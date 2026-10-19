@@ -24,6 +24,8 @@ sources:
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -32,10 +34,14 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+generated: { by: "codex", at: "2026-10-19T09:44:12.806Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:02:08.557Z
+    at: 2026-10-19T09:44:12.806Z
 ---
 
 # CI/CD
@@ -76,6 +82,14 @@ accepts only an exact current-`main` dispatch into `homelab-production`. Its
 protected job validates the owner-supplied OpenRouter key, then writes only the
 new Enterprise SSM parameter. It has not run because the key is not yet supplied;
 this source change does not activate Enterprise.
+
+The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
+accepts fixed inspect, canary and upgrade stages only from the exact current
+`main` commit. It runs static checks before the protected job, rechecks the SHA
+before AWS credentials, and verifies the pinned stage helper before execution.
+The executor keeps activation and canary placement disabled until private
+recovery, image-publication and isolated-node evidence is available; no upgrade
+stage has run from this source change.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 

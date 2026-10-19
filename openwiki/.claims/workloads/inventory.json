@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fbecc5c93832bb916d99ec30a29d90e013f1cb4ad5c317423bda2ee052ff6585",
+  "pageVersion": "sha256:aa9e00f31136e5825136f12e23b3fa283a24b0fc46be86fa56c119cc8bde57ed",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,11 +330,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:6711188198c0e4d1d4f68d95548814c9bbb972fa23d72b501ee4d6d30308d286"
+          "version": "repo-file-v1:sha256:b8e9faa158ef94f4a520dc2bde393c896815b8236da82c65e266760917a4a80f"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -364,7 +364,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -441,6 +441,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:02:08.557Z"
+    "at": "2026-10-19T09:44:12.806Z"
   }
 }

@@ -34,6 +34,21 @@ test_rejects_missing_or_stale_main_recheck if {
 	}
 }
 
+test_rejects_unreviewed_platform_stage_helper if {
+	steps := platform_maintenance_fixture.jobs.maintenance.steps
+	changed := object.union(steps[5], {"run": replace(
+		platform_maintenance_private_run,
+		"75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971",
+		"0000000000000000000000000000000000000000000000000000000000000000",
+	)})
+	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
+	candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
+	candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform maintenance requires exact protected stages")
+}
+
 platform_maintenance_fixture := {
 	"name": "Platform Maintenance",
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},

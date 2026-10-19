@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -92,8 +94,6 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-e3e84b128839afbc47f478f7
-    resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -134,8 +134,6 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
-  - id: openwiki-source-55c4fe691d927de7a22cd232
-    resource: repo://scripts/ci/network-policy-enforcement-test.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -152,8 +150,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
-  - id: openwiki-source-719a8f57b80adfae662090ca
-    resource: repo://scripts/ci/platform-maintenance-test.py
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
@@ -204,6 +202,8 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
@@ -220,10 +220,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
+generated: { by: "codex", at: "2026-10-19T09:44:12.806Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:02:08.557Z
+    at: 2026-10-19T09:44:12.806Z
 ---
 
 # Validation Gates
@@ -1507,11 +1507,15 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
-The staged platform source adds offline tests for exact-main maintenance
-receipts, safe node order, NetworkPolicy inventory, fixture traffic and
-ownership-limited cleanup. The platform workflow and enforcer remain disabled
-until recovery, publication and isolated-canary evidence pass. Passing these
-fixtures does not qualify a live Talos node or make existing policies effective.
+The staged platform source tests exact-main maintenance receipts, safe node
+order, private prerequisite readback, Talos role/disk preservation, immutable
+Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and
+ownership-limited cleanup. The protected workflow wires fixed upgrade stages
+to that executor with a pinned helper hash and bounded private results. Its
+activation flag and canary node remain unset. Current-SHA recovery receipts,
+full-catalog publication, five-tag Harbor lock and an isolated canary remain
+live gates. Passing these fixtures does not qualify a live Talos node or make
+existing policies effective.
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
 to `static-checks.sh`. It renders the Kustomization and checks restricted

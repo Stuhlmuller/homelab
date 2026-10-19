@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Protected, source-pinned entry point. Upgrade execution remains disabled until
-# each node receipt can be retained outside the ephemeral Actions runner.
+# Protected, source-pinned entry point. Activation remains false until the
+# private recovery, publication, and isolated-canary gates are fulfilled.
 set -euo pipefail
 umask 077
 
@@ -40,17 +40,24 @@ bucket="$(terragrunt render --config IaC/application-backup-storage.hcl --json -
   --output text)" == 'aws:kms' ]]
 
 retain_result() {
-  local result="$1" name="$2" key version
-  [[ -f "$result" && ! -L "$result" && "$(stat -c %a "$result")" == 600 ]] || exit 1
+  local result="$1" name="$2" key response checksum version readback
+  [[ -f "$result" && ! -L "$result" && "$(stat -c %a "$result")" == 600 &&
+     "$(stat -c %s "$result")" -le 1048576 ]] || exit 1
   key="openclaw-enterprise/platform/${GITHUB_SHA}/${GITHUB_RUN_ID}/${name}.json"
-  aws s3api put-object --bucket "$bucket" --key "$key" --body "$result" \
-    --server-side-encryption aws:kms >/dev/null
-  version="$(aws s3api head-object --bucket "$bucket" --key "$key" --query VersionId --output text)"
-  [[ -n "$version" && "$version" != None && "$version" != null ]] || exit 1
+  checksum="$(openssl dgst -sha256 -binary "$result" | base64 -w0)"
+  response="$(aws s3api put-object --bucket "$bucket" --key "$key" --body "$result" \
+    --server-side-encryption aws:kms --if-none-match '*' \
+    --checksum-algorithm SHA256 --checksum-sha256 "$checksum")"
+  version="$(jq -er .VersionId <<<"$response")"
+  [[ "$version" != null && "$version" != "" ]] || exit 1
+  readback="$(aws s3api head-object --bucket "$bucket" --key "$key" \
+    --version-id "$version" --checksum-mode ENABLED)"
+  jq -e --arg version "$version" --arg checksum "$checksum" \
+    '.VersionId == $version and .ChecksumSHA256 == $checksum and .ServerSideEncryption == "aws:kms"' \
+    <<<"$readback" >/dev/null
 }
 
-case "$stage" in
-  inspect)
+connect_talos() {
     # Octelium clientless credentials cannot reach TCP Services. This separate
     # CLIENT credential is limited by homelab-platform-talos-ci-access.
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && -n "${OCE_OCTELIUM_CLIENT_AUTH_TOKEN:-}" &&
@@ -80,7 +87,12 @@ for attempt in range(60):
 else:
     raise SystemExit("Talos TCP tunnel did not become ready")
 PY
-    python3 scripts/platform-maintenance.py inspect --config "$config" \
+}
+
+case "$stage" in
+  inspect)
+    connect_talos
+    python3 -I scripts/platform-maintenance.py inspect --config "$config" \
       --talosconfig "$work/talosconfig" --output "$work/inspect.json"
     retain_result "$work/inspect.json" inspect
     ;;
@@ -120,12 +132,23 @@ PY
     retain_result "$work/cleanup.json" cleanup
     ;;
   talos-*|kubernetes-*)
-    # The executor writes per-node receipts on the runner. A reviewed durable
-    # per-node write-through path and fresh private recovery evidence are still
-    # required before it may ever invoke a Talos/Kubernetes upgrade.
-    [[ -n "${OCE_OCTELIUM_CLIENT_AUTH_TOKEN:-}" && -n "${OCE_TALOSCONFIG_B64:-}" &&
-       -n "${OCE_CONTROLPLANE_CONFIG_B64:-}" && -n "${OCE_WORKER_CONFIG_B64:-}" ]] || exit 1
-    echo 'Platform upgrade blocked: durable per-node receipts and recovery verification are not wired.' >&2
-    exit 1
+    [[ -n "${OCE_CONTROLPLANE_CONFIG_B64:-}" && -n "${OCE_WORKER_CONFIG_B64:-}" ]] || exit 1
+    connect_talos
+    printf %s "$OCE_CONTROLPLANE_CONFIG_B64" | base64 --decode >"$work/controlplane.yaml"
+    printf %s "$OCE_WORKER_CONFIG_B64" | base64 --decode >"$work/worker.yaml"
+    chmod 600 "$work/controlplane.yaml" "$work/worker.yaml"
+    install -m 0700 -d "$work/receipts"
+    if ! python3 -I scripts/platform-maintenance.py execute --config "$config" \
+      --stage "$stage" --expected-sha "$GITHUB_SHA" \
+      --talosconfig "$work/talosconfig" \
+      --control-plane-config "$work/controlplane.yaml" \
+      --worker-config "$work/worker.yaml" \
+      --receipt-dir "$work/receipts" --output "$work/upgrade-error.json"; then
+      if [[ -f "$work/upgrade-error.json" && ! -L "$work/upgrade-error.json" ]]; then
+        retain_result "$work/upgrade-error.json" upgrade-error
+      fi
+      exit 1
+    fi
+    retain_result "$work/receipts/$stage.json" "$stage"
     ;;
 esac

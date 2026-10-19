@@ -49,11 +49,12 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse(external)
 
-    def test_upgrade_executor_is_deliberately_unreachable(self):
+    def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
-        self.assertNotIn("platform-maintenance.py execute", source)
-        self.assertIn("durable per-node receipts", source)
+        self.assertIn("platform-maintenance.py execute", source)
         self.assertIn("OCE_OCTELIUM_CLIENT_AUTH_TOKEN", source)
+        self.assertIn("OCE_CONTROLPLANE_CONFIG_B64", source)
+        self.assertIn("--receipt-dir \"$work/receipts\"", source)
         self.assertIn("--publish talos-api-ci.homelab:127.0.0.1:15000", source)
 
     def test_inspect_installs_clientless_kubeconfig_before_cluster_inspection(self):
@@ -80,7 +81,8 @@ class PlatformStageTests(unittest.TestCase):
                        "  scripts/ci/install-octelium-client.sh) echo client >>\"$TRACE\"; exit 0;;\n"
                        "esac\n"
                        f"exec '{bash}' \"$@\"\n")
-            executable("python3", "case \"$1\" in\n"
+            executable("python3", "if [ \"$1\" = -I ]; then shift; fi\n"
+                       "case \"$1\" in\n"
                        "  -) cat >/dev/null; exit 0;;\n"
                        "  scripts/platform-maintenance.py) echo inspect >>\"$TRACE\"; exit 42;;\n"
                        "esac\nexit 99\n")

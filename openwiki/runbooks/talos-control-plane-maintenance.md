@@ -18,14 +18,16 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+generated: { by: "codex", at: "2026-10-19T09:06:14.696Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:08:11.339Z
+    at: 2026-10-19T09:44:12.806Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -167,12 +169,21 @@ and [committed ladder](../../scripts/config/platform-maintenance.json) define
 Talos `1.11.3 → 1.11.6 → 1.12.12 → 1.13.11 → 1.14.4`, followed by a separately
 gated Kubernetes `1.34.11 → 1.35.9` stage. The protected lane requires exact
 current `main`, a distinct Octelium client tunnel and Talos mTLS. Inspect and
-offline validation do not execute upgrades; per-node durable start/verified
-markers are intended to stop ambiguous retries. The upgrade branch remains
-disabled pending direct-LAN recovery, fresh off-node etcd, published images,
-role-specific strict validation, an isolated canary, and Istio completion.
-Kubernetes image digest-to-version-tag immutability/readback also remains an
-explicit open gate. No live node or control-plane upgrade is accepted from this
-staged source alone.
+offline validation do not execute upgrades. The protected upgrade branch now
+invokes the ordered executor after strict role-specific Talos config validation.
+It restores exactly one checksummed, versioned, current-SHA copy of placement,
+direct-LAN Talos recovery, fresh off-node etcd and image-publication receipts.
+Before each Talos node command, it records a durable start marker; a verified
+marker follows node and cluster health, with active/persistent machine role,
+disk and mirror configuration unchanged. An ambiguous or interrupted marker
+stops automatic retry and requires direct-LAN review.
+
+Talos appends target version tags during `upgrade-k8s`. The executor verifies
+the five Harbor aliases are digest-matched and immutable, and that every node
+has the no-fallback Harbor routes before that command. The tag lock, protected
+recovery receipt producer, isolated canary, and Istio completions remain open
+gates; `activationEnabled` is still false. No live node or control-plane
+upgrade is accepted from this source alone. The canonical runbook gives the
+direct-LAN commands and stop conditions.
 
 See [Cluster Topology](../architecture/cluster-topology.md) and [Validation](validation.md).
