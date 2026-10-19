@@ -67,10 +67,13 @@ archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and starts a file-locked
 worker in the reader Pod. The worker copies both source roots, checks the
 stopped-source inventory again, and writes a private result only after a full
-local restore. Verification streams archive headers into a private disk-backed
-index before extraction, so the 512 MiB reader does not retain every tar member
-in memory. An OOM-killed reader or absent result leaves only a partial local
-archive; retain it for diagnosis and start a new protected run only after the
+local restore. The writer keeps hardlink lookups in private local scratch
+SQLite. Verification streams archive headers into a separate index on the same
+local scratch; restored data stays on the archive claim. Both passes clear
+Python 3.11's tar member cache. SQLite failures report only the fixed phase
+and SQLite error code, without paths or database contents. An OOM-killed reader or
+absent result leaves only a partial local archive; retain it for diagnosis
+and start a new protected run only after the
 cause is fixed. Do not treat a successful start as an archive receipt. Inspect
 the private result and worker log before dispatching `publish-archive` with the
 archive stage's SHA/run ID; the old source stays stopped and read-only while it
