@@ -122,6 +122,20 @@ class Retirement(unittest.TestCase):
         with self.assertRaises(ValueError):
             retirement.verify_archive(self.config, receipt)
 
+    def test_restore_supports_reader_tarfile_without_filter_argument(self):
+        extract = tarfile.TarFile.extract
+
+        def reader_extract(tar, member, path='', set_attrs=True, *, numeric_owner=False):
+            return extract(tar, member, path, set_attrs, numeric_owner=numeric_owner,
+                           filter='data')
+
+        with patch.object(tarfile.TarFile, 'extract', reader_extract), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
     def test_large_archive_verifies_without_caching_tar_members(self):
         retained = self.nas / 'openclaw'
         for number in range(4000):
