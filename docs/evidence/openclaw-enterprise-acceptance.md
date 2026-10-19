@@ -20,7 +20,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [earlier attempts `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916), [`39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077); [detached attempt `39181763037`](https://github.com/Stuhlmuller/homelab/actions/runs/39181763037); [merged repair #1401](https://github.com/Stuhlmuller/homelab/pull/1401); [main `2f94bec3`, retry `39204434898`](https://github.com/Stuhlmuller/homelab/actions/runs/39204434898); [checksum repair #1416](https://github.com/Stuhlmuller/homelab/pull/1416); [archive launcher `39207560733`](https://github.com/Stuhlmuller/homelab/actions/runs/39207560733) | — | Pending. `39204434898` failed before worker creation because the workflow's pinned helper checksum was stale; #1416 updated that guard. Launcher `39207560733` passed, but its detached worker was OOM-killed during local `verify_bundle` under the reader's 512 MiB limit. No private result or offsite restore receipt exists. Keep the original sources and unpublished partial scratch intact pending a tested streaming-verifier retry. |
-| Capacity and isolated canary | Read-only post-shutdown node/top snapshots through 2026-10-19 03:37 UTC | — | Blocked: no dedicated node; no existing worker qualifies as a safe tainted canary without exposing or evicting unrelated stateful workloads. Admission and platform activation remain disabled. |
+| Capacity and isolated canary | Read-only node/top/Talos mount snapshots through 2026-10-19 17:07 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -40,8 +40,9 @@ and 39% memory requested, but 75% actual memory in use and hosts Argo, database,
 access, and other unrelated Pods without the proposed canary taint toleration.
 Tainting it would prevent those Pods from rescheduling after a restart. These
 snapshots do not establish peak headroom, local storage allocation, or T022
-admission. Authenticated Talos disk inspection was unavailable because this
-checkout's `.talos/talosconfig` is empty.
+admission. Authenticated Talos disk inspection was unavailable from that
+checkout's empty `.talos/talosconfig`; the later authenticated inspection is
+recorded below.
 
 Do not infer a passed gate from a manifest, green Pod, local fixture or an
 empty receipt cell. Record the exact current-main SHA, workflow run and
@@ -107,6 +108,29 @@ are 99% and 92% reserved; `acer` is the sole control plane and 88%
 reserved. No existing node qualifies as an isolated canary under T022's
 no-unrelated-eviction and no-new-hardware constraint. These are
 point-in-time observations, not measured peaks; T022 remains blocked.
+
+At 2026-10-19 17:07 UTC, read-only `kubectl top nodes`, node allocation and
+authenticated Talos `/var` mounts showed:
+
+| Node | Memory requested / allocatable | Actual memory used | `/var` free |
+| --- | ---: | ---: | ---: |
+| `acer` | 13,459 / 15,261 MiB (88%) | 10,978 MiB (71%) | 411.67 GB |
+| `zimaboard-0` | 7,276 / 7,282 MiB (99%) | 6,270 MiB (86%) | 5.39 GB |
+| `zimaboard-1` | 3,756 / 7,282 MiB (51%) | 6,253 MiB (85%) | 10.01 GB |
+| `zimaboard-2` | 1,206 / 1,308 MiB (92%) | 991 MiB (75%) | 9.29 GB |
+
+Each worker has only one writable 31 GB eMMC disk and no separate local data
+volume. Each has less than the 10 GiB (10.74 GB) free required for even one
+full new PostgreSQL or agent allocation; the three distinct planned volumes
+total 21 GiB. Only `acer` has measured disk space for them, but its 1,802 MiB
+unreserved memory is about 503 MiB below the plan's initial 512 MiB database
+plus 1,792 MiB gateway reservation, before API, worker, Envoy, enforcement,
+transient jobs or headroom. Retained old local volumes are not reclaimable.
+The five non-infrastructure Pods on `zimaboard-2` include single-replica
+Langfuse PostgreSQL with `Recreate` rollout; tainting that node would expose
+them to canary enforcement or strand their replacements, while relocating the
+database would interrupt it. These snapshots are not peak measurements and do
+not admit T022, T035, an isolated canary, or Enterprise activation.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
