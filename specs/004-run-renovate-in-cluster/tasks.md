@@ -132,3 +132,9 @@
 - [ ] T045 Verify failed-Job, per-repository failure, and missed-cycle alert timing plus next-hour recovery through the reviewed fault path and restricted logs, per SC-004 (partial).
 - [ ] T046 Update operator, secret, and cutover documentation for Actions-key retirement and guarded restore, observer and ledger lifecycle, verification, and rollback; refresh affected OpenWiki through its native lifecycle, per FR-011 (partial).
 - [ ] T047 After the aggregate acceptance report is reviewed, add an idempotent GitOps Job that erases only the observer ledger, verify erasure, and retire the observer, cleanup Job, and PVC through reviewed code, per plan: acceptance evidence (missing).
+
+## Phase 8: Convergence
+
+- [ ] T048 Declare a reviewed, read-only inventory and seed Job that derives the private sample from the actual Renovate extraction baseline, verifies every active datasource and source-visibility stratum, and writes only to the protected ledger before observer activation, per plan: acceptance evidence (missing).
+- [ ] T049 Implement a private, evidence-backed outcome receipt path and aggregate-only report that joins every sampled release to eligibility, verified proposal or policy-deferral time, and confirmed exclusions; count missing eligible outcomes and report SC-002 inconclusive when evidence or timing is ambiguous, per SC-002 (partial).
+- [ ] T050 Deduplicate the same upstream datasource, registry, package, and version across sampled repositories, or group their repository outcomes as one independent release, so SC-002's eligible-event denominator cannot be inflated, per SC-002 (partial).
