@@ -22,14 +22,16 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-221eda5e9e283a2549066105
+    resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
-generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
+generated: { by: "codex", at: "2026-10-19T20:40:44.909Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T20:01:23.259Z
+    at: 2026-10-19T20:40:44.909Z
 ---
 
 # Runtime Isolation
@@ -71,7 +73,10 @@ Before activation, finish image publication and policy owner/render review, then
 admit an isolated tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
 stateful workloads. Compare private read-only Pod/NetworkPolicy snapshots and
-all rendered policies with `scripts/network-policy-inventory.py`. Qualify
+all rendered policies with `scripts/network-policy-inventory.py`. Its review
+fingerprints now cover ingress and egress, and missing or drifted ingress-only
+generated policies fail the inventory. Obtain exact generator renders and a
+fresh read-only snapshot before the canary. Qualify
 allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
 IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before

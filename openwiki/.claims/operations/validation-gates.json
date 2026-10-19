@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:27b6e92f3a8c0c433b5ac548a719ec05bc828feb61c9e71a65eee1e979360dd8",
+  "pageVersion": "sha256:910299006641ddc39eb532cb0041548ab0549fdc610e5eb782ff767bd58e4d90",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1125,10 +1125,32 @@
           "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
         }
       ]
+    },
+    {
+      "id": "claim_370a44925f9847ceb782c54e62bad10d",
+      "statement": "The read-only NetworkPolicy inventory hashes normalized ingress and egress rules and reports missing, drifted, or source-only ingress policies as fail-on-findings results; older private review hashes need refresh.",
+      "evidence": [
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L136-L150",
+          "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L159-L207",
+          "version": "repo-lines-v1:sha256:689c13a5f849f5b7ce817da8d718abcb821baa50e2daa2e6dd6fa4b342418d48:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxZGNhMGY0ODhkYmY1MWEwYmE3NzRkOGNmZjI3MjIwNTY3Y2QwYzljMGYxNWIzNzk3NGIzYWI1OTcwZjA2YzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1NzkxYTllMWI5ZmFhZmJhYmIwYTJjOTM1YWNiMDJiNGUxOWVmMzkxNmZkM2M3MDhjOTI5M2Q3ODM5YTMzODUifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py#L148-L198",
+          "version": "repo-lines-v1:sha256:b0daebd8e3893764a075ee38138442b19cf7c6eb83a3a045c8020fa9e0b84531:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MjRiZTc5MmMzNDk1YTc4MDRmMzRlMDJmNzA0ZDQwMDJhMTM4ZWVlNzMyMWQ5MTFiNjc2YTdhYWQxOWQwYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZGJmNjBmNjJjMTM4MDVhN2JiZmNmMzk0OTI0NTZhODY0MWU0MDRhZDc1ZTUzM2QxNjVjZmU1NDkxYmIzNmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkYjI4Yzk1ZTQ0ODE2MmYyN2IzYWM1NjY5ZThmMjU0NTllMjkyMzViZTIyOTFhZGMyNzEzMzkzYzQ3YzAxNGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NDM5YTNiMjM1NjViM2Y1Y2IxZTg4MzM0ZTg0MmNkMDE2NTg1MzIzMmY5NzczODdhNTVhZjZmMGQxMDFjMGQifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py#L601-L618",
+          "version": "repo-lines-v1:sha256:4043ebfeecf2fc5cebd4874f7bd389df0f4156c7fc71e8b4823653e09d103322:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmOWFlMGE5ODMzNWIzMjM3YmJiMWY5MTI1OTE3NzFlYTI1ZjI1NDJlNGY0Nzc2ZDllYjhmMDliOTE0YjI4ZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5MDkwMDZlNTExNzFmM2I2MDZhOTU3OWQ2YmUxMmM5ZGQxM2QyOWEwZGI0YjIyMWExYmJkYTA3MmQ2YTgwMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzNjRhNmM3ODI5NDQ2MjZjMzQwMzFjOTcwNzYwODcyMWEzYTBiZGJhMmVhZTY3ODQyMWI4ZWMxN2ZjZmY4NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1MGEzMjc3NjAzZTgyZTQ1YTMyNGU4MmM4N2I3YzE5OGM0OWNkZmUyNDcxMjVlYWQwODZhM2YyMDliMTU1MTIifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T20:01:23.259Z"
+    "at": "2026-10-19T20:40:44.909Z"
   }
 }
