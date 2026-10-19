@@ -13,7 +13,8 @@ const item = { repository, datasource: 'npm', packageName: 'fixture-package',
   packageFile: 'package.json' };
 const event = { version: '1.1.0', lastAbsent: '2026-10-19T00:00:00.000Z',
   firstPresent: '2026-10-19T00:15:00.000Z' };
-const receipt = { schema: 1, podUid: uid, image: 'renovate:44.167.4',
+const receipt = { schema: 1, podUid: uid,
+  image: 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d',
   startedAt: '2026-10-19T00:20:00.000Z', completedAt: '2026-10-19T00:22:00.000Z' };
 const branch = { branchName: 'renovate/fixture-package-1.x', prNo: 42,
   upgrades: [{ datasource: 'npm', depName: 'fixture-package',

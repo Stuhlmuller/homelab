@@ -29,7 +29,8 @@ function verifiedReports(directory = privateDir) {
       const reportBytes = privateFile(path.join(folder, `${uid}.json`));
       totalBytes += reportBytes.length;
       if (totalBytes > 256 * 1024 * 1024) throw new Error('report-set-too-large');
-      if (receipt.schema !== 1 || receipt.podUid !== uid || receipt.image !== 'renovate:44.167.4' ||
+      if (receipt.schema !== 1 || receipt.podUid !== uid ||
+          receipt.image !== 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d' ||
           receipt.report?.file !== `${uid}.json` || receipt.report.bytes !== reportBytes.length ||
           receipt.report.sha256 !== sha256(reportBytes) ||
           !validTime(receipt.startedAt) || !validTime(receipt.completedAt) ||

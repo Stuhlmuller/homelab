@@ -52,7 +52,7 @@ function seal(paths, uid, startedAt, completedAt) {
   const receipt = {
     schema: 1,
     podUid: uid,
-    image: 'renovate:44.167.4',
+    image: 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d',
     startedAt,
     completedAt,
     report: {

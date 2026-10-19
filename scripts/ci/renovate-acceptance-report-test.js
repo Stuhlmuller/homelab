@@ -94,6 +94,8 @@ test('a pinned-shape report is sealed once with private files and matching hashe
     const counts = runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z');
     assert.deepEqual(counts, { repositories: 1, packageFiles: 1, dependencies: 1, branches: 3 });
     const receipt = JSON.parse(fs.readFileSync(paths.receipt, 'utf8'));
+    const manifest = fs.readFileSync(path.join(root, 'acceptance-report-job.yaml'), 'utf8');
+    assert.equal(receipt.image, manifest.match(/^\s+image: (\S+)$/m)?.[1]);
     assert.equal(receipt.report.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
     assert.equal(receipt.podUid, uid);
     assert.equal(receipt.report.file, `${uid}.json`);
