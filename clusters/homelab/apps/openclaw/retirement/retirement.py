@@ -419,7 +419,8 @@ def verified_restore_destination(destination, bundle, config):
     if any(destination == source or destination.is_relative_to(source)
            or source.is_relative_to(destination) for source in sources):
         raise ValueError('isolated restore destination overlaps retained source')
-    if destination == bundle.parent or destination.is_relative_to(bundle.parent):
+    bundle_parent = private_dir(bundle.parent, config['nasUid'])
+    if destination == bundle_parent or destination.is_relative_to(bundle_parent):
         raise ValueError('isolated restore destination overlaps downloaded archive')
     return destination
 

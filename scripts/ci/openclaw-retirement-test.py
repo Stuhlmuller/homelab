@@ -370,6 +370,13 @@ class Retirement(unittest.TestCase):
             with self.subTest(destination=destination), self.assertRaises(ValueError):
                 retirement.verify_archive(self.config, receipt, destination)
             self.assertFalse(destination.exists())
+        alias = self.archive_root / 'archive-alias'
+        alias.symlink_to(self.archive_root, target_is_directory=True)
+        nested = receipt.parent / 'nested-rehearsal'
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config,
+                                      alias / receipt.parent.name / 'receipt.json', nested)
+        self.assertFalse(nested.exists())
         bad = self.archive_root / 'bad-receipt'
         bad.mkdir(mode=0o700)
         (bad / 'legacy.tar.gz').write_bytes((receipt.parent / 'legacy.tar.gz').read_bytes())
