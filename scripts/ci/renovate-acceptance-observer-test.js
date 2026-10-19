@@ -459,10 +459,10 @@ test('observer requests only read-scoped GitHub App permissions', async () => {
     calls.push({ url, options });
     return {
       ok: true,
-      json: async () => calls.length === 1 ?
+      json: async () => url.endsWith('/installation') ?
         { id: 42, account: { login: 'Stuhlmuller' }, repository_selection: 'all' } :
         { token: 'ghs_readonly', expires_at: new Date(Date.now() + 3600_000).toISOString(),
-          permissions: { contents: 'read', metadata: 'read' } },
+          permissions: JSON.parse(calls.at(-1).options.body).permissions },
     };
   };
   try {
@@ -472,6 +472,10 @@ test('observer requests only read-scoped GitHub App permissions', async () => {
     assert.equal(calls[1].url.endsWith('/access_tokens'), true);
     assert.deepEqual(JSON.parse(calls[1].options.body).permissions,
       { contents: 'read', metadata: 'read' });
+    const expanded = { contents: 'read', metadata: 'read', pull_requests: 'read' };
+    assert.equal(await observer.readToken(expanded), 'ghs_readonly');
+    assert.deepEqual(JSON.parse(calls[3].options.body).permissions, expanded);
+    await assert.rejects(observer.readToken({ contents: 'write' }), /read-token-permissions/);
   } finally {
     fs.readFileSync = originalRead;
     global.fetch = originalFetch;

@@ -390,7 +390,11 @@ function saveLedger(ledger) {
   fs.renameSync(target, ledgerPath);
 }
 
-async function readToken() {
+async function readToken(permissions = { contents: 'read', metadata: 'read' }) {
+  if (!permissions || !Object.keys(permissions).length ||
+      Object.values(permissions).some((value) => value !== 'read')) {
+    throw new Error('read-token-permissions');
+  }
   let issuer;
   let privateKey;
   try {
@@ -428,11 +432,11 @@ async function readToken() {
   const installation = await github(`/orgs/${owner}/installation`, jwt);
   if (!Number.isSafeInteger(installation.id) || installation.account?.login?.toLowerCase() !== owner.toLowerCase() ||
       installation.repository_selection !== 'all') throw new Error('installation-coverage');
-  const permissions = { contents: 'read', metadata: 'read' };
   const result = await github(`/app/installations/${installation.id}/access_tokens`, jwt, 'POST', { permissions });
   if (typeof result.token !== 'string' || !result.token.startsWith('ghs_') ||
       Date.parse(result.expires_at) - Date.now() < 10 * 60 * 1000 ||
-      !result.permissions || Object.values(result.permissions).some((value) => value !== 'read')) {
+      !result.permissions || Object.values(result.permissions).some((value) => value !== 'read') ||
+      Object.keys(permissions).some((key) => result.permissions[key] !== 'read')) {
     throw new Error('read-token-invalid');
   }
   return result.token;

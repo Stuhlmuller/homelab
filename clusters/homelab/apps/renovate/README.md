@@ -215,6 +215,32 @@ ephemeral `/tmp`; the next poll uses a new Pod. It uses the dedicated no-token
 `renovate` ServiceAccount and Pod-local registry route; it has no Kubernetes API
 token or inbound Service.
 
+The separate `acceptance-report-job.yaml` is also suspended and omitted from
+Kustomize. A reviewed GitOps change is required to run it. It uses Renovate
+44.167.4's experimental `reportType: file` in a full dry run with the same
+committed runner policy and a read-scoped GitHub App token. The App currently
+lacks repository Administration read; that known API denial and the complete
+read-only token scope need live verification before activation. Its base and package
+cache are Pod-local `/tmp`; it never mounts `renovate-cache`. The pinned report
+contains actual extracted `packageFiles` and lookup updates, plus branch
+results such as `prNo`, `result`, and `prBlockedBy`. The Pod UID names its raw
+report and private Renovate log under `/ledger/private/reports`. A successful
+scan verifies the report shape, file permissions, and SHA-256, then creates an
+exclusive, timestamped hash receipt. A failed scan, missing report, or malformed
+report creates no success receipt. Pod logs show aggregate counts only; the raw
+report and diagnostic log may contain private package or repository details.
+The report Job mounts the App private key, so its credential capability is not
+isolated even though its requested installation token has read permissions.
+
+The report is a candidate extraction and policy-outcome source, not a verified
+acceptance sample. Its API is experimental; it does not timestamp a GitHub PR's
+first proposal or independently prove a policy deferral. Review input for source
+visibility and effective policy, owner inventory, and a GitHub PR/outcome
+verifier must be declared before seeding or claiming SC-002. The current
+inventory Job still reads the repository cache and does not consume this report.
+Keep both Jobs omitted/suspended and the observer suspended until the producer,
+review-input, and outcome-verification paths are joined and reviewed.
+
 Before starting this CronJob, freeze a private inventory from the pinned
 Renovate image's actual repository-extraction cache. Full dry-run skips cache
 persistence, so this requires a successful later write-enabled scan. The
