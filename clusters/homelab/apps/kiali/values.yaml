@@ -25,6 +25,8 @@ cr:
     deployment:
       namespace: monitoring
       cluster_wide_access: true
+      network_policy:
+        enabled: false
       service_type: ClusterIP
       view_only_mode: true
       additional_pod_init_containers_yaml:
