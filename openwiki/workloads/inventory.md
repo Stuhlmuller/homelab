@@ -24,6 +24,8 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-3f6d0b26d6634f9dca554267
+    resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
     resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
   - id: openwiki-source-95cce4aa4d0f7c4802f5fdd5
@@ -46,6 +48,8 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/launch.rb
   - id: openwiki-source-dbeb78c2adb5040b8afe8540
     resource: repo://clusters/homelab/apps/mastodon/migration.yaml
+  - id: openwiki-source-a953c7d60cd7a8fdea7b14bd
+    resource: repo://clusters/homelab/apps/mastodon/networkpolicy.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4301bd0984ddefae9a3aa9e4
@@ -58,6 +62,8 @@ sources:
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
+  - id: openwiki-source-92921fc2790f07b9b1a48bd3
+    resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
@@ -122,6 +128,8 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
+  - id: openwiki-source-556eb082b86343ef048df9f7
+    resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-59f51b5800f473496977b52a
     resource: repo://IaC/argocd-image-updater/stack.hcl
   - id: openwiki-source-1ee0d946130d3ad97636dfdc
@@ -140,6 +148,8 @@ sources:
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
+  - id: openwiki-source-54e352b5d1969695ce29dabe
+    resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -152,10 +162,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:25.268Z
 ---
 
 # Workload Inventory
@@ -502,6 +512,12 @@ Phase 2a adds intended Traefik peers for Cordium genesis and cluster-config
 bootstrap traffic on port 8443, with matching bootstrap egress declarations.
 Flannel still does not enforce these NetworkPolicies. Require native API
 acceptance after the CoreDNS rewrite; manifest presence is not connectivity proof.
+The source-only T018 pass narrows Cloudflared egress to routed Istio gateway and
+Octelium dataplane Pods, Harbor metrics ingress to Prometheus Pods, and Harbor
+nginx and Mastodon ingress to labeled gateway Pods. Harbor nginx retains labeled
+Traefik and same-namespace bootstrap peers. Mastodon also declares ambient
+HBONE TCP/15008. Enforcement awaits endpoint, probe, and traffic proof on an
+isolated canary.
 The retained connector also has an explicit temporary Traefik authorization for
 `cluster.local/ns/octelium-client/sa/octelium-client` only on port 8443, with an
 intended peer matching its namespace and both pod labels. Retire this allowance

@@ -102,6 +102,8 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-556eb082b86343ef048df9f7
+    resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -148,6 +150,8 @@ sources:
     resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-28fa6202184199322ab68bca
     resource: repo://scripts/ci/network-policy-inventory-test.py
+  - id: openwiki-source-54e352b5d1969695ce29dabe
+    resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -244,10 +248,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T21:02:46.926Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:25.268Z
 ---
 
 # Validation Gates
@@ -548,6 +552,10 @@ CI and native operator transport stay until their later acceptance stage.
 The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
+The offline peer regression checks Cloudflared origins and gateway selectors,
+Harbor monitoring peers, Harbor and Mastodon gateway peers, and Mastodon's
+ambient HBONE TCP/15008 allowance. It cannot prove traffic through an
+enforcing dataplane; require the isolated canary before activation.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
