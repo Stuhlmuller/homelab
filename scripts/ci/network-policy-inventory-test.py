@@ -204,6 +204,19 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
             matched = subprocess.run(command, capture_output=True, text=True, check=False)
             self.assertEqual(matched.returncode, 0, matched.stdout + matched.stderr)
 
+    def test_mixed_policy_ingress_drift_has_direction_neutral_finding(self):
+        selected = {"matchLabels": {"app": "client"}}
+        live = policy("apps", "mixed", selected, [], ["Ingress", "Egress"],
+                      [{"ports": [{"port": 8080}]}])
+        rendered = policy("apps", "mixed", selected, [], ["Ingress", "Egress"],
+                          [{"ports": [{"port": 9090}]}])
+        result = inventory.audit([pod("apps", "client", {"app": "client"})],
+                                 [live], [[rendered]])
+        self.assertEqual(result["driftedPolicies"], ["apps/mixed"])
+        self.assertEqual([item for item in result["findings"]
+                          if item["kind"].startswith("drifted-")],
+                         [{"kind": "drifted-policy", "policy": "apps/mixed"}])
+
     def test_not_in_selector_requires_label_presence(self):
         selector = {"matchExpressions": [{
             "key": "app", "operator": "NotIn", "values": ["excluded"],

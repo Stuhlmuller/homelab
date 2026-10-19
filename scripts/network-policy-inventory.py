@@ -198,6 +198,12 @@ def policy_fingerprint(policy):
     return hashlib.sha256(encoded).hexdigest()
 
 
+def policy_finding_kind(status, policy):
+    types = policy["policyTypes"]
+    direction = f"{types[0].lower()}-" if len(types) == 1 else ""
+    return f"{status}-{direction}policy"
+
+
 def policies(items, strict=False):
     result = {}
     for item in items:
@@ -601,14 +607,14 @@ def audit(pod_items, policy_items, render_items, review_path=None, namespaces=()
     findings = []
     policy_index = {(record["namespace"], record["name"]): record for record in policy_records}
     for key in live_only:
-        direction = "egress" if "Egress" in live[key]["policyTypes"] else "ingress"
-        findings.append({"kind": f"unowned-{direction}-policy", "policy": "/".join(key)})
+        findings.append({"kind": policy_finding_kind("unowned", live[key]),
+                         "policy": "/".join(key)})
     for key in drifted:
-        direction = "egress" if "Egress" in live[key]["policyTypes"] else "ingress"
-        findings.append({"kind": f"drifted-{direction}-policy", "policy": "/".join(key)})
+        findings.append({"kind": policy_finding_kind("drifted", live[key]),
+                         "policy": "/".join(key)})
     for key in source_only:
-        direction = "egress" if "Egress" in rendered[key]["policyTypes"] else "ingress"
-        findings.append({"kind": f"source-only-{direction}-policy", "policy": "/".join(key)})
+        findings.append({"kind": policy_finding_kind("source-only", rendered[key]),
+                         "policy": "/".join(key)})
     for record in policy_records:
         policy = live[(record["namespace"], record["name"])]
         if "Egress" not in policy["policyTypes"]:
