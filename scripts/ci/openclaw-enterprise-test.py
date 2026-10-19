@@ -755,13 +755,18 @@ class EnterpriseReconciliation(unittest.TestCase):
         replay = [context, claimed, {"items": owned_policies}] + prepared[3:]
         with patch.object(OCE.Kubernetes, "_json", side_effect=replay):
             OCE.Kubernetes().tenant_prepared("ns_one", require_claimed=True)
+        extra_policy = copy.deepcopy(owned_policies[0])
+        extra_policy["metadata"]["name"] = "allow-all"
+        extra_policy["spec"] = {"podSelector": {}, "policyTypes": ["Ingress"],
+                                "ingress": [{}]}
         for changed_policies in ([], owned_policies[1:],
+                                 [*owned_policies, extra_policy],
                                  [{**owned_policies[0], "spec": {"podSelector": {},
                                    "policyTypes": ["Ingress"]}}, *owned_policies[1:]]):
             with self.subTest(count=len(changed_policies)), patch.object(
                     OCE.Kubernetes, "_json",
                     side_effect=[context, claimed, {"items": changed_policies}] + prepared[3:]):
-                with self.assertRaisesRegex(OCE.Blocked, "NetworkPolicy is absent or changed"):
+                with self.assertRaisesRegex(OCE.Blocked, "NetworkPolicy (set )?is absent or changed"):
                     OCE.Kubernetes().tenant_prepared("ns_one", require_claimed=True)
         with patch.object(OCE.Kubernetes, "_json", side_effect=[context, namespace,
                                                                  {"items": [owned_policies[0]]}]):

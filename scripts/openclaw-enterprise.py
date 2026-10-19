@@ -306,6 +306,8 @@ class Kubernetes:
                      "prepared tenant NetworkPolicy list is ambiguous")
             observed_policies[policy_name] = policy
         if require_claimed:
+            _require(set(observed_policies) == set(REQUIRED_TENANT_POLICY_SPECS),
+                     "prepared tenant NetworkPolicy set is absent or changed")
             for policy_name, expected_spec in REQUIRED_TENANT_POLICY_SPECS.items():
                 observed = observed_policies.get(policy_name)
                 _require(observed is not None and
