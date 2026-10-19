@@ -57,6 +57,27 @@ retain_result() {
     <<<"$readback" >/dev/null
 }
 
+load_receipt() {
+  local key="$1" target="$2" versions version metadata checksum actual
+  versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$key")"
+  version="$(jq -er --arg key "$key" '
+    if .IsTruncated != true and (.DeleteMarkers // []) == [] and
+       (.Versions | length) == 1 and .Versions[0].Key == $key and
+       (.Versions[0].IsLatest == true) and
+       (.Versions[0].VersionId | type == "string" and . != "" and . != "null")
+    then .Versions[0].VersionId else empty end' <<<"$versions")"
+  metadata="$(aws s3api head-object --bucket "$bucket" --key "$key" \
+    --version-id "$version" --checksum-mode ENABLED)"
+  checksum="$(jq -er --arg version "$version" '
+    select(.VersionId == $version and .ServerSideEncryption == "aws:kms" and
+      (.ContentLength | type == "number" and . >= 1 and . <= 1048576)) |
+    .ChecksumSHA256 | select(type == "string" and . != "")' <<<"$metadata")"
+  aws s3api get-object --bucket "$bucket" --key "$key" --version-id "$version" "$target" >/dev/null
+  chmod 600 "$target"
+  actual="$(openssl dgst -sha256 -binary "$target" | base64 -w0)"
+  [[ "$actual" == "$checksum" ]]
+}
+
 connect_talos() {
     # Octelium clientless credentials cannot reach TCP Services. This separate
     # CLIENT credential is limited by homelab-platform-talos-ci-access.
@@ -106,14 +127,10 @@ case "$stage" in
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
     bash scripts/ci/install-kubeconfig.sh
     install -m 0700 -d "$work/receipts"
-    aws s3api get-object --bucket "$bucket" \
-      --key "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
-      "$work/receipts/placement.json" >/dev/null
-    chmod 600 "$work/receipts/placement.json"
-    aws s3api get-object --bucket "$bucket" \
-      --key "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership.json" \
-      "$work/receipts/firewall-ownership.json" >/dev/null
-    chmod 600 "$work/receipts/firewall-ownership.json"
+    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
+      "$work/receipts/placement.json"
+    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership.json" \
+      "$work/receipts/firewall-ownership.json"
     # A versioned private attempt must exist before any firewall operation.
     # If the final upload fails, this marker still requires direct review.
     jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
