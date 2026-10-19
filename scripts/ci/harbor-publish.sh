@@ -27,8 +27,8 @@ if [[ "$mode" == publish-openclaw-enterprise ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
   mode=publish
-  publish_names=(homelab-oce-controller homelab-oce-runtime)
-  publish_outputs=(controller runtime)
+  publish_names=(homelab-oce-controller homelab-oce-runtime homelab-oce-cli)
+  publish_outputs=(controller runtime cli)
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
@@ -545,10 +545,14 @@ if [[ "$mode" == publish ]]; then
     [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-harbor-core:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
     printf 'core=%s\n' "${published_refs[0]}" >>"$GITHUB_OUTPUT"
   else
-    [[ "${#published_refs[@]}" -eq 2 ]]
-    [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[0]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-    [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[1]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-    printf '%s=%s\n%s=%s\n' "${publish_outputs[0]}" "${published_refs[0]}" "${publish_outputs[1]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+    [[ "${#published_refs[@]}" -eq "${#publish_names[@]}" ]]
+    [[ "${#publish_names[@]}" -eq "${#publish_outputs[@]}" ]]
+    for index in "${!publish_names[@]}"; do
+      [[ "${published_refs[$index]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[$index]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    done
+    for index in "${!publish_names[@]}"; do
+      printf '%s=%s\n' "${publish_outputs[$index]}" "${published_refs[$index]}" >>"$GITHUB_OUTPUT"
+    done
   fi
 fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

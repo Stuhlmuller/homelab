@@ -11,9 +11,12 @@ and images, installation phase, logical Namespace/agent names, private origins,
 storage class, native model configuration, credential references, and
 `activationEnabled`. It contains no secret values or operator shell inputs.
 The source-to-image pairing policy and image repository names are fixed in T003;
-the controller/runtime pair is published and pinned. The CLI digest stays null
-until its source-built artifact has a publication receipt, and the remaining
-platform images still require T004 receipts. Activation remains false.
+the controller/runtime pair is published and pinned. The CLI build pins the
+Go 1.27.1 toolchain and exact Linux amd64 binary hash from `cmd/occ`, then
+packages it with the same source revision in a signed Harbor image. Its
+`artifactDigest` stays null until the protected image workflow verifies the
+complete pull and signature; the remaining platform images still require T004
+receipts. Activation remains false.
 
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
 Sandbox, optional broker/collector, or configured Codex Harness. The pinned OCE
