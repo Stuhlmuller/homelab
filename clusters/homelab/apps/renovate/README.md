@@ -226,9 +226,17 @@ if the marker is omitted. The inventory review must prove every active class
 and public/private source stratum where present; the script rejects a missing
 class but cannot discover an omitted class from a falsified inventory. Private
 repository/package identities stay on the volume and out of public reviews.
+The single `provenance.headSha` checked by `seed` does not prove a
+multi-repository extraction baseline. Before unsuspending, privately verify a
+per-repository base-branch head-SHA vector or digest against the actual
+extraction used for the inventory. Full dry-run does not persist extraction
+cache, so a later write-enabled scan may have a different baseline; that
+comparison and a reviewed private inventory producer remain gates.
 
-The seed selects up to five packages per datasource and source-visibility
-stratum by SHA-256 of the preregistered seed and dependency key. It writes the
+The seed first selects one deterministic repository for each upstream datasource,
+package, normalized registry URL, and source-visibility combination. It then
+selects up to five packages per datasource and source-visibility stratum by
+SHA-256 of the preregistered seed and dependency key. It writes the
 selection once to `/ledger/private/ledger.json` with mode `0600`; the seed stays
 private. A second seed refuses to replace it. Check the seed Job's aggregate
 counts, then use a
@@ -237,8 +245,39 @@ the baseline. Later healthy polls record each new version with the previous
 healthy request-start time and first presence response time. Failed source
 polls stay in the private ledger and mark spanning brackets ambiguous; they do
 not advance a bracket. Only counts appear in Pod logs. The `report` mode emits
-aggregate sample, stratum, poll-failure, bracket, and ambiguous-event counts; raw brackets stay
-on the protected PVC. Do not publish the inventory or ledger.
+aggregate sample, stratum, poll-failure, missed-slot, bracket, and ambiguous-event
+counts; raw brackets stay on the protected PVC. Do not publish the inventory or
+ledger.
+
+For the offline SC-002 report, keep `outcomes.json` as a mode `0600` regular file
+beside the ledger on the protected PVC. Bind it to `ledger.inventorySha256`, set
+`schema: 1`, and provide `receipts` keyed by the sampled item's SHA-256 `key`
+and exact observed `version`. Each receipt needs an `eligibility` status:
+`eligible`, `policy-ineligible`, `excluded-outage`, or `unknown`. Receipt
+eligibility evidence has a private `source` reference and `verifiedAt` time;
+policy-ineligible adds a policy `reason`. An excluded outage or maintenance
+also needs an `exclusion` with `reason` (`source-outage`, `github-outage`, or
+`maintenance`), `startAt`, `endAt`, an `affectedAt` time within both that
+interval and the event's four-hour window, a nonempty `impact` describing the
+affected scheduled lookup, write, or maintenance attempt, private `source`, and
+`verifiedAt`. Eligible
+events may have an `outcome` with `kind` (`proposal` or `deferral`), `at`, private
+`source`, and `verifiedAt`; a deferral also needs its policy `reason`.
+
+The report joins exact events, counts eligible events without an outcome in the
+denominator, and measures four hours from the conservative `lastAbsent` bound.
+It emits only aggregate counts and a rate. Unknown eligibility, incomplete
+evidence fields, ambiguous brackets, or fewer than ten eligible natural releases
+make the result inconclusive. Below 95% on-time gives `criteria-not-met` using
+integer counts; the displayed rate is floored to two decimals. The best script
+status is `review-required`: receipt fields alone cannot prove their GitHub PR
+or restricted policy-log source. A reviewed
+private receipt-production and independent source-verification path remains a
+gate before any SC-002 acceptance claim; do not commit private receipt content
+or inject it through an ad hoc live command.
+`review-required` also does not prove seven healthy days: separately verify the
+observer poll span, excluded intervals, hourly runner slots, and reviewable
+proposal or policy-deferral sources before publishing acceptance.
 
 Start the seven-day clock only after the sample and baseline are verified.
 Keep the observer suspended if the inventory, a datasource, private-source

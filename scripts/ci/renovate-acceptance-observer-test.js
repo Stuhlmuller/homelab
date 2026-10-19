@@ -28,6 +28,28 @@ function inventory() {
   };
 }
 
+function observedReleases() {
+  const ledger = observer.selectSample(inventory());
+  const receipts = { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
+  const start = Date.parse('2026-10-18T00:00:00.000Z');
+  for (let index = 0; index < 10; index++) {
+    const item = ledger.sample[index % ledger.sample.length];
+    const absent = start + index * 3600_000;
+    const version = `private-version-${index}`;
+    item.events.push({ version, lastAbsent: new Date(absent).toISOString(),
+      firstPresent: new Date(absent + 15 * 60_000).toISOString(), ambiguous: false });
+    receipts.receipts.push({
+      key: item.key,
+      version,
+      eligibility: { status: 'eligible', source: 'private://policy-proof',
+        verifiedAt: new Date(absent + 6 * 3600_000).toISOString() },
+      outcome: { kind: 'proposal', at: new Date(absent + 3 * 3600_000).toISOString(),
+        source: 'private://github-pr-proof', verifiedAt: new Date(absent + 6 * 3600_000).toISOString() },
+    });
+  }
+  return { ledger, receipts };
+}
+
 test('sample freezes every class and source visibility, excluding the controlled canary', () => {
   const source = inventory();
   const first = observer.selectSample(source);
@@ -42,6 +64,144 @@ test('sample freezes every class and source visibility, excluding the controlled
   assert.equal(first.sample.some((item) => item.packageName === 'Stuhlmuller/renovate'), false);
   source.dependencies.splice(2, 1);
   assert.throws(() => observer.selectSample(source), /missing-datasource-class/);
+});
+
+test('seed deduplicates one upstream source across repositories before freezing', () => {
+  const source = inventory();
+  source.activeDatasources = ['npm'];
+  source.dependencies = [
+    { ...dependency('npm', 'public', 'shared-package'), repository: 'Stuhlmuller/one',
+      registryUrl: 'https://REGISTRY.example.com/packages/' },
+    { ...dependency('npm', 'public', 'shared-package'), repository: 'Stuhlmuller/two',
+      registryUrl: 'https://registry.example.com/packages' },
+    { ...dependency('npm', 'private', 'shared-package'), repository: 'Stuhlmuller/three',
+      registryUrl: 'https://registry.example.com/packages' },
+  ];
+  const first = observer.selectSample(source).sample;
+  const reverse = observer.selectSample({ ...source, dependencies: [...source.dependencies].reverse() }).sample;
+  assert.equal(first.length, 2);
+  assert.deepEqual(first, reverse);
+  assert.deepEqual(observer.aggregate({ sample: first, polls: [] }).strata,
+    { public: 1, private: 1 });
+});
+
+test('offline report joins exact private receipts and counts missing outcomes in the denominator', () => {
+  const { ledger, receipts } = observedReleases();
+  const complete = observer.aggregateReport(ledger, receipts);
+  assert.equal(complete.status, 'review-required');
+  assert.equal(complete.naturalEvents, 10);
+  assert.equal(complete.eligibleEvents, 10);
+  assert.equal(complete.onTime, 10);
+  assert.equal(complete.onTimePercent, 100);
+  for (const privateValue of ['private-version-0', 'private://github-pr-proof',
+    'Stuhlmuller/example', '@example/private']) {
+    assert.equal(JSON.stringify(complete).includes(privateValue), false);
+  }
+  delete receipts.receipts[0].outcome;
+  receipts.receipts[1].outcome.at = new Date(
+    Date.parse(ledger.sample[1].events.find((event) => event.version === 'private-version-1').lastAbsent) +
+    5 * 3600_000).toISOString();
+  const incomplete = observer.aggregateReport(ledger, receipts);
+  assert.equal(incomplete.eligibleEvents, 10);
+  assert.equal(incomplete.missingOutcomes, 1);
+  assert.equal(incomplete.late, 1);
+  assert.equal(incomplete.onTime, 8);
+  assert.equal(incomplete.onTimePercent, 80);
+  assert.equal(incomplete.status, 'criteria-not-met');
+});
+
+test('report stays inconclusive for low sample, ambiguity, unknown, or incomplete evidence', () => {
+  const { ledger, receipts } = observedReleases();
+  ledger.sample[0].events[0].ambiguous = true;
+  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  ledger.sample[0].events[0].ambiguous = false;
+  receipts.receipts[0].eligibility.status = 'unknown';
+  assert.equal(observer.aggregateReport(ledger, receipts).unknownEvents, 1);
+  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  receipts.receipts[0].eligibility.status = 'eligible';
+  delete receipts.receipts[0].outcome.source;
+  assert.equal(observer.aggregateReport(ledger, receipts).incompleteEvidence, 1);
+  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  receipts.receipts[0].outcome.source = 'private://github-pr-proof';
+  const removed = ledger.sample[0].events.shift();
+  receipts.receipts = receipts.receipts.filter((receipt) => receipt.version !== removed.version);
+  assert.equal(observer.aggregateReport(ledger, receipts).eligibleEvents, 9);
+  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+});
+
+test('integer threshold and floored display stay below 95 percent when unmet', () => {
+  const ledger = observer.selectSample(inventory());
+  const item = ledger.sample[0];
+  const lastAbsent = '2026-10-18T00:00:00.000Z';
+  const firstPresent = '2026-10-18T00:15:00.000Z';
+  const eligibility = { status: 'eligible', source: 'private://policy-proof',
+    verifiedAt: '2026-10-18T06:00:00.000Z' };
+  const onTime = { kind: 'proposal', at: '2026-10-18T03:00:00.000Z',
+    source: 'private://github-pr-proof', verifiedAt: '2026-10-18T06:00:00.000Z' };
+  const late = { ...onTime, at: '2026-10-18T05:00:00.000Z' };
+  const receipts = { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
+  for (let index = 0; index < 20000; index++) {
+    const version = `synthetic-${index}`;
+    item.events.push({ version, lastAbsent, firstPresent, ambiguous: false });
+    receipts.receipts.push({ key: item.key, version, eligibility,
+      outcome: index < 18999 ? onTime : late });
+  }
+  const below = observer.aggregateReport(ledger, receipts);
+  assert.equal(below.onTime, 18999);
+  assert.equal(below.onTimePercent, 94.99);
+  assert.equal(below.status, 'criteria-not-met');
+  receipts.receipts[18999].outcome = onTime;
+  assert.equal(observer.aggregateReport(ledger, receipts).status, 'review-required');
+});
+
+test('report separates policy exclusion from reviewed outage interval and rejects unmatched receipts', () => {
+  const { ledger, receipts } = observedReleases();
+  const first = receipts.receipts[0];
+  first.eligibility = { status: 'policy-ineligible', reason: 'private policy receipt',
+    source: 'private://policy-proof', verifiedAt: first.outcome.verifiedAt };
+  delete first.outcome;
+  const second = receipts.receipts[1];
+  const absent = ledger.sample[1].events.find((event) => event.version === second.version).lastAbsent;
+  second.eligibility.status = 'excluded-outage';
+  second.exclusion = { reason: 'source-outage', startAt: absent,
+    endAt: new Date(Date.parse(absent) + 3600_000).toISOString(),
+    source: 'private://outage-proof',
+    verifiedAt: new Date(Date.parse(absent) + 2 * 3600_000).toISOString() };
+  delete second.outcome;
+  const unrelated = observer.aggregateReport(ledger, receipts);
+  assert.equal(unrelated.excludedIntervals, 0);
+  assert.equal(unrelated.incompleteEvidence, 1);
+  second.exclusion.affectedAt = new Date(Date.parse(absent) + 30 * 60_000).toISOString();
+  second.exclusion.impact = 'scheduled source lookup failed';
+  const report = observer.aggregateReport(ledger, receipts);
+  assert.equal(report.policyIneligible, 1);
+  assert.equal(report.excludedIntervals, 1);
+  assert.equal(report.eligibleEvents, 8);
+  assert.equal(report.status, 'inconclusive');
+  second.exclusion.affectedAt = new Date(Date.parse(absent) + 2 * 3600_000).toISOString();
+  assert.equal(observer.aggregateReport(ledger, receipts).excludedIntervals, 0);
+  second.exclusion.affectedAt = new Date(Date.parse(absent) + 30 * 60_000).toISOString();
+  second.exclusion.impact = '';
+  assert.equal(observer.aggregateReport(ledger, receipts).excludedIntervals, 0);
+  second.exclusion.impact = 'scheduled source lookup failed';
+  receipts.receipts.push({ ...receipts.receipts[2], key: 'unknown-private-key' });
+  assert.throws(() => observer.aggregateReport(ledger, receipts), /invalid-outcomes/);
+  receipts.receipts.pop();
+  receipts.receipts[2].version = 'unknown-private-version';
+  assert.throws(() => observer.aggregateReport(ledger, receipts), /invalid-outcomes/);
+});
+
+test('report refuses a readable-by-others private outcomes file', () => {
+  const originalLstat = fs.lstatSync;
+  const originalRead = fs.readFileSync;
+  fs.lstatSync = () => ({ isFile: () => true, mode: 0o100644 });
+  fs.readFileSync = () => { throw new Error('private receipt should not be read'); };
+  try {
+    assert.throws(() => observer.readPrivateOutcomes(), /invalid-outcomes-permissions/);
+  } finally {
+    fs.lstatSync = originalLstat;
+    fs.readFileSync = originalRead;
+  }
 });
 
 test('only healthy upstream polls advance last-absent brackets', () => {

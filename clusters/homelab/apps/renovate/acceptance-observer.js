@@ -7,6 +7,7 @@ const owner = 'Stuhlmuller';
 const ledgerDir = '/ledger/private';
 const inventoryPath = path.join(ledgerDir, 'inventory.json');
 const ledgerPath = path.join(ledgerDir, 'ledger.json');
+const outcomesPath = path.join(ledgerDir, 'outcomes.json');
 const sampleSize = 5;
 
 function digest(value) {
@@ -16,6 +17,18 @@ function digest(value) {
 function sampleKey(item) {
   return [item.repository, item.datasource, item.packageName, item.registryUrl || '',
     item.currentValue || '', item.sourceVisibility].join('\0');
+}
+
+function sourceKey(item) {
+  let registry = '';
+  if (item.registryUrl) {
+    const url = new URL(item.registryUrl);
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+      throw new Error('invalid-registry');
+    }
+    registry = `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
+  }
+  return [item.datasource, item.packageName, registry, item.sourceVisibility].join('\0');
 }
 
 function selectSample(inventory) {
@@ -33,21 +46,23 @@ function selectSample(inventory) {
     throw new Error('invalid-classes');
   }
   const strata = new Map();
-  const keys = new Set();
+  const sources = new Map();
   for (const item of inventory.dependencies) {
     if (item.controlledCanary === true ||
         item.packageFile === 'scripts/fixtures/renovate-cache-canary.txt' ||
         (item.datasource === 'github-releases' && item.packageName?.toLowerCase() === 'stuhlmuller/renovate')) continue;
     if (typeof item.repository !== 'string' || !item.repository.startsWith(`${owner}/`) ||
-        !classes.has(item.datasource) || !item.packageName ||
+        !classes.has(item.datasource) || typeof item.packageName !== 'string' || !item.packageName ||
         !['public', 'private'].includes(item.sourceVisibility) ||
-        (item.registryUrl && !/^https:\/\//.test(item.registryUrl)) ||
         (item.currentValue && typeof item.currentValue !== 'string')) {
       throw new Error('invalid-dependency');
     }
     const key = sampleKey(item);
-    if (keys.has(key)) continue;
-    keys.add(key);
+    const source = sourceKey(item);
+    const rank = digest(`${inventory.seed}\0${key}`);
+    if (!sources.has(source) || rank < sources.get(source).rank) sources.set(source, { item, key, rank });
+  }
+  for (const { item, key } of sources.values()) {
     const stratum = `${item.datasource}:${item.sourceVisibility}`;
     if (!strata.has(stratum)) strata.set(stratum, []);
     strata.get(stratum).push({
@@ -69,7 +84,7 @@ function selectSample(inventory) {
   if ([...classes].some((name) => ![...strata.keys()].some((key) => key.startsWith(`${name}:`)))) {
     throw new Error('missing-datasource-class');
   }
-  const sample = [...strata.values()].flatMap((items) => items
+  const sample = [...strata].sort(([left], [right]) => left.localeCompare(right)).flatMap(([, items]) => items
     .sort((a, b) => digest(`${inventory.seed}\0${a.key}`).localeCompare(digest(`${inventory.seed}\0${b.key}`)))
     .slice(0, sampleSize));
   return {
@@ -152,6 +167,130 @@ function aggregate(ledger) {
     ambiguousEvents: ledger.sample.reduce((sum, item) =>
       sum + item.events.filter((event) => event.ambiguous).length, 0),
   };
+}
+
+function validTime(value) {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value));
+}
+
+function hasEvidenceFields(value) {
+  return typeof value?.source === 'string' && !!value.source.trim() && validTime(value.verifiedAt);
+}
+
+function aggregateReport(ledger, outcomes) {
+  const receipts = outcomes || { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
+  if (receipts.schema !== 1 || receipts.inventorySha256 !== ledger.inventorySha256 ||
+      !Array.isArray(receipts.receipts)) throw new Error('invalid-outcomes');
+  const events = new Map();
+  for (const item of ledger.sample) {
+    for (const event of item.events) {
+      if (typeof item.key !== 'string' || typeof event.version !== 'string' ||
+          !validTime(event.lastAbsent) || !validTime(event.firstPresent) ||
+          Date.parse(event.lastAbsent) >= Date.parse(event.firstPresent)) throw new Error('invalid-ledger');
+      const id = JSON.stringify([item.key, event.version]);
+      if (events.has(id)) throw new Error('invalid-ledger');
+      events.set(id, event);
+    }
+  }
+  const byEvent = new Map();
+  for (const receipt of receipts.receipts) {
+    const id = JSON.stringify([receipt?.key, receipt?.version]);
+    if (!events.has(id) || byEvent.has(id)) throw new Error('invalid-outcomes');
+    byEvent.set(id, receipt);
+  }
+  const counts = {
+    naturalEvents: events.size,
+    eligibleEvents: 0,
+    onTime: 0,
+    late: 0,
+    missingOutcomes: 0,
+    policyIneligible: 0,
+    excludedIntervals: 0,
+    unknownEvents: 0,
+    incompleteEvidence: 0,
+    ambiguousEvents: 0,
+  };
+  for (const [id, event] of events) {
+    if (event.ambiguous) counts.ambiguousEvents++;
+    const receipt = byEvent.get(id);
+    const eligibility = receipt?.eligibility;
+    if (!eligibility || eligibility.status === 'unknown') {
+      counts.unknownEvents++;
+      continue;
+    }
+    if (!hasEvidenceFields(eligibility)) {
+      counts.unknownEvents++;
+      counts.incompleteEvidence++;
+      continue;
+    }
+    if (eligibility.status === 'policy-ineligible') {
+      if (typeof eligibility.reason !== 'string' || !eligibility.reason.trim()) {
+        counts.unknownEvents++;
+        counts.incompleteEvidence++;
+      } else counts.policyIneligible++;
+      continue;
+    }
+    if (eligibility.status === 'excluded-outage') {
+      const interval = receipt.exclusion;
+      const start = Date.parse(interval?.startAt);
+      const end = Date.parse(interval?.endAt);
+      const lastAbsent = Date.parse(event.lastAbsent);
+      const affectedAt = Date.parse(interval?.affectedAt);
+      if (!['source-outage', 'github-outage', 'maintenance'].includes(interval?.reason) ||
+          !hasEvidenceFields(interval) || !validTime(interval.startAt) || !validTime(interval.endAt) ||
+          !validTime(interval.affectedAt) || typeof interval.impact !== 'string' ||
+          !interval.impact.trim() ||
+          !(start < end && affectedAt >= start && affectedAt < end &&
+            affectedAt >= lastAbsent && affectedAt <= lastAbsent + 4 * 3600000 &&
+            Date.parse(interval.verifiedAt) >= end)) {
+        counts.unknownEvents++;
+        counts.incompleteEvidence++;
+      } else counts.excludedIntervals++;
+      continue;
+    }
+    if (eligibility.status !== 'eligible') throw new Error('invalid-outcomes');
+    counts.eligibleEvents++;
+    const outcome = receipt.outcome;
+    if (!outcome) {
+      counts.missingOutcomes++;
+      continue;
+    }
+    const at = Date.parse(outcome.at);
+    if (!['proposal', 'deferral'].includes(outcome.kind) || !validTime(outcome.at) ||
+        !hasEvidenceFields(outcome) || at < Date.parse(event.lastAbsent) ||
+        Date.parse(outcome.verifiedAt) < at ||
+        (outcome.kind === 'deferral' &&
+          (typeof outcome.reason !== 'string' || !outcome.reason.trim()))) {
+      counts.missingOutcomes++;
+      counts.incompleteEvidence++;
+      continue;
+    }
+    if (at - Date.parse(event.lastAbsent) <= 4 * 3600000) counts.onTime++;
+    else counts.late++;
+  }
+  let status = 'review-required';
+  if (counts.eligibleEvents < 10 || counts.ambiguousEvents || counts.unknownEvents ||
+      counts.incompleteEvidence) status = 'inconclusive';
+  else if (counts.onTime * 100 < counts.eligibleEvents * 95) status = 'criteria-not-met';
+  return {
+    mode: 'report',
+    ...aggregate(ledger),
+    ...counts,
+    onTimePercent: counts.eligibleEvents ? Math.floor(counts.onTime / counts.eligibleEvents * 10000) / 100 : null,
+    status,
+  };
+}
+
+function readPrivateOutcomes() {
+  let metadata;
+  try {
+    metadata = fs.lstatSync(outcomesPath);
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+  if (!metadata.isFile() || (metadata.mode & 0o077)) throw new Error('invalid-outcomes-permissions');
+  return JSON.parse(fs.readFileSync(outcomesPath, 'utf8'));
 }
 
 function privateDirectory() {
@@ -305,7 +444,8 @@ async function main() {
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
     await poll(ledger);
   } else if (mode === 'report') {
-    console.log(JSON.stringify({ mode, ...aggregate(JSON.parse(fs.readFileSync(ledgerPath, 'utf8'))) }));
+    console.log(JSON.stringify(aggregateReport(
+      JSON.parse(fs.readFileSync(ledgerPath, 'utf8')), readPrivateOutcomes())));
   } else {
     throw new Error('invalid-mode');
   }
@@ -319,4 +459,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { selectSample, recordPoll, aggregate, readToken, renovateRoot, datasourceApi, poll };
+module.exports = { selectSample, recordPoll, aggregate, aggregateReport, readPrivateOutcomes,
+  readToken, renovateRoot, datasourceApi, poll };
