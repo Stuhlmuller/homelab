@@ -113,7 +113,15 @@
     "pinnedSourceReview": {
       "capturedAt": "2026-10-19T18:30:27+00:00",
       "liveSpecHashesMatchedPrior": 18,
-      "method": "Read-only full-spec SHA-256 recheck for all 18 live policies, then inspection of the pinned upstream constructors/templates; no generator binary was executed.",
+      "currentLiveRecheck": {
+        "capturedAt": "2026-10-19T21:12:00+00:00",
+        "generatedPolicyHashesMatchedPrior": 17,
+        "operatorKialiPolicyAbsent": true,
+        "sourceOwnedKialiPolicy": "monitoring/kiali-server-ingress",
+        "sourceOwnedKialiSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7",
+        "method": "Read-only all-namespace NetworkPolicy snapshot and Kiali CR/Argo CD inspection; the replacement's complete canonical spec matches both the source manifest and prior operator policy."
+      },
+      "method": "The 18:30 UTC read-only full-spec SHA-256 recheck covered all 18 then-live generated policies; pinned upstream constructors/templates were inspected, but no generator binary was executed.",
       "policySourceRefs": {
         "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
         "monitoring/kiali": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/templates/kubernetes/networkpolicy.yaml#L1",
@@ -134,17 +142,19 @@
         "octelium/octeliumee-secretman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/secretman.go#L129",
         "octelium/svc-upstream": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237"
       },
-      "result": "No concrete live-versus-pinned rule mismatch found. The static source explains the observed rule shapes, but does not qualify traffic or prove byte-for-byte generator rendering.",
+      "result": "All 17 remaining generated policies match their prior live spec hashes. Kiali's source-owned replacement matches the former operator policy spec; no generator render or real traffic qualification was performed.",
       "sourceFindings": [
         "Cordium ws-main and Octelium svc-upstream hardcode broad public IPv4/IPv6 egress; retain strict inventory findings until pinned render and isolated canary traffic show actual requirements.",
-        "Kiali operator emits TCP 20001/9090 ingress with no source peer. Its deployment.network_policy.enabled=false control can remove this policy, but an owned replacement needs verified gateway, Traefik, Prometheus, Octelium and ambient-policy paths before narrowing.",
+        "Kiali's deployment.network_policy.enabled=false handoff removed the operator policy, and Argo CD now owns an equivalent broad-source TCP 20001/9090 policy. Gateway, Traefik, Prometheus, Octelium and ambient paths still need canary traffic proof before narrowing.",
         "The other 15 policies are generated ingress-only rules. Their presence does not isolate selected Pods from egress; no source-only correction or acceptance follows from matching source shapes."
       ],
-      "status": "unqualified: owner decisions, exact generator renders and real isolated canary enforcement remain pending",
+      "status": "unqualified: 17 remaining generator renders, broad-source/egress decisions and real isolated canary enforcement remain pending",
       "kialiOperatorControlRef": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/tasks/kubernetes/k8s-main.yml#L58-L67",
       "kialiCallerReview": {
         "repositoryPaths": [
           "clusters/homelab/apps/kiali/authorizationpolicy.yaml",
+          "clusters/homelab/apps/kiali/networkpolicy.yaml",
+          "clusters/homelab/apps/kiali/values.yaml",
           "clusters/homelab/apps/kiali/virtualservice.yaml",
           "clusters/homelab/apps/traefik/routes.yaml",
           "docs/examples/octelium/homelab-services.yaml"
@@ -1301,10 +1311,10 @@
     }
   ],
   "requiredCorrections": [
-    "Render or otherwise source-bind all 18 generated policies to the pinned Cordium, Octelium and Kiali owners; compare complete live ingress and egress specs before enforcement.",
+    "Render or otherwise source-bind the 17 remaining Cordium and Octelium generated policies to their pinned owners; the former Kiali operator policy has an equivalent source-owned replacement. Compare complete live ingress and egress specs before enforcement.",
     "For cordium/ws-main and octelium/svc-upstream, determine the pinned generator's supported public-egress configuration and prove required destinations and private-range denial on the canary; neither all-port 0/0 rule is approved by owner binding alone.",
-    "For monitoring/kiali, determine the pinned operator's supported NetworkPolicy configuration and prove required TCP 20001/9090 clients before changing its all-source generated ingress.",
-    "Review the nine all-source ingress rules, including eight TCP/15008 mesh rules and generated monitoring/kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
+    "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
+    "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
     "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
     "Review all 18 strict wildcard-egress findings, including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
     "Recheck the six source-corrected DNS policies against live specs and prove TCP/UDP Service DNS through exact CoreDNS Pod peers on the isolated canary before enforcement.",
