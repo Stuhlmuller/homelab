@@ -150,10 +150,14 @@ exact `Returning cached value` marker for namespace
 `github-releases-datasource-v2` and key
 `https://api.github.com/:Stuhlmuller:renovate` in both. Only this marker is
 raised from TRACE to INFO. A shorter second run alone does not prove cache
-reuse. Keep detailed logs private because cache keys can contain repository or
-package names. Remove `logLevelRemap` through a reviewed PR after evidence is
-captured and before enabling writes; keep the hourly schedule and Renovate's
-normal cache freshness rules.
+reuse. The INFO marker includes `namespace` and `key`, which can contain
+private repository or package names. Restrict Pod-log access; keep raw records
+out of public PRs, issues, and CI output. Publish only aggregate cache-hit
+results and distinct Pod UIDs. Remove `logLevelRemap` through a reviewed PR
+after evidence is captured and before enabling writes; keep the hourly schedule
+and Renovate's normal cache freshness rules.
+`scripts/ci/renovate-log-remap-test.mjs` verifies the INFO record and its
+metadata against an installed copy of pinned Renovate 44.167.4.
 
 Read-only status checks:
 
