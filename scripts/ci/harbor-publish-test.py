@@ -189,6 +189,18 @@ class HarborPublicationGates(unittest.TestCase):
             root = Path(FIXTURE["root"])
             command = Path(sys.argv[0]).name
             args = sys.argv[1:]
+            def fail_read(kind, messages, partial=None):
+                failure = FIXTURE["failure"]
+                if failure not in messages:
+                    return
+                marker = root / (kind + "-failed")
+                if failure.endswith("-once") and marker.exists():
+                    return
+                marker.touch()
+                if partial is not None:
+                    (partial / "partial").write_text("incomplete")
+                print(messages[failure] + " private-test-credential-must-never-appear", file=sys.stderr)
+                raise SystemExit(22)
             with (root / "external-calls").open("a") as log:
                 # The real kubeconfig helper supplies its token to kubectl.
                 safe_args = ["[credential]" if arg.startswith("--token=") else arg for arg in args]
@@ -302,6 +314,13 @@ class HarborPublicationGates(unittest.TestCase):
                         if not FIXTURE["resume"] and reference not in published:
                             print("manifest unknown", file=sys.stderr)
                             raise SystemExit(1)
+                        if reference in published:
+                            fail_read("alias", {
+                                "mirror-alias-verify-once": "connection reset",
+                                "mirror-alias-verify-auth": "unauthorized; connection reset",
+                                "mirror-alias-verify-missing": "manifest unknown; connection reset",
+                                "mirror-alias-verify-digest": "digest mismatch; connection reset",
+                            })
                     raw = published.get(reference) or FIXTURE["manifests"][reference]
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
@@ -328,7 +347,7 @@ class HarborPublicationGates(unittest.TestCase):
                     elif FIXTURE["mirror"]:
                         assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest"):
+                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-auth"):
                         print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
                               file=sys.stderr)
                         raise SystemExit(17)
@@ -344,6 +363,16 @@ class HarborPublicationGates(unittest.TestCase):
                         raise SystemExit(15)
                     directory = Path(args[-1][4:])
                     assert list(directory.iterdir()) == []
+                    if FIXTURE["mirror"] and not upstream:
+                        fail_read("skopeo-pull", {
+                            "mirror-pull-once": "unexpected EOF",
+                            "mirror-pull-always": "unexpected EOF",
+                            "mirror-pull-auth": "unauthorized; unexpected EOF",
+                            "mirror-pull-forbidden": "403 Forbidden; unexpected EOF",
+                            "mirror-pull-missing": "manifest unknown; unexpected EOF",
+                            "mirror-pull-digest": "digest mismatch; unexpected EOF",
+                            "mirror-pull-preserve": "Instructed to preserve digests; unexpected EOF",
+                        }, directory)
                     (directory / "manifest.json").write_text(raw)
                     (directory / "blob").write_text("downloaded image content")
                 elif args[0] == "copy" and FIXTURE["mirror"]:
@@ -410,7 +439,13 @@ class HarborPublicationGates(unittest.TestCase):
                         assert user == "robot$mirror+pull"
                         if FIXTURE["failure"] == "mirror-regctl-pull":
                             raise SystemExit(21)
-                        Path(target.removeprefix("ocidir://").split(":", 1)[0], "digest").write_text(source.rsplit("@", 1)[1])
+                        directory = Path(target.removeprefix("ocidir://").split(":", 1)[0])
+                        assert list(directory.iterdir()) == []
+                        fail_read("regctl-pull", {
+                            "mirror-regctl-pull-once": "TLS handshake timeout",
+                            "mirror-regctl-pull-auth": "unauthorized; TLS handshake timeout",
+                        }, directory)
+                        (directory / "digest").write_text(source.rsplit("@", 1)[1])
                     else:
                         assert user == "robot$mirror+publisher"
                         assert target.startswith("harbor.stinkyboi.com/mirror/")
@@ -1196,6 +1231,68 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(artifact.exists())
         self.assert_cleaned()
+
+    def test_mirror_verification_retries_one_transport_failure(self):
+        for failure, phase in (("mirror-alias-verify-once", "alias"),
+                               ("mirror-pull-once", "skopeo"),
+                               ("mirror-regctl-pull-once", "regctl")):
+            with self.subTest(failure=failure):
+                self.calls.unlink(missing_ok=True)
+                (self.root / "summary").unlink(missing_ok=True)
+                self.transport_mocks(failure=failure, mirror=True)
+                result = self.run_helper(mode="mirror")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
+                if phase == "alias":
+                    reads = [args[-1] for args in self.calls_for("skopeo")
+                             if args[0] == "inspect" and args[-1].endswith(":stable")]
+                    self.assertEqual(len(reads), 5)  # Two lookups, two verifications, one retry.
+                elif phase == "skopeo":
+                    reads = [args[-1] for args in self.calls_for("skopeo")
+                             if args[0] == "copy" and args[-2].startswith("docker://harbor.stinkyboi.com/")
+                             and args[-1].startswith("dir:")]
+                    self.assertEqual(len(reads), 3)
+                    self.assertEqual(len(set(reads)), 3)
+                else:
+                    reads = [args[-1] for args in self.calls_for("regctl")
+                             if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+                    self.assertEqual(len(reads), 3)
+                    self.assertEqual(len(set(reads)), 3)
+                self.assert_cleaned()
+
+    def test_mirror_verification_does_not_retry_hard_failures(self):
+        for failure, phase, count in (
+            ("mirror-alias-verify-auth", "alias-verify", 2),
+            ("mirror-alias-verify-missing", "alias-verify", 2),
+            ("mirror-alias-verify-digest", "alias-verify", 2),
+            ("mirror-pull-auth", "authenticated-pull", 1),
+            ("mirror-pull-forbidden", "authenticated-pull", 1),
+            ("mirror-pull-missing", "authenticated-pull", 1),
+            ("mirror-pull-digest", "authenticated-pull", 1),
+            ("mirror-pull-preserve", "authenticated-pull", 1),
+            ("mirror-regctl-pull-auth", "authenticated-pull", 1),
+            ("mirror-pull-always", "authenticated-pull", 3),
+        ):
+            with self.subTest(failure=failure):
+                self.calls.unlink(missing_ok=True)
+                (self.root / "summary").unlink(missing_ok=True)
+                self.transport_mocks(failure=failure, mirror=True)
+                result = self.run_helper(mode="mirror")
+                self.assertEqual(result.returncode, 22)
+                self.assertFalse((self.root / "summary").exists())
+                self.assertIn(f"phase={phase}\n", self.public_status)
+                if failure.startswith("mirror-alias"):
+                    reads = [args for args in self.calls_for("skopeo")
+                             if args[0] == "inspect" and args[-1].endswith(":stable")]
+                elif failure.startswith("mirror-regctl"):
+                    reads = [args for args in self.calls_for("regctl")
+                             if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+                else:
+                    reads = [args for args in self.calls_for("skopeo")
+                             if args[0] == "copy" and args[-2].startswith("docker://harbor.stinkyboi.com/")
+                             and args[-1].startswith("dir:")]
+                self.assertEqual(len(reads), count)
+                self.assert_cleaned()
 
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
         for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "mirror-alias-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
