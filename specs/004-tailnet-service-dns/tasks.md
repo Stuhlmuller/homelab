@@ -98,13 +98,14 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
   UDP/TCP, 27-name, apex mail, unrelated-public, and HTTPS checks in `specs/004-tailnet-service-dns/quickstart.md` against the actual online Service/peer IPv4. Record the verified address
   and peer identity in private rollout evidence, not as invented static values. The initial 27-name registration and offline mutation checks establish handoff evidence; observe later live
   change convergence on the first actual reviewed name change.
-- [ ] T031 Give the owner the verified IPv4 and restricted `stinkyboi.com` nameserver instruction from `docs/networking-tailnet-ingress.md`, then pause before changing tailnet DNS or executing `scripts/tailscale-private-dns.sh --retire-private`.
+- [X] T031 Give the owner the verified IPv4 and restricted `stinkyboi.com` nameserver instruction from `docs/networking-tailnet-ingress.md`, then pause before changing tailnet DNS or executing `scripts/tailscale-private-dns.sh --retire-private`.
 
 T028–T030 receipt: [image publication](https://github.com/Stuhlmuller/homelab/actions/runs/39161113974),
 [reviewed application](https://github.com/Stuhlmuller/homelab/pull/1384), and
 [targeted production apply](https://github.com/Stuhlmuller/homelab/actions/runs/39168123702), and
 [handoff checker fix](https://github.com/Stuhlmuller/homelab/pull/1388).
 The direct checker and representative HTTPS requests passed from the trusted signer Mac, which is an untagged tailnet member. A separate member-client shell was unavailable; normal OS DNS on another client remains a post-handoff cutover check. The local Nix daemon rejected the trusted-builder cache/key policy for `nix run .#validate`; the PR's required repository and Terragrunt checks passed.
+The owner confirmed the restricted nameserver was added. On 2026-10-18, normal OS A lookups from the untagged Mac returned the private Traefik address for all 27 approved names and a Cordium wildcard child. Public-record retirement remains gated by the [cutover contract](contracts/cutover.md).
 
 ## Dependencies and execution order
 
