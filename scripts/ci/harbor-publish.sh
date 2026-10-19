@@ -283,6 +283,10 @@ if [[ "$mode" == mirror ]]; then
   # Only anonymous upstream reads may populate this public project. Publish real
   # artifacts, not proxy-cache entries that remain dependent on upstream state.
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
+  mirror_retryable_transport() {
+    grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error" &&
+      ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status|status code' "$scratch/mirror-error"
+  }
   while IFS= read -r source; do
     oci_index_copy=false
     source_digest="${source##*@}"
@@ -400,27 +404,53 @@ if [[ "$mode" == mirror ]]; then
         fi
       fi
       mirror_phase="alias-verify"
-      skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"
+      for attempt in 1 2 3; do
+        if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+          "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+          break
+        else
+          read_status=$?
+        fi
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+          exit "$read_status"
+        fi
+        sleep "$attempt"
+      done
       mirror_category="digest-mismatch"
       [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
       mirror_category="command-failed"
     fi
     mirror_phase="authenticated-pull"
-    pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
+    for attempt in 1 2 3; do
+      pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
+      if "$oci_index_copy"; then
+        if REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${destination}@${source_digest}" "ocidir://${pull_directory}:verify" \
+          2>"$scratch/mirror-error"; then
+          break
+        else
+          read_status=$?
+        fi
+      elif skopeo copy --all --preserve-digests \
+        --src-authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"; then
+        break
+      else
+        read_status=$?
+      fi
+      rm -rf -- "$pull_directory"
+      if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+        exit "$read_status"
+      fi
+      sleep "$attempt"
+    done
     if "$oci_index_copy"; then
-      REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-        regctl image copy "${destination}@${source_digest}" "ocidir://${pull_directory}:verify" \
-        2>"$scratch/mirror-error"
       mirror_phase="pull-verify"
       pulled_digest="$(REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
         regctl image digest "ocidir://${pull_directory}:verify" 2>"$scratch/mirror-error")"
       mirror_category="digest-mismatch"
       [[ "$pulled_digest" == "$source_digest" ]]
     else
-      skopeo copy --all --preserve-digests \
-        --src-authfile "$scratch/mirror-pull-auth.json" \
-        "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
       mirror_phase="pull-verify"
       skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
       mirror_category="digest-mismatch"
