@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ee566008c64c859b1501abad6c1cef7bbe3117e6387cfe63d622cd3a60b1e495",
+  "pageVersion": "sha256:914a5c4828924db45536c732f1ea283c702ae10c795be6336445f60d7a996153",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -40,7 +40,7 @@
     },
     {
       "id": "claim_d48db879d21a41b286ee52884ca861ad",
-      "statement": "Before obtaining a GitHub token, Renovate flushes a 4 KiB cache probe and fails with a storage error if it cannot write; nfs-default cannot resize the PVC, so full backing share capacity must be restored through a declared path after reviewed CronJob suspension.",
+      "statement": "Before obtaining a GitHub token, Renovate flushes a 4 KiB cache probe and fails if it cannot write. The nfs-default 20Gi request neither reserves nor caps NAS storage and the provisioner cannot resize this PVC, so a full share needs capacity restored through a declared path after reviewed CronJob suspension.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L113",
@@ -49,6 +49,14 @@
         {
           "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
           "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml",
+          "version": "repo-file-v1:sha256:baa0b8fd82e3bd9616186071554eae058aefe2fa79b7c87e51980030d339e035"
+        },
+        {
+          "resource": "repo://docs/storage-nfs.md",
+          "version": "repo-file-v1:sha256:76451e34f5f4e6d9f52c2bd7d6c899591869aad5ab25337df88a841bda127755"
         }
       ]
     },
@@ -115,10 +123,24 @@
           "version": "repo-lines-v1:sha256:32767fffcabf3ce011668824eae15de418c41d5fb74c5eeb7469d23010cb0845:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZjcwMDFjMGFiMTM0NGQ3ODcxOTk0ZDgwNzZhN2JiZjI5NjNkYjBkZjE2NGVhMzdmMDBjMTcxNjQyMDE2YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjY2NmOTYwYTExNzQ1OTA3ZGI2OTM5M2IzNThmMWQwODM3MjU3ZGZlMGY2YjcwNWI0MjhhZTY1N2Y2YWY0ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2MWM1YjJiODY3ZDE0ZTM1ZTZkM2IyYmUyMjg3YTJlNjNhNDBmYTU1MGJhNWM3M2FkN2JjOWVhZDI5NGY0NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYzA3MmRlYWE3ZTVkMWIxNjBlYWE5ZjUwMDJiODZkODhlNDlkZDc2NWM2Yjc1NjNkY2JiMzg1ZGUwYmEwOTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_24d715a3c7ef487a9b5b1e4889110809",
+      "statement": "At this draft revision, Renovate T022 remains unchecked and its task record lacks a durable receipt for the observed 19:00 and 20:00 scheduled Pod cache hits and acceptance of the v0.0.2 refresh.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L148-L160",
+          "version": "repo-lines-v1:sha256:d5348f3deed39acbef2084765dfadf691da200ae927280f61e59b18fbf8d9296:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwZTIwNzlmNTYzY2UwZjUxMmZjMzQwODk3Y2FiMjZhMTAzOTI2ZjU1NmEzNzQ2MDY0Y2E1Zjc2MDJjODhlZWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwYmUyMjNkMTA0ZDUyYWJhYjRmNDM3NGIzMjBjMzUxMTBmMTI5YWFhOTM4ZjRmNzhiMWE3YmVmMWJlMGNiMDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjMTFmNjFmYTNmNzIzMGViZWE2MGIyMDdlYzJkYzNjMzllN2RmYTE2MzExZWE5MmFhMTcyMzBiYWZlMTg5ZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YTIzYTA2NzAyNTYzZDQ0OTFiNzhiNjY2NjNiM2UwZDkwMTcxZDQ4ZTMwNWI0YzliMzM0MzJlZjI5YzQ5ZTgifQ"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
+          "version": "repo-lines-v1:sha256:32e54d6467875b2e5571d6a4e687f5459c41018d385260e81d7b4dea7ab19fdd:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDZhNWExNDlmNTAxMzI2OTQwMTY1ODViYTg3OTFhNGU4YWRjYTg0OTM5OGU2NWUzODRmMjE4YjFlMDI2YjEyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTY4MWQxMzk4NmExNjIwYWQ1OGFjMTZiMjQ1YmE4YmYyNDMwN2FjYzc4OWRjMWE5ZDBjOTFiNzFlZmFmMWZkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T22:48:59.937Z"
+    "at": "2026-10-20T00:21:26.732Z"
   }
 }

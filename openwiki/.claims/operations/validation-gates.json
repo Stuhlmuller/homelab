@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b89e48f7c8e898613454cab8489c48bab6b3451c4b30c70691460f076d1e395b",
+  "pageVersion": "sha256:fc19b226327f1f4e147944aa96a8352bbc0938b7f51124f93197df04df06ffc2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -800,7 +800,7 @@
     },
     {
       "id": "claim_02a584a3dde4474b927244b8e203a5f3",
-      "statement": "The pinned Renovate 44.167.4 local cache fixture verifies rebuilding missing and malformed package and repository cache entries; live PVC recovery, two-Pod cache evidence, and seven-day acceptance remain pending.",
+      "statement": "The pinned Renovate 44.167.4 local cache fixture verifies rebuilding missing and malformed package and repository cache entries; live PVC-failure recovery and seven-day acceptance remain pending.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
@@ -1088,7 +1088,7 @@
     },
     {
       "id": "claim_cf898aed519d439ca54222f144695543",
-      "statement": "T017 accepted an 18:00 UTC scheduled Renovate full dry-run Job covering all eight eligible owner repositories after the 17:00 registry mutex timeout; effective writes, full owner/App parity, and two-Pod cache reuse remain separate gates.",
+      "statement": "T017 accepted an 18:00 UTC scheduled Renovate full dry-run Job covering all eight eligible owner repositories after the 17:00 datasource mutex timeout; effective writes and full owner/App parity remain separate gates.",
       "evidence": [
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
@@ -1183,6 +1183,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T22:48:59.937Z"
+    "at": "2026-10-20T00:21:26.732Z"
   }
 }
