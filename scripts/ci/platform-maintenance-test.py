@@ -292,6 +292,91 @@ class PlatformMaintenance(unittest.TestCase):
         self.assertIn("declaration validated only", output.getvalue())
         self.assertIn("live readiness unverified", output.getvalue())
 
+    def test_execute_rejects_local_config_override_before_talos_or_receipts(self):
+        sha = "a" * 40
+        with patch.object(self.module.subprocess, "check_output", return_value=CONFIG.read_bytes()) as committed:
+            self.assertEqual(self.module.require_reviewed_execution_config(CONFIG, sha),
+                             CONFIG.read_bytes())
+        committed.assert_called_once_with(
+            ["git", "--no-replace-objects", "show",
+             sha + ":scripts/config/platform-maintenance.json"],
+            cwd=ROOT, timeout=15)
+        with tempfile.TemporaryDirectory() as directory:
+            override = Path(directory) / "platform-maintenance.json"
+            candidate = copy.deepcopy(self.config)
+            candidate["activationEnabled"] = True
+            candidate["canary"]["node"] = "zimaboard-0"
+            override.write_text(json.dumps(candidate))
+            self.module.validate_config(candidate)
+            with self.assertRaisesRegex(ValueError, "not repository-owned"):
+                self.module.require_reviewed_execution_config(override, sha)
+            with patch.dict(os.environ, {"GITHUB_ACTIONS": "true",
+                                         "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": sha}), \
+                    patch.object(self.module.sys, "argv", [str(SCRIPT), "execute", "--config",
+                                                            str(override), "--stage", "talos-1.11.6",
+                                                            "--expected-sha", sha,
+                                                            "--control-plane-config", "/tmp/control.yaml",
+                                                            "--worker-config", "/tmp/worker.yaml",
+                                                            "--receipt-dir", "/tmp/receipts"]), \
+                    patch.object(self.module, "validate_rendered_configs") as talos, \
+                    patch.object(self.module, "receipt_target") as receipts, \
+                    redirect_stderr(StringIO()):
+                self.assertEqual(self.module.main(), 1)
+            talos.assert_not_called()
+            receipts.assert_not_called()
+        with patch.object(self.module.subprocess, "check_output", return_value=b"changed"):
+            with self.assertRaisesRegex(ValueError, "differs from exact reviewed commit"):
+                self.module.require_reviewed_execution_config(CONFIG, sha)
+
+    def test_execute_parses_verified_bytes_without_reopening_config(self):
+        sha = "a" * 40
+        changed = copy.deepcopy(self.config)
+        changed["activationEnabled"] = True
+        changed["canary"]["node"] = "zimaboard-0"
+        self.module.validate_config(changed)
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true",
+                                     "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": sha}), \
+                patch.object(self.module.sys, "argv", [str(SCRIPT), "execute", "--config",
+                                                        str(CONFIG), "--stage", "talos-1.11.6",
+                                                        "--expected-sha", sha,
+                                                        "--control-plane-config", "/tmp/control.yaml",
+                                                        "--worker-config", "/tmp/worker.yaml",
+                                                        "--receipt-dir", "/tmp/receipts"]), \
+                patch.object(self.module.subprocess, "check_output", return_value=CONFIG.read_bytes()), \
+                patch.object(Path, "read_text", return_value=json.dumps(changed)) as second_read, \
+                patch.object(self.module, "validate_rendered_configs",
+                             side_effect=ValueError("stop before Talos")) as talos, \
+                redirect_stderr(StringIO()):
+            self.assertEqual(self.module.main(), 1)
+        talos.assert_called_once()
+        self.assertEqual(talos.call_args.args[0], self.config)
+        second_read.assert_not_called()
+
+    def test_execute_ignores_local_git_replacement_for_reviewed_commit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "scripts/config/platform-maintenance.json"
+            config.parent.mkdir(parents=True)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+
+            def commit(contents, message):
+                config.write_text(contents)
+                subprocess.run(["git", "-C", str(root), "add", str(config)], check=True)
+                subprocess.run(["git", "-C", str(root), "-c", "user.name=Test",
+                                "-c", "user.email=test@example.invalid",
+                                "-c", "commit.gpgsign=false", "commit", "-qm", message],
+                               check=True)
+                return subprocess.check_output(
+                    ["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+
+            reviewed = commit('{"activationEnabled":false}', "reviewed")
+            replacement = commit('{"activationEnabled":true}', "unreviewed")
+            subprocess.run(["git", "-C", str(root), "replace", reviewed, replacement],
+                           check=True)
+            with patch.object(self.module, "ROOT", root), \
+                    self.assertRaisesRegex(ValueError, "differs from exact reviewed commit"):
+                self.module.require_reviewed_execution_config(config, reviewed)
+
     def test_validate_cli_rejects_one_private_role_config(self):
         for flag in ("--control-plane-config", "--worker-config"):
             with self.subTest(flag=flag), \

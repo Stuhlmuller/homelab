@@ -706,6 +706,24 @@ def protected_context(source_sha):
         raise ValueError("maintenance requires protected current-main workflow context")
 
 
+def require_reviewed_execution_config(path, source_sha):
+    """Reject an uncommitted activation or canary override before any upgrade checks."""
+    canonical = ROOT / "scripts/config/platform-maintenance.json"
+    if (not isinstance(source_sha, str) or not SHA.fullmatch(source_sha) or
+            path.resolve() != canonical.resolve()):
+        raise ValueError("platform execution config path is not repository-owned")
+    try:
+        committed = subprocess.check_output(
+            ["git", "--no-replace-objects", "show",
+             f"{source_sha}:scripts/config/platform-maintenance.json"],
+            cwd=ROOT, timeout=15)
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        raise ValueError("reviewed platform execution config is unavailable") from None
+    if canonical.read_bytes() != committed:
+        raise ValueError("platform execution config differs from exact reviewed commit")
+    return committed
+
+
 def require_publication(config, source_sha, receipt):
     talos = {f"talos-{item['to']}": item["installerImage"]
              for item in config["talosStages"]}
@@ -993,7 +1011,12 @@ def main():
     parser.add_argument("--expected-sha")
     args = parser.parse_args()
     try:
-        config = validate_config(json.loads(args.config.read_text()))
+        if args.command == "execute":
+            protected_context(args.expected_sha)
+            config_bytes = require_reviewed_execution_config(args.config, args.expected_sha)
+        else:
+            config_bytes = args.config.read_bytes()
+        config = validate_config(json.loads(config_bytes))
         if args.command == "inspect":
             output = private_output(args.output)
             save_inspection(output, read_only_inspection(config, args.talosconfig))
