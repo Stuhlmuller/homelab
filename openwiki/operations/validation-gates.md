@@ -64,6 +64,8 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-74055ec9d540c61af1ff641e
+    resource: repo://clusters/homelab/apps/renovate/cache-drill.js
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -194,6 +196,8 @@ sources:
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
     resource: repo://scripts/ci/renovate-alert-check.py
+  - id: openwiki-source-2623b476b6f9bf46c3a8423c
+    resource: repo://scripts/ci/renovate-cache-drill-test.mjs
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
@@ -264,14 +268,16 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-7bc39840de078c7eb3baf2e5
+    resource: repo://specs/004-run-renovate-in-cluster/quickstart.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T06:19:14.853Z" }
+generated: { by: "codex", at: "2026-10-20T06:23:50.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:19:14.853Z
+    at: 2026-10-20T06:23:50.661Z
 ---
 
 # Validation Gates
@@ -2031,10 +2037,12 @@ validate consuming workloads.
 
 The staged hourly Renovate runner has a credential-free config and discovery
 test in `static-checks.sh`. The config test injects a cache write failure and
-checks that no GitHub API request follows. The recovery test confirms the
-temporary 10:00–11:00 UTC tmpfs mount and clock selection are removed, every
-new Job selects the retained PVC, and a later successful probe permits token
-minting. Live cache-fault failure and next-slot recovery remain unverified.
+checks that no GitHub API request follows. The recovery test checks that the
+temporary 10:00–11:00 UTC tmpfs mount and clock selection are removed. The
+stacked missing/corrupt drill test checks that only two inert 2099 UTC hours
+select isolated scratch storage, invalid staging stops before GitHub access,
+and ordinary runs retain the PVC. These local checks do not establish the
+planned cache-fault failure or later scheduled recovery.
 `offline-checks.sh` runs its Prometheus rule
 fixture, which checks missed starts, incomplete cycles, a missing CronJob,
 late prior-Job completion, and schedules before and after suspension. These
@@ -2054,8 +2062,16 @@ policy parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
-and malformed package and repository cache entries. Neither fixture proves
-live PVC-failure recovery. Credential transfer and temporary writer-grant
+and malformed package and repository cache entries. The separate
+[two-slot fixture](../../scripts/ci/renovate-cache-drill-test.mjs) checks
+package-entry rebuild and in-memory repository fallback under full dry-run;
+repository-cache saves are skipped, so its malformed file stays unchanged.
+After reviewed retargeting, both scheduled slots require a scoped public canary
+lookup, rebuilt package entry, successful repository outcome, and continuity of
+the existing canary PR. The corrupt slot also requires its invalid-cache warning
+in restricted logs. A new due update needs a dry-run proposal or explicit
+deferral only when the existing PR does not already cover it. Neither local
+fixture proves live cache-failure recovery. Credential transfer and temporary writer-grant
 retirement are complete. Retained 17:00 logs attribute three Docker lookup
 errors to one repository; that Job exited 1, its failed-Job and incomplete-cycle
 alerts fired, and the 18:00 Job recovered. The protected missed-slot drill
