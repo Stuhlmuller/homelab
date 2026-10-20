@@ -38,10 +38,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
+generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:59:53.605Z
+    at: 2026-10-20T05:19:15.114Z
 ---
 
 # Runtime Isolation
@@ -99,7 +99,11 @@ limited capacity, system DaemonSets, and a live backup workload.
 Before activation, finish image publication and policy owner/render review, then
 admit an isolated tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
-stateful workloads. Compare private read-only Pod/NetworkPolicy snapshots and
+stateful workloads. The [2026-10-20 capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
+found just 3,909.5 MiB unreserved on the best worker against an initial
+4,096 MiB Enterprise reservation, a 5,997 MiB 24-hour Pod working-set peak,
+and 43 co-resident Pods. A `NoSchedule` taint would leave those Pods in place;
+it is not an isolation proof. Compare private read-only Pod/NetworkPolicy snapshots and
 all rendered policies with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
 generated policies fail the inventory. Obtain exact generator renders and a

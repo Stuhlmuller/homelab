@@ -260,10 +260,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T04:40:29.048Z" }
+generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:59:53.605Z
+    at: 2026-10-20T05:19:15.114Z
 ---
 
 # Validation Gates
@@ -1592,6 +1592,12 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
+The 2026-10-20 post-shutdown read-only receipt still rejects T022: the best
+worker has 3,909.5 MiB unreserved by requests, below Enterprise's initial
+4,096 MiB steady reservation before startup and system headroom. Its 24-hour
+Pod working-set peak was 5,997 MiB and 43 Pods remain co-resident, so a new
+`NoSchedule` taint would not isolate the canary. Storage placement and actual
+network-policy lifecycle traffic are separate unpassed gates.
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
 Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and

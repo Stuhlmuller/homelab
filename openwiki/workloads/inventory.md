@@ -162,10 +162,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T04:40:29.048Z" }
+generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:40:29.048Z
+    at: 2026-10-20T05:19:15.114Z
 ---
 
 # Workload Inventory
@@ -388,6 +388,11 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
+The [2026-10-20 read-only capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
+still blocks placement: the best worker has 3,909.5 MiB unreserved versus the
+initial 4,096 MiB Enterprise steady request, before transient and host
+headroom. Its 43 co-resident Pods prevent an added `NoSchedule` taint from
+providing isolation.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

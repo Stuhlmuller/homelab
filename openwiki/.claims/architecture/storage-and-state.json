@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a31fc9c1c4b90761a2bc045eb77912a624ce6c7990722d81fd0eb0ef0a643597",
+  "pageVersion": "sha256:34b1c28136aa3c8031a26fb68212020fad38a53daf02273b5fcbaa9c0e9173e8",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         }
       ]
     },
@@ -155,10 +155,20 @@
           "version": "repo-lines-v1:sha256:6367c8fc3d21343fac2f461cc65f00e67ec18450bd1b4cbe262932a3a8d27da0:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM2N2M4ZmMzZDIxMzQzZmFjMmY0NjFjYzY1ZjAwZTY3ZWMxODQ1MGJkMWI0Y2JlMjYyOTMyYTNhOGQyN2RhMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM2N2M4ZmMzZDIxMzQzZmFjMmY0NjFjYzY1ZjAwZTY3ZWMxODQ1MGJkMWI0Y2JlMjYyOTMyYTNhOGQyN2RhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc4ODQ0ZDdjOWVjOGE3NmJlOGNmNzQ5YjBhOGQwYzlmYTMzNjUzODc3YjgyYTZlYmNmYzEzMzUyY2E1NDdiZCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_e3857e80ee03434690eb6ce873426ea8",
+      "statement": "The 2026-10-20 post-shutdown receipt measures 3,909.5 MiB unreserved memory on the best worker, below the Enterprise initial 4,096 MiB reservation, so it does not admit local storage or an isolated canary.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:25:47.038Z"
+    "at": "2026-10-20T05:19:15.114Z"
   }
 }
