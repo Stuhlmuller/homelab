@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fc19b226327f1f4e147944aa96a8352bbc0938b7f51124f93197df04df06ffc2",
+  "pageVersion": "sha256:e9edd6795a0febe08f7b57c6a1fb6164275fb1fda8d866d8281f940f5f3441cb",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:684dfe922c341b6ea3c1af7bd6d75f8fcbf267b85e9fbdf9d2e6f64f09b40fc9"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -1179,10 +1179,24 @@
           "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
         }
       ]
+    },
+    {
+      "id": "claim_041b7f748470491c92b6e4dabc752ad1",
+      "statement": "The temporary Renovate cache fault variant mounts the cache PVC read-only while keeping the Job in full dry-run mode; the flushed 4 KiB cache probe executes before GitHub App installation-token exchange.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/config.js",
+          "version": "repo-file-v1:sha256:31b52246c100fe81df240f26385aff5861d944ead48c9d170217f2187b693db4"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:684dfe922c341b6ea3c1af7bd6d75f8fcbf267b85e9fbdf9d2e6f64f09b40fc9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:21:00.595Z"
   }
 }
