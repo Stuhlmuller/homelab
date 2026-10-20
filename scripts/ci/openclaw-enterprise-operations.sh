@@ -7,7 +7,9 @@ work=
 on_exit() {
   result=$?
   if [[ -n "$work" ]]; then rm -rf -- "$work"; fi
-  if (( result != 0 )) && [[ "${stage:-}" == publish-inventory && -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
+  if (( result != 0 )) &&
+     [[ "${stage:-}" =~ ^(inventory|publish-inventory|archive|publish-archive|verify)$ &&
+        -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
     printf '%s\n' "$phase" >"$OPENCLAW_PHASE_FILE"
   fi
 }
@@ -244,6 +246,7 @@ case "$stage" in
     refresh_status inventory
     ;;
   archive|publish-archive)
+    phase=baseline
     baseline_id="${BASELINE_REF##*/}"
     baseline="/archive/private/baseline-${baseline_id}.json"
     archive_id="$GITHUB_RUN_ID"
@@ -287,9 +290,11 @@ case "$stage" in
     for name in legacy.tar.gz receipt.json final.json; do require_absent_object "$prefix/$name"; done
     archive_size="$("${reader[@]}" stat -c %s "${receipt%/*}/legacy.tar.gz")"
     [[ "$archive_size" =~ ^[1-9][0-9]*$ ]] || exit 1
-    "${reader[@]}" cat "${receipt%/*}/legacy.tar.gz" |
-      python3 -I scripts/ci/openclaw-enterprise-upload.py "$bucket" "$prefix/legacy.tar.gz" \
-        "$archive_size" "$(jq -er .sha256 "$work/receipt.json")"
+    phase=publication-upload
+    python3 -I scripts/ci/openclaw-enterprise-upload.py "$bucket" "$prefix/legacy.tar.gz" \
+      "$archive_size" "$(jq -er .sha256 "$work/receipt.json")" \
+      "$pod" "${receipt%/*}/legacy.tar.gz"
+    phase=publication-version
     aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
       --output json >"$work/archive-head.json"
     jq -e --argjson size "$archive_size" \
@@ -304,6 +309,7 @@ case "$stage" in
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
     restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
     restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
+    phase=verification
     verify_restored_archive "$restore/receipt.json"
     "${reader[@]}" cat "$restore/receipt.json" >"$work/restored-receipt.json"
     cmp "$work/receipt.json" "$work/restored-receipt.json"
@@ -318,6 +324,7 @@ case "$stage" in
     fi
     ;;
   verify)
+    phase=verification
     jq -e '.replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and (.cronJobSuspended == true or .cronJobAbsent == true)' "$work/status.json" >/dev/null
     prefix="openclaw-enterprise/legacy/${ARCHIVE_REF}"
     final_key="$prefix/final.json"

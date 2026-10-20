@@ -80,10 +80,11 @@ archive stage's SHA/run ID; the old source stays stopped and read-only while it
 runs. Publication uses its own current-main SHA/run ID as a fresh immutable S3
 prefix, so a failed attempt cannot overwrite an earlier completed or partial
 object. The source archive SHA/run ID stays recorded in `final.json`. Publication
-checks the completed receipt against the observed inventory, streams the bundle
-in bounded S3 parts, and completes the object only after its byte count matches
-the reader's file size and its SHA256 matches the source receipt. An interrupted
-stream leaves an incomplete multipart upload for bucket lifecycle cleanup.
+checks the completed receipt against the observed inventory, reads the bundle
+in 64 MiB ranges through separate Kubernetes exec calls, and retries a broken
+or short range up to three times. It completes the S3 multipart object only
+after the full SHA256 matches the source receipt. A failed publication attempts
+to abort its current multipart upload; bucket lifecycle cleans any abandoned ones.
 Publication then downloads the versioned object to scratch and verifies a full
 isolated extract in a detached worker before writing the private `final.json`
 receipt. It rechecks zero writers and original volume identities immediately

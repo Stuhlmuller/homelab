@@ -34,6 +34,14 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Complete new-state independent restore | Pending | — | Pending |
 | 24-hour observation and selective retirement | Pending | — | Pending |
 
+The [source-bound archive publication run `39431360417`](https://github.com/Stuhlmuller/homelab/actions/runs/39431360417)
+failed in its protected stage on 2026-10-20 before a final offsite receipt.
+That workflow reported no failure phase for `publish-archive`, so its public
+log does not establish whether the long reader stream or a later verification
+step failed. The retained source archive remains the authority; T013 is still
+pending. The next reviewed attempt uses bounded, retryable source ranges and
+reports a fixed failure phase without exposing private archive diagnostics.
+
 Post-shutdown worker observations: `zimaboard-0` has 96% CPU and 99% memory
 requested; `zimaboard-2` has 92% memory requested. `zimaboard-1` has 32% CPU
 and 39% memory requested, but 75% actual memory in use and hosts Argo, database,
