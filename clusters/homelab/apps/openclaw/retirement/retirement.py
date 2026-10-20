@@ -364,6 +364,41 @@ def index_bundle(bundle, index):
     index.commit()
 
 
+def unverified_link_path(index, roots, source, target):
+    """Find path components that an archive cannot prove safe to traverse."""
+    raw = target if target.startswith('/') else posixpath.join(posixpath.dirname(source), target)
+    parts = [part for part in raw.split('/') if part not in ('', '.')]
+    walked = []
+    entered_root = False
+    for position, part in enumerate(parts):
+        if part == '..':
+            if walked:
+                walked.pop()
+        else:
+            walked.append(part)
+        prefix = '/' + '/'.join(walked)
+        match = next(((label, root) for label, root in roots.items()
+                      if prefix == root or prefix.startswith(root + '/')), None)
+        if match:
+            entered_root = True
+            label, root = match
+            if prefix != root:
+                member = label + '/' + prefix[len(root):].lstrip('/')
+                row = index.execute('SELECT kind FROM members WHERE name = ?',
+                                    (member,)).fetchone()
+                if row is None:
+                    return 'missing-in-archive'
+                if position < len(parts) - 1:
+                    if row[0] == 'symlink':
+                        return 'link-chain'
+                    if row[0] != 'directory':
+                        return 'missing-in-archive'
+        elif entered_root or not any(root.startswith(prefix.rstrip('/') + '/')
+                                     for root in roots.values()):
+            return 'external'
+    return None
+
+
 def classify_links(index, config):
     """Describe link dependencies without dereferencing private source paths."""
     roots = {label: posixpath.normpath(config[key]) for label, key in
@@ -374,8 +409,13 @@ def classify_links(index, config):
         source = posixpath.join(roots[label], relative)
         resolved = posixpath.normpath(target if target.startswith('/') else
                                       posixpath.join(posixpath.dirname(source), target))
-        entry = {'member': name, 'target': target, 'resolved': resolved,
+        entry = {'member': name, 'target': target, 'lexicalPath': resolved,
                  'absolute': target.startswith('/')}
+        issue = unverified_link_path(index, roots, source, target)
+        if issue:
+            entry['class'] = issue
+            yield entry
+            continue
         for target_label, root in roots.items():
             if resolved == root or resolved.startswith(root + '/'):
                 suffix = resolved[len(root):].lstrip('/')

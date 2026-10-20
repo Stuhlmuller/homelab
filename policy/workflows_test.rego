@@ -275,7 +275,7 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "d4f1c16606bf04d3990f4fec83e7059ce2ad775bd2c57bcd9eacb5e0910bee55", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
@@ -368,7 +368,7 @@ echo "Legacy operation completed; private receipts withheld."`)
 openclaw_legacy_run := `set -euo pipefail
 umask 077
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'d4f1c16606bf04d3990f4fec83e7059ce2ad775bd2c57bcd9eacb5e0910bee55  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff  scripts/ci/openclaw-enterprise-operations.sh'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `

@@ -476,6 +476,44 @@ refresh_status "$3"
                                         check=False)
                 self.assertEqual(result.returncode == 0, expected == 0, result.stderr)
 
+    def test_prepare_restore_requires_archived_volume_and_root_identity(self):
+        script = SCRIPT.read_text()
+        prepare = script.split('  verify|prepare-restore)\n    phase=verification', 1)[1]
+        preflight = 'validate_archive_identity "$work/receipt.json" "$recheck"'
+        self.assertLess(prepare.index(preflight),
+                        prepare.index('restore_version "$prefix/legacy.tar.gz"'))
+        self.assertIn('refresh_status stopped\n      ' + preflight, prepare)
+        claims = {'localClaim': 'local', 'nasClaim': 'nas'}
+        volumes = {claim: {'pvcUid': 'pvc-' + claim, 'pvName': claim,
+                           'pvUid': 'pv-' + claim} for claim in claims.values()}
+        roots = {'local': {'device': 1, 'inode': 2, 'uid': 3},
+                 'nas': {'device': 4, 'inode': 5, 'uid': 6}}
+        receipt = {'format': 1, 'inventory': {'claims': claims,
+                   'kubernetes': {'volumes': volumes}, 'rootIdentity': roots}}
+        status = {'claims': claims, 'volumes': volumes, 'roots': roots}
+        shell = '''set -euo pipefail
+source <(sed -n '/^validate_archive_identity() {/,/^}/p' "$1")
+validate_archive_identity "$2" "$3"
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory)
+            receipt_path, status_path = private / 'receipt.json', private / 'status.json'
+            receipt_path.write_text(json.dumps(receipt))
+            for changed, succeeds in (({}, True),
+                                      ({'volumes': {**volumes, 'local':
+                                                    {**volumes['local'], 'pvUid': 'changed'}}}, False),
+                                      ({'volumes': {**volumes, 'nas':
+                                                    {**volumes['nas'], 'pvcUid': 'changed'}}}, False),
+                                      ({'roots': {**roots, 'local':
+                                                  {**roots['local'], 'device': 7}}}, False),
+                                      ({'roots': {**roots, 'nas':
+                                                  {**roots['nas'], 'inode': 8}}}, False)):
+                status_path.write_text(json.dumps({**status, **changed}))
+                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT),
+                                         str(receipt_path), str(status_path)], cwd=ROOT,
+                                        capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode == 0, succeeds, result.stderr)
+
     def test_versioned_restore_streams_exact_bytes(self):
         payload = b'archive\x00bytes'
 
@@ -816,7 +854,8 @@ printf '%s\\n' "$phase"
         self.assertIn('verify_restored_archive "$restore/receipt.json"', script)
         self.assertIn('verify_restored_archive "$restore/receipt.json" "$rehearsal"', script)
         self.assertIn('free_kib * 1024 > archive_bytes + tree_bytes + 2147483648', script)
-        self.assertIn('refresh_status stopped\n    else', script)
+        self.assertIn('refresh_status stopped\n      validate_archive_identity '
+                      '"$work/receipt.json" "$recheck"\n    else', script)
         self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)
         self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
                       (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())

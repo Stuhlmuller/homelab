@@ -132,7 +132,8 @@ blindly extract this tar into a live filesystem.
 `prepare-restore` downloads the exact versioned archive, checks free scratch
 space, and retains a verified copy at `/archive/private/rehearsal-<RUN_ID>/tree`.
 Its private `link-classification.json` records raw targets as `contained`,
-`link-chain`, `missing-in-archive`, or `external`. `completed.json` records
+`link-chain`, `missing-in-archive`, or `external`. Its `lexicalPath` is a hint,
+not proof that symlink components resolve there. `completed.json` records
 only extraction and database integrity; its absence means the retained copy is
 incomplete. Neither file belongs in Git or public CI logs. Absolute
 links can still point at the original reader mounts: inspect every dependency

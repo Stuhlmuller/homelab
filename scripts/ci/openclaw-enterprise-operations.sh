@@ -90,6 +90,18 @@ refresh_status() {
   "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$recheck"
 }
 
+validate_archive_identity() {
+  jq -e --slurpfile status "$2" '
+    .format == 1 and
+    (.inventory.claims | type) == "object" and
+    (.inventory.kubernetes.volumes | type) == "object" and
+    (.inventory.rootIdentity | type) == "object" and
+    .inventory.claims == $status[0].claims and
+    .inventory.kubernetes.volumes == $status[0].volumes and
+    .inventory.rootIdentity == $status[0].roots
+  ' "$1" >/dev/null
+}
+
 validate_baseline() {
   jq -e --slurpfile status "$2" --slurpfile config scripts/config/openclaw-enterprise.json '
     . as $baseline | $status[0] as $live | $config[0].legacyRetention as $contract |
@@ -373,6 +385,7 @@ case "$stage" in
         --version-id "$archive_version" --query ContentLength --output text)"
       aws s3api get-object --bucket "$bucket" --key "$prefix/receipt.json" \
         --version-id "$receipt_version" "$work/receipt.json" >/dev/null
+      validate_archive_identity "$work/receipt.json" "$recheck"
       tree_bytes="$(jq -er '[.inventory.roots.local.tree.bytes, .inventory.roots.nas.tree.bytes] |
         if all(type == "number" and . >= 0) then add else empty end' "$work/receipt.json")"
       free_kib="$("${reader[@]}" df -Pk /archive | awk 'NR == 2 {print $4}')"
@@ -390,6 +403,7 @@ case "$stage" in
         jq -e --arg sha "$(jq -er .archiveSha256 "$work/final.json")" \
           '.format == 1 and .archiveSha256 == $sha and (.linkCount | type == "number")' >/dev/null
       refresh_status stopped
+      validate_archive_identity "$work/receipt.json" "$recheck"
     else
       verify_restored_archive "$restore/receipt.json"
     fi

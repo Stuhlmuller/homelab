@@ -309,12 +309,15 @@ class Retirement(unittest.TestCase):
         self.assertEqual(list(outside.iterdir()), [sentinel])
 
     def test_prepare_restore_keeps_private_copy_and_classifies_links(self):
+        (self.nas / 'openclaw' / 'secret').write_text('archived')
         links = {
             'contained-relative': '../unlisted-configuration',
             'contained-absolute': str(self.local / self.config['requiredLocal'][0]),
             'outside': str(self.archive_root / 'not-archived'),
             'missing': 'absent',
             'chain': 'contained-relative',
+            'alias': str(self.archive_root / 'outside' / 'deeper'),
+            'via-alias': 'alias/../secret',
         }
         for name, target in links.items():
             (self.nas / 'openclaw' / name).symlink_to(target)
@@ -354,7 +357,8 @@ class Retirement(unittest.TestCase):
         self.assertEqual(classes, {'contained-relative': 'contained',
                                    'contained-absolute': 'contained',
                                    'outside': 'external', 'missing': 'missing-in-archive',
-                                   'chain': 'link-chain'})
+                                   'chain': 'link-chain', 'alias': 'external',
+                                   'via-alias': 'link-chain'})
         self.assertEqual(json.loads((destination / 'completed.json').read_text())['linkCount'],
                          len(links))
         with self.assertRaises(ValueError):
