@@ -288,6 +288,37 @@ class ActiveAgentReconciliation(unittest.TestCase):
         self.assertEqual(self._stop()["desiredRuntimeState"], "stopped")
         self.assertEqual(len([call for call in self.api.calls if call[1].endswith("/stop")]), 1)
 
+    def test_unknown_stop_before_acceptance_never_reposts_or_discards_revision(self):
+        self._active()
+        revision_id = self._journal()["revisionId"]
+
+        def lose_before_acceptance(path, body=None):
+            if path.endswith("/stop"):
+                raise OCE.Blocked("stop response unknown before acceptance")
+            raise AssertionError("unexpected accepted POST")
+
+        with patch.object(self.api, "post_accepted", side_effect=lose_before_acceptance) as post:
+            with self.assertRaisesRegex(OCE.Blocked, "unknown before acceptance"):
+                self._stop()
+            with self.assertRaisesRegex(OCE.Blocked, "stop outcome is unknown"):
+                self._stop()
+            self.assertEqual(post.call_count, 1)
+
+        self.assertEqual(self._journal()["pending"], {"operation": "stop"})
+        self.assertEqual(self._journal()["revisionId"], revision_id)
+        self.assertEqual(self.api.agents["agt_one"]["desiredRuntimeState"], "running")
+        with self.assertRaisesRegex(OCE.Blocked, "active journal is incomplete"):
+            self._verify()
+
+        # A delayed first request may still complete. Only exact observed
+        # termination clears the pending intent; no second stop is sent.
+        self.api.agents["agt_one"]["desiredRuntimeState"] = "stopped"
+        self.api.agents["agt_one"]["activeRevisionId"] = None
+        self.api.runtime_pods = []
+        self.assertEqual(self._stop()["revisionId"], revision_id)
+        self.assertNotIn("pending", self._journal())
+        self.assertFalse(any(call[1].endswith("/stop") for call in self.api.calls))
+
     def test_admitted_revision_logging_recovers_without_changing_saved_configuration(self):
         installation = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml")
         self.assertNotRegex(installation.read_text(), r"(?m)^logging:")
