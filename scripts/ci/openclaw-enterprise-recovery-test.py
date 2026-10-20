@@ -182,8 +182,6 @@ class RecoveryBoundaries(unittest.TestCase):
                 "status": {"nodeInfo": {"bootID": "node-boot"},
                            "conditions": [{"type": "Ready", "status": "True"}]}}
         placement = {"nodeUid": "node-uid", "bootID": "node-boot"}
-        namespace_check = ("kubectl", "--request-timeout=20s", "get", "namespace",
-                           CLEANUP["FIXTURE_NAMESPACE"], "--ignore-not-found", "-o", "json")
         for phase in ("Running", "Unknown"):
             with self.subTest(phase=phase):
                 tenant["status"]["phase"] = phase
@@ -195,14 +193,12 @@ class RecoveryBoundaries(unittest.TestCase):
                     if args == ("get", "node", "zimaboard-1"):
                         return node
                     if args == ("get", "pods,deployments,statefulsets,replicasets,"
-                                "daemonsets,jobs,cronjobs", "-A"):
-                        return {"items": [tenant]}
+                                "daemonsets,jobs,cronjobs", "-A", "--chunk-size=0"):
+                        return {"metadata": {}, "items": [tenant]}
                     raise AssertionError(f"unexpected Kubernetes read: {args}")
 
                 def command(*args):
                     commands.append(args)
-                    if args == namespace_check:
-                        return ""
                     raise AssertionError(f"cleanup command ran before quiescence: {args}")
 
                 with patch.dict(CLEANUP["inspect_cluster"].__globals__,
@@ -212,7 +208,7 @@ class RecoveryBoundaries(unittest.TestCase):
                         CLEANUP["inspect_cluster"](
                             {"canary": {"node": "zimaboard-1"}}, placement)
                 self.assertEqual(len(reads), 2)
-                self.assertEqual(commands, [namespace_check])
+                self.assertEqual(commands, [])
         tenant["status"]["phase"] = "Succeeded"
         CLEANUP["ensure_quiesced"]([tenant])
 

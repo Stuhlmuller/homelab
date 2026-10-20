@@ -18,6 +18,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-efd15335758af38c6e6af9ab
@@ -72,6 +74,12 @@ sources:
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
   - id: openwiki-source-e293d5daa2ad090397b8923e
@@ -88,10 +96,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Source Map
@@ -156,6 +164,7 @@ desired state.
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-full-sync.sh`, and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected fixed full sync](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, and `scripts/ci/openclaw-enterprise-active-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only active/stop fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
+| `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |

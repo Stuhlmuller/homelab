@@ -126,10 +126,8 @@ def verify_live_pods(config, placement):
     node_name = config["canary"]["node"]
     listing = CLEANUP["kubernetes_json"]("get", "pods", "-A", "--field-selector",
                                           f"spec.nodeName={node_name}", "--chunk-size=0")
-    if not isinstance(listing, dict) or not isinstance(listing.get("items"), list):
-        raise ValueError("canary Pod inventory is incomplete")
     actual = []
-    for pod in listing["items"]:
+    for pod in CLEANUP["complete_items"](listing, "canary Pod"):
         if not isinstance(pod, dict):
             raise ValueError("canary Pod inventory has an invalid entry")
         metadata, spec = pod.get("metadata"), pod.get("spec")
@@ -138,6 +136,7 @@ def verify_live_pods(config, placement):
         owners = metadata.get("ownerReferences", [])
         if (spec.get("nodeName") != node_name or
                 metadata.get("namespace") not in SYSTEM_NAMESPACES or
+                metadata.get("deletionTimestamp") or
                 not isinstance(owners, list) or
                 not any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
                         owner.get("controller") is True and
@@ -194,10 +193,8 @@ def wait_for_cleanup_pod_deletion(config, placement, pod_name, timeout_seconds=1
             raise ValueError("canary Node lost its release isolation state")
         listing = CLEANUP["kubernetes_json"]("-n", "kube-system", "get", "pods",
                                              "--chunk-size=0")
-        if not isinstance(listing, dict) or not isinstance(listing.get("items"), list):
-            raise ValueError("cleanup Pod inventory is incomplete")
         cleanup_pods = []
-        for pod in listing["items"]:
+        for pod in CLEANUP["complete_items"](listing, "cleanup Pod"):
             if not isinstance(pod, dict) or not isinstance(pod.get("metadata"), dict):
                 raise ValueError("cleanup Pod inventory has an invalid entry")
             metadata = pod["metadata"]
@@ -283,6 +280,7 @@ def execute(args):
                              {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
                 node = wait_for_cleanup_pod_deletion(config, placement, pod)
                 require_runtime_absent(False)
+                verify_live_pods(config, placement)
                 index = next(index for index, item in enumerate(node["spec"].get("taints", []))
                              if item.get("key") == CANARY)
                 patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},

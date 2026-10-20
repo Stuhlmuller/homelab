@@ -50,6 +50,14 @@ def kubernetes_json(*args):
     return json.loads(command("kubectl", "--request-timeout=20s", *args, "-o", "json"))
 
 
+def complete_items(listing, inventory):
+    if (not isinstance(listing, dict) or not isinstance(listing.get("items"), list) or
+            not isinstance(listing.get("metadata"), dict) or
+            listing["metadata"].get("continue")):
+        raise ValueError(f"{inventory} inventory is incomplete")
+    return listing["items"]
+
+
 def ready(object_):
     return any(item.get("type") == "Ready" and item.get("status") == "True"
                for item in object_.get("status", {}).get("conditions", []))
@@ -82,6 +90,55 @@ def ensure_quiesced(items):
             raise ValueError("Enterprise tenant CronJob is active")
 
 
+def require_reviewed_node_pods(node_name, placement, cleanup_pod, daemonset_uid):
+    reviewed = placement.get("systemDaemonSetPods")
+    if (not isinstance(reviewed, list) or
+            any(not isinstance(pod, dict) or set(pod) != {"namespace", "name", "uid"} or
+                pod.get("namespace") not in {"kube-system", "istio-system"} or
+                any(not isinstance(value, str) or not value for value in pod.values())
+                for pod in reviewed)):
+        raise ValueError("reviewed canary system Pod identities are missing")
+    expected = {(pod["namespace"], pod["name"], pod["uid"]) for pod in reviewed}
+    if len(expected) != len(reviewed):
+        raise ValueError("reviewed canary system Pod identities are duplicated")
+    cleanup_id = ("kube-system", cleanup_pod["metadata"]["name"],
+                  cleanup_pod["metadata"]["uid"])
+    if cleanup_id in expected:
+        raise ValueError("cleanup Pod must be separate from reviewed system Pods")
+    listing = kubernetes_json("get", "pods", "-A", "--field-selector",
+                              f"spec.nodeName={node_name}", "--chunk-size=0")
+    actual = []
+    for pod in complete_items(listing, "canary node Pod"):
+        if not isinstance(pod, dict):
+            raise ValueError("canary node Pod inventory has an invalid entry")
+        metadata, spec = pod.get("metadata"), pod.get("spec")
+        if not isinstance(metadata, dict) or not isinstance(spec, dict):
+            raise ValueError("canary node Pod inventory has an invalid entry")
+        identity = (metadata.get("namespace"), metadata.get("name"), metadata.get("uid"))
+        owners = metadata.get("ownerReferences")
+        if (spec.get("nodeName") != node_name or metadata.get("deletionTimestamp") or
+                any(not isinstance(value, str) or not value for value in identity) or
+                not isinstance(owners, list)):
+            raise ValueError("canary node Pod inventory has an invalid entry")
+        if identity == cleanup_id:
+            valid = any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
+                        owner.get("name") == CLEANUP and owner.get("uid") == daemonset_uid and
+                        owner.get("controller") is True for owner in owners)
+        else:
+            valid = (identity in expected and
+                     any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
+                         owner.get("controller") is True and
+                         isinstance(owner.get("name"), str) and owner["name"] and
+                         (owner["name"] == "ztunnel" if identity[0] == "istio-system"
+                          else owner["name"] not in {ENFORCER, CLEANUP})
+                         for owner in owners))
+        if not valid:
+            raise ValueError("canary node has an unreviewed Pod")
+        actual.append(identity)
+    if len(set(actual)) != len(actual) or set(actual) != expected | {cleanup_id}:
+        raise ValueError("canary node Pod inventory differs from reviewed placement")
+
+
 def inspect_cluster(config, placement):
     node_name = config["canary"]["node"]
     node = kubernetes_json("get", "node", node_name)
@@ -92,25 +149,25 @@ def inspect_cluster(config, placement):
             not any(item.get("key") == CANARY and item.get("value") == "true" and
                     item.get("effect") == "NoSchedule" for item in node["spec"].get("taints", []))):
         raise ValueError("canary node identity, taint, or readiness changed")
-    fixture_namespace = command("kubectl", "--request-timeout=20s", "get",
-                                "namespace", FIXTURE_NAMESPACE, "--ignore-not-found",
-                                "-o", "json")
-    if fixture_namespace.strip():
-        raise ValueError("canary fixture namespace still exists")
     workloads = kubernetes_json("get", "pods,deployments,statefulsets,replicasets,"
-                                "daemonsets,jobs,cronjobs", "-A")
+                                "daemonsets,jobs,cronjobs", "-A", "--chunk-size=0")
+    workload_items = complete_items(workloads, "Enterprise workload")
     if any(item.get("metadata", {}).get("namespace") == FIXTURE_NAMESPACE
-           for item in workloads.get("items", [])):
+           for item in workload_items):
         raise ValueError("canary fixture workload still exists")
-    ensure_quiesced(workloads.get("items", []))
+    ensure_quiesced(workload_items)
     enforcer = command("kubectl", "--request-timeout=20s", "-n", "kube-system",
                        "get", "daemonset", ENFORCER, "--ignore-not-found", "-o", "json")
     if enforcer.strip():
         raise ValueError("firewall enforcer DaemonSet still exists")
     pods = kubernetes_json("-n", "kube-system", "get", "pods", "-l",
-                           f"app.kubernetes.io/name={ENFORCER}")
-    if pods.get("items"):
+                           f"app.kubernetes.io/name={ENFORCER}", "--chunk-size=0")
+    if complete_items(pods, "firewall enforcer Pod"):
         raise ValueError("firewall enforcer Pod still exists")
+    namespace = command("kubectl", "--request-timeout=20s", "get", "namespace",
+                        FIXTURE_NAMESPACE, "--ignore-not-found", "-o", "json")
+    if namespace.strip():
+        raise ValueError("canary fixture namespace must be absent")
     daemonset = kubernetes_json("-n", "kube-system", "get", "daemonset", CLEANUP)
     template = daemonset["spec"]["template"]["spec"]
     container, = template["containers"]
@@ -127,19 +184,22 @@ def inspect_cluster(config, placement):
             container.get("args") != ["sleep 86400"] or
             container.get("securityContext", {}).get("privileged") is not True):
         raise ValueError("cleanup DaemonSet differs from reviewed dormant source")
-    candidates = kubernetes_json("-n", "kube-system", "get", "pods", "-l",
-                                 f"app.kubernetes.io/name={CLEANUP}").get("items", [])
+    candidates = complete_items(kubernetes_json("-n", "kube-system", "get", "pods", "-l",
+                                                f"app.kubernetes.io/name={CLEANUP}",
+                                                "--chunk-size=0"), "cleanup Pod")
     if len(candidates) != 1:
         raise ValueError("cleanup Pod identity is ambiguous")
     pod, = candidates
     if (pod["spec"].get("nodeName") != node_name or not ready(pod) or
+            pod["metadata"].get("namespace") != "kube-system" or
             pod["spec"].get("hostNetwork") is not True or
             pod["spec"]["containers"][0].get("image") != IMAGE or
             pod["metadata"].get("deletionTimestamp") or
             not any(ref.get("uid") == daemonset["metadata"].get("uid") and
-                    ref.get("kind") == "DaemonSet" for ref in
+                    ref.get("kind") == "DaemonSet" and ref.get("controller") is True for ref in
                     pod["metadata"].get("ownerReferences", []))):
         raise ValueError("cleanup Pod is not the reviewed node-local executor")
+    require_reviewed_node_pods(node_name, placement, pod, daemonset["metadata"]["uid"])
     return pod["metadata"]["name"], pod["metadata"]["uid"]
 
 
@@ -465,6 +525,8 @@ def execute(args):
         if plan:
             if inspect_cluster(config, placement) != (pod, pod_uid) or snapshot(pod) != state:
                 raise ValueError("cleanup identity or firewall changed before deletion")
+            # shortcut: Pod inventory and firewall deletion are not atomic; prove
+            # exclusive placement before live rollout or add a reviewed isolation path.
             for operation in plan:
                 require_current_main(args.expected_sha)
                 exec_cleanup(pod, *operation)

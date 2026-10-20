@@ -423,7 +423,9 @@ carrying that label, including a change detected just before or after labeling.
 After verified `owned-cleanup`,
 `canary-release` requires that run's receipt, empty fixture namespace, absent
 enforcer, and empty owned firewall before removing the label, waiting for all
-cleanup DaemonSet Pods to be deleted, and removing the taint. A stalled deletion
+cleanup DaemonSet Pods to be deleted, rechecking that the complete node Pod
+inventory contains only the reviewed system DaemonSet identities, and removing
+the taint. A stalled deletion or changed Pod identity
 leaves the node tainted for direct recovery review. Release follows the
 cleanup receipt to its immutable ownership receipt and original placement at
 the qualify SHA, and verifies the exact qualify, fixture-prune, firewall-prune
@@ -444,10 +446,22 @@ retry. The stage retains a versioned `cleanup-attempt.json` before invoking
 the firewall helper, so an unavailable final receipt still leaves a private
 attempt marker. `ownership-capture` now retains the full private firewall
 snapshot after a successful traffic probe on the qualify main SHA, followed by
-exact fixture-prune and enforcer-prune commits, with the enforcer gone and the
-cleanup Pod Ready. Pre-enable placement and probe receipts stay bound to the
-qualify SHA. Keep the empty canary Application automated until owned cleanup
-and release checks complete.
+exact fixture-prune and enforcer-prune commits, with the fixture namespace and
+enforcer gone and the cleanup Pod Ready. Capture, approval, cleanup, and
+release compare a complete live canary-node Pod inventory to the reviewed
+system DaemonSet Pod identities plus that validated cleanup Pod while it runs.
+Release rechecks only the reviewed system Pod identities after cleanup Pod
+deletion. An incomplete inventory or foreign, terminating, or replaced Pod
+blocks the stage. A normal system DaemonSet Pod restart changes
+its UID and also blocks capture, approval, cleanup, and release. The immutable
+qualify-SHA placement cannot be refreshed after removal in this workflow;
+stop for a separately reviewed recovery path. Pre-enable placement and probe
+receipts stay bound to the qualify SHA. Keep the empty canary Application
+automated until owned cleanup and release checks complete.
+Inventory checks and firewall deletion are not atomic: a Pod tolerating the
+isolation taint could arrive during deletion. Live activation remains blocked
+until isolated placement rules out that arrival or a reviewed repository-owned
+isolation path is added.
 The repository owner checks that versioned capture
 outside public logs, then freshly dispatches `ownership-approve` with its run
 ID and exact snapshot SHA-256. The protected job rechecks placement,

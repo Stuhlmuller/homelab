@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:20064ede056ed97b9cec151c0625eb53312c51369805aa8d7e447997d4b4af35",
+  "pageVersion": "sha256:c7afa1e6dcab6b978e17695e926dd8f8d2323f57499913b39faf45d83fc82c72",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -16,17 +16,43 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:c13bfe73f968ce5180d2e953dd298b94757f4d985e97854176a6be63d75dd253"
+          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
           "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_610dc4caf1434d3690fb25653cf51e61",
+      "statement": "The canary lifecycle uses exact reviewed GitOps commits to prune fixtures and then the enforcer, verifies the fixture namespace and workloads are absent before ownership capture, and keeps the empty canary Application automated through cleanup and release. Private capture and owner approval gate rule deletion; assigned Pods must match reviewed system and cleanup Pod identities while cleanup runs, and release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/platform-network-policy-canary/stack.hcl",
+          "version": "repo-file-v1:sha256:efe2f1593f159c4ac27fb0245c658fee7765606a21d7c0e1260fcda9dd31f998"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:46:55.569Z"
+    "at": "2026-10-20T15:35:56.635Z"
   }
 }

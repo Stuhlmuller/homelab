@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b51e9c3e1d281085310cb1b732261182b45a51a01d1a4abff9c3f14d1475cfda",
+  "pageVersion": "sha256:563d5c23d5c2395aac357e2d264d87626bf43fa8e62456b15efe445c2c53f6c4",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -245,10 +245,32 @@
           "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
         }
       ]
+    },
+    {
+      "id": "claim_a034ea78041d43fab0f1639f39e991cd",
+      "statement": "The platform maintenance workflow dispatches protected firewall ownership, cleanup, and canary release stages. network-policy-ownership.py owns private versioned snapshot and approval receipts; network-policy-cleanup.py enforces fixture absence and reviewed assigned Pod identities before deletion; network-policy-canary-node.py rechecks only reviewed system Pod identities after cleanup Pod deletion before taint removal.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:6832e2d2c4c737e030671566849d0be5c0d6002dfe409cb3ca835d7f8a0a6fb0"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:46:55.569Z"
+    "at": "2026-10-20T15:35:56.635Z"
   }
 }

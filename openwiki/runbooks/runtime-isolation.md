@@ -40,18 +40,22 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-  - id: openwiki-source-13711977c9ca794932b4c8ee
-    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:10:13.266Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Runtime Isolation
@@ -156,11 +160,28 @@ cleanup Pods, and fixture traffic are absent, then adds the dedicated
 `NoSchedule` taint before the selector label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
-the taint. `canary-release` requires a
-verified owned-cleanup receipt and empty owned firewall. It removes the label
-first and waits for cleanup DaemonSet Pods to disappear cluster-wide before
-removing the taint. A survivor or timeout retains isolation. These staged
-paths do not make a current worker eligible.
+the taint. After a qualifying traffic probe, exact reviewed GitOps commits
+prune the fixtures and then the enforcer. Apply the fixture prune and verify
+the live `network-policy-canary` namespace and all fixture workloads are absent
+before ownership capture. The owner reviews the private full firewall snapshot
+and freshly approves its digest before `owned-cleanup` can delete those
+objects. Capture through release require a complete node Pod inventory
+matching the reviewed system DaemonSet UIDs plus the validated cleanup Pod
+while it runs. After cleanup Pod deletion, release rechecks that only reviewed
+system Pods remain immediately before removing the taint. An incomplete list
+or foreign, terminating or replaced Pod blocks the stage. A system Pod restart
+changes its UID and blocks the immutable placement path pending separately
+reviewed recovery. A partial deletion requires a new capture and approval.
+Inventory checks and firewall deletion are not atomic: a taint-tolerating Pod
+could arrive during deletion. Live activation remains blocked until isolated
+placement rules that out or a reviewed repository-owned isolation path exists.
+`canary-release` verifies the cleanup, ownership and original placement
+receipts, the exact two-commit transition to current `main`, absent fixture
+namespace and workloads, and an empty owned firewall. It removes the label
+first and waits for cleanup DaemonSet Pods to disappear cluster-wide, then
+rechecks the node Pod inventory before removing the taint. A survivor or
+timeout retains isolation. These staged paths do not make a current worker
+eligible.
 
 The nine repository-owned DNS egress policies now select only CoreDNS Pods on
 TCP/UDP 53. Static renders check their peer and the matching Service/Deployment

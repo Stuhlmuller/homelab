@@ -264,7 +264,7 @@ class CanaryNodeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "system DaemonSet"):
             SUT["validate_placement"](receipt, CONFIG, SHA, True)
         with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                         {"items": [app_pod]}}):
+                         {"metadata": {}, "items": [app_pod]}}):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
@@ -278,7 +278,7 @@ class CanaryNodeTests(unittest.TestCase):
                                            "name": "ztunnel-1", "uid": "ztunnel-uid"}]
         SUT["validate_placement"](receipt, CONFIG, SHA, True)
         with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                         {"items": [ztunnel]}}):
+                         {"metadata": {}, "items": [ztunnel]}}):
             SUT["verify_live_pods"](CONFIG, receipt)
 
     def test_other_istio_daemonset_is_rejected_even_with_exact_uid(self):
@@ -290,9 +290,20 @@ class CanaryNodeTests(unittest.TestCase):
                                            "name": "other-1", "uid": "other-uid"}]
         SUT["validate_placement"](receipt, CONFIG, SHA, True)
         with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                         {"items": [pod]}}):
+                         {"metadata": {}, "items": [pod]}}):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
+
+    def test_canary_pod_inventory_rejects_incomplete_or_terminating_entries(self):
+        for listing in ({"items": [system_pod()]},
+                        {"metadata": {"continue": "next"}, "items": [system_pod()]},
+                        {"metadata": {}, "items": [system_pod() | {
+                            "metadata": system_pod()["metadata"] | {
+                                "deletionTimestamp": "2026-10-20T00:00:00Z"}}]}):
+            with self.subTest(listing=listing), patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": lambda *args: listing}):
+                with self.assertRaisesRegex(ValueError, "incomplete|foreign"):
+                    SUT["verify_live_pods"](CONFIG, placement())
 
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
                    cleanup_pods=None, label_inventory=None):
@@ -319,12 +330,13 @@ class CanaryNodeTests(unittest.TestCase):
                 events.append("cleanup-inventory")
                 current_pods = (next(cleanup_inventory) if cleanup_inventory is not None
                                 else cleanup_pods() if callable(cleanup_pods) else cleanup_pods)
-                return {"items": copy.deepcopy(current_pods)}
+                return copy.deepcopy(current_pods if isinstance(current_pods, dict)
+                                     else {"metadata": {}, "items": current_pods})
             if args[:2] == ("get", "pods"):
                 events.append("inventory")
                 current_pods = pods() if callable(pods) else pods
-                return {"items": copy.deepcopy([system_pod()] if current_pods is None
-                                               else current_pods)}
+                return {"metadata": {}, "items": copy.deepcopy(
+                    [system_pod()] if current_pods is None else current_pods)}
             return {"items": []}
 
         def command(*args):
@@ -397,7 +409,7 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertEqual([(item["op"], item["path"]) for item in commands[1][2:]],
                          [("test", "/spec/taints/1"), ("remove", "/spec/taints/1")])
         self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory",
-                                            "cleanup-inventory", "taint"])
+                                            "cleanup-inventory", "inventory", "taint"])
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(len(state["spec"]["taints"]), 1)
 
@@ -424,6 +436,41 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
         self.assertEqual([record["status"] for record in self.last_records],
                          ["started", "interrupted"])
+
+    def test_release_rejects_foreign_pod_arriving_during_cleanup_wait(self):
+        state = node(admitted=True)
+        assigned = [system_pod()]
+        calls = 0
+
+        def cleanup_inventory():
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return [cleanup_pod()]
+            foreign = system_pod()
+            foreign["metadata"].update({"namespace": "default", "name": "foreign",
+                                        "uid": "foreign-uid", "ownerReferences": []})
+            assigned.append(foreign)
+            return []
+
+        with self.assertRaisesRegex(ValueError, "foreign"):
+            self.run_action("release", state, pods=lambda: assigned,
+                            cleanup_pods=cleanup_inventory)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory",
+                                            "cleanup-inventory", "inventory"])
+        self.assertEqual([record["status"] for record in self.last_records],
+                         ["started", "interrupted"])
+
+    def test_release_rejects_incomplete_cleanup_pod_inventory(self):
+        state = node(admitted=True)
+        with self.assertRaisesRegex(ValueError, "cleanup Pod inventory is incomplete"):
+            self.run_action("release", state, cleanup_pods=lambda: {
+                "metadata": {"continue": "next"}, "items": []})
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory"])
 
     def test_release_refuses_remaining_firewall(self):
         with self.assertRaisesRegex(ValueError, "owned firewall objects remain"):

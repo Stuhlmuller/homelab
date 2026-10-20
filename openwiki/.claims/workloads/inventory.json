@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:69dbf76e341961c1bd56b240dd24cb6c837f4ef1df0c76137da9636d8be17fba",
+  "pageVersion": "sha256:671d979f5860f05b671f32a8f055901cbd93eae764ea3e14be976362cd85ce57",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -633,10 +633,46 @@
           "version": "repo-file-v1:sha256:08c6a099b8a84d67179ce3e684275ebad0043209ccd83d5c13482a509a5a0ab9"
         }
       ]
+    },
+    {
+      "id": "claim_5aceb6eb6a9e46dcb66332ead3a678fc",
+      "statement": "The dormant network-policy cleanup Application follows reviewed fixture and firewall removal commits. Live fixture resources block ownership stages, and private owner approval of a versioned snapshot gates rule deletion. Capture through release reject canary-node Pods outside reviewed system and cleanup Pod identities while cleanup runs; after cleanup Pod deletion, release rechecks only reviewed system Pods before taint removal. Changed system Pod UID after firewall removal requires separately reviewed recovery.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
+        }
+      ]
+    },
+    {
+      "id": "claim_81bdee7c95934798b867aa7abcb2408a",
+      "statement": "Pod inventory checks and firewall deletion are not atomic, so a Pod tolerating the isolation taint could arrive during deletion; live activation remains blocked until isolated placement excludes that arrival or a reviewed repository-owned isolation path is added.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T15:10:13.266Z"
+    "at": "2026-10-20T15:35:56.635Z"
   }
 }

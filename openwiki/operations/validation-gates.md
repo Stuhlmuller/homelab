@@ -170,6 +170,8 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
     resource: repo://scripts/ci/n8n-ai-migration-check.py
+  - id: openwiki-source-e2baf610aa52fccbe2535d65
+    resource: repo://scripts/ci/network-policy-canary-node-test.py
   - id: openwiki-source-6fc8139a15619bb0b0107205
     resource: repo://scripts/ci/network-policy-cleanup-test.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
@@ -280,8 +282,6 @@ sources:
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
-  - id: openwiki-source-ba849f5dbd0942cee0b0087d
-    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
@@ -310,10 +310,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:10:13.266Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Validation Gates
@@ -1696,7 +1696,9 @@ order, private prerequisite readback, Talos role/disk preservation, immutable
 Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and
 ownership-limited cleanup. The protected workflow wires fixed upgrade stages
 to that executor with a pinned helper hash and bounded private results. Its
-activation flag and canary node remain unset. Current-SHA recovery receipts,
+execute path also binds canonical platform inputs to the exact dispatched
+commit, rejecting a runner-local override before an upgrade. The activation
+flag and canary node remain unset. Current-SHA recovery receipts,
 full-catalog publication, five-tag Harbor lock and an isolated canary remain
 live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
@@ -1717,7 +1719,19 @@ source SHA; do not rewrite ambiguous history or infer cleanup ran. These are
 source checks; cleanup stays disabled until its separate live prerequisites are
 met. Ownership capture, approval and cleanup also refuse a live
 `network-policy-canary` Namespace or any remaining fixture workload before
-they read the firewall. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+they read the firewall. Capture, approval, cleanup and release also require a
+complete live list of Pods assigned to the canary: exactly the reviewed system
+DaemonSet namespace/name/UID identities plus the validated cleanup Pod while
+it runs. After the cleanup Pod disappears, release rechecks a complete list
+containing only the reviewed system Pod identities immediately before removing
+the taint. An incomplete, extra, terminating, missing or replaced Pod blocks
+the stage. A normal system DaemonSet restart changes its UID, while the
+immutable qualify-SHA placement cannot be refreshed after removal through
+this workflow; stop for a separately reviewed recovery path. Pod inventory
+checks and firewall deletion are not atomic: a Pod tolerating the taint could
+arrive during deletion. Live activation stays blocked until isolated placement
+rules that out or a reviewed repository-owned isolation path is added. See
+the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
 The staged protected `canary-admit` path remains dormant while `canary.node` is
 unset. With a fresh placement receipt, it verifies the exact Node UID and boot
@@ -1728,9 +1742,11 @@ no labeled Node before mutation and again just before labeling; if another
 Node appears after the patch, admission removes its own label and retains the
 taint. `canary-release` requires the reviewed cleanup receipt
 and an empty owned firewall. It removes the label, waits until cleanup
-DaemonSet Pods are gone cluster-wide, then removes the taint; a survivor or
-timeout leaves the taint and an interrupted private receipt. Source fixtures
-do not supply live capacity or traffic qualification.
+DaemonSet Pods are gone cluster-wide, then rechecks the complete canary-node
+Pod inventory against reviewed system Pod UIDs before removing the taint. A
+survivor, incomplete inventory, changed Pod or timeout leaves the taint and an
+interrupted private receipt. Source fixtures do not supply live capacity or
+traffic qualification.
 
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
