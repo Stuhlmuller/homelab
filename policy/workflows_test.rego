@@ -176,19 +176,68 @@ bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 
 workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"name": "OpenClaw Enterprise Operations",
-	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]}}}},
-	"jobs": {"legacy": {
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"true": {"workflow_dispatch": {"inputs": {
+		"expected_sha": {}, "baseline_ref": {}, "archive_ref": {},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"], "default": "none"},
+		"enterprise_stage": {"options": ["none", "full-sync"], "default": "none"},
+	}}},
+	"jobs": {
+		"static-policy": {"permissions": {"contents": "read"}, "steps": [{
+			"env": {"LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}"},
+			"run": "inventory/none|publish-inventory/none|archive/none|publish-archive/none|verify/none|none/full-sync)",
+		}]},
+		"legacy": {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
 		"concurrency": {"group": "openclaw-enterprise-operations-production"},
 		"permissions": permissions,
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
 		"steps": [{
 			"name": "Run Legacy Stage",
 			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,
 		}],
-	}},
+		},
+		"enterprise-sync": {
+			"needs": ["static-policy"],
+			"environment": {"name": "homelab-production"},
+			"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false},
+			"permissions": {"contents": "read"},
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'full-sync'",
+			"steps": [
+				{"name": "Verify Current Main Commit Before Credentials", "run": `test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)`},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Run Full Sync", "env": {
+					"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}",
+					"GH_TOKEN": "${{ github.token }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
+				}, "run": `private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+sha256sum --check --status <<<'0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc  scripts/ci/openclaw-enterprise-full-sync.sh'
+bash scripts/ci/openclaw-enterprise-full-sync.sh
+EOF
+then
+echo "::error::Enterprise full sync blocked; private cluster diagnostics withheld."
+exit 1
+fi
+echo "Enterprise full sync completed; private cluster details withheld."`},
+			],
+		},
+	},
+}
+
+test_rejects_changed_openclaw_enterprise_sync if {
+	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	changed := object.union(candidate.jobs["enterprise-sync"], {"permissions": {"contents": "write"}})
+	mutated := object.union(candidate, {"jobs": object.union(candidate.jobs, {"enterprise-sync": changed})})
+	violations := deny with input as mutated
+	some msg in violations
+	contains(msg, "exact protected stages")
 }
 
 test_rejects_mutable_docker_action_image if {
