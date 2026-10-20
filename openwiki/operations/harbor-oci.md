@@ -163,7 +163,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:21:00.595Z
+    at: 2026-10-20T01:23:30.634Z
 ---
 
 # Harbor Private OCI Registry
