@@ -147,6 +147,29 @@ PVC or edit NFS files by hand. If the claim cannot mount or the backing share
 is full, restore the declared storage path before resuming scans. Record the
 failed cycle and verify the next scheduled run and freshness alerts recover.
 
+The temporary missing/corrupt acceptance drill uses a separate, Pod-local
+`2Gi` `emptyDir`; it never edits the retained PVC. Its two UTC hours are inert
+2099 placeholders until a reviewed change selects future slots after the
+full-cache fault and recovery. The first scheduled full dry run starts with an
+empty cache. The second starts with malformed entries for the public canary's
+package key and repository cache. A pre-token check rejects missing or invalid
+staging; after a successful scan, the wrapper validates the rebuilt public
+package entry without printing its contents. For the corrupt slot, confirm the
+`Repository cache is invalid` warning for `Stuhlmuller/renovate` in restricted
+Job logs. Full dry-run intentionally skips repository-cache saves; the wrapper
+checks the malformed repo file remains unchanged. For both slots, use restricted
+Job logs to confirm the public canary lookup and successful repository outcome;
+match the helper's rebuilt package entry and check existing canary PR continuity.
+Require a dry-run proposal or explicit policy deferral only for a due update
+not already covered by that PR. Record the two scheduled Job and Pod UIDs,
+aggregate repository outcomes, and the next normal PVC-backed Job. T042 remains
+open pending complete cache recovery evidence. Outside those two hours, the
+runner uses the retained PVC and its usual entrypoint. If a slot passes before
+Argo sync, select a new UTC hour through another reviewed PR. Remove the
+temporary helper, volume, and wrapper through reviewed GitOps after evidence
+is recorded. This drill does not prove recovery
+from a full NAS export.
+
 ## Validate and observe
 
 Before merging a consuming image reference, publish the pinned Renovate index

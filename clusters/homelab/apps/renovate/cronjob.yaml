@@ -46,6 +46,7 @@ spec:
             - name: renovate
               image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
               imagePullPolicy: IfNotPresent
+              args: [/bin/bash, /usr/src/app/cache-drill.sh]
               resources:
                 requests:
                   cpu: 250m
@@ -66,11 +67,21 @@ spec:
                   mountPath: /usr/src/app/config.js
                   subPath: config.js
                   readOnly: true
+                - name: config
+                  mountPath: /usr/src/app/cache-drill.js
+                  subPath: cache-drill.js
+                  readOnly: true
+                - name: config
+                  mountPath: /usr/src/app/cache-drill.sh
+                  subPath: cache-drill.sh
+                  readOnly: true
                 - name: github-app
                   mountPath: /var/run/secrets/renovate
                   readOnly: true
                 - name: cache
                   mountPath: /cache/renovate
+                - name: drill-cache
+                  mountPath: /cache/renovate-drill
                 - name: tmp
                   mountPath: /tmp
           volumes:
@@ -89,6 +100,10 @@ spec:
             - name: cache
               persistentVolumeClaim:
                 claimName: renovate-cache
+            # Bounded, Pod-local cache for two reviewed acceptance slots.
+            - name: drill-cache
+              emptyDir:
+                sizeLimit: 2Gi
             - name: tmp
               emptyDir:
                 sizeLimit: 8Gi

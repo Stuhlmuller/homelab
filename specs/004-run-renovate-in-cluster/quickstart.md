@@ -35,6 +35,7 @@ renovate_fixture_dir="$(mktemp -d)"
 nix develop --command npm --cache "$renovate_fixture_dir/npm-cache" --prefix "$renovate_fixture_dir" install --ignore-scripts --no-audit --no-fund --no-package-lock renovate@44.167.4
 nix develop --command node scripts/ci/renovate-discovery-path-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 nix develop --command node scripts/ci/renovate-cache-recovery-test.mjs "$renovate_fixture_dir/node_modules/renovate"
+nix develop --command node scripts/ci/renovate-cache-drill-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 ```
 
 ## Dry-run gate

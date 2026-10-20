@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const crypto = require('node:crypto');
+const cacheDrill = require('./cache-drill');
 
 const issuerPath = '/var/run/secrets/renovate/issuer-id';
 const privateKeyPath = '/var/run/secrets/renovate/private-key';
@@ -77,7 +78,8 @@ async function installationToken() {
 }
 
 module.exports = async function config() {
-  const probe = `/cache/renovate/.storage-probe-${crypto.randomUUID()}`;
+  const cacheDir = cacheDrill.prepared() ? cacheDrill.cacheDir : '/cache/renovate';
+  const probe = `${cacheDir}/.storage-probe-${crypto.randomUUID()}`;
   try {
     fs.writeFileSync(probe, Buffer.alloc(4096), { flush: true });
     fs.unlinkSync(probe);
@@ -109,7 +111,7 @@ module.exports = async function config() {
     lockFileMaintenance: { enabled: true },
     vulnerabilityAlerts: { enabled: true, labels: ['security'] },
     baseDir: '/tmp/renovate',
-    cacheDir: '/cache/renovate',
+    cacheDir,
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
     logLevelRemap: [{ matchMessage: '/^Returning cached value$/', newLogLevel: 'info' }],
