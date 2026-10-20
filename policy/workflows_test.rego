@@ -767,7 +767,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "d2cb78f74328388305aa47875b6b25f3565f6833efa5264c060dec8971af392a", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),

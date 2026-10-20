@@ -211,30 +211,43 @@ chmod 700 "$scratch/kubectl"
 sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
 forward_timeout=2400
 [[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
-timeout --signal=TERM --kill-after=5s "$forward_timeout" \
-  "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
-  --namespace traefik port-forward --address 127.0.0.1 \
-  service/traefik-private 443:443 >"$scratch/port-forward.log" 2>&1 &
-forward_pid=$!
+start_private_forward() {
+  timeout --signal=TERM --kill-after=5s "$forward_timeout" \
+    "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
+    --namespace traefik port-forward --address 127.0.0.1 \
+    service/traefik-private 443:443 >>"$scratch/port-forward.log" 2>&1 &
+  forward_pid=$!
+  local ready=false status
+  for _ in {1..30}; do
+    if ! kill -0 "$forward_pid" 2>/dev/null; then
+      break
+    fi
+    if status="$(curl --silent --show-error --noproxy '*' --max-time 5 \
+      --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
+      2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]; then
+      ready=true
+      break
+    fi
+    sleep 2
+  done
+  "$ready" || {
+    echo 'Harbor TLS and private registry challenge are not ready.' >&2
+    return 1
+  }
+}
+
+stop_private_forward() {
+  if [[ -n "$forward_pid" ]]; then
+    kill -TERM "$forward_pid" 2>/dev/null || true
+    wait "$forward_pid" 2>/dev/null || true
+    forward_pid=""
+  fi
+}
+
 hosts_added=true
 printf '%s\n' '127.0.0.1 harbor.stinkyboi.com # homelab-harbor-ci' |
   sudo -n tee -a /etc/hosts >/dev/null
-
-ready=false
-for _ in {1..30}; do
-  kill -0 "$forward_pid"
-  if status="$(curl --silent --show-error --noproxy '*' --max-time 5 \
-    --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
-    2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]; then
-    ready=true
-    break
-  fi
-  sleep 2
-done
-"$ready" || {
-  echo 'Harbor TLS and private registry challenge are not ready.' >&2
-  exit 1
-}
+start_private_forward
 
 # Credentials stay in restrictive temporary files; transfer output is withheld
 # by the workflow. Harbor validates its normal public hostname and certificate.
@@ -471,6 +484,12 @@ if [[ "$mode" == mirror ]]; then
       fi
       if "$oci_index_copy"; then
         sleep "$((1 << attempt))"
+        # A dropped Kubernetes stream can leave the long-lived forward unusable.
+        # Recheck TLS and the registry challenge before reusing partial OCI data.
+        mirror_category="transport-failed"
+        stop_private_forward
+        start_private_forward
+        mirror_category="command-failed"
       else
         sleep "$attempt"
       fi

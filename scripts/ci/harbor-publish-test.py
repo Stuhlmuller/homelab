@@ -256,6 +256,8 @@ class HarborPublicationGates(unittest.TestCase):
                     # Cleanup can interrupt startup; never expose a partial PID file.
                     (root / "forward-pid.tmp").write_text(str(os.getpid()))
                     (root / "forward-pid.tmp").replace(root / "forward-pid")
+                    with (root / "forward-pids").open("a") as recorded:
+                        recorded.write(str(os.getpid()) + "\\n")
                     if FIXTURE["failure"] == "forward":
                         print("x" * 70000 + "private port-forward fixture", file=sys.stderr)
                         raise SystemExit(13)
@@ -359,7 +361,7 @@ class HarborPublicationGates(unittest.TestCase):
                     elif FIXTURE["mirror"]:
                         assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth"):
+                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth", "mirror-regctl-forward-dies"):
                         print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
                               file=sys.stderr)
                         raise SystemExit(17)
@@ -455,6 +457,13 @@ class HarborPublicationGates(unittest.TestCase):
                         directory = Path(target.removeprefix("ocidir://").split(":", 1)[0])
                         contents = list(directory.iterdir())
                         assert contents == [] or contents == [directory / "partial"]
+                        if FIXTURE["failure"] == "mirror-regctl-forward-dies":
+                            marker = root / "regctl-forward-failed"
+                            if not marker.exists():
+                                marker.touch()
+                                os.kill(int((root / "forward-pid").read_text()), signal.SIGTERM)
+                                print("connection reset private-test-credential-must-never-appear", file=sys.stderr)
+                                raise SystemExit(22)
                         fail_read("regctl-pull", {
                             "mirror-regctl-pull-once": "TLS handshake timeout",
                             "mirror-regctl-pull-four": "TLS handshake timeout",
@@ -505,10 +514,11 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse((self.root / "host-route").exists())
         self.assertFalse((self.root / "home/.kube/config").exists())
         self.assertEqual(list((self.root / "runner").iterdir()), [])
-        pidfile = self.root / "forward-pid"
+        pidfile = self.root / "forward-pids"
         if pidfile.exists():
-            with self.assertRaises(ProcessLookupError):
-                os.kill(int(pidfile.read_text()), 0)
+            for pid in pidfile.read_text().splitlines():
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(int(pid), 0)
 
     def calls_for(self, command):
         return [
@@ -1277,7 +1287,27 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertEqual(len(reads), 3)
                     self.assertEqual(reads[0], reads[1])
                     self.assertEqual(len(set(reads)), 2)
+                    self.assertEqual(len([args for args in self.calls_for("kubectl")
+                                          if "port-forward" in args]), 2)
+                    self.assertEqual(len(self.calls_for("curl")), 2)
                 self.assert_cleaned()
+
+    def test_mirror_index_pull_restarts_dead_forward_before_retry(self):
+        self.transport_mocks(failure="mirror-regctl-forward-dies", mirror=True,
+                             registries=("docker.io",))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        pulls = [args for args in self.calls_for("regctl")
+                 if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+        self.assertEqual(len(pulls), 2)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 2)
+        self.assertEqual(len(self.calls_for("curl")), 2)
+        sudo_calls = self.calls_for("sudo")
+        self.assertEqual(len([args for args in sudo_calls if "tee" in args]), 1)
+        self.assertEqual(len([args for args in sudo_calls if "sed" in args]), 1)
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
+        self.assert_cleaned()
 
     def test_mirror_index_pull_recovers_after_four_transport_failures(self):
         self.transport_mocks(failure="mirror-regctl-pull-four", mirror=True,
@@ -1288,6 +1318,9 @@ class HarborPublicationGates(unittest.TestCase):
                  if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
         self.assertEqual(len(pulls), 5)
         self.assertEqual(len(set(pulls)), 1)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 5)
+        self.assertEqual(len(self.calls_for("curl")), 5)
         self.assertEqual([args[0] for args in self.calls_for("sleep")], ["2", "4", "8", "16"])
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
         self.assert_cleaned()
@@ -1301,6 +1334,9 @@ class HarborPublicationGates(unittest.TestCase):
                  if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
         self.assertEqual(len(pulls), 5)
         self.assertEqual(len(set(pulls)), 1)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 5)
+        self.assertEqual(len(self.calls_for("curl")), 5)
         self.assertEqual([args[0] for args in self.calls_for("sleep")], ["2", "4", "8", "16"])
         self.assertFalse((self.root / "summary").exists())
         self.assertIn("phase=authenticated-pull\n", self.public_status)
