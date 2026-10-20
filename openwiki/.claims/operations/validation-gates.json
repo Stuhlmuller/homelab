@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:33458f1742ea90acc06b129814eca272f8f4f3d0a2a70df84c43ed4ee2ce00bf",
+  "pageVersion": "sha256:121d3d77853b03ff11c83003f3db4c41e74bf1b9eff01ac1bcfa119cad56db2c",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -560,7 +560,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:b933883d848ffe00982f97002e9c12bdf21aecb56c7372ee2dc6640dc7583be4"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py#L136-L252",
@@ -1308,7 +1308,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:26ba969c81aa99cd4781a98fc07f2bdef7bb1c4b949d5c31184d34b50589adf8"
+          "version": "repo-file-v1:sha256:dd22fad7bb267904ce481c12aa9a3138c22828d3d68df80ef870714c1cc4ea15"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
@@ -1506,7 +1506,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:b933883d848ffe00982f97002e9c12bdf21aecb56c7372ee2dc6640dc7583be4"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://scripts/ci/network-policy-canary-node-test.py",
@@ -1514,7 +1514,7 @@
         },
         {
           "resource": "repo://scripts/ci/network-policy-cleanup-test.py",
-          "version": "repo-file-v1:sha256:22b4446f753a911c7366174f112bde758f40a7dd65c7233f643f4743833d3f04"
+          "version": "repo-file-v1:sha256:f8857b7d0dad8c019502ee90a7ba476965668ea9650bb83153ebc8f7195fae81"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -1522,7 +1522,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:b56381e2f295c2fdcf2d8497cdf9454262f30554523815ac2309d2baa95dd20d"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         }
       ]
     },
@@ -1684,13 +1684,13 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:b56381e2f295c2fdcf2d8497cdf9454262f30554523815ac2309d2baa95dd20d"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:42:24.095Z"
+    "at": "2026-10-20T21:46:33.950Z"
   }
 }

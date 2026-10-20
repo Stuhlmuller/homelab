@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9d4269d1d6267dd03f929d5bd4b51083c939f14d501539b1f72cf3237b531cf2",
+  "pageVersion": "sha256:911d371a6f0914cd62d2c137ab9aeac205260069922070a6b442b271038f669f",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -262,7 +262,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:b56381e2f295c2fdcf2d8497cdf9454262f30554523815ac2309d2baa95dd20d"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -349,6 +349,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:42:24.095Z"
+    "at": "2026-10-20T21:46:33.950Z"
   }
 }
