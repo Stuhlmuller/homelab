@@ -38,6 +38,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -64,6 +66,8 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-b3bdcadf54edf75020440bdd
+    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -86,10 +90,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
+generated: { by: "codex", at: "2026-10-20T21:15:11.040Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T20:48:40.649Z
+    at: 2026-10-20T21:15:11.040Z
 ---
 
 # CI/CD
@@ -186,6 +190,13 @@ stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh)
 that exits before mutation because the runner has no durable shared private
 journal and lock. The separately tested full-sync helper is not dispatched by
 this workflow. No Enterprise operation has run or passed live acceptance.
+
+For legacy `publish-archive`, the workflow now reports fixed public
+post-upload phases for archive metadata, receipt publication and both restore
+transfers while withholding private diagnostics. Run `39466313228` completed
+the bounded upload but failed under the former broad `publication-version`
+phase. No final offsite restore receipt exists; independent `verify` was not
+dispatched. Retry only from a fresh exact-current-`main` source after review.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added

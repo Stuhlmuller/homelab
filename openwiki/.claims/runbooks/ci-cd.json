@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9f73714f537fbc26dcc417ce7d3a202add82c24d96883b58ab94d7faa830188f",
+  "pageVersion": "sha256:ebe87ff0591b65e330fc3baba1cd36277286b3d75c91ba267662e99def7287cc",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5af758b681b70f5dcef18acbfca1fac98c4f857eff0ff1f7c38c8b359e3343be"
+          "version": "repo-file-v1:sha256:714a05d106487f15e36dce1bf2d3b6c2bc8994a6f4eb623aac2bfafed64eedde"
         }
       ]
     },
@@ -206,11 +206,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:5b09ae06373d285208cd6d605e0ddd128097df787b4200d7e2c0f3877966f39a"
+          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:6ed322e2a9ce8a556ab35d6279e2254e89cc9a455cb296bb0edfde718a3f31f2"
+          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -302,11 +302,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:f6f419c9c5c83ecd43bf52579cdb9faab329e5457a9992ea70fdac9244d10327"
+          "version": "repo-file-v1:sha256:80380e70ead853be40d1a23d23c92515f62fc72c7386fc4bc79d29fa469c80ec"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:2137c2de8ffa05d10510f1b7bf2153fabd14414c044bdc90c00ebe6b212da2ac"
+          "version": "repo-file-v1:sha256:05f3e566bd619c835da25ecce45b1296f02ee7e82feaf723c9fd15fbcfb20877"
         }
       ]
     },
@@ -327,10 +327,28 @@
           "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
         }
       ]
+    },
+    {
+      "id": "claim_7ecdccd425ea40cbaff08fc602394d17",
+      "statement": "The protected legacy publish-archive workflow now reports fixed public post-upload phases for archive metadata, receipt publication, and both restore transfers while withholding private diagnostics. Run 39466313228 failed under the former broad publication-version phase after bounded upload; it produced no final offsite restore receipt and independent verify was not dispatched.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L153-L169",
+          "version": "repo-lines-v1:sha256:8540dbd2cc99740adb4d2666cb9f8380b1ce8b57d3e88f8568df4b17be82633f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4Y2ZlNTVjMGRhOGZhYmNjMjVmZDBkYmFhZDFiOTY1M2E3YTZmMTdkZTEwZjU3NjQyNzAwMzUxZDNhN2U5MjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZmNkNWNhNjVlNTYwNWZmNTA5MmRiMTQ5ZGUxMzQxZGEyODQxMzQzYTJkNGIyZjFmMDM2MzBlZDE2NGNkYzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY5NmM3NmU2MzI1MmVjZDBhZmZiYzI5ZTBkNDUxZmVjYzdmNzRjYmY1Mjk2MDg3MGQwMjNjZGMwOGE0OGZiYjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhMDQyYTc5YWIwZWNlNzg5MDFmMGU1NGQ1YTRmOGMwMTQwYzM0ZjU5NThkMTZiYzZjMDQyODk4ZTIzNjllZWEifQ"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L54-L60",
+          "version": "repo-lines-v1:sha256:ecd3f730d672fe36183a1d83173ac0e2eb529b4fc85762719765aa7f3082aa48:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmZjZjkwMjcyNTlmNzljYTEwOTcxZTg1MTY5YzU2YzY2MzA0NjRiZmMwN2ZjNmY0NmM2MmUxMTRhYmIxZTA2OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDgwODNkMjM0MTg0YWYxMTY4Y2NmNWM4OWNjNjU4ZjIyZTZmZmQ5NmYwMzhkZjI0NzQ0ODVjNTQwOGIxYmZkZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGVlYTkyMGNkNTZjNTJjYzE5YmQwZDJjM2JhYzVmZjZiMzMxNGUzMjU3YjVjNzg2OTZlYmJhNDA1ZTY3NmViMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjNjODRhZTc5ZGU0MjY4NWYxMmVjYmMyOGRlYTQ5ZWRjNDY2ZGM4YWQyNWU1OTJkNzExNDY2MjMzZGEyOThkNiJ9"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh#L308-L329",
+          "version": "repo-lines-v1:sha256:5d3c78e661c6721ae6333c80d34df1b168cb7390c5d42c00eff667e51b1b0b13:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkNjE4MmZkMTcyMmFhNjc5MjEyNzMwZGQ5YzFkOWQwOTlhYTYwNWNjNDc5NTA1YTAwODUwMDQzNmQ4MGRmYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0YzI3NjRjZDI1YjQ1MGMxNDZjODkwNTk5MTY4NzE2NTI0ODVlY2Q3NzBmODdmMDYwMTA3M2NlOTBlMzc5ODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4N2U3N2I2NDRkYTJmM2M3ZWJiZmY2NDdmYTE4YzJkZTE1YWM3MTQxNmM4MDFiN2IxZjhhNWVkOWYyYjJmY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVmYzkxZGI3YzBmMzJiYTgxYzIyZWEyOTJkZDFiYTA0YThjZDcxYTlkMDdmZTViMzhkMDIwMmFlYmFiNzc5MmUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T20:48:40.649Z"
+    "at": "2026-10-20T21:15:11.040Z"
   }
 }

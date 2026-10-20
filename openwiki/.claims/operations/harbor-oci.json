@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2d334a949dbea77597dcc0a7da74079b36bf0ad9c496384057cdfde4d757d0ad",
+  "pageVersion": "sha256:bf049f6945d7cb49f5d01b228c254e9b60ee0e9adf7bd6e0fba274d3d2b2390b",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
+          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
+          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
+          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
         }
       ]
     },
@@ -830,7 +830,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
+          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
         }
       ]
     },
@@ -873,6 +873,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T20:48:40.649Z"
+    "at": "2026-10-20T21:15:11.040Z"
   }
 }

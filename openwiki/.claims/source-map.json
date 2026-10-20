@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ed7b0d97a91f3f54e8fa4167ca93e131bcdfcf67336ed5be0c03866b2d1cbda2",
+  "pageVersion": "sha256:c59ab635c6017f5e697d722ab38c36c06341e0ef5891013e028b27189b392044",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -212,7 +212,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:5b09ae06373d285208cd6d605e0ddd128097df787b4200d7e2c0f3877966f39a"
+          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -220,7 +220,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
-          "version": "repo-file-v1:sha256:987c24c63e4c9127ddf9724f6dfd5f6c4bf041d139e3486ccfd033aecbfffd83"
+          "version": "repo-file-v1:sha256:80b3983660b45df9ecfc590c894865ccc5d955c4b302d99f39c0792ecaeb37d0"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -234,11 +234,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:5b09ae06373d285208cd6d605e0ddd128097df787b4200d7e2c0f3877966f39a"
+          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:6ed322e2a9ce8a556ab35d6279e2254e89cc9a455cb296bb0edfde718a3f31f2"
+          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -293,6 +293,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T20:48:40.649Z"
+    "at": "2026-10-20T21:15:11.040Z"
   }
 }
