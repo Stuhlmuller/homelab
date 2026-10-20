@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3737f3f179e4cf161a67b0e3d09d5c90995ea5523090a67266eea690b8fc7ecc",
+  "pageVersion": "sha256:f3a9c72753a68dc28e36e0ead3baeca023bbff7185ba763583afaad89f7bab99",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -135,10 +135,28 @@
           "version": "repo-file-v1:sha256:84a474308c9086265b8c5769d9bad552f2d14ef84f821456ca5a6281459fa24c"
         }
       ]
+    },
+    {
+      "id": "claim_a49bb33b6ca940219917d50829da991d",
+      "statement": "The Octelium source catalog stages a separate homelab-ci-plan workload identity and Kubernetes API read-or-dry-run policy, but merging the source neither applies it nor issues a plan token; protected PR plans still read the existing environment secret.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml#L88-L119",
+          "version": "repo-lines-v1:sha256:1256ee1d78cb551cb7e7b17d6c4294aa57f0fcf41aeb06e555f784e3a7388d31:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0MzM0YjU1NTFhOWRmMTcwODQ1YzNiZTQyNjFlYmYzOGJiM2QwOWI4ZWUxNmI0ZTc4M2IyN2E2YmViNDJmODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxMjNkZDRkMWZmMzkxNDEzOTk0NmVjMmQzNmIxYWRkZmRmOTRmMjI2MzU2NmFjNmMzMWI0M2Y1NTIwOWM3ZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhZTBmZjJkZjgyNzE5M2QzZGVmM2ExZDgzNTNkNTdhNTYyYzVjYWEwZDEyNzA3ZGRiOWMyNTAyODU3NTgzNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1ODRiYTZhZGE3NTgzOTdhZDI0OGY4YjdkZmU5ZWI2NGFhYTQ0OTNlNmE3YmU3MmZiMjQwMGJlZDk3MDE5ZDEifQ"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml#L242-L251",
+          "version": "repo-lines-v1:sha256:3f93591b0e55f257da8285a9131be27ea4a6512bbd53576cbc599c7e0fb76a5c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYmRlMTQyMDc5ODY3YTYyMWU5N2M4ZDc5NDZiNDA0NGEzMjI4NWE1NTk4ZTZhNmZhYWFjYmFiYjFlODdhNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MGZiNTExZWNmMmMwNjg4ZTU3YWVhY2RlOTY0ZmQ4NzM5ZGUzNWJmZjBkMzFjZWQzYjBkYTRmZGIwNTk5MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4MDliN2ViMDM1NjFlODQ4MjlkNDljZWRiOTJkY2U4ZWUzYzE5ZTgxMjBiMWJhMzM5MDI5MTlhNGM5ZWQzNWIifQ"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml#L98-L139",
+          "version": "repo-lines-v1:sha256:7dd469848d6a92acb67e79f642e020dee1ccad5dfad2a9b491f06a64f92a2956:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3YmRiZGJhY2Q1ODVlNzZjNDU2ZmQ5NjZiYTc2MjU0ZDk0YzZiM2JlY2Q1MjFjMDJlYzFkMmQ0ZTZmYTgyN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNmY0ZGRhM2VhZWMwMzBmNTUyODI4MWFlYjI1OGRmYzRiOTAyMDhlYjllNWRiZDkxZGJlY2EzMWRiZDFhNTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExODRjN2FhNmEzNjBlMTM5NjNhNWQwN2IyZjczZjc3N2U2NDgwYjUyMTk3ZDBkZTRjYzBhZDFmOTk3MWIzOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0NmM2NjU1ZWJmN2EyYzgxMTY0ZWQyYWI4YjJmYzk2YjM1ZGJiYjQ4ZTQyZmVmZGVlZDdiYTY4YWQ3N2Y0NDcifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:06:01.306Z"
+    "at": "2026-10-20T04:41:27.681Z"
   }
 }

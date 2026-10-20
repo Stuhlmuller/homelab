@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9f1a887ad5aa2311aef004d8d308214ec42d6d2a8398d3048b401e00c7440f4e",
+  "pageVersion": "sha256:e59416128d1c8e671af6a79fea3e7da1c21f2ca639f838143202caaccbee32e7",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -168,7 +168,7 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-access-test.py",
@@ -201,6 +201,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:33:56.360Z"
+    "at": "2026-10-20T04:41:27.681Z"
   }
 }

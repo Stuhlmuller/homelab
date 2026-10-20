@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9864e76d9206949c3baf8ff7cb979bd61f215178069bbef731d845eebc2d5af2",
+  "pageVersion": "sha256:4e4999793185a2bb9bbafc700851bbd64231c063562cbdbc90b0b4c3074cf51b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -776,7 +776,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -935,7 +935,7 @@
       "statement": "Enterprise reconciler fixtures run in static and offline validation. `check` attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded `reconcile` may journal and POST/adopt the prepared logical Namespace, then blocks before Agent creation, while `verify` remains read-only and blocked.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L61-L66",
+          "resource": "repo://scripts/ci/offline-checks.sh#L62-L67",
           "version": "repo-lines-v1:sha256:4708ad92af0c4026a38532a319907dfbaace12b2ff79cbc9ff55ecd81f3f695a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjY3OTFkZjZiNDRhOTM3YzA3MTFmMzkyZjhkMDZhYWIzODExNzA0ZWYyYjRhNjU0NDhkYmExNzJjYjQzMjc4YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE1M2RjMzBiNjdhYzRmYjY0NjkyOTRiMWYzNTRkOTUxODRjOTVkYWIzZTQzYjE4NDBmOGZlYzE2YmU3ZWM4ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDJhYTYxMjA3Y2QxMzRmYWFjMDE2ZmFiNTIzM2JkNGJmOGNmZjEzNDA3NTk5YTcwNDQxYjdhZGFjOTgxMGNlNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGZhZTIyNjdkMTUxMjcwN2VmMWMxYzI3ZWZhOTI1N2FmNTYzOWMwYWU0ZDIyY2I2MjJjOWNmZTUxMzQ3NGExMSJ9"
         },
         {
@@ -1130,7 +1130,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -1174,7 +1174,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -1191,10 +1191,28 @@
           "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
+    },
+    {
+      "id": "claim_e3300df1739642af859195d25bbb30a2",
+      "statement": "The staged homelab-ci-plan policy has an offline fixture for read requests, Kubernetes dry-run writes, live-write denial, and subresource denial; the source check does not prove live enforcement or issue a credential.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml#L99-L139",
+          "version": "repo-lines-v1:sha256:240f6c4e858d7ce5718d2b1c4626617d14fde282a80ac00108ffc8259bb8f44a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNmY0ZGRhM2VhZWMwMzBmNTUyODI4MWFlYjI1OGRmYzRiOTAyMDhlYjllNWRiZDkxZGJlY2EzMWRiZDFhNTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNmY0ZGRhM2VhZWMwMzBmNTUyODI4MWFlYjI1OGRmYzRiOTAyMDhlYjllNWRiZDkxZGJlY2EzMWRiZDFhNTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkNWM1YTRiZjI2NGJjN2NmMWNhMDkwNmVhNTY3NDE2N2I1ZmY5YzMyZTBkMmY2YjAwY2ZmOTJmYTJhOGRhZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0NmM2NjU1ZWJmN2EyYzgxMTY0ZWQyYWI4YjJmYzk2YjM1ZGJiYjQ4ZTQyZmVmZGVlZDdiYTY4YWQ3N2Y0NDcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py#L55-L92",
+          "version": "repo-lines-v1:sha256:aa488094c82a872b7528dd58c28318ba1f3973616893709dce08f4590ef8c317:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3MzRmY2Y5ZDRiYzI4ODI0YThhMTk5MWY2OWZiNjBkMWQzZDNkY2E3MzBiMzQ0NWY5MDRmZjRkNzkxNzdkYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5N2JmMWViNTA2YjY3NTIwNGM4ODAwYzA2ZGZiZWE5ZGYwYjQxNGFjZGY1MjZjNTVkM2M1YjEyOWE4YWE4ZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwODI3OWJiYWIxMDRjMTc0M2E5MDAwNWE2MWY1MzA2YzNmZDMxZjUyZGE3ZjZkY2FmMjZmOTE5ZDljZmVhYjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh#L20-L20",
+          "version": "repo-lines-v1:sha256:85c9b710097a466207d3ac19689c150bc769fd461867a6a39e3fb8267b094db2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODVjOWI3MTAwOTdhNDY2MjA3ZDNhYzE5Njg5YzE1MGJjNzY5ZmQ0NjE4NjdhNmEzOWUzZmI4MjY3YjA5NGRiMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODVjOWI3MTAwOTdhNDY2MjA3ZDNhYzE5Njg5YzE1MGJjNzY5ZmQ0NjE4NjdhNmEzOWUzZmI4MjY3YjA5NGRiMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjA2MWM3MGNhZjEwMzkxMTMxMjE3MzQzNjExNDExM2EyNzZmMDllZjVkNWJjN2QwNTU5MjI5MzE2MDM0OGRjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWYzN2U5ZGJmNjI1Mzg4NGU2YmI3M2JlZTIwZmZkYTI2YzE4NjBkN2E5ZTk5NTQ3ZjYyMzdmMmY0NTMzMWU0NyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:06:01.306Z"
+    "at": "2026-10-20T04:41:27.681Z"
   }
 }

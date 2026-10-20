@@ -30,10 +30,14 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-a176afce8833edc1068e3844
@@ -48,10 +52,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T04:06:01.306Z" }
+generated: { by: "codex", at: "2026-10-20T04:41:27.681Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:06:01.306Z
+    at: 2026-10-20T04:41:27.681Z
 ---
 
 # CI/CD
@@ -63,6 +67,11 @@ to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
+
+The Octelium catalog stages a separate `homelab-ci-plan` User and a
+read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
+applies the catalog nor issues a plan token; the PR plan still reads its
+environment secret.
 
 The separate [Octelium Private Kubernetes Apply](../../.github/workflows/octelium-private-kubernetes-apply.yml)
 dispatch checks its selected `main` commit before entering the protected job.

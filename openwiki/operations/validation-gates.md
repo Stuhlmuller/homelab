@@ -92,6 +92,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -158,6 +160,8 @@ sources:
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-94b1fdad9ed1c1d7d6286c4a
+    resource: repo://scripts/ci/octelium-plan-policy-test.py
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -250,10 +254,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T03:45:43.875Z" }
+generated: { by: "codex", at: "2026-10-20T04:41:27.681Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:06:01.306Z
+    at: 2026-10-20T04:41:27.681Z
 ---
 
 # Validation Gates
@@ -669,6 +673,11 @@ empty patch to receive the specific admission denial. Its `apply` mode verifies
 the protected tag's administration permission without changing resources.
 
 ## Entra owner conversion and Octelium identity checks
+
+The staged `homelab-ci-plan` catalog policy has an offline fixture for read
+requests, Kubernetes dry-run writes, live-write denial, and subresource denial.
+The fixture checks repository source only; it does not prove live Octelium
+enforcement or issue a plan credential.
 
 Offline validation runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
 native APIs to retain the immutable owner `oid` and disabled email fallback.
