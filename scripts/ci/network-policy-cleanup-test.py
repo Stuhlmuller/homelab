@@ -183,6 +183,13 @@ class FirewallCleanupTests(unittest.TestCase):
                 commit("change canary AppProject permissions")
                 with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                     transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                gate = root / "scripts/ci/network-policy-registration-test.py"
+                gate.parent.mkdir(parents=True, exist_ok=True)
+                gate.write_text("weakened static phase check\n")
+                commit("change protected static gate")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
 
     def test_unadmitted_config_refuses_before_any_cluster_command(self):
         with patch.dict(SUT["PLATFORM"], {
