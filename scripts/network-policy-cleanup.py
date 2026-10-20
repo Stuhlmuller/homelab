@@ -525,6 +525,8 @@ def execute(args):
         if plan:
             if inspect_cluster(config, placement) != (pod, pod_uid) or snapshot(pod) != state:
                 raise ValueError("cleanup identity or firewall changed before deletion")
+            # shortcut: Pod inventory and firewall deletion are not atomic; prove
+            # exclusive placement before live rollout or add a reviewed isolation path.
             for operation in plan:
                 require_current_main(args.expected_sha)
                 exec_cleanup(pod, *operation)

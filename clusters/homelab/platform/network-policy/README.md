@@ -104,7 +104,10 @@ Claims, and run metadata; no other source changes are accepted.
 Quiesce tenants and sync the cleanup Pod. Capture, approval, cleanup, and
 release require a complete live inventory of Pods assigned to the canary:
 exactly the reviewed `systemDaemonSetPods` identities plus the validated
-cleanup Pod. A foreign, replaced, or extra Pod blocks the stage. A normal
+cleanup Pod while it runs. Release rechecks that only the reviewed system Pods
+remain after cleanup Pod deletion, immediately before removing the taint. An
+incomplete inventory or foreign, terminating, replaced, or extra Pod blocks the
+stage. A normal
 system DaemonSet Pod restart changes its UID and blocks this flow; the
 immutable qualify-SHA placement cannot be refreshed after removal through
 the current workflow. Stop for a separately reviewed recovery path; do not
@@ -138,6 +141,10 @@ privately. Approval requires a fresh dispatch by GitHub actor ID `57728706`
 (`rstuhlmuller`);
 reruns and other actors cannot attest ownership. The production environment's
 branch policy does not supply a second reviewer.
+Inventory checks and firewall deletion are separate operations. A Pod that
+tolerates the isolation taint could arrive during deletion before the next
+inventory check. Keep live activation blocked until isolated placement proves
+that cannot happen, or add a reviewed repository-owned isolation path.
 
 Each ownership receipt contains `format: 1`, `verified: true`, the exact
 `sourceSha`, `evidenceSourceSha`, `captureRunId`, `node`, `nodeUid`, `bootID`,
@@ -159,7 +166,8 @@ prune commits still lead to the current `main` SHA and the cleanup snapshot,
 capture run, and node identity all match. Keep the cleanup DaemonSet present
 until release: the stage rechecks that its node-local firewall has no
 owned objects, removes the selector label, waits for every cleanup DaemonSet Pod
-across the cluster to be deleted, then removes the dedicated taint. If Pod
+across the cluster to be deleted, rechecks the complete node Pod inventory,
+then removes the dedicated taint. If Pod
 deletion stalls, the taint remains
 and recovery requires direct review. It checks Node UID, boot ID, and
 `resourceVersion` before each patch and retains private attempt, interrupted,
