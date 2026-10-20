@@ -118,6 +118,21 @@ is an additional inventory input, not a deployed policy. All 17 generated
 Cordium, Octelium, and Octelium Enterprise policies now have source-bound
 fixtures. Their traffic, broad `ws-main` and `svc-upstream` egress, and the
 isolated canary remain unqualified; T018 and T027 remain open.
+
+At 2026-10-20 17:59 UTC, a fresh read-only inventory found the same 209 active
+Pods and 66 live policies. All 49 live source-owned policies match current
+Kustomize renders after only absent-versus-empty rule-list normalization; the
+17 Genesis-owned policies match their pinned complete-spec fixtures and live
+managedFields owners. Six rendered policies are absent from live state: two
+restore overlays and four dormant Enterprise policies. There is no observed
+policy drift. The current inventory still reports 196 Pods without egress
+isolation, 21 unreviewed egress policies, ten strict wildcard-egress rules
+across nine policies, and nine all-source ingress rules. The earlier 18-rule
+wildcard count remains a historical snapshot, not a current finding count.
+The six corrected DNS policies now match live specs, but DNS traffic, generated
+all-port public egress, ingress clients and lifecycle behavior still need
+isolated-canary proof. T018 and T027 remain open; firewall enforcement remains
+disabled. See the dated owner and render-hash audit in the policy review.
 Read-only `kubectl top nodes` at 2026-10-18 11:57 UTC showed memory use of
 69% on `acer`, 82% on `zimaboard-0`, 85% on `zimaboard-1` and 81% on
 `zimaboard-2`; all four nodes were Ready and none had a dedicated canary
