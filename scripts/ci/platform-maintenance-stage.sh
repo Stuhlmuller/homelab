@@ -61,7 +61,7 @@ load_receipt() {
   local key="$1" target="$2" versions version metadata checksum actual
   versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$key")"
   version="$(jq -er --arg key "$key" '
-    if .IsTruncated != true and (.DeleteMarkers // []) == [] and
+    if .IsTruncated == false and (.DeleteMarkers // []) == [] and
        (.Versions | length) == 1 and .Versions[0].Key == $key and
        (.Versions[0].IsLatest == true) and
        (.Versions[0].VersionId | type == "string" and . != "" and . != "null")

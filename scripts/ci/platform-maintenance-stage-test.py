@@ -113,12 +113,12 @@ class PlatformStageTests(unittest.TestCase):
                         source.index('python3 scripts/network-policy-cleanup.py'))
 
     def load_cleanup_receipt(self, versions=None, markers=None, body=b"reviewed receipt",
-                             content_length=...):
+                             content_length=..., truncated=False):
         key = f"openclaw-enterprise/platform/receipts/{SHA}/firewall-ownership.json"
         version = "reviewed-version"
         versions = versions if versions is not None else [
             {"Key": key, "VersionId": version, "IsLatest": True}]
-        payload = {"IsTruncated": False, "Versions": versions,
+        payload = {"IsTruncated": truncated, "Versions": versions,
                    "DeleteMarkers": markers if markers is not None else []}
         checksum = base64.b64encode(hashlib.sha256(b"reviewed receipt").digest()).decode()
         metadata = {"VersionId": version, "ServerSideEncryption": "aws:kms",
@@ -179,6 +179,12 @@ aws() {
                  [{"Key": key, "VersionId": "deleted-version", "IsLatest": False}])):
             with self.subTest(versions=versions, markers=markers):
                 result, _, trace = self.load_cleanup_receipt(versions, markers)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(trace, [])
+
+        for truncated in (True, None, "unknown"):
+            with self.subTest(truncated=truncated):
+                result, _, trace = self.load_cleanup_receipt(truncated=truncated)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(trace, [])
 
