@@ -7,7 +7,8 @@ program node firewall rules; the Pod mounts only the shared xtables lock.
 Its health endpoint listens on loopback on the selected node.
 
 The Argo Application registration is staged with automatic sync disabled. Its
-selector currently matches no node. Do not sync or label a node until the legacy
+selector currently matches no node. Admit only a reviewed, isolated canary
+before live qualification. Keep enforcement off other nodes until the legacy
 assistant archive, supported platform upgrades, full policy-owner/render review,
 capacity admission, owned-rule cleanup, and live canary traffic/lifecycle
 qualification pass the [platform contract](../../../../specs/003-replace-openclaw-enterprise/contracts/platform.md).
@@ -97,8 +98,10 @@ After the `owned-cleanup` receipt is verified and the fixture namespace is
 absent, dispatch protected `canary-release` on the same current `main` SHA with
 `cleanup_run_id` set to the verified cleanup run. Keep the cleanup DaemonSet
 present until release: the stage rechecks that its node-local firewall has no
-owned objects, then removes the selector label before the dedicated taint.
-It checks Node UID, boot ID, and `resourceVersion` before each patch and retains
-private attempt, interrupted, and final receipts. A newer `main` requires a
+owned objects, removes the selector label, waits for its Pod to be deleted,
+then removes the dedicated taint. If Pod deletion stalls, the taint remains
+and recovery requires direct review. It checks Node UID, boot ID, and
+`resourceVersion` before each patch and retains private attempt, interrupted,
+and final receipts. A newer `main` requires a
 fresh source-bound placement and cleanup receipt; no stage infers clearance
 from a missing DaemonSet.

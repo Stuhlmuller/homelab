@@ -8,6 +8,7 @@ import re
 import runpy
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -146,6 +147,37 @@ def validate_cleanup(cleanup, placement, source_sha):
         raise ValueError("verified owned-firewall cleanup receipt is required")
 
 
+def wait_for_cleanup_pod_deletion(config, placement, pod_name, timeout_seconds=120):
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        node, labeled, tainted = node_state(config, placement)
+        if labeled or not tainted:
+            raise ValueError("canary Node lost its release isolation state")
+        listing = CLEANUP["kubernetes_json"]("get", "pods", "-A", "--field-selector",
+                                             f"spec.nodeName={config['canary']['node']}",
+                                             "--chunk-size=0")
+        if not isinstance(listing, dict) or not isinstance(listing.get("items"), list):
+            raise ValueError("cleanup Pod inventory is incomplete")
+        cleanup_pods = []
+        for pod in listing["items"]:
+            if not isinstance(pod, dict) or not isinstance(pod.get("metadata"), dict):
+                raise ValueError("cleanup Pod inventory has an invalid entry")
+            metadata = pod["metadata"]
+            owners = metadata.get("ownerReferences", [])
+            if not isinstance(owners, list):
+                raise ValueError("cleanup Pod ownership is invalid")
+            if metadata.get("namespace") == "kube-system" and (
+                    metadata.get("name") == pod_name or
+                    any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
+                        owner.get("name") == CLEANUP["CLEANUP"] for owner in owners)):
+                cleanup_pods.append(pod)
+        if not cleanup_pods:
+            return node
+        if time.monotonic() >= deadline:
+            raise ValueError("cleanup Pod remains; isolation taint retained")
+        time.sleep(2)
+
+
 def execute(args):
     if args.config.resolve() != CONFIG or not PLATFORM["SHA"].fullmatch(args.expected_sha):
         raise ValueError("canary stage requires committed input and exact source SHA")
@@ -205,7 +237,12 @@ def execute(args):
                              if item.get("key") == CANARY)
                 patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
                              {"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
-                             {"op": "remove", "path": LABEL_PATH},
+                             {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
+                node = wait_for_cleanup_pod_deletion(config, placement, pod)
+                require_runtime_absent(False)
+                index = next(index for index, item in enumerate(node["spec"].get("taints", []))
+                             if item.get("key") == CANARY)
+                patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
                              {"op": "remove", "path": f"/spec/taints/{index}"}],
                       args.expected_sha)
         require_current_main(args.expected_sha)

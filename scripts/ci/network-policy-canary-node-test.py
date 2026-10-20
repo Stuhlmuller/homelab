@@ -59,6 +59,13 @@ def system_pod():
             "spec": {"nodeName": "zimaboard-1"}}
 
 
+def cleanup_pod():
+    pod = system_pod()
+    pod["metadata"].update({"name": "cleanup-pod", "uid": "cleanup-pod-uid"})
+    pod["metadata"]["ownerReferences"][0]["name"] = SUT["CLEANUP"]["CLEANUP"]
+    return pod
+
+
 def apply_patch(state, operations):
     for operation in operations:
         parts = [part.replace("~1", "/").replace("~0", "~")
@@ -162,10 +169,12 @@ class CanaryNodeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
-    def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False):
+    def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
+                   cleanup_pods=None):
         commands, records, events = [], [], []
         self.last_records = records
         self.last_events = events
+        cleanup_inventory = iter(([cleanup_pod()], [])) if cleanup_pods is None else None
         initial_foreign_labels = {"foreign.example/owner": "keep"}
         initial_foreign_taints = [{"key": "foreign.example/maintenance",
                                    "value": "yes", "effect": "NoExecute"}]
@@ -174,6 +183,11 @@ class CanaryNodeTests(unittest.TestCase):
             if args[:2] == ("get", "node"):
                 return copy.deepcopy(state)
             if args[:2] == ("get", "pods"):
+                if action == "release":
+                    events.append("cleanup-inventory")
+                    current_pods = (next(cleanup_inventory) if cleanup_inventory is not None
+                                    else cleanup_pods() if callable(cleanup_pods) else cleanup_pods)
+                    return {"items": copy.deepcopy(current_pods)}
                 events.append("inventory")
                 current_pods = pods() if callable(pods) else pods
                 return {"items": copy.deepcopy([system_pod()] if current_pods is None
@@ -212,7 +226,8 @@ class CanaryNodeTests(unittest.TestCase):
                     "cleanup_plan": lambda *_: ([("iptables-nft", "-D", "owned")] if
                                                  remaining else [], 0, 0),
                     "write_record": lambda _path, record, replace=False:
-                    records.append(copy.deepcopy(record))}), patch.dict(
+                    records.append(copy.deepcopy(record))}), patch.object(SUT["time"],
+                    "sleep", lambda _: None), patch.dict(
                     SUT["execute"].__globals__, {"require_current_main": lambda _: None}):
             args = argparse.Namespace(action=action,
                                       config=ROOT / "scripts/config/platform-maintenance.json",
@@ -239,12 +254,27 @@ class CanaryNodeTests(unittest.TestCase):
 
     def test_release_removes_only_owned_label_then_taint(self):
         commands, state = self.run_action("release", node(admitted=True))
-        self.assertEqual(len(commands), 1)
+        self.assertEqual(len(commands), 2)
         self.assertEqual([(item["op"], item["path"]) for item in commands[0][2:]],
                          [("test", SUT["LABEL_PATH"]), ("test", "/spec/taints/1"),
-                          ("remove", SUT["LABEL_PATH"]), ("remove", "/spec/taints/1")])
+                          ("remove", SUT["LABEL_PATH"])])
+        self.assertEqual([(item["op"], item["path"]) for item in commands[1][2:]],
+                         [("test", "/spec/taints/1"), ("remove", "/spec/taints/1")])
+        self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory",
+                                            "cleanup-inventory", "taint"])
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(len(state["spec"]["taints"]), 1)
+
+    def test_release_retains_taint_while_cleanup_pod_remains(self):
+        state = node(admitted=True)
+        with patch.object(SUT["time"], "monotonic", side_effect=[0, 121]):
+            with self.assertRaisesRegex(ValueError, "cleanup Pod remains"):
+                self.run_action("release", state, cleanup_pods=lambda: [cleanup_pod()])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory"])
+        self.assertEqual([record["status"] for record in self.last_records],
+                         ["started", "interrupted"])
 
     def test_release_refuses_remaining_firewall(self):
         with self.assertRaisesRegex(ValueError, "owned firewall objects remain"):
