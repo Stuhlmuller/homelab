@@ -131,11 +131,18 @@ class RecoveryBoundaries(unittest.TestCase):
                 fixture.config, fixture.status_path, fixture.baseline_path,
                 fixture.observed_path, fixture.archive_root)
         expected = LEGACY.retirement.verify_archive(fixture.config, receipt)
+        self.assertEqual(set(expected["restoredDatabases"]), set(fixture.config["requiredLocal"]))
+        bundle = receipt.parent / "legacy.tar.gz"
+        archive_sha = LEGACY.retirement.digest(bundle)
         self.active()
         with patch.object(self.api, "post_accepted", side_effect=OCE.Blocked("stop unavailable")):
             with self.assertRaisesRegex(OCE.Blocked, "stop unavailable"):
                 self.stop()
+        incompatible = dict(fixture.config, localClaim="unrelated-claim")
+        with self.assertRaisesRegex(ValueError, "committed recovery contract"):
+            LEGACY.retirement.verify_archive(incompatible, receipt)
         self.assertEqual(LEGACY.retirement.verify_archive(fixture.config, receipt), expected)
+        self.assertEqual(LEGACY.retirement.digest(bundle), archive_sha)
         self.assertEqual(self.api.agents["agt_one"]["desiredRuntimeState"], "running")
         self.assertEqual(self.journal()["pending"], {"operation": "stop"})
 
@@ -168,11 +175,44 @@ class RecoveryBoundaries(unittest.TestCase):
         tenant = {"kind": "Pod", "metadata": {"namespace": "openclaw-agents",
                                               "name": "agent-one"},
                   "status": {"phase": "Running"}}
+        canary = CLEANUP["CANARY"]
+        node = {"metadata": {"uid": "node-uid", "labels": {canary: "true"}},
+                "spec": {"taints": [{"key": canary, "value": "true",
+                                      "effect": "NoSchedule"}]},
+                "status": {"nodeInfo": {"bootID": "node-boot"},
+                           "conditions": [{"type": "Ready", "status": "True"}]}}
+        placement = {"nodeUid": "node-uid", "bootID": "node-boot"}
+        namespace_check = ("kubectl", "--request-timeout=20s", "get", "namespace",
+                           CLEANUP["FIXTURE_NAMESPACE"], "--ignore-not-found", "-o", "json")
         for phase in ("Running", "Unknown"):
             with self.subTest(phase=phase):
                 tenant["status"]["phase"] = phase
-                with self.assertRaisesRegex(ValueError, "not quiesced"):
-                    CLEANUP["ensure_quiesced"]([tenant])
+                reads = []
+                commands = []
+
+                def kubernetes_json(*args):
+                    reads.append(args)
+                    if args == ("get", "node", "zimaboard-1"):
+                        return node
+                    if args == ("get", "pods,deployments,statefulsets,replicasets,"
+                                "daemonsets,jobs,cronjobs", "-A"):
+                        return {"items": [tenant]}
+                    raise AssertionError(f"unexpected Kubernetes read: {args}")
+
+                def command(*args):
+                    commands.append(args)
+                    if args == namespace_check:
+                        return ""
+                    raise AssertionError(f"cleanup command ran before quiescence: {args}")
+
+                with patch.dict(CLEANUP["inspect_cluster"].__globals__,
+                                {"kubernetes_json": kubernetes_json,
+                                 "command": command}):
+                    with self.assertRaisesRegex(ValueError, "not quiesced"):
+                        CLEANUP["inspect_cluster"](
+                            {"canary": {"node": "zimaboard-1"}}, placement)
+                self.assertEqual(len(reads), 2)
+                self.assertEqual(commands, [namespace_check])
         tenant["status"]["phase"] = "Succeeded"
         CLEANUP["ensure_quiesced"]([tenant])
 
