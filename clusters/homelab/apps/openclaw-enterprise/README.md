@@ -46,13 +46,18 @@ console Service and Traefik Pods. Verify proxy header rewriting and the actual
 Envoy-to-agent source addresses before private route cutover.
 
 The Secret's `openclaw.dev/installation-id` annotation cannot be known until
-bootstrap. The T041 protected selected-Driver proof must set/check that annotation
-against `GET /installation` and verify both Ready Pods' exact startup binding
-before reconciliation. The CLI's read-only `check` gathers that proof; the
-annotation binder is pending. With its protected credential file, exact main
-SHA and journal, `reconcile` can create/adopt the logical `claw` Namespace in
-the prepared `openclaw-agents` namespace, one native Agent Configuration, and
-one stopped Embedded Agent. The Configuration uses native model reference
+bootstrap. The T041 protected binding path must set/check that annotation against
+`GET /installation` and verify both Ready Pods' exact startup binding before
+reconciliation. `scripts/openclaw-enterprise-bind-installation.py` supplies the
+source-only binder: it requires protected exact-`main` dispatch and a private
+bootstrap-key file, proves the reviewed Secret and Ready controllers before and
+after a UID/resource-version guarded annotation patch, and blocks on ambiguity.
+It is not yet wired into a protected post-bootstrap workflow. The CLI's
+read-only `check` consumes the resulting proof. With its protected credential
+file, exact main SHA and journal, `reconcile` can create/adopt the logical
+`claw` Namespace in the prepared `openclaw-agents` namespace, one native
+Agent Configuration, and one stopped Embedded Agent. The Configuration uses
+native model reference
 `openai/openrouter/free` so OCE selects its supported `openai` Harness provider;
 the OpenRouter wire model remains `openrouter/free`. The dedicated model key is
 still absent, so the agent has no `harnessAuth` binding and cannot be deployed.

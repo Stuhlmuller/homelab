@@ -28,12 +28,14 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-7941d9a35910fdb69c63e9c1
+    resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T09:17:33.110Z
 ---
 
 # AWS SSM Secret References
@@ -100,6 +102,10 @@ credentials. The protected startup workflow copies its exact bytes into a
 versioned immutable Kubernetes Secret because the stock chart mounts that
 Secret at startup. Initial creation precedes the installation ID; T041 must
 bind and attest that metadata after bootstrap before reconciliation can run.
+The [binder source](../../scripts/openclaw-enterprise-bind-installation.py)
+reads a private bootstrap-key file, verifies `GET /installation` and both Ready
+Pods, and patches only the Secret annotation with a guarded readback. Its
+protected post-bootstrap workflow is not yet wired; no live binding is proven.
 
 ## Harbor native receipt prerequisite
 

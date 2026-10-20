@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -38,10 +40,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T09:17:33.110Z
 ---
 
 # Storage And State
@@ -284,18 +286,13 @@ The post-shutdown inventory passed, but a complete independent archive/restore
 and any new Enterprise recovery set remain unverified; keep all retained claims.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
-declares a retained, nonrotating `occ-postgres-root` CA and a PostgreSQL 18.6
-StatefulSet with TLS 1.3, distinct administrator, migrator, application, and
-backup roles, and a 10 Gi local claim template. The application role receives
-per-object grants from stock migrations; the backup role has read-only dump
-access. Readiness requires the final bootstrap marker: if first-run SQL stops
-after `PG_VERSION` is written, the retained claim remains unready with no
-automatic replay. Preserve the CA private key, database, credentials, and
-completed agent snapshot as one recovery set. The backup wrapper refuses an
-incomplete set or duplicate publication; its encrypted off-node target and
-writer-fenced capture are still pending. The isolated restore candidate is
-excluded from the Kustomization. The foundation remains unregistered, with no
-new Enterprise PVC or live database. The 2026-10-20 07:22 UTC capacity recheck found about
+declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
+nonrotating private key. Preserve that Secret with any eventual database
+recovery set. The foundation is not registered with Argo. Its PostgreSQL 18.6
+StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
+restore fixtures are source-only; node placement, live role initialization,
+complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
+this source alone. The 2026-10-20 07:22 UTC capacity recheck found about
 3,398 MiB of unreserved memory on the best worker, below the 4,096 MiB
 initial Enterprise reservation before transient and host headroom. That worker
 also had only 9.71 GB of root-filesystem space free, below the proposed 10 GiB
@@ -305,15 +302,14 @@ The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-ente
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
-before chart initialization. The required retained local classes, bound claims,
-live PostgreSQL and restore proof are still absent; the candidate does not
+before chart initialization. The required retained local classes, claims,
+dedicated PostgreSQL and restore proof are still absent; the candidate does not
 adopt legacy OpenClaw state.
-The source-only reconciler needs a private durable journal at
-`/private/openclaw-enterprise/journal.json` to preserve pending API intent and
-resource IDs across retries. A proposed fourth retained local PVC would belong
-only to a serialized operator Job, separate from the bootstrap claim that
-upstream initialization can write. Neither that PVC nor the Job is declared or
-admitted yet; an ephemeral CI runner cannot safely execute reconciliation.
+The inactive reconciler needs a private durable journal at
+`/private/openclaw-enterprise/journal.json` for pending API intent and resource
+IDs across retries. A fourth retained local PVC and serialized operator Job
+are proposed, separate from the writable bootstrap claim; neither is declared
+or admitted. An ephemeral CI runner cannot safely execute live reconciliation.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

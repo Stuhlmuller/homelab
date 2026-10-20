@@ -52,6 +52,8 @@ sources:
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-8047752c8d0bc59d19d7605b
+    resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
@@ -70,6 +72,8 @@ sources:
     resource: repo://scripts/octelium-entra-oidc.sh
   - id: openwiki-source-e293d5daa2ad090397b8923e
     resource: repo://scripts/openclaw-enterprise-access.py
+  - id: openwiki-source-7941d9a35910fdb69c63e9c1
+    resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
@@ -80,10 +84,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T09:17:33.110Z
 ---
 
 # Source Map
@@ -144,9 +148,10 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Dormant workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
+| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Source-only Installation ID binder and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); protected invocation remains pending |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-full-sync.sh`, and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected fixed full sync](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
-| `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, and `scripts/ci/openclaw-enterprise-test.py` | [Guarded inactive Namespace, Configuration, and Agent reconciliation, PostgreSQL, and source gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, and `scripts/ci/openclaw-enterprise-test.py` | [Dormant PostgreSQL and guarded inactive Namespace, Configuration, and Agent reconciliation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |

@@ -190,6 +190,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-8047752c8d0bc59d19d7605b
+    resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
@@ -294,10 +296,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T09:03:07.300Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T09:03:07.300Z
+    at: 2026-10-20T09:17:33.110Z
 ---
 
 # Validation Gates
@@ -1704,47 +1706,45 @@ do not supply live capacity or traffic qualification.
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
 and [`openclaw-enterprise-postgres-test.py`](../../scripts/ci/openclaw-enterprise-postgres-test.py)
-to `static-checks.sh`. It renders restricted namespaces outside ambient mesh,
-system-side default-deny ingress, fixed tenant RoleBindings, exact `OnChange`
-SSM projections, retained PostgreSQL CA, private server SAN, and
-`activationEnabled: false`. The PostgreSQL 18 fixture checks TLS 1.3, separate
-migration/application/backup roles, database readiness and backup boundaries,
-and runs pinned upstream migration 0008 against the `occ` schema. It proves the
-application role can read its migration-created auth table but cannot create
-schema objects or read a new ungranted table. The retained 10Gi local claim,
-restore scratch and live TLS remain placement and recovery gates.
-
-The separate
+to `static-checks.sh`. The first renders the Kustomization and checks restricted
+namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
+RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
+private server SAN, and `activationEnabled: false`. The PostgreSQL 18 fixture
+checks TLS 1.3, separate roles and backup boundaries, and runs pinned upstream
+migration 0008 as the migrator. It proves the app role can use its migrated
+auth table but cannot create schema objects or read a new ungranted table.
+Local results do not establish live PVC, TLS or restore acceptance. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
-runs in both `static-checks.sh` and `offline-checks.sh`. Its portable fixtures
-exercise stopped-Agent reconciliation and workload attestation. Config
-validation pins the bootstrap service-key destination to
+now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
+fixtures exercise reconciliation and workload attestation. Config validation
+pins the bootstrap service-key destination to
 `https://console.oce.stinkyboi.com` before reading the key. When activation is
 requested, it requires the exact `openai` transport, OpenRouter base URL,
-`openai-completions` API, `openrouter/free` wire model, and dedicated key
-reference; fixtures reject changed, missing, and extra model fields. The
-stable receipt compares nonempty resource versions for the immutable Secret,
-Deployments, ReplicaSets, and Pods across two read-only snapshots. The read-only
-`check` uses those snapshots to prove the selected Drivers. With a file-backed
-service key and protected journal, `reconcile` can POST or adopt the logical
-`claw` Namespace, native Configuration, and one stopped unauthenticated
-Embedded Agent in the prepared `openclaw-agents` namespace. Its Configuration
-uses `openai/openrouter/free` as the native model reference for the supported
-`openai` Harness provider; no model key or runtime revision is attached. It
-checks the external namespace, restricted PSA, exact tenant RBAC and policy
-ownership before the first POST, records each pending intent before an API
-write, and recovers uncertain responses only through exact owned readback.
-`verify` is read-only and checks the journaled Namespace, Configuration values
-and generation, stopped Agent, API identity, and Kubernetes objects without
-inference or deployment. A blocked run may already have changed Enterprise and
-Kubernetes state: inspect the journal and exact objects before retrying.
-Removal needs a reviewed cleanup path for the logical Namespace; retain the
-physical tenant Namespace. These local tests do not prove live Secret readiness,
-certificate issuance, PostgreSQL TLS, network-policy enforcement, hooks,
-routes, Namespace adoption or restore. The local `--expected-sha` guard does
-not replace an exact-remote-main check immediately before a protected write,
-and no live reconcile stage may run without a retained operator journal PVC,
-pinned Job image and private credential path.
+`openai-completions` API, `openrouter/free` model, and dedicated key reference;
+fixtures reject changed, missing, and extra model fields. The stable
+receipt compares nonempty resource versions for the immutable Secret,
+Deployments, ReplicaSets, and Pods across two read-only snapshots. The
+read-only `check` uses those snapshots to prove the selected Drivers. With a
+file-backed service key and protected
+journal, `reconcile` can POST the logical `claw` Namespace for the prepared
+`openclaw-agents` namespace. It checks the external namespace, restricted PSA,
+exact tenant RBAC and policy ownership before the first POST, records pending
+intent first, and recovers an uncertain response only through unique API
+readback. A ready result needs exact API and owned Kubernetes readback,
+including exactly the three pinned base NetworkPolicies. With the committed
+`activationEnabled: false`, reconciliation creates or adopts one owned native
+Configuration and one stopped unauthenticated Embedded Agent; it attaches no
+model key or runtime revision. Read-only `verify` checks those journaled IDs,
+Configuration values and generation, stopped state and Kubernetes ownership
+without inference. A blocked run may already have
+changed Enterprise and Kubernetes state: inspect the journal, exact API object,
+namespace and policies before retrying. Rollback needs a reviewed cleanup path
+for the logical Namespace; retain the physical tenant Namespace. These local
+tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
+network-policy enforcement, hooks, routes, Namespace adoption or restore.
+The local `--expected-sha` guard is not an exact-remote-main check. A protected
+live stage also requires a retained operator journal PVC, pinned Job image and
+private credential path; none is declared yet.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
@@ -1753,6 +1753,11 @@ four-finding baseline: three public Secret-name strings in the dormant chart
 and one generated `octeliumee-secretman` policy name paired with its reviewed
 spec hash. The static gate rejects any wider baseline. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
+The static gate also runs the source-only
+[Installation binder fixture](../../scripts/ci/openclaw-enterprise-bind-installation-test.py).
+It checks the exact-main guard, returned Installation ID, stable Ready-Pod
+proof, UID/resource-version guarded Secret annotation patch, and idempotent
+readback. The binder has no protected post-bootstrap invocation or live result.
 The protected Enterprise operations workflow exposes one fixed `full-sync`
 stage. Its source test and workflow policy require an exact current-`main` SHA,
 manual Argo Applications with the reviewed repository sources, healthy Envoy

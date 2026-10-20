@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f5c856645bd17c2a6a107d2f6605dc08bb4b3443ba814e67736dd1e7742fa785",
+  "pageVersion": "sha256:2e8b8b7a1cd1d92c524f368cdde9ae44bd47fdd396a24c6dd22de80b68518f8e",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -388,7 +388,7 @@
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted system and tenant namespaces, tenant RoleBindings, eight retained OnChange SSM projections, system ingress denial, PostgreSQL certificates and a dormant PostgreSQL 18.6 StatefulSet with 10Gi local claim template, but no live database, PVC or Installation workload.",
+      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted system and tenant namespaces, RoleBindings, eight retained SSM projections, ingress denial, PostgreSQL certificates, and a dormant PostgreSQL 18.6 StatefulSet with 10Gi local claim template; no database, PVC, route or Installation workload is running from this source.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -397,10 +397,6 @@
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
           "version": "repo-file-v1:sha256:13e2049fdb039f9b24df9c7d1c9aff6f9005fdf09adf981e95a8dfe1f88a4370"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
-          "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
@@ -432,7 +428,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:93c30ee536de78625a097505d73587b703f4f687698e29e87ada8d81f0ba2d4e"
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -590,7 +586,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:93c30ee536de78625a097505d73587b703f4f687698e29e87ada8d81f0ba2d4e"
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -599,16 +595,30 @@
       ]
     },
     {
-      "id": "claim_b8879644dbbd446bacc1cf80547c329c",
-      "statement": "The Enterprise reconciler is source-only and can journal and read back one logical Namespace, native Configuration and stopped unauthenticated Embedded Agent. No live Agent or journal Job exists; a protected execution path still requires a retained operator journal PVC, pinned Job and credential path.",
+      "id": "claim_8911c2014ec54c3ea616c5fd2a949369",
+      "statement": "An offline-tested source binder can attest and bind an Enterprise Installation ID to the reviewed startup Secret, but no protected post-bootstrap workflow or live binding receipt exists.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:93c30ee536de78625a097505d73587b703f4f687698e29e87ada8d81f0ba2d4e"
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
+          "version": "repo-file-v1:sha256:01c0a5ea9d09dee52723bf5a2944a38d630f205e8c3a9a7131eb692623be1b91"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-bind-installation.py",
+          "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
+        }
+      ]
+    },
+    {
+      "id": "claim_d1d962b833b04ae7a4921efec5f8d8dd",
+      "statement": "The Enterprise reconciler is source-only and can journal and read back one logical Namespace, native Configuration and stopped unauthenticated Embedded Agent; no live Agent or durable operator Job exists, and a protected stage requires a retained journal PVC, pinned Job and exact-main guard.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -619,6 +629,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T09:03:07.300Z"
+    "at": "2026-10-20T09:17:33.110Z"
   }
 }

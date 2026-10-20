@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bdb4445b649a5c1adf41bd68961835f7365c8f75593eaac6199531e15a40d0ec",
+  "pageVersion": "sha256:cb3791b6231639e6bd39c49e1a5397bcea8ec542cec02bbbe60939a1a7ad7f49",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:22e0e3b17551693260acd58a43651ab8e6b19f9ea997643c5171eb6e8dc721b0"
+          "version": "repo-file-v1:sha256:aa00fe9441ece5b3dc58c0ffcf8305a96e354057b8acbe1f508be8ce16b8f454"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:22e0e3b17551693260acd58a43651ab8e6b19f9ea997643c5171eb6e8dc721b0"
+          "version": "repo-file-v1:sha256:aa00fe9441ece5b3dc58c0ffcf8305a96e354057b8acbe1f508be8ce16b8f454"
         }
       ]
     },
@@ -918,17 +918,17 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:22e0e3b17551693260acd58a43651ab8e6b19f9ea997643c5171eb6e8dc721b0"
+          "version": "repo-file-v1:sha256:aa00fe9441ece5b3dc58c0ffcf8305a96e354057b8acbe1f508be8ce16b8f454"
         }
       ]
     },
     {
       "id": "claim_33f43b085f014e02aa20fe8f103119dd",
-      "statement": "Enterprise reconciler fixtures run in static and offline validation. Read-only check attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots. Guarded reconcile journals pending intent, creates or adopts one owned logical Namespace and Configuration, then one stopped unauthenticated Embedded Agent; verify reads back the exact identities, Configuration generation, stopped state and ownership without inference or deployment. A protected live reconcile stage remains unavailable without a retained operator journal PVC, pinned Job and exact remote-main guard.",
+      "statement": "Enterprise reconciler fixtures run in static and offline validation. Read-only check attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots. Guarded reconcile journals pending intent, creates or adopts one owned logical Namespace and Configuration, then one stopped unauthenticated Embedded Agent; verify reads back exact identities, generation, stopped state and ownership without inference or deployment. A protected live stage remains unavailable without a retained operator journal PVC, pinned Job and exact remote-main guard.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:93c30ee536de78625a097505d73587b703f4f687698e29e87ada8d81f0ba2d4e"
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -940,7 +940,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:22e0e3b17551693260acd58a43651ab8e6b19f9ea997643c5171eb6e8dc721b0"
+          "version": "repo-file-v1:sha256:aa00fe9441ece5b3dc58c0ffcf8305a96e354057b8acbe1f508be8ce16b8f454"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -1038,7 +1038,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:22e0e3b17551693260acd58a43651ab8e6b19f9ea997643c5171eb6e8dc721b0"
+          "version": "repo-file-v1:sha256:aa00fe9441ece5b3dc58c0ffcf8305a96e354057b8acbe1f508be8ce16b8f454"
         }
       ]
     },
@@ -1047,8 +1047,8 @@
       "statement": "A Namespace reconciliation retry recovers an uncertain create only from a unique exact API candidate; ready acceptance requires exact API and owned Kubernetes readback with the three pinned base NetworkPolicies. A blocked run may already have changed state, and removal requires a reviewed logical-Namespace cleanup path.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L104",
-          "version": "repo-lines-v1:sha256:6d08863c3fffeb66eb0d901f21a441c488e0c32eccc7a97b1d84dcad56ab07d9:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4YTliNTA2MDBlZmRmNzM1OGUwMzVkMDJiMWZjM2MxYWZjM2QwYzc4NmVhMGFhYmI2NzYyNDdkMTRlYzdmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2ZDkzMmVjOWMxNjYyOTE2NDEzODUxNTU5ZTEyZWE1NmU1NjM4YTBkYjBmMzdjYzE5NjQ5NzFiNWUxNmZjNzMifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L109",
+          "version": "repo-lines-v1:sha256:dee2212209488d4a765a6991cedd25f21c4337215bbe69689bdfa92991f094b4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4YTliNTA2MDBlZmRmNzM1OGUwMzVkMDJiMWZjM2MxYWZjM2QwYzc4NmVhMGFhYmI2NzYyNDdkMTRlYzdmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2ZDkzMmVjOWMxNjYyOTE2NDEzODUxNTU5ZTEyZWE1NmU1NjM4YTBkYjBmMzdjYzE5NjQ5NzFiNWUxNmZjNzMifQ"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py#L248-L317",
@@ -1433,8 +1433,26 @@
       ]
     },
     {
-      "id": "claim_839b41b0edbd49f298856cbce138b312",
-      "statement": "The dormant PostgreSQL 18 fixture runs pinned upstream migration 0008 as the migrator, verifies TLS 1.3 and separate role boundaries, and proves the application role can access its migration-created auth table while schema creation and a new ungranted table remain denied; live PVC, TLS and restore acceptance are pending.",
+      "id": "claim_1778bd82147148099bf8d4d9cae09f34",
+      "statement": "The static gate runs an Installation binder fixture for exact-main checks, stable Ready-controller and returned-ID proof, a UID/resource-version guarded Secret annotation patch, and idempotent readback; protected post-bootstrap invocation and live binding remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
+          "version": "repo-file-v1:sha256:01c0a5ea9d09dee52723bf5a2944a38d630f205e8c3a9a7131eb692623be1b91"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:aa00fe9441ece5b3dc58c0ffcf8305a96e354057b8acbe1f508be8ce16b8f454"
+        }
+      ]
+    },
+    {
+      "id": "claim_b24e3e1294d4494ea19bee980b0f8c0e",
+      "statement": "The dormant PostgreSQL 18 fixture runs pinned upstream migration 0008 as the migrator, checks TLS 1.3 and role boundaries, and proves the app role can access its migrated auth table without schema creation or access to a new ungranted table; live storage and restore remain pending.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -1443,16 +1461,12 @@
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
           "version": "repo-file-v1:sha256:f726b8be2628220111b2130f42e070e6ea39a80166e70d4ae12bde728f9c2cef"
-        },
-        {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:22e0e3b17551693260acd58a43651ab8e6b19f9ea997643c5171eb6e8dc721b0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T09:03:07.300Z"
+    "at": "2026-10-20T09:17:33.110Z"
   }
 }

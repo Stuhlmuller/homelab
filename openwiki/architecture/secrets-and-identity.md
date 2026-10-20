@@ -102,6 +102,8 @@ sources:
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
+  - id: openwiki-source-7941d9a35910fdb69c63e9c1
+    resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
   - id: openwiki-source-447d6bc69ac6883500089232
@@ -118,10 +120,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T04:25:47.038Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T09:17:33.110Z
 ---
 
 # Secrets And Identity
@@ -292,7 +294,7 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
-The `aws-ssm` store allow-list includes both; seven `OnChange` ExternalSecrets
+The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
 Secrets on deletion. The model key remains a placeholder until the protected
 workflow supplies a distinct OpenRouter key. These declarations do not prove
@@ -311,10 +313,13 @@ uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
 non-secret `installation.yaml` bytes. Its exact SHA-256 is bound in Helm values.
 A protected exact-`main` workflow can create and reread only that fixed Secret
 after the foundation namespace exists; this PR does not run it. The initial
-Secret has no installation ID. A later protected reconciler must bind the ID
-returned by `GET /installation` and verify the selected Drivers and Ready Pods
-before activation. SSM-backed model, database, auth, and gateway credentials
-remain separate from these startup bytes.
+Secret has no installation ID. The source-only
+[`bind-installation.py`](../../scripts/openclaw-enterprise-bind-installation.py)
+attests both Ready controller Pods and the returned `GET /installation` ID,
+then patches only the Secret annotation with UID/resource-version guards and
+readback. No protected post-bootstrap invocation or live binding has occurred;
+activation remains blocked. SSM-backed model, database, auth, and gateway
+credentials remain separate from these startup bytes.
 
 ## Identity Notes
 
