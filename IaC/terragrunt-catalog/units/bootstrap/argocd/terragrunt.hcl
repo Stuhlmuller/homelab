@@ -55,7 +55,16 @@ terraform {
     execute = [
       "sh",
       "-c",
-      "kubectl wait --for=condition=Established crd/applications.argoproj.io --timeout=180s && kubectl wait --for=condition=Established crd/appprojects.argoproj.io --timeout=180s && kubectl apply -f '${local.self_management_project_manifest}' && kubectl apply -f '${local.workloads_project_manifest}' && kubectl apply -f '${local.self_management_application_manifest}'",
+      join(" && ", [
+        "kubectl wait --for=condition=Established crd/applications.argoproj.io --timeout=180s",
+        "kubectl wait --for=condition=Established crd/appprojects.argoproj.io --timeout=180s",
+        "bash '${get_parent_terragrunt_dir()}/../scripts/ci/terragrunt-current-main.sh'",
+        "kubectl apply -f '${local.self_management_project_manifest}'",
+        "bash '${get_parent_terragrunt_dir()}/../scripts/ci/terragrunt-current-main.sh'",
+        "kubectl apply -f '${local.workloads_project_manifest}'",
+        "bash '${get_parent_terragrunt_dir()}/../scripts/ci/terragrunt-current-main.sh'",
+        "kubectl apply -f '${local.self_management_application_manifest}'",
+      ]),
     ]
   }
 }

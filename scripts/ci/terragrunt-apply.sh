@@ -33,6 +33,10 @@ azuread_credentials_available() {
   esac
 }
 
+verify_current_main_commit() {
+  bash "${script_dir}/terragrunt-current-main.sh"
+}
+
 destroy_deleted_terragrunt_units() {
   local deleted_units=()
   local snapshot_dir
@@ -75,6 +79,7 @@ destroy_deleted_terragrunt_units() {
         terragrunt plan -destroy -refresh=false -out plan.out -no-color >/dev/null
         terragrunt --log-disable show -json plan.out >plan.json
         conftest test --policy "${snapshot_dir}/policy" --output github plan.json
+        verify_current_main_commit
         terragrunt apply -no-color plan.out
       else
         echo "Deleted Terragrunt unit ${unit_dir} has no resources in remote state."
@@ -118,6 +123,7 @@ adopt_existing_ssm_parameters() {
 
     if [[ "$existing_name" == "$parameter_name" ]]; then
       echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
+      verify_current_main_commit
       terragrunt import -no-color "$resource_address" "$parameter_name"
     else
       echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
@@ -134,6 +140,7 @@ plan_and_apply_ssm_prerequisites() {
     terragrunt plan -out plan.out -no-color
     terragrunt --log-disable show -json plan.out >plan.json
     conftest test --policy ../../../policy --output github plan.json
+    verify_current_main_commit
     terragrunt apply -no-color plan.out
   )
   echo "::endgroup::"
@@ -155,6 +162,7 @@ plan_and_apply_langfuse_prerequisites() {
     terragrunt plan -out "$langfuse_plan_dir/plan.out" -no-color
     terragrunt --log-disable show -json "$langfuse_plan_dir/plan.out" >"$langfuse_plan_dir/plan.json"
     conftest test --policy ../../../policy --output github "$langfuse_plan_dir/plan.json"
+    verify_current_main_commit
     terragrunt apply -no-color "$langfuse_plan_dir/plan.out"
   )
   echo "::endgroup::"
@@ -171,6 +179,7 @@ plan_and_apply_application_backup_storage() {
     terragrunt plan -out "$plan_dir/plan.out" -no-color
     terragrunt --log-disable show -json "$plan_dir/plan.out" >"$plan_dir/plan.json"
     conftest test --policy ../../../policy --output github "$plan_dir/plan.json"
+    verify_current_main_commit
     terragrunt apply -no-color "$plan_dir/plan.out"
   )
 }
@@ -209,6 +218,7 @@ plan_and_apply_argocd_apps() {
   (
     cd IaC/live/argocd-apps
     filter="$(terragrunt_argocd_app_filter)"
+    verify_current_main_commit
     terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
       --out-dir "$plan_dir" -- apply -no-color
   )
@@ -299,6 +309,7 @@ if [[ -n "$repair_argocd_app_state_unit" ]]; then
   (
     cd "IaC/live/argocd-apps/${repair_argocd_app_state_unit}"
     terragrunt init -no-color
+    verify_current_main_commit
     if ! repair_output="$(terragrunt run -- untaint -no-color kubernetes_manifest.this 2>&1)"; then
       printf '%s\n' "$repair_output"
       if ! grep -Eiq 'not tainted|no such instance|does not exist' <<<"$repair_output"; then
@@ -344,11 +355,13 @@ echo "::group::Argo CD bootstrap apply"
   if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'helm_release.this'; then
     if helm status argocd --namespace argocd >/dev/null 2>&1; then
       echo "Adopting existing Argo CD Helm release into OpenTofu state."
+      verify_current_main_commit
       terragrunt import -no-color helm_release.this argocd/argocd
     else
       echo "Argo CD Helm release is absent; OpenTofu will install it."
     fi
   fi
+  verify_current_main_commit
   terragrunt apply -no-color -auto-approve
 )
 echo "::endgroup::"
@@ -362,6 +375,7 @@ echo "::group::Kubernetes node label apply"
   terragrunt plan -out plan.out -no-color
   terragrunt --log-disable show -json plan.out >plan.json
   conftest test --policy ../../../policy --output github plan.json
+  verify_current_main_commit
   terragrunt apply -no-color plan.out
 )
 echo "::endgroup::"
@@ -370,6 +384,7 @@ echo "::group::AzureAD application registration apply"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
+    verify_current_main_commit
     terragrunt run --all --filter "$(terragrunt_azuread_changed_filter)" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
   )
 elif terragrunt_azuread_stack_changed; then
@@ -386,12 +401,14 @@ plan_and_apply_argocd_apps
 echo "::endgroup::"
 
 echo "::group::External Secrets AWS auth Secret state adoption"
+verify_current_main_commit
 kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml
 if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then
   (
     cd IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth
     terragrunt init -no-color
     if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'kubernetes_secret_v1.this'; then
+      verify_current_main_commit
       terragrunt import -no-color kubernetes_secret_v1.this external-secrets/aws-ssm-auth
     fi
   )
@@ -403,6 +420,7 @@ echo "::endgroup::"
 echo "::group::Kubernetes secret materialization apply"
 (
   cd IaC/live/kubernetes-secrets
+  verify_current_main_commit
   terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/kubernetes-secrets/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
 )
 echo "::endgroup::"
