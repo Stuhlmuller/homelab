@@ -81,8 +81,8 @@ runs. Publication uses its own current-main SHA/run ID as a fresh immutable S3
 prefix, so a failed attempt cannot overwrite an earlier completed or partial
 object. The source archive SHA/run ID stays recorded in `final.json`. Publication
 checks the completed receipt against the observed inventory, reads the bundle
-in 64 MiB ranges through separate Kubernetes exec calls, and retries a broken
-or short range up to three times. It completes the S3 multipart object only
+in at most 8 MiB Kubernetes exec slices, and assembles 64 MiB S3 multipart
+parts. It retries a broken or short slice up to three times and completes S3 only
 after the full SHA256 matches the source receipt. A failed publication attempts
 to abort its current multipart upload; bucket lifecycle cleans any abandoned ones.
 Publication then downloads the versioned object to scratch and verifies a full
