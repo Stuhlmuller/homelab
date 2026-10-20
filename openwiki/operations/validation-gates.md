@@ -216,14 +216,14 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
-  - id: openwiki-source-8483d28614308625b1073872
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-86a40ee4669b4b7843917e87
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
@@ -322,10 +322,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:55:49.056Z
+    at: 2026-10-20T19:36:50.176Z
 ---
 
 # Validation Gates
@@ -1853,14 +1853,18 @@ The static gate also runs the source-only
 [Installation binder fixture](../../scripts/ci/openclaw-enterprise-bind-installation-test.py).
 It checks the exact-main guard, returned Installation ID, stable Ready-Pod
 proof, UID/resource-version guarded Secret annotation patch, and idempotent
-readback. The binder has no protected post-bootstrap invocation or live result.
-The protected Enterprise operations workflow exposes one fixed `full-sync`
-stage. Its source test and workflow policy require an exact current-`main` SHA,
-manual Argo Applications with the reviewed repository sources, healthy Envoy
-Gateway, and a pinned upstream chart revision. The executor checks each gate
-again before syncing the foundation and then Enterprise with explicit source
-revisions. Fixture and policy success do not prove a live sync, journaled
-reconciliation, rollback, or runtime acceptance.
+readback. The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+now offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
+`verification`, `restore` and `acceptance` selections. It rechecks exact
+current `main`, pins the binder and stage helper, serializes the production
+jobs, and withholds private output. Binding requires the configured
+owner-controlled 0600 service-key file; no declared hosted-runner delivery or
+live binding exists. The six runtime selections invoke the
+[stage guard](../../scripts/ci/openclaw-enterprise-stage.sh), which exits
+before mutation because no durable shared private journal and lock are mounted.
+The separate full-sync helper still has offline dependency-order fixtures, but
+the workflow does not call it. Source and policy checks do not prove a live
+sync, reconciliation, rollback, or runtime acceptance.
 The static gate also runs
 [`openclaw-enterprise-registration-test.py`](../../scripts/ci/openclaw-enterprise-registration-test.py).
 It renders both generated Applications, checks disabled automatic sync and the

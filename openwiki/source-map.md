@@ -42,6 +42,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
@@ -68,12 +70,14 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
-  - id: openwiki-source-8483d28614308625b1073872
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-67b7023614bb46ffd2f06e85
+    resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -102,10 +106,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-20T19:44:12.447Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:18:26.448Z
+    at: 2026-10-20T19:44:12.447Z
 ---
 
 # Source Map
@@ -167,8 +171,9 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
-| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Source-only Installation ID binder and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); protected invocation remains pending |
-| `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-full-sync.sh`, and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected fixed full sync](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
+| `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding and reserved fail-closed Enterprise operations](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Offline-tested full-sync helper](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no protected workflow invokes it until durable journal delivery is declared |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, and `scripts/ci/openclaw-enterprise-active-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only active/stop fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
 | `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |

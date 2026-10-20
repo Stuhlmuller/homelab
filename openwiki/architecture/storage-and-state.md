@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -28,10 +30,14 @@ sources:
     resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
@@ -42,10 +48,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:18:26.448Z
+    at: 2026-10-20T19:36:50.176Z
 ---
 
 # Storage And State
@@ -326,7 +332,11 @@ The inactive reconciler needs a private durable journal at
 `/private/openclaw-enterprise/journal.json` for pending API intent and resource
 IDs across retries. A fourth retained local PVC and serialized operator Job
 are proposed, separate from the writable bootstrap claim; neither is declared
-or admitted. An ephemeral CI runner cannot safely execute live reconciliation.
+or admitted. The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+reserves `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
+`acceptance`, but its [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh)
+exits before mutation because the hosted runner has no durable shared journal
+mount or lock. An ephemeral CI runner cannot safely execute live reconciliation.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

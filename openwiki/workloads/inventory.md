@@ -162,8 +162,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
-  - id: openwiki-source-8483d28614308625b1073872
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -186,10 +188,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:55:49.056Z
+    at: 2026-10-20T19:36:50.176Z
 ---
 
 # Workload Inventory
@@ -423,9 +425,12 @@ declare foundation and chart registration under a scoped AppProject with
 automatic sync, pruning, self-heal and retries disabled. Neither has been
 applied or synced. The candidate's
 placeholder administrator email, missing placement labels, and unfinished
-database/storage gates prevent activation. A protected full-sync stage is
-source-tested, but cannot run until live registration and the reviewed installation
-phase; it would sync Foundation before Enterprise at explicit revisions.
+database/storage gates prevent activation. The
+[protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+reserves fixed `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
+`acceptance` stages, but its pinned helper exits before mutation until a durable
+shared private journal and lock are declared. The separate full-sync helper is
+offline-tested but not dispatched.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
 Embedded Agent; no live Agent or durable operator Job exists. A protected
@@ -435,8 +440,9 @@ exact Agent grants, runtime credential/deployment readback, and idempotent
 stop. Committed `activationEnabled: false` and the missing dedicated OpenRouter
 key still block activation; these fixtures are not live acceptance.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
-exists in source; no protected post-bootstrap invocation or live Secret binding
-has occurred.
+exists in source. A fixed protected binding lane is declared, but hosted
+runner delivery of the owner-controlled 0600 bootstrap key and live Secret
+binding remain absent.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy

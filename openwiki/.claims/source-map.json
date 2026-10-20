@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:95e5a8ac9f8bbe3338d122b854ae35c03ce788389f1714a450307b1dd63acb60",
+  "pageVersion": "sha256:02dbbc3b9ef433495d50d6c5a73fbd3f99a9c67c3d0d3fbec2fec59c96324bdf",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -216,29 +216,37 @@
     },
     {
       "id": "claim_31cc2638d1bc4ac5ac37886991d4d7c8",
-      "statement": "The Enterprise operations workflow and full-sync shell helper own the protected fixed full-sync sequence; the focused fixture tests source and ordering guards before live use.",
+      "statement": "The Enterprise operations workflow owns protected binding and reserved runtime stages; its pinned stage helper blocks runtime mutation without a durable shared private journal. The separate full-sync shell helper retains offline source/order tests but no protected workflow invokes it.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:f5a9ac5b8c257f6ad68dad7e2504541145d859d6ba8cb7aa7d866dda8a22236b"
+          "version": "repo-file-v1:sha256:24c63099d5e2b83c2a6b1d8201c81fd27a13376f1bf42f47f16e11f22fde4f44"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
-          "version": "repo-file-v1:sha256:039f5269c036777e6c46da84556314bd3296345b52a40417e28ef25831eca35c"
+          "version": "repo-file-v1:sha256:437afc0f6e72426e608641d022e4c115da32b568d8fc173a729d7ba00202aab0"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
-          "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
+          "version": "repo-file-v1:sha256:1d9a3cfdab55289643c5086f8dc148355fd4c8dbf32d545fefb9e1a09182089a"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
         }
       ]
     },
     {
       "id": "claim_991945f52bbd4e61bc94ef79e6cf733f",
-      "statement": "The source-only Enterprise Installation binder and its offline fixture have their own scripts; the binder still lacks protected post-bootstrap workflow invocation.",
+      "statement": "The Enterprise Installation binder has offline fixtures and a protected workflow invocation, but private bootstrap service-key delivery and live binding are not yet proven.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:24c63099d5e2b83c2a6b1d8201c81fd27a13376f1bf42f47f16e11f22fde4f44"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:6ed322e2a9ce8a556ab35d6279e2254e89cc9a455cb296bb0edfde718a3f31f2"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -293,6 +301,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:18:26.448Z"
+    "at": "2026-10-20T19:44:12.447Z"
   }
 }
