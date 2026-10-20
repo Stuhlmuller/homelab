@@ -283,11 +283,21 @@ case "$stage" in
     "${reader[@]}" cat "$receipt" >"$work/receipt.json"
     validate_baseline "$work/observed.json" "$work/status.json"
     jq -e --slurpfile observed "$work/observed.json" '.format == 1 and .inventory == $observed[0] and (.sha256 | test("^[0-9a-f]{64}$"))' "$work/receipt.json" >/dev/null
-    prefix="openclaw-enterprise/legacy/${archive_sha}/${archive_id}"
+    prefix="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}"
     for name in legacy.tar.gz receipt.json final.json; do require_absent_object "$prefix/$name"; done
-    "${reader[@]}" cat "${receipt%/*}/legacy.tar.gz" | aws s3 cp - "s3://${bucket}/${prefix}/legacy.tar.gz" --expected-size 80000000000
-    "${reader[@]}" cat "$receipt" | aws s3 cp - "s3://${bucket}/${prefix}/receipt.json"
-    archive_version="$(aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" --query VersionId --output text)"
+    archive_size="$("${reader[@]}" stat -c %s "${receipt%/*}/legacy.tar.gz")"
+    [[ "$archive_size" =~ ^[1-9][0-9]*$ ]] || exit 1
+    "${reader[@]}" cat "${receipt%/*}/legacy.tar.gz" |
+      python3 -I scripts/ci/openclaw-enterprise-upload.py "$bucket" "$prefix/legacy.tar.gz" \
+        "$archive_size" "$(jq -er .sha256 "$work/receipt.json")"
+    aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
+      --output json >"$work/archive-head.json"
+    jq -e --argjson size "$archive_size" \
+      '.ContentLength == $size and .ServerSideEncryption == "aws:kms" and
+       (.VersionId | type) == "string" and .VersionId != ""' \
+      "$work/archive-head.json" >/dev/null
+    aws s3 cp "$work/receipt.json" "s3://${bucket}/${prefix}/receipt.json"
+    archive_version="$(jq -er .VersionId "$work/archive-head.json")"
     receipt_version="$(aws s3api head-object --bucket "$bucket" --key "$prefix/receipt.json" --query VersionId --output text)"
     [[ -n "$archive_version" && "$archive_version" != None && -n "$receipt_version" && "$receipt_version" != None ]] || exit 1
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
@@ -298,9 +308,10 @@ case "$stage" in
     "${reader[@]}" cat "$restore/receipt.json" >"$work/restored-receipt.json"
     cmp "$work/receipt.json" "$work/restored-receipt.json"
     jq -n --arg sha "$archive_sha" --arg run "$archive_id" \
+      --arg publicationSha "$GITHUB_SHA" --arg publicationRun "$GITHUB_RUN_ID" \
       --arg baseline "$BASELINE_REF" --arg archiveVersion "$archive_version" \
       --arg receiptVersion "$receipt_version" --arg digest "$(jq -er .sha256 "$work/receipt.json")" \
-      '{sourceSha:$sha,runId:$run,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
+      '{sourceSha:$sha,runId:$run,publicationSha:$publicationSha,publicationRunId:$publicationRun,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
     refresh_status stopped
     aws s3 cp "$work/final.json" "s3://${bucket}/${prefix}/final.json"
     "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
@@ -314,7 +325,10 @@ case "$stage" in
     final_version="$(aws s3api list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key" --output json |
       jq -er --arg key "$final_key" 'if .IsTruncated == false then [.Versions[]? | select(.Key == $key) | .VersionId] | last else empty end')"
     aws s3api get-object --bucket "$bucket" --key "$final_key" --version-id "$final_version" "$work/final.json" >/dev/null
-    jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and (.sourceSha + "/" + .runId) == $ref and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
+    jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and
+      (.publicationSha + "/" + .publicationRunId) == $ref and
+      (.sourceSha | test("^[0-9a-f]{40}$")) and (.runId | test("^[0-9]+$")) and
+      .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
     archive_version="$(jq -er .archiveVersion "$work/final.json")"
     receipt_version="$(jq -er .receiptVersion "$work/final.json")"
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
