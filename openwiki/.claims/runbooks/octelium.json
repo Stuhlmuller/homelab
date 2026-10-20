@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cda16a1deb88a8f18b77c48d52ddff4ef72b5c9a14643b4b0bf3d94115872acd",
+  "pageVersion": "sha256:f6fca4035b138eef35ed72e5132e144df733f05c39c64c82053dfda6327df51c",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://docs/octelium.md",
-          "version": "repo-file-v1:sha256:615cb5ec0b77ea0e265b7e72e2ea1678cc4a4ed40b2f62d63024fa39d3c993c4"
+          "version": "repo-file-v1:sha256:a28cfe5dd49d6402f5212b8e269b8c792cbfdbaf7e589e4637083488203ddb4d"
         }
       ]
     },
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
+          "version": "repo-file-v1:sha256:0ee5d73c0c598d7b5d13ff0d37ca104ad8d02acc4b4caa9994ad185f73b35301"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise-access.py",
@@ -87,6 +87,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:27:46.454Z"
+    "at": "2026-10-20T14:21:06.739Z"
   }
 }

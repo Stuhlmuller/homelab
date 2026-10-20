@@ -38,6 +38,8 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
+  - id: openwiki-source-f19aa740c5d820d4dd28114e
+    resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -46,6 +48,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
+  - id: openwiki-source-b40c5f24adeb9bed95341580
+    resource: repo://scripts/aws-plan-role-configure.sh
   - id: openwiki-source-6044cd3de00b52da78c6cf44
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a176afce8833edc1068e3844
@@ -72,10 +76,10 @@ sources:
     resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
+generated: { by: "codex", at: "2026-10-20T14:21:06.739Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T14:21:06.739Z
 ---
 
 # CI/CD
@@ -98,6 +102,15 @@ The Octelium catalog stages a separate `homelab-ci-plan` User and a
 read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
 applies the catalog nor issues a plan token; the PR plan still reads its
 environment secret.
+
+The operator catalog also stages `Github-TF-Plan`, trusted only by
+`homelab-plan`. Keep the current `Github-TF-State` role and shared Octelium
+token in the plan workflow until the `homelab-plan` reviewer gate is live.
+Then review and apply the full operator saved plan, accepting only the new role
+and inline policy; preview and execute `scripts/aws-plan-role-configure.sh` to
+publish its exact ARN. Publish and verify a separate Octelium plan token before
+a later workflow cutover PR. The staged source has not created the role or
+changed live credentials; follow the [operator rollout](../../docs/operator-infrastructure.md#dedicated-pull-request-plan-role).
 
 The separate Octelium Private Kubernetes Apply dispatch verifies the selected
 `main` commit before the protected job. Its fixed helper rechecks current `main`
