@@ -22,12 +22,6 @@ locals {
 
   # PR plans read these state families. Other state includes runtime keys and
   # generated secrets that the plan workflow deliberately excludes.
-  plan_state_list_prefixes = [
-    "IaC/homelab/bootstrap/argocd/*",
-    "IaC/homelab/operator/application-backup-storage/*",
-    "IaC/homelab/live/argocd-apps/*",
-    "IaC/homelab/live/azuread-applications/*",
-  ]
   plan_state_object_arns = [
     "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/bootstrap/argocd/terraform.tfstate",
     "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/operator/application-backup-storage/terraform.tfstate",
@@ -67,16 +61,11 @@ data "aws_iam_policy_document" "github_actions_plan" {
     resources = ["arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}"]
   }
 
+  # HeadObject needs unrestricted ListBucket to return 404 for missing state.
   statement {
     sid       = "ListHomelabStateBucket"
     actions   = ["s3:ListBucket"]
     resources = ["arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}"]
-
-    condition {
-      test     = "StringLike"
-      variable = "s3:prefix"
-      values   = local.plan_state_list_prefixes
-    }
   }
 
   statement {
