@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0f8f11edce81b65e9084ad5487548e933a6cc66682f81a5035900dfc2aa124b0",
+  "pageVersion": "sha256:37f9d5fc3d31217a24400e9f45ca68a5efb06b1fe3f56657deffbbd71e3661d5",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -61,10 +61,28 @@
           "version": "repo-lines-v1:sha256:88516d4c612429553048f1c6bf7cd155097911a27b40892a186d28c6a45f7cab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2MjI0Y2E4Yjg2YTRlYjQyMThkOGExODk4OGQ0ODdmOWVjYjZiMWRhYjYwYmQ2NjQxY2I0MGMxOTlkNWMwMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkYWQxOGMwMjcwMTFmY2Q5YTc0ZTk0NDBkMTJmOWYxY2JmZTgzYTI0YzkzZTU3MWY4NTEzMDI4ODI4NjdmZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzNzIxMzMzNTAzN2FjZjIzM2NkZTdlMWZhMWZmZjZhNzNkMmJhMDQ4ZmFmYjBmYmE2M2Y3NzNkOWU0MzA2M2MifQ"
         }
       ]
+    },
+    {
+      "id": "claim_4a22124f1899474a92f64f4f127f4e62",
+      "statement": "OpenClaw Enterprise declares separate disabled-auto-sync foundation and controller Argo Applications and a scoped AppProject; Terragrunt orders registration dependencies but does not prove database readiness, protected full sync, capacity, or network-policy qualification.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
+          "version": "repo-file-v1:sha256:207beafeb472afa0248153c28eba7b6f0ad55b6e5231df3de26ae2d996399d0b"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T15:59:51.049Z"
+    "at": "2026-10-20T00:01:21.354Z"
   }
 }

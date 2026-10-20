@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2b9e070c9e5e12981eb24262bcf2b8283e7a1f686a3e6d9b135aeaba7536733e",
+  "pageVersion": "sha256:e5f8835a1b2d204172a274b51fc81018a5584372a33cd19a1e0f21950ffb1b40",
   "claims": [
     {
       "id": "claim_f813a679b7d145dfbfc81a595d98b9e8",
@@ -18,25 +18,25 @@
     },
     {
       "id": "claim_9aa2d0ec319d4bd590273838399a23ac",
-      "statement": "The dormant OpenClaw Enterprise candidate uses the pinned upstream Helm chart with app-local values, reviewed Installation bytes, Kustomize lifecycle hooks, and one EnvoyProxy image override; it has no Application or root Terragrunt registration.",
+      "statement": "The source-only OpenClaw Enterprise candidate uses a pinned upstream Helm chart with app-local values, reviewed Installation bytes, Kustomize lifecycle hooks, and one EnvoyProxy image override; a root Terragrunt unit now declares its separate Argo Application with automatic sync disabled, but it has not been applied or synced.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml",
-          "version": "repo-file-v1:sha256:4f8cf618d5c9d076a2a193565d46c1552bf753c1603e0f3294cd653fd0ba7871"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/kustomization.yaml",
-          "version": "repo-file-v1:sha256:1c8dffaeecd216386e000bef883a8897edafac9c2297901a3cf964d545702d40"
+          "version": "repo-file-v1:sha256:94151af2191bb7e11132a2727f0d5a8ee265158bacf3afbb45e9e3e2b79e1c5e"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T14:01:19.597Z"
+    "at": "2026-10-20T00:01:21.354Z"
   }
 }

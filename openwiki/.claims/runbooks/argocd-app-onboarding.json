@@ -1,32 +1,58 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a6fb8c142bc404790dbf7ac810792bc97892403da303d65d78c68494b7958edc",
+  "pageVersion": "sha256:e649db538fcb6af15c07b96a84a21bc2dec73a875635d368042517fb8b0ffd5e",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
-      "statement": "The OpenClaw Enterprise platform NetworkPolicy, canary, cleanup and Envoy Gateway Applications are registered with automatic sync disabled; NetworkPolicy selects no node, while Envoy's CRD source owns shared CRDs ahead of the controller, so registration alone neither enforces policy nor serves a route.",
+      "statement": "The OpenClaw Enterprise platform NetworkPolicy, canary, cleanup, and Envoy Gateway Applications are registered with automatic sync disabled; NetworkPolicy selects no node, while Envoy's CRD source owns shared CRDs ahead of the controller, so registration alone neither enforces policy nor serves a route.",
       "evidence": [
         {
           "resource": "repo://IaC/platform-envoy-gateway/stack.hcl",
           "version": "repo-file-v1:sha256:8d0d580140ed39bc371b9405cb7a30ac3ac617b77e73d70b85f7db69feffea60"
         },
         {
+          "resource": "repo://IaC/platform-network-policy-canary/stack.hcl",
+          "version": "repo-file-v1:sha256:efe2f1593f159c4ac27fb0245c658fee7765606a21d7c0e1260fcda9dd31f998"
+        },
+        {
+          "resource": "repo://IaC/platform-network-policy-cleanup/stack.hcl",
+          "version": "repo-file-v1:sha256:d8a5b59e80b6064b6b261d664c8f9219b1c07e2f14468a23457d440732d15589"
+        },
+        {
           "resource": "repo://IaC/platform-network-policy/stack.hcl",
           "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
         },
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:089c2e395615ab3ac94b42e42d52c55100fe0974e57b7e83cb73640c35ec7900"
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:041820d8897cda37f448cb4f7ec5e3a55317f9ec1e90c7eff52efcc3691bce89"
+        }
+      ]
+    },
+    {
+      "id": "claim_24428932d3354547957b43987c2d373f",
+      "statement": "The Enterprise foundation and controller Applications are source-only, use a scoped AppProject and disabled automatic sync/prune/self-heal/retries, and leave PostgreSQL, secrets, capacity, network policy, and serialized protected full-sync gates open.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
-          "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
-          "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
+          "version": "repo-file-v1:sha256:207beafeb472afa0248153c28eba7b6f0ad55b6e5231df3de26ae2d996399d0b"
+        },
+        {
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:041820d8897cda37f448cb4f7ec5e3a55317f9ec1e90c7eff52efcc3691bce89"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T22:16:36.048Z"
+    "at": "2026-10-20T00:01:21.354Z"
   }
 }

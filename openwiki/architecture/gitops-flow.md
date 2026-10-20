@@ -8,8 +8,14 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-eadf0e51039eed966d58db54
+    resource: repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
   - id: openwiki-source-5edf712b7916c34ad7d2c410
@@ -22,10 +28,10 @@ sources:
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-20T00:01:21.354Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T15:59:51.049Z
+    at: 2026-10-20T00:01:21.354Z
 ---
 
 # GitOps Flow
@@ -214,6 +220,16 @@ and applications with audited cluster-resource requirements remain in the
 `homelab` project. `n8n-postgres` remains there because its existing managed
 namespace metadata requires access to the cluster-scoped `automation`
 Namespace.
+
+OpenClaw Enterprise declares separate foundation and controller Applications
+through the shared stack, with a dedicated AppProject limited to their source
+repositories, three destination namespaces, and rendered resource kinds. Both
+Applications disable automatic sync, pruning, self-heal, and retries. The
+foundation registration orders secret, certificate, and storage dependencies;
+the Enterprise registration then depends on that foundation and Envoy Gateway.
+These edges create Applications only. Database readiness, protected full sync,
+capacity, and network-policy qualification remain separate activation gates.
+See the [source registration](../../docs/argocd-app-onboarding.md#dependency-readiness).
 
 `platform-crossplane` currently installs only Crossplane core through the
 upstream Helm chart. Before Argo CD owns Crossplane Provider, Composition, or
