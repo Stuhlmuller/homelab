@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:feb5d0fdd485667a01e5b03575953569eb617333e5e0a11333111ab0f71a33ec",
+  "pageVersion": "sha256:ede519b6d5a2a86116abcc39cafccbe0803892d619ceadc95d7661f656384ddb",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,11 +8,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:089c2e395615ab3ac94b42e42d52c55100fe0974e57b7e83cb73640c35ec7900"
+          "version": "repo-file-v1:sha256:88ed02eab2a3fef6e7d2796b4867b7340d481d7d20f1ea85864fad1ba4b72463"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -29,15 +29,15 @@
       "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, admitted tainted node, and exact fixture commands, arguments, container security contexts, identities, and policy before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L40-L54",
-          "version": "repo-lines-v1:sha256:c30f3c64d8a4ed0b2b9409d6c201a8bda5c3f948b6d3b17a2c3b56dc51fdc045:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L41-L57",
+          "version": "repo-lines-v1:sha256:e096727a973080c1a15653f753c5d2ea4d1d40e831260cb9878c4e20157009d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml#L20-L210",
           "version": "repo-lines-v1:sha256:1e6f33fb6e1aa167d543c2768b0b74ef1d02c48bae2628a76c4926b766c79d53:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzYWQyMDFmYjJkNjc0MzZjMTAxNDZkYTZiMGIzYjJlZTQ3YTNlNDFkMDZiZTIyMzcyOGI1NWIwOGY4Y2I2MjcwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzOTg2ZDRmMmI2MWQwOTJjNzJiZmU1MGU4YTJlYWI4NTFlZDE3MzlkOWY5YjA1OTMxOGQ2MjIwMjY4ZGIyYTNiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4ZmVmZTA1OGY4NzMwOWMyNjU3NzRmMzAwYTdhYTg0MGJhYTU0MWJhZjM2Y2Q5YjgwODQwNjgzNzY2MzhlZTU3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NTkyMjIxYWFlMzQxZDA4NTEwYjk1NWY2YWFhN2JkM2M0YTFkOTAxZDk2N2IxODRlZjJjOThjMTFkZTQzYTVmIn0"
         },
         {
-          "resource": "repo://scripts/network-policy-qualification.py#L196-L279",
+          "resource": "repo://scripts/network-policy-qualification.py#L250-L333",
           "version": "repo-lines-v1:sha256:8bf6e3138a0862486c94c3f796c654d61751b4dd7ddd4c7cb6dbb5549dcfba4e:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMWZjZTA2YTk1NDM1OTAxZjk2M2M3Zjc5MjEyN2U0OWJkNzEwYTYzNDljYTAyZTBmZjQ2OThkNzcwZTIzMDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NzNkNmJmOTJhY2I2ZTE4ZmExMjI4YjkwMzYyYTM3ZGVhZDYwYzExZmY3NGE1Mjk1OGZlNGFhNjI1ZGNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3MDcyNzcyZmNlODQ3MWMzN2RkMjg0M2UzMjczMTI5MzdmZjI3MmI4NTJhNDZlZDZiMDEzODA5YzkzZDZlNmIifQ"
         }
       ]
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
         }
       ]
     },
@@ -153,10 +153,28 @@
           "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
         }
       ]
+    },
+    {
+      "id": "claim_1fe3e5cebba240eab41ab9f354d44e96",
+      "statement": "The protected canary qualifier probes Kubernetes Service DNS through the reviewed kube-dns Service over TCP and UDP 53, rejects malformed replies or an A record differing from the live Kubernetes Service IP, and records both DNS outcomes; lifecycle and real-workload qualification remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L41-L54",
+          "version": "repo-lines-v1:sha256:766abf4d327a432962220174dcdd72e60cd9d30d353405e3d132e5519547108f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMmE3MmNjMDRkNmQ5YmJhYjcyYWZlZjVhMmVlNjU5MTAzM2U1ZmQ5ZmQwYTkyYjZiNzUyOGNlNDFhNGNhYTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwYjBkNzQyNDI0ODkwMzE0YWYwY2QyODQxODJjYmM0YTY1NDY0MWYyZDQwMDY4ZDM2ZTQzMzU5NjU4ODY3ZTUifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L350-L379",
+          "version": "repo-lines-v1:sha256:29d4532aa2efba2b48821feb99f3b2ccd15ec04bd7c7d38dffd4133799877439:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjYTAxOWQ2YWJjZjgxMmViMzg3ZGM3YjQwYjcwODY2Y2Y5NTRlZTVlMDU4YTNhNzk2ODc5MTQzY2VkNDc3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwZTRmYjRkNDIzZWMzZTYwYTFkMDNkYjA4OGU1N2U4YjM1MjIxZDkxMzg0OTM2YTg4ZmQ5Mzg5NzllZDlkOTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmNTE2OTIzNDcwZGE2Mjc3MjUwZWNjNDM1N2VjYjU5MGY0MDFhYTI1OTE2NTg4YWQzODM5YWUxOWEzOTJhZWMifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L79-L123",
+          "version": "repo-lines-v1:sha256:03244aed459ffeca0a1f53160d5fbc8e9405f1774ff3ae2b7a525f9f2e1e4530:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlODk0MmRiZTc0YTJlMjAzN2YzZGNiMDYyZTQ5MGJjZWIyZmY5MDQ4YzIzYzhmNWM2MTkxNWJmNTgxOTg3NDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3OGJlMDk2MTkyZDJiZGU2NTY2Zjc4NzY2OTg0MTA0Yzg4ZDg0ZjI0NjA0ODVhYTVmN2FlZTZmYjgxYWViNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmYjVjZTk1ZTZjYmQwOWU3YTIxMWNkMjg1MmQxYWUzODM1MTk0ZDE3YmZjZTFkZTI2MmRmMzVkYzNhZjU0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2NDM0MDA0ZDBjYzM1YjgxMzg1OTdkNjhjNGQ2YzdlN2VkNmZhYmI2ODI3YmZhMGU4MjRhZjIyY2UzZjUxNWUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:49:43.338Z"
+    "at": "2026-10-20T01:45:42.239Z"
   }
 }
