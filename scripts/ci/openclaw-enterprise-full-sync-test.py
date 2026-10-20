@@ -107,7 +107,8 @@ elif name == "kubectl":
         self.assertEqual(commands[3].count(SHA), 2)
         self.assertEqual(commands[3].count(UPSTREAM), 1)
         self.assertFalse(any(flag in call for call in commands for flag in
-                             ("--force", "--prune", "--resource", "--apply-out-of-sync-only", "--async")))
+                             ("--force", "--prune", "--resource", "--skip-hooks",
+                              "--apply-out-of-sync-only", "--async")))
 
     def test_incomplete_or_drifted_inputs_block_before_sync(self):
         for options in ({"phase": "unselected"}, {"ref": "refs/heads/feature"},
