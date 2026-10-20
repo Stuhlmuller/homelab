@@ -102,12 +102,16 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-a44b67b396abfe9ddff04314
+    resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+generated: { by: "codex", at: "2026-10-20T04:25:47.038Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T03:36:01.758Z
+    at: 2026-10-20T04:25:47.038Z
 ---
 
 # Secrets And Identity
@@ -239,9 +243,11 @@ role and inline-policy deletions. A read-only IAM lookup returned
 `NoSuchEntity`, and a fresh full-unit plan had no changes. The CronJob is now
 scheduled hourly in UTC and remains in full dry-run mode. Its earlier
 19:00 and 20:00 UTC Jobs each finished all eight eligible repositories and
-logged the same public release cache-key hit on separate Pods; the protected companion canary published
-`v0.0.2` at 20:20 UTC. Normal refresh, fault recovery, full parity, and writer
-cutover remain open. The legacy GitHub Action remains the only writer. The App
+logged the same public release cache-key hit on separate Pods. After the
+protected companion canary published `v0.0.2` at 20:20 UTC, the 21:00 scheduled
+dry run hit that key and selected the new public canary branch proposal. The
+durable aggregate receipt closes T022. Cache-fault recovery, full parity, and
+writer cutover remain open. The legacy GitHub Action remains the only writer. The App
 lacks repository Administration read, a recorded migration exception whose
 first write-enabled outcome still needs policy review.
 After dry-run parity and removal of the entire legacy workflow, a guarded
