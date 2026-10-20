@@ -53,6 +53,12 @@ digest-pinned private reference such as
 `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 The image gate requires that reference in the declared target of a migrated
 consumer, with the exact receipt-backed digest.
+The trusted workflow checks the event PR when its head changes. On each `main`
+push, it rechecks only open PR heads whose native receipt entries differ from
+the exact `main` state; unreadable state or a missing receipt map is rechecked
+and fails closed. Unchanged heads keep their prior status. This bounds repeated
+status writes for unrelated long-lived PRs while preserving base-revision
+checks for receipt imports.
 Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.

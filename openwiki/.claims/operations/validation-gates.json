@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:67ec4b58ba00e94cf5bb94f77756ecf2a6e065a1b75438928b6cf5d9c31f64d7",
+  "pageVersion": "sha256:4201c8946f377e1be5555ec870e6571bef68e1f9b20f00de65e3f41025954fa3",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
+          "version": "repo-file-v1:sha256:16b799b1caf40564f0e6e37b04717915f40e3a0d8faaae561d3cd8b93486e571"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         }
       ]
     },
@@ -574,7 +574,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -596,7 +596,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a2b03932686ac12d9cadcf1f4126bc88e05bc24dc7aafd93328249dcf22e1155"
+          "version": "repo-file-v1:sha256:a7e31a42cbc42c490a41e477c440d2408f4ecbdbb450faba52da2449d416eba5"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -710,7 +710,7 @@
     },
     {
       "id": "claim_d241cdf1ec014386b9b591f2d4b4f425",
-      "statement": "The repository's local validation entry point is `nix run .#validate`; its flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
+      "statement": "The repository's local validation entry point is `nix run .#validate`; the flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
       "evidence": [
         {
           "resource": "repo://README.md",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
+          "version": "repo-file-v1:sha256:16b799b1caf40564f0e6e37b04717915f40e3a0d8faaae561d3cd8b93486e571"
         }
       ]
     },
@@ -1126,7 +1126,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
+          "version": "repo-file-v1:sha256:16b799b1caf40564f0e6e37b04717915f40e3a0d8faaae561d3cd8b93486e571"
         }
       ]
     },
@@ -1351,6 +1351,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:35:13.441Z"
+    "at": "2026-10-20T07:09:39.748Z"
   }
 }

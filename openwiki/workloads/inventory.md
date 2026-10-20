@@ -68,6 +68,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
+  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -126,6 +130,8 @@ sources:
     resource: repo://docs/rollback-argocd-apps.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-59f51b5800f473496977b52a
     resource: repo://IaC/argocd-image-updater/stack.hcl
   - id: openwiki-source-1ee0d946130d3ad97636dfdc
@@ -160,10 +166,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T06:35:13.441Z" }
+generated: { by: "codex", at: "2026-10-20T07:09:39.748Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:35:13.441Z
+    at: 2026-10-20T07:09:39.748Z
 ---
 
 # Workload Inventory

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5c02992d4bfcdee1a87bfcddaef615109c044474b29b26fa806bc1454aa387f0",
+  "pageVersion": "sha256:f87e183dfb707b728ee68cee4c638ed673c6faf1b1db7cf387fa0584c6fdc88e",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         }
       ]
     },
@@ -56,7 +56,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+          "version": "repo-file-v1:sha256:0f2f55e5fdd5d6f026b48c5cc35ba613968789e95a166d9ffcd582ff85eb0528"
         },
         {
           "resource": "repo://.github/workflows/lint.yml",
@@ -64,11 +64,11 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
+          "version": "repo-file-v1:sha256:16b799b1caf40564f0e6e37b04717915f40e3a0d8faaae561d3cd8b93486e571"
         }
       ]
     },
@@ -156,7 +156,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
@@ -181,10 +181,28 @@
           "version": "repo-file-v1:sha256:2a9e5922387211a72f2caff4226ea5b1580890de82a92dc44baa4fff12bbd29e"
         }
       ]
+    },
+    {
+      "id": "claim_3dfaeab94e2a4085a3dade66f1e23c4c",
+      "statement": "The trusted-base native Chainguard receipt provenance workflow writes status only for the event head after confirming it is an open main PR; on main pushes it rechecks only heads with exact base/head native receipt differences, and includes unreadable state or a missing receipts map for fail-closed verification. The manifest policy locks its workflow shape and run body.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml#L35-L101",
+          "version": "repo-lines-v1:sha256:ba9c47bd7b588eb40c7987e173bc49ac2dcdca77c3803cccc1acfa34f34716bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQ4ZDE0OGI4ZWU3NzBlMDQ2NDA5NTE3NGEwM2E1NmFiZmM4NTZmYTdhYjg0NWQxNDY1YzY0NzcyMjc0NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NGIyODhiMjk5NTc2ODQxMTc2YmM4ZTgxNDdjYmJhYjM1NTgwZmI2OGM1MjFkOTkxM2Y5ZDQ3ZmJiZWI2YjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmZGZjMTAwZmVkNTgxMjc2ZjBjMDQ5ZWEyMDkyMmIzZjBiZDNhZjRkODQwYWM2Mzc5NDFjZDFkYjE4NmI5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjc0N2E1MTcxZGQwOGMwMzc5YzdiZWEzZGYwYjIzZWM1NjRhZGQ4OTY3MTk4MDcyY2E1ZjYyZjFkNWFlMWUifQ"
+        },
+        {
+          "resource": "repo://policy/workflows.rego#L354-L448",
+          "version": "repo-lines-v1:sha256:878ce88de52696eedf20590376360bcdc352b1972f6cae4ecd77db91d9d5ef66:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py#L367-L383",
+          "version": "repo-lines-v1:sha256:8add3df46008119eae6af9b8f626d2489a32813911d60e20de1885de475143eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjYjYxYTdkYzZhYTI3NTI2YTNkODhlNjNkMDE2MzNiMjc0N2E1MjJmZTcyYTQ2NWRjZmNjM2Q5MzU3NmIwMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0ZDAwNDczZDg2YmE3ZDAwNDc0ZTBjM2NhZTQ1MDQ3MDFjN2NiOThhMzExNDU2Y2Y5MGQxODY3N2M0NTI3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjZDVkMzVkM2FmYWVmOWYwODY1MWM2ZDgxOWM4ZDExYzZjNWE1OTgyYzAyNTFjMThlYzc4ODE3MzlmMDQwOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhmMGM1ZDQxNmVjMWNiMzA1ODgzZTFlYzlhZjY1MzkwYmEwZmU2YTQzMzQ2NTVhZTRhYzc2NDczMjVjNDkwMjIifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:35:13.441Z"
+    "at": "2026-10-20T07:00:11.238Z"
   }
 }
