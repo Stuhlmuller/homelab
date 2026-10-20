@@ -71,6 +71,8 @@ spec:
                   readOnly: true
                 - name: cache
                   mountPath: /cache/renovate
+                - name: fault-cache
+                  mountPath: /cache/renovate-fault
                 - name: tmp
                   mountPath: /tmp
           volumes:
@@ -89,6 +91,11 @@ spec:
             - name: cache
               persistentVolumeClaim:
                 claimName: renovate-cache
+            # Only the committed fault hour uses this bounded, Pod-local volume.
+            - name: fault-cache
+              emptyDir:
+                medium: Memory
+                sizeLimit: 1Mi
             - name: tmp
               emptyDir:
                 sizeLimit: 8Gi

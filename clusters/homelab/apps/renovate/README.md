@@ -116,6 +116,22 @@ visibility and later normal PVC use, but cannot prove recovery from an actual
 full NAS export. T024/T042 and writer cutover remain blocked on a declared
 capacity path and direct recovery evidence.
 
+For the bounded 2026-10-20 10:00–11:00 UTC full-cache drill, a reviewed
+temporary change keeps the cache PVC mounted and adds a `1Mi` memory-backed
+`emptyDir`. During that hour, `config.js` fills only that tmpfs to `ENOSPC`
+and selects it for the ordinary 4 KiB cache probe, which must fail before
+minting an App token. On every other hour, the Job uses the retained PVC
+automatically, even if the
+recovery PR is delayed. Keep full dry-run mode. Merge before the chosen slot
+only after checks and Argo sync can finish; if the slot passes, retarget it
+through another reviewed change. Confirm one failed scheduled Job and its
+restricted storage-error log, then a successful later scheduled Job with the
+original PVC. Remove the temporary volume and clock condition through a
+reviewed recovery change. This tests failure visibility and scheduled recovery
+without filling the shared NAS. It does not prove NAS capacity restoration;
+that still needs a declared operator procedure before a real full-export
+incident.
+
 Renovate 44.167.4 treats missing or malformed package entries as misses and
 skips malformed repository cache files; a later run can rebuild both from
 upstream. The pinned upstream recovery fixture in

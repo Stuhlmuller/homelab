@@ -14,6 +14,7 @@ function load(options = {}) {
   const calls = [];
   const cacheWrites = [];
   const cacheUnlinks = [];
+  const cacheFills = [];
   const issuer = options.issuer ?? 'Iv1.example';
   const key = options.key ?? pem;
   const installation = options.installation ?? {
@@ -23,11 +24,12 @@ function load(options = {}) {
   };
   const result = options.result ?? {
     token: 'ghs_test-installation-token',
-    expires_at: new Date(Date.now() + 3600_000).toISOString(),
+    expires_at: new Date((options.now ?? Date.now()) + 3600_000).toISOString(),
   };
   const context = {
     module: { exports: {} },
     Buffer,
+    Date: { now: () => options.now ?? Date.now(), parse: Date.parse },
     require(name) {
       if (name === 'node:fs') {
         return {
@@ -37,7 +39,15 @@ function load(options = {}) {
             throw new Error('unexpected credential path');
           },
           writeFileSync(file, bytes, settings) {
-            assert.match(file, /^\/cache\/renovate\/\.storage-probe-[0-9a-f-]+$/);
+            if (file === '/cache/renovate-fault/.full-fixture') {
+              assert.equal(bytes.length, 2 * 1024 * 1024);
+              cacheFills.push(file);
+              if (options.fixtureFillSucceeds) return;
+              const error = new Error(options.fixtureError ?? 'ENOSPC');
+              error.code = options.fixtureError ?? 'ENOSPC';
+              throw error;
+            }
+            assert.match(file, /^\/cache\/renovate(?:-fault)?\/\.storage-probe-[0-9a-f-]+$/);
             assert.equal(bytes.length, 4096);
             assert.equal(settings.flush, true);
             cacheWrites.push(file);
@@ -62,7 +72,7 @@ function load(options = {}) {
     },
   };
   vm.runInNewContext(source, context, { filename: configPath });
-  return { config: context.module.exports, calls, cacheWrites, cacheUnlinks };
+  return { config: context.module.exports, calls, cacheWrites, cacheUnlinks, cacheFills };
 }
 
 test('mints a signed installation token and preserves the current global policy', async () => {
@@ -128,6 +138,34 @@ test('fails before GitHub access when the cache volume is full or unwritable', a
   assert.deepEqual(recovered.cacheUnlinks, recovered.cacheWrites);
 });
 
+test('bounds the full-cache fault to one UTC hour and resumes the retained cache', async () => {
+  const hour = Date.parse('2026-10-20T10:00:00Z');
+  for (const now of [hour - 1, hour + 3600_000]) {
+    const run = load({ now });
+    const resolved = await run.config();
+    assert.equal(resolved.cacheDir, '/cache/renovate');
+    assert.deepEqual(run.cacheFills, []);
+    assert.equal(run.calls.length, 2);
+  }
+
+  const fault = load({ now: hour + 15 * 60_000, cacheError: true });
+  await assert.rejects(fault.config(), /cache volume is unavailable or full/);
+  assert.deepEqual(fault.cacheFills, ['/cache/renovate-fault/.full-fixture']);
+  assert.match(fault.cacheWrites[0], /^\/cache\/renovate-fault\/\.storage-probe-/);
+  assert.equal(fault.calls.length, 0);
+
+  const unexpected = load({ now: hour + 15 * 60_000 });
+  await assert.rejects(unexpected.config(), /fault probe unexpectedly succeeded/);
+  assert.match(unexpected.cacheWrites[0], /^\/cache\/renovate-fault\/\.storage-probe-/);
+  assert.equal(unexpected.calls.length, 0);
+
+  for (const options of [{ fixtureError: 'EACCES' }, { fixtureFillSucceeds: true }]) {
+    const invalid = load({ now: hour, ...options });
+    await assert.rejects(invalid.config(), /EACCES|did not reach ENOSPC/);
+    assert.equal(invalid.calls.length, 0);
+  }
+});
+
 test('refuses an inaccessible or selected-repository installation', async () => {
   const inaccessible = load({ status: [404] });
   await assert.rejects(inaccessible.config(), /returned HTTP 404/);
@@ -169,7 +207,7 @@ test('temporarily exposes only package-cache hit markers during full dry run', a
   assert.match(cronjob, /^  concurrencyPolicy: Forbid$/m);
 });
 
-test('keeps Renovate cache refresh defaults and mounts credentials outside the PVC', async () => {
+test('keeps Renovate cache refresh defaults and the bounded fault separate from the PVC', async () => {
   const { config } = load();
   const resolved = await config();
   for (const key of ['cacheTtlOverride', 'cacheHardTtlMinutes', 'httpCacheTtlDays']) {
@@ -183,6 +221,9 @@ test('keeps Renovate cache refresh defaults and mounts credentials outside the P
   const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
   assert.match(cronjob, /- name: cache\n\s+mountPath: \/cache\/renovate\n/);
   assert.match(cronjob, /- name: cache\n\s+persistentVolumeClaim:\n\s+claimName: renovate-cache\n/);
+  assert.match(cronjob, /- name: fault-cache\n\s+mountPath: \/cache\/renovate-fault\n/);
+  assert.match(cronjob, /- name: fault-cache\n\s+emptyDir:\n\s+medium: Memory\n\s+sizeLimit: 1Mi\n/);
+  assert.doesNotMatch(cronjob, /initContainers:/);
   assert.match(cronjob, /- name: github-app\n\s+mountPath: \/var\/run\/secrets\/renovate\n\s+readOnly: true\n/);
   assert.match(cronjob, /- name: github-app\n\s+secret:\n\s+secretName: renovate\n/);
 });
