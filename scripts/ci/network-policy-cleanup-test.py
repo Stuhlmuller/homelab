@@ -191,11 +191,26 @@ class FirewallCleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                     transition(qualify_sha, git("rev-parse", "HEAD"))
                 git("reset", "--hard", "HEAD~1")
-                backup_storage = root / "IaC/application-backup-storage.hcl"
-                backup_storage.write_text('inputs = { bucket = "unreviewed-receipts" }\n')
-                commit("change private receipt bucket")
-                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
-                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                anchor = git("rev-parse", "HEAD")
+                for name in (
+                        "IaC/application-backup-storage.hcl",
+                        "IaC/unrelated-unit/stack.hcl",
+                        "clusters/unrelated-app/kustomization.yaml",
+                        "scripts/unrelated-helper.py",
+                        ".github/actions/unrelated/action.yml",
+                        ".talos/unrelated.yaml",
+                        "builds/unrelated/Dockerfile",
+                        "policy/unrelated.rego",
+                        "recovery/unrelated.json",
+                        "flake.nix", "flake.lock"):
+                    with self.subTest(protected_path=name):
+                        git("reset", "--hard", anchor)
+                        protected = root / name
+                        protected.parent.mkdir(parents=True, exist_ok=True)
+                        protected.write_text("unreviewed operational source\n")
+                        commit("change operational source")
+                        with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                            transition(qualify_sha, git("rev-parse", "HEAD"))
 
     def test_unadmitted_config_refuses_before_any_cluster_command(self):
         with patch.dict(SUT["PLATFORM"], {

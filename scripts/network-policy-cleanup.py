@@ -472,21 +472,9 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
                     new_app != old_app.replace(old_sync, new_sync)):
                 raise ValueError("firewall removal differs from the reviewed GitOps transition")
             phase = 2
-        elif any(path.startswith(("clusters/homelab/platform/network-policy/",
-                                  "IaC/platform-network-policy", "scripts/network-policy-",
-                                  "scripts/ci/network-policy-", "scripts/ci/platform-maintenance-",
-                                  "IaC/terragrunt-catalog/units/live/argocd-app/",
-                                  "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/")) or
-                 path in {"scripts/platform-maintenance.py", "scripts/config/platform-maintenance.json",
-                          "scripts/ci/platform-maintenance-stage.sh",
-                          "scripts/ci/static-checks.sh", "scripts/ci/offline-static-checks.sh",
-                          "scripts/ci/terragrunt-filter-base.sh",
-                          "scripts/ci/install-kubeconfig.sh", "scripts/ci/install-octelium-client.sh",
-                          ".github/workflows/platform-maintenance.yml", "policy/workflows.rego",
-                          "policy/workflows_test.rego",
-                          "IaC/root.hcl", "IaC/terragrunt.stack.hcl",
-                          "IaC/stack-defaults.hcl", "IaC/application-backup-storage.hcl",
-                          "clusters/homelab/argocd/self-management/appproject.yaml"}
+        elif any(path.startswith((".github/", ".talos/", "IaC/", "builds/", "clusters/",
+                                  "policy/", "recovery/", "scripts/")) or
+                 path in {"flake.nix", "flake.lock"}
                  for path in changed):
             raise ValueError("policy cleanup source changed after qualification")
         previous = commit_sha

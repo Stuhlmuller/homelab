@@ -98,7 +98,11 @@ The protected Platform Maintenance workflow has separate `ownership-capture`
 and `ownership-approve` stages. After a successful `qualify` run, merge two
 dedicated reviewed GitOps commits in order. Unrelated `main` commits may land
 before, between, or after them; the protected stage checks complete first-parent
-history and rejects any intervening policy cleanup source change. The first
+history and rejects intervening changes under `.github/`, `.talos/`, `IaC/`,
+`builds/`, `clusters/`, `policy/`, `recovery/`, or `scripts/`, or to `flake.nix`
+or `flake.lock`. These broad source roots keep the qualified runtime, private
+receipt bucket, and validation inputs intact while allowing documentation-only
+merges. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
 `allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
 verify the fixture namespace is absent. The second changes only
@@ -168,7 +172,7 @@ absent, dispatch protected `canary-release` on the same current `main` SHA with
 `cleanup_run_id` set to the verified cleanup run. Release reads that immutable
 cleanup receipt, its reviewed ownership receipt, and the original placement
 at the qualify SHA. It accepts that placement only when the two exact GitOps
-prune commits still lead through policy-source-invariant history to current
+prune commits still lead through operational-source-invariant history to current
 `main` and the cleanup snapshot,
 capture run, and node identity all match. Keep the cleanup DaemonSet present
 until release: the stage rechecks that its node-local firewall has no
