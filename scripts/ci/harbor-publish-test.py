@@ -1294,6 +1294,9 @@ class HarborPublicationGates(unittest.TestCase):
                              and args[-1].startswith("dir:")]
                     self.assertEqual(len(reads), 3)
                     self.assertEqual(len(set(reads)), 3)
+                    self.assertEqual(len([args for args in self.calls_for("kubectl")
+                                          if "port-forward" in args]), 2)
+                    self.assertEqual(len(self.calls_for("curl")), 2)
                 else:
                     reads = [args[-1] for args in self.calls_for("regctl")
                              if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
@@ -1420,6 +1423,10 @@ class HarborPublicationGates(unittest.TestCase):
                              if args[0] == "copy" and args[-2].startswith("docker://harbor.stinkyboi.com/")
                              and args[-1].startswith("dir:")]
                 self.assertEqual(len(reads), count)
+                if failure == "mirror-pull-always":
+                    self.assertEqual(len([args for args in self.calls_for("kubectl")
+                                          if "port-forward" in args]), 3)
+                    self.assertEqual(len(self.calls_for("curl")), 3)
                 self.assert_cleaned()
 
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
