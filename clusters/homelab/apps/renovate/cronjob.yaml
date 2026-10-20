@@ -71,6 +71,8 @@ spec:
                   readOnly: true
                 - name: cache
                   mountPath: /cache/renovate
+                  # Temporary scheduled fault drill; the config rejects storage failure before minting a token.
+                  readOnly: true
                 - name: tmp
                   mountPath: /tmp
           volumes:
