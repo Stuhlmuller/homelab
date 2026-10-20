@@ -19,6 +19,13 @@ Kubernetes resources that are safe for this public repository:
 - A bounded emergency dataplane on `acer` for the control paths, CI API, and
   current public WEB Services while both normal dataplane nodes are NotReady.
 
+`generated-networkpolicies.json` records the ten NetworkPolicy specs created
+by the pinned [Enterprise Genesis v0.22.0 constructors](https://github.com/octelium/octelium-ee/tree/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components).
+It is a sanitized `--render` input for `scripts/network-policy-inventory.py`,
+not a Kustomize resource. A read-only October 20 comparison found all ten
+complete specs equal to live policies. These ingress-only policies do not
+isolate egress; traffic and enforcement still require a canary review.
+
 Do not commit generated Secrets such as `sys-init-kek`, Octelium database
 credentials, license material, or kubeconfigs here. Those remain runtime state
 created by Octelium or stored through the existing secret contracts.

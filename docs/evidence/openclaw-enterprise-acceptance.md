@@ -85,10 +85,17 @@ canary remain unqualified; this does not pass T018 or T027.
 On October 20, the four Octelium Genesis policies also matched a read-only
 live complete-spec recheck and the reviewed v0.35.0 constructors. Their
 [expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
-is another inventory render input, not a live owner. Ten Octelium Enterprise
-Genesis policies still lack source-bound fixtures. `octelium/svc-upstream`
+is another inventory render input, not a live owner. At that checkpoint, ten
+Octelium Enterprise Genesis policies lacked source-bound fixtures. `octelium/svc-upstream`
 public all-port egress, actual traffic, and the tainted canary remain
 unqualified; T018 and T027 remain open.
+On October 20, the ten Octelium Enterprise Genesis policies also matched a
+read-only complete-spec check against the reviewed v0.22.0 constructors. Their
+[expected-spec fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+is an additional inventory input, not a deployed policy. All 17 generated
+Cordium, Octelium, and Octelium Enterprise policies now have source-bound
+fixtures. Their traffic, broad `ws-main` and `svc-upstream` egress, and the
+isolated canary remain unqualified; T018 and T027 remain open.
 Read-only `kubectl top nodes` at 2026-10-18 11:57 UTC showed memory use of
 69% on `acer`, 82% on `zimaboard-0`, 85% on `zimaboard-1` and 81% on
 `zimaboard-2`; all four nodes were Ready and none had a dedicated canary
