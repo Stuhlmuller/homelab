@@ -16,8 +16,14 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-2db30a96244f789640bb2100
+    resource: repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -34,10 +40,10 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T21:32:39.892Z" }
+generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:02:18.363Z
 ---
 
 # Storage And State
@@ -576,6 +582,12 @@ at this draft revision, its task record still lacks a durable receipt for
 those Pod UIDs and acceptance of the `v0.0.2` refresh. The protected release
 was published at 20:20 UTC. A live cache-failure cycle and next-slot recovery
 also remain open.
+
+## Temporary Renovate acceptance ledger
+
+The staged observer declares a separate 2 GiB `nfs-default` PVC for private dependency inventory, the fixed sample, upstream release brackets, report artifacts, and PR-proof receipts. Its 15-minute CronJob remains suspended; the inventory, report, and PR-proof Jobs are suspended and omitted from Kustomize. This volume holds acceptance evidence, separate from the runner cache, and must be retained through aggregate review.
+
+The PVC has `Prune=false`, so removing its manifest alone does not erase private data. The [workload runbook](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) requires a reviewed cleanup path and verification before retiring the observer and ledger. That cleanup Job is not yet declared.
 
 ## Staged independent application recovery (HOME-2)
 

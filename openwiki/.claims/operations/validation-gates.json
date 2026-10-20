@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fc19b226327f1f4e147944aa96a8352bbc0938b7f51124f93197df04df06ffc2",
+  "pageVersion": "sha256:3b19647713bbad40db5f736a047779bb5ddfef6fc5cd9c92dc04de3dbb6d1876",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -789,8 +789,8 @@
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
-          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L110-L124",
+          "version": "repo-lines-v1:sha256:66a64334a83db3b5c0a71516ce217aaa2ac7e0137628cc1c069a274311f1fa57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmMGJkMDY5MGE4MTI2M2I1MjEyYWQwMTg4OWQ4MmZjZDRmNGNhZDgxZmEyMmZmYjhlZDhmNzAxM2EwZGMyNjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4MmE1MWIyOTAyNTA5Yjk5YmRkNzA3OTgxOTk5MjNjODZkYjEyMGE0ZDRlYTk1Y2RjY2Q0Mjg2NzY4Y2VhODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5ZTI4NmYzNTYwYTM2ZDg2YThhOGJkMWJlMDFlOGRmNzZjMzMzYTdjNjA4MmI1NjMyODdjOTk5NGU1MTljM2EifQ"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -1030,7 +1030,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -1179,10 +1179,42 @@
           "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
         }
       ]
+    },
+    {
+      "id": "claim_1ce9fa41d6424b4b96be819f659cffc3",
+      "statement": "Four Renovate acceptance Node suites cover source inventory, fixed sample and upstream polling, aggregate report, and version-bound PR proof; the observer CronJob is rendered suspended while one-shot Jobs remain omitted, so these tests are not live acceptance evidence.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml",
+          "version": "repo-file-v1:sha256:337c9c7f9020afcd5c40f11835cc4f76e6808e441609792d7e1a3cd798d54c8d"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
+          "version": "repo-file-v1:sha256:fc3a8f0133dde1f6b1c1aa29a830e3f717e1e568d541e818cf0b2aa9fd68c89d"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+        }
+      ]
+    },
+    {
+      "id": "claim_2b1ad298f4514442a75c10c9e9b0bc7f",
+      "statement": "The staged acceptance report stays inconclusive for fewer than ten eligible natural releases, missing outcomes, or ambiguous evidence; independent owner, source visibility, effective policy, recurring outcome proof, and seven healthy days remain review gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer.js",
+          "version": "repo-file-v1:sha256:2cf53537da3c7db8885b6f41c85a7eee8a5cb85a60318026aabb32ca65344092"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:02:18.363Z"
   }
 }

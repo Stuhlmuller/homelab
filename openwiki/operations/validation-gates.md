@@ -60,10 +60,16 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
+  - id: openwiki-source-699113cfd35bf2732550bb50
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer.js
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
@@ -248,10 +254,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
+generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:02:18.363Z
 ---
 
 # Validation Gates
@@ -2058,6 +2064,24 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Renovate acceptance evidence
+
+The four focused `renovate-acceptance-*` Node suites in
+[`static-checks.sh`](../../scripts/ci/static-checks.sh) cover extraction
+inventory, a fixed datasource sample, upstream polling, conservative aggregate
+reports, and version-bound PR proof. The Kustomize render includes the
+observer CronJob only in suspended state; the inventory, report, and PR-proof
+Jobs are omitted. These checks establish source behavior, not live acceptance.
+
+The observer is designed to poll upstream every 15 minutes without the runner
+cache and keep private identities and release brackets on its separate ledger.
+Its offline report counts missing eligible outcomes and measures four hours
+from the conservative last-absent bound. Fewer than ten eligible natural
+releases, ambiguous evidence, or missing outcomes make the result inconclusive.
+Independent owner, source-visibility, and policy review; recurring outcome
+proof; and seven healthy days remain open. See the
+[workload contract](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer).
 
 ## Mastodon activation gates
 
