@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b6230723e7cbe788a253b33a3807c2f3b23989024d76b3a6cf2ef9ddb7e223d2",
+  "pageVersion": "sha256:d38844cb7dcf50ee2ce8c78faaee3feb5bede0f8b72fd13f6321ce972954e49c",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1030,7 +1030,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -1162,7 +1162,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
+          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1334,7 +1334,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
         },
         {
           "resource": "repo://scripts/ci/network-policy-inventory-test.py",
@@ -1344,15 +1344,15 @@
     },
     {
       "id": "claim_401e6ef8883345159579fb1c697cace1",
-      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors admit public IPv4 and IPv6 on all ports, which additive NetworkPolicies cannot narrow; generator-owned correction and isolated canary traffic qualification remain required before enforcement.",
+      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode public IPv4 and IPv6 egress on all ports without a public-egress input; additive NetworkPolicies cannot narrow either rule. A reviewed upstream patch or fork, rebuilt and pinned images, actual generator renders, and isolated canary traffic and private-range denial qualification are required before enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L1391-L1394",
+          "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
+          "resource": "repo://docs/runtime-isolation.md#L168-L193",
+          "version": "repo-lines-v1:sha256:1aef65d9c5acad4e5e9ce7e85f6538c959810dde4af9afff3667d341f6243d08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZDczZmM1MmE0YmRhYzcxNTYyYzI3ZTdiNTYxOGU5NDNhZjM2OTY4ODZiODU5NTA5YmNkOWJlMTVlNzk0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZTlkMzg5ZDJjYTkxMTlkMWZkMjY0MDljNzVmYzJhNThiOGE1MThmZGU4NTIzMmY3Y2RkNWE3YjM2NmYyZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0NDUwNzAyMjAxYmJhYzQ3MjcwNWY3MDU4NWM5ZjYyZTdiNzk4YTRmYjYzMjQ0NDE0NzQ2NDk0YTZmNjdmYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMTYxZmRmNWRmNmE1NjYxMDdhMmYwYTdhMDBmYTAzYTIzYTViYTdmZDRhMTkyMDQxYWFiMWM3OGQ5M2FhMDMifQ"
         }
       ]
     },
@@ -1431,6 +1431,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T08:13:32.442Z"
+    "at": "2026-10-20T08:35:40.829Z"
   }
 }

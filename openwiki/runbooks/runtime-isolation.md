@@ -48,10 +48,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
+generated: { by: "codex", at: "2026-10-20T08:35:40.829Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:13:32.442Z
+    at: 2026-10-20T08:35:40.829Z
 ---
 
 # Runtime Isolation
@@ -132,10 +132,13 @@ binds three complete policy shapes to pinned `v0.12.7` constructors. The
 binds four Genesis policies to pinned `v0.35.0` constructors. The
 [Enterprise fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
 binds the remaining ten. All 17 complete expected specs are now source-bound;
-pinned generator-binary renders remain unverified. The pinned `ws-main` and `svc-upstream` constructors
-admit all ports to public IPv4 and IPv6; additive NetworkPolicies cannot narrow
-those allows. Correct the generators and qualify required traffic on an isolated
-canary before any enforcement.
+pinned generator-binary renders remain unverified. The pinned `ws-main` and
+`svc-upstream` constructors hardcode all-port public IPv4 and IPv6 egress
+without a public-egress input; additive NetworkPolicies cannot narrow those
+allows. Patch the owning generators upstream or build reviewed forks, publish
+and pin corrected images, then refresh fixtures from actual generator renders.
+Qualify required destinations and private-range denial on an isolated canary
+before any enforcement.
 
 Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
