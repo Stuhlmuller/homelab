@@ -2,6 +2,7 @@
 """Probe the admitted policy canary; lifecycle evidence is checked separately."""
 
 import argparse
+import ipaddress
 import json
 import os
 import runpy
@@ -75,6 +76,52 @@ except OSError:
 if data!=b'npq-ok': sys.exit(8)
 print('NPQ_ALLOWED')
 """
+DNS_PROBE = """import os,socket,struct,sys
+address,protocol,expected,port=sys.argv[1:]
+port=int(port)
+name=b''.join(bytes([len(part)])+part.encode() for part in 'kubernetes.default.svc.cluster.local'.split('.'))+b'\\0'
+question=name+b'\\0\\x01\\0\\x01'
+query=os.urandom(2)+b'\\x01\\0\\0\\x01\\0\\0\\0\\0\\0\\0'+question
+def receive(connection,count):
+ data=b''
+ while len(data)<count:
+  part=connection.recv(count-len(data))
+  if not part: raise OSError('short DNS reply')
+  data+=part
+ return data
+try:
+ kind=socket.SOCK_STREAM if protocol=='TCP' else socket.SOCK_DGRAM
+ with socket.socket(socket.AF_INET,kind) as connection:
+  connection.settimeout(3)
+  if kind==socket.SOCK_STREAM:
+   connection.connect((address,port))
+   connection.sendall(struct.pack('!H',len(query))+query)
+   reply=receive(connection,struct.unpack('!H',receive(connection,2))[0])
+  else:
+   connection.sendto(query,(address,port))
+   reply,source=connection.recvfrom(4096)
+except OSError: sys.exit(7)
+if protocol=='UDP' and source!=(address,port): sys.exit(8)
+if (len(reply)<12+len(question) or reply[:2]!=query[:2] or
+    not reply[2]&0x80 or reply[2]&0x02 or reply[3]&0x0f or
+    int.from_bytes(reply[4:6],'big')!=1 or
+    not int.from_bytes(reply[6:8],'big') or
+    reply[12:12+len(question)]!=question): sys.exit(8)
+offset=12+len(question)
+found=False
+for _ in range(int.from_bytes(reply[6:8],'big')):
+ if reply[offset:offset+2]==b'\\xc0\\x0c': offset+=2
+ elif reply[offset:offset+len(name)]==name: offset+=len(name)
+ else: sys.exit(8)
+ if len(reply)<offset+10: sys.exit(8)
+ kind,record_class,_,length=struct.unpack('!HHIH',reply[offset:offset+10])
+ offset+=10
+ if len(reply)<offset+length: sys.exit(8)
+ if kind==1 and record_class==1 and length==4 and reply[offset:offset+4]==socket.inet_aton(expected): found=True
+ offset+=length
+if not found: sys.exit(8)
+print('NPQ_DNS_ALLOWED')
+"""
 CASES = (
     ("npq-allowed", "npq-denied", 8080, "TCP", True),
     ("npq-allowed", "npq-denied", 8080, "UDP", True),
@@ -93,9 +140,16 @@ EXPECTED_POLICY = {
     "metadata": {"name": "npq-client-egress", "namespace": NAMESPACE},
     "spec": {"podSelector": {"matchLabels": {"role": "client"}},
              "policyTypes": ["Egress"],
-             "egress": [{"to": [{"podSelector": {"matchLabels": {"role": "allowed"}}}],
-                         "ports": [{"protocol": "TCP", "port": 8080},
-                                   {"protocol": "UDP", "port": 8080}]}]},
+             "egress": [
+                 {"to": [{"podSelector": {"matchLabels": {"role": "allowed"}}}],
+                  "ports": [{"protocol": "TCP", "port": 8080},
+                            {"protocol": "UDP", "port": 8080}]},
+                 {"to": [{"namespaceSelector": {"matchLabels": {
+                     "kubernetes.io/metadata.name": "kube-system"}},
+                     "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}}],
+                  "ports": [{"protocol": "TCP", "port": 53},
+                            {"protocol": "UDP", "port": 53}]},
+             ]},
 }
 
 
@@ -285,6 +339,46 @@ def probe(source, address, port, protocol):
     )
 
 
+def probe_dns(source, address, protocol, expected):
+    return subprocess.run(
+        ["kubectl", "--request-timeout=15s", "-n", NAMESPACE, "exec", source,
+         "--", "/usr/bin/python3", "-c", DNS_PROBE, address, protocol, expected, "53"],
+        capture_output=True, text=True, timeout=25,
+    )
+
+
+def dns_matrix():
+    service = kubernetes_json("-n", "kube-system", "get", "service", "kube-dns")
+    kubernetes = kubernetes_json("-n", "default", "get", "service", "kubernetes")
+    metadata, spec = service.get("metadata", {}), service.get("spec", {})
+    kube_metadata, kube_spec = kubernetes.get("metadata", {}), kubernetes.get("spec", {})
+    ports = {(item.get("protocol"), item.get("port"), item.get("targetPort"))
+             for item in spec.get("ports", [])}
+    if (metadata.get("name") != "kube-dns" or metadata.get("namespace") != "kube-system" or
+            spec.get("clusterIP") != "10.96.0.10" or
+            spec.get("ipFamilies") != ["IPv4"] or
+            spec.get("selector") != {"k8s-app": "kube-dns"} or
+            not {("TCP", 53, 53), ("UDP", 53, 53)}.issubset(ports)):
+        raise ValueError("DNS Service differs from reviewed IPv4 source")
+    try:
+        expected = str(ipaddress.IPv4Address(kube_spec.get("clusterIP")))
+    except (ValueError, TypeError):
+        raise ValueError("Kubernetes Service has no IPv4 address") from None
+    if (kube_metadata.get("name") != "kubernetes" or
+            kube_metadata.get("namespace") != "default" or
+            kube_spec.get("ipFamilies") != ["IPv4"]):
+        raise ValueError("Kubernetes Service differs from reviewed IPv4 source")
+    results = []
+    for protocol in ("TCP", "UDP"):
+        result = probe_dns("npq-client", "10.96.0.10", protocol, expected)
+        if result.returncode != 0 or result.stdout.strip() != "NPQ_DNS_ALLOWED":
+            raise ValueError(f"DNS {protocol} probe failed")
+        results.append({"source": "npq-client", "target": "kube-dns", "port": 53,
+                        "protocol": protocol, "permitted": True,
+                        "observed": "NPQ_DNS_ALLOWED"})
+    return results
+
+
 def traffic_matrix(pods):
     results = []
     for source, target, port, protocol, permitted in CASES:
@@ -295,6 +389,7 @@ def traffic_matrix(pods):
         results.append({"source": source, "target": target, "port": port,
                         "protocol": protocol, "permitted": permitted,
                         "observed": marker})
+    results.extend(dns_matrix())
     return results
 
 

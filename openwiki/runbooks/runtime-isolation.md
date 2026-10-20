@@ -41,7 +41,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:06:01.306Z
+    at: 2026-10-20T04:09:01.373Z
 ---
 
 # Runtime Isolation
@@ -124,7 +124,12 @@ checks the live firewall-only DaemonSet image, flags, host mount and RBAC, then
 checks the admitted tainted node, three fixed fixture Pods and their policy.
 It rejects changed fixture commands, arguments, and container security contexts
 before probing, so a modified server cannot make blocked traffic appear denied.
-Its TCP/UDP allow-and-deny probe writes a private receipt that explicitly lists
+Its TCP/UDP allow-and-deny probes also resolve the Kubernetes Service name
+through the reviewed `kube-dns` Service over both TCP and UDP 53. Each DNS reply
+must contain a complete A record matching the live `default/kubernetes` Service
+IP, and each probe requires an explicit remote outcome marker. Transport failure
+or a malformed or wrong DNS answer cannot count
+as a deny or DNS success. Both DNS results enter a private receipt that lists
 the lifecycle scenarios still unverified. The qualifier does not create the
 fixture or attest node reboot, enforcer recovery, or real workload traffic;
 those remain live gates before enforcement expands.
