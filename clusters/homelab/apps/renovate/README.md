@@ -110,7 +110,11 @@ cannot resize PVCs. If the backing share is full, suspend `cronjob.yaml`
 through a reviewed PR, restore share capacity through a declared path, and
 verify the next scheduled Job after resuming. If no declared NAS capacity path
 exists, add one before changing live state. Increasing the PVC request will
-not restore writes.
+not restore writes. No verified QNAP `/homelab` capacity-restoration operation
+is declared yet. A bounded, isolated tmpfs `ENOSPC` drill can test failure
+visibility and later normal PVC use, but cannot prove recovery from an actual
+full NAS export. T024/T042 and writer cutover remain blocked on a declared
+capacity path and direct recovery evidence.
 
 Renovate 44.167.4 treats missing or malformed package entries as misses and
 skips malformed repository cache files; a later run can rebuild both from
@@ -162,6 +166,18 @@ and Renovate's normal cache freshness rules.
 `scripts/ci/renovate-log-remap-test.mjs` verifies the INFO record and its
 metadata against an installed copy of pinned Renovate 44.167.4.
 
+On 2026-10-19, the 19:00 and 20:00 scheduled Pods had distinct UIDs and each
+hit that exact cached key. After the protected v0.0.2 release at 20:20 UTC, the
+21:00 full dry run kept the cache hit and gained one branch-commit proposal for
+the public canary; its four other proposals were unchanged. Renovate's pinned
+full dry-run path stops before creating a new PR, so no create-PR marker is
+expected. The
+[parity receipt](../../../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md)
+records the aggregate evidence. A manual cluster Job created the public canary
+record at 05:13 UTC after v0.0.1 was published; historical Job and Pod
+metrics confirm it mounted the retained PVC. T022 is complete. Real PR creation
+and policy remain gated by T031.
+
 Read-only status checks:
 
 ```sh
@@ -177,6 +193,24 @@ cover a missed start, a cycle with no success by its deadline, and a missing
 CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
+
+For per-repository failures, correlate restricted `ERROR`/`FATAL` records and
+their repository tags with the final repository summaries. Pinned Renovate can
+log `Repository finished` with `done`/`exitCode 0` after a datasource lookup
+error, then exit the overall Job nonzero for retained error records. Do not
+treat a final per-repository processing summary alone as an error-free scan.
+
+The protected missed-slot drill produced no 03:00 UTC Job, and
+`RenovateHourlyCycleMissing` fired at 03:20:47 UTC. The reviewed recovery
+restored hourly desired state at 03:35:11 UTC. The unsuspended CronJob created
+Job `renovate-29874480` at 04:00:00 UTC; a read-only Prometheus check at
+04:00:38 UTC found the missed-cycle rule inactive with no `ALERTS` series.
+That Job succeeded at 04:20:23 UTC using Pod UID
+`dd063320-8d27-493e-8c62-104aadbb6140`: eight repository starts and
+finishes, 124 dry-run markers, one exact public canary cache hit, and zero
+error headers, lookup errors, or mutex timeouts. Argo CD was Synced/Healthy
+at main `90fc7761618c43a9f120130d584dd7ae4eea0da5`. T045 is complete;
+cache-fault recovery under T024/T042 remains open.
 
 A temporary acceptance observer is planned but not yet declared. Once added,
 keep it suspended until its private sample is fixed before the seven-day
