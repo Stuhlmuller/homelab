@@ -212,6 +212,16 @@ class ActiveTenantAPI(TenantAPI):
 
     def patch(self, path, body):
         self.calls.append(("PATCH", path, copy.deepcopy(body)))
+        if path == "/namespaces/ns_one/configurations/cfg_one":
+            item = self.configurations["cfg_one"]
+            if body.get("expectedGeneration") != item["generation"]:
+                raise OCE.Blocked("HTTP 409")
+            item["generation"] += 1
+            item["values"] = copy.deepcopy(body["values"])
+            if self.lose == "configuration-update":
+                self.lose = None
+                raise OCE.Blocked("lost Configuration update response")
+            return copy.deepcopy(item)
         if path != "/namespaces/ns_one/agents/agt_one":
             raise AssertionError("unexpected PATCH")
         self.agents["agt_one"]["harnessAuth"] = copy.deepcopy(body["harnessAuth"])
@@ -234,14 +244,20 @@ class ActiveTenantAPI(TenantAPI):
         self.calls.append(("POST-202", path, copy.deepcopy(body)))
         if path == "/namespaces/ns_one/agents/agt_one/deploy":
             agent = self.agents["agt_one"]
+            generation = self.configurations["cfg_one"]["generation"]
+            if generation not in (1, 2):
+                raise AssertionError("unexpected Configuration generation")
+            revision_id = "rev_one" if generation == 1 else "rev_two"
+            if revision_id in self.revisions:
+                raise AssertionError("unchanged Configuration was redeployed")
             # Pinned OCC admits platform logging when Kubernetes Compute owns
             # the runtime and the Installation omits a logging override.
             admitted = copy.deepcopy(self.configurations["cfg_one"]["values"])
             admitted["logging"] = {"level": "info", "consoleLevel": "info",
                                    "consoleStyle": "json"}
             admitted["diagnostics"] = {"otel": {"logs": False}}
-            item = {"id": "rev_one", "namespaceId": "ns_one", "agentId": "agt_one",
-                    "configurationId": "cfg_one", "configurationGeneration": 1,
+            item = {"id": revision_id, "namespaceId": "ns_one", "agentId": "agt_one",
+                    "configurationId": "cfg_one", "configurationGeneration": generation,
                     "configurationKind": "agent", "backendId": None,
                     "configuration": admitted,
                     "harnessAuth": copy.deepcopy(agent["harnessAuth"]),
@@ -1063,7 +1079,12 @@ class InactiveAgentReconciliation(unittest.TestCase):
             "openai/openrouter/free": {"agentRuntime": {"id": "openclaw"}}})
         self.assertEqual(values["models"]["providers"], {"openai": {
             "baseUrl": "https://openrouter.ai/api/v1", "api": "openai-completions",
+            "apiKey": {"source": "env", "provider": "model", "id": "OPENAI_API_KEY"},
             "models": [{"id": "openrouter/free", "name": "openrouter/free"}]}})
+        self.assertEqual(values["gateway"]["controlUi"], {"enabled": False})
+        self.assertEqual(values["secrets"], {"providers": {
+            "model": {"source": "env", "allowlist": ["OPENAI_API_KEY"]}}})
+        self.assertEqual(values["tools"], {"deny": ["*"]})
         bad = copy.deepcopy(self.config)
         bad["model"]["provider"] = "openrouter"
         with self.assertRaisesRegex(OCE.Blocked, "approved OpenRouter transport"):

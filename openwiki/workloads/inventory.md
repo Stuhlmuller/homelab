@@ -164,6 +164,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-91161c3887f6aa107b3c0d6b
+    resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -188,10 +190,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
+generated: { by: "codex", at: "2026-10-20T20:48:40.649Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T20:00:04.184Z
+    at: 2026-10-20T20:48:40.649Z
 ---
 
 # Workload Inventory
@@ -437,7 +439,11 @@ Embedded Agent; no live Agent or durable operator Job exists. A protected
 stage still needs a retained journal PVC, pinned Job and exact-main guard.
 Its active and stop paths have offline fixtures for model-key isolation,
 exact Agent grants, runtime credential/deployment readback, and idempotent
-stop. Committed `activationEnabled: false` and the missing dedicated OpenRouter
+stop. With a reviewed native origin, the source-only path guards the
+Configuration update from generation 1 to 2 and one second deployment; it
+verifies both revisions and blocks uncertain reposts. Recovery fixtures keep
+unknown stop intent and the separate legacy archive intact. Committed
+`activationEnabled: false` and the missing dedicated OpenRouter
 key still block activation; these fixtures are not live acceptance.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
 exists in source. A fixed protected binding lane is declared, but hosted

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:efeb024a0358d075f0744a7a294c835b8a6648934888b034a0cbb93dda1e9d56",
+  "pageVersion": "sha256:661ea5de7f756184c1587dc44c730cf3007dee076cd026999f8250978bda4a65",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -124,7 +124,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
+          "version": "repo-file-v1:sha256:4865783fe5547e4b8c6202ca3af20318398814ff2eda30215e51f3dc80822a82"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
@@ -180,7 +180,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:24c63099d5e2b83c2a6b1d8201c81fd27a13376f1bf42f47f16e11f22fde4f44"
+          "version": "repo-file-v1:sha256:5b09ae06373d285208cd6d605e0ddd128097df787b4200d7e2c0f3877966f39a"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -192,7 +192,7 @@
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:2f45979a0dea227e7f7059889e019f0d841005f46a77e5b77ec549eba17f72a8"
+          "version": "repo-file-v1:sha256:654fc64e37fcdd91de89c6c4f7b295aeb5f775706622466fea5172eeb00828c5"
         }
       ]
     },
@@ -217,6 +217,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:36:50.176Z"
+    "at": "2026-10-20T20:48:40.649Z"
   }
 }
