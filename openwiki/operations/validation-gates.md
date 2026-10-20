@@ -260,6 +260,8 @@ sources:
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-4bbfe00c406fec8a213babcb
@@ -290,10 +292,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
+generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:54:18.171Z
+    at: 2026-10-20T08:13:32.442Z
 ---
 
 # Validation Gates
@@ -1681,6 +1683,19 @@ placement and firewall ownership review under a new exact-current-`main`
 source SHA; do not rewrite ambiguous history or infer cleanup ran. These are
 source checks; cleanup stays disabled until its separate live prerequisites are
 met. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+
+The staged protected `canary-admit` path remains dormant while `canary.node` is
+unset. With a fresh placement receipt, it verifies the exact Node UID and boot
+ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
+Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
+then the selector label. A complete cluster-wide selector inventory must show
+no labeled Node before mutation and again just before labeling; if another
+Node appears after the patch, admission removes its own label and retains the
+taint. `canary-release` requires the reviewed cleanup receipt
+and an empty owned firewall. It removes the label, waits until cleanup
+DaemonSet Pods are gone cluster-wide, then removes the taint; a survivor or
+timeout leaves the taint and an interrupted private receipt. Source fixtures
+do not supply live capacity or traffic qualification.
 
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
