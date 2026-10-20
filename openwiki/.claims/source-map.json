@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7e4056f56d594abfbc6bc70bd503c60684e891a7a6b766256ee79ce627eb19b8",
+  "pageVersion": "sha256:8ed2815f11c6c0cf4a81ebbfd8555e999d14c0621c48762a438eafe763e62e05",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -146,7 +146,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
-          "version": "repo-file-v1:sha256:0273e318c03f94f26807630fd2ba2c032a5e8ff67b556e5e8ca4730b65017ae3"
+          "version": "repo-file-v1:sha256:0472059f9056b2c1e0f33fd544502e40f1c3109e6d95baa67aff94e35b8a3513"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -216,11 +216,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
+          "version": "repo-file-v1:sha256:e5ed3742d6a5d30874be41c3e8354874a2b19e5c8959bf04ff07759c24bf4d38"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
-          "version": "repo-file-v1:sha256:28ec5179a6dfe3926daac5afc06e1e10b52e77d5bc132fe4d9787219d2da05d1"
+          "version": "repo-file-v1:sha256:039f5269c036777e6c46da84556314bd3296345b52a40417e28ef25831eca35c"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -249,6 +249,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T10:40:02.561Z"
+    "at": "2026-10-20T14:16:14.853Z"
   }
 }
