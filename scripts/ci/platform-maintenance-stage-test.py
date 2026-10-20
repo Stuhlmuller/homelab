@@ -143,7 +143,9 @@ class PlatformStageTests(unittest.TestCase):
 bucket=test-bucket
 aws() {
   case "$2" in
-    list-object-versions) printf '%s\\n' "$TEST_VERSIONS" ;;
+    list-object-versions)
+      [[ " $* " == *" --no-paginate "* ]] || return 90
+      printf '%s\\n' "$TEST_VERSIONS" ;;
     get-object)
       printf 'get\\n' >>"$TEST_TRACE"
       [[ " $* " == *" --version-id $TEST_VERSION "* ]] || return 90
