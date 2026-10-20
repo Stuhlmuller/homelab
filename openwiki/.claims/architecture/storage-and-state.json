@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:523c927e287fe758e724f4059629bac3d9a3dff409290f95b4f1fa2e013f5572",
+  "pageVersion": "sha256:fcd275c8edbfcbc599c640cc2c3d779129aa8baa45f48fc71b501a42d5b22f5c",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -94,15 +94,19 @@
     },
     {
       "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
-      "statement": "The unregistered Enterprise foundation declares a retained nonrotating PostgreSQL CA, but does not create a PVC or live database; placement, roles, backups and isolated restore are still pending.",
+      "statement": "The unregistered Enterprise foundation declares a retained PostgreSQL CA, source-only PostgreSQL 18.6 StatefulSet and role bootstrap with a 10Gi local claim template, while node placement, live roles, complete backup material and isolated restore remain pending.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
+          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml#L1-L65",
-          "version": "repo-lines-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzZjdiMzVjZjkxMTQ1MDBkN2IyN2E5YjFhNTM3N2NiM2I4NDJlM2E4YzMwNTllN2Y0ZTk1ZjlhNjgyMGM0MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNmJiYmZhM2NlYjlkNzZhMGJkMDljNWRkM2FiZmUwYjY3NDM0M2JmZmQ1Yzk2YzJlYTY0OGZhMzQ1NzY4ZDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
+          "version": "repo-file-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
+          "version": "repo-file-v1:sha256:5b01d9104cce65ef4cdd9d3b908c2269583dbf6550ec355c6918bc018987ea7a"
         }
       ]
     },
@@ -112,7 +116,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:b89fa0a5808bc0d061e436fcf4cbc45a91870ea022c1720ce41aec4f048d3f58"
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
@@ -165,10 +169,24 @@
           "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
+    },
+    {
+      "id": "claim_142fce561c734aaca7703660665c09fd",
+      "statement": "Inactive Enterprise reconciliation requires a durable private journal to retain pending API intent and resource IDs; a fourth local PVC and serialized operator Job are proposed but undeclared, so an ephemeral runner cannot safely execute live reconciliation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py",
+          "version": "repo-file-v1:sha256:b53f8722d5b3e9eddbfb52b29a9734a8f631cf55c335a3f4a85cfe690ff51e1f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T08:57:21.938Z"
+    "at": "2026-10-20T09:40:00.529Z"
   }
 }

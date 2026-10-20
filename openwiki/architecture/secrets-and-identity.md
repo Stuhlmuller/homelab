@@ -120,10 +120,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T08:57:21.938Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:57:21.938Z
+    at: 2026-10-20T09:40:00.529Z
 ---
 
 # Secrets And Identity
@@ -294,7 +294,7 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
-The `aws-ssm` store allow-list includes both; seven `OnChange` ExternalSecrets
+The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
 Secrets on deletion. The model key remains a placeholder until the protected
 workflow supplies a distinct OpenRouter key. These declarations do not prove

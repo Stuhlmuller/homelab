@@ -4,4 +4,10 @@ resources:
   - namespace.yaml
   - externalsecret.yaml
   - postgres-tls.yaml
+  - postgres.yaml
   - networkpolicy.yaml
+configMapGenerator:
+  - name: occ-postgres-bootstrap
+    namespace: openclaw-system
+    files:
+      - database-bootstrap.sql

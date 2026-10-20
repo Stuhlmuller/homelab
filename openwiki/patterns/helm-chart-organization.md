@@ -17,7 +17,7 @@ sources:
     resource: repo://IaC/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:57:21.938Z
+    at: 2026-10-20T09:40:00.529Z
 ---
 
 # Helm Chart Organization

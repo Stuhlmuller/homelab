@@ -6,6 +6,8 @@ tags: ["architecture", "storage", "stateful"]
 sources:
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-20275bab1ec480742e28a50f
@@ -32,14 +34,16 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T07:27:46.454Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:57:21.938Z
+    at: 2026-10-20T09:40:00.529Z
 ---
 
 # Storage And State
@@ -284,9 +288,10 @@ See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
 nonrotating private key. Preserve that Secret with any eventual database
-recovery set. The foundation is not registered with Argo; node placement,
-distinct storage, PostgreSQL roles, database and agent backups, and isolated
-restore remain pending. No new Enterprise PVC or live database exists from
+recovery set. The foundation is not registered with Argo. Its PostgreSQL 18.6
+StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
+restore fixtures are source-only; node placement, live role initialization,
+complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
 this source alone. The 2026-10-20 07:22 UTC capacity recheck found about
 3,398 MiB of unreserved memory on the best worker, below the 4,096 MiB
 initial Enterprise reservation before transient and host headroom. That worker
@@ -300,6 +305,11 @@ requires `occ-bootstrap-admin-password` to be Bound to
 before chart initialization. The required retained local classes, claims,
 dedicated PostgreSQL and restore proof are still absent; the candidate does not
 adopt legacy OpenClaw state.
+The inactive reconciler needs a private durable journal at
+`/private/openclaw-enterprise/journal.json` for pending API intent and resource
+IDs across retries. A fourth retained local PVC and serialized operator Job
+are proposed, separate from the writable bootstrap claim; neither is declared
+or admitted. An ephemeral CI runner cannot safely execute live reconciliation.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

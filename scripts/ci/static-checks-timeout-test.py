@@ -29,6 +29,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-access-test.py",
                          "renovate-config-test.js", "tailnet-dns-test.py",
                          "openclaw-enterprise-foundation-test.py",
+                         "openclaw-enterprise-postgres-test.py",
                          "openclaw-enterprise-chart-hooks-test.py",
                          "openclaw-enterprise-lifecycle-test.py",
                          "openclaw-enterprise-startup-test.py",

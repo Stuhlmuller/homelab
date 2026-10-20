@@ -72,14 +72,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
-  - id: openwiki-source-bf69918d51d510f8b19906f1
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
-  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -172,14 +166,16 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T08:57:21.938Z" }
+generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:57:21.938Z
+    at: 2026-10-20T09:40:00.529Z
 ---
 
 # Workload Inventory
@@ -398,13 +394,14 @@ upstream or build reviewed forks, publish and pin corrected images, then verify
 actual renders and isolated-canary traffic before enforcement.
 
 The OpenClaw Enterprise replacement is staged in source with
-`activationEnabled: false`; no Enterprise controller, gateway, or
+`activationEnabled: false`; no Enterprise controller, gateway, database or
 agent has been deployed. The unregistered
 [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
-scoped tenant RoleBindings, seven retained `OnChange` secret projections,
-a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It declares no running PostgreSQL, local volumes, or Installation
+scoped tenant RoleBindings, eight retained `OnChange` secret projections,
+a system ingress deny, retained PostgreSQL CA, private server certificate,
+and a dormant PostgreSQL 18.6 StatefulSet with a 10Gi local claim template.
+It declares no running PostgreSQL, local volumes, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
@@ -412,6 +409,10 @@ placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. A protected full-sync stage is
 source-tested, but cannot run until registration and the reviewed installation
 phase; it would sync Foundation before Enterprise at explicit revisions.
+The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
+one logical Namespace, native Configuration and stopped unauthenticated
+Embedded Agent; no live Agent or durable operator Job exists. A protected
+stage still needs a retained journal PVC, pinned Job and exact-main guard.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
 exists in source; no protected post-bootstrap invocation or live Secret binding
 has occurred.

@@ -68,7 +68,10 @@
           pkgs = import nixpkgs { inherit system; };
           validate = pkgs.writeShellApplication {
             name = "validate";
-            runtimeInputs = self.devShells.${system}.default.nativeBuildInputs;
+            runtimeInputs = self.devShells.${system}.default.nativeBuildInputs ++ [
+              (pkgs.lib.getBin pkgs.postgresql_14)
+              (pkgs.lib.getBin pkgs.postgresql_18)
+            ];
             text = ''
               (cd IaC && terragrunt stack generate)
               terragrunt hcl fmt --check
@@ -102,7 +105,12 @@
             name: command:
             pkgs.runCommand name
               {
-                nativeBuildInputs = tools;
+                # mkShell exposes PostgreSQL dev outputs here; restore fixtures
+                # also need both server/client bin outputs in the check sandbox.
+                nativeBuildInputs = tools ++ [
+                  (pkgs.lib.getBin pkgs.postgresql_14)
+                  (pkgs.lib.getBin pkgs.postgresql_18)
+                ];
                 __darwinAllowLocalNetworking = true;
               }
               ''
@@ -176,6 +184,7 @@
             openssl
             pre-commit
             postgresql_14
+            postgresql_18
             prometheus.cli
             python3
             regctl

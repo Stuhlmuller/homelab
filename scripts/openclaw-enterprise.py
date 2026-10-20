@@ -2,8 +2,8 @@
 """Fail-closed OpenClaw Enterprise reconciliation entrypoint.
 
 Read-only checks attest the reviewed startup file and current controller Pods.
-Reconciliation may adopt the prepared tenant Namespace; agent activation remains
-blocked until its credential and deployment workflow is implemented.
+Reconciliation creates only reviewed Namespace, Configuration and stopped Agent
+state while activation is disabled.
 """
 
 import argparse
@@ -341,6 +341,28 @@ class Kubernetes:
                                                   "namespace": "openclaw-system"}],
                      "prepared tenant RBAC is absent or changed")
 
+    def configuration_candidates(self, namespace_id):
+        _require(isinstance(namespace_id, str) and namespace_id.startswith("ns_"),
+                 "Configuration Namespace ID is invalid")
+        # A label selector would hide ownership drift before the create gate.
+        listing = self._json("-n", "openclaw-agents", "get", "configmaps", "-o=json")
+        _require(isinstance(listing, dict) and isinstance(listing.get("items"), list),
+                 "Configuration ConfigMap list is invalid")
+        candidates = []
+        for item in listing["items"]:
+            metadata = item.get("metadata") if isinstance(item, dict) else None
+            _require(isinstance(metadata, dict), "Configuration ConfigMap list is invalid")
+            labels = metadata.get("labels") or {}
+            annotations = metadata.get("annotations") or {}
+            _require(isinstance(labels, dict) and isinstance(annotations, dict),
+                     "Configuration ConfigMap metadata is invalid")
+            name = metadata.get("name")
+            if ((isinstance(name, str) and name.startswith("cfg-")) or
+                    labels.get("app.kubernetes.io/managed-by") == "openclaw-enterprise" or
+                    any(key.startswith("openclaw.dev/") for key in (*labels, *annotations))):
+                candidates.append(item)
+        return candidates
+
 
 def require_driver_identity(installation):
     """GET /installation is deliberately insufficient at the pinned revision."""
@@ -394,6 +416,8 @@ def check(config, api, kube):
 
 def reconcile(config, api, kube, expected_sha):
     _validate_config(config)
+    _require(config["activationEnabled"] is False,
+             "Enterprise activation awaits the dedicated model credential and protected workflow")
     if not SHA.fullmatch(expected_sha):
         raise Blocked("Expected repository SHA is invalid")
     installation = prove_driver_identity(config, api, kube)
@@ -407,14 +431,59 @@ def reconcile(config, api, kube, expected_sha):
         if "installationId" not in state:
             state["installationId"] = installation_id
             journal.save(state)
-        reconcile_namespace(config, api, journal, kube)
-    raise Blocked("Enterprise Agent reconciliation is not implemented; activation remains blocked")
+        namespace_id = reconcile_namespace(config, api, journal, kube)
+        configuration = reconcile_configuration(config, api, journal, kube, namespace_id)
+        agent = reconcile_agent(config, api, journal, namespace_id, configuration["id"])
+        _require(agent["desiredRuntimeState"] == "stopped" and
+                 agent.get("activeRevisionId") is None,
+                 "inactive Enterprise Agent has a runtime revision")
+    return {"namespaceId": namespace_id, "configurationId": configuration["id"],
+            "agentId": agent["id"], "desiredRuntimeState": "stopped"}
 
 
 def verify(config, api, kube):
     # Verification is a read, never an inference probe or implicit deployment.
-    check(config, api, kube)
-    raise Blocked("Enterprise tenant verification is not implemented")
+    _require(config["activationEnabled"] is False,
+             "active Enterprise verification awaits protected credential and deployment flow")
+    installation = check(config, api, kube)
+    journal_path = config["privateJournal"]["mountPath"]
+    state, raw = read_journal(journal_path, config["source"]["revision"], _identity_hash(config))
+    _require(state.get("installationId") == installation["installationId"],
+             "journaled Installation identity changed")
+    namespace_id = state.get("namespaceId")
+    configuration_id = state.get("configurationId")
+    agent_id = state.get("agentId")
+    _require(all(isinstance(item, str) for item in (namespace_id, configuration_id, agent_id)) and
+             state.get("pending") is None, "Enterprise tenant is incomplete")
+    kube.tenant_prepared(namespace_id, require_claimed=True)
+    discover_exact(api.get("/namespaces"), config["namespace"]["logicalName"], namespace_id,
+                   {"existingNamespace": config["namespace"]["existingNamespace"]})
+    namespace = api.get("/namespaces/" + namespace_id)
+    _require(isinstance(namespace, dict) and
+             namespace.get("id") == namespace_id and
+             namespace.get("name") == config["namespace"]["logicalName"] and
+             namespace.get("existingNamespace") == config["namespace"]["existingNamespace"] and
+             namespace.get("status") == "ready", "Enterprise Namespace readback changed")
+    configuration = api.get(f"/namespaces/{namespace_id}/configurations/{configuration_id}")
+    _assert_configuration(configuration, namespace_id, configuration_id,
+                          desired_configuration(config), state.get("configurationGeneration"))
+    candidates = kube.configuration_candidates(namespace_id)
+    _require(len(candidates) == 1, "Configuration ConfigMap set is ambiguous")
+    recover_configuration(candidates, configuration, "openclaw-agents")
+    agents = api.get(f"/namespaces/{namespace_id}/agents")
+    discover_exact(agents, config["agent"]["name"], agent_id,
+                   {"configurationId": configuration_id})
+    agent = api.get(f"/namespaces/{namespace_id}/agents/{agent_id}")
+    _assert_agent(agent, config, namespace_id, configuration_id, agent_id)
+    _require(agent["desiredRuntimeState"] == "stopped" and
+             agent.get("activeRevisionId") is None and
+             agent.get("harnessAuth") is None and
+             agent.get("servicePrincipalId") == state.get("servicePrincipalId"),
+             "inactive Enterprise Agent changed")
+    after, second_raw = read_journal(journal_path, config["source"]["revision"], _identity_hash(config))
+    _require(raw == second_raw and state == after, "Enterprise journal changed during verification")
+    return {"namespaceId": namespace_id, "configurationId": configuration_id,
+            "agentId": agent_id, "desiredRuntimeState": "stopped"}
 
 
 def _identity_hash(config):
@@ -427,17 +496,47 @@ def _identity_hash(config):
     return hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def desired_configuration(config):
+    """Translate the selected OpenRouter wire model to OCE's native provider/model ref.
+
+    The pinned Harness resolver splits at the first slash. A raw
+    `openrouter/free` ref would select unsupported provider `openrouter`.
+    """
+    _validate_config(config)
+    model = config["model"]
+    native_ref = model["provider"] + "/" + model["id"]
+    _require(native_ref == "openai/openrouter/free", "Enterprise native model ref changed")
+    return {
+        "gateway": {
+            "mode": "local", "bind": "lan",
+            "controlUi": {"enabled": True, "allowedOrigins": [
+                "http://127.0.0.1:18789", "http://localhost:18789"]},
+            "auth": {"password": {"source": "env", "provider": "default",
+                                  "id": "OPENCLAW_GATEWAY_PASSWORD"}},
+            "http": {"endpoints": {"chatCompletions": {"enabled": True}}},
+        },
+        "agents": {"defaults": {"model": native_ref, "skipBootstrap": True,
+                                "models": {native_ref: {"agentRuntime": {"id": "openclaw"}}}}},
+        "models": {"providers": {model["provider"]: {
+            "baseUrl": model["baseUrl"], "api": model["api"],
+            "models": [{"id": model["id"], "name": model["id"]}],
+        }}},
+    }
+
+
 def reconcile_namespace(config, api, journal, kube):
     """Create once, then adopt only the exact owned Namespace after API readback."""
     state = dict(journal.state)
     name = config["namespace"]["logicalName"]
     physical = config["namespace"]["existingNamespace"]
     pending = state.get("pending")
-    _require(pending is None or pending == {"operation": "namespace-create"},
+    _require(pending is None or pending == {"operation": "namespace-create"} or
+             (state.get("namespaceId") is not None and
+              pending.get("operation") in ("configuration-create", "agent-create")),
              "another Enterprise operation is pending")
     candidates = api.get("/namespaces")
     _require(isinstance(candidates, list), "Namespace list response is invalid")
-    if pending:
+    if pending and pending.get("operation") == "namespace-create":
         _require(state.get("namespaceId") is None, "pending Namespace already has an ID")
         matches = [item for item in candidates if isinstance(item, dict) and item.get("name") == name]
         _require(len(matches) == 1, "unknown Namespace create outcome; do not retry")
@@ -456,15 +555,14 @@ def reconcile_namespace(config, api, journal, kube):
                 candidate = api.post("/namespaces", {"name": name,
                                                       "existingNamespace": physical})
             except DefinitiveRejection:
-                # The pinned 401/403 admission and grant checks run before create.
-                # Preserve the intent if a competing Namespace appears meanwhile.
+                # A definitive rejection cannot own a later competing Namespace.
+                state.pop("pending")
+                journal.save(state)
                 after_rejection = api.get("/namespaces")
                 _require(isinstance(after_rejection, list) and
                          not any(isinstance(item, dict) and item.get("name") == name
                                  for item in after_rejection),
                          "Namespace create outcome changed after rejection")
-                state.pop("pending")
-                journal.save(state)
                 raise
             _require(isinstance(candidate, dict) and candidate.get("name") == name and
                      candidate.get("existingNamespace") == physical and
@@ -480,11 +578,179 @@ def reconcile_namespace(config, api, journal, kube):
              exact.get("name") == name and exact.get("existingNamespace") == physical and
              exact.get("status") == "ready", "Namespace exact readback changed")
     kube.tenant_prepared(namespace_id, require_claimed=True)
+    discover_exact(api.get("/namespaces"), name, namespace_id,
+                   {"existingNamespace": physical})
     if state.get("namespaceId") is None:
         state["namespaceId"] = namespace_id
         state.pop("pending", None)
         journal.save(state)
     return namespace_id
+
+
+def _assert_configuration(item, namespace_id, configuration_id, desired, generation=None):
+    _require(isinstance(item, dict) and item.get("id") == configuration_id and
+             item.get("namespaceId") == namespace_id and item.get("kind") == "agent" and
+             item.get("secretBindings") in (None, {}) and
+             item.get("values") == desired and
+             type(item.get("generation")) is int and item["generation"] >= 1 and
+             (generation is None or item["generation"] == generation),
+             "Enterprise Configuration readback changed")
+
+
+def reconcile_configuration(config, api, journal, kube, namespace_id):
+    """Recover an uncertain create from exact owned ConfigMap plus API GET."""
+    state = dict(journal.state)
+    desired = desired_configuration(config)
+    expected_hash = hashlib.sha256(json.dumps(desired, sort_keys=True,
+                                               separators=(",", ":")).encode()).hexdigest()
+    _require(state.get("desiredHash", expected_hash) == expected_hash,
+             "Enterprise desired Configuration changed without a reviewed generation update")
+    pending = state.get("pending")
+    _require(pending is None or pending.get("operation") == "configuration-create" or
+             (state.get("configurationId") is not None and
+              pending.get("operation") == "agent-create"),
+             "another Enterprise operation is pending")
+    configuration_id = state.get("configurationId")
+    path = f"/namespaces/{namespace_id}/configurations"
+    if configuration_id is None:
+        candidates = kube.configuration_candidates(namespace_id)
+        _require(isinstance(candidates, list), "Configuration candidates are invalid")
+        if pending:
+            baseline = set(pending["baselineConfigmapUids"])
+            new = [item for item in candidates if isinstance(item, dict) and
+                   item.get("metadata", {}).get("uid") not in baseline]
+            _require(len(new) == 1, "unknown Configuration create outcome; do not retry")
+            candidate = new[0]
+            configuration_id = candidate.get("metadata", {}).get("annotations", {}).get(
+                "openclaw.dev/configuration-id")
+            _require(_valid_resource_id(configuration_id, "cfg_"),
+                     "Configuration recovery candidate has no exact ID")
+            exact = api.get(path + "/" + configuration_id)
+            recover_configuration([candidate], exact, "openclaw-agents")
+        else:
+            _require(not candidates, "unjournaled Enterprise Configuration may be foreign")
+            state["desiredHash"] = expected_hash
+            state["pending"] = {"operation": "configuration-create",
+                                "baselineConfigmapUids": []}
+            journal.save(state)
+            try:
+                created = api.post(path, {"kind": "agent", "values": desired})
+            except DefinitiveRejection:
+                # A definitive rejection cannot own a later competing ConfigMap.
+                state.pop("pending")
+                journal.save(state)
+                _require(kube.configuration_candidates(namespace_id) == [],
+                         "Configuration create outcome changed after rejection")
+                raise
+            _require(isinstance(created, dict), "Configuration create response is invalid")
+            configuration_id = created.get("id")
+            _require(_valid_resource_id(configuration_id, "cfg_"),
+                     "Configuration create ID is invalid")
+            exact = api.get(path + "/" + configuration_id)
+        _assert_configuration(exact, namespace_id, configuration_id, desired)
+        candidate = kube.configuration_candidates(namespace_id)
+        _require(len(candidate) == 1, "Configuration ConfigMap set is ambiguous")
+        recover_configuration(candidate, exact, "openclaw-agents")
+        state["configurationId"] = configuration_id
+        state["configurationGeneration"] = exact["generation"]
+        state.pop("pending", None)
+        journal.save(state)
+        return exact
+    _require(pending is None or pending.get("operation") == "agent-create",
+             "journaled Configuration has a pending operation")
+    exact = api.get(path + "/" + configuration_id)
+    _assert_configuration(exact, namespace_id, configuration_id, desired,
+                          state.get("configurationGeneration"))
+    candidates = kube.configuration_candidates(namespace_id)
+    _require(len(candidates) == 1, "Configuration ConfigMap set is ambiguous")
+    recover_configuration(candidates, exact, "openclaw-agents")
+    return exact
+
+
+def _assert_agent(item, config, namespace_id, configuration_id, agent_id):
+    _require(isinstance(item, dict) and item.get("id") == agent_id and
+             item.get("namespaceId") == namespace_id and
+             item.get("name") == config["agent"]["name"] and
+             item.get("configurationId") == configuration_id and
+             item.get("executionMode") == "embedded" and
+             item.get("backendId") is None and
+             item.get("status") == "active" and
+             isinstance(item.get("servicePrincipalId"), str) and
+             bool(item["servicePrincipalId"]),
+             "Enterprise Agent readback changed")
+
+
+def reconcile_agent(config, api, journal, namespace_id, configuration_id):
+    """Create/adopt only one fresh, stopped, unauthenticated Embedded Agent."""
+    state = dict(journal.state)
+    pending = state.get("pending")
+    _require(pending is None or pending.get("operation") == "agent-create",
+             "another Enterprise operation is pending")
+    path = f"/namespaces/{namespace_id}/agents"
+    agents = api.get(path)
+    _require(isinstance(agents, list), "Enterprise Agent list is invalid")
+    name = config["agent"]["name"]
+    agent_id = state.get("agentId")
+    if agent_id is None:
+        if pending:
+            baseline = set(pending["baselineAgentIds"])
+            new = [item for item in agents if isinstance(item, dict) and
+                   item.get("id") not in baseline and item.get("name") == name]
+            _require(len(new) == 1,
+                     "unknown Agent create outcome; do not retry")
+            agent_id = new[0].get("id")
+        else:
+            _require(not any(isinstance(item, dict) and item.get("name") == name
+                             for item in agents),
+                     "unjournaled Enterprise Agent may be foreign")
+            _require(all(isinstance(item, dict) and isinstance(item.get("id"), str)
+                         for item in agents), "Enterprise Agent list is invalid")
+            state["pending"] = {"operation": "agent-create",
+                                "baselineAgentIds": [item["id"] for item in agents]}
+            journal.save(state)
+            try:
+                created = api.post(path, {"name": name, "configurationId": configuration_id,
+                                          "executionMode": "embedded"})
+            except DefinitiveRejection:
+                # A definitive rejection cannot own a later competing Agent.
+                baseline = state["pending"]["baselineAgentIds"]
+                state.pop("pending")
+                journal.save(state)
+                after_rejection = api.get(path)
+                _require(isinstance(after_rejection, list) and
+                         all(isinstance(item, dict) and isinstance(item.get("id"), str)
+                             for item in after_rejection) and
+                         len({item["id"] for item in after_rejection}) == len(after_rejection) and
+                         set(baseline) <= {item["id"] for item in after_rejection} and
+                         not any(item.get("name") == name for item in after_rejection),
+                         "Agent create outcome changed after rejection")
+                raise
+            _require(isinstance(created, dict), "Agent create response is invalid")
+            agent_id = created.get("id")
+        _require(_valid_resource_id(agent_id, "agt_"),
+                 "Enterprise Agent ID is invalid")
+        exact = api.get(path + "/" + agent_id)
+        _assert_agent(exact, config, namespace_id, configuration_id, agent_id)
+        _require(exact.get("desiredRuntimeState") == "stopped" and
+                 exact.get("activeRevisionId") is None and exact.get("harnessAuth") is None,
+                 "new Enterprise Agent is not inactive")
+        discover_exact(api.get(path), name, agent_id,
+                       {"configurationId": configuration_id})
+        state["agentId"] = agent_id
+        state["servicePrincipalId"] = exact["servicePrincipalId"]
+        state.pop("pending", None)
+        journal.save(state)
+        return exact
+    _require(pending is None, "journaled Agent has a pending operation")
+    discover_exact(agents, name, agent_id, {"configurationId": configuration_id})
+    exact = api.get(path + "/" + agent_id)
+    _assert_agent(exact, config, namespace_id, configuration_id, agent_id)
+    _require(exact.get("servicePrincipalId") == state.get("servicePrincipalId"),
+             "journaled Agent principal changed")
+    _require(exact.get("desiredRuntimeState") == "stopped" and
+             exact.get("activeRevisionId") is None and exact.get("harnessAuth") is None,
+             "journaled Agent is not inactive")
+    return exact
 
 
 def _validate_config(config):
@@ -514,19 +780,23 @@ def _validate_config(config):
             agent.get("channels") != [] or agent.get("backend") is not None or
             agent.get("sandbox") is not None):
         raise Blocked("Enterprise agent is not the approved fresh Embedded shape")
-    if config["activationEnabled"]:
-        model = config.get("model", {})
-        secrets = config.get("secrets", {})
-        if not isinstance(model, dict) or model != APPROVED_MODEL:
-            raise Blocked("activation requires explicit model on approved OpenRouter transport")
-        if (not isinstance(secrets, dict) or
-                secrets.get("modelApiKey") != "/homelab/openclaw-enterprise/model-api-key"):
-            raise Blocked("activation requires dedicated key reference")
+    model = config.get("model", {})
+    secrets = config.get("secrets", {})
+    if not isinstance(model, dict) or model != APPROVED_MODEL:
+        raise Blocked("explicit model must use approved OpenRouter transport")
+    if (not isinstance(secrets, dict) or
+            secrets.get("modelApiKey") != "/homelab/openclaw-enterprise/model-api-key"):
+        raise Blocked("dedicated model key reference changed")
 
 
 def _require(condition, reason):
     if not condition:
         raise Blocked(reason)
+
+
+def _valid_resource_id(value, prefix):
+    return (isinstance(value, str) and value.startswith(prefix) and
+            re.fullmatch(r"[A-Za-z0-9_-]{1,100}", value[len(prefix):]) is not None)
 
 
 def _created_at(value):
@@ -928,17 +1198,25 @@ class ProtectedJournal:
                     raise Blocked("Journal desired hash is invalid")
             elif (not isinstance(value, str) or not 1 <= len(value) <= 200 or
                   not re.fullmatch(r"[A-Za-z0-9._~:@/-]+", value) or
-                  (field in ID_PREFIXES and not value.startswith(ID_PREFIXES[field]))):
+                  (field in ID_PREFIXES and
+                   not _valid_resource_id(value, ID_PREFIXES[field]))):
                 raise Blocked("Journal resource identity is invalid")
         pending = state.get("pending")
         if pending is not None:
             if (not isinstance(pending, dict) or
-                    set(pending) - {"operation", "baselineRevisionIds"} or
-                    pending.get("operation") not in ("namespace-create", "configuration-create", "deploy") or
+                    set(pending) - {"operation", "baselineRevisionIds",
+                                    "baselineConfigmapUids", "baselineAgentIds"} or
+                    pending.get("operation") not in ("namespace-create", "configuration-create",
+                                                     "agent-create", "deploy") or
                     not isinstance(pending.get("baselineRevisionIds", []), list) or
                     any(not isinstance(item, str) or not item.startswith("rev_") or
                         not re.fullmatch(r"[A-Za-z0-9._~:@/-]{1,200}", item)
-                        for item in pending.get("baselineRevisionIds", []))):
+                        for item in pending.get("baselineRevisionIds", [])) or
+                    any(not isinstance(pending.get(key, []), list) or
+                        any(not isinstance(item, str) or not re.fullmatch(
+                            r"[A-Za-z0-9._~:@/-]{1,200}", item)
+                            for item in pending.get(key, []))
+                        for key in ("baselineConfigmapUids", "baselineAgentIds"))):
                 raise Blocked("Journal pending operation is invalid")
 
     def save(self, state):
@@ -965,6 +1243,30 @@ class ProtectedJournal:
             if os.path.exists(temporary):
                 os.unlink(temporary)
         self.state = dict(state)
+
+
+def read_journal(path, source_sha, config_sha):
+    """Read a protected journal without creating a lock or changing the file."""
+    candidate = Path(path)
+    _require(candidate.is_absolute() and candidate.parent.resolve() == candidate.parent and
+             candidate.parent.is_dir(), "Journal path is not a real private path")
+    parent_stat = candidate.parent.stat()
+    _require(parent_stat.st_uid == os.getuid() and stat.S_IMODE(parent_stat.st_mode) == 0o700,
+             "Journal parent owner or mode is unsafe")
+    ProtectedJournal._check_file(candidate)
+    _require(candidate.is_file(), "Enterprise journal is missing")
+    raw = candidate.read_bytes()
+    _require(len(raw) <= 65536, "Journal is oversized")
+    try:
+        document = json.loads(raw)
+    except ValueError:
+        raise Blocked("Enterprise journal is invalid JSON") from None
+    _require(isinstance(document, dict) and document.get("schemaVersion") == 1 and
+             document.get("sourceSha") == source_sha and document.get("configSha") == config_sha,
+             "Journal source or desired input changed")
+    state = document.get("state")
+    ProtectedJournal._validate_state(state)
+    return state, raw
 
 
 def _read_key(path):

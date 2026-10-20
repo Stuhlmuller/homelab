@@ -147,7 +147,7 @@ settings, activation, and rollback. This preparation is not live-secret proof.
 
 The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
 none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
-SSM unit generates the five internal values below in encrypted state and grants
+SSM unit generates the six internal values below in encrypted state and grants
 their exact parameter names to the External Secrets reader. The model key is a
 placeholder until `openclaw-enterprise-model-credential.yml` in the protected
 `homelab-production` environment writes an owner-supplied OpenRouter API key.
@@ -184,25 +184,33 @@ inference on the restored consumer revision before deleting the temporary
 GitHub input or revoking the failed key. Keep all key values out of git,
 dispatch inputs and logs.
 
-| SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
+| SSM parameter suffix | Producer | Planned ExternalSecret target/key | Runtime consumer |
 | --- | --- | --- | --- |
 | `postgres-admin-password` | OpenTofu generated | `openclaw-system/occ-postgres-admin` `password` | PostgreSQL bootstrap and isolated recovery |
 | `postgres-migrator-password` | OpenTofu generated | `openclaw-system/occ-postgres-migrator` `password` | Schema migration Job |
 | `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
+| `postgres-backup-password` | OpenTofu generated | `openclaw-system/occ-postgres-backup` `password` | Read-only logical backup job only |
 | `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API and initialization bootstrap session signing |
 | `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
 | `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Protected reconciler registers the key as the fresh Agent's OCC `harnessAuth` Secret; OCE projects `OPENAI_API_KEY` only to that agent |
 
+The database container reads the three non-admin PostgreSQL passwords once to
+bootstrap their roles; the scheduled backup job receives only `occ_backup`.
 The dormant foundation declares exact TLS-verified application and migration
-URLs in `openclaw-system/occ-database` without mounting the admin or migrator
+URLs in `openclaw-system/occ-database` without mounting the admin, migrator or backup
 password in API/worker Pods. Its URL template relies on the committed
 alphanumeric-only password generator; change the template if that contract
-changes. All seven ExternalSecrets use `OnChange` and
+changes. All eight ExternalSecrets use `OnChange` and
 retained targets. A credential rotation requires advancing a committed revision,
 checking ExternalSecret readiness, then restarting only consumers that read the
 value once. A changed SSM value alone is not a rollout. Add `openclaw-system`
 and `openclaw-agents` to the `aws-ssm` ClusterSecretStore allow-list with their
 first ExternalSecrets; do not broaden the reader to a prefix wildcard.
+
+PostgreSQL roles read their generated passwords only during initial database
+bootstrap. Rotating any of those four SSM values also needs a declared role
+password update before affected clients restart. That update path is still
+pending; hold PostgreSQL password revisions until it exists and is tested.
 
 Bootstrap writes the initial administrator password and service key to the
 retained private bootstrap volume. Cert-manager owns the private gateway CA and

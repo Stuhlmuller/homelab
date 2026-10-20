@@ -2,7 +2,9 @@
 """Check the dormant Enterprise namespace and secret boundary."""
 
 import json
+import shlex
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -38,9 +40,135 @@ class FoundationContract(unittest.TestCase):
             self.assertNotIn("istio.io/dataplane-mode", labels)
         policies = [item for (kind, _), item in self.resources.items()
                     if kind == "NetworkPolicy"]
-        self.assertEqual(len(policies), 1)
-        self.assertEqual(policies[0]["metadata"]["namespace"], "openclaw-system")
-        self.assertEqual(policies[0]["spec"], {"podSelector": {}, "policyTypes": ["Ingress"]})
+        self.assertEqual({item["metadata"]["name"] for item in policies}, {
+            "openclaw-system-default-deny-ingress", "occ-postgres-ingress",
+            "occ-postgres-restore-drill-isolation"})
+        self.assertTrue(all(item["metadata"]["namespace"] == "openclaw-system"
+                            for item in policies))
+        self.assertEqual(self.resources["NetworkPolicy", "openclaw-system-default-deny-ingress"]["spec"],
+                         {"podSelector": {}, "policyTypes": ["Ingress"]})
+        ingress = self.resources["NetworkPolicy", "occ-postgres-ingress"]["spec"]
+        self.assertEqual(ingress["podSelector"], {"matchLabels": {"app.kubernetes.io/name": "occ-postgres"}})
+        self.assertEqual(ingress["ingress"], [{"from": [{"podSelector": {
+            "matchLabels": {"app.kubernetes.io/name": "openclaw-enterprise"},
+            "matchExpressions": [{"key": "app.kubernetes.io/component", "operator": "In",
+                                  "values": ["api", "worker", "initialization"]}]}},
+            {"podSelector": {"matchLabels": {"app.kubernetes.io/name": "occ-postgres-backup"}}}],
+            "ports": [{"protocol": "TCP", "port": 5432}]}])
+        self.assertEqual(self.resources["NetworkPolicy", "occ-postgres-restore-drill-isolation"]["spec"],
+                         {"podSelector": {"matchLabels": {
+                             "app.kubernetes.io/name": "occ-postgres-restore-drill"}},
+                          "policyTypes": ["Ingress", "Egress"]})
+
+    def test_postgres_is_retained_tls_only_and_waits_for_local_claim(self):
+        service = self.resources["Service", "occ-postgres"]["spec"]
+        self.assertEqual(service["clusterIP"], "10.96.0.51")
+        workload = self.resources["StatefulSet", "occ-postgres"]["spec"]
+        self.assertEqual(workload["replicas"], 1)
+        self.assertEqual(workload["persistentVolumeClaimRetentionPolicy"], {
+            "whenDeleted": "Retain", "whenScaled": "Retain"})
+        claim = workload["volumeClaimTemplates"][0]
+        self.assertEqual(claim["metadata"]["name"], "occ-postgres")
+        self.assertEqual(claim["spec"], {"accessModes": ["ReadWriteOnce"],
+                                         "storageClassName": "openclaw-enterprise-postgres-local",
+                                         "resources": {"requests": {"storage": "10Gi"}}})
+        pod = workload["template"]["spec"]
+        self.assertNotIn("nodeSelector", pod)
+        self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertEqual(pod["securityContext"]["runAsUser"], 999)
+        container = pod["containers"][0]
+        digest = "afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
+        image = ("harbor.stinkyboi.com/mirror/docker.io/library/postgres:"
+                 f"{digest}@sha256:{digest}")
+        self.assertEqual(container["image"], image)
+        self.assertIn("ssl=on", container["args"])
+        self.assertIn("ssl_min_protocol_version=TLSv1.3", container["args"])
+        self.assertIn("hba_file=/etc/occ-postgres/pg_hba.conf", container["args"])
+        self.assertIn("password_encryption=scram-sha-256", container["args"])
+        self.assertEqual(container["securityContext"]["readOnlyRootFilesystem"], True)
+        hba = self.resources["ConfigMap", "occ-postgres-hba"]["data"]["pg_hba.conf"]
+        self.assertIn("hostnossl all all 0.0.0.0/0 reject", hba)
+        self.assertIn("hostssl all occ_admin 0.0.0.0/0 reject", hba)
+        self.assertIn("hostssl openclaw_enterprise occ_app 10.244.0.0/16 scram-sha-256", hba)
+        self.assertNotIn("host all all 0.0.0.0/0 trust", hba)
+        bootstrap = next(item for (kind, name), item in self.resources.items()
+                         if kind == "ConfigMap" and name.startswith("occ-postgres-bootstrap-"))
+        self.assertEqual(bootstrap["data"]["database-bootstrap.sql"],
+                         (FOUNDATION / "database-bootstrap.sql").read_text())
+        sql = bootstrap["data"]["database-bootstrap.sql"]
+        self.assertIn("CREATE SCHEMA IF NOT EXISTS occ AUTHORIZATION occ_migrator", sql)
+        self.assertIn("CREATE SCHEMA IF NOT EXISTS drizzle AUTHORIZATION occ_migrator", sql)
+        self.assertIn("GRANT CONNECT, CREATE ON DATABASE openclaw_enterprise TO occ_migrator", sql)
+        self.assertNotIn("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES", sql)
+        self.assertTrue(sql.rstrip().endswith(
+            "COMMENT ON DATABASE openclaw_enterprise IS 'occ-bootstrap-v1';"))
+        readiness = container["readinessProbe"]["exec"]["command"][2]
+        self.assertIn("shobj_description(oid, 'pg_database') = 'occ-bootstrap-v1'", readiness)
+        self.assertIn("| grep -qx 1", readiness)
+        self.assertEqual(next(volume["configMap"]["name"] for volume in pod["volumes"]
+                              if volume["name"] == "bootstrap"), bootstrap["metadata"]["name"])
+        self.assertFalse(any(item["kind"] == "Job" for item in self.resources.values()))
+
+    def test_postgres_cert_renewal_invalidates_health_probes_until_restart(self):
+        container = self.resources["StatefulSet", "occ-postgres"]["spec"]["template"]["spec"]["containers"][0]
+        start = container["command"]
+        self.assertEqual(start[:2], ["/bin/sh", "-ec"])
+        self.assertEqual(start[3], "postgres-tls-snapshot")
+        self.assertIn('exec /usr/local/bin/docker-entrypoint.sh postgres "$@"', start[2])
+        self.assertNotIn("lifecycle", container)
+        with tempfile.TemporaryDirectory() as directory:
+            cert = Path(directory) / "tls.crt"
+            key = Path(directory) / "tls.key"
+            marker = Path(directory) / "startup-tls.sha256"
+            entrypoint = Path(directory) / "docker-entrypoint.sh"
+            rotate = Path(directory) / "rotate-during-start"
+            cert.write_text("original certificate")
+            key.write_text("original key")
+            entrypoint.write_text(
+                "#!/bin/sh\nset -eu\n"
+                f"test -s {shlex.quote(str(marker))}\n"
+                'test "$1" = postgres && test "$2" = -c\n'
+                f"if test -e {shlex.quote(str(rotate))}; then "
+                f"printf renewed-during-start > {shlex.quote(str(key))}; fi\n")
+            entrypoint.chmod(0o700)
+
+            def localize(script):
+                return (script.replace("/run/postgres-tls/tls.crt", str(cert))
+                        .replace("/run/postgres-tls/tls.key", str(key))
+                        .replace("/tmp/occ-postgres-startup-tls.sha256", str(marker))
+                        .replace("/usr/local/bin/docker-entrypoint.sh", str(entrypoint)))
+
+            def restart():
+                subprocess.run(["/bin/sh", "-ec", localize(start[2]),
+                                start[3], *container["args"]], check=True)
+
+            def probe_result(name):
+                command = container[name]["exec"]["command"]
+                self.assertEqual(command[:2], ["/bin/sh", "-ec"])
+                check, separator, postgres = command[2].partition("\n")
+                self.assertTrue(separator and "psql" in postgres and "SELECT 1" in postgres)
+                return subprocess.run(["/bin/sh", "-ec", localize(check)],
+                                      capture_output=True, text=True).returncode
+
+            restart()
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertEqual(probe_result(name), 0)
+            key.write_text("renewed key")
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertNotEqual(probe_result(name), 0)
+            restart()
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertEqual(probe_result(name), 0)
+            cert.write_text("renewed certificate")
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertNotEqual(probe_result(name), 0)
+            restart()
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertEqual(probe_result(name), 0)
+            rotate.touch()
+            restart()
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertNotEqual(probe_result(name), 0)
 
     def test_tenant_roles_follow_fixed_oce_release(self):
         expected = {
@@ -86,6 +214,7 @@ class FoundationContract(unittest.TestCase):
             "occ-postgres-admin": ("openclaw-system", "password", "postgres-admin-password"),
             "occ-postgres-migrator": ("openclaw-system", "password", "postgres-migrator-password"),
             "occ-postgres-app": ("openclaw-system", "password", "postgres-app-password"),
+            "occ-postgres-backup": ("openclaw-system", "password", "postgres-backup-password"),
             "occ-auth": ("openclaw-system", "secret", "session-auth-secret"),
             "occ-private-gateway-key": ("openclaw-system", "occ", "gateway-api-key"),
             "occ-model-api-key": ("openclaw-agents", "api-key", "model-api-key"),
