@@ -265,6 +265,75 @@ address, or run a destroy. The prior `github-iac` pull-request and `main`
 subjects are broader than the environment subjects, so use that rollback only
 while repairing the protected workflows.
 
+### Legacy archive session-duration rollout
+
+The protected OpenClaw Enterprise legacy job can run for six hours. Its AWS
+credential action requests a seven-hour web-identity session, leaving one hour
+between the job timeout and credential expiry. The operator-owned
+`Github-TF-State` role must allow the same 25,200-second maximum before retrying
+`publish-archive`; the default one-hour role session expired during a large
+multipart upload. The trust-only gate above deliberately rejects this different
+role change. Other workflows keep their current session requests.
+
+After the reviewed source merges, use an administrator session and this exact
+role-only saved-plan path. Stop if the plan changes trust, another role
+attribute, or any other managed resource. Keep plan files private; do not use
+the GitHub Actions apply role to change its own maximum.
+
+```sh
+set -euo pipefail
+operator_profile="<administrator-profile>"
+aws sso login --profile "$operator_profile"
+cd IaC
+terragrunt stack generate
+cd operator/github-actions-role-policy
+terragrunt --log-disable init -backend=false -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
+terragrunt --log-disable run --no-auto-init -- test -no-color
+AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
+
+umask 077
+duration_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-role-duration.XXXXXX")"
+trap 'rm -rf -- "$duration_plan_dir"' EXIT
+AWS_PROFILE="$operator_profile" terragrunt --log-disable state list \
+  >"$duration_plan_dir/state-list.txt"
+grep -Fxq 'aws_iam_role.github_actions' "$duration_plan_dir/state-list.txt"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable plan -input=false \
+  -lock-timeout=5m -target='aws_iam_role.github_actions' \
+  -out="$duration_plan_dir/role.tfplan" -no-color \
+  >"$duration_plan_dir/plan.log" 2>&1
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -json \
+  "$duration_plan_dir/role.tfplan" >"$duration_plan_dir/plan.json"
+
+jq -e '
+  [.resource_changes[]? | select(.mode == "managed" and .change.actions != ["no-op"])] as $changes
+  | ($changes | length) == 1
+  and $changes[0].address == "aws_iam_role.github_actions"
+  and $changes[0].change.actions == ["update"]
+  and $changes[0].change.before.id == "Github-TF-State"
+  and $changes[0].change.after.id == "Github-TF-State"
+  and $changes[0].change.before.max_session_duration == 3600
+  and $changes[0].change.after.max_session_duration == 25200
+  and (($changes[0].change.importing // null) == null)
+  and (($changes[0].previous_address // null) == null)
+  and (($changes[0].change.before | del(.max_session_duration)) ==
+       ($changes[0].change.after | del(.max_session_duration)))
+' "$duration_plan_dir/plan.json"
+
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -no-color \
+  "$duration_plan_dir/role.tfplan"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable apply -no-color \
+  "$duration_plan_dir/role.tfplan"
+test "$(aws --profile "$operator_profile" iam get-role \
+  --role-name Github-TF-State --query Role.MaxSessionDuration --output text)" = 25200
+```
+
+The archived source and incomplete multipart upload remain untouched. Retry
+the protected `publish-archive` stage with the same completed `archive_ref`, a
+new workflow run ID, and fresh exact-main SHA only after the live IAM maximum
+is verified. The backup bucket's declared lifecycle removes abandoned multipart
+uploads; no manual S3 cleanup is part of this path.
+
 ### Full-unit reconciliation
 
 Changes to the managed policy, attachment, External Secrets boundary, or IAM
