@@ -28,7 +28,7 @@ def event(name):
 if tool == "yq":
     print("[]" if "-o=json" in args else "kind: Policy\nmetadata:\n  name: fixture")
 elif tool == "jq":
-    pass
+    sys.stdin.buffer.read()
 elif tool == "curl":
     Path(args[args.index("-o") + 1]).touch()
 elif tool == "sha256sum":
