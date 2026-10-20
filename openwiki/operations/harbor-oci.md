@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -122,8 +124,6 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-e3e84b128839afbc47f478f7
     resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
@@ -167,7 +167,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:18:26.448Z
+    at: 2026-10-20T19:55:49.056Z
 ---
 
 # Harbor Private OCI Registry
