@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:00fe63e006dc8f64c09b3c826b7a5b5d2340c3f9fd4b8db46c2de6af93d2196b",
+  "pageVersion": "sha256:33458f1742ea90acc06b129814eca272f8f4f3d0a2a70df84c43ed4ee2ce00bf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -560,7 +560,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:69cb42c72bf7ff6ffa0bb0f210d2025d81243f47c0f6bc26ddec321259eca91e"
+          "version": "repo-file-v1:sha256:b933883d848ffe00982f97002e9c12bdf21aecb56c7372ee2dc6640dc7583be4"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py#L136-L252",
@@ -1308,7 +1308,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:763a586489743b8edb5c261ecb3403e522804927bb60ac5fb1e8532a71146374"
+          "version": "repo-file-v1:sha256:26ba969c81aa99cd4781a98fc07f2bdef7bb1c4b949d5c31184d34b50589adf8"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
@@ -1506,7 +1506,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:69cb42c72bf7ff6ffa0bb0f210d2025d81243f47c0f6bc26ddec321259eca91e"
+          "version": "repo-file-v1:sha256:b933883d848ffe00982f97002e9c12bdf21aecb56c7372ee2dc6640dc7583be4"
         },
         {
           "resource": "repo://scripts/ci/network-policy-canary-node-test.py",
@@ -1514,7 +1514,7 @@
         },
         {
           "resource": "repo://scripts/ci/network-policy-cleanup-test.py",
-          "version": "repo-file-v1:sha256:9daeac187c4b72e58a6605119fc921228b68ee027ae4c5e7cafd8c9e10a2c844"
+          "version": "repo-file-v1:sha256:22b4446f753a911c7366174f112bde758f40a7dd65c7233f643f4743833d3f04"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -1522,7 +1522,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:8aad14f94f1dcbb5f0ab5a27bb743a45cf87f618be59eb4d851a4a6e64dbecbd"
+          "version": "repo-file-v1:sha256:b56381e2f295c2fdcf2d8497cdf9454262f30554523815ac2309d2baa95dd20d"
         }
       ]
     },
@@ -1531,7 +1531,7 @@
       "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 images and fully observed, ready controllers that are not marked for deletion, including Deployment total replicas equal to desired so old terminating replicas block the stage. Matching mutable tags are rejected. T025 must align chart image hubs and digest-bearing injection with the reviewed catalog; no live upgrade has run.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L516-L526",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L517-L527",
           "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
@@ -1672,7 +1672,7 @@
     },
     {
       "id": "claim_112e286b8889419f98a51377d63dda96",
-      "statement": "The static registration fixture accepts only the five reviewed policy/canary GitOps source phases and rejects mixed sync/manifests. Protected maintenance fetches full Git history and verifies first-parent ancestry from the qualified evidence SHA through two dedicated prune commits to current main, accepting unrelated merges but rejecting intervening protected policy source edits; current-SHA private ownership and cleanup receipts remain required.",
+      "statement": "The static registration fixture accepts only five reviewed policy/canary GitOps source phases and rejects mixed sync or manifests. Protected maintenance fetches full Git history and verifies first-parent ancestry from the qualified evidence SHA through two dedicated prune commits to current main, accepting unrelated commits but rejecting intervening changes in operational source roots and Nix flake inputs. Current-SHA private ownership and cleanup receipts remain required.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
@@ -1684,13 +1684,13 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:8aad14f94f1dcbb5f0ab5a27bb743a45cf87f618be59eb4d851a4a6e64dbecbd"
+          "version": "repo-file-v1:sha256:b56381e2f295c2fdcf2d8497cdf9454262f30554523815ac2309d2baa95dd20d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:33:04.461Z"
+    "at": "2026-10-20T21:42:24.095Z"
   }
 }

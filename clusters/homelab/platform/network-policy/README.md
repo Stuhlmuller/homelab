@@ -98,11 +98,11 @@ The protected Platform Maintenance workflow has separate `ownership-capture`
 and `ownership-approve` stages. After a successful `qualify` run, merge two
 dedicated reviewed GitOps commits in order. Unrelated `main` commits may land
 before, between, or after them; the protected stage checks complete first-parent
-history and rejects intervening changes under `.github/`, `.talos/`, `IaC/`,
-`builds/`, `clusters/`, `policy/`, `recovery/`, or `scripts/`, or to `flake.nix`
-or `flake.lock`. These broad source roots keep the qualified runtime, private
-receipt bucket, and validation inputs intact while allowing documentation-only
-merges. The first
+history and rejects every intervening source change except Markdown under
+`docs/`, JSON under `docs/evidence/`, OpenWiki, specs, and named root prose
+files. This fail-closed allowlist keeps runtime manifests, the private receipt
+bucket, hidden Argo inputs, and validation configuration fixed while allowing
+documentation and inventory evidence merges. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
 `allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
 verify the fixture namespace is absent. The second changes only

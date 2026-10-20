@@ -330,10 +330,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T21:33:04.461Z" }
+generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:33:04.461Z
+    at: 2026-10-20T21:42:24.095Z
 ---
 
 # Validation Gates
@@ -1769,7 +1769,8 @@ canary retired. It rejects mismatched sync settings and manifests. Protected
 maintenance fetches full Git history and walks first-parent commits from the
 qualified evidence SHA to current `main`, requiring the two dedicated prunes
 in order while allowing unrelated merges and rejecting intervening policy
-source edits. Static phase acceptance does not replace current-SHA private
+runtime-source edits, including the private receipt bucket and static gate.
+Static phase acceptance does not replace current-SHA private
 ownership capture, approval, and cleanup receipts or live resource checks.
 The Kubernetes stage also reads live Istiod, CNI, ztunnel and both injected
 gateway workloads before the command and after stage verification. It rejects

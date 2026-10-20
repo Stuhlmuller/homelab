@@ -80,6 +80,10 @@ class FirewallCleanupTests(unittest.TestCase):
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
                     "-c", "commit.gpgsign=false", "commit", "-qm", message)
                 return git("rev-parse", "HEAD")
+            def document(name, contents):
+                target = root / "docs" / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(contents)
             def prune_fixtures():
                 (root / canary_manifest).write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
@@ -106,7 +110,7 @@ class FirewallCleanupTests(unittest.TestCase):
                 "        enabled = false\n        prune   = false\n",
                 "        enabled = true\n        prune   = true\n"))
             qualify_sha = commit("qualify with fixtures")
-            (root / "unrelated.txt").write_text("before\n")
+            document("unrelated.md", "before\n")
             commit("unrelated change before fixture prune")
             prune_fixtures()
             wiki_update("openwiki/unreviewed.md")
@@ -118,7 +122,7 @@ class FirewallCleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "fixture removal differs"):
                     transition(qualify_sha, drift_sha)
                 git("reset", "--hard", qualify_sha)
-                (root / "unrelated.txt").write_text("before\n")
+                document("unrelated.md", "before\n")
                 commit("unrelated before valid prunes")
                 prune_fixtures()
                 wiki_update("openwiki/runbooks/runtime-isolation.md")
@@ -126,10 +130,10 @@ class FirewallCleanupTests(unittest.TestCase):
                 fixture_sha = commit("fixture prune with reviewed wiki update")
                 with self.assertRaisesRegex(ValueError, "both reviewed GitOps prune"):
                     transition(qualify_sha, fixture_sha)
-                (root / "unrelated.txt").write_text("between\n")
+                document("unrelated.md", "between\n")
                 middle_sha = commit("unrelated change between prunes")
                 prune_firewall()
-                (root / "unrelated.txt").write_text("drift\n")
+                document("unrelated.md", "drift\n")
                 drift_sha = commit("firewall prune with unrelated change")
                 with self.assertRaisesRegex(ValueError, "firewall removal differs"):
                     transition(qualify_sha, drift_sha)
@@ -140,12 +144,12 @@ class FirewallCleanupTests(unittest.TestCase):
                 wiki_update("openwiki/.page-manifest.json")
                 removal_sha = commit("firewall prune with reviewed wiki update")
                 transition(qualify_sha, removal_sha)
-                (root / "unrelated.txt").write_text("after\n")
+                document("unrelated.md", "after\n")
                 later_sha = commit("unrelated change after prunes")
                 transition(qualify_sha, later_sha)
                 main_branch = git("branch", "--show-current")
                 git("checkout", "-qb", "unrelated-topic", qualify_sha)
-                (root / "topic.txt").write_text("side branch\n")
+                document("side-topic.md", "side branch\n")
                 side_sha = commit("unrelated side branch")
                 git("checkout", "-q", main_branch)
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
@@ -202,7 +206,9 @@ class FirewallCleanupTests(unittest.TestCase):
                         "builds/unrelated/Dockerfile",
                         "policy/unrelated.rego",
                         "recovery/unrelated.json",
-                        "flake.nix", "flake.lock"):
+                        "flake.nix", "flake.lock", ".unexpected-policy.toml",
+                        ".argocd-values-ref-placeholder.yaml", ".checkov.yaml",
+                        "docs/examples/octelium/runtime.yaml"):
                     with self.subTest(protected_path=name):
                         git("reset", "--hard", anchor)
                         protected = root / name
@@ -211,6 +217,14 @@ class FirewallCleanupTests(unittest.TestCase):
                         commit("change operational source")
                         with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                             transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", anchor)
+                newline_name = "clusters/homelab/apps/unreviewed/bad\nmanifest.yaml"
+                protected = root / newline_name
+                protected.parent.mkdir(parents=True, exist_ok=True)
+                protected.write_text("unreviewed manifest\n")
+                commit("change source with a quoted Git path")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
 
     def test_unadmitted_config_refuses_before_any_cluster_command(self):
         with patch.dict(SUT["PLATFORM"], {

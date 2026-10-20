@@ -443,6 +443,14 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
     application = "IaC/platform-network-policy/stack.hcl"
     old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
     old_sync = "        enabled = false\n        prune   = false\n"
+    def non_operational(path):
+        return (path.startswith(("openwiki/", "specs/")) or
+                (path.startswith("docs/") and
+                 (path.endswith(".md") or
+                  (path.startswith("docs/evidence/") and path.endswith(".json")))) or
+                path in {"AGENTS.md", "README.md", "ONBOARDING.md",
+                         "THIRD_PARTY_NOTICES.md", "LICENSE"})
+
     commits = command("git", "-C", str(ROOT), "rev-list", "--first-parent", "--reverse",
                       f"{evidence_sha}..{source_sha}").splitlines()
     previous, phase = evidence_sha, 0
@@ -451,7 +459,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
         if not parents or parents[0] != previous:
             raise ValueError("firewall evidence is not on the current first-parent history")
         changed = set(command("git", "-C", str(ROOT), "diff", "--no-renames", "--name-only",
-                              previous, commit_sha).splitlines())
+                              "-z", previous, commit_sha).split("\0")) - {""}
         if phase == 0 and {canary_manifest, canary_application} & changed:
             old_app = command("git", "-C", str(ROOT), "show", f"{previous}:{canary_application}")
             new_app = command("git", "-C", str(ROOT), "show", f"{commit_sha}:{canary_application}")
@@ -472,10 +480,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
                     new_app != old_app.replace(old_sync, new_sync)):
                 raise ValueError("firewall removal differs from the reviewed GitOps transition")
             phase = 2
-        elif any(path.startswith((".github/", ".talos/", "IaC/", "builds/", "clusters/",
-                                  "policy/", "recovery/", "scripts/")) or
-                 path in {"flake.nix", "flake.lock"}
-                 for path in changed):
+        elif any(not non_operational(path) for path in changed):
             raise ValueError("policy cleanup source changed after qualification")
         previous = commit_sha
     if phase != 2:

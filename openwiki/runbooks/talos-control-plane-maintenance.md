@@ -34,10 +34,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-20T21:18:04.847Z" }
+generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:33:04.461Z
+    at: 2026-10-20T21:42:24.095Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -211,8 +211,8 @@ taint before the selector label. It rejects another Node with that label before
 mutation and immediately before labeling, and removes its own label if a
 post-patch check detects a conflict. After qualification, the exact qualify →
 fixture-prune → firewall-prune order must hold on the first-parent history of
-current `main`. Unrelated commits may interleave; policy cleanup source edits
-cannot. The static gate checks exact GitOps source phases, while private
+current `main`. Documentation and evidence commits may interleave; other
+source edits cannot. The static gate checks exact GitOps source phases, while private
 ownership and cleanup receipts still bind each protected run to current
 `main`. Apply the
 fixture prune and verify the live `network-policy-canary` namespace and all

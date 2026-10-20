@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:85f4537753fe824fcb8e21b5e78ec5eb55bc656fd838a47727dbc5946174896b",
+  "pageVersion": "sha256:9d4269d1d6267dd03f929d5bd4b51083c939f14d501539b1f72cf3237b531cf2",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -246,7 +246,7 @@
     },
     {
       "id": "claim_54e22979a58544c1bec353a4d0f28a17",
-      "statement": "The protected canary admission, firewall ownership capture and approval, owned cleanup, and canary release stages require exact current-main dispatch, private versioned ownership receipts, two dedicated fixture/firewall prune commits on first-parent history, and absent fixture resources. Unrelated commits may intervene only if protected policy source stays invariant. Assigned canary Pods must match reviewed system and cleanup Pod identities while cleanup runs; release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint, and changed system Pod identity requires separate recovery.",
+      "statement": "Protected canary admission, firewall ownership capture and approval, owned cleanup, and canary release require exact current-main dispatch, private versioned ownership receipts, two dedicated fixture/firewall prune commits on first-parent history, and absent fixture resources. Unrelated commits may intervene only if operational source roots and Nix flake inputs stay invariant. Assigned canary Pods must match reviewed system and cleanup Pod identities while cleanup runs; release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint, and changed system Pod identity requires separate recovery.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
@@ -262,7 +262,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:8aad14f94f1dcbb5f0ab5a27bb743a45cf87f618be59eb4d851a4a6e64dbecbd"
+          "version": "repo-file-v1:sha256:b56381e2f295c2fdcf2d8497cdf9454262f30554523815ac2309d2baa95dd20d"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -349,6 +349,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:33:04.461Z"
+    "at": "2026-10-20T21:42:24.095Z"
   }
 }

@@ -52,10 +52,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T21:33:04.461Z" }
+generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:33:04.461Z
+    at: 2026-10-20T21:42:24.095Z
 ---
 
 # Runtime Isolation
@@ -164,7 +164,8 @@ the taint. After a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
-source changes. The static gate accepts only five exact policy/canary source
+runtime-source changes under the guarded operational roots or Nix flake
+inputs. The static gate accepts only five exact policy/canary source
 phases; private receipts and live checks still gate protected operations.
 Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent

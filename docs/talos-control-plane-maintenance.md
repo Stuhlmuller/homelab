@@ -431,8 +431,8 @@ cleanup receipt to its immutable ownership receipt and original placement at
 the qualify SHA, and verifies the exact qualify, fixture-prune, firewall-prune
 commit order on the first-parent history of current `main` before touching the
 Node. Unrelated commits may land around the two dedicated prune commits;
-changes to operational source, including the private receipt bucket and Nix
-validation inputs, do not. A newer `main` requires fresh
+changes outside the documented prose/evidence allowlist, including the private
+receipt bucket and validation inputs, do not. A newer `main` requires fresh
 SHA-bound ownership capture, approval, and cleanup receipts before release.
 Both stages retain private attempt and completion receipts and stay blocked
 while `canary.node` is null. `owned-cleanup` reads the original verified
