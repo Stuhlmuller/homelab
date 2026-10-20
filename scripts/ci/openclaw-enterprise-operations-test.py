@@ -19,9 +19,21 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
+ROLE = ROOT / 'IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf'
 
 
 class Operations(unittest.TestCase):
+    def test_legacy_session_outlives_the_bounded_job(self):
+        workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise-sync:\n', 1)[0]
+        role = ROLE.read_text()
+        requested = re.findall(r'^\s+role-duration-seconds: (\d+)$', workflow, re.M)
+        maximum = re.findall(r'^\s+max_session_duration = (\d+)\b', role, re.M)
+        limit = re.findall(r'^    timeout-minutes: (\d+)$', workflow, re.M)
+        self.assertEqual(requested, ['25200'])
+        self.assertEqual(maximum, requested)
+        self.assertEqual(limit, ['360'])
+        self.assertGreaterEqual(int(requested[0]) - 60 * int(limit[0]), 3600)
+
     def test_workflow_pins_current_operations_script(self):
         pins = re.findall(
             r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-operations\.sh'",

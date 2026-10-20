@@ -34,6 +34,20 @@ variables {
   policy_name                           = "test-policy"
 }
 
+run "legacy_archive_role_session_outlives_job" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [aws_iam_role.github_actions]
+  }
+
+  assert {
+    condition     = aws_iam_role.github_actions.max_session_duration == 25200
+    error_message = "The legacy archive role session must outlive the protected six-hour job by one hour."
+  }
+}
+
 run "apply_role_describes_only_current_runtime_key" {
   command = plan
 

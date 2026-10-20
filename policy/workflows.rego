@@ -302,8 +302,12 @@ approved_openclaw_legacy_operation if {
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
 	job.concurrency.group == "openclaw-enterprise-operations-production"
+	job["timeout-minutes"] == 360
 	job.permissions == {"contents": "read", "id-token": "write"}
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
+	credentials := [step | step := job.steps[_]; step.name == "Configure AWS Credentials"]
+	count(credentials) == 1
+	credentials[0]["with"]["role-duration-seconds"] == 25200
 	some step in job.steps
 	step.name == "Run Legacy Stage"
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"

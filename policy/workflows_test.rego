@@ -147,6 +147,17 @@ test_rejects_changed_openclaw_legacy_operation if {
 	}
 }
 
+test_rejects_short_openclaw_legacy_session if {
+	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	legacy := candidate.jobs.legacy
+	short_credentials := object.union(legacy.steps[0], {"with": {"role-duration-seconds": 3600}})
+	short_job := object.union(legacy, {"steps": [short_credentials, legacy.steps[1]]})
+	short_workflow := object.union(candidate, {"jobs": object.union(candidate.jobs, {"legacy": short_job})})
+	violations := deny with input as short_workflow
+	some msg in violations
+	contains(msg, "exact protected stages")
+}
+
 test_allows_fixed_openclaw_phase_tail if {
 	private_live_tail(`then
 phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
@@ -192,9 +203,10 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
 		"concurrency": {"group": "openclaw-enterprise-operations-production"},
+		"timeout-minutes": 360,
 		"permissions": permissions,
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
-		"steps": [{
+		"steps": [{"name": "Configure AWS Credentials", "with": {"role-duration-seconds": 25200}}, {
 			"name": "Run Legacy Stage",
 			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,

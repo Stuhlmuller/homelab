@@ -88,7 +88,17 @@ shutdown; the old Deployment and backup CronJob must first reach their reviewed
 stopped GitOps state. If any stage
 fails, leave old PVs, NAS data and credentials retained, inspect the private
 diagnostic in the backup bucket if published, and retry with a new run ID after fixing
-the cause. Do not reuse a partial S3 prefix.
+the cause. Never overwrite a completed S3 object version. An incomplete
+multipart upload has no object version; after fixing its cause, the same
+completed `archive_ref` can be retried through the protected workflow. The
+bucket lifecycle aborts abandoned multipart uploads.
+
+Large offsite publication needs a seven-hour AWS role session for the bounded
+six-hour protected job. Before retrying `publish-archive`, apply and verify the
+operator-owned role maximum through the
+[duration-only saved-plan gate](../../../../docs/operator-infrastructure.md#legacy-archive-session-duration-rollout);
+the workflow requests the same 25,200 seconds. Other AWS workflows retain their
+existing session duration.
 
 The tar keeps each source symlink's raw target without following it. Restore
 verification validates all archive members and parent paths before extracting
