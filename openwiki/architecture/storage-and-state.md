@@ -38,10 +38,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T14:16:14.853Z" }
+generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:10:13.266Z
 ---
 
 # Storage And State
@@ -298,11 +298,14 @@ recovery set. The foundation is not registered with Argo. Its PostgreSQL 18.6
 StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
 restore fixtures are source-only; node placement, live role initialization,
 complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
-this source alone. The 2026-10-20 07:22 UTC capacity recheck found about
-3,398 MiB of unreserved memory on the best worker, below the 4,096 MiB
-initial Enterprise reservation before transient and host headroom. That worker
-also had only 9.71 GB of root-filesystem space free, below the proposed 10 GiB
-local claim. This does not admit local storage or an isolated canary; see the
+this source alone. The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
+about 3,398 MiB unreserved on the best worker, `zimaboard-1`, below the
+4,096 MiB initial Enterprise reservation before transient and host headroom.
+Its root filesystem had 9.74 GB free. Talos confirmed each worker's `/var`
+resides on eMMC; all have less than the 10.74 GB needed for a new 10 GiB local
+claim if T035 uses the existing `/var/lib` pattern. New node paths are not yet
+committed. `acer` has only 1,802 MiB unreserved, below the 2,304 MiB database
+and gateway minimum. This does not admit local storage or an isolated canary; see the
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight

@@ -310,10 +310,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T14:46:55.569Z" }
+generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:10:13.266Z
 ---
 
 # Validation Gates
@@ -1682,13 +1682,15 @@ that blocks Discord, heartbeat, and job deliveries. Flannel does not enforce
 the declared NetworkPolicies, so a deny policy alone cannot isolate the old
 image. Require the verified offsite archive receipt before the rehearsal; keep
 production writers stopped and original claims read-only.
-The 2026-10-20 07:22 UTC read-only recheck still rejects T022: the best
-worker has about 3,398 MiB unreserved by requests, below Enterprise's initial
-4,096 MiB steady reservation before startup and system headroom. It was using
-6,447 MiB of memory, had 45 co-resident Pods, and had 9.71 GB root-filesystem
-space free, below the proposed 10 GiB local claim. A new `NoSchedule` taint
-would not isolate those existing Pods. Storage placement and actual
-network-policy lifecycle traffic are separate unpassed gates.
+The 2026-10-20 13:07–13:15 UTC post-shutdown read-only recheck still rejects
+T022: the best worker, `zimaboard-1`, has about 3,398 MiB unreserved against
+Enterprise's initial 4,096 MiB steady reservation, 6,308 MiB in use, and
+9.74 GB root-filesystem space free. Talos confirms every worker's `/var` is on
+eMMC; each has less than 10.74 GB for one new 10 GiB local claim if T035 uses
+the existing `/var/lib` pattern. `acer` has only 1,802 MiB unreserved, below
+the 2,304 MiB database-plus-gateway minimum. Unrelated Pods remain on every
+worker, so a new `NoSchedule` taint cannot isolate a canary. Storage placement
+and actual network-policy lifecycle traffic are separate unpassed gates.
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
 Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and
