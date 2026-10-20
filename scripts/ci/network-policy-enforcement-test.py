@@ -2,9 +2,11 @@
 """Guard the disabled firewall-only kube-router source before live qualification."""
 
 import json
+import importlib.util
 import subprocess
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +19,11 @@ FLAGS = {
     "--enable-ipv4=true", "--enable-ipv6=false",
     "--health-addr=127.0.0.1",
 }
+QUALIFICATION_SPEC = importlib.util.spec_from_file_location(
+    "network_policy_qualification", ROOT / "scripts/network-policy-qualification.py"
+)
+qualification = importlib.util.module_from_spec(QUALIFICATION_SPEC)
+QUALIFICATION_SPEC.loader.exec_module(qualification)
 
 
 def rendered_objects(path=SOURCE):
@@ -114,17 +121,76 @@ class FirewallSourceTests(unittest.TestCase):
             self.assertIn("harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:", image)
             self.assertIn("@sha256:", image)
         policy, = (item for item in fixtures if item["kind"] == "NetworkPolicy")
+        self.assertEqual(policy["spec"], qualification.EXPECTED_POLICY["spec"])
         self.assertEqual(policy["spec"]["podSelector"], {"matchLabels": {"role": "client"}})
         self.assertEqual(policy["spec"]["policyTypes"], ["Egress"])
-        rule, = policy["spec"]["egress"]
-        self.assertEqual(rule["to"], [{"podSelector": {"matchLabels": {"role": "allowed"}}}])
-        self.assertEqual({(port["protocol"], port["port"]) for port in rule["ports"]},
+        peer, dns = policy["spec"]["egress"]
+        self.assertEqual(peer["to"], [{"podSelector": {"matchLabels": {"role": "allowed"}}}])
+        self.assertEqual({(port["protocol"], port["port"]) for port in peer["ports"]},
                          {("TCP", 8080), ("UDP", 8080)})
+        self.assertEqual(dns["to"], [{
+            "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}},
+            "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}},
+        }])
+        self.assertEqual({(port["protocol"], port["port"]) for port in dns["ports"]},
+                         {("TCP", 53), ("UDP", 53)})
         for item in fixtures:
             if item["kind"] == "Pod" and item["metadata"]["name"] != "npq-client":
                 self.assertEqual({(port["protocol"], port["containerPort"])
                                   for port in item["spec"]["containers"][0]["ports"]},
                                  {("TCP", 8080), ("UDP", 8080), ("TCP", 9090)})
+
+    def test_dns_matrix_requires_both_transports_and_exact_service(self):
+        compile(qualification.DNS_PROBE, "dns-probe", "exec")
+        service = {"metadata": {"name": "kube-dns", "namespace": "kube-system"},
+                   "spec": {"clusterIP": "10.96.0.10", "ipFamilies": ["IPv4"],
+                            "selector": {"k8s-app": "kube-dns"},
+                            "ports": [{"protocol": "TCP", "port": 53, "targetPort": 53},
+                                      {"protocol": "UDP", "port": 53, "targetPort": 53}]}}
+        kubernetes = {"metadata": {"name": "kubernetes", "namespace": "default"},
+                      "spec": {"clusterIP": "10.96.0.1", "ipFamilies": ["IPv4"]}}
+        objects = {("-n", "kube-system", "get", "service", "kube-dns"): service,
+                   ("-n", "default", "get", "service", "kubernetes"): kubernetes}
+        with (mock.patch.object(qualification, "kubernetes_json",
+                                side_effect=lambda *args: objects[args]),
+              mock.patch.object(qualification, "probe_dns", return_value=
+                                subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", "")) as probe):
+            results = qualification.dns_matrix()
+        self.assertEqual([item["protocol"] for item in results], ["TCP", "UDP"])
+        self.assertEqual([item["observed"] for item in results],
+                         ["NPQ_DNS_ALLOWED", "NPQ_DNS_ALLOWED"])
+        self.assertEqual(probe.call_count, 2)
+        self.assertEqual({call.args for call in probe.call_args_list}, {
+            ("npq-client", "10.96.0.10", "TCP", "10.96.0.1"),
+            ("npq-client", "10.96.0.10", "UDP", "10.96.0.1"),
+        })
+        with (mock.patch.object(qualification, "kubernetes_json",
+                                side_effect=lambda *args: objects[args]),
+              mock.patch.object(qualification, "probe_dns", side_effect=[
+                  subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", ""),
+                  subprocess.CompletedProcess([], 7, "", "")])):
+            with self.assertRaisesRegex(ValueError, "DNS"):
+                qualification.dns_matrix()
+        service["spec"]["selector"] = {"k8s-app": "foreign"}
+        with mock.patch.object(qualification, "kubernetes_json",
+                               side_effect=lambda *args: objects[args]):
+            with self.assertRaisesRegex(ValueError, "DNS"):
+                qualification.dns_matrix()
+
+    def test_traffic_receipt_includes_both_dns_probes(self):
+        pods = {name: {"status": {"podIP": f"10.244.1.{index}"}}
+                for index, name in enumerate(("npq-client", "npq-allowed", "npq-denied"), 10)}
+        dns = [{"source": "npq-client", "target": "kube-dns", "port": 53,
+                "protocol": protocol, "permitted": True, "observed": "NPQ_DNS_ALLOWED"}
+               for protocol in ("TCP", "UDP")]
+        outcomes = [subprocess.CompletedProcess([], 0 if case[4] else 7,
+                    "NPQ_ALLOWED\n" if case[4] else "NPQ_DENIED\n", "")
+                    for case in qualification.CASES]
+        with (mock.patch.object(qualification, "probe", side_effect=outcomes),
+              mock.patch.object(qualification, "dns_matrix", return_value=dns) as checked):
+            result = qualification.traffic_matrix(pods)
+        checked.assert_called_once_with()
+        self.assertEqual(result[-2:], dns)
 
 
 if __name__ == "__main__":
