@@ -55,6 +55,7 @@ override; see [the routing contract](contracts/enterprise.md#gateway-api-and-pri
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
+python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 scripts/platform-maintenance.py validate \
   --config scripts/config/platform-maintenance.json
