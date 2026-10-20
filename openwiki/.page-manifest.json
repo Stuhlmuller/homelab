@@ -121,20 +121,18 @@
       "completedRunId": "8c55ea97-a813-4c38-8a2f-f37edfed2bb2"
     },
     "/openwiki/runbooks/ci-cd.md": {
-      "gitHead": "8dd98909ffb69b36aef879e3081a7b6f97352bb2",
-      "sourceFingerprint": "sha256:c9afaca7000d05248e3baec2167718ff625d89a01bd9309ba66669b9a66bcfdb",
-      "pageVersion": "sha256:accec4423d94a9de59119bf391efcfae76e6354e9574468aec4d199318ba13c5",
+      "pageVersion": "sha256:db784c096c1968843f64b40d860e4093931ec0ef55f12f17ffa1dc46e7955a74",
       "completedBy": "codex",
-      "completedRunId": "4df239fc-c83a-417b-b974-f51cf3d78c13"
+      "completedRunId": "cf1801ea-d79d-498a-a34e-19a5ce515d55",
+      "gitHead": "bad17e9fd29f1e5e74497dce873d5b98ce39fc60",
+      "sourceFingerprint": "sha256:bb0338094d316d36884fd343b8999cb59b8e403ea124fd288e999bf23141b6b3"
     },
     "/openwiki/runbooks/octelium.md": {
-      "gitHead": "6cda9d356f30b4eee4013be1230d5e405165fc3e",
-      "sourceFingerprint": "sha256:0fc8cee406e4207513a2350c4373b7ed8f714325f850c72c416cbed26a346e4c",
+      "gitHead": "1a8151d7fe8c32442b2ce8da59b879acafcbcde7",
+      "sourceFingerprint": "sha256:561b8b879eefca3c9d792df685e4bcffcb8869dbcba106e2d32ac65816ee167f",
       "pageVersion": "sha256:209b881cc4c751fe7498c417c04edb14376f28237d294fe3c4a7220d0bd2b290",
       "completedBy": "codex",
-      "completedRunId": "e10d8d67-feb5-4438-a302-33635111518d",
-      "gitHead": "1a8151d7fe8c32442b2ce8da59b879acafcbcde7",
-      "sourceFingerprint": "sha256:561b8b879eefca3c9d792df685e4bcffcb8869dbcba106e2d32ac65816ee167f"
+      "completedRunId": "e10d8d67-feb5-4438-a302-33635111518d"
     },
     "/openwiki/runbooks/runtime-isolation.md": {
       "gitHead": "43981c102066773f05799a0c683eec7cb9b42de9",
