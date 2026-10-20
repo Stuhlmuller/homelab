@@ -397,7 +397,8 @@ jq -r '.[].head.sha' "$pulls_file" >"$all_heads_file"
 if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
   event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
   [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
-  grep -Fx -- "$event_head" "$all_heads_file" >"$heads_file" || :
+  grep -Fxq -- "$event_head" "$all_heads_file" || exit 1
+  printf '%s\n' "$event_head" >"$heads_file"
 else
   [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
   while IFS= read -r head_sha; do
