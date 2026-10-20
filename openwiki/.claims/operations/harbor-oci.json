@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ca4e4a47a722e7764dc4c75569542b3f3e3c4e3ecf45152939cf293fd3734aff",
+  "pageVersion": "sha256:f32d49ca63287a55e4efffeb576e045efd25a63d6bece69f8ef129bc999ddde1",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -728,7 +728,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         }
       ]
     },
@@ -792,7 +792,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
+          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
         }
       ]
     },
@@ -830,7 +830,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         }
       ]
     },
@@ -855,6 +855,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:54:44.714Z"
+    "at": "2026-10-20T07:12:19.109Z"
   }
 }

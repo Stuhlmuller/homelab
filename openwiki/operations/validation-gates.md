@@ -60,6 +60,8 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-f8f5d3b6cb788d6762c27993
+    resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -278,10 +280,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T06:54:44.714Z" }
+generated: { by: "codex", at: "2026-10-20T07:12:19.109Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:54:44.714Z
+    at: 2026-10-20T07:12:19.109Z
 ---
 
 # Validation Gates
@@ -609,11 +611,12 @@ between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 an empty `egress` field alone does not add Egress.
 
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
-binds the complete source shapes of `cordium/ws-main`,
-`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` to pinned
-`v0.12.7` constructors. Inventory tests compare these three full specs; 14
-other Cordium/Octelium generated policies still lack bound fixtures. This is
-source review, not a pinned generator-binary render or live traffic result.
+binds three complete policy shapes to pinned `v0.12.7` constructors. The
+[Octelium fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+adds four policies from pinned `v0.35.0` constructors. Inventory tests compare
+all seven full specs; ten Octelium Enterprise generated policies still lack
+bound fixtures. This is source review, not a pinned generator-binary render
+or live traffic result.
 The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
 IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
 generator needs a reviewed correction and an isolated canary must qualify

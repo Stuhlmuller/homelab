@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:18c899e21f76dafd53d3322411a090fef29acd36fbec8364ee168533d63c2993",
+  "pageVersion": "sha256:3a7c86e61550ed08735a96495cbbd2446e240b3fde5aff67135ad9ca9aaa60fe",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -1118,7 +1118,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -1135,7 +1135,7 @@
           "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L180-L268",
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L200-L288",
           "version": "repo-lines-v1:sha256:2c2e93861c3fdba4894a9e725ba19fc1560e0ba33cdf9467674691304847f681:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjN2U1NDg5YzUwNWQ2MmI3NGUwYzRhZWFlNzY3NDllZGM3OTljNWYyNTEyMTRjYmQ3MGZhNzMwNGYzYjk1YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZDYzNmIxMTdjNjBmNTBmMTI2ZDVlMDA4MmY4MDNjMDQxNWZiMWM0OTYwMjE5NmM5Mzc3YTRiMDNlZGNmZDUifQ"
         },
         {
@@ -1158,7 +1158,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
+          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1258,7 +1258,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         }
       ]
     },
@@ -1314,19 +1314,23 @@
     },
     {
       "id": "claim_d2bb7c4027b140ae90c7db26e4b9c3c5",
-      "statement": "A read-only fixture binds complete expected NetworkPolicy specs for three pinned Cordium v0.12.7 Genesis policies, leaving 14 Cordium/Octelium generated policies without source-bound fixtures; it does not prove pinned binary rendering or live enforcement.",
+      "statement": "Read-only fixtures bind complete expected NetworkPolicy specs for three pinned Cordium v0.12.7 and four pinned Octelium v0.35.0 Genesis policies, leaving ten Octelium Enterprise generated policies without source-bound fixtures; they do not prove pinned binary rendering or live enforcement.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
           "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
         },
         {
+          "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7"
+        },
+        {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
         },
         {
           "resource": "repo://scripts/ci/network-policy-inventory-test.py",
-          "version": "repo-file-v1:sha256:3b92bf94f576551cdd1d1242ca4d4a461c89e2606c68c8df30f2eda1b558fda1"
+          "version": "repo-file-v1:sha256:c6ef44758bac4fc6f0d69fc94fd27e8a21a5c1925ac752b2dbb059adb09acc6c"
         }
       ]
     },
@@ -1336,11 +1340,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
+          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
         }
       ]
     },
@@ -1369,6 +1373,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:54:44.714Z"
+    "at": "2026-10-20T07:12:19.109Z"
   }
 }
