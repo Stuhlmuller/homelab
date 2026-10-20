@@ -68,12 +68,14 @@ sources:
     resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
+generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:28:14.127Z
+    at: 2026-10-20T08:13:32.442Z
 ---
 
 # CI/CD
@@ -170,6 +172,15 @@ before AWS credentials, and verifies the pinned stage helper before execution.
 The executor keeps activation and canary placement disabled until private
 recovery, image-publication and isolated-node evidence is available; no upgrade
 stage has run from this source change.
+The protected `canary-admit` and `canary-release` stages require a configured
+canary node and exact-main private receipts. Admission verifies placement and
+adds the dedicated isolation taint before the selector label. It checks the
+cluster-wide label selector before mutation, immediately before labeling, and
+after the patch. A preflight conflict blocks mutation; a later conflict
+retains the taint and removes this Node's label. Release requires
+the verified owned-cleanup run, removes the label, waits for cleanup DaemonSet
+Pods to disappear cluster-wide, then removes the taint. Each stage records a
+private attempt before mutation; an interrupted release retains isolation.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 

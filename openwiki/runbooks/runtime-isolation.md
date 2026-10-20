@@ -40,14 +40,18 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T07:27:46.454Z" }
+generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:27:46.454Z
+    at: 2026-10-20T08:13:32.442Z
 ---
 
 # Runtime Isolation
@@ -139,6 +143,18 @@ IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before
 expanding to another node. Stock Enterprise's public TCP/443 requirement
 remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
+
+The protected `canary-admit` source path requires a fresh measured placement
+receipt and exact Node and system Pod identities. It checks that the enforcer,
+cleanup Pods, and fixture traffic are absent, then adds the dedicated
+`NoSchedule` taint before the selector label. A complete cluster-wide label
+inventory must exclude every other selected Node before mutation and just
+before labeling; a conflicting post-patch read removes its own label and keeps
+the taint. `canary-release` requires a
+verified owned-cleanup receipt and empty owned firewall. It removes the label
+first and waits for cleanup DaemonSet Pods to disappear cluster-wide before
+removing the taint. A survivor or timeout retains isolation. These staged
+paths do not make a current worker eligible.
 
 The nine repository-owned DNS egress policies now select only CoreDNS Pods on
 TCP/UDP 53. Static renders check their peer and the matching Service/Deployment

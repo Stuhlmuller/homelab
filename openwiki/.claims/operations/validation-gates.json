@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f685adfa3c8dc2f7502ccc0c5c461ffef0b66a9308a7508c865ffb545736ffd9",
+  "pageVersion": "sha256:b6230723e7cbe788a253b33a3807c2f3b23989024d76b3a6cf2ef9ddb7e223d2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bcdf5c5f3916c6e66c4e7ed0cdb50f6373ea1ec65f9711d0416c1e99dbaaf6b9"
+          "version": "repo-file-v1:sha256:8cc1f298c0110c21de03922dabf11388366dbe43587f4adef07c09c56696c87e"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
+          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
         }
       ]
     },
@@ -559,8 +559,8 @@
           "version": "repo-lines-v1:sha256:abb4548fcad718c086aa8e2544915a4adfd265452568234e0590753180a5f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmMzkzMTdhZGU5YTRiYzJjNjBhZTBkNGMyOTI3Mzg4ZTFmOWNkMzY2MzZmMTdlM2M0MDdiMTBkNDZkYzcwYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxMTc1ODA2OWUxYmM2NzkyZDFhNzBjYjI5ZDFhOGNmY2U2MDFiM2I2Y2EwZTVjNTBlNWI0ZTBhY2E3NjUyMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZWM0Y2Y5MjdlYzc4NDYyYjNmZTUyMzNiYzk2OGYzZjVhNTFmY2U3YTk2YWQ0YWJmMDkwMThhOThlZDdhOTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlYTBlM2Y5MDI4ZjgwNTE0YmU1NjBjODdmYzIwODAxYmE3OWYxNGIwMDU5ZTUxYjI5MWIwZDUwZWEzODg2YTQifQ"
         },
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L1-L14",
-          "version": "repo-lines-v1:sha256:4f3079bf06090cc0fd9b83016de15bb9cbbeac0ad9c70934aa03b51a7fa06d56:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzNiZDU3MmRjMzMyNDJmMTM0MDMyMGEzMDA5NGVmZDQxMGQyN2JlNTM3YWY4MGE1YzQ1MzAzNTliZTViODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MTE5OTFlNjQ1YmM1OGE1NDMwY2Y0MTVlOGVhODAyOTQ4YjE0M2VjMWU3YWRkYWQwZjExZGRhYjU5OGE1YjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU5MjNlMmQ4YzU1MjRlNjZlODY3YWI3MTlkMzcyYTM3MGYxZThmYjJkNTg2MzJkM2ZhZjRlYjI4ZGRmM2VhYWQifQ"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:1d4a4d7c21a7f57646b3f9befa210d11baedc2c2f19456e103f6a60dcec1de3b"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py#L136-L252",
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:59e576517b8ef7fc485a0cad9c83d18d452d018c57cf2291aac7d9ba9604a963"
+          "version": "repo-file-v1:sha256:b34265e1ee91a9ac6f3df2a4ecfe0b593bac4c7ddf89db84d21fc140df44df45"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
+          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bcdf5c5f3916c6e66c4e7ed0cdb50f6373ea1ec65f9711d0416c1e99dbaaf6b9"
+          "version": "repo-file-v1:sha256:8cc1f298c0110c21de03922dabf11388366dbe43587f4adef07c09c56696c87e"
         }
       ]
     },
@@ -888,11 +888,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:5849e1575bf8976951932889e7712ee35d54f94d75f7904c0feaf5623b87de62"
+          "version": "repo-file-v1:sha256:d9f09d68a0d66a63f749c3e8d2d8ccd58bc01548adb312c69440859f392d829a"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
+          "version": "repo-file-v1:sha256:ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bcdf5c5f3916c6e66c4e7ed0cdb50f6373ea1ec65f9711d0416c1e99dbaaf6b9"
+          "version": "repo-file-v1:sha256:8cc1f298c0110c21de03922dabf11388366dbe43587f4adef07c09c56696c87e"
         }
       ]
     },
@@ -1034,7 +1034,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bcdf5c5f3916c6e66c4e7ed0cdb50f6373ea1ec65f9711d0416c1e99dbaaf6b9"
+          "version": "repo-file-v1:sha256:8cc1f298c0110c21de03922dabf11388366dbe43587f4adef07c09c56696c87e"
         }
       ]
     },
@@ -1126,7 +1126,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
+          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
         }
       ]
     },
@@ -1304,11 +1304,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
-          "version": "repo-file-v1:sha256:ab7ad95771d6aa8f8cab9bde9db8ffd668f7ef9ddc42ca266cda869f20f2e1e8"
+          "version": "repo-file-v1:sha256:084ac1690fdb9e22b86c2d7fdfc0dba38e2f6fb6d3d370a66f347fa8068f8aa1"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
+          "version": "repo-file-v1:sha256:ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -1366,7 +1366,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:59e576517b8ef7fc485a0cad9c83d18d452d018c57cf2291aac7d9ba9604a963"
+          "version": "repo-file-v1:sha256:b34265e1ee91a9ac6f3df2a4ecfe0b593bac4c7ddf89db84d21fc140df44df45"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -1399,10 +1399,38 @@
           "version": "repo-lines-v1:sha256:91b4f9f45840e62745f0e55757df7c294c3510d202ed64cd949e65f074ff357c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3OTNkMTg0NTU1MmIzYTEzN2U5Yzc4OTdkYzc4YjE1ZGU0NzQzZjNmMTUzODlkYWVhMzE1OTE3MWEwYmRkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmODE3ZTVlNWZkNzRjMWFmMWQ1MDBjNjFhZjhiNDM1ZTE5ZTU2MjNlMDdhYzljMTBjZjZhYTgyODgzYmE5NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_587f5933719f41f39c72b79664622e13",
+      "statement": "Canary admission requires a complete cluster-wide selector inventory with no labeled Node before mutation and immediately before labeling; after the patch it verifies only the configured Node and rolls back its own label on conflict while retaining the isolation taint.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L219-L285",
+          "version": "repo-lines-v1:sha256:bea282bac1365438081ac206b8baa723dfebd2fb5853230465d9323af5bfcfee:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMDYyMjI3MzU2ZWQ0ZjMwYWNlM2UzMWUyMTA4ZDRjMmI1YzY1M2U5ZjFhNWNlMzgwYWFiMDc3YjE3YmQwZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZTVkZDJlMDRiNjU5MWZiZTBiYjY2NzIzYzA4YjQxMjIxYzFjODQxMzUxOGNmNzg3ZTIwYmIyZWMyYzdhMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2NDllMDliYjBiNTdlNWI5M2NjYzY3NzNlMzU5ZDc0YjliZWJmOWUzMGRlNjRhZTVjYTBmMmI2ZTk1OGJlMTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwOWYxZWY2N2Q4MDJhMWQzZjk1MGUxYTUxYTc0NTE1NmUzNWJmYWUwMzhkYjE5MzIwMTQxMTg0YWU5ZDRjNmQifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L49-L68",
+          "version": "repo-lines-v1:sha256:585b635b9316bd92d9fe7a4959bbb5e7cd2b6a487bb04a65f828cc82eeca7e81:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlN2EzOTdhZGIyODYzNmY1OGI2YzUyMGM3Nzc1M2IyZmIyN2JjYzE0YTZmOTMzYTVhZjhkYTcxMTIwNWQyOWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU0YTAyNmZmNDFjZGM0Mjg5MDllZjIyYmU2MmI4ZTc2NjhjMWFjMDNhMWYyNzQ4OGNmNDgwYTA1Njk4NDk1NTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4NzQxZGMyOThjMTBkNDM5NDZmOTg1M2U4YzdmYWY5OGM3ODkzNjZmMGQzNzc5MDNjNWJlYTQ5ODYxZmRmNGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_140fb784a6bb41d49e5d5007017703db",
+      "statement": "Canary release removes the selector label, waits for every cleanup DaemonSet Pod to disappear across the cluster, and removes the isolation taint only afterward; a surviving Pod or timeout keeps the taint.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L171-L199",
+          "version": "repo-lines-v1:sha256:87e9ef7c483287e2c58e663f6e8d7ac587d1c205351e35364d814fcc584ee75d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmE1YWYyY2IxYzg2OWFjOTM4ZjgwZWU3ZmE5YmQ2YmFlMDU0NTUzZWIyYWQzYWViOTYxODY1ZmQ3ODc5NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkODYzMTc2NTQ4ZjhkYThhOTY4ZmNkNmEzN2JhNDgxYTFjNGUxOWY2NmExZGQ0NTI3YjkwOWM1OWNlMTQwMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlYWI0ZDM4NjNlMWNmNGU4YjNiYjJiZWQxOWVkYTg3NDlhYzg0MDk2ZTQ3MWQ2YzU3YzVkODY5NzQzYzBmYTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhZTZhNDNiODQwYmE2ZDAwN2IwNGEyZjVmM2M5Njg2NTFiZDNiNzZmZmRlNTM3NWYzNTU1YjJmNmE2MzhiZmIifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L257-L270",
+          "version": "repo-lines-v1:sha256:8f71d5a0467450c37394d9a376d6b2671e6ca9c98ca65e3292cfa10316149efe:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5N2I0N2JiODFjZTkzY2JhNjdhZmMwODY5OGE4MGNmYTA5M2E4NjY3ZTljOWY5NjUzMzc4MThkNjU3OGQxODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MzY1YWIwZmY0ZjUwZGQ1OWQwYTA1ODdjNjE3Y2YwZDRmMjY2ZTQzNjgyMzdjNDg1Zjk0ZTQzZmI2ZTMzYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1NzBmNzM1ZTk5MTBjZjc1ZTEyOWMzOTc0MmExNGJlNWRjNWUyY2QwYTQ2NzNiNzUwNGU2YjM3NzdlM2I2ZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5MjU3MTMyZDA5MDE2NTlkZmJhMTM5M2Y3YThiYmZmNzMzZjY3MGUzOWMxMzIxMGRjZDkxNWMwZjc5N2Q3ZWYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:54:18.171Z"
+    "at": "2026-10-20T08:13:32.442Z"
   }
 }

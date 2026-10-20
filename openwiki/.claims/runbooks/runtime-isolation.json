@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b858e96ae55b57163392e345266259d5f75dbdabda5e124f7f46423a8d957b0c",
+  "pageVersion": "sha256:dc697995ca81a562bb91ffcd331fda95f2fb17cf6b3f0458bd2f2851a7aed34a",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:88ed02eab2a3fef6e7d2796b4867b7340d481d7d20f1ea85864fad1ba4b72463"
+          "version": "repo-file-v1:sha256:1d4a4d7c21a7f57646b3f9befa210d11baedc2c2f19456e103f6a60dcec1de3b"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -29,7 +29,7 @@
       "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, admitted tainted node, and exact fixture commands, arguments, container security contexts, identities, and policy before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L41-L57",
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L69-L85",
           "version": "repo-lines-v1:sha256:e096727a973080c1a15653f753c5d2ea4d1d40e831260cb9878c4e20157009d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
         },
         {
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
+          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
         }
       ]
     },
@@ -159,7 +159,7 @@
       "statement": "The protected canary qualifier probes Kubernetes Service DNS through the reviewed kube-dns Service over TCP and UDP 53, rejects malformed replies or an A record differing from the live Kubernetes Service IP, and records both DNS outcomes; lifecycle and real-workload qualification remain pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L41-L54",
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L69-L82",
           "version": "repo-lines-v1:sha256:766abf4d327a432962220174dcdd72e60cd9d30d353405e3d132e5519547108f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMmE3MmNjMDRkNmQ5YmJhYjcyYWZlZjVhMmVlNjU5MTAzM2U1ZmQ5ZmQwYTkyYjZiNzUyOGNlNDFhNGNhYTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwYjBkNzQyNDI0ODkwMzE0YWYwY2QyODQxODJjYmM0YTY1NDY0MWYyZDQwMDY4ZDM2ZTQzMzU5NjU4ODY3ZTUifQ"
         },
         {
@@ -235,10 +235,32 @@
           "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         }
       ]
+    },
+    {
+      "id": "claim_b74a0aa4689d47f491bdfac25d4ac038",
+      "statement": "The protected canary admission and release helpers require reviewed exact-Node placement and owned cleanup receipts, retain a dedicated isolation taint through selector-label removal and cluster-wide cleanup Pod deletion, and leave live traffic and lifecycle qualification pending.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L171-L199",
+          "version": "repo-lines-v1:sha256:87e9ef7c483287e2c58e663f6e8d7ac587d1c205351e35364d814fcc584ee75d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmE1YWYyY2IxYzg2OWFjOTM4ZjgwZWU3ZmE5YmQ2YmFlMDU0NTUzZWIyYWQzYWViOTYxODY1ZmQ3ODc5NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkODYzMTc2NTQ4ZjhkYThhOTY4ZmNkNmEzN2JhNDgxYTFjNGUxOWY2NmExZGQ0NTI3YjkwOWM1OWNlMTQwMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlYWI0ZDM4NjNlMWNmNGU4YjNiYjJiZWQxOWVkYTg3NDlhYzg0MDk2ZTQ3MWQ2YzU3YzVkODY5NzQzYzBmYTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhZTZhNDNiODQwYmE2ZDAwN2IwNGEyZjVmM2M5Njg2NTFiZDNiNzZmZmRlNTM3NWYzNTU1YjJmNmE2MzhiZmIifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L219-L285",
+          "version": "repo-lines-v1:sha256:bea282bac1365438081ac206b8baa723dfebd2fb5853230465d9323af5bfcfee:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMDYyMjI3MzU2ZWQ0ZjMwYWNlM2UzMWUyMTA4ZDRjMmI1YzY1M2U5ZjFhNWNlMzgwYWFiMDc3YjE3YmQwZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZTVkZDJlMDRiNjU5MWZiZTBiYjY2NzIzYzA4YjQxMjIxYzFjODQxMzUxOGNmNzg3ZTIwYmIyZWMyYzdhMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2NDllMDliYjBiNTdlNWI5M2NjYzY3NzNlMzU5ZDc0YjliZWJmOWUzMGRlNjRhZTVjYTBmMmI2ZTk1OGJlMTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwOWYxZWY2N2Q4MDJhMWQzZjk1MGUxYTUxYTc0NTE1NmUzNWJmYWUwMzhkYjE5MzIwMTQxMTg0YWU5ZDRjNmQifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L49-L68",
+          "version": "repo-lines-v1:sha256:585b635b9316bd92d9fe7a4959bbb5e7cd2b6a487bb04a65f828cc82eeca7e81:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlN2EzOTdhZGIyODYzNmY1OGI2YzUyMGM3Nzc1M2IyZmIyN2JjYzE0YTZmOTMzYTVhZjhkYTcxMTIwNWQyOWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU0YTAyNmZmNDFjZGM0Mjg5MDllZjIyYmU2MmI4ZTc2NjhjMWFjMDNhMWYyNzQ4OGNmNDgwYTA1Njk4NDk1NTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4NzQxZGMyOThjMTBkNDM5NDZmOTg1M2U4YzdmYWY5OGM3ODkzNjZmMGQzNzc5MDNjNWJlYTQ5ODYxZmRmNGEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:27:46.454Z"
+    "at": "2026-10-20T08:13:32.442Z"
   }
 }
