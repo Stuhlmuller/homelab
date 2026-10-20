@@ -25,6 +25,7 @@ node --test scripts/ci/renovate-config-test.js
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
+python3 -I scripts/ci/platform-maintenance-credentials-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/network-policy-qualification-test.py
 python3 -I scripts/ci/network-policy-cleanup-test.py
