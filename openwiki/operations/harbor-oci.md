@@ -160,10 +160,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
+generated: { by: "codex", at: "2026-10-20T01:08:27.886Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:08:27.886Z
 ---
 
 # Harbor Private OCI Registry
@@ -843,10 +843,12 @@ up to three times. An expected missing-alias response proceeds to copy; an
 authentication error or other hard lookup failure stops publication. A retry
 does not replace the final digest, alias, and authenticated pull checks.
 For an OCI index, the final authenticated Harbor pull retries classified
-transport failures up to five times with fresh local directories and 2, 4,
-8, then 16 seconds of backoff. Authentication, content, and other hard
-errors stop immediately; the pulled index must still match the original
-digest. Full-catalog acceptance remains pending a protected receipt.
+transport failures up to five times with one temporary OCI directory and 2,
+4, 8, then 16 seconds of backoff. `regctl --force-recursive` rechecks nested
+manifests and blobs while retaining completed content across attempts.
+Authentication, content, and other hard errors stop immediately; the pulled
+index must still match the original digest. Full-catalog acceptance remains
+pending a protected receipt.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
