@@ -29,6 +29,18 @@ if [[ "$stage" == full-sync ]]; then
   exit
 fi
 
-# Reconcile and recovery need a shared journal across retries.
+if [[ "$stage" == reconcile || "$stage" == stop || "$stage" == verification ]]; then
+  jq -e '.journalOperator.enabled == true' scripts/config/openclaw-enterprise.json >/dev/null || {
+    echo 'Enterprise operator remains disabled pending placement and credential proofs' >&2
+    exit 1
+  }
+  [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${GH_REPO:-}" == Stuhlmuller/homelab &&
+     -n "${GH_TOKEN:-}" ]] || exit 2
+  bash scripts/ci/install-kubeconfig.sh
+  python3 -I scripts/ci/openclaw-enterprise-journal-operator.py "$stage"
+  exit
+fi
+
+# Restore and acceptance need separate recovery and human-session contracts.
 echo "Enterprise ${stage} blocked: durable private journal runner is not declared" >&2
 exit 1

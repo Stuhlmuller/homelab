@@ -408,6 +408,7 @@ approved_openclaw_enterprise_operation if {
 	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
 	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
 	job.steps[1].with["persist-credentials"] == false
+	job.steps[1].with["fetch-depth"] == 0
 	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
 	job.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
 	job.steps[3].env == job.steps[0].env
@@ -453,7 +454,8 @@ umask 077
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'29988ee75f3e1173e475596cb2fa309148c7a20063005c694ff0fca5b647a26e  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   sha256sum --check --status <<<'e1345d5fae7bd6f7261cb439fbc8cdab3d9eb0854aa44a2fff000b32ed4ad111  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then

@@ -99,26 +99,49 @@ The chart's bootstrap claim holds the upstream service key and initial password;
 it is writable by upstream initialization and must not hold this operator
 journal.
 
-The planned protected execution path is a one-shot, serialized operator Job in
-`openclaw-system` with a separate retained local journal PVC mounted writable
-only to that Job. Mount the bootstrap files read-only at
-`/private/openclaw-enterprise/bootstrap`. The pinned operator image must carry
-the reviewed script, config, `kubectl`, and an exact-source checkout for its
-`--expected-sha` guard. Scope its service account to the exact startup Secret
-and the controller and tenant objects the readback uses; the startup Secret
-read includes its contents and cannot be treated as metadata-only access.
-The Job must use a kubeconfig whose API endpoint is
-`https://kubernetes-api-ci.stinkyboi.com`, matching the script's context check. The protected
-workflow will pin the image digest, source SHA, PVC identity, and fixed Job
-manifest, then wait for a sanitized result without logging credentials or
-journal contents.
+The source-only operator bundle in `../openclaw-enterprise-operator/` declares a
+separate retained journal claim, read-only Kubernetes proof permissions, a
+projected service-account kubeconfig, and a narrow egress policy. No active
+Argo CD Application references that bundle. The protected operations workflow
+now routes fixed `reconcile`, `stop`, and `verification` names to a one-shot Job
+dispatcher, but `journalOperator.enabled` is false; dispatch stops before
+creating a Job. Full-sync keeps its existing runner path. Restore and
+acceptance remain blocked pending their separate recovery and owner-session
+contracts.
 
-This Job and its workflow stage are not declared yet. T035 must first admit a
-fourth retained local claim with safe UID and `0700` ownership, alongside the
-three application claims. The operator image identity, source pairing, private
-credential, archive, and isolated network-policy receipts are also pending.
-Until those gates pass, the CLI remains a source-validated candidate; no
-reconcile, stop, or verify stage may be exposed as an executable cutover step.
+The Job mounts the whole journal claim writable at
+`/private/openclaw-enterprise` so atomic replacement and `flock` work across
+retries. It mounts the bootstrap claim read-only below that path and uses a
+projected service-account token and cluster CA to reach the exact
+`https://10.1.0.199:6443` Kubernetes API. The CI runner continues to use the
+Octelium endpoint. The Job never receives the Octelium token. The startup
+Secret GET permission is pinned to the current Installation digest and exposes
+the Secret body. Change that Role with any Installation candidate change.
+
+T022/T035 must choose the node and add a fourth static Retain PV, with its
+directory precreated for UID 10001 at mode `0700` through a reviewed code
+path. The PVC, PV, and bootstrap claim UIDs, path, node, and operator image
+digest/source SHA then belong in the reviewed `journalOperator` declaration.
+The operator image must contain a prior reviewed homelab source commit,
+`python3`, `kubectl`, and `yq`. The dispatcher compares its embedded
+reconciler, Installation, and values files with current `main`, then projects
+current `main`'s config and SHA receipt through an immutable ConfigMap. The
+later commit can pin the image digest without a self-referential build. Its
+build, signed Harbor receipt,
+pull proof, bootstrap-key UID access, and in-cluster console TLS/network-policy
+proofs remain pending. Changing `enabled` alone cannot pass the dispatcher.
+The current model key Secret is in `openclaw-agents`, cannot be mounted across
+namespaces, and lacks the versioned private-file shape required for active
+reconciliation. Active deployment needs a separate reviewed credential path.
+
+A canceled hosted runner can leave its Job running. The next dispatch checks
+retained Jobs before creation, waits on the exact same Job when safe, and
+refuses a different running, uncertain, or failed Job. Verification takes the
+same journal lock as mutation and performs no inference. Failed Jobs and the
+private journal stay in place for inspection; no automatic delete or retry
+changes tenant state. The dispatcher emits only a fixed sanitized result, and
+no journal or key is uploaded as a workflow artifact. T043 remains open until
+the placement, image, access, and recovery proofs pass live.
 
 At the pinned upstream revision, `native-admin` requires an authenticated
 human session with exact Agent `administer`. Service keys cannot inspect its
