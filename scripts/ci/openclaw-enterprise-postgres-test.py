@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the dormant PostgreSQL roles, TLS boundary and recovery candidate."""
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -124,6 +125,18 @@ class PostgresFoundation(unittest.TestCase):
         cls.bootstrap.write_text(bootstrap)
         run("psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", str(cls.socket), "-p", str(cls.port),
             "-U", "occ_admin", "-d", "openclaw_enterprise", "-f", str(cls.bootstrap))
+        # Use an actual migration-created table and its stock DML grants. This
+        # self-contained migration is copied from the pinned upstream source;
+        # changing that source requires reviewing the fixture again.
+        migration = ROOT / "scripts/ci/fixtures/openclaw-enterprise/0008_better_auth_sessions.sql"
+        source = json.loads((ROOT / "builds/openclaw-enterprise/source.json").read_text())
+        if source["revision"] != "33bb74590a749f37934da4502fca6035cd234a55":
+            raise AssertionError("review pinned Enterprise migration fixture for new source")
+        if hashlib.sha256(migration.read_bytes()).hexdigest() != (
+                "33e942da16000ac073bf052b0a0273b9f8facc6fcfdfb64547add705a51d3b82"):
+            raise AssertionError("pinned Enterprise migration fixture changed")
+        run("psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", str(cls.socket), "-p", str(cls.port),
+            "-U", "occ_migrator", "-d", "openclaw_enterprise", "-f", str(migration))
         run("psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", str(cls.socket), "-p", str(cls.port),
             "-U", "occ_migrator", "-d", "openclaw_enterprise", "-c",
             "CREATE TABLE occ.fixture (id integer primary key, payload text); "
@@ -309,6 +322,42 @@ class PostgresFoundation(unittest.TestCase):
         self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "OpenClaw Enterprise isolated restore failed at integrity\n")
         self.assertNotIn("tampered", result.stderr)
+
+    def test_stock_migration_app_dml_without_create_or_admin(self):
+        passfile = self.root / "app.pgpass"
+        passfile.write_text(f"localhost:{self.port}:*:occ_app:{'P' * 40}\n")
+        passfile.chmod(0o600)
+        conn = (f"host=localhost hostaddr=127.0.0.1 port={self.port} "
+                f"dbname=openclaw_enterprise user=occ_app sslmode=verify-full "
+                f"sslrootcert={self.cert} passfile={passfile}")
+        user = 'occ."user"'
+        inserted = run("psql", conn, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc",
+                       f"INSERT INTO {user} (id, name, email, created_at, updated_at) "
+                       "VALUES ('fixture-auth-user', 'First', 'fixture@example.invalid', now(), now()) "
+                       "RETURNING name").stdout.strip()
+        self.assertEqual(inserted, "First")
+        self.assertEqual(run("psql", conn, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc",
+                             f"UPDATE {user} SET name='Second' WHERE id='fixture-auth-user' "
+                             "RETURNING name").stdout.strip(), "Second")
+        self.assertEqual(run("psql", conn, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc",
+                             f"SELECT name FROM {user} WHERE id='fixture-auth-user'"
+                             ).stdout.strip(), "Second")
+        self.assertEqual(run("psql", conn, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc",
+                             f"DELETE FROM {user} WHERE id='fixture-auth-user' RETURNING id"
+                             ).stdout.strip(), "fixture-auth-user")
+        run("psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", str(self.socket),
+            "-p", str(self.port), "-U", "occ_migrator", "-d", "openclaw_enterprise",
+            "-c", "CREATE TABLE occ.ungranted_probe (id integer)")
+        denied = run("psql", conn, "-X", "-v", "ON_ERROR_STOP=1", "-c",
+                     "SELECT * FROM occ.ungranted_probe", check=False)
+        self.assertNotEqual(denied.returncode, 0,
+                            "bootstrap must not grant broad default table access")
+        self.assertIn("permission denied", denied.stderr)
+        role = run("psql", "-X", "-h", str(self.socket), "-p", str(self.port),
+                   "-U", "occ_admin", "-d", "openclaw_enterprise", "-Atqc",
+                   "SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolinherit "
+                   "FROM pg_roles WHERE rolname='occ_app'").stdout.strip()
+        self.assertEqual(role, "f")
 
 
 if __name__ == "__main__":

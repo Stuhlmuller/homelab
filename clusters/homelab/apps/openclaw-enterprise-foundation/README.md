@@ -65,4 +65,7 @@ Validate this dormant boundary with
 Run `nix develop --command python3 -I scripts/ci/openclaw-enterprise-postgres-test.py`
 for the PostgreSQL 18 role, TLS, dump, and isolated restore fixture. The fixture
 selects the PostgreSQL 18 binaries alongside the shell's PostgreSQL 14 default
-and checks its client binaries and server major before accepting a result.
+and checks its client binaries and server major before accepting a result. It
+also runs pinned upstream migration 0008 as `occ_migrator` and proves `occ_app`
+can use its auth table while a new ungranted table and schema creation stay
+denied.
