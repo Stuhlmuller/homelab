@@ -39,6 +39,7 @@ class PlatformMaintenance(unittest.TestCase):
     def setUp(self):
         self.machine_state_function = self.module.active_machine_state
         self.mirror_tag_function = self.module.verify_kubernetes_mirror_tags
+        self.istio_target_function = self.module.verify_live_istio_target
         mirrors = {registry: {"endpoints": [
             f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
             "overridePath": True, "skipFallback": True}
@@ -48,6 +49,7 @@ class PlatformMaintenance(unittest.TestCase):
                                                        "mirrors": mirrors}}),
             ("verify_kubernetes_mirror_routes", {}),
             ("verify_kubernetes_mirror_tags", {}),
+            ("verify_live_istio_target", {}),
         ):
             replacement = patch.object(self.module, name, **kwargs)
             replacement.start()
@@ -979,6 +981,76 @@ class PlatformMaintenance(unittest.TestCase):
         with patch.object(self.module.urllib.request, "urlopen", side_effect=unlocked), \
                 self.assertRaisesRegex(ValueError, "not locked"):
             self.mirror_tag_function(self.config)
+
+    def test_kubernetes_preflight_requires_live_istio_target_and_readiness(self):
+        target = self.config["istioStages"][-1]["images"]
+        components = (
+            ("Deployment", "istiod", "pilot"),
+            ("Deployment", "istio-ingressgateway", "proxyv2"),
+            ("Deployment", "octelium-api-ingressgateway", "proxyv2"),
+            ("DaemonSet", "istio-cni-node", "install-cni"),
+            ("DaemonSet", "ztunnel", "ztunnel"),
+        )
+        items = []
+        for kind, name, component in components:
+            image = "auto" if name.endswith("ingressgateway") else target[component]
+            status = {"observedGeneration": 1}
+            if kind == "Deployment":
+                status.update(replicas=1, updatedReplicas=1, readyReplicas=1,
+                              availableReplicas=1)
+            else:
+                status.update(desiredNumberScheduled=4, updatedNumberScheduled=4,
+                              numberReady=4, numberAvailable=4, numberMisscheduled=0)
+            items.append({"kind": kind, "metadata": {"name": name, "generation": 1},
+                          "spec": {"replicas": 1, "selector": {"matchLabels": {"app": name}},
+                                   "template": {"spec": {
+                              "containers": [{"image": image}]}}}, "status": status})
+        gateway_image = target["proxyv2"]
+        pods = [{"metadata": {"labels": {"app": name}},
+                 "spec": {"containers": [{"image": gateway_image}]},
+                 "status": {"conditions": [{"type": "Ready", "status": "True"}]}}
+                for name in ("istio-ingressgateway", "octelium-api-ingressgateway")]
+
+        def inspect(command, **_kwargs):
+            self.assertEqual(command[:4], ["kubectl", "-n", "istio-system", "get"])
+            self.assertEqual(command[-2:], ["-o", "json"])
+            payload = pods if command[4] == "pods" else items
+            return subprocess.CompletedProcess(command, 0, json.dumps({"items": payload}), "")
+
+        with patch.object(self.module.subprocess, "run", side_effect=inspect):
+            self.istio_target_function(self.config)
+            pods[0]["spec"]["containers"][0]["image"] = (
+                gateway_image.split("@sha256:", 1)[0])
+            with self.assertRaisesRegex(ValueError, "gateway Pods"):
+                self.istio_target_function(self.config)
+            pods[0]["spec"]["containers"][0]["image"] = "docker.io/istio/proxyv2:1.27.3"
+            with self.assertRaisesRegex(ValueError, "gateway Pods"):
+                self.istio_target_function(self.config)
+            pods[0]["spec"]["containers"][0]["image"] = gateway_image
+            items[0]["spec"]["template"]["spec"]["containers"][0]["image"] = (
+                target["pilot"].replace("1.30.6", "1.27.3"))
+            with self.assertRaisesRegex(ValueError, "image differs"):
+                self.istio_target_function(self.config)
+            items[0]["spec"]["template"]["spec"]["containers"][0]["image"] = (
+                target["pilot"].split("@sha256:", 1)[0])
+            with self.assertRaisesRegex(ValueError, "image differs"):
+                self.istio_target_function(self.config)
+            items[0]["spec"]["template"]["spec"]["containers"][0]["image"] = (
+                target["pilot"].split("@sha256:", 1)[0] + "@sha256:" + "0" * 64)
+            with self.assertRaisesRegex(ValueError, "image differs"):
+                self.istio_target_function(self.config)
+            items[0]["spec"]["template"]["spec"]["containers"][0]["image"] = target["pilot"]
+            items[0]["status"]["replicas"] = 2
+            with self.assertRaisesRegex(ValueError, "not fully ready"):
+                self.istio_target_function(self.config)
+            items[0]["status"]["replicas"] = 1
+            items[3]["status"]["numberReady"] = 3
+            with self.assertRaisesRegex(ValueError, "not fully ready"):
+                self.istio_target_function(self.config)
+            items[3]["status"]["numberReady"] = 4
+            items.pop()
+            with self.assertRaisesRegex(ValueError, "is missing"):
+                self.istio_target_function(self.config)
 
     def test_target_patches_only_change_pinned_images_for_each_role(self):
         self.module.validate_target_patches(self.config)

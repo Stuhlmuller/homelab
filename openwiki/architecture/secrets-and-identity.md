@@ -127,7 +127,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:35:56.635Z
+    at: 2026-10-20T16:40:47.303Z
 ---
 
 # Secrets And Identity
