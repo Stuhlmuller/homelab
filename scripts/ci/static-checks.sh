@@ -43,6 +43,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
+python3 -I scripts/ci/openclaw-enterprise-registration-test.py
 python3 -I scripts/ci/envoy-gateway-registration-test.py
 python3 -I scripts/ci/network-policy-registration-test.py
 
