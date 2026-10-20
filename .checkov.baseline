@@ -27,6 +27,17 @@
                     ]
                 }
             ]
+        },
+        {
+            "file": "/docs/evidence/openclaw-enterprise-policy-review.json",
+            "findings": [
+                {
+                    "resource": "900d958341a77ac728b81edab1190560c72fd655",
+                    "check_ids": [
+                        "CKV_SECRET_6"
+                    ]
+                }
+            ]
         }
     ]
 }

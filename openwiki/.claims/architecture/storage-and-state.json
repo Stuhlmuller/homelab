@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5387bfdd3580c306745c8fb34922fc958ffa005e0cfd4c99a93249a9e1daca9d",
+  "pageVersion": "sha256:a0f70afdfdfcaeb7d182fdbc210ee8045927967181a3f8d48f8d24976ac8ec9f",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,55 +88,39 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     },
     {
       "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
-      "statement": "The unregistered Enterprise foundation declares a retained nonrotating PostgreSQL CA, TLS-only PostgreSQL 18.6 StatefulSet, separate database roles, and a 10Gi retained local claim template. Interrupted first-run SQL stays unready without automatic repair; backup rejects incomplete recovery material and duplicate publication, and the isolated restore candidate is excluded from its Kustomization. No Enterprise PVC or database runs from this source alone; placement, scheduled backup, and live isolated restore remain pending.",
+      "statement": "The unregistered Enterprise foundation declares a retained CA and dormant TLS-only PostgreSQL 18.6 StatefulSet with four separated roles and a 10 Gi local claim template; no Enterprise database or PVC has been created by this source alone.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L19-L41",
+          "version": "repo-lines-v1:sha256:f7bfd9d1c6a7268374f5c89f62d0b41363044fdf8655028ef33a0b222896680d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhODdkZmMyNmRjNmM5MjlmNGZiZjE2YjcwNDc2ZjdkM2QzMzViMTYzNjQ3N2RkMWU4OThkN2E0ZTVkY2U4OGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkM2Q4YzQzOGE3NDc1M2E5ZTIyMjUyOWRlMTQwMDdkZGYyNzg0ZDY1ZDZjMjExZjExNjY3ZWYxZjE5NGMzMjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlZGE1OWNkYWNlOWQwY2QxOTg1NDdkYzc1NTEwMjcyMDc4Yjc2MTM3NjY3ZjY2ZDQ2Zjc0Mjg0NzZhNTYxMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmZDNiYTcxYmE5NzZiMDAyYzc3YWYzMjZkMzhhNmZlNWExMTg5ZDIzMWVhNWNlYjJiODZiOTNjYTczNWJlZjUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:22892a3dbdd7652a068606a4bf907a7b1d74a1225a64d5620813d2c7c8294459"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
-          "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
-          "version": "repo-file-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
-          "version": "repo-file-v1:sha256:5b01d9104cce65ef4cdd9d3b908c2269583dbf6550ec355c6918bc018987ea7a"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml",
-          "version": "repo-file-v1:sha256:aff9913c5753e69880f2be5236c5141303fea0910cc02e08d67b89bd28490337"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml#L35-L219",
+          "version": "repo-lines-v1:sha256:1bd680797880eb4aab45be437890a7f6561728dd42223b9b0b42454a96d406a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTg1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMjkyMjY1ZjZjMDcxNmM2YTgxNDNkNTZiOThmYTdhM2VkODQxYjg3ODQ4ZTQ4MzhkODgwMmQ1ZmM2MGEyYjFlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjAwMzVlYThkYTY5ZGFlYjczNGNmODY5NGY1Mjc0OTk1MjhjYmViNzIzY2E3MjkxZjRmYjc2NDgzYjgwNDYyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YzEzYzFiOWQ2MWE0NzU3N2JiZmYyNGI0N2UwYjA1OTQwMGI4MWRiOWE1NDE1MTBjYjk4Zjg0N2QzMTRiMjhhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
     {
       "id": "claim_b5ed386830ae4c9ca4684a1a5758c893",
-      "statement": "The dormant Enterprise chart candidate requires a Bound bootstrap password PVC on its local class and a ready dedicated PostgreSQL endpoint before initialization. Source declares the PostgreSQL claim template, but reviewed local PV bindings, a ready database, and restore proof remain pending.",
+      "statement": "The dormant Enterprise chart candidate requires a Bound bootstrap password PVC on its local class and a ready dedicated PostgreSQL endpoint before initialization, while the storage classes, claims, database, and restore proof remain pending.",
       "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
-          "version": "repo-file-v1:sha256:5b01d9104cce65ef4cdd9d3b908c2269583dbf6550ec355c6918bc018987ea7a"
-        },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
           "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
+          "version": "repo-lines-v1:sha256:1ef97d90830ca79ddd352a416018e4edcc3c9400cb732edebce5e85c47a8b0b2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwOGFlN2U2MDFiYzU3ZjUzMjAwZDBlZDQ0YjhmOTlhOGQ0OTI0OTcxY2FjZmFmYzgyMjdjYjQ5MTA1MmQ2ZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NWEyOWE5ZGQyZWMyNmJkMWEzN2VjZWM5ZTNhZDY5YjRmYTE0MWI1ZmU2NTgzNzcwZmM2MTM3MjNmNzM3NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5Y2U0YjZiZjZiZmVmOTU0ZWNkYzZmYWIyMmE1OTVjOGU3ZjllODUxZjgyM2JmN2I4Y2Q5NDI2ODVkNTc1MDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZTg3YzViMDFhMWMyMTFmYmUyMDRhNzcwMzg1ZWZiMWVjM2VhM2YwMzEyOWE4NTIwZjZiM2ZmMzRjN2UyMTIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml#L13-L22",
+          "version": "repo-lines-v1:sha256:32767fffcabf3ce011668824eae15de418c41d5fb74c5eeb7469d23010cb0845:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZjcwMDFjMGFiMTM0NGQ3ODcxOTk0ZDgwNzZhN2JiZjI5NjNkYjBkZjE2NGVhMzdmMDBjMTcxNjQyMDE2YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjY2NmOTYwYTExNzQ1OTA3ZGI2OTM5M2IzNThmMWQwODM3MjU3ZGZlMGY2YjcwNWI0MjhhZTY1N2Y2YWY0ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2MWM1YjJiODY3ZDE0ZTM1ZTZkM2IyYmUyMjg3YTJlNjNhNDBmYTU1MGJhNWM3M2FkN2JjOWVhZDI5NGY0NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYzA3MmRlYWE3ZTVkMWIxNjBlYWE5ZjUwMDJiODZkODhlNDlkZDc2NWM2Yjc1NjNkY2JiMzg1ZGUwYmEwOTUifQ"
         }
       ]
     },
@@ -174,17 +158,17 @@
     },
     {
       "id": "claim_e3857e80ee03434690eb6ce873426ea8",
-      "statement": "The 2026-10-20 post-shutdown receipt measures 3,909.5 MiB unreserved memory on the best worker, below the Enterprise initial 4,096 MiB reservation, so it does not admit local storage or an isolated canary.",
+      "statement": "The 2026-10-20 07:22 UTC read-only recheck found about 3,398 MiB unreserved memory and 9.71 GB root-filesystem space on the best worker, below the initial 4,096 MiB Enterprise memory reservation and proposed 10 GiB local claim; neither local storage nor an isolated canary is admitted.",
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:36:50.881Z"
+    "at": "2026-10-20T08:11:01.425Z"
   }
 }

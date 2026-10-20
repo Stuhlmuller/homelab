@@ -85,10 +85,17 @@ canary remain unqualified; this does not pass T018 or T027.
 On October 20, the four Octelium Genesis policies also matched a read-only
 live complete-spec recheck and the reviewed v0.35.0 constructors. Their
 [expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
-is another inventory render input, not a live owner. Ten Octelium Enterprise
-Genesis policies still lack source-bound fixtures. `octelium/svc-upstream`
+is another inventory render input, not a live owner. At that checkpoint, ten
+Octelium Enterprise Genesis policies lacked source-bound fixtures. `octelium/svc-upstream`
 public all-port egress, actual traffic, and the tainted canary remain
 unqualified; T018 and T027 remain open.
+On October 20, the ten Octelium Enterprise Genesis policies also matched a
+read-only complete-spec check against the reviewed v0.22.0 constructors. Their
+[expected-spec fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+is an additional inventory input, not a deployed policy. All 17 generated
+Cordium, Octelium, and Octelium Enterprise policies now have source-bound
+fixtures. Their traffic, broad `ws-main` and `svc-upstream` egress, and the
+isolated canary remain unqualified; T018 and T027 remain open.
 Read-only `kubectl top nodes` at 2026-10-18 11:57 UTC showed memory use of
 69% on `acer`, 82% on `zimaboard-0`, 85% on `zimaboard-1` and 81% on
 `zimaboard-2`; all four nodes were Ready and none had a dedicated canary
@@ -173,8 +180,8 @@ That would leave only about 266 MiB above Enterprise's minimum on `acer` and,
 at current observed use, about 800 MiB on `zimaboard-1` before peaks and
 rolling overlap. Grafana and Langfuse PostgreSQL are single-replica
 `Recreate` workloads; moving them would interrupt unrelated services. No
-such move is authorized, no peak or transient fit is proven, and a taint alone
-would not remove already-running Pods. This candidate does not admit T022.
+peak or transient fit is proven, and a taint alone would not remove
+already-running Pods. This candidate does not admit T022.
 
 At 2026-10-20 01:47 UTC, after the legacy shutdown, all four nodes were Ready,
 reported no memory, disk or PID pressure, and had no canary taint. Read-only
@@ -199,6 +206,26 @@ legacy reader; a `NoSchedule` taint would not isolate them. No existing worker
 qualifies as the dedicated canary without moving unrelated workloads. The
 independent legacy archive/restore and measured storage/transient placement
 remain pending; T022 stays unchecked.
+
+At 2026-10-20 07:22 UTC on `main` `cefa1440`, another read-only
+`kubectl describe node`, `kubectl top nodes`, running-Pod inventory and kubelet
+`/stats/summary` recheck found all four nodes untainted:
+
+| Node | Memory requested / allocatable | Actual memory used | Running Pods | Root filesystem free |
+| --- | ---: | ---: | ---: | ---: |
+| `acer` | 13,459 / 15,261 MiB | 10,866 MiB | 76 | 411.61 GB |
+| `zimaboard-0` | 7,276 / 7,282 MiB | 6,046 MiB | 81 | 5.41 GB |
+| `zimaboard-1` | 3,884 / 7,282 MiB | 6,447 MiB | 45 | 9.71 GB |
+| `zimaboard-2` | 1,078 / 1,308 MiB | 922 MiB | 9 | 9.29 GB |
+
+The best worker, `zimaboard-1`, now has about 3,398 MiB unreserved by request,
+698 MiB below the initial 4,096 MiB Enterprise reservation. Its point-in-time
+usage leaves only about 835 MiB of allocatable RAM before host overhead, so no
+peak or rolling-overlap margin is established. Every worker also has less than
+10.74 GB free for one new 10 GiB local claim. Existing Pods remain on each
+worker; a `NoSchedule` taint cannot isolate them. The previously considered
+Grafana/Langfuse relocations still interrupt single-replica services and have
+no proven transient fit. This recheck does not admit storage, a canary or T022.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during

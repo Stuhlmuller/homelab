@@ -62,6 +62,8 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/workloads.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-06c51d450592da5906a7761d
+    resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
@@ -72,10 +74,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
   - id: openwiki-source-855f2c27f3fa7ed6f006f4be
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -170,10 +172,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T07:33:02.341Z" }
+generated: { by: "codex", at: "2026-10-20T08:11:01.425Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:33:02.341Z
+    at: 2026-10-20T08:11:01.425Z
 ---
 
 # Workload Inventory
@@ -381,8 +383,10 @@ remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
 The [Cordium Genesis expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete source-reviewed policy shapes at pinned `v0.12.7`. The
 [Octelium Genesis expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
-binds four more at pinned `v0.35.0`; ten Octelium Enterprise generated policies
-still lack fixtures. These fixtures are read-only inventory inputs, not deployed
+binds four more at pinned `v0.35.0`. The
+[Octelium Enterprise expected-spec fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+binds the remaining ten. All 17 complete generated policy specs are source-bound.
+These fixtures are read-only inventory inputs, not deployed
 policies or verified generator-binary renders. `ws-main` and Octelium
 `svc-upstream` retain public IPv4/IPv6 all-port egress; additive NetworkPolicies
 cannot narrow it. Review the generator-owned correction and isolated-canary
@@ -395,12 +399,12 @@ agent has been deployed. The unregistered
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It also declares a dormant TLS-only PostgreSQL 18.6 StatefulSet
-with separate admin, migrator, app and backup roles and a retained 10Gi local
-claim template. Its interrupted-bootstrap marker keeps an incomplete first run
-unready; the guarded dump and isolated restore fixture remain source-only. No
-Enterprise database, local claim, or Installation workload has been bound or
-started from this source. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+certificate. It also declares a dormant TLS-only PostgreSQL 18.6 StatefulSet,
+four separated roles, and a 10 Gi local claim template; the required local
+volume is not bound and no Enterprise database or Installation workload runs.
+An incomplete first bootstrap leaves PostgreSQL unready and its claim retained;
+the stopped-writer backup capture, encrypted off-node target, and isolated
+restore proof remain open. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
 placeholder administrator email, missing placement labels, and unfinished
@@ -413,10 +417,11 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
-The [2026-10-20 read-only capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
-still blocks placement: the best worker has 3,909.5 MiB unreserved versus the
-initial 4,096 MiB Enterprise steady request, before transient and host
-headroom. Its 43 co-resident Pods prevent an added `NoSchedule` taint from
+The [2026-10-20 07:22 UTC read-only capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+still blocks placement: the best worker has about 3,398 MiB unreserved versus
+the initial 4,096 MiB Enterprise steady request, before transient and host
+headroom, and 9.71 GB root-filesystem space free against a proposed 10 GiB
+local claim. Its 45 co-resident Pods prevent an added `NoSchedule` taint from
 providing isolation.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and

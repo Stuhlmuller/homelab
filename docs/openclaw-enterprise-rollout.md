@@ -95,10 +95,10 @@ the new reviewed `main` after a concurrent merge; do not bypass its guard.
 The [latest capacity snapshot](evidence/openclaw-enterprise-acceptance.md)
 still blocks placement: only `acer` has space for the distinct 21 GiB local
 claims, but it lacks even the PostgreSQL-plus-gateway memory request; no worker
-is an isolated canary. Freeing `zimaboard-2` and shifting Grafana would move
-unrelated single-replica services and lacks measured peak headroom. That move
-has not been authorized. Do not declare PV nodes or apply a canary taint until
-the placement, transient-load and service-continuity review passes.
+is an isolated canary. Freeing `zimaboard-2` and shifting Grafana would disrupt
+unrelated single-replica services, and the measured margin does not cover peaks
+or rolling overlap. Do not declare PV nodes or apply a canary taint until the
+placement, transient-load and service-continuity review passes.
 
 Stop at the first failed stage. Do not force-delete a writer, downgrade
 Kubernetes automatically, disable network policy, reuse a legacy key, switch to

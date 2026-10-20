@@ -4,20 +4,16 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
-  - id: openwiki-source-3cae87753a0e502a1e05c1f3
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
-  - id: openwiki-source-bf69918d51d510f8b19906f1
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
-  - id: openwiki-source-7c9faa7724c75fa77db675cb
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml
+  - id: openwiki-source-20275bab1ec480742e28a50f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-52536621afbfff1f8abeed59
@@ -40,10 +36,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T07:36:50.881Z" }
+generated: { by: "codex", at: "2026-10-20T08:11:01.425Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:36:50.881Z
+    at: 2026-10-20T08:11:01.425Z
 ---
 
 # Storage And State
@@ -286,28 +282,29 @@ The post-shutdown inventory passed, but a complete independent archive/restore
 and any new Enterprise recovery set remain unverified; keep all retained claims.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
-declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
-nonrotating private key. Preserve that Secret with any eventual database
-recovery set. It also declares a PostgreSQL 18.6 TLS-only StatefulSet with
-separate admin, migrator, app and backup roles, a 10Gi retained local claim
-template. A last-statement marker leaves interrupted first-run SQL unready
-on its retained claim; there is no automatic repair. The backup script rejects
-incomplete recovery material and duplicate publication, while the isolated
-restore candidate is excluded from the Kustomization. The foundation is not
-registered with Argo; node placement, prebound storage, scheduled backup,
-and live isolated restore remain pending. No new Enterprise PVC or database
-is running from this source alone. The 2026-10-20 post-shutdown capacity
-receipt found only
-3,909.5 MiB of unreserved memory on the best worker, below the 4,096 MiB
-initial Enterprise reservation before transient and host headroom. It does
-not admit the local claims or an isolated canary; see the
+declares a retained, nonrotating `occ-postgres-root` CA and a PostgreSQL 18.6
+StatefulSet with TLS 1.3, distinct administrator, migrator, application, and
+backup roles, and a 10 Gi local claim template. The application role receives
+per-object grants from stock migrations; the backup role has read-only dump
+access. Readiness requires the final bootstrap marker: if first-run SQL stops
+after `PG_VERSION` is written, the retained claim remains unready with no
+automatic replay. Preserve the CA private key, database, credentials, and
+completed agent snapshot as one recovery set. The backup wrapper refuses an
+incomplete set or duplicate publication; its encrypted off-node target and
+writer-fenced capture are still pending. The isolated restore candidate is
+excluded from the Kustomization. The foundation remains unregistered, with no
+new Enterprise PVC or live database. The 2026-10-20 07:22 UTC capacity recheck found about
+3,398 MiB of unreserved memory on the best worker, below the 4,096 MiB
+initial Enterprise reservation before transient and host headroom. That worker
+also had only 9.71 GB of root-filesystem space free, below the proposed 10 GiB
+local claim. This does not admit local storage or an isolated canary; see the
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
-before chart initialization. The required local PV bindings, ready PostgreSQL,
-and restore proof are still absent; the candidate does not
+before chart initialization. The required retained local classes, bound claims,
+live PostgreSQL and restore proof are still absent; the candidate does not
 adopt legacy OpenClaw state.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
