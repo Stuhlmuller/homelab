@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e8dc999e27dcc35683faf15025a7456a1da5addd2fa852d85353fda83698df8d",
+  "pageVersion": "sha256:da5a31af419422d699a1adf89b8d06aea54ef2f6940d38dc0b9abbddc05e92bf",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -334,7 +334,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -364,7 +364,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -426,7 +426,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
         }
       ]
     },
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:b22a99d8255a2f83a245bda1d3d6ac0ed5e914f9b9fede5e9842e2c0c3186fb1"
         }
       ]
     },
@@ -513,10 +513,28 @@
           "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
         }
       ]
+    },
+    {
+      "id": "claim_799d3bbdae494caf90a782d868fa1dc1",
+      "statement": "Enterprise operations source reserves a protected Installation binding lane and six lifecycle stages, but bootstrap key delivery and a durable shared journal runner are still absent, so no Enterprise stage can establish live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:cc8dc922f080ba40741243bbe9186bafb3b44f4311c325bf18481675d20005ff"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:12:45.818Z"
+    "at": "2026-10-20T01:34:40.058Z"
   }
 }

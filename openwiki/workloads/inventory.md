@@ -8,6 +8,8 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -148,6 +150,8 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -158,10 +162,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
+generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:12:45.818Z
+    at: 2026-10-20T01:34:40.058Z
 ---
 
 # Workload Inventory
@@ -389,6 +393,14 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
+The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+reserves a fixed Installation binding lane plus six other Enterprise stages
+alongside legacy retention. Binding pins reviewed source but lacks declared
+delivery of the private bootstrap service-key file; its separate binder source
+is still a PR dependency. The other Enterprise helper checks the journal
+contract and fails before live work because no durable shared journal runner
+exists. T043 remains open; neither the workflow nor its source tests are a
+deployment receipt.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

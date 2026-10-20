@@ -24,6 +24,8 @@ sources:
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
@@ -32,20 +34,24 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T01:34:40.058Z
 ---
 
 # CI/CD
@@ -94,6 +100,19 @@ the versioned immutable Installation Secret from reviewed repository bytes.
 The create-only path does not register the dormant Application or run an Agent;
 the post-bootstrap installation-ID annotation and live Pod binding remain
 separate proof work.
+
+The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+keeps the legacy archive lane and reserves seven fixed Enterprise stage names.
+Dispatch must bind to the exact current `main` SHA and choose one lane; the
+protected jobs share a non-canceling production queue. `bind-installation`
+pins the reviewed binder checksum and requires the 0600 private bootstrap
+service-key file named by the committed config. The binder source remains a
+separate PR dependency, and no declared hosted-runner path delivers that file;
+binding is blocked. Its six other Enterprise stages use a pinned
+[helper](../../scripts/ci/openclaw-enterprise-stage.sh) that validates the
+private journal contract, then fails before mutation because GitHub runners
+lack a durable shared mount. Source validation does not authorize binding,
+full-sync, reconciliation, stop, restore, verification, or inference acceptance.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
 accepts fixed inspect, canary and upgrade stages only from the exact current

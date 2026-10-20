@@ -18,6 +18,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -174,12 +176,16 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-67b7023614bb46ffd2f06e85
+    resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-86a40ee4669b4b7843917e87
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
@@ -258,10 +264,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
+generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:12:45.818Z
+    at: 2026-10-20T01:34:40.058Z
 ---
 
 # Validation Gates
@@ -1636,6 +1642,22 @@ restricted destinations/resources, ordered dependencies, disabled automatic
 sync/pruning/self-heal/retries, and absence of selective-sync options. This is
 source validation only; an authenticated Terragrunt plan, Application
 registration, and full-sync acceptance remain separate gates.
+The [protected Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+now reserves fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
+`verification`, `restore`, and `acceptance` dispatches beside the legacy
+archive lane. The static gate checks the exact source SHA and excludes mixed or
+receipt-bearing Enterprise dispatches; all lanes share a non-canceling
+production queue. Binding rechecks current `main`, pins the reviewed binder
+checksum, and requires the owner-controlled private bootstrap service-key file
+at its fixed config path before any API call. No declared hosted-runner delivery
+for that file exists, and the binder source is a separate pending PR, so this
+lane cannot yet bind a live Installation. The other Enterprise jobs recheck
+current `main` and pin the
+[stage helper](../../scripts/ci/openclaw-enterprise-stage.sh), whose only current
+result is a blocked receipt after validating the private journal contract.
+The hosted runner has no durable shared journal mount, so those six stages
+cannot mutate or perform inference. Source tests and workflow policy bind these
+fail-closed shapes; T043 and live verification remain open.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main

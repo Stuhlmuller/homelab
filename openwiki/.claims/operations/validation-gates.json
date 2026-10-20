@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f4d9ebd86001e50bce90a9022a646e03d798213b6ff15f578eba95e643f97b30",
+  "pageVersion": "sha256:0d4928e977d373276ab4b2f61be6e7f43df08bb01eb45a51851bca0d89177f73",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:b22a99d8255a2f83a245bda1d3d6ac0ed5e914f9b9fede5e9842e2c0c3186fb1"
         }
       ]
     },
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:e3c9de143a6fced87a8fd926f61ccf7b26197a163092bf9f149d0b81634657d7"
+          "version": "repo-file-v1:sha256:0bfbd98bcfd0c81df827b3f2eca004697b3800bf96864be4282686380cf5954c"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:b22a99d8255a2f83a245bda1d3d6ac0ed5e914f9b9fede5e9842e2c0c3186fb1"
         }
       ]
     },
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,11 +874,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
         }
       ]
     },
@@ -1122,11 +1122,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:dfc81d6fece30e5bc8b691d17d248624fa5bc08e405b6335eb95d639e0372a68"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:b22a99d8255a2f83a245bda1d3d6ac0ed5e914f9b9fede5e9842e2c0c3186fb1"
         }
       ]
     },
@@ -1205,10 +1205,28 @@
           "version": "repo-file-v1:sha256:67c41d289779f72fb596ae9a9eb16c590b672b2e1b9eb2c3f0a78dfa6125d186"
         }
       ]
+    },
+    {
+      "id": "claim_8f799fa67d5640f3b279a3ff1d24aa74",
+      "statement": "The protected Enterprise operations workflow fixes seven dispatch stages, binds them to exact current main and one non-canceling queue, and keeps the Installation binder blocked without private bootstrap key delivery and the other six stages blocked without a durable journal runner.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:cc8dc922f080ba40741243bbe9186bafb3b44f4311c325bf18481675d20005ff"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
+          "version": "repo-file-v1:sha256:45ad83b50080cb4751b2f30974b8aeee426edcf7d6515fe6e47c7115817dffe1"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:12:45.818Z"
+    "at": "2026-10-20T01:34:40.058Z"
   }
 }
