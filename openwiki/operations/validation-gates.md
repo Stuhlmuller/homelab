@@ -120,8 +120,12 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
@@ -234,6 +238,10 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c65516e351b2fe2cbdfc5a79
     resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
   - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
     resource: repo://scripts/ci/terragrunt-plan-stage-test.py
   - id: openwiki-source-60b00db0363e7f9e27d7fa7f
@@ -282,10 +290,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T07:33:02.341Z" }
+generated: { by: "codex", at: "2026-10-20T07:52:46.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:33:02.341Z
+    at: 2026-10-20T07:52:46.535Z
 ---
 
 # Validation Gates
@@ -1069,6 +1077,12 @@ secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
 Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
+During production apply, the script rechecks current `main` immediately before
+each import, untaint, direct Kubernetes write, and apply. The root Terragrunt
+`before_hook` also checks before each unit's `apply` in a multi-unit run; the
+bootstrap `after_hook` checks before each self-management manifest write. The
+checks fail closed when `main` advances or cannot be read. These source guards
+have not been exercised by a live apply in this update.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. Main-only diagnostics use the same production environment.
 

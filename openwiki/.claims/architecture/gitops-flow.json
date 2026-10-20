@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0f8f11edce81b65e9084ad5487548e933a6cc66682f81a5035900dfc2aa124b0",
+  "pageVersion": "sha256:eb70752a9ea18357dc57b03443918d24dc9596349c903638f33d249cdc82dd6d",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -61,10 +61,32 @@
           "version": "repo-lines-v1:sha256:88516d4c612429553048f1c6bf7cd155097911a27b40892a186d28c6a45f7cab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2MjI0Y2E4Yjg2YTRlYjQyMThkOGExODk4OGQ0ODdmOWVjYjZiMWRhYjYwYmQ2NjQxY2I0MGMxOTlkNWMwMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkYWQxOGMwMjcwMTFmY2Q5YTc0ZTk0NDBkMTJmOWYxY2JmZTgzYTI0YzkzZTU3MWY4NTEzMDI4ODI4NjdmZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzNzIxMzMzNTAzN2FjZjIzM2NkZTdlMWZhMWZmZjZhNzNkMmJhMDQ4ZmFmYjBmYmE2M2Y3NzNkOWU0MzA2M2MifQ"
         }
       ]
+    },
+    {
+      "id": "claim_90db00b16de147d99fb8abbe69b2642c",
+      "statement": "The protected production Terragrunt path verifies current main before direct state writes and through a root before_hook for each apply unit; the bootstrap after_hook repeats the guard before each Argo CD self-management manifest write, so stale or unreadable main stops a later write.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/root.hcl#L41-L46",
+          "version": "repo-lines-v1:sha256:1be7d5f63b35894393624ea6dfad0fd1c183e1ffc54ae3d2614a0b4997ef7d7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmI4YjM0NWU1MjQyNzZhZTFlMjdkNzVkMjYyY2RkZDkyMDNkZTY0MzM4YjllMWFlNGE5NGQ2MTAyODBkMTJjNSJ9"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L50-L69",
+          "version": "repo-lines-v1:sha256:699f9c904000f3994346e3d2686fdbdeb41a0af31b3fb7c62c9626aae6c53073:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNjE2MWZiZmU1YjM2ZTA4MGFhOThlMGI4MDQzNGIyZjUzNDczN2EzMzEyYmVhYWNkYjkxMjU5OGYxZDUwZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYjlhOTkxNDk3ODc0MzE3MTQzNDBmZmU0MDQ4MTYyMzk4ZWVhOWRmZjVkNjU5MjYxYmY4MmNkODNmMjFjZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOTk5MDMwN2QyNGRhY2Y5Yjc5OTEzZWI3YmJjNTZlY2IzOTFiOTdiMjg1ZGNiODgxZjFiNzFhY2I1ZGVhZTQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L198-L222",
+          "version": "repo-lines-v1:sha256:ccdce2aad38554c029fe09303c77320d79b6f6c5d930c8431d8ae14af58724a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmMTU3MzA1NzJlYjM3OWY2MzMxZTJjZDI4YTdjYmQxNDg5N2NiYjE4MWFkYmI1MTQzMmU0Yzg0NDc2ZmIwMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxY2Q2NjI1M2I3N2ZmM2NjNjc2MzczY2E4MTdhNTVmZjllMmI3NWQwZGU4YWFhMzlmOGJlMTZiNGMwM2VhMjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZWUyNjhmYmM0MzhmYTQ1ZDVjZGY0NTVlMDM4YWM4MmE5MmZiZDUxNzUxMmFlNDQ1ZWQ2MTc5Y2VlZDkwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYWZiZjM1NWQxOGZlMzlhYzNkY2RmNzY1ZmUyNTY4NmQ2YjIyYzE3MDNjNDA0Y2ZlZjMyY2ZiYjE5MmU5YTkifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-current-main.sh#L4-L22",
+          "version": "repo-lines-v1:sha256:91b4f9f45840e62745f0e55757df7c294c3510d202ed64cd949e65f074ff357c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3OTNkMTg0NTU1MmIzYTEzN2U5Yzc4OTdkYzc4YjE1ZGU0NzQzZjNmMTUzODlkYWVhMzE1OTE3MWEwYmRkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmODE3ZTVlNWZkNzRjMWFmMWQ1MDBjNjFhZjhiNDM1ZTE5ZTU2MjNlMDdhYzljMTBjZjZhYTgyODgzYmE5NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T15:59:51.049Z"
+    "at": "2026-10-20T07:28:14.127Z"
   }
 }

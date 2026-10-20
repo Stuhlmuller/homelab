@@ -36,8 +36,10 @@ This repository uses GitHub Actions for the review and rollout path:
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
   main-only `homelab-production` environment, then
-  verifies `main` again before referencing
-  environment credentials or running live commands. Full applies run the Argo
+  verifies `main` again before referencing environment credentials and before
+  each state import or apply. The root Terragrunt `before_hook` repeats the
+  check for every unit in a multi-unit apply. Bootstrap's `after_hook` checks
+  before each Argo CD self-management manifest write. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
   They compare against the latest successful historical push apply or full

@@ -38,6 +38,13 @@ catalog {
   ]
 }
 
+terraform {
+  before_hook "verify_current_main_before_apply" {
+    commands = ["apply"]
+    execute  = ["bash", "${get_parent_terragrunt_dir()}/../scripts/ci/terragrunt-current-main.sh"]
+  }
+}
+
 inputs = {
   project_name = local.project_name
   tags         = local.default_tags
