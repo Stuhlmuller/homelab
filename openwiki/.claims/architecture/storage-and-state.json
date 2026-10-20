@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7712a11c2cbe4154d86e6728cabfa9676bbb15dab8e24b93e5d2a86a1780c2c7",
+  "pageVersion": "sha256:df33ae7ec72e4e7a35aaa559e652e5fc7a08fbc79dacc34839c09b98891d511e",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -94,11 +94,15 @@
     },
     {
       "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
-      "statement": "The unregistered Enterprise foundation declares a retained PostgreSQL CA, source-only PostgreSQL 18.6 StatefulSet and role bootstrap with a 10Gi local claim template, while node placement, live roles, complete backup material and isolated restore remain pending.",
+      "statement": "The Enterprise foundation Application is declared with automatic sync disabled but has not been applied; it declares a retained PostgreSQL CA, PostgreSQL 18.6 StatefulSet, role bootstrap and 10Gi local claim template, while placement, live roles, complete backup and isolated restore remain pending.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -112,7 +116,7 @@
     },
     {
       "id": "claim_b5ed386830ae4c9ca4684a1a5758c893",
-      "statement": "The dormant Enterprise preflight requires a Bound local bootstrap password PVC and a ready dedicated PostgreSQL endpoint; the foundation declares the Service and 10Gi claim template, but registration, local classes, bootstrap and agent claims, live database, and restore proof remain pending.",
+      "statement": "The dormant Enterprise preflight requires a Bound local bootstrap password PVC and a ready PostgreSQL endpoint; the foundation Service and 10Gi claim template are declared but unsynced, while local classes, bootstrap and agent claims, live database and restore proof remain pending.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
@@ -120,11 +124,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
-          "version": "repo-lines-v1:sha256:1ef97d90830ca79ddd352a416018e4edcc3c9400cb732edebce5e85c47a8b0b2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwOGFlN2U2MDFiYzU3ZjUzMjAwZDBlZDQ0YjhmOTlhOGQ0OTI0OTcxY2FjZmFmYzgyMjdjYjQ5MTA1MmQ2ZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NWEyOWE5ZGQyZWMyNmJkMWEzN2VjZWM5ZTNhZDY5YjRmYTE0MWI1ZmU2NTgzNzcwZmM2MTM3MjNmNzM3NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5Y2U0YjZiZjZiZmVmOTU0ZWNkYzZmYWIyMmE1OTVjOGU3ZjllODUxZjgyM2JmN2I4Y2Q5NDI2ODVkNTc1MDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZTg3YzViMDFhMWMyMTFmYmUyMDRhNzcwMzg1ZWZiMWVjM2VhM2YwMzEyOWE4NTIwZjZiM2ZmMzRjN2UyMTIifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
+          "version": "repo-file-v1:sha256:645617fc12883cc0cd15a460116f63c7e713e0f45e5bde80ea6b3197bf3c4406"
         }
       ]
     },
@@ -176,7 +180,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -205,6 +209,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:18:26.448Z"
   }
 }

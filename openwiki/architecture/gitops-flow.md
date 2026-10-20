@@ -8,8 +8,14 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-9824f110ded8ce152ef180f9
+    resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
@@ -30,10 +36,10 @@ sources:
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:28:14.127Z
+    at: 2026-10-20T19:18:26.448Z
 ---
 
 # GitOps Flow
@@ -203,6 +209,12 @@ repository, and revision. Each active app file loads those locals and passes
 exceptions and dependencies. The template derives the
 name, default namespace, and ordinary app source from the unit directory name.
 Map merging preserves inherited sync settings; lists replace rather than append.
+OpenClaw Enterprise has a scoped AppProject in the self-managed Argo CD source.
+That project can reconcile after merge, but the two Terragrunt-declared
+Applications are created only by a later protected apply. Both Applications
+disable automatic sync, pruning, self-heal, and retries. Registration alone does
+not establish foundation readiness; complete sync waits for storage, secret,
+capacity, and network-policy checks.
 See the [registration example](../../docs/argocd-app-onboarding.md#register-with-shared-defaults)
 and [Helm Chart Organization](../patterns/helm-chart-organization.md). Bootstrap, self-management,
 and child-Application lifecycles keep their existing owners. The latter include

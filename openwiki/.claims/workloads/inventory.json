@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:34550981c1c25f7637fe5563e3efd13a207ec27146074b209a4e553715836a52",
+  "pageVersion": "sha256:81587abfa91a00b74e45b759925feb5d778c1cd70626fa7518158e1b9024ae75",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -214,7 +214,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -352,11 +352,11 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
         },
         {
-          "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
-          "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:ea986dd560cc3b4b10ed774f86157d1632ac3b180004fc13cead1508ffbbbfc4"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -382,17 +382,21 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
+          "version": "repo-file-v1:sha256:08fa5661346b1b8b92ad9c7e5cf2cf957734164ec28bf20eb571a1b47c5e2c46"
         }
       ]
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted system and tenant namespaces, RoleBindings, eight retained SSM projections, ingress denial, PostgreSQL certificates, and a dormant PostgreSQL 18.6 StatefulSet with 10Gi local claim template; no database, PVC, route or Installation workload is running from this source.",
+      "statement": "OpenClaw Enterprise's source-declared, unsynced foundation prepares restricted system and tenant namespaces, RoleBindings, eight retained SSM projections, ingress denial, PostgreSQL certificates, and a dormant PostgreSQL 18.6 StatefulSet with 10Gi local claim template; no database, PVC, route or Installation workload is running from this source.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -424,11 +428,19 @@
     },
     {
       "id": "claim_c0276db66dfe4a428c7de7fa5fb37afb",
-      "statement": "A dormant OpenClaw Enterprise stock-chart candidate now declares reviewed Installation startup bytes, immutable Secret contract, Helm values and lifecycle hooks, but has no Argo registration or running Enterprise workload; placeholder admin, absent placement labels and database/storage gates prevent activation.",
+      "statement": "The dormant OpenClaw Enterprise stock-chart candidate declares reviewed Installation startup bytes, immutable Secret contract, Helm values and lifecycle hooks; separate auto-sync-disabled Terragrunt Applications declare foundation and chart registration but have not been applied or synced, and placement and database/storage gates prevent activation.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -472,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f18aa0846f602d11a547f7d3609a9ef785699ace1cebb86e4972d395f33493a1"
+          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
         }
       ]
     },
@@ -586,7 +598,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -600,7 +612,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -618,7 +630,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -673,6 +685,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:28:35.536Z"
+    "at": "2026-10-20T19:18:26.448Z"
   }
 }
