@@ -229,13 +229,36 @@ deny contains msg if {
 
 approved_platform_maintenance if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(dispatch.inputs) == 7
 	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
+	dispatch.inputs.expected_sha.required == true
+	count(object.keys(input)) == 5
+	input.permissions == {}
+	input.env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}
+	count(object.keys(input.jobs)) == 2
 	static := input.jobs["static-policy"]
+	count(object.keys(static)) == 4
+	static.name == "Validate Platform Stage Source"
 	static.permissions == {"contents": "read"}
+	static["runs-on"] == "ubuntu-24.04"
+	count(static.steps) == 4
+	count(object.keys(static.steps[0])) == 3
+	static.steps[0].name == "Verify Dispatch Commit"
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}
+	trim(static.steps[0].run, "\n") == platform_maintenance_dispatch_check
+	static.steps[1] == platform_maintenance_static_checkout
+	static.steps[2] == platform_maintenance_install_nix
+	count(object.keys(static.steps[3])) == 2
+	static.steps[3].name == "Run Static Checks"
+	trim(static.steps[3].run, "\n") == platform_maintenance_static_checks
 	job := input.jobs.maintenance
+	count(object.keys(job)) == 9
+	job.name == "Protected Platform Stage"
+	job["timeout-minutes"] == 120
 	job.needs == ["static-policy"]
+	job["runs-on"] == "ubuntu-24.04"
 	job.environment.name == "homelab-production"
 	job.concurrency == {"group": "platform-maintenance-production", "cancel-in-progress": false}
 	job.permissions == {"contents": "read", "id-token": "write"}
@@ -243,25 +266,42 @@ approved_platform_maintenance if {
 	count(job.steps) == 6
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
 	verify := job.steps[0]
+	count(object.keys(verify)) == 3
 	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(verify.run, "\n") == platform_maintenance_owner_main_check
+	job.steps[1] == platform_maintenance_private_checkout
+	job.steps[2] == platform_maintenance_install_nix
 	recheck := job.steps[3]
+	count(object.keys(recheck)) == 3
 	recheck.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(recheck.run, "\n") == platform_maintenance_main_check
+	job.steps[4] == platform_maintenance_aws_credentials
 	some run in job.steps
 	run.name == "Run Reviewed Platform Stage"
-	run.env.RUN_STAGE == "${{ inputs.stage }}"
-	run.env.CLEANUP_RUN_ID == "${{ inputs.cleanup_run_id }}"
-	run.env.EXPECTED_SHA == "${{ inputs.expected_sha }}"
-	run.env.QUALIFICATION_RUN_ID == "${{ inputs.qualification_run_id }}"
-	run.env.EVIDENCE_SOURCE_SHA == "${{ inputs.evidence_source_sha }}"
-	run.env.CAPTURE_RUN_ID == "${{ inputs.capture_run_id }}"
-	run.env.REVIEWED_SNAPSHOT_SHA256 == "${{ inputs.reviewed_snapshot_sha256 }}"
-	run.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
-	run.env.OCE_OCTELIUM_CLIENT_AUTH_TOKEN == "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}"
-	run.env.OCE_TALOSCONFIG_B64 == "${{ secrets.OCE_TALOSCONFIG_B64 }}"
+	count(object.keys(run)) == 3
+	run.env == platform_maintenance_private_env
 	trim(run.run, "\n") == platform_maintenance_private_run
 }
+
+platform_maintenance_dispatch_check := `test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+if [ "$RUN_STAGE" = ownership-approve ]; then
+  test "$GITHUB_ACTOR_ID" = 57728706
+  test "$GITHUB_RUN_ATTEMPT" = 1
+fi`
+
+platform_maintenance_static_checks := `git fetch --no-tags origin main
+cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+nix develop --command python3 -I scripts/ci/platform-maintenance-stage-test.py`
+
+platform_maintenance_static_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 2, "persist-credentials": false}}
+platform_maintenance_private_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 3, "persist-credentials": false}}
+platform_maintenance_install_nix := {"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}}
+platform_maintenance_aws_credentials := {"name": "Configure AWS Credentials", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-platform-${{ github.run_id }}", "role-to-assume": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}", "unset-current-credentials": true}}
+platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
 
 platform_maintenance_main_check := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main

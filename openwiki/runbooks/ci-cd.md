@@ -44,6 +44,8 @@ sources:
     resource: repo://IaC/root.hcl
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-fdad4f74fd023e19134fcc88
+    resource: repo://policy/workflows_test.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
   - id: openwiki-source-6044cd3de00b52da78c6cf44
@@ -76,10 +78,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T17:42:58.784Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T17:28:41.182Z
+    at: 2026-10-20T18:08:01.242Z
 ---
 
 # CI/CD
@@ -176,6 +178,12 @@ before AWS credentials, and verifies the pinned stage helper before execution.
 The executor keeps activation and canary placement disabled until private
 recovery, image-publication and isolated-node evidence is available; no upgrade
 stage has run from this source change.
+
+The [workflow policy](../../policy/workflows.rego) requires explicit empty
+workflow permissions and pins both jobs' commands, actions, settings and private
+credential mapping. Its regression test rejects a workflow-level custom shell
+that could bypass those run commands. This is a source guard, not live readiness.
+
 The protected canary and firewall stages require a configured canary node and
 exact-current-main dispatch. Admission verifies private placement and
 adds the dedicated isolation taint before the selector label. It checks the

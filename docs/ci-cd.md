@@ -102,6 +102,12 @@ checks remain fresh.
   effect after the policy change lands on `main`.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
+- The Platform Maintenance policy pins both the static gate and protected job:
+  exact check commands, action identities and inputs, job settings, and the
+  private credential mapping. A renamed or skipped static check, substituted
+  action, or `continue-on-error` cannot satisfy the reviewed workflow contract.
+  This is a source gate; private recovery and capacity receipts still control
+  whether a maintenance stage may run.
 - The `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,

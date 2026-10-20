@@ -51,9 +51,11 @@ test_allows_protected_platform_maintenance if {
 
 test_rejects_changed_platform_maintenance if {
 	every candidate in [
+		object.union(platform_maintenance_fixture, {"env": {"KUBE_API_SERVER_URL": "https://unreviewed.example.com"}}),
 		object.union(platform_maintenance_fixture, {"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "owned-cleanup"]}}}}}),
 		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": object.union(platform_maintenance_fixture.jobs.maintenance, {"permissions": {"contents": "write", "id-token": "write"}})})}),
 		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": object.union(platform_maintenance_fixture.jobs.maintenance, {"environment": {"name": "unprotected"}})})}),
+		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"static-policy": object.union(platform_maintenance_fixture.jobs["static-policy"], {"continue-on-error": true})})}),
 	] {
 		violations := deny with input as candidate
 		some msg in violations
@@ -105,35 +107,85 @@ test_rejects_unreviewed_platform_stage_helper if {
 	contains(msg, "Platform maintenance requires exact protected stages")
 }
 
+test_rejects_bypassed_platform_static_checks if {
+	static := platform_maintenance_fixture.jobs["static-policy"]
+	steps := static.steps
+	every candidate_steps in [
+		[object.union(steps[0], {"run": "true"}), steps[1], steps[2], steps[3]],
+		[steps[0], steps[1], steps[2], object.union(steps[3], {"run": "true"})],
+		[steps[0], steps[1], steps[2], object.union(steps[3], {"continue-on-error": true})],
+	] {
+		candidate_static := object.union(static, {"steps": candidate_steps})
+		candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"static-policy": candidate_static})})
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
+test_rejects_platform_workflow_run_shell_default if {
+	candidate := object.union(
+		object.remove(platform_maintenance_fixture, {"permissions"}),
+		{"defaults": {"run": {"shell": "bash -c 'true' --noprofile --norc {0}"}}},
+	)
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform maintenance requires exact protected stages")
+}
+
+test_rejects_changed_platform_actions_and_credentials if {
+	steps := platform_maintenance_fixture.jobs.maintenance.steps
+	every candidate_steps in [
+		[steps[0], object.union(steps[1], {"uses": "attacker/checkout@0000000000000000000000000000000000000000"}), steps[2], steps[3], steps[4], steps[5]],
+		[steps[0], steps[1], object.union(steps[2], {"with": {"github_access_token": "${{ secrets.GITHUB_TOKEN }}", "enable_kvm": true}}), steps[3], steps[4], steps[5]],
+		[steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"uses": "attacker/credentials@0000000000000000000000000000000000000000"}), steps[5]],
+		[steps[0], steps[1], steps[2], object.union(steps[3], {"continue-on-error": true}), steps[4], steps[5]],
+		[steps[0], steps[1], steps[2], steps[3], steps[4], object.union(steps[5], {"env": object.union(steps[5].env, {"EXFIL": "${{ secrets.GITHUB_TOKEN }}"})})],
+	] {
+		candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
+		candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
 platform_maintenance_fixture := {
 	"name": "Platform Maintenance",
+	"permissions": {},
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
-	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}, "cleanup_run_id": {"required": false, "type": "string"}}}},
+	"true": {"workflow_dispatch": {"inputs": {
+		"expected_sha": {"required": true},
+		"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"cleanup_run_id": {"required": false, "type": "string"},
+		"qualification_run_id": {},
+		"evidence_source_sha": {},
+		"capture_run_id": {},
+		"reviewed_snapshot_sha256": {},
+	}}},
 	"jobs": {
-		"static-policy": {"permissions": {"contents": "read"}},
+		"static-policy": {"name": "Validate Platform Stage Source", "permissions": {"contents": "read"}, "runs-on": "ubuntu-24.04", "steps": [
+			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}, "run": platform_maintenance_dispatch_check},
+			platform_maintenance_static_checkout,
+			platform_maintenance_install_nix,
+			{"name": "Run Static Checks", "run": platform_maintenance_static_checks},
+		]},
 		"maintenance": {
+			"name": "Protected Platform Stage",
 			"needs": ["static-policy"],
+			"runs-on": "ubuntu-24.04",
+			"timeout-minutes": 120,
 			"environment": {"name": "homelab-production"},
 			"concurrency": {"group": "platform-maintenance-production", "cancel-in-progress": false},
 			"permissions": {"contents": "read", "id-token": "write"},
 			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
 			"steps": [
 				{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_owner_main_check_env, "run": platform_maintenance_owner_main_check},
-				{"name": "Check Out Repository"},
-				{"name": "Install Nix"},
+				platform_maintenance_private_checkout,
+				platform_maintenance_install_nix,
 				{"name": "Recheck Current Main Commit Before AWS Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
-				{"name": "Configure AWS Credentials"},
-				{"name": "Run Reviewed Platform Stage", "env": {
-					"RUN_STAGE": "${{ inputs.stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}",
-					"CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}",
-					"QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}",
-						"EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}",
-					"CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}",
-					"REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}",
-					"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
-					"OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}",
-					"OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}",
-				}, "run": platform_maintenance_private_run},
+				platform_maintenance_aws_credentials,
+				{"name": "Run Reviewed Platform Stage", "env": platform_maintenance_private_env, "run": platform_maintenance_private_run},
 			],
 		},
 	},

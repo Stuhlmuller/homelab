@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6ba3ef6fd5c0bfdfaa1118526be5ada613860177e4504e5b2bcc51bfe8c6cb60",
+  "pageVersion": "sha256:c1a473a6f9aba42cf14e31089e5c7bfcab3bf796b8ae663dc6b5578cf453fab0",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -40,33 +40,21 @@
     },
     {
       "id": "claim_5ccef82fce4f413da7827acd753341d3",
-      "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns; six were narrowed in this review, while harbor-vulnerability-exporter, harbor-image-signing, and nofx-frontend already had this selector. The static gate checks all nine policies and requires exact kube-dns Service and CoreDNS Deployment selector maps plus the matching Pod label. Live reconciliation and enforced canary traffic remain unverified.",
+      "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns. A read-only October 20 inventory matched the six narrowed policy specs to current live resources, but isolated-canary DNS traffic remains unverified before enforcement.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml#L1-L27",
-          "version": "repo-lines-v1:sha256:506024b3a5e3f4cdceb6e49b5fcc16c60c43322779dcb82ce98188fbd2ebca07:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViYTI1NzVlMzQ2ODk3MjNlYWM2ZGNjYWM1ZGY2ODAxNTdhODQ5Y2YyZTlmMTE0MzgzYjhlZDYzMDQxYmNmOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMmE5YTU4ZjhiOWJjZDBmNDM5YzczZmY5ZTEwZGQ2Mjc1MzY4MmM4ZjFjODViYjU3ZDU4YzhlYTc5ODI4YjQifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2016-L2048",
+          "version": "repo-lines-v1:sha256:099c8280cb98f1e881eace66910fec07219a57789d1fe26697e7d335868387e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzOTdhM2E0YzM5YTczM2NmNTY2YTg2OWVlZmFhNDhjNTY0OTNlYzc5MGUxM2NlNjEwMGE0NTI0ZTg5NWMwZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyOGY2YzlhYWIwNjlkZDE2NWFkZWNkZDI3ZDljYzY3ZjM4MDQyYjY3MDc2YmE1MGNlYjhlMTU0OGU5NTQ0NWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4ZmQzOTYwOGE2MjJmOTg5YmIyYjE5Nzk5MDg1NjczYTg5OThmYjMxZTRjYTA3ZmEyMGI0MzI0ZGQzYWU1ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5MGVlNmNjMjBlMzVhN2RlOTA2MjNhNWFmZDE3OTg2YmJiYjE5ZTg1YTIyNmI2YmQyZDg0OTA1NmU3M2E2OTcifQ"
         },
         {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-deployment.yaml#L23-L35",
-          "version": "repo-lines-v1:sha256:65e2d2f67a383a684e4db260abd3e553891f3dd7465195f476ed84e27f0dcd9a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczN2Y4YmI1MDgzMTkyZTgzYzc2ZjBkZmQ4Y2UyNTA5NDEwMzVlOThjMDA5NTBmMGI5MmZjNDU5OTBkNWFjYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNjQ3YTNmN2QxNDIxMmM2OTNjYjQ5MmU1ZWYwNzY4Njc3NjdkYzQ1Mzk5ODQ5YzI3ZGFjMmQ5NjA4OGQ2MDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3ZjJhNmE5NWI3OWU0NmY1NzUyOTY5ZWQ3NTVkYjJmNDlhNzUwMTI4YTFlYzlmYWY3YTJjMjE1NjgwOGYxMGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUwOTczM2JkNDM5YzE0OTM2YjE0MGNkNDcwNzA1OGU5YmRkYzJjNzUxMzJiNDFlM2IxZjJiZDgyNTMyMTgxYTEifQ"
-        },
-        {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-service.yaml#L23-L38",
-          "version": "repo-lines-v1:sha256:36a99601c95f8861009f343fec5381dd75c40fb5e2806c52dee5a774b33602bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiYjVkZTlkMjBkNWYwM2M1ZTBjZGU3MDk1ZjllOWI4OWQxZGIxNTc4NDhhYjhmMmIzOWYyYmEwMGYxZGI0ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwYjJhYmRjODU3Zjc1OWVlZWVjNWViNzRhZWFiMjgyOWQxYjkxYjcwMGYzZGU1YTkzYmFmMjkxN2I0OTYyMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNTQ4NTBmNmYzZWQ4OTU2MzQ0Y2I4NjkzNzBiNmRlMDE1YTBiOTA1Y2RhMzQ3NzY4YzhmMjgzOGVmZDEzNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4NmIyZTE2ODljYzk4YWVmMzE5MTQ1ZWY3NjFmZjUzYmZiMzMwYjYzYTVkZDZlZTYwYjQ0NTI5NzZjYjhjMTAifQ"
-        },
-        {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-static-checks.sh#L474-L516",
-          "version": "repo-lines-v1:sha256:3c595178c313629322f9ae9b516ce81a01ef6f7e732d66c7d82e6b5cf29dc344:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNmM4MWYxOWExMjgyNDQwYzMyOTVkMjU0MmEyYjU5Y2Y4YmVmZjU3ZWUyZGQ4YzljYjY2OWM3YThiMGQ2NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3NWU4NzBkNTYyM2ZlNzg2YmU0NzQ3MjAzODJkMDE3NTllNDNhNjhhOGZiZGNlZjAwY2I2NjMxNTQxYzAyNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MzBiMjM1ODQ3Y2JhYmFhMmI2ZWQ1ZjNmOTA3ZTE2YjhjYmYyYjJkMmViMWZjZGE1MWExZjdiNDg0ODRhNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZkOGY5MmYwNmM0MjczYzk2YjlhYTE5YmU5YzE5Yjg0YTljNDQ1MTA5MzJjZjllYTdiZmNhZDI5MTg0NjZiOWQifQ"
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:16:14.853Z"
+    "at": "2026-10-20T18:25:19.174Z"
   }
 }

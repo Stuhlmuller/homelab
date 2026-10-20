@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a5ab2de35b58ee5cbe34282958b1f4a5aac2212e76d40a8fd8b27ce4a5a6bee3",
+  "pageVersion": "sha256:6f141f2245a77d225427f7938573b6502013b9a4db743c779cf299dc45fa8921",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
+          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
+          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
         }
       ]
     },
@@ -378,11 +378,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
+          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a5446ced71390cfa58a988185ce62c754d205c69044f63d71aa07481d77a1b80"
+          "version": "repo-file-v1:sha256:08fa5661346b1b8b92ad9c7e5cf2cf957734164ec28bf20eb571a1b47c5e2c46"
         }
       ]
     },
@@ -454,7 +454,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
         }
       ]
     },
@@ -464,15 +464,15 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
+          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:889043351a19997299bc137c0446afe65682606dc38d26face296089ae488d04"
+          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
         }
       ]
     },
@@ -535,7 +535,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L246-L272",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L267-L293",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -558,7 +558,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
         }
       ]
     },
@@ -567,7 +567,7 @@
       "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode public IPv4 and IPv6 all-port egress without a configuration input; additive NetworkPolicies cannot narrow them. Reviewed upstream patches or forks, rebuilt pinned images, actual generator renders, and isolated canary traffic qualification remain required before enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L1583-L1586",
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2010-L2013",
           "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
         },
         {
@@ -673,6 +673,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T17:28:41.182Z"
+    "at": "2026-10-20T18:25:19.174Z"
   }
 }

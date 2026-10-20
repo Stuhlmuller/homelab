@@ -136,6 +136,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-fdad4f74fd023e19134fcc88
+    resource: repo://policy/workflows_test.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
@@ -314,10 +316,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T17:08:07.139Z" }
+generated: { by: "codex", at: "2026-10-20T17:42:58.784Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T17:28:41.182Z
+    at: 2026-10-20T18:25:19.174Z
 ---
 
 # Validation Gates
@@ -847,6 +849,15 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+
+The Platform Maintenance Conftest rule binds the workflow's explicit empty
+permissions map, fixed inputs and endpoint, both jobs' commands, pinned actions,
+job settings and private credential mapping. Its regression fixture rejects a
+missing permissions key paired with a workflow-level custom shell, which could
+otherwise reinterpret the exact run scripts. The repository also hashes the
+credentialed workflow and inventories both jobs. These are source checks;
+private recovery and capacity receipts still gate any live maintenance stage.
+
 The live-plan and protected-apply diagnostic exceptions check a classifier's
 SHA-256 inside the hashed workflow before reading private output. A changed or
 missing helper is not executed; only the fixed withheld error remains. The
