@@ -36,10 +36,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
+generated: { by: "codex", at: "2026-10-20T07:27:46.454Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:12:19.109Z
+    at: 2026-10-20T07:27:46.454Z
 ---
 
 # Storage And State
@@ -287,10 +287,11 @@ nonrotating private key. Preserve that Secret with any eventual database
 recovery set. The foundation is not registered with Argo; node placement,
 distinct storage, PostgreSQL roles, database and agent backups, and isolated
 restore remain pending. No new Enterprise PVC or live database exists from
-this source alone. The 2026-10-20 post-shutdown capacity receipt found only
-3,909.5 MiB of unreserved memory on the best worker, below the 4,096 MiB
-initial Enterprise reservation before transient and host headroom. It does
-not admit the local claims or an isolated canary; see the
+this source alone. The 2026-10-20 07:22 UTC capacity recheck found about
+3,398 MiB of unreserved memory on the best worker, below the 4,096 MiB
+initial Enterprise reservation before transient and host headroom. That worker
+also had only 9.71 GB of root-filesystem space free, below the proposed 10 GiB
+local claim. This does not admit local storage or an isolated canary; see the
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight

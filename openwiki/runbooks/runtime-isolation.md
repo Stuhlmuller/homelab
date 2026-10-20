@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/namespace.yaml
   - id: openwiki-source-a953c7d60cd7a8fdea7b14bd
     resource: repo://clusters/homelab/apps/mastodon/networkpolicy.yaml
+  - id: openwiki-source-06c51d450592da5906a7761d
+    resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
@@ -42,10 +44,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T07:12:19.109Z" }
+generated: { by: "codex", at: "2026-10-20T07:27:46.454Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:12:19.109Z
+    at: 2026-10-20T07:27:46.454Z
 ---
 
 # Runtime Isolation
@@ -103,10 +105,11 @@ limited capacity, system DaemonSets, and a live backup workload.
 Before activation, finish image publication and policy owner/render review, then
 admit an isolated tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
-stateful workloads. The [2026-10-20 capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
-found just 3,909.5 MiB unreserved on the best worker against an initial
-4,096 MiB Enterprise reservation, a 5,997 MiB 24-hour Pod working-set peak,
-and 43 co-resident Pods. A `NoSchedule` taint would leave those Pods in place;
+stateful workloads. The [2026-10-20 07:22 UTC capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+found about 3,398 MiB unreserved on the best worker against an initial
+4,096 MiB Enterprise reservation, 6,447 MiB actual memory use, 45 co-resident
+Pods and only 9.71 GB root-filesystem space free against a proposed 10 GiB
+local claim. A `NoSchedule` taint would leave those Pods in place;
 it is not an isolation proof. Compare private read-only Pod/NetworkPolicy snapshots and
 all rendered policies with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
@@ -122,9 +125,10 @@ source convergence, not traffic or enforcement qualification.
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete policy shapes to pinned `v0.12.7` constructors. The
 [Octelium expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
-binds four more to pinned `v0.35.0` constructors. Ten Octelium Enterprise
-generated policies still lack source-bound fixtures, and pinned generator-binary
-renders remain unverified. The pinned `ws-main` and `svc-upstream` constructors
+binds four Genesis policies to pinned `v0.35.0` constructors. The
+[Enterprise fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+binds the remaining ten. All 17 complete expected specs are now source-bound;
+pinned generator-binary renders remain unverified. The pinned `ws-main` and `svc-upstream` constructors
 admit all ports to public IPv4 and IPv6; additive NetworkPolicies cannot narrow
 those allows. Correct the generators and qualify required traffic on an isolated
 canary before any enforcement.
