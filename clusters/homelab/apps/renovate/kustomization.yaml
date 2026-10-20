@@ -11,3 +11,5 @@ configMapGenerator:
   - name: renovate-config
     files:
       - config.js
+      - cache-drill.js
+      - cache-drill.sh

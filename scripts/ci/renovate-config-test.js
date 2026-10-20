@@ -37,7 +37,7 @@ function load(options = {}) {
             throw new Error('unexpected credential path');
           },
           writeFileSync(file, bytes, settings) {
-            assert.match(file, /^\/cache\/renovate\/\.storage-probe-[0-9a-f-]+$/);
+            assert.match(file, /^\/cache\/renovate(?:-drill)?\/\.storage-probe-[0-9a-f-]+$/);
             assert.equal(bytes.length, 4096);
             assert.equal(settings.flush, true);
             cacheWrites.push(file);
@@ -49,6 +49,15 @@ function load(options = {}) {
         };
       }
       if (name === 'node:crypto') return crypto;
+      if (name === './cache-drill') {
+        return {
+          cacheDir: '/cache/renovate-drill',
+          prepared() {
+            if (options.drillUnprepared) throw new Error('Renovate cache drill slot was not prepared');
+            return options.drillMode ?? null;
+          },
+        };
+      }
       throw new Error('unexpected module');
     },
     async fetch(url, request) {
@@ -128,6 +137,21 @@ test('fails before GitHub access when the cache volume is full or unwritable', a
   assert.deepEqual(recovered.cacheUnlinks, recovered.cacheWrites);
 });
 
+test('uses only the bounded scratch cache in active drill slots and fails closed if unstaged', async () => {
+  for (const drillMode of ['missing', 'corrupt']) {
+    const run = load({ drillMode });
+    const resolved = await run.config();
+    assert.equal(resolved.cacheDir, '/cache/renovate-drill');
+    assert.match(run.cacheWrites[0], /^\/cache\/renovate-drill\/\.storage-probe-/);
+    assert.equal(run.calls.length, 2);
+  }
+
+  const unstaged = load({ drillUnprepared: true });
+  await assert.rejects(unstaged.config(), /slot was not prepared/);
+  assert.equal(unstaged.cacheWrites.length, 0);
+  assert.equal(unstaged.calls.length, 0);
+});
+
 test('refuses an inaccessible or selected-repository installation', async () => {
   const inaccessible = load({ status: [404] });
   await assert.rejects(inaccessible.config(), /returned HTTP 404/);
@@ -169,7 +193,7 @@ test('temporarily exposes only package-cache hit markers during full dry run', a
   assert.match(cronjob, /^  concurrencyPolicy: Forbid$/m);
 });
 
-test('keeps Renovate cache refresh defaults and mounts credentials outside the PVC', async () => {
+test('keeps cache refresh defaults and the bounded drill separate from the PVC', async () => {
   const { config } = load();
   const resolved = await config();
   for (const key of ['cacheTtlOverride', 'cacheHardTtlMinutes', 'httpCacheTtlDays']) {
@@ -187,6 +211,10 @@ test('keeps Renovate cache refresh defaults and mounts credentials outside the P
   assert.doesNotMatch(cronjob, /fault-cache/);
   assert.doesNotMatch(cronjob, /medium: Memory\n/);
   assert.doesNotMatch(source, /fullCacheFaultHour|renovate-fault/);
+  assert.match(cronjob, /- name: drill-cache\n\s+mountPath: \/cache\/renovate-drill\n/);
+  assert.match(cronjob, /- name: drill-cache\n\s+emptyDir:\n\s+sizeLimit: 2Gi\n/);
+  assert.match(cronjob, /args: \[\/bin\/bash, \/usr\/src\/app\/cache-drill.sh\]/);
+  assert.match(cronjob, /- name: config\n\s+mountPath: \/usr\/src\/app\/cache-drill.js\n\s+subPath: cache-drill.js\n\s+readOnly: true/);
   assert.match(cronjob, /- name: github-app\n\s+mountPath: \/var\/run\/secrets\/renovate\n\s+readOnly: true\n/);
   assert.match(cronjob, /- name: github-app\n\s+secret:\n\s+secretName: renovate\n/);
 });

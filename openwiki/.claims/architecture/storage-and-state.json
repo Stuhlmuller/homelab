@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fad61b33f3997afb1d190d664e31ad9455926e03ac2bfd040ec70388e74966ea",
+  "pageVersion": "sha256:f1a14be112dfef2fad44c8b7ce6b6466bd344a2f59c43c08cb763089b230a050",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
-      "statement": "Renovate uses a retained 20 GiB nfs-default PVC for datasource, private-package, and repository caches; its working files remain ephemeral, and the recovery configuration mounts only the retained cache PVC at /cache/renovate.",
+      "statement": "Ordinary Renovate Jobs use the retained 20 GiB nfs-default PVC at /cache/renovate for datasource, private-package, and repository caches; the two inert missing/corrupt drill windows select a separate 2 GiB Pod-local cache while working files remain ephemeral.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L69-L75",
-          "version": "repo-lines-v1:sha256:48c3bf472443ce5e0a81152e3b749b37a05c8a0e1025011d230f1d5e6016557d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTBhZjU4NmQzZTUxNTg1NmRmNTFmZGFhZGY0YTU4ZGQ3YWJjYzcxM2JlYjY2NjYyMzUzMzRmZTQyMGU5OTliZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTFlNzYzYzAxNDI1Mjk3YzI0NTFiZjNkODAxN2U0NjdkMGY2MzU0MzY5OTAxNzc2MDE1NGNiYzg1OTMwNzVlOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTgyYjI0Njc0ZDgwYTAwMjBjNDA0YjBjZTdjZjEzZTZiZWYwOGUxZjUwMTY4YTc5ZDdhOGUxZWUwMDJhNjkxMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGJmNjM4MjY2NTg0OTg2Mjc5YzQ3ZDg3MDEwYWM4MTI3OTJlZWIwMTQ5M2ZiZTAzMDY2NDM4MjYxNTQzMzU1YyJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L150-L171",
+          "version": "repo-lines-v1:sha256:db503fd321b5ef681e678f4fda19accfc5602296a66a546b1aedb819deb93841:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZDhlZTgwMmRmMjVkNDQ2MmM3MzliY2E5ZTk2NTNlYWNlYWQ0Yzc4YjBkMTAyMjdhY2QyY2UxYTBhNzdiN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMGVlMDNjNWUxNWQyZjBlNWJkYTNlYTdlMjNiMDdjZmJmMjYzYWZkMjA0YjMwNDE1OWQ5NjM0Y2NlYWQyNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1ZjNkMGM2ZThmYjNhYzY4ZTljMjJiM2JmYmEzZTIxYTlmZGRhOTlhNTFlNWQwYmI5OTU2MGMyNTBiZWY2YTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YjAzY2NhZDI5ZWFkYTc0YWZlYmRhNzc3ZGVmNjUzOGVmMDAzMDk4NjRlMmI2ZTMwODhhMGQzYjM4ZDBkYWEifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L109-L114",
-          "version": "repo-lines-v1:sha256:8d8afd98425fc9626de5c04497be309c1890b26e89a8b7346fcffd0cf0ce3ee6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDI5MGFkOWQxOGQyMjk1ZWIyN2UxMTNjM2U2YzA0ZGRhYjAzYWE4M2Q3NzNkMzY5MzI4ZTEwMjA2NTEzMTAzZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjhkNGExMDZkYmUxM2RiZDQ2MzcyYjFlMTdlZjU1OTZmZThmNmYwMDkzMmRjZDRiZjA1YjIxODAxOGQxZDhiNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMxOTdmOWJiM2Q5MzhlMzViNTFiNzI1ZDQxOWUyMGE1ZTExNjE4YzI2N2YzMTRiOGY3ZDc5ZmM0YmIyZTc2ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDgyYTUxYjI5MDI1MDliOTliZGQ3MDc5ODE5OTkyM2M4NmRiMTIwYTRkNGVhOTVjZGNjZDQyODY3NjhjZWE4NSJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L80-L89",
+          "version": "repo-lines-v1:sha256:3b60c7b8abd3dd1db17b2799185d1f779fe5bfcd2c461e37fa42614a91953116:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllODZjY2Y4ZWVlNzU2MGI0YTMxNDYzZmJlZjBlMzJhNjRiNzg2OGY4NTIzZDk3OGEwMDYxMDdhOWMyMjhmNzYifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L64-L94",
-          "version": "repo-lines-v1:sha256:2827d4a16a15ee48114e85051218099ed37716af35485ba459c2b71696336a6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMTA0MmZhZjIyOTAxM2JmN2JjZDVhYzAyZjc0ZDE5MGNhNDEzMGEzYzE3MWIyNmJhNzU2ZTQ1ZTdmYWI1NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyZjM5NGM2OTcyMDAyMGYyMzk4ZTgyNzkwZGQwM2ZhMDI4NmE0MDYxMTcyODAzZTcyZTc2NDMyNWIwNWVkNWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNTFhODA4MWIzYjgxN2E4YThhMTU4YzU0MDAwYzcyZDc3YjQwNzgyYTBiOGU4ZTA0YzUzNjdjZTVkYjNhODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L80-L107",
+          "version": "repo-lines-v1:sha256:3359a6806e7a79ff1378ec7215b27053f9ffdc6f83038438248e48cd4d218ba8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMTIwYjBhNWU3NGIzZGYwYTg3ZWY2NGViNTZlNzg2OTMyODczNjFlN2YxZjI5MDU4MmJjYzczMGI2NDMyY2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlYjRjYWZmNzk2MzIzNTQ2NTg0MzlmNDFhNzdmYTk0YjZlMzlmNzE3YWEzM2MxM2IwYzQyZjA1Mjk1MDcxMGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMjg2ZWIyODM5MjVjYTM2ZTU0ZTc5ZTA4MDc2NjA0N2NjMGM1NGFlZWIzMGM1ZmUxZGFjY2YwYzM1MTY1NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxODI1Y2M3ZGI5ODk0Yzg2Njc3MWNjMjA4NjJmNjNmNzVkNzc1N2MzOGNkOWQyNmY1NWVkYWJlYWNlNmJjNTkifQ"
         }
       ]
     },
@@ -40,19 +40,15 @@
     },
     {
       "id": "claim_d48db879d21a41b286ee52884ca861ad",
-      "statement": "Before minting a GitHub token, Renovate flushes a 4 KiB probe to /cache/renovate and fails if the PVC is unwritable. The nfs-default 20Gi request neither reserves nor caps NAS storage and the provisioner cannot resize the PVC; a real full share needs a declared capacity-restoration path after reviewed CronJob suspension.",
+      "statement": "Before minting a GitHub token, Renovate flushes a 4 KiB probe to its selected cache path and fails if unwritable. The nfs-default 20Gi request neither reserves nor caps NAS storage and the provisioner cannot resize the PVC; a real full share still needs a declared capacity-restoration path after reviewed CronJob suspension.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L117",
-          "version": "repo-lines-v1:sha256:6e3dd52ced19de008e9e0a8f2f0d2ee865070cb95789f60430bc92da1f916723:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiOTM0NTNlZGQ1NDE0Y2UzYzlkOTJkMzM0OWI1ZDA4MGYwZDgxODc0MzcwNDdlMDA0NzUxZjIxNzYxYTc3NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhM2EyNjk5ZTI1Nzc1YjAyY2Q1YTlkOTcwZmYzZTkzODYzYTQxNGQwYTNlYjUxZWE2MzJmOWQ4ZmQ3MTliMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0MmNhZWJkZmU3YTk0ZjY3NjdlNDMwMDNiZTRjZGNkMGUyMWJlYjAwYzYzNmVjYTllYzlkNTUzOTE1ZGNiNmEifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L94-L117",
+          "version": "repo-lines-v1:sha256:cb5d9050a6fb64c65c0713bc4acc058ea366619c07af26b64747b666a2c74948:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhMmJmZGU5YTUwMjliZTI1YjQ1YmNiOTg4NmY1MDNiYWMzYmQ5MWI1MTcxYjMwMTI1NzhiMGRmMGY0ZWM0ZDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI4MDU4ZjFmY2JmNDYxOTQ1MTE4NmY2MDFmZWNmMTc2MzVjOGViMDRhNzMyZjYxODkwNDBjODJkNjlmNzkzNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0MmNhZWJkZmU3YTk0ZjY3NjdlNDMwMDNiZTRjZGNkMGUyMWJlYjAwYzYzNmVjYTllYzlkNTUzOTE1ZGNiNmEifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
-          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
-        },
-        {
-          "resource": "repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml",
-          "version": "repo-file-v1:sha256:baa0b8fd82e3bd9616186071554eae058aefe2fa79b7c87e51980030d339e035"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L80-L92",
+          "version": "repo-lines-v1:sha256:f003ab99c5741b2acf676858e4c3b41a21f6c86e63d756a9a22cd8540cd97b57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         },
         {
           "resource": "repo://docs/storage-nfs.md#L100-L116",
@@ -62,19 +58,19 @@
     },
     {
       "id": "claim_a9d5edc1d5204ff7b0501daf1016929e",
-      "statement": "Pinned local Renovate recovery checks show missing and malformed package or repository cache entries rebuild, and a full-cache write probe prevents GitHub access; live failed-cycle and next-slot recovery remain unverified.",
+      "statement": "Pinned local fixtures check missing or malformed package and repository cache reads, package-entry rebuild in full dry-run, and skipped repository-cache save in full dry-run; a cache write-probe failure stops GitHub access. Scheduled missing/corrupt and full fault recovery remain unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:562f08f0d9885068d960fcb85e7a006ad9f2b87f239913693106e933cea711a7"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L135-L171",
+          "version": "repo-lines-v1:sha256:45796859a9eb75d600dbbf038e79b5b80afa912704d5a2b67fcd2dce1540fa09:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NGYxYjY1MTRmZWQ2MjA3NzJmMDY2MDg5NjkzOWRkY2UyYWFjYTViYzBmNTU3ZDU1ZjVjYmI2NmJmODlmYzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMGVlMDNjNWUxNWQyZjBlNWJkYTNlYTdlMjNiMDdjZmJmMjYzYWZkMjA0YjMwNDE1OWQ5NjM0Y2NlYWQyNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0ZTU4MTMzNmVjZDdhNjNiYjM5YTU0OTcyOWU5NzJlM2Q5OWE5YTg1Y2MzOTM4Zjg2OTc2N2EzMGVkMzUxMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YjAzY2NhZDI5ZWFkYTc0YWZlYmRhNzc3ZGVmNjUzOGVmMDAzMDk4NjRlMmI2ZTMwODhhMGQzYjM4ZDBkYWEifQ"
         },
         {
-          "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
-          "version": "repo-file-v1:sha256:8251f2bfd72061617175cb232cb12c2b8ea43d54242637f02869332a89136444"
+          "resource": "repo://scripts/ci/renovate-cache-drill-test.mjs#L42-L83",
+          "version": "repo-lines-v1:sha256:4ae840b05adc3c0311400dba35c62abe6d2ea591812d705a73b657713396289f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4YzA4NWFmYjRlYTA2YWU0N2I2ZWFkMmY3OTg2MTEzZmE2NTY2ODZiMGVlYzczYjQyYzMzZjgwNDI2ZGIwYWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ2MTY5N2FjOGVlZDViMDIzZGYxNjFlMjRhZWI2ODk1OTE1MzlhODYzM2M3OTkwZGE5OGMyZDcwNzAxMzc1M2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4ZjRmYTlhMmYxZTViMDM1ZTdlZDYwNjg1ZjBhNzM4MWY5YTFkNjM1YjkwM2IxNTQyY2M3ZjcxMjUwYzdjZjAifQ"
         },
         {
-          "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:e1ab120133a1611f673fdb4138d9c2b243d6adf96bfdc7cbdb758cd14e38f80e"
+          "resource": "repo://scripts/ci/renovate-config-test.js#L125-L153",
+          "version": "repo-lines-v1:sha256:392bb6251c8263820cfef85be08c200909e4d336df8e5a24cb897fef3eec0fbe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNGQ2ZThmZjAyYjA3ZjY1MmFjNzMyMzVkZWJkZmQ5MDc0NjcwYjg5NmJlNTE1MjIzYWU4ZWY1OTM1ZmZhODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYjI3NWU3YzkxMzNiZGNhZWMzMzBjMzljZDUwOGRkYzZkZmVjYjM2MTZlZDkzOWRjNjEyMDUyMDM0YTM2NDcifQ"
         }
       ]
     },
@@ -168,29 +164,51 @@
     },
     {
       "id": "claim_0a4e7c74e8da42098ab6bd397f9846e7",
-      "statement": "The recovery change removes the temporary 1 MiB fault mount and clock selection, so every new scheduled Job selects the retained PVC; local tests cover tokenless failure on a full cache and later probe recovery, while scheduled fault and recovery outcomes remain pending.",
+      "statement": "The recovery revision removed the temporary full-cache ENOSPC mount and clock branch; the stacked missing/corrupt drill adds a separate disk-backed emptyDir with inert 2099 windows. Local tests check the fault path stays absent, while scheduled full-fault and recovery outcomes remain unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L109-L114",
-          "version": "repo-lines-v1:sha256:8d8afd98425fc9626de5c04497be309c1890b26e89a8b7346fcffd0cf0ce3ee6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDI5MGFkOWQxOGQyMjk1ZWIyN2UxMTNjM2U2YzA0ZGRhYjAzYWE4M2Q3NzNkMzY5MzI4ZTEwMjA2NTEzMTAzZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjhkNGExMDZkYmUxM2RiZDQ2MzcyYjFlMTdlZjU1OTZmZThmNmYwMDkzMmRjZDRiZjA1YjIxODAxOGQxZDhiNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMxOTdmOWJiM2Q5MzhlMzViNTFiNzI1ZDQxOWUyMGE1ZTExNjE4YzI2N2YzMTRiOGY3ZDc5ZmM0YmIyZTc2ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDgyYTUxYjI5MDI1MDliOTliZGQ3MDc5ODE5OTkyM2M4NmRiMTIwYTRkNGVhOTVjZGNjZDQyODY3NjhjZWE4NSJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/cache-drill.js#L6-L27",
+          "version": "repo-lines-v1:sha256:fbe99b5af3f359d889fcf7e19271b1f8c588513b6318d1d7947922b54543a0a8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1OWVlY2NjOWIzMWU2YTUxM2M3ZDY1NDZmNTBlYzZjM2YwZDJjMGViNmJhOGUzNjI5Yzk1OGRmMmVkMzQyNjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYmFkN2Q4ZGYzZGQ3NzAyODM1Njk5YjljZDIxZWUwZjVjYTRkMDk3ZjNlOTkxMjg2N2Y1ZmRmM2M0YTM2NTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1MzFmMjY4ZWRkNTljMTg4MTBiMDllYTg2ZDdmZWI3YjM2YzhlMGFjMzQ1NWU5NGI0YjY3N2E1NDA0Y2MxNmUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
-          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L80-L89",
+          "version": "repo-lines-v1:sha256:3b60c7b8abd3dd1db17b2799185d1f779fe5bfcd2c461e37fa42614a91953116:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllODZjY2Y4ZWVlNzU2MGI0YTMxNDYzZmJlZjBlMzJhNjRiNzg2OGY4NTIzZDk3OGEwMDYxMDdhOWMyMjhmNzYifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L64-L94",
-          "version": "repo-lines-v1:sha256:2827d4a16a15ee48114e85051218099ed37716af35485ba459c2b71696336a6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMTA0MmZhZjIyOTAxM2JmN2JjZDVhYzAyZjc0ZDE5MGNhNDEzMGEzYzE3MWIyNmJhNzU2ZTQ1ZTdmYWI1NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyZjM5NGM2OTcyMDAyMGYyMzk4ZTgyNzkwZGQwM2ZhMDI4NmE0MDYxMTcyODAzZTcyZTc2NDMyNWIwNWVkNWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNTFhODA4MWIzYjgxN2E4YThhMTU4YzU0MDAwYzcyZDc3YjQwNzgyYTBiOGU4ZTA0YzUzNjdjZTVkYjNhODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L80-L107",
+          "version": "repo-lines-v1:sha256:3359a6806e7a79ff1378ec7215b27053f9ffdc6f83038438248e48cd4d218ba8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwMTIwYjBhNWU3NGIzZGYwYTg3ZWY2NGViNTZlNzg2OTMyODczNjFlN2YxZjI5MDU4MmJjYzczMGI2NDMyY2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlYjRjYWZmNzk2MzIzNTQ2NTg0MzlmNDFhNzdmYTk0YjZlMzlmNzE3YWEzM2MxM2IwYzQyZjA1Mjk1MDcxMGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMjg2ZWIyODM5MjVjYTM2ZTU0ZTc5ZTA4MDc2NjA0N2NjMGM1NGFlZWIzMGM1ZmUxZGFjY2YwYzM1MTY1NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxODI1Y2M3ZGI5ODk0Yzg2Njc3MWNjMjA4NjJmNjNmNzVkNzc1N2MzOGNkOWQyNmY1NWVkYWJlYWNlNmJjNTkifQ"
         },
         {
-          "resource": "repo://scripts/ci/renovate-config-test.js#L116-L129",
-          "version": "repo-lines-v1:sha256:da5ebbb8b98d8e7b8884e7f290a0d0fa15e2f3122552622687e02fd2298653d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNGQ2ZThmZjAyYjA3ZjY1MmFjNzMyMzVkZWJkZmQ5MDc0NjcwYjg5NmJlNTE1MjIzYWU4ZWY1OTM1ZmZhODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYjI3NWU3YzkxMzNiZGNhZWMzMzBjMzljZDUwOGRkYzZkZmVjYjM2MTZlZDkzOWRjNjEyMDUyMDM0YTM2NDcifQ"
+          "resource": "repo://scripts/ci/renovate-config-test.js#L196-L217",
+          "version": "repo-lines-v1:sha256:84aec0ccdc04708cab105c24932c43cd3291f5496eb28d9a893387604d8f7f6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0ZmJiYWU3Zjc3MTY4Yjc0NzM2ZmIyNmRlODA5MmM3NDhhNjk4NjdlMzNlMDI3NWQ2YTEwOGMxM2JmNzgyMzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZjcwN2Y1ZTViNWZkNzc3YjE0MGExYjkwNTdjODFjZDg2OWQ3NDJjOTU3MTY2MDZmZjQyMDQyYTVmMTY4ZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4YjIwY2MxZWNhYzIwNDgxYWFlMTY1YmQzNTgyM2EzOWQyMjJhMDdlYThkMWVjODI5ZmJhZDQyNGNkODBkY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiMmQ4NGJhYmFiMGYyMWYxMTM0ZjZiODE5NmUzN2VmNzIzYjA5YmMzMzAyZTEyYjdjMjA0YTEwMzlkNDYzMzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fa6b37a3106a462d9e5078387c951bf7",
+      "statement": "The temporary drill wrapper stages an empty or malformed public canary cache before a token is minted and verifies the package entry after a successful dry run; full dry-run leaves the repository file unchanged, so a live corrupt-slot check also needs the scoped invalid-cache warning and successful repository outcome.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L150-L171",
+          "version": "repo-lines-v1:sha256:db503fd321b5ef681e678f4fda19accfc5602296a66a546b1aedb819deb93841:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZDhlZTgwMmRmMjVkNDQ2MmM3MzliY2E5ZTk2NTNlYWNlYWQ0Yzc4YjBkMTAyMjdhY2QyY2UxYTBhNzdiN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMGVlMDNjNWUxNWQyZjBlNWJkYTNlYTdlMjNiMDdjZmJmMjYzYWZkMjA0YjMwNDE1OWQ5NjM0Y2NlYWQyNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1ZjNkMGM2ZThmYjNhYzY4ZTljMjJiM2JmYmEzZTIxYTlmZGRhOTlhNTFlNWQwYmI5OTU2MGMyNTBiZWY2YTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YjAzY2NhZDI5ZWFkYTc0YWZlYmRhNzc3ZGVmNjUzOGVmMDAzMDk4NjRlMmI2ZTMwODhhMGQzYjM4ZDBkYWEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cache-drill.js#L44-L93",
+          "version": "repo-lines-v1:sha256:a12aa4ad6b6da824a0c5e69070a449339eac6c34b679cfbec2c04f5798c9ad25:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxOTAyY2ExOGJkZjVjN2Q5ZjZiZjAzMzBmMTY1OWRhOGM2MjU0YmVkNmE5MTU5NmVkYzlhZTliMThmZGJmNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyMDQwZTA5NWE5NGUyYWRhNzRlNDIxZjM3MTg3NTFhOTFhODEwYmZkNjZmNDhmNGU5MzljN2I3NDgwZWI2NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5NWY1MGE0ZTdmNWFmNzRhYjA0MWZmZWIwNGMzMWZmMTA2MTJiZTE5NjE1NTYzMTJhMmYwZTM0Zjc2YTU4NjcifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cache-drill.sh#L4-L19",
+          "version": "repo-lines-v1:sha256:d5870cce63d9882ae1bb7942553ac0155965051e955e068f854400e3964a7d0c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzMTA0NjNiYzdkMmJlNTlmMzZhYWE0NWYyYmYzOGY2ODU4YjdmNGUwZjQwYzMxMTlhMmRjMmZjNjg2YzAwNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2OTFmOWEzNTY0MjMzMTU2YjAxNjlkY2U0ODZiNmI1ODI4NzUwNDRiMTM0MWFhNzMzMWRjNTIwYWU1MDQ5ZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4ZGE0ZmNmN2MxNjQ4NmZhZmVjN2MwYWFjZjhiOTJmYzk0NDMzNDQ4ZGM4MzRlY2QyMTI0YzYzNTEwMTY3ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L80-L92",
+          "version": "repo-lines-v1:sha256:f003ab99c5741b2acf676858e4c3b41a21f6c86e63d756a9a22cd8540cd97b57:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:19:14.853Z"
+    "at": "2026-10-20T06:23:50.661Z"
   }
 }

@@ -16,6 +16,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-74055ec9d540c61af1ff641e
+    resource: repo://clusters/homelab/apps/renovate/cache-drill.js
+  - id: openwiki-source-db229b3c2e4c3c8667a53963
+    resource: repo://clusters/homelab/apps/renovate/cache-drill.sh
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -24,24 +28,22 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
-  - id: openwiki-source-b8e8b7405b7234a1ce62dc56
-    resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
-  - id: openwiki-source-b7865f8f7c461f149710edda
-    resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
+  - id: openwiki-source-2623b476b6f9bf46c3a8423c
+    resource: repo://scripts/ci/renovate-cache-drill-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T06:19:14.853Z" }
+generated: { by: "codex", at: "2026-10-20T06:23:50.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:19:14.853Z
+    at: 2026-10-20T06:23:50.661Z
 ---
 
 # Storage And State
@@ -562,12 +564,13 @@ the public key independently for historical signature verification. See
 
 ## Renovate cache
 
-Renovate uses a retained 20 GiB `nfs-default` PVC in `automation` for
-datasource, private-package, and repository caches; its working files stay on ephemeral
+Renovate retains a 20 GiB `nfs-default` PVC in `automation` for datasource,
+private-package, and repository caches; its working files stay on ephemeral
 storage. The cache includes private package metadata, so restrict access to the
 volume and logs. It is replaceable and has no backup requirement. Argo CD does
 not prune the PVC. Before requesting a GitHub token, each run flushes a 4 KiB
-write to `/cache/renovate` so a full or unwritable cache fails visibly. The `20Gi`
+write to its selected cache path so an unwritable cache fails visibly. Ordinary
+runs select `/cache/renovate`. The `20Gi`
 request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
 PVCs or enforce their requested size. A full export needs restored NAS capacity
 through a declared path; increasing the PVC request cannot restore writes.
@@ -579,16 +582,28 @@ evidence. For corruption, suspend the CronJob, clear only cache contents with
 a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
 
-The bounded full-cache fault change proposed a separate `1Mi` memory-backed
-`emptyDir` for 2026-10-20 10:00–11:00 UTC while leaving the PVC mounted. This
-recovery change removes that temporary mount and clock condition: every new
-Job selects the retained PVC and probes it before GitHub access. Local tests
-cover a failed probe before token minting and a later successful probe. The
-scheduled fault and recovery results remain unobserved; neither the fixture
-nor this desired-state reversal proves restoration after a full NAS export.
+The recovery change removes the temporary `1Mi` memory-backed fault mount and
+2026-10-20 10:00–11:00 UTC clock branch. Local tests require that fault path to
+be absent and verify that an unwritable cache stops GitHub access before token
+minting. The preceding fault PR planned a single-hour `ENOSPC` drill; this
+recovery declaration does not establish that a scheduled Job failed, an alert
+fired, or a later Job succeeded. Those live observations and a declared NAS
+capacity-restoration operation remain required for T024/T042 and writer cutover.
 
-The pinned Renovate recovery fixture confirms missing or malformed package and
-repository cache entries can be rebuilt; the config test confirms a full-claim
+The later [missing/corrupt drill](../../clusters/homelab/apps/renovate/README.md#cache-failure-and-recovery)
+mounts a separate bounded 2 GiB Pod-local cache. Its two committed UTC hours
+remain inert 2099 placeholders until reviewed retargeting after the full-cache
+fault and recovery. The wrapper starts one scheduled full dry run with an empty
+cache and another with malformed public canary package and repository entries;
+it rejects bad staging before the App token. Outside those hours, Jobs still
+select the retained PVC. The [pinned drill fixture](../../scripts/ci/renovate-cache-drill-test.mjs)
+confirms package-entry rebuild and repository-cache fallback in memory. Full
+dry-run skips repository-cache saves, so the malformed repository file stays on
+disk; a persisted repository-cache rewrite is not expected. Restricted logs
+and scheduled Job outcomes must prove the later live behavior. T042 remains open.
+
+The pinned Renovate recovery fixture checks missing or malformed package and
+repository entries under its local save path; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the
 19:00 and 20:00 UTC scheduled Pods showed one exact public canary
 datasource-key hit each, on distinct Pod UIDs using the same PVC. These

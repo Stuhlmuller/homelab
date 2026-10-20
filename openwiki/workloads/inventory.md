@@ -82,14 +82,12 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-74055ec9d540c61af1ff641e
+    resource: repo://clusters/homelab/apps/renovate/cache-drill.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
-  - id: openwiki-source-caf6d77fd092a28e8583a6a2
-    resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
-  - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
-    resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-19486243ca5f1efdd808adf2
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -162,10 +160,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
+generated: { by: "codex", at: "2026-10-20T06:23:50.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:19:14.853Z
+    at: 2026-10-20T06:23:50.661Z
 ---
 
 # Workload Inventory
@@ -357,7 +355,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Legacy gateway and backup writer stopped by GitOps; node-local SQLite, NAS workspace, snapshots, and four PVC/PV identities retained. Post-shutdown inventory passed; independent archive/restore pending. No Discord or LiteLLM state moves to Enterprise. | platform-storage, external-secrets (retained recovery only) |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
-| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache), dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; [T022](../../specs/004-run-renovate-in-cluster/tasks.md) records 19:00/20:00 same-key hits and the 21:00 `v0.0.2` refresh; [T045](../../specs/004-run-renovate-in-cluster/tasks.md) records the 17:00 failure, 03:00 missed-slot alert, and successful 04:00 recovery; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), T024/T042 cache-fault/NAS-capacity recovery, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
+| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache) plus an inert two-slot Pod-local missing/corrupt cache drill, dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; [T022](../../specs/004-run-renovate-in-cluster/tasks.md) records 19:00/20:00 same-key hits and the 21:00 `v0.0.2` refresh; [T045](../../specs/004-run-renovate-in-cluster/tasks.md) records the 17:00 failure, 03:00 missed-slot alert, and successful 04:00 recovery; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), T024/T042 cache-fault/NAS-capacity recovery, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
 Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
