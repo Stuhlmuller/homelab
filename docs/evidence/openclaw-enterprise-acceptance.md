@@ -180,8 +180,8 @@ That would leave only about 266 MiB above Enterprise's minimum on `acer` and,
 at current observed use, about 800 MiB on `zimaboard-1` before peaks and
 rolling overlap. Grafana and Langfuse PostgreSQL are single-replica
 `Recreate` workloads; moving them would interrupt unrelated services. No
-such move is authorized, no peak or transient fit is proven, and a taint alone
-would not remove already-running Pods. This candidate does not admit T022.
+peak or transient fit is proven, and a taint alone would not remove
+already-running Pods. This candidate does not admit T022.
 
 At 2026-10-20 01:47 UTC, after the legacy shutdown, all four nodes were Ready,
 reported no memory, disk or PID pressure, and had no canary taint. Read-only
