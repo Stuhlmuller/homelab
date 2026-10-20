@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e9c9d36ffd265a72a82d6d4d030805ff081c11c4f88a5540f92b33ea984b8a84",
+  "pageVersion": "sha256:fac1dbf6d5db272e63e7fb3a66b7863c8cf53ae962a30ee34df9548d45e3c13b",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -92,11 +92,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:aacc3aaabef52fdfd0b0d0c3d3308aa65cb75a284f735c5733dc4b72ec9b7167"
+          "version": "repo-file-v1:sha256:5849e1575bf8976951932889e7712ee35d54f94d75f7904c0feaf5623b87de62"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971"
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -185,6 +185,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:34:43.418Z"
+    "at": "2026-10-20T05:58:28.951Z"
   }
 }
