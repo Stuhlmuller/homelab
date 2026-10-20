@@ -248,10 +248,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
+generated: { by: "codex", at: "2026-10-20T01:14:14.135Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:14:14.135Z
 ---
 
 # Validation Gates
@@ -1599,20 +1599,27 @@ requested, it requires the exact `openai` transport, OpenRouter base URL,
 fixtures reject changed, missing, and extra model fields. The stable
 receipt compares nonempty resource versions for the immutable Secret,
 Deployments, ReplicaSets, and Pods across two read-only snapshots. The
-read-only `check` uses those snapshots to prove the selected Drivers; `verify`
-also remains read-only and blocked. With a file-backed service key and protected
-journal, `reconcile` can POST the logical `claw` Namespace for the prepared
-`openclaw-agents` namespace. It checks the external namespace, restricted PSA,
-exact tenant RBAC and policy ownership before the first POST, records pending
-intent first, and recovers an uncertain response only through unique API
-readback. A ready result needs exact API and owned Kubernetes readback,
-including exactly the three pinned base NetworkPolicies. Reconciliation then
-blocks before Agent creation or activation. A blocked run may already have
-changed Enterprise and Kubernetes state: inspect the journal, exact API object,
-namespace and policies before retrying. Rollback needs a reviewed cleanup path
-for the logical Namespace; retain the physical tenant Namespace. These local
-tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
-network-policy enforcement, hooks, routes, Namespace adoption or restore.
+read-only `check` uses those snapshots to prove the selected Drivers. With a
+file-backed service key and protected journal, `reconcile` can create or adopt
+the logical `claw` Namespace, one native Configuration, and one stopped,
+unauthenticated Embedded Agent in the prepared `openclaw-agents` namespace.
+It checks the external namespace, restricted PSA, exact tenant RBAC and policy
+ownership before the first POST. Each create records pending intent first;
+unknown responses remain fenced until unique exact API and owned Kubernetes
+readback proves the object. A definitive 401/403 clears intent before a fresh
+read; any object appearing after rejection remains foreign on retry. The
+Namespace needs exactly the three pinned base NetworkPolicies, the Configuration
+its owned ConfigMap, and the Agent its exact identity, principal, and inactive
+state. Fresh collection reads reject duplicate logical Namespace and Agent
+names before journaling success. `verify` remains read-only and accepts only a
+complete journal with unique identities, owned Configuration ConfigMap, and
+stopped Agent readback; it sends no inference request. Agent activation remains
+blocked. A blocked run may already have changed Enterprise and Kubernetes
+state: inspect the journal, exact API objects, namespace and policies before
+retrying. Rollback needs a reviewed cleanup path for the logical Namespace;
+retain the physical tenant Namespace. These local tests do not prove live
+Secret readiness, certificate issuance, PostgreSQL TLS, network-policy
+enforcement, hooks, routes, Namespace adoption or restore.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main

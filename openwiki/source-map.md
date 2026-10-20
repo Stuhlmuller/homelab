@@ -72,10 +72,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T14:01:19.597Z" }
+generated: { by: "codex", at: "2026-10-20T01:14:14.135Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T19:40:37.007Z
+    at: 2026-10-20T01:14:14.135Z
 ---
 
 # Source Map
@@ -137,7 +137,7 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
-| `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, and `scripts/ci/openclaw-enterprise-test.py` | [Guarded Namespace reconciliation and source gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, and `scripts/ci/openclaw-enterprise-test.py` | [Guarded inactive tenant reconciliation and source gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |

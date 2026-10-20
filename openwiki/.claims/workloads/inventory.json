@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:21124e9a9002b56c995f025e40cca8f1b37d686bdd8c75e7e451583b489de2ef",
+  "pageVersion": "sha256:5623141203fbc8fc9e274074bce46670bdaa098ed86ad9c6701b992e2c766444",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -444,7 +444,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:25e5f26293b5bc2c470d80a85b763f10445265e838f3251da6f45368cca2a0c5"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -517,10 +517,28 @@
           "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
         }
       ]
+    },
+    {
+      "id": "claim_d24b15a9522f49f1ba4ab1d0c18f8234",
+      "statement": "The source-only OpenClaw Enterprise reconciler can create or adopt one logical Namespace, native Configuration, and stopped Embedded Agent after exact identity and ownership proof; it has not run against a live Enterprise installation and does not activate the Agent.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:25e5f26293b5bc2c470d80a85b763f10445265e838f3251da6f45368cca2a0c5"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
+          "version": "repo-file-v1:sha256:32ba3e1ad43a47b571119ec3e0763edeb95e073dd05b643ed033b9a214fa83b7"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py",
+          "version": "repo-file-v1:sha256:b53f8722d5b3e9eddbfb52b29a9734a8f631cf55c335a3f4a85cfe690ff51e1f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:14:14.135Z"
   }
 }

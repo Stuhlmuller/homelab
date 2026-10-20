@@ -150,6 +150,8 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
+    resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -158,12 +160,14 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
+generated: { by: "codex", at: "2026-10-20T01:14:14.135Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:14:14.135Z
 ---
 
 # Workload Inventory
@@ -380,7 +384,10 @@ workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
 placeholder administrator email, missing placement labels, and unfinished
-database/storage gates prevent activation. Separate staged Traefik and Octelium declarations provide an
+database/storage gates prevent activation. The source-only reconciler can
+create or adopt a logical Namespace, native Configuration, and stopped Agent
+after exact identity and ownership proof; it has not run against Enterprise.
+Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
