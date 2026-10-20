@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the actual apply shell offline; no cloud CLI is on the fixture PATH."""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -9,6 +10,7 @@ import unittest
 from pathlib import Path
 
 SOURCE = Path(__file__).parent
+FIXTURE_SHA = "f" * 40
 OIDC_ENVIRONMENT = {
     "ARM_CLIENT_ID": "fixture", "ARM_TENANT_ID": "fixture", "ARM_USE_OIDC": "true",
     "ARM_USE_CLI": "false", "ARM_USE_MSI": "false",
@@ -39,12 +41,14 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 root = Path(os.environ["FIXTURE_ROOT"])
 config = json.loads((root / "fixture.json").read_text())
 args = sys.argv[1:]
 tool = Path(sys.argv[0]).name
+assert "GH_TOKEN" not in os.environ
 cwd = str(Path.cwd().relative_to(root))
 units = {
     "IaC/bootstrap/argocd": "bootstrap",
@@ -87,8 +91,30 @@ def checked(path):
     receipt = path.with_suffix(".json.checked")
     assert receipt.read_text() == hashlib.sha256(data).hexdigest()
 
+def bulk_apply():
+    if not config.get("simulate_bulk_units"):
+        event(unit + ".apply")
+        return
+    for number in (1, 2):
+        result = subprocess.run(["bash", str(root / "scripts/ci/terragrunt-current-main.sh")],
+                                env=dict(os.environ, FIXTURE_BULK_UNIT="1"),
+                                text=True, capture_output=True, check=False)
+        if result.returncode:
+            sys.stderr.write(result.stderr)
+            sys.exit(result.returncode)
+        event(f"{unit}.unit{number}.apply")
+
 if tool == "git":
-    if args[:1] == ["rev-parse"]:
+    if args[:2] == ["ls-remote", "--exit-code"]:
+        assert args[2:] == ["https://github.com/Stuhlmuller/homelab.git", "refs/heads/main"]
+        name = "unit.main.check" if os.environ.get("FIXTURE_BULK_UNIT") else "main.check"
+        event(name)
+        checks = sum(json.loads(line)["event"] == name
+                     for line in (root / "calls.jsonl").read_text().splitlines())
+        threshold = config.get("stale_at_unit" if name == "unit.main.check" else "stale_at", 1000)
+        print(("e" * 40 if checks >= threshold else config["sha"])
+              + "\trefs/heads/main")
+    elif args[:1] == ["rev-parse"]:
         if args == ["rev-parse", "--show-toplevel"]:
             print(root)
         elif args[:3] != ["rev-parse", "--verify", "--quiet"]:
@@ -196,12 +222,12 @@ elif tool == "terragrunt":
                 plan(path)
                 path.with_suffix(".json").write_bytes(path.read_bytes())
             elif tail == ["apply", "-no-color"]:
-                event("apps.apply")
                 checked(path)
+                bulk_apply()
             else:
                 unexpected()
         elif unit in ("azure", "secrets") and tail == ["apply", "-no-color", "-auto-approve"]:
-            event(unit + ".apply")
+            bulk_apply()
         else:
             unexpected()
     else:
@@ -232,7 +258,7 @@ class TerragruntApplyTest(unittest.TestCase):
             app_names = TRAEFIK_APPS
             crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
                     "authorizationpolicies.security.istio.io"]
-        config = {"target": target, "project": project,
+        config = {"target": target, "sha": FIXTURE_SHA, "project": project,
                   "app_names": app_names, "crds": crds,
                   "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
@@ -253,7 +279,8 @@ class TerragruntApplyTest(unittest.TestCase):
                 path.chmod(0o700)
             scripts = root / "scripts/ci"
             scripts.mkdir(parents=True)
-            for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh"):
+            for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
+                         "terragrunt-current-main.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
             for unit in ("bootstrap/argocd", "live/aws-ssm-parameters", "live/langfuse-blob-storage",
                          "operator/application-backup-storage",
@@ -272,6 +299,9 @@ class TerragruntApplyTest(unittest.TestCase):
                     "ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
                     "ARM_TENANT_ID": "fixture",
                 }))
+            if config.get("github_actions"):
+                environment.update(GITHUB_ACTIONS="true", GITHUB_SHA=FIXTURE_SHA,
+                                   GITHUB_REF="refs/heads/main", GITHUB_REPOSITORY="Stuhlmuller/homelab")
             result = subprocess.run(
                 [str(binaries / "bash"), str(scripts / "terragrunt-apply.sh")],
                 cwd=root, env=environment,
@@ -296,6 +326,145 @@ class TerragruntApplyTest(unittest.TestCase):
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_github_apply_checks_current_main_before_each_mutation(self):
+        for target in ("langfuse", ""):
+            with self.subTest(target=target):
+                result, events = self.run_apply(target=target, github_actions=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                writes = [index for index, event in enumerate(events)
+                          if event.endswith((".import", ".apply", ".untaint"))]
+                self.assertTrue(writes)
+                self.assertTrue(all(events[index - 1] == "main.check" for index in writes), events)
+
+    def test_main_advancing_between_stages_blocks_later_apply(self):
+        result, events = self.run_apply(github_actions=True, stale_at=6)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ssm.apply", events)
+        self.assertEqual(events[-1], "main.check")
+        self.assertNotIn("s3.apply", events)
+        self.assertNotIn("apps.apply", events)
+        self.assertIn("Main advanced after dispatch", result.stderr)
+
+    def test_main_lookup_failure_blocks_first_write(self):
+        result, events = self.run_apply(github_actions=True, fail="main.check")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events[-1], "main.check")
+        self.assertFalse(any(event.endswith((".import", ".apply")) for event in events))
+        self.assertIn("Unable to verify current main", result.stderr)
+
+    def test_each_bulk_unit_rechecks_main_without_provider_token(self):
+        for stale_at, allowed, denied in (
+            (2, "azure.unit1.apply", "azure.unit2.apply"),
+            (4, "apps.unit1.apply", "apps.unit2.apply"),
+            (6, "secrets.unit1.apply", "secrets.unit2.apply"),
+        ):
+            with self.subTest(stale_at=stale_at):
+                result, events = self.run_apply(target="", github_actions=True,
+                                                simulate_bulk_units=True, stale_at_unit=stale_at)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(allowed, events)
+                self.assertNotIn(denied, events)
+                self.assertEqual(events[-1], "unit.main.check")
+                self.assertIn("Main advanced after dispatch", result.stderr)
+
+    def test_bulk_unit_main_lookup_failure_blocks_first_unit(self):
+        result, events = self.run_apply(target="", github_actions=True,
+                                        simulate_bulk_units=True, fail="unit.main.check")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events[-1], "unit.main.check")
+        self.assertNotIn("azure.unit1.apply", events)
+        self.assertIn("Unable to verify current main", result.stderr)
+
+    def test_root_hook_reaches_each_bulk_apply_family(self):
+        repo = SOURCE.parent.parent
+        guard = (repo / "scripts/ci/terragrunt-current-main.sh").resolve()
+        for unit in ("live/azuread-applications/grafana", "live/argocd-apps/n8n",
+                     "live/kubernetes-secrets/external-secrets-aws-ssm-auth"):
+            with self.subTest(unit=unit):
+                result = subprocess.run(
+                    ["terragrunt", "--log-disable", "--working-dir", str(repo / "IaC" / unit),
+                     "render", "--json", "--write=false", "--no-color"],
+                    cwd=repo, text=True, capture_output=True, timeout=10, check=False)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                hook = json.loads(result.stdout)["terraform"]["before_hook"]["verify_current_main_before_apply"]
+                self.assertEqual(hook["commands"], ["apply"])
+                self.assertEqual(Path(hook["execute"][1]).resolve(), guard)
+
+    def test_bootstrap_after_hook_rechecks_main_before_each_manifest(self):
+        repo = SOURCE.parent.parent
+        catalog = repo / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
+        generated = repo / "IaC/bootstrap/argocd/terragrunt.hcl"
+        self.assertEqual(generated.read_text(), catalog.read_text())
+        rendered = subprocess.run(
+            ["terragrunt", "--log-disable", "--working-dir", str(generated.parent),
+             "render", "--json", "--write=false", "--no-color"],
+            cwd=repo, text=True, capture_output=True, timeout=10, check=False)
+        self.assertEqual(rendered.returncode, 0, rendered.stderr)
+        hook = json.loads(rendered.stdout)["terraform"]["after_hook"]["apply_self_management_application"]
+        self.assertEqual(hook["commands"], ["apply"])
+        self.assertEqual(hook["execute"][:2], ["sh", "-c"])
+
+        stub = r'''
+import json
+import os
+from pathlib import Path
+import sys
+
+events_path = Path(os.environ["FIXTURE_EVENTS"])
+tool = Path(sys.argv[0]).name
+args = sys.argv[1:]
+
+def event(name):
+    with events_path.open("a") as log:
+        log.write(json.dumps(name) + "\n")
+
+if tool == "git":
+    assert args == ["ls-remote", "--exit-code",
+                    "https://github.com/Stuhlmuller/homelab.git", "refs/heads/main"]
+    event("main.check")
+    checks = sum(json.loads(line) == "main.check" for line in events_path.read_text().splitlines())
+    current = os.environ["GITHUB_SHA"] if checks < int(os.environ["STALE_AT"]) else "e" * 40
+    print(current + "\trefs/heads/main")
+elif tool == "kubectl":
+    if args[0] == "wait":
+        event("wait")
+    elif args[:2] == ["apply", "-f"]:
+        event(Path(args[2]).name)
+    else:
+        sys.exit(99)
+else:
+    sys.exit(99)
+'''
+        manifests = ["appproject.yaml", "workloads-appproject.yaml", "application.yaml"]
+        with tempfile.TemporaryDirectory(prefix="argocd-after-hook-test-") as tmp:
+            root = Path(tmp)
+            binaries = root / "bin"
+            binaries.mkdir()
+            for name in ("git", "kubectl"):
+                path = binaries / name
+                path.write_text(f"#!{sys.executable}\n" + stub)
+                path.chmod(0o700)
+            events_path = root / "events.jsonl"
+            environment = dict(os.environ, PATH=str(binaries) + os.pathsep + os.environ["PATH"],
+                               FIXTURE_EVENTS=str(events_path), GITHUB_ACTIONS="true",
+                               GITHUB_SHA=FIXTURE_SHA, GITHUB_REF="refs/heads/main",
+                               GITHUB_REPOSITORY="Stuhlmuller/homelab")
+            for stale_at in (1, 2, 3, 4):
+                with self.subTest(stale_at=stale_at):
+                    events_path.write_text("")
+                    result = subprocess.run(
+                        hook["execute"], cwd=repo,
+                        env=dict(environment, STALE_AT=str(stale_at)),
+                        text=True, capture_output=True, timeout=10, check=False)
+                    events = [json.loads(line) for line in events_path.read_text().splitlines()]
+                    expected = ["wait", "wait"]
+                    for manifest in manifests[:stale_at - 1]:
+                        expected.extend(("main.check", manifest))
+                    if stale_at <= len(manifests):
+                        expected.append("main.check")
+                    self.assertEqual(events, expected)
+                    self.assertEqual(result.returncode == 0, stale_at == 4, result.stderr)
 
     def test_missing_target_and_invalid_repair_do_not_write(self):
         for options in ({"missing_target": "langfuse"}, {"repair": "invalid"},
