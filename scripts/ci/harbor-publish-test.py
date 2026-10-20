@@ -272,6 +272,17 @@ class HarborPublicationGates(unittest.TestCase):
                     print("private readiness fixture", file=sys.stderr)
                     time.sleep(0.2)
                     raise SystemExit(7)
+                if FIXTURE["failure"] in ("mirror-regctl-restart-readiness-once",
+                                          "mirror-regctl-restart-readiness-always") and \
+                        (root / "regctl-pull-failed").exists():
+                    for _ in range(50):
+                        if len((root / "forward-pids").read_text().splitlines()) >= 2:
+                            break
+                        time.sleep(0.01)
+                    launches = len((root / "forward-pids").read_text().splitlines())
+                    if launches == 2 or (FIXTURE["failure"] == "mirror-regctl-restart-readiness-always" and launches > 2):
+                        print("private restarted-forward readiness fixture", file=sys.stderr)
+                        raise SystemExit(7)
                 print("401", end="")
             elif command == "sleep":
                 assert args[0].isdigit()
@@ -361,7 +372,7 @@ class HarborPublicationGates(unittest.TestCase):
                     elif FIXTURE["mirror"]:
                         assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth", "mirror-regctl-forward-dies"):
+                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-restart-readiness-once", "mirror-regctl-restart-readiness-always", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth", "mirror-regctl-forward-dies"):
                         print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
                               file=sys.stderr)
                         raise SystemExit(17)
@@ -466,6 +477,8 @@ class HarborPublicationGates(unittest.TestCase):
                                 raise SystemExit(22)
                         fail_read("regctl-pull", {
                             "mirror-regctl-pull-once": "TLS handshake timeout",
+                            "mirror-regctl-restart-readiness-once": "TLS handshake timeout",
+                            "mirror-regctl-restart-readiness-always": "TLS handshake timeout",
                             "mirror-regctl-pull-four": "TLS handshake timeout",
                             "mirror-regctl-pull-always": "TLS handshake timeout",
                             "mirror-regctl-pull-auth": "unauthorized; TLS handshake timeout",
@@ -1307,6 +1320,37 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(len([args for args in sudo_calls if "tee" in args]), 1)
         self.assertEqual(len([args for args in sudo_calls if "sed" in args]), 1)
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
+        self.assert_cleaned()
+
+    def test_mirror_index_pull_retries_failed_forward_readiness(self):
+        self.transport_mocks(failure="mirror-regctl-restart-readiness-once", mirror=True,
+                             registries=("docker.io",))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        pulls = [args for args in self.calls_for("regctl")
+                 if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+        self.assertEqual(len(pulls), 2)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 3)
+        sudo_calls = self.calls_for("sudo")
+        self.assertEqual(len([args for args in sudo_calls if "tee" in args]), 1)
+        self.assertEqual(len([args for args in sudo_calls if "sed" in args]), 1)
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
+        self.assert_cleaned()
+
+    def test_mirror_index_pull_stops_after_bounded_forward_readiness_failures(self):
+        self.transport_mocks(failure="mirror-regctl-restart-readiness-always", mirror=True,
+                             registries=("docker.io",))
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        pulls = [args for args in self.calls_for("regctl")
+                 if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+        self.assertEqual(len(pulls), 1)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 4)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=transport-failed\n", self.public_status)
         self.assert_cleaned()
 
     def test_mirror_index_pull_recovers_after_four_transport_failures(self):
