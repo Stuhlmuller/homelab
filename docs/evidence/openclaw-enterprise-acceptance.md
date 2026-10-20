@@ -28,6 +28,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Firewall canary and node expansion | Pending | — | Pending |
 | Envoy/Gateway API private route | Pending | — | Pending |
 | PostgreSQL roles/TLS and isolated restore | Pending | — | Pending |
+| Private browser access source | [access PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420), `bd5bd437`; [installation PR #1424](https://github.com/Stuhlmuller/homelab/pull/1424), `e24dc89` | — | Source validated: authenticated Octelium console and post-auth redirect, opaque native-host private route and DNS/certificate from #1420; cookie and trusted-proxy declarations from #1424. Live URL cutover and browser/TLS/WebSocket acceptance remain pending. |
 | Enterprise install and hook failure matrix | Pending | — | Pending |
 | Inactive agent reconciliation and retry | Pending | — | Pending |
 | Model credential and real provider probe | Pending | — | Pending |
@@ -48,6 +49,11 @@ passed credentials but failed `publication-source-read` with 64 MiB Kubernetes
 exec ranges. No offsite receipt exists. The uploader now assembles each
 64 MiB S3 multipart part from at most 8 MiB exec slices; T013 remains pending
 until a protected retry and independent offsite restore pass.
+
+T038 originally assigned `private-access.yaml` to the Enterprise foundation.
+[PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420) moved the
+fixed Services to the Octelium catalog and the opaque Agent-host route,
+DNS and TLS to Traefik. The checked task and plan use those source owners.
 
 Post-shutdown worker observations: `zimaboard-0` has 96% CPU and 99% memory
 requested; `zimaboard-2` has 92% memory requested. `zimaboard-1` has 32% CPU
