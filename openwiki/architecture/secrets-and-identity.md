@@ -60,6 +60,8 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
@@ -74,6 +76,8 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
+  - id: openwiki-source-8852e7fd463f12bed3ef5da3
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/plan.tf
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -120,10 +124,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
+generated: { by: "codex", at: "2026-10-20T14:21:06.739Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:40:02.561Z
+    at: 2026-10-20T14:21:06.739Z
 ---
 
 # Secrets And Identity
@@ -612,6 +616,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [Continuous Improvement](../operations/continuous-improvement.md).
+- A separate `Github-TF-Plan` role is staged in the operator unit for the
+  `Stuhlmuller/homelab:homelab-plan` OIDC subject. Its policy can list state
+  object names but read state contents only for the four PR-planned families;
+  it grants no AWS resource writes. AzureAD state contains SSO credentials,
+  so the `homelab-plan` reviewer gate must be active before the role is
+  merged or applied. The plan workflow still uses `Github-TF-State` until a
+  separate credential cutover; see the [operator rollout](../../docs/operator-infrastructure.md#dedicated-pull-request-plan-role).
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,

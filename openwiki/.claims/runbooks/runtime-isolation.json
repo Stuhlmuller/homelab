@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:65cce62c14c478ede8c49dde17abdc914c6c8f685f610a8060a625357564de74",
+  "pageVersion": "sha256:9444f63f409a24f7d2f78fcbdc3841e2c0e6e4d63db8b08be287138afa1b842d",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -56,7 +56,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
+          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
         }
       ]
     },
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
+          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
+          "version": "repo-file-v1:sha256:2d2404ad64e38e672d3bd7f59d81860d4c3748301b020790c525f7b844cb22f8"
         }
       ]
     },
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
+          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
@@ -178,7 +178,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
+          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
@@ -214,7 +214,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:cc307d1d08386cfc68398843788c13af8940abe74dd379e9b7f37c23a85fcbbd"
+          "version": "repo-file-v1:sha256:5173ab8ddbb17e271792c183be719dbe8d3d4519fed75278b2cc0c7e3fdd4d3c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -227,7 +227,7 @@
       "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress without a public-egress input; additive NetworkPolicies cannot narrow either allow. Reviewed upstream patches or forks, rebuilt pinned images, actual generator renders, and isolated canary qualification of required destinations and private-range denial are prerequisites for enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L1391-L1394",
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L1583-L1586",
           "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
         },
         {
@@ -261,6 +261,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T08:35:40.829Z"
+    "at": "2026-10-20T14:21:06.739Z"
   }
 }

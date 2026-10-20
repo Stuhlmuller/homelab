@@ -8,6 +8,16 @@ provider "aws" {
   skip_requesting_account_id  = true
 }
 
+provider "aws" {
+  alias                       = "state"
+  region                      = "us-east-1"
+  access_key                  = "test"
+  secret_key                  = "test"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
+}
+
 override_data {
   target = data.aws_caller_identity.current
   values = { account_id = "123456789012" }
@@ -19,12 +29,21 @@ override_data {
 }
 
 override_data {
+  target = data.aws_kms_alias.state
+  values = { target_key_arn = "arn:aws:kms:us-east-1:123456789012:key/state" }
+}
+
+override_data {
   target = data.aws_iam_openid_connect_provider.github_actions
   values = { arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
 }
 
 variables {
   apply_role_name                       = "test-apply"
+  plan_role_name                        = "test-plan"
+  state_bucket_name                     = "test-state"
+  state_kms_key_id                      = "alias/test-state"
+  backup_bucket_name                    = "test-backups"
   aws_region                            = "us-west-2"
   external_secrets_boundary_policy_name = "test"
   external_secrets_user_name            = "test"
@@ -45,6 +64,118 @@ run "legacy_archive_role_session_outlives_job" {
   assert {
     condition     = aws_iam_role.github_actions.max_session_duration == 25200
     error_message = "The legacy archive role session must outlive the protected six-hour job by one hour."
+  }
+}
+
+run "plan_role_trusts_only_homelab_plan" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.github_actions_plan_assume_role]
+  }
+
+  assert {
+    condition = (
+      length(jsondecode(data.aws_iam_policy_document.github_actions_plan_assume_role.json).Statement) == 1 &&
+      jsondecode(data.aws_iam_policy_document.github_actions_plan_assume_role.json).Statement[0].Principal.Federated == "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" &&
+      jsondecode(data.aws_iam_policy_document.github_actions_plan_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:aud"] == "sts.amazonaws.com" &&
+      jsondecode(data.aws_iam_policy_document.github_actions_plan_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:Stuhlmuller/homelab:environment:homelab-plan"
+    )
+    error_message = "The plan role must trust only the homelab-plan environment through GitHub OIDC."
+  }
+}
+
+run "plan_role_can_only_read_its_state_and_backup_metadata" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.github_actions_plan]
+  }
+
+  assert {
+    condition = {
+      for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : statement.Sid => {
+        actions   = toset(flatten([statement.Action]))
+        resources = toset(flatten([statement.Resource]))
+      }
+      } == {
+      LocateHomelabStateBucket = {
+        actions   = toset(["s3:GetBucketLocation"])
+        resources = toset(["arn:aws:s3:::test-state"])
+      }
+      ListHomelabStateBucket = {
+        actions   = toset(["s3:ListBucket"])
+        resources = toset(["arn:aws:s3:::test-state"])
+      }
+      ReadHomelabStateObjects = {
+        actions = toset(["s3:GetObject"])
+        resources = toset([
+          "arn:aws:s3:::test-state/IaC/homelab/bootstrap/argocd/terraform.tfstate",
+          "arn:aws:s3:::test-state/IaC/homelab/operator/application-backup-storage/terraform.tfstate",
+          "arn:aws:s3:::test-state/IaC/homelab/live/argocd-apps/*/terraform.tfstate",
+          "arn:aws:s3:::test-state/IaC/homelab/live/azuread-applications/*/terraform.tfstate",
+        ])
+      }
+      InspectApplicationBackupBucket = {
+        actions   = toset(["s3:Get*", "s3:List*"])
+        resources = toset(["arn:aws:s3:::test-backups"])
+      }
+      ReadAzureadSsoParameters = {
+        actions = toset(["ssm:GetParameter", "ssm:ListTagsForResource"])
+        resources = toset([
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/allowed-organizations",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/auth-url",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/client-id",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/client-secret",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/token-url",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/client-id",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/client-secret",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/issuer-url",
+          "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/tenant-id",
+        ])
+      }
+      DescribeAzureadSsoParameters = {
+        actions   = toset(["ssm:DescribeParameters"])
+        resources = toset(["*"])
+      }
+      DecryptAzureadSsoParameters = {
+        actions   = toset(["kms:Decrypt"])
+        resources = toset(["arn:aws:kms:us-west-2:123456789012:key/test"])
+      }
+      ReadEncryptedStateAndWriteLocalPlans = {
+        actions   = toset(["kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey"])
+        resources = toset(["arn:aws:kms:us-east-1:123456789012:key/state"])
+      }
+    }
+    error_message = "The plan role may read only PR-planned state, backup-bucket metadata, generated SSO parameters, and the keys needed for local encrypted plans."
+  }
+
+  assert {
+    condition = [
+      for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : try(statement.Condition, null)
+      if statement.Sid == "ListHomelabStateBucket"
+    ] == [null]
+    error_message = "The plan role needs unconditional ListBucket so a missing state object returns 404 to HeadObject."
+  }
+
+  assert {
+    condition = (
+      [for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : statement if statement.Sid == "DecryptAzureadSsoParameters"][0].Condition.StringEquals["kms:ViaService"] == "ssm.us-west-2.amazonaws.com" &&
+      toset(flatten([[for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : statement if statement.Sid == "DecryptAzureadSsoParameters"][0].Condition.StringEquals["kms:EncryptionContext:PARAMETER_ARN"]])) == toset([
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/allowed-organizations",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/auth-url",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/client-id",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/client-secret",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/grafana/azuread/token-url",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/client-id",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/client-secret",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/issuer-url",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/octelium/entra/tenant-id",
+      ])
+    )
+    error_message = "The plan role may decrypt only generated SSO parameters through SSM."
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4f253854ca5977198bf1c38d7d4abdfe79d2d1f08c38acfe2f290feef899ec9f",
+  "pageVersion": "sha256:7f9473572c1612311ed6539333c948f158ce9211dda819c96f5966b0a1f3ce79",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
+          "version": "repo-file-v1:sha256:2c0fc40e4ff631285ec8d9a5d290c07b1054d65b237514546c6875de9552439a"
         }
       ]
     },
@@ -64,11 +64,11 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
+          "version": "repo-file-v1:sha256:2c0fc40e4ff631285ec8d9a5d290c07b1054d65b237514546c6875de9552439a"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
+          "version": "repo-file-v1:sha256:2d2404ad64e38e672d3bd7f59d81860d4c3748301b020790c525f7b844cb22f8"
         }
       ]
     },
@@ -156,7 +156,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
+          "version": "repo-file-v1:sha256:2c0fc40e4ff631285ec8d9a5d290c07b1054d65b237514546c6875de9552439a"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
@@ -191,7 +191,7 @@
           "version": "repo-lines-v1:sha256:ba9c47bd7b588eb40c7987e173bc49ac2dcdca77c3803cccc1acfa34f34716bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQ4ZDE0OGI4ZWU3NzBlMDQ2NDA5NTE3NGEwM2E1NmFiZmM4NTZmYTdhYjg0NWQxNDY1YzY0NzcyMjc0NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NGIyODhiMjk5NTc2ODQxMTc2YmM4ZTgxNDdjYmJhYjM1NTgwZmI2OGM1MjFkOTkxM2Y5ZDQ3ZmJiZWI2YjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmZGZjMTAwZmVkNTgxMjc2ZjBjMDQ5ZWEyMDkyMmIzZjBiZDNhZjRkODQwYWM2Mzc5NDFjZDFkYjE4NmI5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjc0N2E1MTcxZGQwOGMwMzc5YzdiZWEzZGYwYjIzZWM1NjRhZGQ4OTY3MTk4MDcyY2E1ZjYyZjFkNWFlMWUifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L390-L484",
+          "resource": "repo://policy/workflows.rego#L394-L488",
           "version": "repo-lines-v1:sha256:878ce88de52696eedf20590376360bcdc352b1972f6cae4ecd77db91d9d5ef66:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
         },
         {
@@ -206,7 +206,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
+          "version": "repo-file-v1:sha256:e5ed3742d6a5d30874be41c3e8354874a2b19e5c8959bf04ff07759c24bf4d38"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -261,10 +261,28 @@
           "version": "repo-lines-v1:sha256:bea282bac1365438081ac206b8baa723dfebd2fb5853230465d9323af5bfcfee:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMDYyMjI3MzU2ZWQ0ZjMwYWNlM2UzMWUyMTA4ZDRjMmI1YzY1M2U5ZjFhNWNlMzgwYWFiMDc3YjE3YmQwZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZTVkZDJlMDRiNjU5MWZiZTBiYjY2NzIzYzA4YjQxMjIxYzFjODQxMzUxOGNmNzg3ZTIwYmIyZWMyYzdhMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2NDllMDliYjBiNTdlNWI5M2NjYzY3NzNlMzU5ZDc0YjliZWJmOWUzMGRlNjRhZTVjYTBmMmI2ZTk1OGJlMTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwOWYxZWY2N2Q4MDJhMWQzZjk1MGUxYTUxYTc0NTE1NmUzNWJmYWUwMzhkYjE5MzIwMTQxMTg0YWU5ZDRjNmQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_45a84bdd988a4748971e08c91479ff15",
+      "statement": "The operator catalog stages Github-TF-Plan for homelab-plan, but keeps the current Github-TF-State role and shared Octelium token until the reviewer gate and separate credentials are live. The rollout requires a reviewed full operator saved plan, exact-ARN publisher readback, a separate Octelium plan credential, and a later workflow cutover PR; this source stage does not create the role or change credentials.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md#L607-L620",
+          "version": "repo-lines-v1:sha256:78f33af569dabeb2f842b0ca58f9428c11faaededbc7e444c443aa95d7bd98cc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmOGFhNzk4OGE2MjRjZDBkNDM4NWRjN2EyZjg2NmYxNzhlYWRkMmFhMjM5YTRkMjEzZGVlYzg5OGNmZDYxZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MmUzYzc0MDk4NzJmOTdjN2UxYmY5MzBlYTdkNGRkYzhiMDBmZmQ2MDkwNTNiODE1YmE3YzhjMWMxOGRkN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzMDRkYjEyNzE3NjU4ZDQ0M2M2OTZiZDkzNjQzNTE1MjU2NzcwOTc5ZGI3MzAyMmE1N2RhMTAwZGJlYTEzMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxODBmMzc0YzM4Nzg2NDM3ZjYyNGExMWRkMmIxOTc3ODQxZjM0NTcxOTQ3ZGRjZDgwNWJmNjE5MTViODczNmIifQ"
+        },
+        {
+          "resource": "repo://docs/operator-infrastructure.md#L356-L380",
+          "version": "repo-lines-v1:sha256:49b1f9c88bd33dae0906cd5510c89829f63d2ece1eb732bc64612d90595b7db9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyOGM0ZWRjNThmZGUxNTQ0OGJmMTYxZWU5ODhjNjUzZDI4MzM1ODk4MDI4ODM1MTY1ZDFmMGMxMDA5OWZmZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0Njk0YjU3MzI3OWVjZjRiNzRmMmFhMTVhMzZmOGI3YzlhNDk4MDQ3OWYyMTEwNWU3ODA2OTE3Yjk5ZTA4YzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0MDViNDMxZDQyMGYzNTQ3ZGZmMTkwNWIxMjRiMTFhMDEwZmM2ZDZiMjI0MTAyZmQ4OWVmYWZkZmI2YWRkZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzNGUwMjcwY2U2MmU4YjQyMzdiZDhkMWMxMmZiOTY2MWY1Y2EyMTk2MzNkYWUyNDY3N2M5N2JiZTVlMWZlODMifQ"
+        },
+        {
+          "resource": "repo://scripts/aws-plan-role-configure.sh#L15-L36",
+          "version": "repo-lines-v1:sha256:99535bb9cc2dd2f932c4117c3d7069d9990bec0cc6f762a53c6f7bbb1899d277:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3NmE5YzBjOWUzNzliNmU2NzA0ZGIxZGEwNmVmMDlkMTQxNDM4MzJmYjQxZDc4NWIxZWQ3ZWY2ZDkyY2ZmYTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0ODU1NTcyOTc2MDE0OTBmMzRhOTcwYTkzOTZiMzBkOTM1ZGU1ZDc3M2YzYmU1MWFiNDBmYmRiZDEyN2Q3NzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzZjZiMjc4YWUwMmEyOWNlMDU5ZTg1NjQ4MTE4NzY5ZjcwMjQxMTQ2YjE0NjdiMzQzYWZhOTM1NjNkYTBlNGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T08:38:19.458Z"
+    "at": "2026-10-20T14:21:06.739Z"
   }
 }

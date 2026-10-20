@@ -124,6 +124,8 @@ sources:
     resource: repo://flake.nix
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
+  - id: openwiki-source-1945cb06abec619dd623ff42
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/boundary.tftest.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-d15d8af567654cd0f94c3158
@@ -134,6 +136,8 @@ sources:
     resource: repo://policy/workflows.rego
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
+  - id: openwiki-source-79b884444c76b4b3bb1b0966
+    resource: repo://scripts/ci/aws-plan-role-configure-test.py
   - id: openwiki-source-714484b73b4ba165201cb06d
     resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -300,10 +304,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
+generated: { by: "codex", at: "2026-10-20T14:21:06.739Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:40:02.561Z
+    at: 2026-10-20T14:21:06.739Z
 ---
 
 # Validation Gates
@@ -1472,6 +1476,13 @@ selectors or an incomplete GitHub OIDC session fail the plan; only unrelated
 changes may skip AzureAD. Restore the environment secrets through the
 [Entra provider runbook](../../docs/entra-terraform-provider.md), then rerun
 the PR plan and verify the protected gate before merging.
+
+The staged `Github-TF-Plan` role has an OpenTofu boundary fixture for its exact
+OIDC subject, state-object read scope, and denied AWS resource writes. The
+`aws-plan-role-configure-test.py` fixture checks that its publisher accepts
+only the expected role ARN and does not write by default. These are source
+checks; they do not establish that the role, reviewer gate, or separate plan
+credential is live. The current PR plan still uses `Github-TF-State`.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
