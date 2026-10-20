@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:de47a98da552173d34cedffd061098f19f1332f1d67998a23099de21a7ae16ea",
+  "pageVersion": "sha256:3737f3f179e4cf161a67b0e3d09d5c90995ea5523090a67266eea690b8fc7ecc",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
         }
       ]
     },
@@ -64,11 +64,11 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:7ecad2f323944f6287f2b7afe9ad0c8e59ba86c65d34df969b02d4cceac5e491"
+          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
         }
       ]
     },
@@ -117,10 +117,28 @@
           "version": "repo-file-v1:sha256:08de19e4a74ae7521889d600edaae58b500bb9bdd6d9f5e7e2464d7fe45fb289"
         }
       ]
+    },
+    {
+      "id": "claim_f5083cabdc2d49cfa0c8b95c16bb18c9",
+      "statement": "The protected Octelium private Kubernetes catalog lane verifies exact current main before each of two writes and requires the second apply to be empty; a failed main lookup or advanced commit stops the next write, and source guards alone do not prove a live dispatch.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/octelium-private-kubernetes-apply.yml",
+          "version": "repo-file-v1:sha256:27bdb90f445f6799380835651b07f7396b7acd6927184e41da30aebeffd8fa3d"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py",
+          "version": "repo-file-v1:sha256:ef4982bd4351ea74bfcd94b0a052efb4c6a3037e465faff6a1e14d954768842a"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh",
+          "version": "repo-file-v1:sha256:84a474308c9086265b8c5769d9bad552f2d14ef84f821456ca5a6281459fa24c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:33:56.360Z"
+    "at": "2026-10-20T04:06:01.306Z"
   }
 }

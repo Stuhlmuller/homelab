@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e8841d6e6fbb4e672fcccbda332084ce4fe30387aac22bd5aef025b3526cdf58",
+  "pageVersion": "sha256:4badd1565b5a8c324fdb74a8a0d6eb382638aecd84a78aca748f6213f5cb256f",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -728,7 +728,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         }
       ]
     },
@@ -827,6 +827,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:45:43.875Z"
+    "at": "2026-10-20T04:06:01.306Z"
   }
 }

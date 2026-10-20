@@ -78,6 +78,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-ab3ca049e4829053c335f750
+    resource: repo://clusters/homelab/apps/openclaw/retirement-reader.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -156,10 +158,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T03:45:43.875Z" }
+generated: { by: "codex", at: "2026-10-20T04:06:01.306Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T03:45:43.875Z
+    at: 2026-10-20T04:06:01.306Z
 ---
 
 # Workload Inventory
@@ -384,6 +386,12 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
+The stopped legacy archive reader now mounts its owner-only private volume at
+`/tmp` so SQLite can build temporary indexes during independent restore while
+the source volumes remain read-only. This repairs a failed scratch-path attempt;
+the full archive and offsite restore are still unverified. See the
+[retirement reader](../../clusters/homelab/apps/openclaw/retirement-reader.yaml)
+and [archive runbook](../../clusters/homelab/apps/openclaw/README.md).
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

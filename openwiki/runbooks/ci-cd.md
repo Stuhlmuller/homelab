@@ -20,6 +20,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
     resource: repo://.github/workflows/nofx-images.yml
+  - id: openwiki-source-70a103e770a716ccc6d4024b
+    resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
@@ -34,6 +36,10 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -42,10 +48,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-20T04:06:01.306Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T03:33:56.360Z
+    at: 2026-10-20T04:06:01.306Z
 ---
 
 # CI/CD
@@ -57,6 +63,13 @@ to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
+
+The separate [Octelium Private Kubernetes Apply](../../.github/workflows/octelium-private-kubernetes-apply.yml)
+dispatch checks its selected `main` commit before entering the protected job.
+Its fixed helper [rechecks current `main`](../../scripts/ci/octelium-private-kubernetes-apply.sh)
+immediately before each of two catalog writes. A failed lookup or advanced
+commit stops the next write; the second apply must report no changes. These
+source guards have not been exercised by a live dispatch in this update.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.

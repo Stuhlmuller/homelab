@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e620ef8aaf1f1e4055ec08a0e0ecb0c5dd124df63c54565683d9d32839f7af55",
+  "pageVersion": "sha256:8ad8ad9365b18739b00df72b3ca59077383fa9e01a435b1056449f366b3a8c90",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -322,7 +322,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -352,7 +352,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         }
       ]
     },
@@ -370,7 +370,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -418,7 +418,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:7f5ea4848733bf0f6abc8e8a772df84835984510c4bc5ca846a67e3ed9ca2efb"
         }
       ]
     },
@@ -436,7 +436,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:7f5ea4848733bf0f6abc8e8a772df84835984510c4bc5ca846a67e3ed9ca2efb"
         }
       ]
     },
@@ -464,7 +464,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -472,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:7ecad2f323944f6287f2b7afe9ad0c8e59ba86c65d34df969b02d4cceac5e491"
+          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
         }
       ]
     },
@@ -501,10 +501,28 @@
           "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
         }
       ]
+    },
+    {
+      "id": "claim_cf5345a3231341038afec1bdd6b80522",
+      "statement": "The stopped legacy archive reader mounts its private volume at /tmp so SQLite can create temporary indexes during independent restore without writing the retained source volumes; the full archive and offsite restore remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:8dad9ee7ae9ca40462edc31ea8f94d1438e4f26e82da8c589e2d7d729e1cd38c"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/retirement-reader.yaml",
+          "version": "repo-file-v1:sha256:9dcc82ae6a663ab64f4cc77420585a6bdee6c93c65aa94d38fb4c14bd909526f"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:45:43.875Z"
+    "at": "2026-10-20T04:06:01.306Z"
   }
 }
