@@ -111,7 +111,12 @@ run "plan_role_can_only_read_its_state_and_backup_metadata" {
       }
       ReadHomelabStateObjects = {
         actions   = toset(["s3:GetObject"])
-        resources = toset(["arn:aws:s3:::test-state/IaC/homelab/*"])
+        resources = toset([
+          "arn:aws:s3:::test-state/IaC/homelab/bootstrap/argocd/terraform.tfstate",
+          "arn:aws:s3:::test-state/IaC/homelab/operator/application-backup-storage/terraform.tfstate",
+          "arn:aws:s3:::test-state/IaC/homelab/live/argocd-apps/*/terraform.tfstate",
+          "arn:aws:s3:::test-state/IaC/homelab/live/azuread-applications/*/terraform.tfstate",
+        ])
       }
       InspectApplicationBackupBucket = {
         actions   = toset(["s3:Get*", "s3:List*"])
@@ -144,15 +149,20 @@ run "plan_role_can_only_read_its_state_and_backup_metadata" {
         resources = toset(["arn:aws:kms:us-east-1:123456789012:key/state"])
       }
     }
-    error_message = "The plan role may read only homelab state, backup-bucket metadata, generated SSO parameters, and the keys needed for local encrypted plans."
+    error_message = "The plan role may read only PR-planned state, backup-bucket metadata, generated SSO parameters, and the keys needed for local encrypted plans."
   }
 
   assert {
     condition = [
       for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : statement.Condition.StringLike["s3:prefix"]
       if statement.Sid == "ListHomelabStateBucket"
-    ] == ["IaC/homelab/*"]
-    error_message = "The plan role must not list keys outside the homelab state prefix."
+    ] == [[
+      "IaC/homelab/bootstrap/argocd/*",
+      "IaC/homelab/operator/application-backup-storage/*",
+      "IaC/homelab/live/argocd-apps/*",
+      "IaC/homelab/live/azuread-applications/*",
+    ]]
+    error_message = "The plan role must not list state outside PR-planned units."
   }
 
   assert {

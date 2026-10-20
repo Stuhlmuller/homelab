@@ -19,6 +19,21 @@ locals {
       "homelab/octelium/entra/tenant-id",
     ] : "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${name}"
   ]
+
+  # PR plans read these state families. Other state includes runtime keys and
+  # generated secrets that the plan workflow deliberately excludes.
+  plan_state_list_prefixes = [
+    "IaC/homelab/bootstrap/argocd/*",
+    "IaC/homelab/operator/application-backup-storage/*",
+    "IaC/homelab/live/argocd-apps/*",
+    "IaC/homelab/live/azuread-applications/*",
+  ]
+  plan_state_object_arns = [
+    "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/bootstrap/argocd/terraform.tfstate",
+    "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/operator/application-backup-storage/terraform.tfstate",
+    "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/live/argocd-apps/*/terraform.tfstate",
+    "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/live/azuread-applications/*/terraform.tfstate",
+  ]
 }
 
 data "aws_iam_policy_document" "github_actions_plan_assume_role" {
@@ -60,14 +75,14 @@ data "aws_iam_policy_document" "github_actions_plan" {
     condition {
       test     = "StringLike"
       variable = "s3:prefix"
-      values   = ["IaC/homelab/*"]
+      values   = local.plan_state_list_prefixes
     }
   }
 
   statement {
     sid       = "ReadHomelabStateObjects"
     actions   = ["s3:GetObject"]
-    resources = ["arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}/IaC/homelab/*"]
+    resources = local.plan_state_object_arns
   }
 
   statement {

@@ -81,12 +81,16 @@ attaches one managed policy. Trust is limited to the protected plan and
 production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
 The unit also declares `Github-TF-Plan`, trusted only by
-`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads the homelab state
-prefix and backup-bucket metadata, and allows the KMS operations needed to read
-encrypted state and write local encrypted plans. AzureAD plans may read only
-the nine generated Grafana and Octelium SSO parameters and decrypt them through
-SSM. The role has no AWS resource-write or backup-object-read grant. The plan
-workflow still uses `Github-TF-State` until a separate cutover PR.
+`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads state only for
+Argo CD bootstrap, Argo CD and AzureAD application registrations, and the
+application-backup bucket unit. It cannot read the excluded Langfuse key,
+Kubernetes Secret, or SSM generation state. It can inspect backup-bucket
+metadata and use the state KMS key for encrypted state and local plans.
+AzureAD state contains SSO credentials, so the plan environment's reviewer
+gate remains essential. The runtime-secret KMS key permits only the nine
+generated Grafana and Octelium SSO parameters through SSM. The role has no
+AWS resource-write or backup-object-read grant. The plan workflow still uses
+`Github-TF-State` until a separate cutover PR.
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
@@ -369,6 +373,8 @@ role, and verifies the GitHub variable after writing it. Publish and verify
 the separate Octelium plan credential before the workflow cutover. The cutover
 PR must switch the workflow to `AWS_PLAN_ROLE_TO_ASSUME_HOMELAB` and remove
 `homelab-plan` from `Github-TF-State` trust after the new plan path passes.
+Its deleted-unit test must also cover a removed unit outside the plan role's
+state allowlist; that PR must fail closed rather than read excluded state.
 
 ### Renovate App credential transfer and role retirement
 
