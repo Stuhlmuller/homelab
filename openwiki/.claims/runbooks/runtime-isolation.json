@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:21e94820de03d1ce22d04998e3d7b7d22a63ba58cddc9e41d77cc83d4ddc564b",
+  "pageVersion": "sha256:f71d30945454744020b350c71b0747356a00ef68cbb76385175753d79e7da88a",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -150,13 +150,13 @@
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
-          "version": "repo-file-v1:sha256:66f3541bee43fa3c9b50ea8efed997434251407b2d462893abb7d36c6a5698eb"
+          "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:03:18.678Z"
+    "at": "2026-10-20T01:45:20.233Z"
   }
 }
