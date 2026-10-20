@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:efb4e0b934ff0cb07200617ae4caeef54d907731b55fa7c8ba817ce03a54409e",
+  "pageVersion": "sha256:6d29c865adbc6fcc36c9ebf580a4898fc32edf2d9c54628b800c120640e37dfa",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -430,7 +430,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:7f5ea4848733bf0f6abc8e8a772df84835984510c4bc5ca846a67e3ed9ca2efb"
+          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:7f5ea4848733bf0f6abc8e8a772df84835984510c4bc5ca846a67e3ed9ca2efb"
+          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
         }
       ]
     },
@@ -466,7 +466,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         }
       ]
     },
@@ -476,11 +476,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -506,7 +506,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -544,21 +544,25 @@
     },
     {
       "id": "claim_a5f8cba223b046b2baacb669a1513c02",
-      "statement": "The 2026-10-20 capacity receipt finds 3,909.5 MiB unreserved on the best worker against a 4,096 MiB initial Enterprise steady request, while 43 co-resident Pods prevent a new NoSchedule taint from providing isolation.",
+      "statement": "The 2026-10-20 07:22 UTC read-only capacity recheck finds about 3,398 MiB unreserved on the best worker against a 4,096 MiB initial Enterprise steady request, and 9.71 GB root-filesystem space free against a proposed 10 GiB local claim; 45 co-resident Pods prevent a new NoSchedule taint from providing isolation.",
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     },
     {
       "id": "claim_9baa40f2bf824b43b0a9aca5b14e7d94",
-      "statement": "Read-only Genesis expected-spec fixtures bind three Cordium policies at pinned v0.12.7 and four Octelium policies at pinned v0.35.0; ten Octelium Enterprise generated policies still lack source-bound fixtures, and pinned generator-binary renders and live enforcement remain unverified.",
+      "statement": "Read-only expected-spec fixtures source-bind three Cordium policies at pinned v0.12.7, four Octelium Genesis policies at pinned v0.35.0, and ten Octelium Enterprise generated policies; all 17 complete specs are bound, while pinned generator-binary renders and live enforcement remain unverified.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
           "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2"
         },
         {
           "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
@@ -566,7 +570,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         }
       ]
     },
@@ -576,11 +580,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         }
       ]
     },
@@ -605,6 +609,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:12:19.109Z"
+    "at": "2026-10-20T07:27:46.454Z"
   }
 }

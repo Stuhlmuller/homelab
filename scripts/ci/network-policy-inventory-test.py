@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Regression coverage for the read-only effective NetworkPolicy inventory."""
 
-import importlib.util
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -87,6 +87,37 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
         })
         self.assertEqual(len(inventory.policies(items, strict=True)), 3)
         self.assertIn("all-ports", inventory.broad_rule(items[0]["spec"]["egress"][0]))
+
+    def test_octelium_enterprise_generated_policy_fixture(self):
+        fixture = ROOT / "clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json"
+        expected = {
+            "cloudman": "7a9127b12c5c7155ca871fa98aa74de1b272346159a48c2614f78a1447633682",
+            "clusterman": "a251d82d27afcea7cd9b31b6e902bda8e97b55bd07d08ead1735c0d17b07898a",
+            "collector": "57ceee250c68b372992449f16e3728990f7e2ff84152bb9c6418692110f21ebe",
+            "logstore": "7e61872de5b3b3ee0c56f80a62eb3c3d7bebca70d9a23b0160f11247fc2afce7",
+            "metricstore": "0a5fe48dcf9783d60743677e3069368e95a764a7062e64bbfa33f51a327a43c6",
+            "nocturne": "154789ab1e91f093086522732abeb3fc37542226cb74b739027340d28bcaacd3",
+            "policyportal": "2d3bbf55384ff4b02153571274801b746810d976666fc82fda73a9334cdb0634",
+            "rscserver": "81f5b4d700b25faf90890d79befd526eed375694b6084de6374c1e9f0948a7fa",
+            "rscstore": "962321945d3a49408e4049978c78969b498f1727dc566fbad386b6d29dfa8c98",
+            "secretman": "149ba1bcf503716e2076c16d5092a989093d00e4f15df594a22ca01f151615a1",
+        }
+        self.assertIn('DEFAULT_VERSION="0.22.0"',
+                      (ROOT / "scripts/octelium-enterprise-package.sh").read_text())
+        self.assertIn(
+            "ghcr.io/octelium/octeliumee-genesis:0.22.0@sha256:f8978d6373bd11a0bb5c6f5c5c57375e110bc1ab2842056f55a3153c77428e92",
+            (ROOT / "scripts/config/harbor-images.json").read_text(),
+        )
+        policies = inventory.load_items(fixture)
+        self.assertEqual(len(policies), 10)
+        self.assertEqual({
+            item["metadata"]["name"].removeprefix("octeliumee-"): hashlib.sha256(
+                json.dumps(item["spec"], sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+            for item in policies
+        }, expected)
+        self.assertEqual({item["metadata"]["namespace"] for item in policies}, {"octelium"})
+        self.assertEqual({item["spec"]["policyTypes"][0] for item in policies}, {"Ingress"})
 
     def test_reports_additive_union_drift_and_exceptions(self):
         narrow = policy("apps", "narrow", {"matchLabels": {"app": "client"}}, [{

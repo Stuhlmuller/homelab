@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:569be6f4ab74d481dc1f8bad1428e2d6621e93ca5d08441e9eabf965d8da5868",
+  "pageVersion": "sha256:84e5acbe8716f50743d585c13cc94bd7ac3a1243387572a8ff39643ba9f2021d",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     },
@@ -158,17 +158,17 @@
     },
     {
       "id": "claim_e3857e80ee03434690eb6ce873426ea8",
-      "statement": "The 2026-10-20 post-shutdown receipt measures 3,909.5 MiB unreserved memory on the best worker, below the Enterprise initial 4,096 MiB reservation, so it does not admit local storage or an isolated canary.",
+      "statement": "The 2026-10-20 07:22 UTC read-only recheck found about 3,398 MiB unreserved memory and 9.71 GB root-filesystem space on the best worker, below the initial 4,096 MiB Enterprise memory reservation and proposed 10 GiB local claim; neither local storage nor an isolated canary is admitted.",
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:12:19.109Z"
+    "at": "2026-10-20T07:27:46.454Z"
   }
 }

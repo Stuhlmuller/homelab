@@ -143,6 +143,9 @@ The fixture is not a Kustomize resource and does not approve their traffic.
 Also pass `clusters/homelab/apps/octelium/generated-networkpolicies.json`
 as another `--render` input for the four source-reviewed Octelium Genesis
 policies. It does not approve `svc-upstream` public all-port egress.
+Pass `clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json`
+as one more `--render` input for the ten source-reviewed Enterprise Genesis
+policies. This fixture does not approve their ingress traffic.
 
 Stock OCE's public TCP/443 rule intentionally fails the stricter broad-egress
 finding in this helper. Preserve that finding and the helper's strict behavior;

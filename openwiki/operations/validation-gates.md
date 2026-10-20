@@ -60,6 +60,8 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-06c51d450592da5906a7761d
+    resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -291,7 +293,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:28:14.127Z
+    at: 2026-10-20T07:54:18.171Z
 ---
 
 # Validation Gates
@@ -621,9 +623,10 @@ an empty `egress` field alone does not add Egress.
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete policy shapes to pinned `v0.12.7` constructors. The
 [Octelium fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
-adds four policies from pinned `v0.35.0` constructors. Inventory tests compare
-all seven full specs; ten Octelium Enterprise generated policies still lack
-bound fixtures. This is source review, not a pinned generator-binary render
+adds four Genesis policies from pinned `v0.35.0` constructors. The
+[Octelium Enterprise fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+binds the remaining ten policies. Inventory tests compare all 17 complete
+expected specs. This is source review, not a pinned generator-binary render
 or live traffic result.
 The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
 IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
@@ -1648,11 +1651,12 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
-The 2026-10-20 post-shutdown read-only receipt still rejects T022: the best
-worker has 3,909.5 MiB unreserved by requests, below Enterprise's initial
-4,096 MiB steady reservation before startup and system headroom. Its 24-hour
-Pod working-set peak was 5,997 MiB and 43 Pods remain co-resident, so a new
-`NoSchedule` taint would not isolate the canary. Storage placement and actual
+The 2026-10-20 07:22 UTC read-only recheck still rejects T022: the best
+worker has about 3,398 MiB unreserved by requests, below Enterprise's initial
+4,096 MiB steady reservation before startup and system headroom. It was using
+6,447 MiB of memory, had 45 co-resident Pods, and had 9.71 GB root-filesystem
+space free, below the proposed 10 GiB local claim. A new `NoSchedule` taint
+would not isolate those existing Pods. Storage placement and actual
 network-policy lifecycle traffic are separate unpassed gates.
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
@@ -1712,7 +1716,9 @@ The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
 Secret creation/readback and bounded hook behavior; Checkov uses an exact
-three-finding baseline for public Secret-name strings. These offline checks do
+four-finding baseline: three public Secret-name strings in the dormant chart
+and one generated `octeliumee-secretman` policy name paired with its reviewed
+spec hash. The static gate rejects any wider baseline. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
 The protected Enterprise operations workflow exposes one fixed `full-sync`
 stage. Its source test and workflow policy require an exact current-`main` SHA,

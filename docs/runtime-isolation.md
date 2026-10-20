@@ -160,7 +160,7 @@ owns the pinned kube-router firewall DaemonSet, isolated canary fixtures and
 ownership-limited cleanup. It leaves Flannel as the CNI and kube-proxy as the
 service proxy. The Argo registrations are dormant; no node is selected or
 tainted. The [policy review](evidence/openclaw-enterprise-policy-review.json)
-still has unreviewed generated policies and broad egress findings. The
+still has unqualified source-bound generated policies and broad egress findings. The
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
@@ -178,8 +178,16 @@ based on the pinned [constructors](https://github.com/octelium/octelium/tree/5e4
 Their complete specs matched a fresh read-only live check on October 20.
 Pass that fixture as another `--render` input; it is not a deployed owner.
 `octelium/svc-upstream` still allows all ports to public IPv4/IPv6 ranges,
-so source binding does not qualify its traffic. Ten Octelium Enterprise
-Genesis policies still lack bound fixtures.
+so source binding does not qualify its traffic.
+
+The ten Octelium Enterprise Genesis policies have a separate [v0.22.0
+expected-spec fixture](../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+derived from the pinned [constructors](https://github.com/octelium/octelium-ee/tree/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components).
+Their complete specs matched current live policies on October 20. Pass this
+fixture as another `--render` input; it does not deploy or qualify their
+ingress traffic. All 17 generated policies now have source-reviewed fixtures,
+but Flannel still provides no NetworkPolicy enforcement and canary qualification
+remains open.
 
 The source policies now limit cloudflared's private egress to the two routed
 Istio gateways and Octelium ingress dataplane, Harbor metrics ingress to the
