@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e85aed1ceecefcffa976fff748375ec234a9158ca972614d8ca763dde8f79fd3",
+  "pageVersion": "sha256:f041b573780e70e9d2c0608ea169a98777938c40aef38bd00e074c06358b2d8a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:b929a55e97e47fb0a467e16cf05a4777c2c2fed67c805e0fdd50391df9b25a74"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -786,19 +786,23 @@
     },
     {
       "id": "claim_58ae28f7ae7642faa63b0dc5157e05ed",
-      "statement": "The Renovate config fixture simulates a cache write failure and the bounded 2026-10-20 10:00–11:00 UTC tmpfs ENOSPC window, requiring no GitHub API request during failure and selection of the retained PVC outside that hour. It does not establish live cache-fault failure or next-slot recovery.",
+      "statement": "The Renovate recovery fixture injects a cache write failure and requires no GitHub request during that failure; it also verifies the temporary fault mount and clock condition are removed, the retained PVC is selected for every new Job, and a later successful probe can mint a token. It does not establish live cache-fault failure or next-slot recovery.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L119-L133",
-          "version": "repo-lines-v1:sha256:4161f05610cb383fc82454516969e61e53725eac101c7f1ab0fc172952023f9e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhNTM0ZjU4MjVhY2YzYjc3OWU0ODQwMjgwNzk4ZGZkYThhOGY5M2U2ODE0Zjk1ZGQ2MmYxY2Q0MzlkMTA4NGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5OWU2YmE5YWJhNjE3M2Y1NTY2N2NkOWUyNDdjNjAzNGY0ZGQ2YzA5YjVhNzFiYzVkNzkwZWE4MmYxYTIyYjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3MjNlNzBiYjY0ODE4N2M1ZDM1OTdhZjE1NjFhYWM1ZTM3MjFmNDIxN2E5ZjRmMDY2ZGJlMmE1YjAyMDNlZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
+          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L81-L103",
-          "version": "repo-lines-v1:sha256:15a09e3570a7b4ac859d0d7422c22805c468ff6af942c7d15cae8c9092e2b7d9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllODZjY2Y4ZWVlNzU2MGI0YTMxNDYzZmJlZjBlMzJhNjRiNzg2OGY4NTIzZDk3OGEwMDYxMDdhOWMyMjhmNzYifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L64-L94",
+          "version": "repo-lines-v1:sha256:2827d4a16a15ee48114e85051218099ed37716af35485ba459c2b71696336a6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMTA0MmZhZjIyOTAxM2JmN2JjZDVhYzAyZjc0ZDE5MGNhNDEzMGEzYzE3MWIyNmJhNzU2ZTQ1ZTdmYWI1NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyZjM5NGM2OTcyMDAyMGYyMzk4ZTgyNzkwZGQwM2ZhMDI4NmE0MDYxMTcyODAzZTcyZTc2NDMyNWIwNWVkNWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNTFhODA4MWIzYjgxN2E4YThhMTU4YzU0MDAwYzcyZDc3YjQwNzgyYTBiOGU4ZTA0YzUzNjdjZTVkYjNhODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/renovate-config-test.js#L126-L167",
-          "version": "repo-lines-v1:sha256:55c1f8a9a4a892f2a36ab414ecf5bb7281ea50601119b98c9f595ef4c2534c53:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNGQ2ZThmZjAyYjA3ZjY1MmFjNzMyMzVkZWJkZmQ5MDc0NjcwYjg5NmJlNTE1MjIzYWU4ZWY1OTM1ZmZhODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYjI3NWU3YzkxMzNiZGNhZWMzMzBjMzljZDUwOGRkYzZkZmVjYjM2MTZlZDkzOWRjNjEyMDUyMDM0YTM2NDcifQ"
+          "resource": "repo://scripts/ci/renovate-config-test.js#L116-L129",
+          "version": "repo-lines-v1:sha256:da5ebbb8b98d8e7b8884e7f290a0d0fa15e2f3122552622687e02fd2298653d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNGQ2ZThmZjAyYjA3ZjY1MmFjNzMyMzVkZWJkZmQ5MDc0NjcwYjg5NmJlNTE1MjIzYWU4ZWY1OTM1ZmZhODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYjI3NWU3YzkxMzNiZGNhZWMzMzBjMzljZDUwOGRkYzZkZmVjYjM2MTZlZDkzOWRjNjEyMDUyMDM0YTM2NDcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-config-test.js#L172-L189",
+          "version": "repo-lines-v1:sha256:faa302b1b3fc532b0a57f8b34744ef2c563b9c355fd520459fd54721102516f4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNTkzNTUyYjFhMzY3N2YyZTU1N2Q3NTU5ZTlhMjNmYTAzYjJmMTExMjRmOGExOTZhZDYzYTkxZDQxYzI2NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxZDkwZmUwOWQxNTJlMWUwYmJkN2Y0ODJmNDliZGY2YjJjNjNkZTRhMTNjMzYwNWU5N2IzYzZkOTVhNmE2ZTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4YjIwY2MxZWNhYzIwNDgxYWFlMTY1YmQzNTgyM2EzOWQyMjJhMDdlYThkMWVjODI5ZmJhZDQyNGNkODBkY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiMmQ4NGJhYmFiMGYyMWYxMTM0ZjZiODE5NmUzN2VmNzIzYjA5YmMzMzAyZTEyYjdjMjA0YTEwMzlkNDYzMzIifQ"
         }
       ]
     },
@@ -1319,6 +1323,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:15:53.373Z"
+    "at": "2026-10-20T06:19:14.853Z"
   }
 }

@@ -38,10 +38,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T06:15:53.373Z" }
+generated: { by: "codex", at: "2026-10-20T06:19:14.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:15:53.373Z
+    at: 2026-10-20T06:19:14.853Z
 ---
 
 # Storage And State
@@ -562,12 +562,12 @@ the public key independently for historical signature verification. See
 
 ## Renovate cache
 
-Renovate normally uses a retained 20 GiB `nfs-default` PVC in `automation` for
+Renovate uses a retained 20 GiB `nfs-default` PVC in `automation` for
 datasource, private-package, and repository caches; its working files stay on ephemeral
 storage. The cache includes private package metadata, so restrict access to the
 volume and logs. It is replaceable and has no backup requirement. Argo CD does
 not prune the PVC. Before requesting a GitHub token, each run flushes a 4 KiB
-write to its selected cache path so a full or unwritable cache fails visibly. The `20Gi`
+write to `/cache/renovate` so a full or unwritable cache fails visibly. The `20Gi`
 request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
 PVCs or enforce their requested size. A full export needs restored NAS capacity
 through a declared path; increasing the PVC request cannot restore writes.
@@ -579,16 +579,13 @@ evidence. For corruption, suspend the CronJob, clear only cache contents with
 a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
 
-The staged bounded full-cache fixture keeps the production PVC mounted and
-adds a separate `1Mi` memory-backed `emptyDir`. Only during 2026-10-20
-10:00–11:00 UTC, `config.js` fills that tmpfs to `ENOSPC` and selects it for
-the pre-token 4 KiB probe. Outside that hour, new Jobs select the retained PVC
-automatically, even if the recovery PR is delayed. The fixture requires one
-failed scheduled Job with a restricted storage-error record and a later
-successful scheduled Job on the PVC; those live results are not yet observed.
-The temporary mount and clock condition need a reviewed removal. This tests
-failure visibility and scheduled PVC reuse without filling the NAS; it does
-not prove restoration of capacity after a full export.
+The bounded full-cache fault change proposed a separate `1Mi` memory-backed
+`emptyDir` for 2026-10-20 10:00–11:00 UTC while leaving the PVC mounted. This
+recovery change removes that temporary mount and clock condition: every new
+Job selects the retained PVC and probes it before GitHub access. Local tests
+cover a failed probe before token minting and a later successful probe. The
+scheduled fault and recovery results remain unobserved; neither the fixture
+nor this desired-state reversal proves restoration after a full NAS export.
 
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
