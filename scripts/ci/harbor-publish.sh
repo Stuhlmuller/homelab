@@ -212,28 +212,36 @@ sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
 forward_timeout=2400
 [[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 start_private_forward() {
-  timeout --signal=TERM --kill-after=5s "$forward_timeout" \
-    "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
-    --namespace traefik port-forward --address 127.0.0.1 \
-    service/traefik-private 443:443 >>"$scratch/port-forward.log" 2>&1 &
-  forward_pid=$!
-  local ready=false status
-  for _ in {1..30}; do
-    if ! kill -0 "$forward_pid" 2>/dev/null; then
-      break
+  local attempt ready status
+  for attempt in 1 2 3; do
+    timeout --signal=TERM --kill-after=5s "$forward_timeout" \
+      "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
+      --namespace traefik port-forward --address 127.0.0.1 \
+      service/traefik-private 443:443 >>"$scratch/port-forward.log" 2>&1 &
+    forward_pid=$!
+    ready=false
+    for _ in {1..30}; do
+      if ! kill -0 "$forward_pid" 2>/dev/null; then
+        break
+      fi
+      if status="$(curl --silent --show-error --noproxy '*' --max-time 5 \
+        --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
+        2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]; then
+        ready=true
+        break
+      fi
+      sleep 2
+    done
+    if "$ready" && kill -0 "$forward_pid" 2>/dev/null; then
+      return 0
     fi
-    if status="$(curl --silent --show-error --noproxy '*' --max-time 5 \
-      --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
-      2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]; then
-      ready=true
-      break
+    stop_private_forward
+    if [[ "$attempt" -lt 3 ]]; then
+      sleep "$attempt"
     fi
-    sleep 2
   done
-  "$ready" || {
-    echo 'Harbor TLS and private registry challenge are not ready.' >&2
-    return 1
-  }
+  echo 'Harbor TLS and private registry challenge are not ready.' >&2
+  return 1
 }
 
 stop_private_forward() {
