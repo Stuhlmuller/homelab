@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:62cb2a037edbc04f8022ccfa8c89fe1be678833abcc3b1a57854004f4735a08d",
+  "pageVersion": "sha256:021c9b584659bd6806c6a6cf0b5c5323efe532902846968ae598f3ec002c12ab",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -212,7 +212,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer.js",
-          "version": "repo-file-v1:sha256:2cf53537da3c7db8885b6f41c85a7eee8a5cb85a60318026aabb32ca65344092"
+          "version": "repo-file-v1:sha256:af5bb268a7ba3069254c09ca48fcefc650c2c3a2674a0732f0a5a08218fdecc0"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-pr-proof.js",
@@ -231,10 +231,32 @@
           "version": "repo-lines-v1:sha256:8bc67486fc9623201ecb3901039f676816907d897cb5373e55aab5ce4eebf8c0:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGU1NTVhYTg1MDI4OTU4YWQ0YjgxYjNlYjdjZmIzZDYwM2U0YjllOTUwYzNlYTA5Njk4OTQzOWJhOTMxZjZmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2JlZjRmNzlhNDFkZTAxNTIwZDUxMmExM2YyMzg3OTUyZGEwNzEzNmUzOTJlYjE5ZDNiODVhZDRiODRiZmJmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYThhYmNmMWIzZDI5NTAyMDc3ZDBhODk0OGNkOWQ4MjRjOGI4MzA5MGUyZTBkYTE0MDAzYTZjMGJiM2MwYjk4YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0MjdiMDYxZDFhNWY2NjkxMWE5MGU5NTllYmVkZTFiYjE3MTAyMWY3OTE1YjM0ZmMwMTc2OWNlNzFjZDVhYSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_8eec145b1e34473f828c5182965fb264",
+      "statement": "The Renovate acceptance App contract adds a separate dormant ExternalSecret and protected fixed-target credential intake, both kept outside active Kustomize projection until owner provisioning.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/renovate-acceptance-credentials.yml",
+          "version": "repo-file-v1:sha256:2a5a49bd8d7bf7469a63426ed8afef1972f67da684302e311c32a720ee5738c1"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml",
+          "version": "repo-file-v1:sha256:972ef75794e0d2261d605758337b61de79189a4a6c24cb4afe9e78a6edb8d382"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
+          "version": "repo-file-v1:sha256:fc3a8f0133dde1f6b1c1aa29a830e3f717e1e568d541e818cf0b2aa9fd68c89d"
+        },
+        {
+          "resource": "repo://scripts/renovate-acceptance-credentials.py",
+          "version": "repo-file-v1:sha256:7725099d2e89e00c3ac7e644105a3a3da95b4fbc99c0194e6154bee435e277c1"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:02:18.363Z"
+    "at": "2026-10-20T01:07:54.935Z"
   }
 }

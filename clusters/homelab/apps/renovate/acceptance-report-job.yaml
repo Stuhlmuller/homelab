@@ -95,7 +95,7 @@ spec:
             name: renovate-config
         - name: github-app
           secret:
-            secretName: renovate
+            secretName: renovate-acceptance
             defaultMode: 0440
             items:
               - key: issuer-id

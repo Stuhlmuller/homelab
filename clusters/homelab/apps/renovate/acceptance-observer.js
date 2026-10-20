@@ -431,9 +431,20 @@ async function readToken(permissions = { contents: 'read', metadata: 'read' }) {
     if (!response.ok) throw new Error('github-read-failed');
     return response.json();
   }
+  const app = await github('/app', jwt);
+  if (!app.permissions || typeof app.permissions !== 'object' ||
+      Array.isArray(app.permissions) || !Object.keys(app.permissions).length ||
+      Object.values(app.permissions).some((value) => value !== 'read')) {
+    throw new Error('app-not-readonly');
+  }
   const installation = await github(`/orgs/${owner}/installation`, jwt);
   if (!Number.isSafeInteger(installation.id) || installation.account?.login?.toLowerCase() !== owner.toLowerCase() ||
       installation.repository_selection !== 'all') throw new Error('installation-coverage');
+  if (!installation.permissions || typeof installation.permissions !== 'object' ||
+      Array.isArray(installation.permissions) || !Object.keys(installation.permissions).length ||
+      Object.values(installation.permissions).some((value) => value !== 'read')) {
+    throw new Error('installation-not-readonly');
+  }
   const result = await github(`/app/installations/${installation.id}/access_tokens`, jwt, 'POST', { permissions });
   if (typeof result.token !== 'string' || !result.token.startsWith('ghs_') ||
       Date.parse(result.expires_at) - Date.now() < 10 * 60 * 1000 ||

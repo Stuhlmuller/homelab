@@ -207,6 +207,29 @@ The separate `renovate-acceptance-observer` CronJob is staged suspended. It
 would poll every 15 minutes during the seven-day acceptance window. It mounts
 only `renovate-acceptance-ledger`, never `renovate-cache`. It asks GitHub for an
 installation token limited to `contents` and `metadata` **read** permissions.
+All four staged acceptance Jobs mount the separate `renovate-acceptance`
+Secret, never the writer's `renovate` Secret. The App registration and its
+Stuhlmuller installation must have only read grants; token minting checks both
+before requesting a token. The acceptance ExternalSecret is omitted from
+Kustomize until the owner provisions its App and the two declared
+`/homelab/renovate/acceptance/github-app/` SecureStrings. The Jobs remain
+suspended, so a missing Secret cannot start an acceptance run.
+
+The owner may use a dedicated read-only App or an existing read-only Argo CD
+App after its grants and all-repositories installation are verified. The App
+must grant Checks, Contents, Issues, Metadata, Pull requests, Commit statuses,
+and Dependabot alerts repository read, plus Members organization
+read, for the staged report's requested token. The protected
+`renovate-acceptance-credentials.yml` workflow accepts its issuer ID and PEM
+only from `homelab-production` secrets, verifies the App and installation,
+and writes only the two acceptance SSM paths. After a successful fixed-target
+intake, add `acceptance-externalsecret.yaml` to Kustomize in a reviewed PR;
+verify `Ready=True` and the target Secret metadata without reading values.
+Only then review the private inventory/report inputs and unsuspend Jobs through
+GitOps. Rotate this read-only key through the same protected intake; wait for
+the five-minute ExternalSecret refresh before a new Pod uses it. Do not copy
+the Renovate writer PEM into the acceptance slots.
+
 Its own GitHub POST mints that token; datasource clients may POST read-only
 GraphQL queries. The observer calls the pinned Renovate image's datasource
 implementations directly, bypassing the
@@ -229,8 +252,8 @@ scan verifies the report shape, file permissions, and SHA-256, then creates an
 exclusive, timestamped hash receipt. A failed scan, missing report, or malformed
 report creates no success receipt. Pod logs show aggregate counts only; the raw
 report and diagnostic log may contain private package or repository details.
-The report Job mounts the App private key, so its credential capability is not
-isolated even though its requested installation token has read permissions.
+The report Job receives only the acceptance App private key and refuses an App
+or installation with write grants.
 
 The report is a candidate extraction and policy-outcome source, not a verified
 acceptance sample. Its API is experimental; it does not timestamp a GitHub PR's

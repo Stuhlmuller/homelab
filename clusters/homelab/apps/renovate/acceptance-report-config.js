@@ -14,7 +14,6 @@ const readPermissions = Object.freeze({
   pull_requests: 'read',
   statuses: 'read',
   vulnerability_alerts: 'read',
-  workflows: 'read',
 });
 
 function podUid() {

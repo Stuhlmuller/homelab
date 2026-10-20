@@ -64,7 +64,7 @@ test('report scan uses only read grants and a per-Pod private path, without the 
   assert.deepEqual(JSON.parse(JSON.stringify(permissions())), {
     checks: 'read', contents: 'read', issues: 'read', members: 'read',
     metadata: 'read', pull_requests: 'read', statuses: 'read',
-    vulnerability_alerts: 'read', workflows: 'read',
+    vulnerability_alerts: 'read',
   });
   assert.throws(() => config.reportPaths('../escape'), /invalid-pod-uid/);
   const manifest = fs.readFileSync(path.join(root, 'acceptance-report-job.yaml'), 'utf8');

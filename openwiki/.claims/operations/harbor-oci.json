@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d2421ddea1289d735badc330238bee3205a85ac9287dbfd6ecb81793fe00b05b",
+  "pageVersion": "sha256:de5b5de70b748c0f365e5481127ef8147e141506296eb6687958e3c18ad917f1",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -442,7 +442,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:3e02afd5fa5bf89459e99bdf72e1ff0eb9d5b73e9e1d5b16826b89b9a35452cc"
+          "version": "repo-file-v1:sha256:6c566bcf425f0007319bebd9a339cd3823490f99bad03bd13c7304541eba12a2"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
@@ -458,7 +458,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
+          "version": "repo-file-v1:sha256:bb8a9dd489e8f6cb9e6f3c73bff52279659e64a6f7477583ce62e3bd09a9690e"
         }
       ]
     },
@@ -532,7 +532,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:3e02afd5fa5bf89459e99bdf72e1ff0eb9d5b73e9e1d5b16826b89b9a35452cc"
+          "version": "repo-file-v1:sha256:6c566bcf425f0007319bebd9a339cd3823490f99bad03bd13c7304541eba12a2"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -540,7 +540,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
+          "version": "repo-file-v1:sha256:bb8a9dd489e8f6cb9e6f3c73bff52279659e64a6f7477583ce62e3bd09a9690e"
         }
       ]
     },
@@ -823,6 +823,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:02:18.363Z"
+    "at": "2026-10-20T01:07:54.935Z"
   }
 }

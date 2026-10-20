@@ -60,6 +60,8 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-d8ec08e5345adbfbeea3f592
+    resource: repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml
   - id: openwiki-source-21ece176c767ab637348d713
     resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
   - id: openwiki-source-699113cfd35bf2732550bb50
@@ -184,6 +186,10 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
+  - id: openwiki-source-09036edd05b5dea9e2d29b75
+    resource: repo://scripts/ci/renovate-acceptance-credentials-test.py
+  - id: openwiki-source-98bcd36c9863a7fd21ea194d
+    resource: repo://scripts/ci/renovate-acceptance-observer-test.js
   - id: openwiki-source-5028d06d31a177019a8bf782
     resource: repo://scripts/ci/renovate-alert-check.py
   - id: openwiki-source-b7865f8f7c461f149710edda
@@ -254,10 +260,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
+generated: { by: "codex", at: "2026-10-20T01:07:54.935Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:02:18.363Z
+    at: 2026-10-20T01:07:54.935Z
 ---
 
 # Validation Gates
@@ -2067,12 +2073,17 @@ data or an added field still fails the raw-Secret gate.
 
 ## Renovate acceptance evidence
 
-The four focused `renovate-acceptance-*` Node suites in
+The four focused `renovate-acceptance-*` Node suites and the fixed-target
+credential-intake Python suite in
 [`static-checks.sh`](../../scripts/ci/static-checks.sh) cover extraction
 inventory, a fixed datasource sample, upstream polling, conservative aggregate
-reports, and version-bound PR proof. The Kustomize render includes the
-observer CronJob only in suspended state; the inventory, report, and PR-proof
-Jobs are omitted. These checks establish source behavior, not live acceptance.
+reports, version-bound PR proof, and rejection of an App or installation with
+write grants before token minting. Static checks also confirm that all four
+acceptance Jobs reference only the separate `renovate-acceptance` Secret and
+that the protected intake writes only its two SSM paths. The Kustomize render
+includes the observer CronJob only in suspended state; the inventory, report,
+PR-proof Jobs, and acceptance ExternalSecret are omitted. These checks
+establish source behavior, not live acceptance or a provisioned read-only App.
 
 The observer is designed to poll upstream every 15 minutes without the runner
 cache and keep private identities and release brackets on its separate ledger.

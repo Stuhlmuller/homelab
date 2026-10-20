@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:596df1c1b18b1d2a54dfab2f660484c1a310732237678dc8d4cb198b0d4295b9",
+  "pageVersion": "sha256:014fa52ec2ed944f00e8772310eb260bfb4e20e9606486e41a370297114386de",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:724e67ba832b96a8246d79bd8a43605823cfaafa9e24c03108c2be506eecaa54"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -144,7 +144,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:724e67ba832b96a8246d79bd8a43605823cfaafa9e24c03108c2be506eecaa54"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml",
@@ -152,7 +152,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml",
-          "version": "repo-file-v1:sha256:337c9c7f9020afcd5c40f11835cc4f76e6808e441609792d7e1a3cd798d54c8d"
+          "version": "repo-file-v1:sha256:009f8fc19730b8b55ae191a423f130d150b36e5743f33c0a31554ed1916484bc"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
@@ -163,6 +163,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:02:18.363Z"
+    "at": "2026-10-20T01:07:54.935Z"
   }
 }

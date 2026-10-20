@@ -378,6 +378,7 @@ cluster CA is intentionally rotated.
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | renovate | `renovate` | `renovate` | `/homelab/renovate/github-app/issuer-id`, `/homelab/renovate/github-app/private-key` |
+| renovate acceptance (staged) | `renovate-acceptance` | `renovate-acceptance` | `/homelab/renovate/acceptance/github-app/issuer-id`, `/homelab/renovate/acceptance/github-app/private-key` |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
 not an active secret contract and has no ExternalSecret consumer. It remains in
@@ -668,6 +669,18 @@ Keep the CronJob suspended until deletion is verified. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
 See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+
+The temporary acceptance Jobs have separate read-only App credential slots.
+Their `acceptance-externalsecret.yaml` is staged outside Kustomize until a
+dedicated read-only App or an existing read-only Argo CD App is selected,
+granted all required read permissions, and installed for all Stuhlmuller
+repositories. From exact reviewed `main`, the protected
+`renovate-acceptance-credentials.yml` workflow validates that App and writes
+only the acceptance issuer and PEM slots. After the SSM versions advance,
+include the ExternalSecret through GitOps and verify its five-minute refresh
+and target Secret metadata before unsuspending any acceptance Job. The writer
+Secret and its SSM paths remain separate; a write-capable App fails the
+acceptance token check.
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret
