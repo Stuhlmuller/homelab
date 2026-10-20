@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3c9108ec2fb98ba22c383524fd8edefa045b652df44fb6ea7acc5a1036a8df18",
+  "pageVersion": "sha256:7d413b23c9845a7e3b6bed44c93d4b751470defdd1a3058abf91df4549890ad5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:b7616f397b6b3afa3f9a947e0e13719f39165d406f912e7351b6cc53668cf95a"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:b7616f397b6b3afa3f9a947e0e13719f39165d406f912e7351b6cc53668cf95a"
         }
       ]
     },
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:b7616f397b6b3afa3f9a947e0e13719f39165d406f912e7351b6cc53668cf95a"
         }
       ]
     },
@@ -1030,7 +1030,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:b7616f397b6b3afa3f9a947e0e13719f39165d406f912e7351b6cc53668cf95a"
         }
       ]
     },
@@ -1255,6 +1255,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:40:29.048Z"
+    "at": "2026-10-20T04:59:53.605Z"
   }
 }
