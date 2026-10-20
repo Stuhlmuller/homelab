@@ -360,6 +360,9 @@ gate. Use the administrator-authenticated full-unit saved-plan path in
 [`ci-cd.md`](ci-cd.md#aws-setup). Expect only
 `aws_iam_role.github_actions_plan` and
 `aws_iam_role_policy.github_actions_plan` creations; stop on unrelated changes.
+The role can list every state object key name so OpenTofu sees 404 for a
+missing new unit state; object contents remain readable only in the four
+PR-planned state families.
 After applying the reviewed plan, publish its ARN to the `homelab-plan` GitHub
 environment with:
 

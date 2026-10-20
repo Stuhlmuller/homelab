@@ -625,7 +625,10 @@ state encryption access to `alias/homelab-opentofu` in the state region
 The operator unit also declares `Github-TF-Plan`, trusted only by
 `Stuhlmuller/homelab:homelab-plan`. Its inline policy reads only PR-planned
 state families, backup-bucket metadata, and the nine generated SSO parameters
-needed by AzureAD plans. The allowed AzureAD state itself contains SSO
+needed by AzureAD plans. `s3:ListBucket` on the state bucket is unconditional
+so a missing new unit state returns 404 to OpenTofu's `HeadObject`; it exposes
+all state object key names, while `s3:GetObject` still limits state contents to
+the four PR-planned families. The allowed AzureAD state itself contains SSO
 credentials; the reviewer gate protects that access. The runtime-secret KMS
 grant decrypts those parameters only through SSM. It has no AWS resource-write
 grant. The plan workflow still uses `Github-TF-State`;

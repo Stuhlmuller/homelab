@@ -154,15 +154,10 @@ run "plan_role_can_only_read_its_state_and_backup_metadata" {
 
   assert {
     condition = [
-      for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : statement.Condition.StringLike["s3:prefix"]
+      for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : try(statement.Condition, null)
       if statement.Sid == "ListHomelabStateBucket"
-      ] == [[
-        "IaC/homelab/bootstrap/argocd/*",
-        "IaC/homelab/operator/application-backup-storage/*",
-        "IaC/homelab/live/argocd-apps/*",
-        "IaC/homelab/live/azuread-applications/*",
-    ]]
-    error_message = "The plan role must not list state outside PR-planned units."
+    ] == [null]
+    error_message = "The plan role needs unconditional ListBucket so a missing state object returns 404 to HeadObject."
   }
 
   assert {
