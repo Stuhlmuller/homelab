@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7d2c94e26ecf5731cb21df27b59612e6fb94c6816faa3074d980b2d0a1b1dbc4",
+  "pageVersion": "sha256:25164b41bf15eee7fbe501f9528b56c6a9fc87aa22ba15771e41f96c4f5ceec8",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:0e5d1bee57bfdd2222d092ca0758ad049d29cb6881a2dfe41b7e1c66f0a04294"
+          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
         }
       ]
     },
@@ -141,6 +141,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T02:36:08.776Z"
+    "at": "2026-10-20T03:36:01.758Z"
   }
 }

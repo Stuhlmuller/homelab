@@ -33,7 +33,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T02:36:08.776Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T02:36:08.776Z
+    at: 2026-10-20T03:36:01.758Z
 ---
 
 # AWS SSM Secret References
@@ -67,7 +67,7 @@ merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
 reintroduction of the exact-scope grant. The CronJob is now declared
-unsuspended on a two-hour UTC schedule in full dry-run mode. Its earlier 19:00
+unsuspended on an hourly UTC schedule in full dry-run mode. Its earlier 19:00
 and 20:00 UTC Jobs each finished all eight eligible repositories with no
 reported errors. The legacy GitHub Action remains the only writer. Full App-policy parity, fault recovery,
 the old-writer workflow deletion, guarded Actions-key retirement, and cluster
