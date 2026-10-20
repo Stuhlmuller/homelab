@@ -83,7 +83,7 @@ verify_secret() {
 }
 
 publish_octelium_client() {
-  local existing_count credential_args=()
+  local existing_count
 
   octeliumctl get user "$octelium_user" --domain "$domain" -o json >"$work/user.json"
   jq -e --arg name "$octelium_user" \
@@ -145,13 +145,14 @@ publish_octelium_client() {
         echo 'error: refusing to rotate an unexpected Octelium credential' >&2
         return 1
       }
-    credential_args+=(--rotate)
+    octeliumctl create cred --rotate "$octelium_credential" \
+      --domain "$domain" -o json >"$work/credential.json"
+  else
+    octeliumctl create cred --domain "$domain" \
+      --user "$octelium_user" --policy "$octelium_policy" \
+      --type auth-token --session-type client --expire-in 30days \
+      -o json "$octelium_credential" >"$work/credential.json"
   fi
-
-  octeliumctl create cred --domain "$domain" \
-    --user "$octelium_user" --policy "$octelium_policy" \
-    --type auth-token --session-type client --expire-in 30days \
-    "${credential_args[@]}" -o json "$octelium_credential" >"$work/credential.json"
   jq -e '.authenticationToken.authenticationToken | type == "string" and length > 40' \
     "$work/credential.json" >/dev/null || {
       echo 'error: Octelium did not return the expected credential token' >&2
@@ -165,7 +166,7 @@ publish_octelium_client() {
 
 publish_talos_client() {
   local operator_cert client_cert operator_key client_key
-  [[ -s "$operator_talosconfig" && ! -L "$operator_talosconfig" ]] || {
+  [[ -f "$operator_talosconfig" && -s "$operator_talosconfig" && ! -L "$operator_talosconfig" ]] || {
     echo 'error: operator Talos client config must be a nonempty regular file' >&2
     return 1
   }

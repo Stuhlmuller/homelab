@@ -16,6 +16,7 @@ MAIN_SHA = "a" * 40
 
 
 FAKE_CLI = r'''#!/usr/bin/env python3
+import base64
 import json
 import os
 from pathlib import Path
@@ -54,7 +55,11 @@ elif name == "gh":
         if len(value) < 40:
             sys.exit(1)
         state.setdefault("secrets", []).append(args[2])
-        record({"secret": args[2], "length": len(value)})
+        action = {"secret": args[2], "length": len(value)}
+        if args[2] == "OCE_TALOSCONFIG_B64":
+            decoded = base64.b64decode(value, validate=True)
+            action["contains_operator_cert"] = b"OWNER_CERT" in decoded
+        record(action)
     else:
         sys.exit(2)
 elif name == "octeliumctl":
@@ -190,7 +195,12 @@ class CredentialPublisherTests(unittest.TestCase):
         actions = self.state()["actions"]
         self.assertEqual([item["secret"] for item in actions if "secret" in item],
             ["OCE_TALOSCONFIG_B64"])
+        self.assertFalse(next(item["contains_operator_cert"] for item in actions
+            if item.get("secret") == "OCE_TALOSCONFIG_B64"))
         self.assertEqual(len([item for item in actions if "talos_version" in item]), 2)
+        issued = next(item["talos_new"] for item in actions if "talos_new" in item)
+        self.assertEqual(issued[issued.index("--roles") + 1], "os:admin")
+        self.assertEqual(issued[issued.index("--crt-ttl") + 1], "720h")
         self.assertLess(next(i for i, item in enumerate(actions) if "talos_new" in item),
             next(i for i, item in enumerate(actions) if "secret" in item))
         self.assertNotIn("OWNER_CERT", result.stdout + result.stderr)
