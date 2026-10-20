@@ -18,6 +18,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -36,10 +38,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
+generated: { by: "codex", at: "2026-10-20T06:55:34.223Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:20:01.051Z
+    at: 2026-10-20T06:55:34.223Z
 ---
 
 # Storage And State
@@ -560,12 +562,12 @@ the public key independently for historical signature verification. See
 
 ## Renovate cache
 
-Renovate retains a 20 GiB `nfs-default` PVC in `automation` for datasource,
+Renovate normally uses a retained 20 GiB `nfs-default` PVC in `automation` for datasource,
 private-package, and repository caches; its working files stay on ephemeral
 storage. The cache includes private package metadata, so restrict access to the
 volume and logs. It is replaceable and has no backup requirement. Argo CD does
-not prune the PVC. Before requesting a GitHub token, each run flushes a small
-write to the claim so a full or unwritable cache fails visibly. The `20Gi`
+not prune the PVC. Before requesting a GitHub token, each run flushes a 4 KiB
+write to its selected cache path so a full or unwritable cache fails visibly. The `20Gi`
 request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
 PVCs or enforce their requested size. A full export needs restored NAS capacity
 through a declared path; increasing the PVC request cannot restore writes.
@@ -576,6 +578,18 @@ writer cutover remain blocked on a declared capacity path and direct recovery
 evidence. For corruption, suspend the CronJob, clear only cache contents with
 a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
+
+The staged bounded full-cache fixture keeps the production PVC mounted and
+adds a separate `1Mi` memory-backed `emptyDir`. Only during 2026-10-20
+10:00–11:00 UTC, `config.js` fills that tmpfs to `ENOSPC` and selects it for
+the pre-token 4 KiB probe. Outside that hour, new Jobs select the retained PVC
+automatically, even if the recovery PR is delayed. The fixture requires one
+failed scheduled Job with a restricted storage-error record and a later
+successful scheduled Job on the PVC; those live results are not yet observed.
+The temporary mount and clock condition need a reviewed removal. This tests
+failure visibility and scheduled PVC reuse without filling the NAS; it does
+not prove restoration of capacity after a full export.
+
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the
