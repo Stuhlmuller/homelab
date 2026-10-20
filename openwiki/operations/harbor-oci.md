@@ -164,10 +164,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T19:28:35.536Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:28:35.536Z
+    at: 2026-10-20T19:55:49.056Z
 ---
 
 # Harbor Private OCI Registry
@@ -891,7 +891,8 @@ transport output stays withheld, and a failed run supplies no acceptance receipt
 The [post-shutdown capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
 also leaves isolated canary placement blocked; a mirror receipt cannot clear
 that independent gate.
-The dormant Enterprise foundation is unregistered and deploys neither image.
+The Enterprise foundation Application is declared with automatic sync disabled,
+has not been applied, and deploys neither image.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the
 stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. Its local

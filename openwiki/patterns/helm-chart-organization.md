@@ -3,7 +3,7 @@ type: pattern
 title: "Helm Chart Organization"
 description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 sources:
   - id: openwiki-source-d27624f754153b714543d8c4
     resource: repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml
@@ -11,13 +11,15 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/kustomization.yaml
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-9828d67d6c8e28f372b28e0d
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:40:02.561Z
+    at: 2026-10-20T19:18:26.448Z
 ---
 
 # Helm Chart Organization
@@ -89,7 +91,8 @@ keeps the pinned upstream chart intact. App-local `values.yaml` and reviewed
 `installation.yaml` supply site inputs; Kustomize holds lifecycle hook resources
 and a single EnvoyProxy image override. The focused renderer test compares
 profile output and rendered chart identities against the pinned upstream tree.
-No Argo Application or root Terragrunt unit registers this candidate yet.
+The root Terragrunt stack declares a separate Enterprise Application with
+automatic sync disabled; its chart has not been synced.
 
 ## Generated Output and Upgrade Checks
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:47b7b224f4eb858ddf1ea378fbe4095ab16965ab4fbc24a9b18348d440c45b56",
+  "pageVersion": "sha256:c6266c8c209fa43d960abfac799d01ed8ad4db33b027c0d2f03d96e33e4ae9cc",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -738,11 +738,11 @@
     },
     {
       "id": "claim_1ae7d021eb1540109148bb2d07fda36a",
-      "statement": "The signed stock OpenClaw Enterprise image pair is published separately from the unregistered foundation, which deploys neither image and does not release the Enterprise rollout.",
+      "statement": "The signed stock OpenClaw Enterprise image pair is published separately from the declared but unapplied foundation, which deploys neither image and does not release the Enterprise rollout.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -756,7 +756,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
@@ -873,6 +873,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:28:35.536Z"
+    "at": "2026-10-20T19:55:49.056Z"
   }
 }

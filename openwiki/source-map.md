@@ -44,6 +44,10 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
@@ -68,6 +72,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
+  - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
+    resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -96,10 +102,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T17:28:41.182Z
+    at: 2026-10-20T19:18:26.448Z
 ---
 
 # Source Map
@@ -157,8 +163,9 @@ desired state.
 | --- | --- |
 | `clusters/homelab/apps/README.md` | [Application Notes](workloads/application-notes.md) |
 | `clusters/homelab/apps/*/README.md` | [Application Notes](workloads/application-notes.md) |
-| `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Dormant workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
+| `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Source-declared, unsynced workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
+| `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Source-only Installation ID binder and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); protected invocation remains pending |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-full-sync.sh`, and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected fixed full sync](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |

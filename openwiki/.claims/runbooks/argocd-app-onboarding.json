@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c7afa1e6dcab6b978e17695e926dd8f8d2323f57499913b39faf45d83fc82c72",
+  "pageVersion": "sha256:bc8da666de2f0bfd5a86afe0fc75b09bff1b6f8a08dccd2cbcf1cb7d2febeec7",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -19,8 +19,8 @@
           "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
         },
         {
-          "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
-          "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:ea986dd560cc3b4b10ed774f86157d1632ac3b180004fc13cead1508ffbbbfc4"
         }
       ]
     },
@@ -49,10 +49,32 @@
           "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
         }
       ]
+    },
+    {
+      "id": "claim_f4976f0c4d6a41178ef7dad842f202a3",
+      "statement": "The Enterprise AppProject is in Argo CD self-management, while the foundation and chart Applications require a later protected Terragrunt apply and have automatic sync, pruning, self-heal and retries disabled.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://clusters/homelab/argocd/self-management/kustomization.yaml",
+          "version": "repo-file-v1:sha256:5d1ea47ef327933bfaa51615ae3d29ead6b462a1f15aa3a83adb66abc4173f23"
+        },
+        {
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:ea986dd560cc3b4b10ed774f86157d1632ac3b180004fc13cead1508ffbbbfc4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T15:35:56.635Z"
+    "at": "2026-10-20T19:18:26.448Z"
   }
 }

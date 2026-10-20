@@ -246,6 +246,22 @@ unit "argocd_apps_openclaw" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/openclaw/stack.hcl").inputs
 }
 
+unit "argocd_apps_openclaw_enterprise_foundation" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/openclaw-enterprise-foundation"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/openclaw-enterprise-foundation/stack.hcl").inputs
+}
+
+unit "argocd_apps_openclaw_enterprise" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/openclaw-enterprise"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/openclaw-enterprise/stack.hcl").inputs
+}
+
 unit "argocd_apps_platform_crossplane" {
   source                  = "./terragrunt-catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/platform-crossplane"

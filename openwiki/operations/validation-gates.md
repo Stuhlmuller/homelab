@@ -128,6 +128,10 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -218,6 +222,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
+    resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
   - id: openwiki-source-86a40ee4669b4b7843917e87
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
@@ -316,10 +322,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T19:28:35.536Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:28:35.536Z
+    at: 2026-10-20T19:55:49.056Z
 ---
 
 # Validation Gates
@@ -1855,6 +1861,12 @@ Gateway, and a pinned upstream chart revision. The executor checks each gate
 again before syncing the foundation and then Enterprise with explicit source
 revisions. Fixture and policy success do not prove a live sync, journaled
 reconciliation, rollback, or runtime acceptance.
+The static gate also runs
+[`openclaw-enterprise-registration-test.py`](../../scripts/ci/openclaw-enterprise-registration-test.py).
+It renders both generated Applications, checks disabled automatic sync and the
+scoped AppProject, and compares the pinned chart's resource kinds and namespaces
+with its allowlist when that upstream source is available. This is source
+validation; the Applications have not been applied or synced.
 The staged private-access check runs
 [`openclaw-enterprise-access-test.py`](../../scripts/ci/openclaw-enterprise-access-test.py)
 in the static gate. It validates the scoped Octelium catalog and exact-main

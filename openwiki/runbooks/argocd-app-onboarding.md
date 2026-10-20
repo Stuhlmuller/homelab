@@ -4,10 +4,16 @@ title: "Argo CD App Onboarding"
 description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
 tags: ["runbook", "argocd", "applications"]
 sources:
+  - id: openwiki-source-9824f110ded8ce152ef180f9
+    resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-cb44bee82f523806d88ae83a
     resource: repo://docs/argocd-app-onboarding.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-00c8a32293c8aaa55d3daba4
     resource: repo://IaC/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-17718b74140783bc6aaf9388
@@ -20,10 +26,10 @@ sources:
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-ba849f5dbd0942cee0b0087d
     resource: repo://scripts/network-policy-ownership.py
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:35:56.635Z
+    at: 2026-10-20T19:18:26.448Z
 ---
 
 # Argo CD App Onboarding
@@ -47,6 +53,15 @@ stays unsynced until the shared Gateway/Envoy CRDs, mirrored images and private
 route are qualified. The CRD Helm source is the single shared CRD owner and
 must become ready before its controller source. Registration alone neither
 enforces policies nor serves an Enterprise route.
+
+The Enterprise AppProject is included in Argo CD self-management and can
+reconcile after merge. The separate foundation and stock-chart Applications
+are declared in the root Terragrunt stack, but require a later protected apply.
+Both disable automatic sync, pruning, self-heal and retries. Run the focused
+[`openclaw-enterprise-registration-test.py`](../../scripts/ci/openclaw-enterprise-registration-test.py)
+after stack generation to inspect their rendered sources and resource allowlist.
+Registration does not prove database or secret readiness; complete sync still
+requires storage, capacity, policy and live gates.
 
 After the traffic probe, two reviewed GitOps commits prune the fixtures and
 then the enforcer; each may include native OpenWiki metadata. Apply the

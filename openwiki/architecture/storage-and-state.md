@@ -30,6 +30,8 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
@@ -40,10 +42,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T15:58:42.704Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:25:19.174Z
+    at: 2026-10-20T19:18:26.448Z
 ---
 
 # Storage And State
@@ -298,7 +300,8 @@ See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
 nonrotating private key. Preserve that Secret with any eventual database
-recovery set. The foundation is not registered with Argo. Its PostgreSQL 18.6
+recovery set. Its Argo Application is declared with automatic sync disabled but
+has not been applied. Its PostgreSQL 18.6
 StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
 restore fixtures are source-only; node placement, live role initialization,
 complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
@@ -316,7 +319,7 @@ names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
 before chart initialization. The foundation declares the dedicated PostgreSQL
-Service and 10Gi claim template, but is not registered or deployed. The local
+Service and 10Gi claim template, but remains unsynced and undeployed. The local
 classes, bootstrap and agent claims, live database and restore proof remain
 pending; the candidate does not adopt legacy OpenClaw state.
 The inactive reconciler needs a private durable journal at

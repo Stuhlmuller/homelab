@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f787dd10c54dde4fecad490dccb44cbd094245b2a86a22e7309e85e82009b462",
+  "pageVersion": "sha256:86aa19569f3357e4e2d7642c237a5a3e10e06cfbe054216309e751528b86d00a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         }
       ]
     },
@@ -910,7 +910,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         }
       ]
     },
@@ -928,7 +928,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -940,7 +940,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -1038,7 +1038,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         }
       ]
     },
@@ -1047,7 +1047,7 @@
       "statement": "A Namespace reconciliation retry recovers an uncertain create only from a unique exact API candidate; ready acceptance requires exact API and owned Kubernetes readback with the three pinned base NetworkPolicies. A blocked run may already have changed state, and removal requires a reviewed logical-Namespace cleanup path.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L125",
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L49-L126",
           "version": "repo-lines-v1:sha256:4651eaa711c367d4b22bf0861771ee66c0d533372dffd6953f6f444e49149ed6:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4YTliNTA2MDBlZmRmNzM1OGUwMzVkMDJiMWZjM2MxYWZjM2QwYzc4NmVhMGFhYmI2NzYyNDdkMTRlYzdmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2ZDkzMmVjOWMxNjYyOTE2NDEzODUxNTU5ZTEyZWE1NmU1NjM4YTBkYjBmMzdjYzE5NjQ5NzFiNWUxNmZjNzMifQ"
         },
         {
@@ -1438,7 +1438,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -1446,7 +1446,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         }
       ]
     },
@@ -1456,7 +1456,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
@@ -1478,7 +1478,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:0093846d14e2b7ca7a704cfb55adac2b6794fe07c70f30b0360994d49093a4a4"
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -1617,10 +1617,32 @@
           "version": "repo-lines-v1:sha256:b3ba964869cef176d9e6e1be30533a0850944076893f7f6f693c4b391eb062a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5OGY5M2M3ZTA0ZDljYzQ0NmMyNTJjZTRhYzljYzYyYTA5ZDQxYjdjNWU0OTVhYzViZDc1M2NmZjAxZmYxMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwMWVjMDUwZTk2NDc3NmQwNWQxNDdlNzE3MzkwODM2N2QxMzFkMjUxNmE4ZGM1MWM2YTE2ZTU2MGYzNTQ5ZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4MzU5MDI3MDU3ZDNjMzMwNzU5ZTBmNGVlOTkxNmNlZTUwZmM2NWE0MmE3M2YzNTQ5NmI2ZDE4YjE2ODllZmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlMjFjMmZjMTE1YjI5YTgzODNiYzhlYTY5MmRhOTBjZmEwMTNhMjFjNDYyNTM4NGE1ZWQ2MjNlOTlhNTY5NzEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_8915b892ce684373946feb76848fed53",
+      "statement": "The Enterprise registration fixture renders both generated Applications, verifies disabled automatic sync and the scoped AppProject, and compares pinned chart resources with the allowlist when upstream source is available; it does not prove live application or sync.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
+          "version": "repo-file-v1:sha256:09d57cdebfa0e75bd74e84d5d89965b6ab021557826fb6ac23d5e3fd964274dc"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:28:35.536Z"
+    "at": "2026-10-20T19:55:49.056Z"
   }
 }

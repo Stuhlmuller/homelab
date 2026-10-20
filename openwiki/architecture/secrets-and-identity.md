@@ -124,10 +124,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:28:35.536Z
+    at: 2026-10-20T19:55:49.056Z
 ---
 
 # Secrets And Identity
@@ -296,8 +296,8 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 ### Dormant OpenClaw Enterprise boundary
 
-The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
-declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
+The declared but unapplied [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+prepares restricted `openclaw-system` and external `openclaw-agents` namespaces.
 The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
 Secrets on deletion. The model key remains a placeholder until the protected

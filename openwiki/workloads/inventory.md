@@ -138,6 +138,10 @@ sources:
     resource: repo://IaC/cert-manager/stack.hcl
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-00c8a32293c8aaa55d3daba4
     resource: repo://IaC/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-73d9c28ed7b9740028ceb5c2
@@ -182,10 +186,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:28:35.536Z
+    at: 2026-10-20T19:55:49.056Z
 ---
 
 # Workload Inventory
@@ -405,7 +409,7 @@ actual renders and isolated-canary traffic before enforcement.
 
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, database or
-agent has been deployed. The unregistered
+agent has been deployed. The source-declared, unsynced
 [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
@@ -414,10 +418,13 @@ and a dormant PostgreSQL 18.6 StatefulSet with a 10Gi local claim template.
 It declares no running PostgreSQL, local volumes, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
-local Helm values and lifecycle hooks. It has no Argo registration, and its
+local Helm values and lifecycle hooks. Separate Terragrunt Applications now
+declare foundation and chart registration under a scoped AppProject with
+automatic sync, pruning, self-heal and retries disabled. Neither has been
+applied or synced. The candidate's
 placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. A protected full-sync stage is
-source-tested, but cannot run until registration and the reviewed installation
+source-tested, but cannot run until live registration and the reviewed installation
 phase; it would sync Foundation before Enterprise at explicit revisions.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
