@@ -20,6 +20,7 @@ python3 -I scripts/ci/openclaw-enterprise-postgres-test.py
 python3 -I scripts/ci/openclaw-enterprise-chart-hooks-test.py
 python3 -I scripts/ci/openclaw-enterprise-lifecycle-test.py
 python3 -I scripts/ci/openclaw-enterprise-startup-test.py
+python3 -I scripts/ci/openclaw-enterprise-bootstrap-key-test.py
 python3 -I scripts/ci/openclaw-enterprise-bind-installation-test.py
 python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py

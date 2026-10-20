@@ -169,6 +169,74 @@ deny contains msg if {
 	msg := "OpenClaw Enterprise startup requires exact-main protected create, fixed source hash, and private output"
 }
 
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Installation Binding"
+	not approved_openclaw_binding
+	msg := "OpenClaw Enterprise binding requires exact-main protected source, private credential copy, and fixed source hashes"
+}
+
+approved_openclaw_binding if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
+	count(dispatch.inputs) == 1
+	dispatch.inputs.expected_sha.required == true
+	input.permissions == {}
+	input.concurrency == {"group": "openclaw-enterprise-binding-production", "cancel-in-progress": false}
+	count(input.jobs) == 2
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	static.steps[0].name == "Verify Dispatch Commit"
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	contains(static.steps[0].run, `test "${ACTUAL_REF}" = refs/heads/main`)
+	contains(static.steps[0].run, `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`)
+	static.steps[3].name == "Run Static Checks"
+	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
+	job := input.jobs.bind
+	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.environment.name == "homelab-production"
+	job.permissions == {"contents": "read"}
+	count(job.steps) == 4
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Before Credentials", "Check Out Repository", "Install Nix", "Bind Reviewed Installation ID"]
+	verify := job.steps[0]
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == openclaw_binding_main_check
+	run := job.steps[3]
+	run.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(run.run, "\n") == openclaw_binding_private_run
+}
+
+openclaw_binding_main_check := `set -euo pipefail
+test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+openclaw_binding_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+private_dir="$(mktemp -d)"
+trap 'rm -rf -- "$private_dir"' EXIT
+sha256sum --check --status <<'DIGESTS'
+dc3587402264ec6f41165eb6e35a6104e94693b1963dc61d24b8768955ad1b79  scripts/openclaw-enterprise-bootstrap-key.py
+8a2e7961ccdcecd40a8e9eb0bbc28ffaf78eab41e82609894d13f1c2a3f01fe8  scripts/openclaw-enterprise-bind-installation.py
+DIGESTS
+python3 -I scripts/openclaw-enterprise-bootstrap-key.py \
+  --expected-sha "$EXPECTED_SHA" --output "$private_dir/service-key.json"
+python3 -I scripts/openclaw-enterprise-bind-installation.py \
+  --expected-sha "$EXPECTED_SHA" --credential-file "$private_dir/service-key.json"
+EOF
+then
+  echo "::error::Installation binding blocked; private bootstrap and cluster diagnostics withheld."
+  exit 1
+fi
+echo "Reviewed Installation binding verified; private details withheld."`
+
 approved_openclaw_startup if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	count(object.keys(workflow_events)) == 1

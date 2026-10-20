@@ -1,0 +1,121 @@
+name: OpenClaw Enterprise Installation Binding
+
+# checkov:skip=CKV_GHA_7: fixed target and exact current-main SHA are checked before private key access and before binding.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit for the post-bootstrap Installation binding
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: openclaw-enterprise-binding-production
+  cancel-in-progress: false
+
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Validate Binding Source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+
+  bind:
+    name: Protected Post-Bootstrap Binding
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Current Main Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bind Reviewed Installation ID
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/install-kubeconfig.sh
+          private_dir="$(mktemp -d)"
+          trap 'rm -rf -- "$private_dir"' EXIT
+          sha256sum --check --status <<'DIGESTS'
+          dc3587402264ec6f41165eb6e35a6104e94693b1963dc61d24b8768955ad1b79  scripts/openclaw-enterprise-bootstrap-key.py
+          8a2e7961ccdcecd40a8e9eb0bbc28ffaf78eab41e82609894d13f1c2a3f01fe8  scripts/openclaw-enterprise-bind-installation.py
+          DIGESTS
+          python3 -I scripts/openclaw-enterprise-bootstrap-key.py \
+            --expected-sha "$EXPECTED_SHA" --output "$private_dir/service-key.json"
+          python3 -I scripts/openclaw-enterprise-bind-installation.py \
+            --expected-sha "$EXPECTED_SHA" --credential-file "$private_dir/service-key.json"
+          EOF
+          then
+            echo "::error::Installation binding blocked; private bootstrap and cluster diagnostics withheld."
+            exit 1
+          fi
+          echo "Reviewed Installation binding verified; private details withheld."

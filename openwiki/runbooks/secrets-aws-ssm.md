@@ -4,6 +4,8 @@ title: "AWS SSM Secret References"
 description: "SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume."
 tags: ["runbook", "secrets", "aws"]
 sources:
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
@@ -14,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-eca3c53f1ff6f9898620a7df
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -30,12 +34,14 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-ddbd7d2c9d809c7cb049bf50
+    resource: repo://scripts/openclaw-enterprise-bootstrap-key.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:40:02.561Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # AWS SSM Secret References
@@ -105,7 +111,11 @@ bind and attest that metadata after bootstrap before reconciliation can run.
 The [binder source](../../scripts/openclaw-enterprise-bind-installation.py)
 reads a private bootstrap-key file, verifies `GET /installation` and both Ready
 Pods, and patches only the Secret annotation with a guarded readback. Its
-protected post-bootstrap workflow is not yet wired; no live binding is proven.
+protected post-bootstrap workflow now reads the retained bootstrap PVC through
+an isolated, tokenless reader Pod into an owner-only temporary runner file.
+It removes that file after calling the binder; the key is not copied to SSM,
+GitHub secrets, environment variables, or artifacts. The workflow has not run,
+so no live binding is proven.
 
 ## Harbor native receipt prerequisite
 

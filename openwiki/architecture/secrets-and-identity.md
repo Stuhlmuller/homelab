@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
@@ -46,6 +48,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-eca3c53f1ff6f9898620a7df
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
@@ -108,6 +112,8 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-ddbd7d2c9d809c7cb049bf50
+    resource: repo://scripts/openclaw-enterprise-bootstrap-key.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
   - id: openwiki-source-447d6bc69ac6883500089232
@@ -124,10 +130,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:08:01.242Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # Secrets And Identity
@@ -316,14 +322,20 @@ The separate dormant [application candidate](../../clusters/homelab/apps/opencla
 uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
 non-secret `installation.yaml` bytes. Its exact SHA-256 is bound in Helm values.
 A protected exact-`main` workflow can create and reread only that fixed Secret
-after the foundation namespace exists; this PR does not run it. The initial
-Secret has no installation ID. The source-only
+after the foundation namespace exists; it has not run. The initial Secret has
+no installation ID. The source-only
 [`bind-installation.py`](../../scripts/openclaw-enterprise-bind-installation.py)
 attests both Ready controller Pods and the returned `GET /installation` ID,
 then patches only the Secret annotation with UID/resource-version guards and
-readback. No protected post-bootstrap invocation or live binding has occurred;
-activation remains blocked. SSM-backed model, database, auth, and gateway
-credentials remain separate from these startup bytes.
+readback. A separate protected exact-`main` dispatch uses a tokenless,
+deny-all [reader Pod](../../clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml)
+to copy the retained bootstrap service key from its PVC into an owner-only
+runner file. The reader checks the completed initializer first, then the Pod
+and isolation before and after copy; the workflow removes the file after
+binding. Neither dispatch nor live binding has run, and activation remains
+blocked. SSM-backed
+model, database, auth, and gateway credentials remain separate from these
+startup bytes.
 
 ## Identity Notes
 

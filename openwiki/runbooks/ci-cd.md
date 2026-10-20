@@ -22,6 +22,8 @@ sources:
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
@@ -38,6 +40,8 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -76,12 +80,14 @@ sources:
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-ba849f5dbd0942cee0b0087d
     resource: repo://scripts/network-policy-ownership.py
+  - id: openwiki-source-ddbd7d2c9d809c7cb049bf50
+    resource: repo://scripts/openclaw-enterprise-bootstrap-key.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T19:05:38.546Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:05:38.546Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # CI/CD
@@ -161,6 +167,13 @@ The create-only path does not register the dormant Application or run an Agent;
 the post-bootstrap installation-ID annotation and live Pod binding remain
 separate proof work.
 
+The source-only [Enterprise binding workflow](../../.github/workflows/openclaw-enterprise-bind-installation.yml)
+runs after initialization and Ready controller Pods. It rechecks the exact
+current-`main` SHA, verifies the isolated reader Pod and completed initialization
+Job, copies the retained bootstrap service key into an owner-only runner file,
+then invokes the guarded Installation-ID binder. It withholds the key and
+private output. The dispatch has not run and does not establish live binding.
+
 The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
 keeps the legacy retention stages behind `legacy_stage` and adds
 `enterprise_stage=full-sync`. Select exactly one stage. The protected full sync
@@ -171,8 +184,9 @@ Enterprise at explicit repository and chart revisions. Source tests pass; this
 stage has not run on the cluster. Reconciliation, stop, restore and acceptance
 remain separate gates.
 
-The startup and operations [workflow policy](../../policy/workflows.rego) rules
-accept only `workflow_dispatch`. Regression fixtures reject an added
+The startup, operations, and binding
+[workflow policy](../../policy/workflows.rego) rules accept only
+`workflow_dispatch`. Regression fixtures reject an added
 `workflow_call` event, so another workflow cannot reuse those protected jobs
 without manual dispatch. They also reject unreviewed workflow or job run
 defaults and environment, step shell or working-directory overrides, and

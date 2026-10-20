@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - envoyproxy.yaml
   - hooks.yaml
+  - bootstrap-reader.yaml
 configMapGenerator:
   - name: oce-lifecycle-scripts
     namespace: openclaw-system

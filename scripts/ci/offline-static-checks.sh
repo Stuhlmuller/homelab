@@ -978,6 +978,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/nofx-images.yml:test-build' \
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-bind-installation.yml:bind' \
+    '.github/workflows/openclaw-enterprise-bind-installation.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-images.yml:publish' \
     '.github/workflows/openclaw-enterprise-model-credential.yml:credential' \
     '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
@@ -1048,6 +1050,7 @@ done <<'EOF'
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
+.github/workflows/openclaw-enterprise-bind-installation.yml cdd744a80cd0350ccb4ddb0298f7eaafb72689fc4a5b084a32aadd5bc662c3d3
 .github/workflows/openclaw-enterprise-images.yml ff4bf59a9a70afb0723cc0c5dd3f60a8d64a4b031efc03169847e7c12616d49d
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml 168484d2e84946fb0670d720411aed051ff92dac711c91ceef67c8650b21b2e4
@@ -1076,6 +1079,7 @@ for workflow_job in \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-bind-installation.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \

@@ -4,12 +4,16 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-eca3c53f1ff6f9898620a7df
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml
   - id: openwiki-source-20275bab1ec480742e28a50f
     resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -28,6 +32,8 @@ sources:
     resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-b7865f8f7c461f149710edda
@@ -40,10 +46,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T15:58:42.704Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:25:19.174Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # Storage And State
@@ -319,6 +325,9 @@ before chart initialization. The foundation declares the dedicated PostgreSQL
 Service and 10Gi claim template, but is not registered or deployed. The local
 classes, bootstrap and agent claims, live database and restore proof remain
 pending; the candidate does not adopt legacy OpenClaw state.
+The source-only post-bootstrap reader mounts that same retained bootstrap claim
+read-only to copy its completed service key through the protected binding
+workflow. It declares no new PVC and has not run.
 The inactive reconciler needs a private durable journal at
 `/private/openclaw-enterprise/journal.json` for pending API intent and resource
 IDs across retries. A fourth retained local PVC and serialized operator Job

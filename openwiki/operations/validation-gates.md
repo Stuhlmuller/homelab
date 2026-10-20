@@ -18,6 +18,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-70a103e770a716ccc6d4024b
     resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
@@ -206,6 +208,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-059210ae36f3f2a466339b6d
+    resource: repo://scripts/ci/openclaw-enterprise-bootstrap-key-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
@@ -316,10 +320,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T19:05:38.546Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:05:38.546Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # Validation Gates
@@ -1847,7 +1851,20 @@ The static gate also runs the source-only
 [Installation binder fixture](../../scripts/ci/openclaw-enterprise-bind-installation-test.py).
 It checks the exact-main guard, returned Installation ID, stable Ready-Pod
 proof, UID/resource-version guarded Secret annotation patch, and idempotent
-readback. The binder has no protected post-bootstrap invocation or live result.
+readback. A protected post-bootstrap dispatch now runs the binder only after
+static checks and an exact-current-`main` recheck. Its separate
+[reader fixture](../../scripts/ci/openclaw-enterprise-bootstrap-key-test.py)
+rejects a changed Pod, incomplete initialization, open isolation policy,
+host networking, injected environment, and privileged execution before private
+key copy. The credentialed workflow has a canonical security hash, explicit
+job inventory, and a Conftest rule that rejects reusable triggers and shell or
+environment overrides. Neither dispatch nor live binding has run.
+The separate protected
+[model-credential workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
+reads `OCE_MODEL_API_KEY` and writes one SSM target. Its canonical workflow hash
+and generic policy checks are present, but no named exact Conftest contract
+binds its trigger, jobs, and secret-writing step. Add that contract and
+malicious fixtures before supplying the absent key or dispatching it.
 The protected Enterprise operations workflow exposes one fixed `full-sync`
 stage. Its source test and workflow policy require an exact current-`main` SHA,
 manual Argo Applications with the reviewed repository sources, healthy Envoy

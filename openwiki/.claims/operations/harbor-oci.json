@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:65ae529771a4a56258531eceec06e4c3140db96fb0f46e50dd271e0daedd26d8",
+  "pageVersion": "sha256:a92f5c9514115c8b02a627d69b11108eb4b91d81bae8f9c65daa6286f72e27e7",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -458,7 +458,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:f1adc8e2a4c3f57d8263bf092bdf7ea8131973cdb22e2c0de69efbe378fc5084"
+          "version": "repo-file-v1:sha256:7fb67b65d31d0c1c78f3fb682c7ff9e51606c870b339385ca14e5b4ab3241255"
         }
       ]
     },
@@ -540,7 +540,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:f1adc8e2a4c3f57d8263bf092bdf7ea8131973cdb22e2c0de69efbe378fc5084"
+          "version": "repo-file-v1:sha256:7fb67b65d31d0c1c78f3fb682c7ff9e51606c870b339385ca14e5b4ab3241255"
         }
       ]
     },
@@ -756,7 +756,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
@@ -855,6 +855,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:21:18.213Z"
   }
 }

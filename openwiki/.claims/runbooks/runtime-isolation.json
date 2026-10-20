@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4a65bf739ccc6bdaf4b6eb20cd70994148a742b5722047870ef860ff5ff5eb39",
+  "pageVersion": "sha256:58066418ef109a661f11c2b5d8e736beafa12cc05227e099be8638ed423246fb",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
+          "version": "repo-file-v1:sha256:c016a140326b22752ed5706ab990d0358f4710faae505e53397ae210cad6310a"
         }
       ]
     },
@@ -275,10 +275,32 @@
           "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
         }
       ]
+    },
+    {
+      "id": "claim_9c5bafb3a2524679ac1a00edf6215f4b",
+      "statement": "The source-only Enterprise bootstrap reader Pod has no service-account token, mounts the retained bootstrap claim read-only, and declares deny-all ingress and egress. Its reader checks Pod and policy objects, but Flannel alone does not enforce NetworkPolicy; isolated-canary traffic proof remains required before protected binding dispatch.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml",
+          "version": "repo-file-v1:sha256:a5bde2752cdcaf1149ec8c65ebe118b71d9e5d24f5d3b274f6c25d8610bd78fe"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:6577696faeb07f286e7c30571c74f7fa756dde8a98db3746dac26880411d2777"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-bootstrap-key.py",
+          "version": "repo-file-v1:sha256:dc3587402264ec6f41165eb6e35a6104e94693b1963dc61d24b8768955ad1b79"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:34:57.111Z"
   }
 }

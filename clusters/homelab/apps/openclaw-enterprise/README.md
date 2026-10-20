@@ -52,7 +52,19 @@ reconciliation. `scripts/openclaw-enterprise-bind-installation.py` supplies the
 source-only binder: it requires protected exact-`main` dispatch and a private
 bootstrap-key file, proves the reviewed Secret and Ready controllers before and
 after a UID/resource-version guarded annotation patch, and blocks on ambiguity.
-It is not yet wired into a protected post-bootstrap workflow. The CLI's
+The source-only `.github/workflows/openclaw-enterprise-bind-installation.yml`
+dispatch runs after the stock initialization Job completes and both API/worker
+Pods are Ready. It takes only an exact current-`main` SHA. The declared
+`oce-bootstrap-reader` Pod mounts that Job's retained PVC read-only on the
+control node, has no service-account token, and declares deny-all ingress and
+egress. It is the only source for the private key copy. The protected runner
+checks its UID, Ready state, exact mount and isolation before and after copying
+the service-key JSON into an owner-only temporary file; it removes the file on
+exit. The workflow exposes no key bytes, Installation ID, Kubernetes response
+or private log. This dispatch has not run; the annotation and selected-Driver
+acceptance remain pending.
+
+The CLI's
 read-only `check` consumes the resulting proof. With its protected credential
 file, exact main SHA and journal, `reconcile` can create/adopt the logical
 `claw` Namespace in the prepared `openclaw-agents` namespace, one native

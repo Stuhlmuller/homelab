@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:75e4812b3355f4e7841304bd7f85dacab16d85639e514e2220ee741d5c89a4ee",
+  "pageVersion": "sha256:8fe9aadc233f8e623d2f784538149fa9d6d9be64ffcc259ea75d748b00ae9de8",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -202,11 +202,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
-          "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
+          "version": "repo-file-v1:sha256:822022cdb2ea521b8652bf281d535650e46a7e01e2b85c7dd623a4f4b6983777"
         }
       ]
     },
@@ -230,11 +230,15 @@
     },
     {
       "id": "claim_991945f52bbd4e61bc94ef79e6cf733f",
-      "statement": "The source-only Enterprise Installation binder and its offline fixture have their own scripts; the binder still lacks protected post-bootstrap workflow invocation.",
+      "statement": "The Enterprise Installation binder and its offline fixture have their own scripts. A source-only protected post-bootstrap dispatch now reads the retained service key through an isolated reader Pod into a temporary runner file and invokes that binder; live binding remains pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "resource": "repo://.github/workflows/openclaw-enterprise-bind-installation.yml",
+          "version": "repo-file-v1:sha256:1b8eee384043fae6e001074a9d1fd7fad84a08f8c8f034ac526c75bcc3bb2cd8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml",
+          "version": "repo-file-v1:sha256:a5bde2752cdcaf1149ec8c65ebe118b71d9e5d24f5d3b274f6c25d8610bd78fe"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -243,6 +247,10 @@
         {
           "resource": "repo://scripts/openclaw-enterprise-bind-installation.py",
           "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-bootstrap-key.py",
+          "version": "repo-file-v1:sha256:dc3587402264ec6f41165eb6e35a6104e94693b1963dc61d24b8768955ad1b79"
         }
       ]
     },
@@ -271,6 +279,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T17:28:41.182Z"
+    "at": "2026-10-20T19:34:57.111Z"
   }
 }

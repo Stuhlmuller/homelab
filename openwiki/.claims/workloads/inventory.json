@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f141f2245a77d225427f7938573b6502013b9a4db743c779cf299dc45fa8921",
+  "pageVersion": "sha256:11617faeb714ad0d608b13f2fced72cd4fb544a7c8a576a4a0f16e4ee81dea7a",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -418,7 +418,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:b3d5bd69d90f320a6072b8efc8b4c3adc6cb94f909eb7ff257939d288abf6303"
+          "version": "repo-file-v1:sha256:6577696faeb07f286e7c30571c74f7fa756dde8a98db3746dac26880411d2777"
         }
       ]
     },
@@ -428,7 +428,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -436,7 +436,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:b3d5bd69d90f320a6072b8efc8b4c3adc6cb94f909eb7ff257939d288abf6303"
+          "version": "repo-file-v1:sha256:6577696faeb07f286e7c30571c74f7fa756dde8a98db3746dac26880411d2777"
         }
       ]
     },
@@ -472,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
+          "version": "repo-file-v1:sha256:c016a140326b22752ed5706ab990d0358f4710faae505e53397ae210cad6310a"
         }
       ]
     },
@@ -586,7 +586,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -596,19 +596,27 @@
     },
     {
       "id": "claim_8911c2014ec54c3ea616c5fd2a949369",
-      "statement": "An offline-tested source binder can attest and bind an Enterprise Installation ID to the reviewed startup Secret, but no protected post-bootstrap workflow or live binding receipt exists.",
+      "statement": "An offline-tested source binder can attest and bind the Enterprise Installation ID to the reviewed startup Secret. A protected post-bootstrap dispatch now declares a tokenless, read-only bootstrap reader Pod with deny-all NetworkPolicy, but neither reader nor dispatch has run, live Secret binding remains unproven, and network-policy enforcement needs canary qualification.",
       "evidence": [
         {
+          "resource": "repo://.github/workflows/openclaw-enterprise-bind-installation.yml",
+          "version": "repo-file-v1:sha256:1b8eee384043fae6e001074a9d1fd7fad84a08f8c8f034ac526c75bcc3bb2cd8"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
-          "version": "repo-file-v1:sha256:01c0a5ea9d09dee52723bf5a2944a38d630f205e8c3a9a7131eb692623be1b91"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml",
+          "version": "repo-file-v1:sha256:a5bde2752cdcaf1149ec8c65ebe118b71d9e5d24f5d3b274f6c25d8610bd78fe"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise-bind-installation.py",
-          "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-bootstrap-key-test.py",
+          "version": "repo-file-v1:sha256:40a43033f4dcb4cad18760bac97eeccf5c2c518745e101b140992d31dc06aa13"
         }
       ]
     },
@@ -618,7 +626,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -673,6 +681,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:34:57.111Z"
   }
 }

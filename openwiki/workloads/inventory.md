@@ -8,6 +8,8 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
@@ -76,6 +78,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-eca3c53f1ff6f9898620a7df
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
@@ -156,8 +160,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d070446e78bc2444fe729dec
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
-  - id: openwiki-source-8047752c8d0bc59d19d7605b
-    resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-059210ae36f3f2a466339b6d
+    resource: repo://scripts/ci/openclaw-enterprise-bootstrap-key-test.py
   - id: openwiki-source-8483d28614308625b1073872
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -174,18 +178,16 @@ sources:
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-ba849f5dbd0942cee0b0087d
     resource: repo://scripts/network-policy-ownership.py
-  - id: openwiki-source-7941d9a35910fdb69c63e9c1
-    resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:25:19.174Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # Workload Inventory
@@ -428,8 +430,10 @@ exact Agent grants, runtime credential/deployment readback, and idempotent
 stop. Committed `activationEnabled: false` and the missing dedicated OpenRouter
 key still block activation; these fixtures are not live acceptance.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
-exists in source; no protected post-bootstrap invocation or live Secret binding
-has occurred.
+now has a source-only protected post-bootstrap dispatch. Its declared,
+tokenless reader Pod mounts the retained bootstrap PVC read-only and has a
+deny-all NetworkPolicy. The reader and dispatch have not run; no live Secret
+binding has occurred, and network-policy enforcement still needs a canary.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy

@@ -116,6 +116,34 @@ class ChartHooksContract(unittest.TestCase):
         self.assertEqual(hooks["Job", "oce-preflight"]["spec"]["backoffLimit"], 0)
         self.assertEqual(hooks["Job", "oce-quiesce"]["spec"]["backoffLimit"], 0)
 
+    def test_bootstrap_reader_is_tokenless_read_only_and_isolated(self):
+        pod = self.local["Pod", "oce-bootstrap-reader", "openclaw-system"]
+        spec = pod["spec"]
+        self.assertFalse(spec["automountServiceAccountToken"])
+        self.assertFalse(spec["enableServiceLinks"])
+        self.assertEqual(spec["nodeSelector"], {"oce-role": "control"})
+        self.assertEqual(spec["securityContext"]["runAsUser"], 1000)
+        self.assertNotIn("fsGroup", spec["securityContext"])
+        self.assertEqual(len(spec["containers"]), 1)
+        self.assertEqual(len(spec["volumes"]), 1)
+        self.assertEqual(spec["volumes"][0]["persistentVolumeClaim"], {
+            "claimName": "occ-bootstrap-admin-password", "readOnly": True})
+        container = spec["containers"][0]
+        self.assertEqual(container["name"], "reader")
+        self.assertEqual(container["volumeMounts"], [{"name": "bootstrap",
+            "mountPath": "/var/lib/openclaw/bootstrap", "readOnly": True}])
+        self.assertEqual(container["securityContext"], {
+            "allowPrivilegeEscalation": False, "readOnlyRootFilesystem": True,
+            "capabilities": {"drop": ["ALL"]}})
+        policy = self.local["NetworkPolicy", "oce-bootstrap-reader-isolation",
+                            "openclaw-system"]["spec"]
+        self.assertEqual(set(policy["policyTypes"]), {"Ingress", "Egress"})
+        self.assertEqual(policy.get("ingress", []), [])
+        self.assertEqual(policy.get("egress", []), [])
+        self.assertEqual(policy["podSelector"]["matchLabels"], {
+            "app.kubernetes.io/name": "openclaw-enterprise-bootstrap-reader",
+            "app.kubernetes.io/instance": "oce"})
+
     @unittest.skipUnless(UPSTREAM, "supply --upstream-root for pinned stock chart comparison")
     def test_stock_chart_single_image_only_override(self):
         if (UPSTREAM / ".git").exists():

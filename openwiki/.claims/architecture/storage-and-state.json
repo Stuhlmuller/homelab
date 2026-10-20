@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7712a11c2cbe4154d86e6728cabfa9676bbb15dab8e24b93e5d2a86a1780c2c7",
+  "pageVersion": "sha256:9e07d1f418d8561648f81f8b5302f9fd142879c037752baa4200ebaa43c05aba",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -120,7 +120,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
@@ -176,7 +176,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
+          "version": "repo-file-v1:sha256:26e3f1b2ce40b2ac6c05e20f07f9664af2f892b9be806a4ee3f0debffee375ef"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -201,10 +201,28 @@
           "version": "repo-lines-v1:sha256:cd43aa98398d18b9291822b8b76c5305426c44f391655857d88a838b31063fc6:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q0M2FhOTgzOThkMThiOTI5MTgyMmI4Yjc2YzUzMDU0MjZjNDRmMzkxNjU1ODU3ZDg4YTgzOGIzMTA2M2ZjNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q0M2FhOTgzOThkMThiOTI5MTgyMmI4Yjc2YzUzMDU0MjZjNDRmMzkxNjU1ODU3ZDg4YTgzOGIzMTA2M2ZjNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDljYzNiZTIxMzgyNDJhMGRiZGMyZTQwNjJkNWNiZGMwZGM3YmUyZTg5M2Q0MmYwNDRmNTM2NmY4MDI3NzBkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2MwMzAwMTgxZjcyOWE0M2NlNGY0ZmM2YzA3OTY4MGJlM2FmNTg1NzJkZTBiZDM2Y2RjZTM4NzI0YzJkYzIwMCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_1dd5797153d74b6eac24ed5b7617e1b5",
+      "statement": "The source-only post-bootstrap reader mounts the existing retained Enterprise bootstrap password claim read-only for private service-key copy; it declares no additional PVC and has not run.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-bind-installation.yml",
+          "version": "repo-file-v1:sha256:1b8eee384043fae6e001074a9d1fd7fad84a08f8c8f034ac526c75bcc3bb2cd8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml",
+          "version": "repo-file-v1:sha256:a5bde2752cdcaf1149ec8c65ebe118b71d9e5d24f5d3b274f6c25d8610bd78fe"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:6577696faeb07f286e7c30571c74f7fa756dde8a98db3746dac26880411d2777"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:34:57.111Z"
   }
 }

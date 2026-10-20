@@ -221,6 +221,15 @@ Talos client identity through its protected credential path, never a repo file
 or an SSM value projected into application Pods. No live Talos projection or
 Enterprise model-credential write has occurred yet.
 
+The post-bootstrap Installation binder reads the service key only through the
+declared `openclaw-system/oce-bootstrap-reader` Pod's read-only mount of
+`occ-bootstrap-admin-password`. The Pod has no service-account token and
+declares deny-all ingress and egress. The exact-main protected workflow copies
+the key into a temporary owner-only runner file, calls the binder, then removes
+the file. Do not alias
+this key into SSM, a GitHub secret, an environment variable or an artifact.
+This workflow has not run.
+
 The protected workflows use distinct `homelab-production` environment
 secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
 writer; `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside

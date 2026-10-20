@@ -2,6 +2,65 @@ package main
 
 import rego.v1
 
+test_allows_exact_openclaw_binding if {
+	approved_openclaw_binding with input as openclaw_binding_fixture
+}
+
+test_rejects_reusable_openclaw_binding if {
+	events := object.union(openclaw_binding_fixture["true"], {"workflow_call": {}})
+	candidate := object.union(openclaw_binding_fixture, {"true": events})
+	not approved_openclaw_binding with input as candidate
+}
+
+test_rejects_openclaw_binding_run_overrides if {
+	every candidate in [
+		object.union(openclaw_binding_fixture, {"defaults": {"run": {"shell": "python"}}}),
+		object.union(openclaw_binding_fixture, {"env": object.union(openclaw_binding_fixture.env, {"BASH_ENV": "unreviewed"})}),
+		with_job_run_defaults(openclaw_binding_fixture, "bind"),
+		with_job_run_env(openclaw_binding_fixture, "bind", {"BASH_ENV": "unreviewed"}),
+		with_step_run_setting(openclaw_binding_fixture, "bind", 3, {"shell": "python"}),
+		with_step_run_setting(openclaw_binding_fixture, "bind", 3, {"working-directory": "unreviewed"}),
+		with_step_run_env(openclaw_binding_fixture, "static-policy", 3, {"ENV": "unreviewed"}),
+		with_step_run_env(openclaw_binding_fixture, "bind", 3, {"BASH_ENV": "unreviewed"}),
+	] {
+		not approved_openclaw_binding with input as candidate
+	}
+}
+
+test_rejects_changed_openclaw_binding if {
+	job := openclaw_binding_fixture.jobs.bind
+	every candidate in [
+		object.union(openclaw_binding_fixture, {"concurrency": {"group": "unprotected", "cancel-in-progress": false}}),
+		object.union(openclaw_binding_fixture, {"jobs": {"static-policy": openclaw_binding_fixture.jobs["static-policy"], "bind": object.union(job, {"environment": {"name": "unprotected"}})}}),
+		object.union(openclaw_binding_fixture, {"jobs": {"static-policy": openclaw_binding_fixture.jobs["static-policy"], "bind": object.union(job, {"steps": [job.steps[0], job.steps[1], job.steps[2], object.union(job.steps[3], {"run": replace(openclaw_binding_private_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})}}),
+	] {
+		not approved_openclaw_binding with input as candidate
+	}
+}
+
+openclaw_binding_fixture := {
+	"name": "OpenClaw Enterprise Installation Binding",
+	"permissions": {},
+	"concurrency": {"group": "openclaw-enterprise-binding-production", "cancel-in-progress": false},
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"true": {"workflow_dispatch": {"inputs": {"expected_sha": {"required": true}}}},
+	"jobs": {
+		"static-policy": openclaw_startup_fixture.jobs["static-policy"],
+		"bind": {
+			"needs": ["static-policy"],
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"environment": {"name": "homelab-production"},
+			"permissions": {"contents": "read"},
+			"steps": [
+				{"name": "Verify Current Main Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_binding_main_check},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Bind Reviewed Installation ID", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": openclaw_binding_private_run},
+			],
+		},
+	},
+}
+
 test_allows_exact_openclaw_startup if {
 	approved_openclaw_startup with input as openclaw_startup_fixture
 }

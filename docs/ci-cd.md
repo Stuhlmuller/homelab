@@ -102,8 +102,9 @@ checks remain fresh.
   effect after the policy change lands on `main`.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
-- The protected OpenClaw Enterprise startup and operations policies accept only
-  `workflow_dispatch`. Their regression fixtures reject an added `workflow_call`
+- The protected OpenClaw Enterprise startup, operations, and installation
+  binding policies accept only `workflow_dispatch`. Their regression fixtures
+  reject an added `workflow_call`
   trigger that could bypass manual invocation of credentialed jobs. The shared
   policy rejects unreviewed workflow and job run defaults or environment,
   per-step shell and working-directory overrides, and `BASH_ENV` or `ENV` on

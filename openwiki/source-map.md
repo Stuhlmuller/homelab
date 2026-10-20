@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-4d11b952c423ea65f2946759
+    resource: repo://.github/workflows/openclaw-enterprise-bind-installation.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
@@ -32,6 +34,8 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-eca3c53f1ff6f9898620a7df
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
@@ -86,6 +90,8 @@ sources:
     resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-ddbd7d2c9d809c7cb049bf50
+    resource: repo://scripts/openclaw-enterprise-bootstrap-key.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
@@ -96,10 +102,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T17:28:41.182Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # Source Map
@@ -160,7 +166,8 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Dormant workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
-| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Source-only Installation ID binder and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); protected invocation remains pending |
+| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); live binding remains pending |
+| `.github/workflows/openclaw-enterprise-bind-installation.yml`, `clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml`, `scripts/openclaw-enterprise-bootstrap-key.py`, and its fixture | [Source-only protected binding dispatch and isolated reader](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md); no live execution |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-full-sync.sh`, and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected fixed full sync](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, and `scripts/ci/openclaw-enterprise-active-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only active/stop fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |

@@ -91,6 +91,22 @@ Service, and requires a second no-change apply and identity readback. A stale
 SHA, changed auth contract, or failed readback stops the cutover. Rerun it from
 the new reviewed `main` after a concurrent merge; do not bypass its guard.
 
+After full stock-chart sync completes initialization and both API/worker Pods
+are Ready, dispatch `openclaw-enterprise-bind-installation.yml` on current
+`main` with that exact commit as `expected_sha`. The declared, tokenless
+`openclaw-system/oce-bootstrap-reader` Pod mounts only the retained bootstrap
+PVC read-only; its NetworkPolicy declares deny-all ingress and egress. Prove
+that policy on the isolated enforcement canary before dispatch; the object alone
+does not prove traffic isolation. The protected job
+checks the completed producer, reader UID/Ready state and isolation, copies the
+service key into a private runner file, then runs the selected-Driver proof and
+UID/resource-version guarded startup-Secret annotation binder. It deletes the
+runner file and withholds key bytes and private Kubernetes output. A failed or
+stale dispatch is not acceptance: inspect the public step outcome, repair
+desired state in Git, and retry on a fresh exact `main` SHA. The reader Pod can
+be removed in a later reviewed PR after binding and recovery are proven; the
+bootstrap PVC stays retained. This path is source-only and has not run.
+
 | Stage | Action | Required exit receipt |
 | --- | --- | --- |
 | Prepare | Confirm source/image pairing, publish all chart-rendered images to Harbor, inventory placement and recovery access | Exact digest and current-main receipts |

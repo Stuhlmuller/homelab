@@ -24,6 +24,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
+  - id: openwiki-source-eca3c53f1ff6f9898620a7df
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
@@ -34,6 +36,8 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-54e352b5d1969695ce29dabe
@@ -52,10 +56,12 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+  - id: openwiki-source-ddbd7d2c9d809c7cb049bf50
+    resource: repo://scripts/openclaw-enterprise-bootstrap-key.py
+generated: { by: "codex", at: "2026-10-20T19:21:18.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:25:19.174Z
+    at: 2026-10-20T19:34:57.111Z
 ---
 
 # Runtime Isolation
@@ -66,6 +72,13 @@ Pod Security, service accounts, Istio authorization, and workload security
 contexts are enforced desired state. Existing `NetworkPolicy` objects remain
 intent-only while Flannel is the sole active CNI and the staged firewall-only
 kube-router Application selects no node.
+
+The source-only Enterprise [bootstrap reader](../../clusters/homelab/apps/openclaw-enterprise/bootstrap-reader.yaml)
+mounts the retained bootstrap claim read-only, has no service-account token,
+and declares deny-all ingress and egress. Its private-key reader verifies the
+Pod and policy objects before and after copy, but this cannot prove enforcement
+while Flannel is the sole active CNI. Qualify isolation on the dedicated canary
+before any protected binding dispatch.
 
 Kiali's [repository ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 replaced the operator-generated `monitoring/kiali` rule without changing its
