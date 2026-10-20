@@ -248,10 +248,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:21:00.595Z" }
+generated: { by: "codex", at: "2026-10-20T01:23:30.634Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:21:00.595Z
+    at: 2026-10-20T01:23:30.634Z
 ---
 
 # Validation Gates
@@ -1976,10 +1976,7 @@ validate consuming workloads.
 The staged hourly Renovate runner has a credential-free config and discovery
 test in `static-checks.sh`. The config test injects a cache write failure and
 checks that no GitHub API request follows; live PVC-failure behavior remains
-unverified. The temporary cache fault variant makes only the PVC mount
-read-only for one scheduled full dry-run cycle. The flushed 4 KiB cache probe
-runs before GitHub App token exchange; the paired recovery restores the writable
-mount. `offline-checks.sh` runs its Prometheus rule
+unverified. `offline-checks.sh` runs its Prometheus rule
 fixture, which checks missed starts, incomplete cycles, a missing CronJob,
 late prior-Job completion, and schedules before and after suspension. These
 fixtures also enforce that the 15-minute allowed late start plus the 40-minute

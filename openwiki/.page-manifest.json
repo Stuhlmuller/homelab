@@ -72,11 +72,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
-      "pageVersion": "sha256:c15040e74760175c57c5a05f0e3f9e94b5bf27f8de77877ae848110d14943dca",
+      "pageVersion": "sha256:db3a4ab1f063fe92ae75a3e4104b6a9195338d206b3219b35cf7d6ce5a435fcc",
       "completedBy": "codex",
-      "completedRunId": "ec559925-7297-48f3-9d85-8c3ba7bfd14d",
-      "gitHead": "505ebc10c5ecbd0b7c3bf1f376a3e33e5d0f4ab7",
-      "sourceFingerprint": "sha256:f4102858d88222cfe3e3ae15088b8056553294f56ee0a07beb29bcd7c4feb7b9"
+      "completedRunId": "619fcc65-2bf8-4820-947c-04308d7d4cd4",
+      "gitHead": "c9b7ab89bc87e030ac4403959738141aa583fd6e",
+      "sourceFingerprint": "sha256:d0add241eb001988ff7d7a85bd16f8bc1d9cc88e71435c9627d7d68350f347f9"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -86,11 +86,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:e9edd6795a0febe08f7b57c6a1fb6164275fb1fda8d866d8281f940f5f3441cb",
+      "pageVersion": "sha256:77f77f43e632ee42100bb2df15e184949a7cf6605df495b49f932461a2256516",
       "completedBy": "codex",
-      "completedRunId": "ec559925-7297-48f3-9d85-8c3ba7bfd14d",
-      "gitHead": "505ebc10c5ecbd0b7c3bf1f376a3e33e5d0f4ab7",
-      "sourceFingerprint": "sha256:f4102858d88222cfe3e3ae15088b8056553294f56ee0a07beb29bcd7c4feb7b9"
+      "completedRunId": "619fcc65-2bf8-4820-947c-04308d7d4cd4",
+      "gitHead": "c9b7ab89bc87e030ac4403959738141aa583fd6e",
+      "sourceFingerprint": "sha256:d0add241eb001988ff7d7a85bd16f8bc1d9cc88e71435c9627d7d68350f347f9"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -149,11 +149,11 @@
       "completedRunId": "2b5ace89-0bef-42b9-a416-15ba7d054cd2"
     },
     "/openwiki/runbooks/tailnet-ingress.md": {
-      "pageVersion": "sha256:e3d4b7b5994abe1ecc5c10e23e9c4a6c2d6b9340a6c4b6168801b4a431270aa1",
+      "pageVersion": "sha256:19824bc4112d79bf23eaff2875f0d7bb891d1d738f08a8e15b33d88289c1410b",
       "completedBy": "codex",
-      "completedRunId": "ec559925-7297-48f3-9d85-8c3ba7bfd14d",
-      "gitHead": "505ebc10c5ecbd0b7c3bf1f376a3e33e5d0f4ab7",
-      "sourceFingerprint": "sha256:f4102858d88222cfe3e3ae15088b8056553294f56ee0a07beb29bcd7c4feb7b9"
+      "completedRunId": "619fcc65-2bf8-4820-947c-04308d7d4cd4",
+      "gitHead": "c9b7ab89bc87e030ac4403959738141aa583fd6e",
+      "sourceFingerprint": "sha256:d0add241eb001988ff7d7a85bd16f8bc1d9cc88e71435c9627d7d68350f347f9"
     },
     "/openwiki/runbooks/talos-control-plane-maintenance.md": {
       "gitHead": "6bc0641c3f346b81849fef87490ee2aef555885d",
@@ -177,11 +177,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/workloads/inventory.md": {
-      "pageVersion": "sha256:a2c194b55df483d1e8e1ddca83e961daa395ef9c0b8af96f3bed78bcc9a8ad39",
+      "pageVersion": "sha256:f97c021800fced1db498ada2203b81463cc65f5680c59e921df19afd56296966",
       "completedBy": "codex",
-      "completedRunId": "ec559925-7297-48f3-9d85-8c3ba7bfd14d",
-      "gitHead": "505ebc10c5ecbd0b7c3bf1f376a3e33e5d0f4ab7",
-      "sourceFingerprint": "sha256:f4102858d88222cfe3e3ae15088b8056553294f56ee0a07beb29bcd7c4feb7b9"
+      "completedRunId": "619fcc65-2bf8-4820-947c-04308d7d4cd4",
+      "gitHead": "c9b7ab89bc87e030ac4403959738141aa583fd6e",
+      "sourceFingerprint": "sha256:d0add241eb001988ff7d7a85bd16f8bc1d9cc88e71435c9627d7d68350f347f9"
     }
   }
 }
