@@ -102,6 +102,10 @@ sources:
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
@@ -120,10 +124,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Secrets And Identity
@@ -561,6 +565,14 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   tests; Octelium admin authentication, CI issuance, tunnel access, and a
   complete protected inspection receipt remain outstanding. See the
   [Talos maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+  The dormant firewall cleanup lane keeps capture, approval, attempt, and
+  completion evidence in the private versioned maintenance bucket. The owner
+  reviews the full capture outside public logs and supplies its exact digest
+  to a fresh protected approval run. That run verifies the owner actor, live
+  snapshot, absent fixture namespace and workloads, exact reviewed canary Pod
+  inventory, and current `main` before writing an
+  immutable receipt under the capture run ID. Partial deletion needs a new
+  capture and approval, including when no owned objects remain.
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is

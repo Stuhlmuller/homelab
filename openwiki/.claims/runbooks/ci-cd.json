@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4e7540791fe4166f29f40469c1092d899a970fbf5596dfffa1adf4f4b3ccd3a1",
+  "pageVersion": "sha256:94a8f280963aa05bb7163decdd77559452416387a6fd370114b1ac37ff326b36",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -242,7 +242,7 @@
     },
     {
       "id": "claim_54e22979a58544c1bec353a4d0f28a17",
-      "statement": "The protected canary-admit and canary-release stages load exact-current-main placement and cleanup receipts, record a private attempt before Node mutation, and use the repository canary helper to retain the isolation taint across interrupted release or cleanup Pod deletion.",
+      "statement": "The protected canary admission, firewall ownership capture and approval, owned cleanup, and canary release stages require exact current-main dispatch, private versioned ownership receipts, reviewed qualify-to-fixture-prune-to-firewall-prune source history, and absent fixture resources. Assigned canary Pods must match reviewed system and cleanup Pod identities while cleanup runs; release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint, and changed system Pod identity requires separate recovery.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
@@ -254,13 +254,21 @@
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
-          "version": "repo-file-v1:sha256:b49d528e27bc7cedfdf694c7fa99b0e8fdb559e9ccf8caa3c39109de1ab41c2b"
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:46:55.569Z"
+    "at": "2026-10-20T15:35:56.635Z"
   }
 }

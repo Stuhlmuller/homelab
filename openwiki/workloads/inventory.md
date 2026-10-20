@@ -108,6 +108,8 @@ sources:
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-994a8289757a8dfdfff70e1b
+    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
@@ -166,6 +168,12 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
@@ -174,10 +182,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:10:13.266Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Workload Inventory
@@ -442,7 +450,21 @@ The platform source declares dormant `platform-network-policy`,
 kube-router selects no node and the canary fixtures deploy nothing until
 placement, publication, policy review, and live qualification pass. Envoy's
 shared CRD source is ordered before the controller but no private route is
-accepted yet.
+accepted yet. The network-policy cleanup Application stays unsynced until the
+reviewed fixture and enforcer removal commits reach current `main`. A live
+fixture namespace or lingering fixture workload blocks ownership capture,
+approval, cleanup and release; private owner approval of the exact firewall
+snapshot gates deletion of remaining rules. Capture through release require a
+complete live canary-node Pod inventory matching reviewed system DaemonSet
+identities plus the validated cleanup Pod while it runs. After cleanup Pod
+deletion, release rechecks that only the reviewed system Pods remain before
+removing the taint. An incomplete or changed inventory blocks release. A
+restarted system DaemonSet Pod changes its UID; immutable placement cannot be
+refreshed after firewall removal in this workflow, so operators must stop for
+a separately reviewed recovery path. Inventory checks and firewall deletion
+are not atomic; live activation remains blocked until isolated placement
+excludes arrival of a taint-tolerating Pod during deletion or a reviewed
+isolation path is added.
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were

@@ -10,12 +10,20 @@ sources:
     resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-00c8a32293c8aaa55d3daba4
     resource: repo://IaC/platform-envoy-gateway/stack.hcl
+  - id: openwiki-source-17718b74140783bc6aaf9388
+    resource: repo://IaC/platform-network-policy-canary/stack.hcl
   - id: openwiki-source-e3e84b128839afbc47f478f7
     resource: repo://IaC/platform-network-policy/stack.hcl
-generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Argo CD App Onboarding
@@ -39,6 +47,19 @@ stays unsynced until the shared Gateway/Envoy CRDs, mirrored images and private
 route are qualified. The CRD Helm source is the single shared CRD owner and
 must become ready before its controller source. Registration alone neither
 enforces policies nor serves an Enterprise route.
+
+After the traffic probe, two reviewed GitOps commits prune the fixtures and
+then the enforcer; each may include native OpenWiki metadata. Apply the
+fixture prune and verify the live `network-policy-canary` namespace and all
+fixture workloads are absent before ownership capture. Keep the emptied
+canary Application automated with `allowEmpty` through cleanup and node
+release; disable automatic sync afterward. The cleanup Application then
+syncs a reviewed Pod to the admitted node; private capture and owner approval
+gate rule deletion. Capture through release require assigned Pods to match
+the reviewed system DaemonSet identities plus that cleanup Pod while it runs.
+After deletion, release rechecks that only the reviewed system Pods remain
+before removing the taint; a system Pod restart blocks this immutable
+placement path pending reviewed recovery.
 
 See [GitOps Flow](../architecture/gitops-flow.md), [Workload Inventory](../workloads/inventory.md), and
 [New Application Pattern](../patterns/new-application.md).

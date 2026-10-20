@@ -20,16 +20,22 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-719a8f57b80adfae662090ca
+    resource: repo://scripts/ci/platform-maintenance-test.py
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -173,6 +179,8 @@ gated Kubernetes `1.34.11 → 1.35.9` stage. The protected lane requires exact
 current `main`, a distinct Octelium client tunnel and Talos mTLS. Inspect and
 offline validation do not execute upgrades. The protected upgrade branch now
 invokes the ordered executor after strict role-specific Talos config validation.
+Before an upgrade execute, the executor compares the canonical platform config
+bytes with the exact dispatched commit and rejects a runner-local override.
 It restores exactly one checksummed, versioned, current-SHA copy of placement,
 direct-LAN Talos recovery, fresh off-node etcd and image-publication receipts.
 Before each Talos node command, it records a durable start marker; a verified
@@ -192,9 +200,30 @@ The same protected lane stages `canary-admit` and `canary-release` separately
 from upgrades. Admission requires reviewed placement and adds the isolation
 taint before the selector label. It rejects another Node with that label before
 mutation and immediately before labeling, and removes its own label if a
-post-patch check detects a conflict. Release requires verified owned cleanup,
-removes the label, waits for cleanup DaemonSet Pods to disappear cluster-wide,
-then removes the taint. An interrupted release keeps the taint for direct
-review; the committed `canary.node` is unset.
+post-patch check detects a conflict. After qualification, the exact qualify →
+fixture-prune → firewall-prune commits must lead to current `main`. Apply the
+fixture prune and verify the live `network-policy-canary` namespace and all
+fixture workloads are absent before capture. Protected `ownership-capture`
+stores the full remaining firewall snapshot in private versioned S3; the owner
+reviews it and dispatches `ownership-approve` with its run ID and digest.
+Approval rechecks the live snapshot, fixture absence, node identity and
+current main before an immutable receipt can authorize `owned-cleanup`.
+Partial cleanup requires a new capture and approval. Capture, approval,
+cleanup, and release also require the complete live canary-node Pod inventory
+to match the reviewed system DaemonSet Pod namespace/name/UID identities plus
+the validated cleanup Pod while it runs. After cleanup Pod deletion, release
+rechecks that only the reviewed system Pods remain before removing the taint.
+An incomplete inventory or extra, terminating or replaced Pod blocks the
+stage. A normal system DaemonSet Pod restart changes its UID; the immutable
+qualify-SHA placement cannot be refreshed after firewall removal through this
+workflow, so stop for a separately reviewed recovery path. Inventory checks
+and firewall deletion are not atomic; a Pod tolerating the taint could arrive
+during deletion. Live activation stays blocked until isolated placement rules
+out that arrival or a reviewed repository-owned isolation path is added.
+Release verifies the cleanup and ownership receipts, original placement,
+exact removal chain and fixture absence. It removes the label, waits for
+cleanup DaemonSet Pods to disappear cluster-wide, rechecks the node Pod
+inventory, then removes the taint. An interrupted release keeps the taint for
+direct review; the committed `canary.node` is unset.
 
 See [Cluster Topology](../architecture/cluster-topology.md) and [Validation](validation.md).

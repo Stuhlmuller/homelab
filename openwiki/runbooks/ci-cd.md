@@ -70,12 +70,16 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
+generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:35:56.635Z
 ---
 
 # CI/CD
@@ -172,15 +176,26 @@ before AWS credentials, and verifies the pinned stage helper before execution.
 The executor keeps activation and canary placement disabled until private
 recovery, image-publication and isolated-node evidence is available; no upgrade
 stage has run from this source change.
-The protected `canary-admit` and `canary-release` stages require a configured
-canary node and exact-main private receipts. Admission verifies placement and
+The protected canary and firewall stages require a configured canary node and
+exact-current-main dispatch. Admission verifies private placement and
 adds the dedicated isolation taint before the selector label. It checks the
 cluster-wide label selector before mutation, immediately before labeling, and
 after the patch. A preflight conflict blocks mutation; a later conflict
-retains the taint and removes this Node's label. Release requires
-the verified owned-cleanup run, removes the label, waits for cleanup DaemonSet
-Pods to disappear cluster-wide, then removes the taint. Each stage records a
-private attempt before mutation; an interrupted release retains isolation.
+retains the taint and removes this Node's label. After the exact qualify →
+fixture-prune → firewall-prune commits, `ownership-capture` requires the live
+fixture namespace and all fixture workloads to be absent and stores a
+versioned private snapshot. `ownership-approve` requires the owner actor and
+an exact reviewed digest before it writes an immutable capture-run-specific
+receipt. `owned-cleanup` loads that receipt under current main and the
+original placement under the qualify SHA, then records a private attempt
+before deletion. Capture through release also require a complete node Pod
+list matching the reviewed system DaemonSet UIDs and validated cleanup Pod
+while it runs. A system Pod restart blocks this immutable placement path until
+separately reviewed recovery. Release verifies the same source chain and
+reviewed cleanup run, removes the label, waits for cleanup DaemonSet Pods to
+disappear cluster-wide, then rechecks that only reviewed system Pods remain
+before removing the taint. An incomplete inventory or changed Pod retains
+isolation.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
