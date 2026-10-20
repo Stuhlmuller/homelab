@@ -462,6 +462,8 @@ set.
 The protected upgrade branch now connects through the same authenticated Talos
 tunnel, strictly validates both private role configs with the committed
 image-only patches, and invokes the ordered Talos or Kubernetes upgrade API.
+The executor first requires the canonical platform input file to match the
+exact dispatched commit, so a runner-local activation or canary override stops.
 The image-only Talos patches cannot alter `machine.install.disk`; the executor
 also compares each node's active and persistent role, disk, and registry mirror
 configuration before and after a Talos hop. It checks node/API health between
