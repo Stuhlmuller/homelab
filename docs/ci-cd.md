@@ -623,10 +623,12 @@ state encryption access to `alias/homelab-opentofu` in the state region
 `kms:ReEncrypt*`.
 
 The operator unit also declares `Github-TF-Plan`, trusted only by
-`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads the homelab state
-prefix, backup-bucket metadata, and the nine generated SSO parameters needed
-by AzureAD plans. It can decrypt those SSO values only through SSM and has no
-AWS resource-write grant. The plan workflow still uses `Github-TF-State`;
+`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads only PR-planned
+state families, backup-bucket metadata, and the nine generated SSO parameters
+needed by AzureAD plans. The allowed AzureAD state itself contains SSO
+credentials; the reviewer gate protects that access. The runtime-secret KMS
+grant decrypts those parameters only through SSM. It has no AWS resource-write
+grant. The plan workflow still uses `Github-TF-State`;
 apply the new role with a reviewed operator saved plan, publish its ARN with
 `scripts/aws-plan-role-configure.sh`, and switch the workflow in a separate PR.
 The [operator runbook](operator-infrastructure.md#dedicated-pull-request-plan-role)
