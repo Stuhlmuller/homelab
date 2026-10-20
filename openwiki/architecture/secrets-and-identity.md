@@ -529,6 +529,23 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
   affects CI, operator, and Cordium Kubernetes access, so validate both Services
   after rotation.
+  The protected Talos maintenance lane has a separate CLIENT authentication
+  token, `OCE_OCTELIUM_CLIENT_AUTH_TOKEN`, limited by
+  `homelab-platform-talos-ci-access` to the private TCP
+  `talos-api-ci.homelab` Service. Its repository helper
+  [`platform-maintenance-credentials.sh`](../../scripts/platform-maintenance-credentials.sh)
+  runs only from an exact, clean `main` checkout; it verifies the reviewed
+  Octelium WORKLOAD User, policy, and Service before creating or rotating the
+  dedicated Credential. It does not delete the User's CLIENTLESS Kubernetes
+  sessions. The same helper issues a separate 30-day Talos `os:admin` client
+  from a valid operator identity, proves its certificate and key differ from
+  the operator's, tests read-only direct access, and publishes only the encoded
+  client as `OCE_TALOSCONFIG_B64` in `homelab-production`. It never uploads the
+  operator's client config. Protected inspect run `39362087271` stopped at the
+  Talos connection setup with both inputs empty. The helper has only local
+  tests; Octelium admin authentication, CI issuance, tunnel access, and a
+  complete protected inspection receipt remain outstanding. See the
+  [Talos maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
