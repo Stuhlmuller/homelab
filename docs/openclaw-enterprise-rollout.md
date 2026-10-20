@@ -51,6 +51,11 @@ for `verify`; the original archive worker SHA/ID remains the source reference.
 On failure, the protected job exposes only a fixed category: `publication-source-read`,
 `publication-s3-create`, `publication-s3-part`, `publication-s3-complete`, or
 `publication-digest`. None is an offsite restore receipt.
+Exact-main [run `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090)
+passed credentials but failed `publication-source-read` with 64 MiB Kubernetes
+exec ranges. The uploader now assembles each 64 MiB S3 part from at most 8 MiB
+exec slices. No offsite receipt exists; T013 remains pending until a protected
+retry and independent offsite restore pass.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain

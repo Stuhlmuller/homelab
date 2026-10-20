@@ -11,6 +11,7 @@ from pathlib import Path
 
 
 PART_SIZE = 64 * 1024 * 1024
+READ_SIZE = 8 * 1024 * 1024
 
 
 class RangeReadError(ValueError):
@@ -91,10 +92,15 @@ def main():
             body = Path(directory) / 'part'
             while total < args.expected_size:
                 count = min(PART_SIZE, args.expected_size - total)
-                chunk = source_range(args.reader_pod, args.source_path, total,
-                                     count, args.expected_size)
-                digest.update(chunk)
-                body.write_bytes(chunk)
+                with body.open('wb') as output:
+                    for offset in range(total, total + count, READ_SIZE):
+                        read_count = min(READ_SIZE, total + count - offset)
+                        chunk = source_range(args.reader_pod, args.source_path, offset,
+                                             read_count, args.expected_size)
+                        digest.update(chunk)
+                        output.write(chunk)
+                if body.stat().st_size != count:
+                    raise RangeReadError('archive part size differs from source ranges')
                 etag = json.loads(aws('upload-part', '--bucket', args.bucket,
                                       '--key', args.key, '--upload-id', upload_id,
                                       '--part-number', str(len(parts) + 1), '--body', str(body)))['ETag']

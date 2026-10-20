@@ -7,12 +7,14 @@ import hashlib
 import re
 import runpy
 import subprocess
+import sys
 import tempfile
 import unittest
 import stat
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
+from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
 
@@ -133,6 +135,50 @@ sys.stdout.buffer.write(chunk)
                 self.assertEqual('abort-multipart-upload' in operations, code not in (0, 11))
                 self.assertEqual(len(kube_log.read_text().splitlines()) if kube_log.exists() else 0,
                                  0 if code == 11 else 2 if flaky else 3 if len(body) != size else 1)
+
+    def test_archive_upload_assembles_parts_from_smaller_reads_and_aborts_on_truncation(self):
+        module = runpy.run_path(str(UPLOAD))
+        self.assertEqual(module['PART_SIZE'], 64 * 1024 * 1024)
+        self.assertEqual(module['READ_SIZE'], 8 * 1024 * 1024)
+        main = module['main']
+        payload = b'abcdefghijklmnopqrstuv'
+        arguments = ['upload', 'bucket', 'key', str(len(payload)),
+                     hashlib.sha256(payload).hexdigest(), 'openclaw-retirement-reader-test',
+                     '/archive/private/legacy-' + 'a' * 64 + '/legacy.tar.gz']
+        for truncated in (False, True):
+            reads, uploads, operations = [], [], []
+
+            def fake_source_range(_pod, _path, offset, count, expected_size):
+                self.assertEqual(expected_size, len(payload))
+                reads.append((offset, count))
+                return payload[offset:offset + count - (1 if truncated and offset == 6 else 0)]
+
+            def fake_aws(*args):
+                operation = args[0]
+                operations.append(operation)
+                if operation == 'create-multipart-upload':
+                    return '{"UploadId":"test-upload"}'
+                if operation == 'upload-part':
+                    uploads.append(Path(args[args.index('--body') + 1]).read_bytes())
+                    return '{"ETag":"test-etag"}'
+                if operation == 'complete-multipart-upload':
+                    manifest = Path(args[args.index('--multipart-upload') + 1][7:])
+                    self.assertEqual(len(json.loads(manifest.read_text())['Parts']), 2)
+                return '{}'
+
+            with mock.patch.dict(main.__globals__, {'PART_SIZE': 16, 'READ_SIZE': 6,
+                                                      'source_range': fake_source_range,
+                                                      'aws': fake_aws}), mock.patch.object(sys, 'argv', arguments):
+                if truncated:
+                    with self.assertRaises(module['RangeReadError']):
+                        main()
+                else:
+                    main()
+            self.assertEqual(reads, [(0, 6), (6, 6), (12, 4)] if truncated else
+                             [(0, 6), (6, 6), (12, 4), (16, 6)])
+            self.assertEqual(uploads, [] if truncated else [payload[:16], payload[16:]])
+            self.assertEqual(operations[-1], 'abort-multipart-upload' if truncated else
+                             'complete-multipart-upload')
 
     def test_legacy_session_outlives_the_bounded_job(self):
         workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise-sync:\n', 1)[0]
