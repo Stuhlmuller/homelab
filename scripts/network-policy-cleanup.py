@@ -481,7 +481,8 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
                           "scripts/ci/install-kubeconfig.sh", "scripts/ci/install-octelium-client.sh",
                           ".github/workflows/platform-maintenance.yml", "policy/workflows.rego",
                           "IaC/root.hcl", "IaC/terragrunt.stack.hcl",
-                          "IaC/stack-defaults.hcl"}
+                          "IaC/stack-defaults.hcl",
+                          "clusters/homelab/argocd/self-management/appproject.yaml"}
                  for path in changed):
             raise ValueError("policy cleanup source changed after qualification")
         previous = commit_sha

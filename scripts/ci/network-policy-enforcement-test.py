@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Guard the disabled firewall-only kube-router source before live qualification."""
+"""Guard retained firewall-only source across reviewed GitOps phases."""
 
 import json
 import importlib.util
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -19,6 +20,11 @@ FLAGS = {
     "--enable-ipv4=true", "--enable-ipv6=false",
     "--health-addr=127.0.0.1",
 }
+EMPTY_KUST = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n"
+ENFORCER_KUST = ("apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                 "resources:\n  - daemonset.yaml\n")
+FIXTURES_KUST = ("apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                 "resources:\n  - fixtures.yaml\n")
 QUALIFICATION_SPEC = importlib.util.spec_from_file_location(
     "network_policy_qualification", ROOT / "scripts/network-policy-qualification.py"
 )
@@ -39,14 +45,29 @@ def rendered_objects(path=SOURCE):
         ["yq", "-o=json", "-I=0", "."], input=source,
         capture_output=True, text=True, check=True, timeout=30,
     )
-    return [json.loads(line) for line in parsed.stdout.splitlines()]
+    return [item for line in parsed.stdout.splitlines()
+            if (item := json.loads(line)) is not None]
+
+
+def canonical_objects(items):
+    return sorted(json.dumps(item, sort_keys=True) for item in items)
 
 
 class FirewallSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.objects = rendered_objects()
+        # This retained source remains reviewable after GitOps prunes its overlay.
+        cls.objects = rendered_objects(SOURCE / "daemonset.yaml")
         cls.by_kind = {item["kind"]: item for item in cls.objects}
+
+    def test_enforcer_overlay_matches_reviewed_source_phase(self):
+        source = (SOURCE / "kustomization.yaml").read_text()
+        self.assertIn(source, {ENFORCER_KUST, EMPTY_KUST})
+        rendered = rendered_objects()
+        if source == ENFORCER_KUST:
+            self.assertEqual(canonical_objects(rendered), canonical_objects(self.objects))
+        else:
+            self.assertEqual(rendered, [])
 
     def test_exact_owned_resources_and_rbac(self):
         self.assertEqual(set(self.by_kind), {
@@ -98,9 +119,19 @@ class FirewallSourceTests(unittest.TestCase):
                       catalog["images"])
 
     def test_qualification_fixtures_stay_separate_and_tainted(self):
-        self.assertEqual(subprocess.check_output(
-            ["kubectl", "kustomize", str(SOURCE / "canary")], text=True), "")
+        source = (SOURCE / "canary" / "kustomization.yaml").read_text()
+        self.assertIn(source, {EMPTY_KUST, FIXTURES_KUST})
         fixtures = rendered_objects(SOURCE / "canary" / "fixtures.yaml")
+        with tempfile.TemporaryDirectory() as directory:
+            candidate = Path(directory)
+            (candidate / "fixtures.yaml").write_bytes(
+                (SOURCE / "canary" / "fixtures.yaml").read_bytes())
+            (candidate / "kustomization.yaml").write_text(FIXTURES_KUST)
+            self.assertEqual(canonical_objects(rendered_objects(candidate)),
+                             canonical_objects(fixtures))
+        rendered = rendered_objects(SOURCE / "canary")
+        self.assertEqual(canonical_objects(rendered),
+                         canonical_objects(fixtures if source == FIXTURES_KUST else []))
         self.assertEqual({(item["kind"], item["metadata"]["name"]) for item in fixtures}, {
             ("Namespace", "network-policy-canary"),
             ("Pod", "npq-client"), ("Pod", "npq-allowed"), ("Pod", "npq-denied"),

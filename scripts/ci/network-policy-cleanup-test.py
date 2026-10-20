@@ -56,6 +56,22 @@ class FirewallCleanupTests(unittest.TestCase):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((ROOT / name).read_bytes())
+            dormant = "        enabled = false\n        prune   = false\n"
+            active = "        enabled = true\n        prune   = true\n"
+            empty_active = ("        enabled    = true\n        prune      = true\n"
+                            "        allowEmpty = true\n")
+            for name, variants in ((application, (dormant, empty_active)),
+                                   (canary_application, (dormant, active, empty_active))):
+                target = root / name
+                source = target.read_text()
+                matches = [variant for variant in variants if source.count(variant) == 1]
+                self.assertEqual(len(matches), 1, f"unreviewed source state: {name}")
+                target.write_text(source.replace(matches[0], dormant))
+            (root / manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources:\n  - daemonset.yaml\n")
+            (root / canary_manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
             def git(*args):
                 return subprocess.run(["git", *args], cwd=root, check=True,
                                       capture_output=True, text=True).stdout.strip()
@@ -158,6 +174,13 @@ class FirewallCleanupTests(unittest.TestCase):
                 root_stack = root / "IaC/terragrunt.stack.hcl"
                 root_stack.write_text("unreviewed root registration\n")
                 commit("change root Application registration")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                project = root / "clusters/homelab/argocd/self-management/appproject.yaml"
+                project.parent.mkdir(parents=True, exist_ok=True)
+                project.write_text("unreviewed AppProject permissions\n")
+                commit("change canary AppProject permissions")
                 with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                     transition(qualify_sha, git("rev-parse", "HEAD"))
 

@@ -160,6 +160,22 @@ class CanaryNodeTests(unittest.TestCase):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((ROOT / name).read_bytes())
+            dormant = "        enabled = false\n        prune   = false\n"
+            active = "        enabled = true\n        prune   = true\n"
+            empty_active = ("        enabled    = true\n        prune      = true\n"
+                            "        allowEmpty = true\n")
+            for name, variants in ((application, (dormant, empty_active)),
+                                   (canary_application, (dormant, active, empty_active))):
+                target = root / name
+                source = target.read_text()
+                matches = [variant for variant in variants if source.count(variant) == 1]
+                self.assertEqual(len(matches), 1, f"unreviewed source state: {name}")
+                target.write_text(source.replace(matches[0], dormant))
+            (root / manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources:\n  - daemonset.yaml\n")
+            (root / canary_manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
 
             def git(*args):
                 return subprocess.run(["git", *args], cwd=root, check=True,
