@@ -44,10 +44,12 @@ def state():
 
 class FirewallCleanupTests(unittest.TestCase):
     def test_unadmitted_config_refuses_before_any_cluster_command(self):
-        with self.assertRaisesRegex(ValueError, "no admitted canary"):
-            SUT["execute"](argparse.Namespace(
-                config=ROOT / "scripts/config/platform-maintenance.json",
-                expected_sha="0" * 40, receipt_dir=Path("/unused"), output=Path("/unused")))
+        with patch.dict(SUT["PLATFORM"], {
+                "validate_config": lambda _: {"canary": {"node": None}}}):
+            with self.assertRaisesRegex(ValueError, "no admitted canary"):
+                SUT["execute"](argparse.Namespace(
+                    config=ROOT / "scripts/config/platform-maintenance.json",
+                    expected_sha="0" * 40, receipt_dir=Path("/unused"), output=Path("/unused")))
 
     def test_admitted_cleanup_requires_protected_workflow_before_cluster_access(self):
         with patch.dict(SUT["PLATFORM"], {

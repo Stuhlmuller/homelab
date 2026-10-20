@@ -229,7 +229,9 @@ deny contains msg if {
 
 approved_platform_maintenance if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.stage.options == ["inspect", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.cleanup_run_id.required == false
+	dispatch.inputs.cleanup_run_id.type == "string"
 	static := input.jobs["static-policy"]
 	static.permissions == {"contents": "read"}
 	job := input.jobs.maintenance
@@ -249,6 +251,7 @@ approved_platform_maintenance if {
 	some run in job.steps
 	run.name == "Run Reviewed Platform Stage"
 	run.env.RUN_STAGE == "${{ inputs.stage }}"
+	run.env.CLEANUP_RUN_ID == "${{ inputs.cleanup_run_id }}"
 	run.env.EXPECTED_SHA == "${{ inputs.expected_sha }}"
 	run.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	run.env.OCE_OCTELIUM_CLIENT_AUTH_TOKEN == "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}"
@@ -268,7 +271,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then

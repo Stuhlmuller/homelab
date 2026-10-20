@@ -262,6 +262,8 @@ sources:
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-4bbfe00c406fec8a213babcb
@@ -292,10 +294,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
+generated: { by: "codex", at: "2026-10-20T08:38:19.458Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:26:45.252Z
+    at: 2026-10-20T08:38:19.458Z
 ---
 
 # Validation Gates
@@ -1684,47 +1686,63 @@ source SHA; do not rewrite ambiguous history or infer cleanup ran. These are
 source checks; cleanup stays disabled until its separate live prerequisites are
 met. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
+The staged protected `canary-admit` path remains dormant while `canary.node` is
+unset. With a fresh placement receipt, it verifies the exact Node UID and boot
+ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
+Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
+then the selector label. A complete cluster-wide selector inventory must show
+no labeled Node before mutation and again just before labeling; if another
+Node appears after the patch, admission removes its own label and retains the
+taint. `canary-release` requires the reviewed cleanup receipt
+and an empty owned firewall. It removes the label, waits until cleanup
+DaemonSet Pods are gone cluster-wide, then removes the taint; a survivor or
+timeout leaves the taint and an interrupted private receipt. Source fixtures
+do not supply live capacity or traffic qualification.
+
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
-to `static-checks.sh`. It renders the Kustomization and checks restricted
-namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
-RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
-private server SAN, and `activationEnabled: false`. The static wrapper also
-runs `openclaw-enterprise-postgres-test.py` against PostgreSQL 18. It executes a
-SHA-pinned stock migration as `occ_migrator`, checks `occ_app` can use the
-migration-created auth table but cannot create a table or read an ungranted
-table, then checks TLS, separated roles, logical dump, and isolated restore.
-This is a local fixture, not a live database or recovery receipt. The separate
+and [`openclaw-enterprise-postgres-test.py`](../../scripts/ci/openclaw-enterprise-postgres-test.py)
+to `static-checks.sh`. It renders restricted namespaces outside ambient mesh,
+system-side default-deny ingress, fixed tenant RoleBindings, exact `OnChange`
+SSM projections, retained PostgreSQL CA, private server SAN, and
+`activationEnabled: false`. The PostgreSQL 18 fixture checks TLS 1.3, separate
+migration/application/backup roles, database readiness and backup boundaries,
+and runs pinned upstream migration 0008 against the `occ` schema. It proves the
+application role can read its migration-created auth table but cannot create
+schema objects or read a new ungranted table. The retained 10Gi local claim,
+restore scratch and live TLS remain placement and recovery gates.
+
+The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
-now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
-fixtures exercise reconciliation and workload attestation. Config validation
-pins the bootstrap service-key destination to
+runs in both `static-checks.sh` and `offline-checks.sh`. Its portable fixtures
+exercise stopped-Agent reconciliation and workload attestation. Config
+validation pins the bootstrap service-key destination to
 `https://console.oce.stinkyboi.com` before reading the key. When activation is
 requested, it requires the exact `openai` transport, OpenRouter base URL,
-`openai-completions` API, `openrouter/free` model, and dedicated key reference;
-fixtures reject changed, missing, and extra model fields. The stable
-receipt compares nonempty resource versions for the immutable Secret,
-Deployments, ReplicaSets, and Pods across two read-only snapshots. The
-read-only `check` uses those snapshots to prove the selected Drivers; `verify`
-also remains read-only and checks exact journal, API, and tenant state without
-inference. With a file-backed service key and protected journal, the source-only
-`reconcile` path can POST the logical `claw` Namespace for the prepared
-`openclaw-agents` namespace. It checks the external namespace, restricted PSA,
-exact tenant RBAC and policy ownership before the first POST, records pending
-intent first, and recovers an uncertain response only through unique API
-readback. A ready result needs exact API and owned Kubernetes readback,
-including exactly the three pinned base NetworkPolicies. It can then create
-or adopt one owned Configuration and one stopped, unauthenticated Embedded Agent,
-journaling pending intent before each POST and refusing unknown outcomes.
-Activation and runtime deployment remain disabled. A blocked run may already have
-changed Enterprise and Kubernetes state: inspect the journal, exact API object,
-namespace and policies before retrying. Rollback needs a reviewed cleanup path
-for the logical Namespace; retain the physical tenant Namespace. An ephemeral
-runner cannot execute the protected reconcile stage safely: a serialized
-operator Job, separate retained journal PVC, pinned image and admitted placement
-are still undeclared. These local
-tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
-network-policy enforcement, hooks, routes, Namespace adoption or restore.
+`openai-completions` API, `openrouter/free` wire model, and dedicated key
+reference; fixtures reject changed, missing, and extra model fields. The
+stable receipt compares nonempty resource versions for the immutable Secret,
+Deployments, ReplicaSets, and Pods across two read-only snapshots. The read-only
+`check` uses those snapshots to prove the selected Drivers. With a file-backed
+service key and protected journal, `reconcile` can POST or adopt the logical
+`claw` Namespace, native Configuration, and one stopped unauthenticated
+Embedded Agent in the prepared `openclaw-agents` namespace. Its Configuration
+uses `openai/openrouter/free` as the native model reference for the supported
+`openai` Harness provider; no model key or runtime revision is attached. It
+checks the external namespace, restricted PSA, exact tenant RBAC and policy
+ownership before the first POST, records each pending intent before an API
+write, and recovers uncertain responses only through exact owned readback.
+`verify` is read-only and checks the journaled Namespace, Configuration values
+and generation, stopped Agent, API identity, and Kubernetes objects without
+inference or deployment. A blocked run may already have changed Enterprise and
+Kubernetes state: inspect the journal and exact objects before retrying.
+Removal needs a reviewed cleanup path for the logical Namespace; retain the
+physical tenant Namespace. These local tests do not prove live Secret readiness,
+certificate issuance, PostgreSQL TLS, network-policy enforcement, hooks,
+routes, Namespace adoption or restore. The local `--expected-sha` guard does
+not replace an exact-remote-main check immediately before a protected write,
+and no live reconcile stage may run without a retained operator journal PVC,
+pinned Job image and private credential path.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main

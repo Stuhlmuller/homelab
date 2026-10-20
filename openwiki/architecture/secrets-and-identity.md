@@ -118,10 +118,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
+generated: { by: "codex", at: "2026-10-20T04:25:47.038Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:26:45.252Z
+    at: 2026-10-20T08:38:19.458Z
 ---
 
 # Secrets And Identity
@@ -292,7 +292,7 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
-The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
+The `aws-ssm` store allow-list includes both; seven `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
 Secrets on deletion. The model key remains a placeholder until the protected
 workflow supplies a distinct OpenRouter key. These declarations do not prove
@@ -303,9 +303,8 @@ from generated app and migrator passwords. Both URLs name the private
 `occ-postgres` Service and require `sslmode=verify-full` with the retained
 `occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
 password is a separate target. cert-manager declares that CA and a server
-certificate for the Service DNS name. PostgreSQL is staged in source; its
-installation, chart consumers, scheduled backup, and live TLS verification
-remain pending.
+certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
+and live TLS verification remain pending.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
@@ -692,7 +691,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
 - Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
-  contract. OpenTofu generates six internal values; the model key stays a
+  contract. OpenTofu generates five internal values; the model key stays a
   placeholder until the owner supplies a distinct OpenRouter inference key to
   the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
   It verifies the key and writes only the new SSM path. The selected

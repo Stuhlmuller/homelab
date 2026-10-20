@@ -22,12 +22,14 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-19T09:06:14.696Z" }
+generated: { by: "codex", at: "2026-10-20T08:13:32.442Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:44:12.806Z
+    at: 2026-10-20T08:13:32.442Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -185,5 +187,14 @@ recovery receipt producer, isolated canary, and Istio completions remain open
 gates; `activationEnabled` is still false. No live node or control-plane
 upgrade is accepted from this source alone. The canonical runbook gives the
 direct-LAN commands and stop conditions.
+
+The same protected lane stages `canary-admit` and `canary-release` separately
+from upgrades. Admission requires reviewed placement and adds the isolation
+taint before the selector label. It rejects another Node with that label before
+mutation and immediately before labeling, and removes its own label if a
+post-patch check detects a conflict. Release requires verified owned cleanup,
+removes the label, waits for cleanup DaemonSet Pods to disappear cluster-wide,
+then removes the taint. An interrupted release keeps the taint for direct
+review; the committed `canary.node` is unset.
 
 See [Cluster Topology](../architecture/cluster-topology.md) and [Validation](validation.md).

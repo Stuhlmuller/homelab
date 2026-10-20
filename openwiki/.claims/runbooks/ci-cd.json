@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:853ad09448e5b2444920d99e835857d33eec67b460d75d2957ee8262771816cc",
+  "pageVersion": "sha256:4f253854ca5977198bf1c38d7d4abdfe79d2d1f08c38acfe2f290feef899ec9f",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
+          "version": "repo-file-v1:sha256:01b8cdc1b0ba53d588c23d993895e4254e043c2a54c551dc867969acc69e7079"
         }
       ]
     },
@@ -92,11 +92,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:5849e1575bf8976951932889e7712ee35d54f94d75f7904c0feaf5623b87de62"
+          "version": "repo-file-v1:sha256:d9f09d68a0d66a63f749c3e8d2d8ccd58bc01548adb312c69440859f392d829a"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
+          "version": "repo-file-v1:sha256:ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -191,7 +191,7 @@
           "version": "repo-lines-v1:sha256:ba9c47bd7b588eb40c7987e173bc49ac2dcdca77c3803cccc1acfa34f34716bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQ4ZDE0OGI4ZWU3NzBlMDQ2NDA5NTE3NGEwM2E1NmFiZmM4NTZmYTdhYjg0NWQxNDY1YzY0NzcyMjc0NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NGIyODhiMjk5NTc2ODQxMTc2YmM4ZTgxNDdjYmJhYjM1NTgwZmI2OGM1MjFkOTkxM2Y5ZDQ3ZmJiZWI2YjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmZGZjMTAwZmVkNTgxMjc2ZjBjMDQ5ZWEyMDkyMmIzZjBiZDNhZjRkODQwYWM2Mzc5NDFjZDFkYjE4NmI5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjc0N2E1MTcxZGQwOGMwMzc5YzdiZWEzZGYwYjIzZWM1NjRhZGQ4OTY3MTk4MDcyY2E1ZjYyZjFkNWFlMWUifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L387-L481",
+          "resource": "repo://policy/workflows.rego#L390-L484",
           "version": "repo-lines-v1:sha256:878ce88de52696eedf20590376360bcdc352b1972f6cae4ecd77db91d9d5ef66:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
         },
         {
@@ -239,10 +239,32 @@
           "version": "repo-lines-v1:sha256:91b4f9f45840e62745f0e55757df7c294c3510d202ed64cd949e65f074ff357c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3OTNkMTg0NTU1MmIzYTEzN2U5Yzc4OTdkYzc4YjE1ZGU0NzQzZjNmMTUzODlkYWVhMzE1OTE3MWEwYmRkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmODE3ZTVlNWZkNzRjMWFmMWQ1MDBjNjFhZjhiNDM1ZTE5ZTU2MjNlMDdhYzljMTBjZjZhYTgyODgzYmE5NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_54e22979a58544c1bec353a4d0f28a17",
+      "statement": "The protected canary-admit and canary-release stages load exact-current-main placement and cleanup receipts, record a private attempt before Node mutation, and use the repository canary helper to retain the isolation taint across interrupted release or cleanup Pod deletion.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml#L1-L38",
+          "version": "repo-lines-v1:sha256:cd0adf4f23d7b77cb2771e1bc2978047a9289bcb207bec05cf6224d23e261a22:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3M2RhNzc1MjUyYTFjYTU2NzU4ZTE0NGMxNzIwNzI5NDVkMWU5NmZiN2UxNDI5NGIxM2Y0NDRlNGJjOGY1ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjZThiODJlMzgwNWEzYTE4MDAzZjJmZTQ1ZDRmNWRiYjQ3YWZkZThjMmRkZjU1OWNlZDJiNGZkYzRmNDA2MzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc2YWY2MmVmODAyNjFhNDRhNjVhMWJiYTc2ODVjYjUxYjMyZjJkYjRiYzRkYWJlYjAxMmU1NGU4MDAzNzFjYjMifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh#L122-L145",
+          "version": "repo-lines-v1:sha256:db0754c12af29e92d8accdebf750b7488f5268004263b4d1cd2e2d38e59890f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3OTFmZTM4NjE0MGVmMmU1Y2Q0NzcxZTJjNzE1ZmM0NzAzOTEyOTBhOGI4MjE5OTVhMDE1NTQ0MzMzZDJkMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTc2MDQyNmE4ZTNhODYwZGQxNTBlNmMxMTc4YmFhNmJmMTgyNGM1N2ZlODI3M2IwMmI0YTVjZTQ1M2FhNzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyODI1ODdhYzVjYTcyZjgzMTI4ZjcyMDFhMTU0MTgwYTJhZDk5ZGU4ZTQ1MjIwZjdlY2JlYjJjNDFjOWU0OTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3M2FiOTQzY2JlYzM5OTkyYTc4N2RkODkwYjJkYjVlMjU0NDJhYTI0ODYzOWZjMmU1OTZlZGNmYzRkZjMxYmYifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L171-L199",
+          "version": "repo-lines-v1:sha256:87e9ef7c483287e2c58e663f6e8d7ac587d1c205351e35364d814fcc584ee75d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmE1YWYyY2IxYzg2OWFjOTM4ZjgwZWU3ZmE5YmQ2YmFlMDU0NTUzZWIyYWQzYWViOTYxODY1ZmQ3ODc5NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkODYzMTc2NTQ4ZjhkYThhOTY4ZmNkNmEzN2JhNDgxYTFjNGUxOWY2NmExZGQ0NTI3YjkwOWM1OWNlMTQwMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlYWI0ZDM4NjNlMWNmNGU4YjNiYjJiZWQxOWVkYTg3NDlhYzg0MDk2ZTQ3MWQ2YzU3YzVkODY5NzQzYzBmYTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhZTZhNDNiODQwYmE2ZDAwN2IwNGEyZjVmM2M5Njg2NTFiZDNiNzZmZmRlNTM3NWYzNTU1YjJmNmE2MzhiZmIifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py#L219-L285",
+          "version": "repo-lines-v1:sha256:bea282bac1365438081ac206b8baa723dfebd2fb5853230465d9323af5bfcfee:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMDYyMjI3MzU2ZWQ0ZjMwYWNlM2UzMWUyMTA4ZDRjMmI1YzY1M2U5ZjFhNWNlMzgwYWFiMDc3YjE3YmQwZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZTVkZDJlMDRiNjU5MWZiZTBiYjY2NzIzYzA4YjQxMjIxYzFjODQxMzUxOGNmNzg3ZTIwYmIyZWMyYzdhMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2NDllMDliYjBiNTdlNWI5M2NjYzY3NzNlMzU5ZDc0YjliZWJmOWUzMGRlNjRhZTVjYTBmMmI2ZTk1OGJlMTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwOWYxZWY2N2Q4MDJhMWQzZjk1MGUxYTUxYTc0NTE1NmUzNWJmYWUwMzhkYjE5MzIwMTQxMTg0YWU5ZDRjNmQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:52:46.535Z"
+    "at": "2026-10-20T08:38:19.458Z"
   }
 }

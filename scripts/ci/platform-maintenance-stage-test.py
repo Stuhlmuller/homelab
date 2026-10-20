@@ -14,19 +14,26 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 STAGE = ROOT / "scripts/ci/platform-maintenance-stage.sh"
+CONFIG = ROOT / "scripts/config/platform-maintenance.json"
 SHA = "a" * 40
 
 
 class PlatformStageTests(unittest.TestCase):
-    def run_stage(self, stage):
+    def run_stage(self, stage, canary_node=None):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
+            config = json.loads(CONFIG.read_text())
+            config["activationEnabled"] = False
+            config["canary"]["node"] = canary_node
+            fixture = path / "scripts/config/platform-maintenance.json"
+            fixture.parent.mkdir(parents=True)
+            fixture.write_text(json.dumps(config))
             bin_dir = path / "bin"
             bin_dir.mkdir()
             (bin_dir / "gh").write_text(f"#!/bin/sh\nprintf '%s\\n' {SHA}\n")
             (bin_dir / "gh").chmod(0o700)
             marker = path / "external-command"
-            for name in ("aws", "talosctl", "kubectl", "octelium"):
+            for name in ("terragrunt", "aws", "talosctl", "kubectl", "octelium"):
                 executable = bin_dir / name
                 executable.write_text(f"#!/bin/sh\ntouch '{marker}'\nexit 99\n")
                 executable.chmod(0o700)
@@ -34,7 +41,7 @@ class PlatformStageTests(unittest.TestCase):
                        GITHUB_ACTIONS="true", GITHUB_REF="refs/heads/main",
                        GITHUB_SHA=SHA, EXPECTED_SHA=SHA, GITHUB_RUN_ID="123",
                        RUN_STAGE=stage)
-            result = subprocess.run(["bash", str(STAGE)], cwd=ROOT, env=env,
+            result = subprocess.run(["bash", str(STAGE)], cwd=path, env=env,
                                     capture_output=True, text=True, timeout=10)
             return result, marker.exists()
 
@@ -44,13 +51,20 @@ class PlatformStageTests(unittest.TestCase):
         self.assertFalse(external)
 
     def test_disabled_config_blocks_all_mutating_stages(self):
-        for stage in ("qualify", "owned-cleanup", "talos-1.11.6",
+        for stage in ("canary-admit", "canary-release", "qualify", "owned-cleanup", "talos-1.11.6",
                       "talos-1.12.12", "talos-1.13.11", "talos-1.14.4",
                       "kubernetes-1.35.9"):
             with self.subTest(stage=stage):
                 result, external = self.run_stage(stage)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse(external)
+
+    def test_canary_with_reviewed_node_reaches_protected_entry_even_before_activation(self):
+        for stage in ("canary-admit", "canary-release"):
+            with self.subTest(stage=stage):
+                result, external = self.run_stage(stage, "zimaboard-1")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(external)
 
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
@@ -205,6 +219,11 @@ aws() {
         helper = source.index('python3 scripts/network-policy-cleanup.py')
         for name in ("placement", "firewall-ownership"):
             self.assertLess(source.index(f'load_receipt "openclaw-enterprise/platform/receipts/${{GITHUB_SHA}}/{name}.json"'), helper)
+
+    def test_canary_retains_attempt_before_mutating_node(self):
+        source = STAGE.read_text()
+        self.assertLess(source.index('retain_result "$work/canary-attempt.json"'),
+                        source.index('python3 -I scripts/network-policy-canary-node.py'))
 
 
 if __name__ == "__main__":

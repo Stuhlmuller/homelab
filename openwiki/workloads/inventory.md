@@ -74,10 +74,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
-  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -160,8 +156,6 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-8483d28614308625b1073872
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
-  - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
-    resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -176,10 +170,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
+generated: { by: "codex", at: "2026-10-20T08:38:19.458Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:26:45.252Z
+    at: 2026-10-20T08:38:19.458Z
 ---
 
 # Workload Inventory
@@ -397,28 +391,25 @@ cannot narrow it. Review the generator-owned correction and isolated-canary
 traffic before enforcement.
 
 The OpenClaw Enterprise replacement is staged in source with
-`activationEnabled: false`; no Enterprise controller, gateway, or
+`activationEnabled: false`; no Enterprise controller, gateway, database or
 agent has been deployed. The unregistered
 [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
-a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It also declares a dormant TLS-only PostgreSQL 18.6 StatefulSet,
-four separated roles, and a 10 Gi local claim template; the required local
-volume is not bound and no Enterprise database or Installation workload runs.
-An incomplete first bootstrap leaves PostgreSQL unready and its claim retained;
-the stopped-writer backup capture, encrypted off-node target, and isolated
-restore proof remain open. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+a system ingress deny, PostgreSQL TLS certificates, and a dormant PostgreSQL
+18.6 StatefulSet with a 10Gi local claim template. It declares no live database,
+PVC, or Installation workload. A separate dormant
+[stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
 placeholder administrator email, missing placement labels, and unfinished
-database/storage gates prevent activation. A protected full-sync stage is
-source-tested, but cannot run until registration and the reviewed installation
-phase; it would sync Foundation before Enterprise at explicit revisions.
-The reconciler's source tests can create or adopt only a stopped, unauthenticated
-Agent after exact tenant and journal checks. Its protected live stage is absent:
-a separate retained journal PVC, serialized operator Job, pinned image, and
-placement are still pending. No Enterprise API reconciliation has run.
+storage/capacity gates prevent activation. The source-only
+[reconciler](../../scripts/openclaw-enterprise.py) can journal and read back one
+logical Namespace, native Configuration and stopped unauthenticated Embedded
+Agent; its protected live stage needs a retained operator journal PVC and
+pinned Job, so no live Agent or journal Job exists. A protected full-sync stage
+is source-tested, but cannot run until registration and the reviewed installation
+phase; it would sync foundation before Enterprise at explicit revisions.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy
