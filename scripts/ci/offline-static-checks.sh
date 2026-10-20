@@ -981,8 +981,9 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-images.yml:publish' \
     '.github/workflows/openclaw-enterprise-model-credential.yml:credential' \
     '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
-    '.github/workflows/openclaw-enterprise-operations.yml:enterprise-sync' \
     '.github/workflows/openclaw-enterprise-operations.yml:legacy' \
+    '.github/workflows/openclaw-enterprise-operations.yml:enterprise' \
+    '.github/workflows/openclaw-enterprise-operations.yml:binding' \
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-startup.yml:startup' \
     '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
@@ -1050,7 +1051,7 @@ done <<'EOF'
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml ff4bf59a9a70afb0723cc0c5dd3f60a8d64a4b031efc03169847e7c12616d49d
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 168484d2e84946fb0670d720411aed051ff92dac711c91ceef67c8650b21b2e4
+.github/workflows/openclaw-enterprise-operations.yml df54f5674291298dd6cbdbfe8b0bf59ef52bfcebaa35cabeae6f4b0d98ff628f
 .github/workflows/openclaw-enterprise-startup.yml fa532be5d92086f46d805cfbe10bd1230076ecc42827f483a79a1f1d23e76e5c
 .github/workflows/platform-maintenance.yml dfe73c87848179af320549a129fcbdb396d7088faa41abd5f71fc54738046b6b
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5

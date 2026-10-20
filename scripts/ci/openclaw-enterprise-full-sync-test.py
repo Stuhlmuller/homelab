@@ -2,10 +2,8 @@
 """Fixed full-sync contract; fake CLIs prevent a local cluster mutation."""
 
 import json
-import hashlib
 import os
 from pathlib import Path
-import re
 import subprocess
 import tempfile
 import unittest
@@ -19,13 +17,11 @@ REPO = "https://github.com/Stuhlmuller/homelab.git"
 
 
 class FullSync(unittest.TestCase):
-    def test_workflow_pins_reviewed_script(self):
+    def test_workflow_reserves_full_sync_until_durable_journal(self):
         workflow = (ROOT / ".github/workflows/openclaw-enterprise-operations.yml").read_text()
-        hashes = re.findall(
-            r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-full-sync\.sh'",
-            workflow,
-        )
-        self.assertEqual(hashes, [hashlib.sha256(SCRIPT.read_bytes()).hexdigest()])
+        self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop,', workflow)
+        self.assertIn('bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"', workflow)
+        self.assertNotIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', workflow)
 
     def run_stage(self, *, phase="lifecycle-validation", ref="refs/heads/main",
                   upstream=UPSTREAM, enterprise_enabled=False, foundation_path=None,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed local checks for the protected legacy archive lane."""
+"""Fail-closed local checks for protected OpenClaw operations."""
 
 import os
 import json
@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 import stat
+import textwrap
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
@@ -21,6 +22,9 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 UPLOAD = ROOT / 'scripts/ci/openclaw-enterprise-upload.py'
+ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
+BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
+BINDER_SHA256 = 'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 ROLE = ROOT / 'IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf'
@@ -181,7 +185,7 @@ sys.stdout.buffer.write(chunk)
                              'complete-multipart-upload')
 
     def test_legacy_session_outlives_the_bounded_job(self):
-        workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise-sync:\n', 1)[0]
+        workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise:\n', 1)[0]
         role = ROLE.read_text()
         requested = re.findall(r'^\s+role-duration-seconds: (\d+)$', workflow, re.M)
         maximum = re.findall(r'^\s+max_session_duration = (\d+)\b', role, re.M)
@@ -190,6 +194,160 @@ sys.stdout.buffer.write(chunk)
         self.assertEqual(maximum, requested)
         self.assertEqual(limit, ['360'])
         self.assertGreaterEqual(int(requested[0]) - 60 * int(limit[0]), 3600)
+    def test_enterprise_stages_are_pinned_serialized_and_fail_closed(self):
+        workflow = WORKFLOW.read_text()
+        script = ENTERPRISE_SCRIPT.read_text()
+        digest = hashlib.sha256(ENTERPRISE_SCRIPT.read_bytes()).hexdigest()
+        self.assertIn(f"{digest}  scripts/ci/openclaw-enterprise-stage.sh", workflow)
+        self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop, verification, '
+                      'restore, acceptance]', workflow)
+        self.assertIn('Choose exactly one fixed operation stage.', workflow)
+        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 3)
+        self.assertEqual(workflow.count('queue: max'), 3)
+        self.assertIn("inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
+                      workflow)
+        self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && "
+                      "inputs.enterprise_stage != 'bind-installation'",
+                      workflow)
+        self.assertIn('private diagnostics withheld', workflow)
+        self.assertIn('durable private journal runner is not declared', script)
+        self.assertNotIn('kubectl', script)
+        self.assertNotIn('argocd', script)
+        self.assertNotIn('openclaw-enterprise.py', script)
+
+        enterprise_job = workflow.split('\n  enterprise:\n', 1)[1]
+        self.assertLess(enterprise_job.index('name: Check Out Repository'),
+                        enterprise_job.index('name: Recheck Current Main Commit Before Enterprise Stage'))
+        self.assertLess(enterprise_job.index('name: Recheck Current Main Commit Before Enterprise Stage'),
+                        enterprise_job.index('name: Run Fixed Enterprise Stage'))
+        recheck = re.search(r'      - name: Recheck Current Main Commit Before Enterprise Stage\n'
+                            r'.*?        run: \|\n'
+                            r'(.*?)(?=\n      - name: Run Fixed Enterprise Stage)',
+                            enterprise_job, re.S)
+        self.assertIsNotNone(recheck)
+        with tempfile.TemporaryDirectory() as directory:
+            fake_gh = Path(directory) / 'gh'
+            fake_gh.write_text('#!/bin/sh\nprintf "%s\\n" "$FAKE_MAIN_SHA"\n')
+            fake_gh.chmod(0o755)
+            for current_main, expected in (('a' * 40, True), ('b' * 40, False)):
+                result = subprocess.run(['bash', '-c', textwrap.dedent(recheck.group(1))],
+                                        cwd=ROOT, env={**os.environ,
+                                                       'PATH': f'{directory}:{os.environ["PATH"]}',
+                                                       'ACTUAL_REF': 'refs/heads/main',
+                                                       'ACTUAL_SHA': 'a' * 40,
+                                                       'EXPECTED_SHA': 'a' * 40,
+                                                       'FAKE_MAIN_SHA': current_main,
+                                                       'GH_REPO': 'Stuhlmuller/homelab',
+                                                       'GH_TOKEN': 'test'},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode == 0, expected,
+                                 (current_main, result.stderr))
+
+        dispatch = re.search(r'      - name: Verify Dispatch Commit\n.*?        run: \|\n'
+                             r'(.*?)(?=\n      - name: Check Out Repository)',
+                             workflow, re.S)
+        self.assertIsNotNone(dispatch)
+        guard = textwrap.dedent(dispatch.group(1))
+        base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
+                'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
+                'BASELINE_REF': '', 'ARCHIVE_REF': ''}
+        for legacy, enterprise, baseline, expected in (
+            ('inventory', 'none', '', True), ('none', 'verification', '', True),
+            ('none', 'bind-installation', '', True),
+            ('none', 'none', '', False), ('inventory', 'stop', '', False),
+            ('none', 'reconcile', 'unexpected', False),
+        ):
+            result = subprocess.run(['bash', '-c', guard], cwd=ROOT,
+                                    env={**base, 'LEGACY_STAGE': legacy,
+                                         'ENTERPRISE_STAGE': enterprise,
+                                         'BASELINE_REF': baseline},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode == 0, expected,
+                             (legacy, enterprise, result.stderr))
+
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                                      text=True).strip()
+        run_env = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha,
+                   'EXPECTED_SHA': sha}
+        for stage in ('full-sync', 'reconcile', 'stop', 'verification',
+                      'restore', 'acceptance'):
+            with self.subTest(stage=stage):
+                result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,
+                                        env=run_env, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn('durable private journal runner is not declared', result.stderr)
+        for stage in ('', 'inventory', 'unknown', '../restore'):
+            with self.subTest(stage=stage):
+                result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,
+                                        env=run_env, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 2)
+        stale = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), 'verification'], cwd=ROOT,
+                               env={**run_env, 'EXPECTED_SHA': '0' * 40},
+                               capture_output=True, text=True, timeout=5)
+        self.assertEqual(stale.returncode, 2)
+
+    def test_installation_binding_is_pinned_protected_and_requires_private_file(self):
+        workflow = WORKFLOW.read_text()
+        binding = workflow.split('\n  binding:\n', 1)[1]
+        self.assertIn("inputs.enterprise_stage == 'bind-installation'", binding)
+        self.assertIn('name: homelab-production', binding)
+        self.assertIn('group: openclaw-enterprise-operations-production', binding)
+        self.assertIn('queue: max', binding)
+        self.assertIn('OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}', binding)
+        self.assertNotIn('id-token: write', binding)
+        self.assertLess(binding.index('name: Recheck Current Main Commit Before Binding'),
+                        binding.index('name: Bind Reviewed Installation'))
+        self.assertIn('test "$ACTUAL_SHA" = "$(gh api', binding)
+        self.assertIn(f'{BINDER_SHA256}  scripts/openclaw-enterprise-bind-installation.py',
+                      binding)
+        if BINDER.exists():
+            self.assertEqual(hashlib.sha256(BINDER.read_bytes()).hexdigest(), BINDER_SHA256)
+        self.assertIn('test "$(jq -r \'.bootstrap.serviceKeyFile // empty\' '
+                      'scripts/config/openclaw-enterprise.json)" = '
+                      '/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json',
+                      binding)
+        self.assertIn('test -f /private/openclaw-enterprise/bootstrap/'
+                      'initial-admin-service-key.json', binding)
+        self.assertIn("stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/"
+                      'initial-admin-service-key.json', binding)
+        self.assertIn("timeout 10m nix develop --command bash <<'EOF'", binding)
+        self.assertIn('ulimit -f 1024', binding)
+        self.assertIn('private diagnostics withheld', binding)
+        self.assertNotIn('cat "$private_log"', binding)
+
+        run = textwrap.dedent(binding.split('        run: |\n')[-1])
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory)
+            (fake / 'sha256sum').write_text('#!/bin/sh\nexit 0\n')
+            (fake / 'jq').write_text(
+                '#!/bin/sh\nprintf "%s\\n" '
+                '"/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json"\n')
+            marker = fake / 'ran-binder'
+            (fake / 'timeout').write_text(
+                '#!/bin/sh\ntouch "$BINDER_MARKER"\nexit 0\n')
+            (fake / 'stat').write_text('#!/bin/sh\nprintf "0:644\\n"\n')
+            (fake / 'id').write_text('#!/bin/sh\nprintf "0\\n"\n')
+            for name in ('sha256sum', 'jq', 'timeout', 'stat', 'id'):
+                (fake / name).chmod(0o755)
+            # Reject a missing key and an existing key with weak file mode.
+            for gate, file_tests in (
+                    ('missing', 'return 1'),
+                    ('weak_mode', 'return 0')):
+                with self.subTest(gate=gate):
+                    private_file = ('test() { if [[ "$1" == -f || "$1" == -s ]]; '
+                                    f'then {file_tests}; else builtin test "$@"; fi; }}\n')
+                    result = subprocess.run(['bash', '-c', private_file + run], cwd=ROOT,
+                                            env={**os.environ,
+                                                 'PATH': f'{fake}:{os.environ["PATH"]}',
+                                                 'OCTELIUM_AUTH_TOKEN': 'test',
+                                                 'EXPECTED_SHA': 'a' * 40,
+                                                 'BINDER_MARKER': str(marker)},
+                                            capture_output=True, text=True, timeout=5)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     '::error::Enterprise Installation binding blocked; '
+                                     'private diagnostics withheld.')
+                    self.assertFalse(marker.exists())
 
     def test_workflow_pins_current_operations_script(self):
         pins = re.findall(
@@ -452,7 +610,6 @@ printf '%s\\n' "$phase"
         workflow = WORKFLOW.read_text()
         for required in (
             'options: [none, inventory, publish-inventory, archive, publish-archive, verify]',
-            'options: [none, full-sync]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',

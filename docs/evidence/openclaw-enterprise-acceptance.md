@@ -29,6 +29,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Envoy/Gateway API private route | Pending | — | Pending |
 | PostgreSQL roles/TLS and isolated restore | Pending | — | Pending |
 | Private browser access source | [access PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420), `bd5bd437`; [installation PR #1424](https://github.com/Stuhlmuller/homelab/pull/1424), `e24dc89` | — | Source validated: authenticated Octelium console and post-auth redirect, opaque native-host private route and DNS/certificate from #1420; cookie and trusted-proxy declarations from #1424. Live URL cutover and browser/TLS/WebSocket acceptance remain pending. |
+| Protected Enterprise operations stages | [workflow](../../.github/workflows/openclaw-enterprise-operations.yml), [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh), [journal contract](../../scripts/config/openclaw-enterprise.json) | — | Source-only. Fixed dispatch is guarded and serialized; runtime stages block without a durable private journal runner/mount, and binding needs an owner-controlled private key. T043 and live outcomes remain pending. |
 | Enterprise install and hook failure matrix | Pending | — | Pending |
 | Inactive agent reconciliation and retry | Pending | — | Pending |
 | Model credential and real provider probe | Pending | — | Pending |
