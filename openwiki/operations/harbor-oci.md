@@ -160,7 +160,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
+generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
 verified:
   - by: openwiki/0.7.0
     at: 2026-10-19T23:18:08.587Z
@@ -842,6 +842,11 @@ Before copying an alias, the publisher retries a transient Harbor alias lookup
 up to three times. An expected missing-alias response proceeds to copy; an
 authentication error or other hard lookup failure stops publication. A retry
 does not replace the final digest, alias, and authenticated pull checks.
+For an OCI index, the final authenticated Harbor pull retries classified
+transport failures up to five times with fresh local directories and 2, 4,
+8, then 16 seconds of backoff. Authentication, content, and other hard
+errors stop immediately; the pulled index must still match the original
+digest. Full-catalog acceptance remains pending a protected receipt.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
