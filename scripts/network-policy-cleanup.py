@@ -442,7 +442,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
     manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
     application = "IaC/platform-network-policy/stack.hcl"
     old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
-    old_sync = "        enabled = false\n        prune   = false\n"
+    old_sync = "        enabled = true\n        prune   = true\n"
     def non_operational(path):
         return (path.startswith(("openwiki/", "specs/")) or
                 (path.startswith("docs/") and

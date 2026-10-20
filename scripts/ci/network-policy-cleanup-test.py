@@ -60,7 +60,7 @@ class FirewallCleanupTests(unittest.TestCase):
             active = "        enabled = true\n        prune   = true\n"
             empty_active = ("        enabled    = true\n        prune      = true\n"
                             "        allowEmpty = true\n")
-            for name, variants in ((application, (dormant, empty_active)),
+            for name, variants in ((application, (dormant, active, empty_active)),
                                    (canary_application, (dormant, active, empty_active))):
                 target = root / name
                 source = target.read_text()
@@ -96,7 +96,7 @@ class FirewallCleanupTests(unittest.TestCase):
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
                 original = (root / application).read_text()
                 (root / application).write_text(original.replace(
-                    "        enabled = false\n        prune   = false\n",
+                    "        enabled = true\n        prune   = true\n",
                     "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"))
             def wiki_update(name):
                 target = root / name
@@ -105,6 +105,8 @@ class FirewallCleanupTests(unittest.TestCase):
             git("init", "-q")
             (root / canary_manifest).write_text(
                 "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml\n")
+            original = (root / application).read_text()
+            (root / application).write_text(original.replace(dormant, active))
             original = (root / canary_application).read_text()
             (root / canary_application).write_text(original.replace(
                 "        enabled = false\n        prune   = false\n",
