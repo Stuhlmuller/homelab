@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5f1511235bc53fe92878e52aac6c8941d92e1406c2fe4f9bc116daec0405783b",
+  "pageVersion": "sha256:9f73714f537fbc26dcc417ce7d3a202add82c24d96883b58ab94d7faa830188f",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:84186bc2833ea79d54fc719695d3e5ccaefa7e3c6cde0e09ea52de2d99bf14ce"
+          "version": "repo-file-v1:sha256:5af758b681b70f5dcef18acbfca1fac98c4f857eff0ff1f7c38c8b359e3343be"
         }
       ]
     },
@@ -206,7 +206,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:24c63099d5e2b83c2a6b1d8201c81fd27a13376f1bf42f47f16e11f22fde4f44"
+          "version": "repo-file-v1:sha256:5b09ae06373d285208cd6d605e0ddd128097df787b4200d7e2c0f3877966f39a"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -302,11 +302,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:603d5072a098ea2f5186835f8ba4422b96ff8e0fd5fdde86c4bc539a5969ed9a"
+          "version": "repo-file-v1:sha256:f6f419c9c5c83ecd43bf52579cdb9faab329e5457a9992ea70fdac9244d10327"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:02a9a6ceed6aadc2f9e6e6718c7041fb57767f782382bd85bbe4ed5261900d48"
+          "version": "repo-file-v1:sha256:2137c2de8ffa05d10510f1b7bf2153fabd14414c044bdc90c00ebe6b212da2ac"
         }
       ]
     },
@@ -331,6 +331,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T20:00:04.184Z"
+    "at": "2026-10-20T20:48:40.649Z"
   }
 }

@@ -222,6 +222,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-91161c3887f6aa107b3c0d6b
+    resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -324,10 +326,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
+generated: { by: "codex", at: "2026-10-20T20:48:40.649Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T20:00:04.184Z
+    at: 2026-10-20T20:48:40.649Z
 ---
 
 # Validation Gates
@@ -1839,10 +1841,20 @@ The source-only active path is exercised by
 in static and offline checks. Its fixtures cover the model-key file boundary,
 exact Agent-only Secret grant, Configuration and runtime credential readback,
 deployment response loss and repeat, verification without inference, and
-stopping the journaled revision without deleting retained state. The committed
+stopping the journaled revision without deleting retained state. With an
+owner-reviewed native origin, the source-only path verifies the first active
+revision, patches its Configuration from generation 1 to 2 with an exact
+generation guard, and journals one second deployment. Lost responses are
+adopted only from one exact new revision; absent or foreign outcomes block
+reposting. Read-only verification checks both revisions and the selected
+deployment. The committed
 `activationEnabled: false` and absent dedicated OpenRouter key block the active
 path. These are offline state-machine checks, not live activation or recovery
 acceptance; durable operator storage and protected execution remain pending.
+The static-gate [recovery fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
+checks unknown stop intent, interrupted runtime reads and retention of the
+separate legacy archive after a new-Agent stop failure. This is source-only
+recovery evidence, not a live restore receipt.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main

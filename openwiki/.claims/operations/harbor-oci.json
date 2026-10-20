@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bef9a3901163ae2d6cf9c9fcf8ffc6c18cbbd26ec1d002a0aa0fd482b03905b0",
+  "pageVersion": "sha256:2d334a949dbea77597dcc0a7da74079b36bf0ad9c496384057cdfde4d757d0ad",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -756,7 +756,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
+          "version": "repo-file-v1:sha256:4865783fe5547e4b8c6202ca3af20318398814ff2eda30215e51f3dc80822a82"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
@@ -873,6 +873,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T20:00:04.184Z"
+    "at": "2026-10-20T20:48:40.649Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c677ddc14f501327a3878d7767b3311da3cad645249d968b2c2d4bf73722cc4d",
+  "pageVersion": "sha256:6c9ee65cc0d96815abfceb3cd6ccee89c25f2ff738d4049aea689fbf2d5d2881",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:84186bc2833ea79d54fc719695d3e5ccaefa7e3c6cde0e09ea52de2d99bf14ce"
+          "version": "repo-file-v1:sha256:5af758b681b70f5dcef18acbfca1fac98c4f857eff0ff1f7c38c8b359e3343be"
         }
       ]
     },
@@ -279,6 +279,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T20:00:04.184Z"
+    "at": "2026-10-20T20:48:40.649Z"
   }
 }
