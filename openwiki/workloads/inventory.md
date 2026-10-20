@@ -64,6 +64,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -162,10 +164,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Workload Inventory
@@ -355,7 +357,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `langfuse`             | `langfuse`         | `clusters/homelab/apps/langfuse`                | `IaC/live/argocd-apps/langfuse`             | operator UI for LiteLLM's trusted caller-attributed traces. Octelium-protected UI: `https://langfuse.stinkyboi.com`. Retained NFS PVCs: PostgreSQL `20Gi`, Valkey `8Gi`, ClickHouse `100Gi`; S3 raw events retain 30 days. No database operator/automatic logical backup; restore unverified.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, langfuse-blob-storage; Octelium for UI |
 | `multica`              | `ai`               | `clusters/homelab/apps/multica`                 | `IaC/live/argocd-apps/multica`              | Multica `v0.4.29` self-host chart with frontend, backend API/WebSocket server, dedicated pgvector PostgreSQL, generated JWT, database, and private fixed sign-in code secrets; development-mode authentication behind Octelium without email delivery; Postgres and uploads PVCs on `nfs-default`; UI at `https://multica.stinkyboi.com`; persistent OpenCode daemon on acer uses LiteLLM with its dedicated caller key, max one task.                                                                                                                                                                                                                                                                                                                                                                                        | external-secrets, cert-manager, istio, platform-storage                                                             |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Legacy gateway and backup writer stopped by GitOps; node-local SQLite, NAS workspace, snapshots, and four PVC/PV identities retained. Post-shutdown inventory passed; independent archive/restore pending. No Discord or LiteLLM state moves to Enterprise. | platform-storage, external-secrets (retained recovery only) |
-| `openclaw-enterprise-foundation` | `openclaw-system` | `clusters/homelab/apps/openclaw-enterprise-foundation` | `IaC/live/argocd-apps/openclaw-enterprise-foundation` (declared, unapplied) | Disabled-auto-sync namespace, credential, TLS, PostgreSQL and backup boundary; no live PVC/database | aws-ssm-parameters, external-secrets, cert-manager, platform-storage |
+| `openclaw-enterprise-foundation` | `openclaw-system` | `clusters/homelab/apps/openclaw-enterprise-foundation` | `IaC/live/argocd-apps/openclaw-enterprise-foundation` (declared, unapplied) | Disabled-auto-sync namespace, credential, TLS, PostgreSQL, backup and retained RWX operations-journal boundary; suspended credential-free probe, no live PVC/database | aws-ssm-parameters, external-secrets, cert-manager, platform-storage |
 | `openclaw-enterprise` | `openclaw-system` | pinned upstream chart plus `clusters/homelab/apps/openclaw-enterprise` | `IaC/live/argocd-apps/openclaw-enterprise` (declared, unapplied) | Disabled-auto-sync stock controller chart with local values and hooks; no live Enterprise workload | openclaw-enterprise-foundation, platform-envoy-gateway |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
@@ -382,7 +384,9 @@ a system ingress deny, and a retained PostgreSQL CA plus private server
 certificate. It also declares a PostgreSQL 18 StatefulSet with a retained
 10Gi local claim template and marker-gated bootstrap readiness. It has no
 running database, bound storage, route, or Installation
-workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+workload. It now also declares a retained 1Gi RWX operations-journal claim and
+suspended credential-free mount probe. Cross-node locking, policy traffic, and
+encrypted journal backup/restore remain unproven. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. Its Argo registration also disables
 automatic sync, pruning, self-heal, and retries; its

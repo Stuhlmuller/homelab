@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bdb739e2e16046501cf621f26b96786d73cdfdce626ddb043875a428e6367115",
+  "pageVersion": "sha256:865786d204df63b34b8fe710282212861284e74e170d1883421c994b5da1bc81",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -372,7 +372,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         }
       ]
     },
@@ -419,10 +419,24 @@
           "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
         }
       ]
+    },
+    {
+      "id": "claim_7d8d0045144348a38361bc3cf0271327",
+      "statement": "The suspended Enterprise journal-mount probe does not advance private ingress cutover; protected stages still lack shared-journal and private bootstrap-key delivery.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

@@ -28,10 +28,10 @@ sources:
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-20T00:01:21.354Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:12:45.818Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # GitOps Flow
@@ -229,6 +229,8 @@ foundation registration orders secret, certificate, and storage dependencies;
 the Enterprise registration then depends on that foundation and Envoy Gateway.
 These edges create Applications only. Database readiness, protected full sync,
 capacity, and network-policy qualification remain separate activation gates.
+The scoped project now admits a namespaced PVC for the dormant operations
+journal; this does not change either Application's disabled sync policy.
 See the [source registration](../../docs/argocd-app-onboarding.md#dependency-readiness).
 
 `platform-crossplane` currently installs only Crossplane core through the

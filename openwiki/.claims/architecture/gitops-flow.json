@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:76062d3e4af6eb2b0a16432b1289c99cd66d4130f1a52af0793e799f25245c22",
+  "pageVersion": "sha256:ab49ed0e8995102da34ab40ff86490c4ebbca75e5ca6258ac94351c68a97c9f0",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -76,13 +76,31 @@
         },
         {
           "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
-          "version": "repo-file-v1:sha256:207beafeb472afa0248153c28eba7b6f0ad55b6e5231df3de26ae2d996399d0b"
+          "version": "repo-file-v1:sha256:90312daa3e9e4603114fd66dcdfb147fb99f5f6a9412584eb36f36df8b3f551a"
+        }
+      ]
+    },
+    {
+      "id": "claim_01719653b3d546d9b67b244e49409f87",
+      "statement": "The scoped OpenClaw Enterprise AppProject admits namespaced PersistentVolumeClaims for the dormant operations journal while both Applications retain disabled automatic sync.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
+          "version": "repo-file-v1:sha256:90312daa3e9e4603114fd66dcdfb147fb99f5f6a9412584eb36f36df8b3f551a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:12:45.818Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

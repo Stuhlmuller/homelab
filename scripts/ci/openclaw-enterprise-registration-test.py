@@ -18,7 +18,8 @@ AGENTS = "openclaw-agents"
 ENVOY = "envoy-gateway-system"
 CLUSTER_KINDS = {"Namespace", "ClusterRole", "ClusterRoleBinding"}
 NAMESPACED_KINDS = {
-    ("", "ConfigMap"), ("", "Service"), ("", "ServiceAccount"),
+    ("", "ConfigMap"), ("", "PersistentVolumeClaim"),
+    ("", "Service"), ("", "ServiceAccount"),
     ("apps", "Deployment"), ("apps", "StatefulSet"), ("batch", "Job"),
     ("cert-manager.io", "Certificate"), ("cert-manager.io", "Issuer"),
     ("external-secrets.io", "ExternalSecret"),

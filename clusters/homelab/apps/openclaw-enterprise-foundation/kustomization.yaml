@@ -6,8 +6,13 @@ resources:
   - postgres-tls.yaml
   - postgres.yaml
   - networkpolicy.yaml
+  - journal-delivery.yaml
 configMapGenerator:
   - name: occ-postgres-bootstrap
     namespace: openclaw-system
     files:
       - database-bootstrap.sql
+  - name: occ-operations-journal-probe
+    namespace: openclaw-system
+    files:
+      - journal-probe.py

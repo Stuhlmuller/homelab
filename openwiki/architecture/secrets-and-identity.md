@@ -40,6 +40,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/database-bootstrap.sql
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -66,6 +68,8 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -106,10 +110,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:12:45.818Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Secrets And Identity
@@ -297,6 +301,10 @@ the new pair. It bootstraps separate admin, migrator, app, and read-only backup
 roles. Password rotation needs a declared `ALTER ROLE` path; advancing an
 ExternalSecret alone does not rerun bootstrap SQL. The foundation's Argo Application has not been applied; scheduled backup, chart consumers, and live TLS verification
 remain pending.
+
+The separate operations journal claim and suspended mount probe carry no
+credentials. A protected runner still needs a reviewed private bootstrap-key
+delivery path before the mutating Enterprise stages can run.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,

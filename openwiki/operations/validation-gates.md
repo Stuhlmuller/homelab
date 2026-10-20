@@ -54,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -176,6 +178,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-504261fbc9a8d2ccdbe34e76
+    resource: repo://scripts/ci/openclaw-enterprise-journal-delivery-test.py
   - id: openwiki-source-67b7023614bb46ffd2f06e85
     resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-6514a0140b512caa7259f135
@@ -264,10 +268,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Validation Gates
@@ -1642,6 +1646,12 @@ restricted destinations/resources, ordered dependencies, disabled automatic
 sync/pruning/self-heal/retries, and absence of selective-sync options. This is
 source validation only; an authenticated Terragrunt plan, Application
 registration, and full-sync acceptance remain separate gates.
+The journal-delivery fixture now checks the retained RWX claim, exact scoped
+AppProject PVC admission, suspended credential-free Job, local NFS mount and
+lock rejection, and interrupted journal write/retry behavior. It runs in
+`static-checks.sh`. This is source and local process evidence only: cross-node
+NFSv3 locking, policy traffic, NAS durability, and encrypted recovery still
+need live qualification before any protected writer can mount the claim.
 The [protected Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
 now reserves fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
 `verification`, `restore`, and `acceptance` dispatches beside the legacy

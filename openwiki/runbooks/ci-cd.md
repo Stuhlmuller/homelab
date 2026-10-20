@@ -32,6 +32,8 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
@@ -40,6 +42,8 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-504261fbc9a8d2ccdbe34e76
+    resource: repo://scripts/ci/openclaw-enterprise-journal-delivery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -48,10 +52,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # CI/CD
@@ -113,6 +117,10 @@ binding is blocked. Its six other Enterprise stages use a pinned
 private journal contract, then fails before mutation because GitHub runners
 lack a durable shared mount. Source validation does not authorize binding,
 full-sync, reconciliation, stop, restore, verification, or inference acceptance.
+The dormant foundation now declares a separate retained journal PVC and a
+suspended, credential-free mount probe. CI tests its source shape and local
+interrupted-write behavior; hosted runners still cannot mount it, and no live
+cross-node locking or recovery receipt exists.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
 accepts fixed inspect, canary and upgrade stages only from the exact current

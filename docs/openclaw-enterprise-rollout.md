@@ -42,6 +42,14 @@ Copying a runner-local journal after a command exits would lose a pending API
 intent if that command or runner stops mid-operation. T043 remains open until a
 declared private runner mounts the same journal and lock across retries, and the
 full-sync, stop, restore and acceptance commands have tested source-owned paths.
+The dormant foundation now declares a retained `occ-operations-journal` PVC
+and a suspended, credential-free mount probe. They establish an in-cluster
+delivery candidate, not a hosted-runner mount or a live lock receipt. The
+`nfs-default` class uses NFSv3; qualify server-side locking across two Pods on
+different nodes and the exact NFS/NLM paths under NetworkPolicy before any
+mutating stage can use it. Keep the claim and its journal in a separately
+verified encrypted recovery set. Local interrupted-write fixtures preserve a
+pending intent for readback after process death; they do not prove NAS durability.
 Read-only verification never sends inference. Native-origin and browser checks
 need the owner's OCE session and remain T048 acceptance evidence.
 

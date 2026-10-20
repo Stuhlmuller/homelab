@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0d4928e977d373276ab4b2f61be6e7f43df08bb01eb45a51851bca0d89177f73",
+  "pageVersion": "sha256:90ce094ec37d8f970650d166aa813420fde96e91a275cbb64296f4eccc258724",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:558d52c9c707c3b147904dc1694aefb5dd7c0b9109b7cbafe66a5aeb5840f171"
+          "version": "repo-file-v1:sha256:8662ccfa9ea686b2530b6580c9a0db0f9eb720a5125116a8c514cab2d95339f9"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:558d52c9c707c3b147904dc1694aefb5dd7c0b9109b7cbafe66a5aeb5840f171"
+          "version": "repo-file-v1:sha256:8662ccfa9ea686b2530b6580c9a0db0f9eb720a5125116a8c514cab2d95339f9"
         }
       ]
     },
@@ -878,7 +878,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         }
       ]
     },
@@ -910,7 +910,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -922,7 +922,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:558d52c9c707c3b147904dc1694aefb5dd7c0b9109b7cbafe66a5aeb5840f171"
+          "version": "repo-file-v1:sha256:8662ccfa9ea686b2530b6580c9a0db0f9eb720a5125116a8c514cab2d95339f9"
         }
       ]
     },
@@ -939,8 +939,8 @@
           "version": "repo-lines-v1:sha256:892d67ca775ae4b9a7a1ee3deceb5416020557e62ea454898db8765d5a35926f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3NmJkMTUxZWEyZWMwMjE2ZWZmNTk0MTMxYzNmNDczZTdhMTgyNTdkZGIwNDJiNmU5M2EwZDNlNmNjMjJmYTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwNzYyN2UzYzlmYTgxOWRkOTczMWNhMjExZTY4OGMwYzk3MzIzMjBlYmIwYjY1ZWY3N2VhYjc0NmMzYjZjNTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjOWY4NTYyYzZhZDkxOTE2ZWIzYTgxYzg4NzEyZTQ4MTMwY2YzZmYwNTIzZGEzMWQ5M2E3NmM3N2U2ZWQ5ODMifQ"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L17-L24",
-          "version": "repo-lines-v1:sha256:8b549e27ab5577fec9211db9bd14a01ba9d0045cea2a51e30dcf48702be09791:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzViZTUzZWE1ZTQ3MTZkM2Q3ODY2M2FjYzVkZjE4ZmNkYjZiODIwYWFkOGEzMTg2OTBiOTcwYjM5YmZhMmE1YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFmMjk3N2Y0MDNlYmU3MTgxYzRhMTE2ZTk2ZGViMDc5YWZkNGViMmJiNjA1ZTcyNjE2NmYzZjg5YzU2MzFlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTEwNjgyODdjMDE2ZDA5OWQ0YmU3MGFhMzhmMTRmNzc5YTU3MmQ0OWFkZGIxN2I2OTU0ZWVlYjYwMzlkZWQxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOThhYWU0ZjI2NTVkZjQyNTNhNjVmNGRkZjEwMmIzNzA2NDQ5OTJiNjI1ZDY0ZjY1YTE4MTYzMWVlY2ExZTJhMSJ9"
+          "resource": "repo://scripts/ci/static-checks.sh#L17-L25",
+          "version": "repo-lines-v1:sha256:7dad0fc57f181b1c82f5b81fb8425de8f0a2046ca1ed215b42c96372920964d9:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzViZTUzZWE1ZTQ3MTZkM2Q3ODY2M2FjYzVkZjE4ZmNkYjZiODIwYWFkOGEzMTg2OTBiOTcwYjM5YmZhMmE1YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFmMjk3N2Y0MDNlYmU3MTgxYzRhMTE2ZTk2ZGViMDc5YWZkNGViMmJiNjA1ZTcyNjE2NmYzZjg5YzU2MzFlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTEwNjgyODdjMDE2ZDA5OWQ0YmU3MGFhMzhmMTRmNzc5YTU3MmQ0OWFkZGIxN2I2OTU0ZWVlYjYwMzlkZWQxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOThhYWU0ZjI2NTVkZjQyNTNhNjVmNGRkZjEwMmIzNzA2NDQ5OTJiNjI1ZDY0ZjY1YTE4MTYzMWVlY2ExZTJhMSJ9"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py#L377-L487",
@@ -1034,7 +1034,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:558d52c9c707c3b147904dc1694aefb5dd7c0b9109b7cbafe66a5aeb5840f171"
+          "version": "repo-file-v1:sha256:8662ccfa9ea686b2530b6580c9a0db0f9eb720a5125116a8c514cab2d95339f9"
         }
       ]
     },
@@ -1198,11 +1198,11 @@
         },
         {
           "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
-          "version": "repo-file-v1:sha256:207beafeb472afa0248153c28eba7b6f0ad55b6e5231df3de26ae2d996399d0b"
+          "version": "repo-file-v1:sha256:90312daa3e9e4603114fd66dcdfb147fb99f5f6a9412584eb36f36df8b3f551a"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
-          "version": "repo-file-v1:sha256:67c41d289779f72fb596ae9a9eb16c590b672b2e1b9eb2c3f0a78dfa6125d186"
+          "version": "repo-file-v1:sha256:59b21d59de64720fdaf3cadaff12453193fd8c6677a7614945009d6193983336"
         }
       ]
     },
@@ -1223,10 +1223,32 @@
           "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
         }
       ]
+    },
+    {
+      "id": "claim_24c92dc5e88e4b559e8bee779f95ff95",
+      "statement": "The Enterprise static gate checks a retained RWX journal claim, scoped PVC admission, suspended credential-free Job, local NFS lock rejection, and interrupted-write recovery; cross-node NFS locking, NetworkPolicy traffic, NAS durability, and encrypted recovery remain live gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-delivery-test.py",
+          "version": "repo-file-v1:sha256:b2d71c63430d3131ba2f9b9233136cc2900db177d92d979c71482a13a99dc71e"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:8662ccfa9ea686b2530b6580c9a0db0f9eb720a5125116a8c514cab2d95339f9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

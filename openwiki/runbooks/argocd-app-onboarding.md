@@ -4,6 +4,8 @@ title: "Argo CD App Onboarding"
 description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
 tags: ["runbook", "argocd", "applications"]
 sources:
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-eadf0e51039eed966d58db54
     resource: repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml
   - id: openwiki-source-cb44bee82f523806d88ae83a
@@ -20,10 +22,10 @@ sources:
     resource: repo://IaC/platform-network-policy-cleanup/stack.hcl
   - id: openwiki-source-e3e84b128839afbc47f478f7
     resource: repo://IaC/platform-network-policy/stack.hcl
-generated: { by: "codex", at: "2026-10-20T00:01:21.354Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:12:45.818Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Argo CD App Onboarding
@@ -50,7 +52,8 @@ enforces policies nor serves an Enterprise route.
 
 The separate Enterprise foundation and controller Applications are also only
 declared source. Their dedicated AppProject scopes both source repositories,
-three destination namespaces, and rendered resource kinds. The pinned upstream
+three destination namespaces, and rendered resource kinds. Its namespaced PVC
+allowlist now covers the dormant, retained operations-journal claim. The pinned upstream
 chart, local values, and lifecycle hooks are one multi-source Application;
 both Enterprise Applications disable automatic sync, pruning, self-heal, and
 retries. Registering them does not satisfy PostgreSQL, secret, capacity, or

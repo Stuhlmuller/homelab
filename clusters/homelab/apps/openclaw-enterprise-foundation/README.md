@@ -17,6 +17,28 @@ their respective stock chart consumers. The planned PostgreSQL Service is
 `occ-postgres` and its CA mount is `/etc/openclaw/database-ca/tls.crt`.
 Do not activate the agent from this declaration.
 
+The dormant `occ-operations-journal` claim reserves a retained, separate
+`nfs-default` RWX volume for the credential-free reconciliation journal. The
+scoped AppProject admits namespaced PVCs for this declared claim; its exact
+resource whitelist is checked by the registration fixture, and automatic sync
+remains disabled. The suspended `occ-operations-journal-probe` Job mounts
+that claim at `/private`,
+so a future protected in-cluster runner can use the committed
+`/private/openclaw-enterprise/journal.json` path with UID 1000 and a 0700
+directory. Its probe checks NFS mount options, owner/mode, cross-process lock
+exclusion, and atomic fsync/rename without mounting credentials or touching the
+actual journal. This source does not start a runner or make GitHub's hosted
+runner share the claim. Keep the operations stage blocked until a reviewed
+runner and bootstrap-key delivery path exist. Before enabling either, prove
+cross-node NFSv3 locking with two separately scheduled Pods, exact NAS/NLM
+traffic under the proposed NetworkPolicy, interrupted-write recovery, and an
+independent encrypted off-node journal backup/restore. The single-Pod probe
+and local tests are not those live receipts. Do not prune the claim or reuse
+the legacy archive volume for the new journal.
+Linux translates `flock` into NFS byte-range locks only when the server and
+mount options support them; see the
+[NFS notes in `flock(2)`](https://man7.org/linux/man-pages/man2/flock.2.html).
+
 The dedicated PostgreSQL 18.6 StatefulSet uses TLS 1.3, SCRAM, an exact Service
 IP and the 10Gi `openclaw-enterprise-postgres-local` claim template. T035 must
 prebind `occ-postgres-occ-postgres-0` to reviewed local storage; no node is

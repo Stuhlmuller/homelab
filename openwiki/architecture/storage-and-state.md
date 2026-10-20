@@ -6,6 +6,8 @@ tags: ["architecture", "storage", "stateful"]
 sources:
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -30,6 +32,8 @@ sources:
     resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
@@ -40,10 +44,10 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Storage And State
@@ -298,8 +302,12 @@ database unready. No automatic replay or declared repair workflow exists yet.
 
 The backup script rejects incomplete recovery material and an already-published
 timestamp. Its isolated restore candidate is excluded from the Kustomization.
-No Enterprise PVC, database, off-node backup, or live restore proof exists from
-this declared but unapplied Argo source alone.
+No live Enterprise PVC, database, off-node backup, or restore proof exists from
+this declared but unapplied Argo source alone. A separate retained 1Gi
+`nfs-default` RWX claim is now declared for the private operations journal.
+Its suspended, credential-free probe checks one mount only; cross-node NFSv3
+locking, NetworkPolicy paths, interrupted-write recovery, and independent
+encrypted off-node backup/restore remain activation gates.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
