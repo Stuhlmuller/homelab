@@ -80,6 +80,13 @@ or prove offsite recovery; those verification steps remain separate.
 attaches one managed policy. Trust is limited to the protected plan and
 production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
+The unit also declares `Github-TF-Plan`, trusted only by
+`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads the homelab state
+prefix and backup-bucket metadata, and allows the KMS operations needed to read
+encrypted state and write local encrypted plans. AzureAD plans may read only
+the nine generated Grafana and Octelium SSO parameters and decrypt them through
+SSM. The role has no AWS resource-write or backup-object-read grant. The plan
+workflow still uses `Github-TF-State` until a separate cutover PR.
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
@@ -341,6 +348,27 @@ user require an un-targeted operator plan. Import
 `aws_iam_user.external_secrets` as `external-secrets_aws-ssm-auth` first only
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
+
+### Dedicated pull-request plan role
+
+Merge the role declaration only after the PR plan environment has its reviewer
+gate. Use the administrator-authenticated full-unit saved-plan path in
+[`ci-cd.md`](ci-cd.md#aws-setup). Expect only
+`aws_iam_role.github_actions_plan` and
+`aws_iam_role_policy.github_actions_plan` creations; stop on unrelated changes.
+After applying the reviewed plan, publish its ARN to the `homelab-plan` GitHub
+environment with:
+
+```sh
+scripts/aws-plan-role-configure.sh
+scripts/aws-plan-role-configure.sh --execute
+```
+
+The helper reads the exact role ARN from operator state, rejects any other
+role, and verifies the GitHub variable after writing it. Publish and verify
+the separate Octelium plan credential before the workflow cutover. The cutover
+PR must switch the workflow to `AWS_PLAN_ROLE_TO_ASSUME_HOMELAB` and remove
+`homelab-plan` from `Github-TF-State` trust after the new plan path passes.
 
 ### Renovate App credential transfer and role retirement
 
