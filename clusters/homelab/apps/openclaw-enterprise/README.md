@@ -64,7 +64,7 @@ not reposted. Keep activation false and preserve the journal for rollback.
 Removing this logical Namespace needs a reviewed repository-owned cleanup path;
 do not delete the physical tenant Namespace.
 
-### Durable reconciliation journal
+## Durable reconciliation journal
 
 The reconciler cannot run safely from an ephemeral Actions runner. Its
 `privateJournal.mountPath` is `/private/openclaw-enterprise/journal.json`, and
