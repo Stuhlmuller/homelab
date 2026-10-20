@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1f7a09f6219002a90849f5f4a6da8e17ad7c8e261fb8bd1ff69a92e1be3454e1",
+  "pageVersion": "sha256:d76ce1f208ba62c506ac126c327698a91868704979dd674ac107981c94de8d10",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -194,7 +194,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
+          "version": "repo-file-v1:sha256:b89fa0a5808bc0d061e436fcf4cbc45a91870ea022c1720ce41aec4f048d3f58"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
@@ -219,10 +219,28 @@
           "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
         }
       ]
+    },
+    {
+      "id": "claim_991945f52bbd4e61bc94ef79e6cf733f",
+      "statement": "The source-only Enterprise Installation binder and its offline fixture have their own scripts; the binder still lacks protected post-bootstrap workflow invocation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L65",
+          "version": "repo-lines-v1:sha256:a02f12bad3cb0069a4203305706e89d39fc9e6f01713da8a3b680f961c3f7d23:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczMjU0NWM2Nzg4YWNmYmIwYTRlNjdhOTY4NTA4Y2EwZjg3OGY1NmIzMjM4MDQ3ZDNkODRhNjNiNmEzZDQ0ZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxNDdjODQ4YjMwYmFlOTk4NzAwODJlOTRlNjk0YzQxOWUzMDg1MDBjOTQ5Mjk0ZTBkYTQzODQ4N2UxYmEyNzIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
+          "version": "repo-file-v1:sha256:01c0a5ea9d09dee52723bf5a2944a38d630f205e8c3a9a7131eb692623be1b91"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-bind-installation.py",
+          "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:54:44.714Z"
+    "at": "2026-10-20T08:57:21.938Z"
   }
 }

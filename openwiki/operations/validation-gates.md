@@ -190,6 +190,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-8047752c8d0bc59d19d7605b
+    resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
@@ -292,10 +294,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T08:35:40.829Z" }
+generated: { by: "codex", at: "2026-10-20T08:57:21.938Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:35:40.829Z
+    at: 2026-10-20T08:57:21.938Z
 ---
 
 # Validation Gates
@@ -1737,6 +1739,11 @@ four-finding baseline: three public Secret-name strings in the dormant chart
 and one generated `octeliumee-secretman` policy name paired with its reviewed
 spec hash. The static gate rejects any wider baseline. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
+The static gate also runs the source-only
+[Installation binder fixture](../../scripts/ci/openclaw-enterprise-bind-installation-test.py).
+It checks the exact-main guard, returned Installation ID, stable Ready-Pod
+proof, UID/resource-version guarded Secret annotation patch, and idempotent
+readback. The binder has no protected post-bootstrap invocation or live result.
 The protected Enterprise operations workflow exposes one fixed `full-sync`
 stage. Its source test and workflow policy require an exact current-`main` SHA,
 manual Argo Applications with the reviewed repository sources, healthy Envoy

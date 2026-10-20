@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:84e5acbe8716f50743d585c13cc94bd7ac3a1243387572a8ff39643ba9f2021d",
+  "pageVersion": "sha256:523c927e287fe758e724f4059629bac3d9a3dff409290f95b4f1fa2e013f5572",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -112,7 +112,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
+          "version": "repo-file-v1:sha256:b89fa0a5808bc0d061e436fcf4cbc45a91870ea022c1720ce41aec4f048d3f58"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
@@ -169,6 +169,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:27:46.454Z"
+    "at": "2026-10-20T08:57:21.938Z"
   }
 }
