@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:996a0d227ef023cd6b74e0d3db2f758e271304196271543c9a2ebeabdbeb035a",
+  "pageVersion": "sha256:42f5298cdebd0647dd3908d70427f765e3f8e01aa62462340e61f33ad2f5588b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:f6420353a267eae46a5e907d835cc23277fd2be1028c339c48a9b516e1b13092"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58d290c89a2835ccf536ca0a69388e2defab3e2d10402fbed4bb13aa178fd206"
+          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
         }
       ]
     },
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58d290c89a2835ccf536ca0a69388e2defab3e2d10402fbed4bb13aa178fd206"
+          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
         }
       ]
     },
@@ -794,7 +794,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
+          "version": "repo-file-v1:sha256:0e5d1bee57bfdd2222d092ca0758ad049d29cb6881a2dfe41b7e1c66f0a04294"
         }
       ]
     },
@@ -1012,7 +1012,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-quiesce-test.py",
-          "version": "repo-file-v1:sha256:a2da4b24607829dae226e226a834cf6551ab043ed8092727f18c28cc4567c1d0"
+          "version": "repo-file-v1:sha256:d00b6a250af18b72e22d7f7a9e30311175c85ab264b97ea8f03d7722afbd141f"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-startup-test.py",
@@ -1122,7 +1122,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58d290c89a2835ccf536ca0a69388e2defab3e2d10402fbed4bb13aa178fd206"
+          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
         }
       ]
     },
@@ -1209,6 +1209,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:08:27.886Z"
+    "at": "2026-10-20T03:25:10.745Z"
   }
 }

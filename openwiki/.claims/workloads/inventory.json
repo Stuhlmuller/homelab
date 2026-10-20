@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:76d519bd794be52ddfab881327cce6cc11edbc4f62977c6904bff6692c1285b7",
+  "pageVersion": "sha256:939b0accdd4f4d4599410b0a1ca58a6527dcf71ecd057ecf098914649186596f",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,7 +292,7 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while eligible Harbor transport and version discovery, full dry-run parity, fault recovery, and reviewed cutover remain open.",
+      "statement": "The Renovate Application declares an unsuspended two-hour UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while eligible Harbor transport and version discovery, full dry-run parity, fault recovery, and reviewed cutover remain open.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
@@ -300,7 +300,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:f6420353a267eae46a5e907d835cc23277fd2be1028c339c48a9b516e1b13092"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
@@ -488,7 +488,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58d290c89a2835ccf536ca0a69388e2defab3e2d10402fbed4bb13aa178fd206"
+          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
         }
       ]
     },
@@ -521,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:08:27.886Z"
+    "at": "2026-10-20T03:25:10.745Z"
   }
 }
