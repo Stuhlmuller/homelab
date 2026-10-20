@@ -117,7 +117,7 @@ jobs:
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
-          fetch-depth: 3
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install Nix

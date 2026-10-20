@@ -51,7 +51,8 @@ class FirewallCleanupTests(unittest.TestCase):
         canary_application = "IaC/platform-network-policy-canary/stack.hcl"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for name in (manifest, application, canary_manifest, canary_application):
+            for name in (manifest, application, canary_manifest, canary_application,
+                         "clusters/homelab/platform/network-policy/daemonset.yaml"):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((ROOT / name).read_bytes())
@@ -89,6 +90,8 @@ class FirewallCleanupTests(unittest.TestCase):
                 "        enabled = false\n        prune   = false\n",
                 "        enabled = true\n        prune   = true\n"))
             qualify_sha = commit("qualify with fixtures")
+            (root / "unrelated.txt").write_text("before\n")
+            commit("unrelated change before fixture prune")
             prune_fixtures()
             wiki_update("openwiki/unreviewed.md")
             commit("fixture prune with unreviewed wiki change")
@@ -99,27 +102,63 @@ class FirewallCleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "fixture removal differs"):
                     transition(qualify_sha, drift_sha)
                 git("reset", "--hard", qualify_sha)
+                (root / "unrelated.txt").write_text("before\n")
+                commit("unrelated before valid prunes")
                 prune_fixtures()
                 wiki_update("openwiki/runbooks/runtime-isolation.md")
                 wiki_update("openwiki/.last-update.json")
                 fixture_sha = commit("fixture prune with reviewed wiki update")
-                with self.assertRaisesRegex(ValueError, "two direct commits"):
+                with self.assertRaisesRegex(ValueError, "both reviewed GitOps prune"):
                     transition(qualify_sha, fixture_sha)
+                (root / "unrelated.txt").write_text("between\n")
+                middle_sha = commit("unrelated change between prunes")
                 prune_firewall()
                 (root / "unrelated.txt").write_text("drift\n")
                 drift_sha = commit("firewall prune with unrelated change")
                 with self.assertRaisesRegex(ValueError, "firewall removal differs"):
                     transition(qualify_sha, drift_sha)
-                git("reset", "--hard", fixture_sha)
+                git("reset", "--hard", middle_sha)
                 prune_firewall()
                 wiki_update("openwiki/workloads/inventory.md")
                 wiki_update("openwiki/.claims/workloads/inventory.json")
                 wiki_update("openwiki/.page-manifest.json")
                 removal_sha = commit("firewall prune with reviewed wiki update")
                 transition(qualify_sha, removal_sha)
+                (root / "unrelated.txt").write_text("after\n")
+                later_sha = commit("unrelated change after prunes")
+                transition(qualify_sha, later_sha)
+                main_branch = git("branch", "--show-current")
+                git("checkout", "-qb", "unrelated-topic", qualify_sha)
+                (root / "topic.txt").write_text("side branch\n")
+                side_sha = commit("unrelated side branch")
+                git("checkout", "-q", main_branch)
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
-                    "-c", "commit.gpgsign=false", "commit", "-qm", "unrelated", "--allow-empty")
-                with self.assertRaisesRegex(ValueError, "two direct commits"):
+                    "-c", "commit.gpgsign=false", "merge", "-q", "--no-ff", "-m",
+                    "merge unrelated side branch", side_sha)
+                transition(qualify_sha, git("rev-parse", "HEAD"))
+                with self.assertRaisesRegex(ValueError, "first-parent history"):
+                    transition(side_sha, git("rev-parse", "HEAD"))
+                git("mv", "clusters/homelab/platform/network-policy/daemonset.yaml",
+                    "renamed-unrelated.yaml")
+                commit("rename protected policy source")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                protected = root / "scripts/network-policy-qualification.py"
+                protected.parent.mkdir(parents=True)
+                protected.write_text("changed\n")
+                commit("change protected policy source")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                protected.unlink()
+                commit("revert protected policy source")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~2")
+                root_stack = root / "IaC/terragrunt.stack.hcl"
+                root_stack.write_text("unreviewed root registration\n")
+                commit("change root Application registration")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                     transition(qualify_sha, git("rev-parse", "HEAD"))
 
     def test_unadmitted_config_refuses_before_any_cluster_command(self):

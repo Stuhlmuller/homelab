@@ -416,15 +416,10 @@ def require_current_main(source_sha):
 
 
 def require_firewall_removal_transition(evidence_sha, source_sha):
-    """Accept pre-removal evidence only across the two reviewed GitOps prunes."""
+    """Accept pre-removal evidence across two dedicated prunes and unrelated merges."""
     if (not isinstance(evidence_sha, str) or not PLATFORM["SHA"].fullmatch(evidence_sha) or
             evidence_sha == source_sha):
         raise ValueError("firewall evidence is not from the reviewed pre-removal commit")
-    fixture_sha = command("git", "-C", str(ROOT), "show", "-s", "--format=%P", source_sha).strip()
-    if (not PLATFORM["SHA"].fullmatch(fixture_sha) or
-            command("git", "-C", str(ROOT), "show", "-s", "--format=%P", fixture_sha).strip()
-            != evidence_sha):
-        raise ValueError("firewall evidence is not two direct commits before removal")
     canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
     canary_application = "IaC/platform-network-policy-canary/stack.hcl"
     # Native OpenWiki may update only these non-runtime pages and their provenance.
@@ -440,34 +435,58 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
         "openwiki/runbooks/runtime-isolation.md",
         "openwiki/.claims/runbooks/runtime-isolation.json",
     }
-    fixture_changed = set(command("git", "-C", str(ROOT), "diff", "--name-only",
-                                  evidence_sha, fixture_sha).splitlines())
     old_canary_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml\n"
     empty_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n"
-    old_canary_application = command("git", "-C", str(ROOT), "show", f"{evidence_sha}:{canary_application}")
-    new_canary_application = command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{canary_application}")
     old_canary_sync = "        enabled = true\n        prune   = true\n"
     new_sync = "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"
-    if (fixture_changed - wiki_paths != {canary_manifest, canary_application} or
-            command("git", "-C", str(ROOT), "show", f"{evidence_sha}:{canary_manifest}") != old_canary_manifest or
-            command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{canary_manifest}") != empty_manifest or
-            old_canary_application.count(old_canary_sync) != 1 or
-            new_canary_application != old_canary_application.replace(old_canary_sync, new_sync)):
-        raise ValueError("fixture removal differs from the reviewed GitOps transition")
     manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
     application = "IaC/platform-network-policy/stack.hcl"
-    changed = set(command("git", "-C", str(ROOT), "diff", "--name-only",
-                          fixture_sha, source_sha).splitlines())
     old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
-    old_application = command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{application}")
-    new_application = command("git", "-C", str(ROOT), "show", f"{source_sha}:{application}")
     old_sync = "        enabled = false\n        prune   = false\n"
-    if (changed - wiki_paths != {manifest, application} or
-            command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{manifest}") != old_manifest or
-            command("git", "-C", str(ROOT), "show", f"{source_sha}:{manifest}") != empty_manifest or
-            old_application.count(old_sync) != 1 or
-            new_application != old_application.replace(old_sync, new_sync)):
-        raise ValueError("firewall removal differs from the reviewed GitOps transition")
+    commits = command("git", "-C", str(ROOT), "rev-list", "--first-parent", "--reverse",
+                      f"{evidence_sha}..{source_sha}").splitlines()
+    previous, phase = evidence_sha, 0
+    for commit_sha in commits:
+        parents = command("git", "-C", str(ROOT), "show", "-s", "--format=%P", commit_sha).split()
+        if not parents or parents[0] != previous:
+            raise ValueError("firewall evidence is not on the current first-parent history")
+        changed = set(command("git", "-C", str(ROOT), "diff", "--no-renames", "--name-only",
+                              previous, commit_sha).splitlines())
+        if phase == 0 and {canary_manifest, canary_application} & changed:
+            old_app = command("git", "-C", str(ROOT), "show", f"{previous}:{canary_application}")
+            new_app = command("git", "-C", str(ROOT), "show", f"{commit_sha}:{canary_application}")
+            if (changed - wiki_paths != {canary_manifest, canary_application} or
+                    command("git", "-C", str(ROOT), "show", f"{previous}:{canary_manifest}") != old_canary_manifest or
+                    command("git", "-C", str(ROOT), "show", f"{commit_sha}:{canary_manifest}") != empty_manifest or
+                    old_app.count(old_canary_sync) != 1 or
+                    new_app != old_app.replace(old_canary_sync, new_sync)):
+                raise ValueError("fixture removal differs from the reviewed GitOps transition")
+            phase = 1
+        elif phase == 1 and {manifest, application} & changed:
+            old_app = command("git", "-C", str(ROOT), "show", f"{previous}:{application}")
+            new_app = command("git", "-C", str(ROOT), "show", f"{commit_sha}:{application}")
+            if (changed - wiki_paths != {manifest, application} or
+                    command("git", "-C", str(ROOT), "show", f"{previous}:{manifest}") != old_manifest or
+                    command("git", "-C", str(ROOT), "show", f"{commit_sha}:{manifest}") != empty_manifest or
+                    old_app.count(old_sync) != 1 or
+                    new_app != old_app.replace(old_sync, new_sync)):
+                raise ValueError("firewall removal differs from the reviewed GitOps transition")
+            phase = 2
+        elif any(path.startswith(("clusters/homelab/platform/network-policy/",
+                                  "IaC/platform-network-policy", "scripts/network-policy-",
+                                  "IaC/terragrunt-catalog/units/live/argocd-app/",
+                                  "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/")) or
+                 path in {"scripts/platform-maintenance.py", "scripts/config/platform-maintenance.json",
+                          "scripts/ci/platform-maintenance-stage.sh",
+                          "scripts/ci/install-kubeconfig.sh", "scripts/ci/install-octelium-client.sh",
+                          ".github/workflows/platform-maintenance.yml", "policy/workflows.rego",
+                          "IaC/root.hcl", "IaC/terragrunt.stack.hcl",
+                          "IaC/stack-defaults.hcl"}
+                 for path in changed):
+            raise ValueError("policy cleanup source changed after qualification")
+        previous = commit_sha
+    if phase != 2:
+        raise ValueError("both reviewed GitOps prune transitions are required")
 
 
 def execute(args):

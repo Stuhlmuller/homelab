@@ -429,7 +429,10 @@ the taint. A stalled deletion or changed Pod identity
 leaves the node tainted for direct recovery review. Release follows the
 cleanup receipt to its immutable ownership receipt and original placement at
 the qualify SHA, and verifies the exact qualify, fixture-prune, firewall-prune
-commit chain against current `main` before touching the Node.
+commit order on the first-parent history of current `main` before touching the
+Node. Unrelated commits may land around the two dedicated prune commits;
+changes to policy cleanup source do not. A newer `main` requires fresh
+SHA-bound ownership capture, approval, and cleanup receipts before release.
 Both stages retain private attempt and completion receipts and stay blocked
 while `canary.node` is null. `owned-cleanup` reads the original verified
 `placement.json` under `receipts/<evidence-sha>/` and the immutable approved

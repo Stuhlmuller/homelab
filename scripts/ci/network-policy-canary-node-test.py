@@ -149,7 +149,7 @@ class CanaryNodeTests(unittest.TestCase):
                     action="release", config=ROOT / "scripts/config/platform-maintenance.json",
                     expected_sha=SHA, receipt_dir=Path("/unused"), output=Path("/unused")))
 
-    def test_release_accepts_only_exact_qualify_fixture_firewall_chain(self):
+    def test_release_accepts_invariant_history_with_fresh_receipts(self):
         manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
         application = "IaC/platform-network-policy/stack.hcl"
         canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
@@ -209,10 +209,12 @@ class CanaryNodeTests(unittest.TestCase):
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
                     "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-qm", "unrelated")
                 stale_sha = git("rev-parse", "HEAD")
-                with self.assertRaisesRegex(ValueError, "two direct commits"):
-                    SUT["validate_cleanup"](verified_cleanup | {"sourceSha": stale_sha},
-                                            verified_ownership | {"sourceSha": stale_sha},
+                with self.assertRaisesRegex(ValueError, "reviewed firewall ownership receipt"):
+                    SUT["validate_cleanup"](verified_cleanup, verified_ownership,
                                             evidence, CONFIG, stale_sha)
+                SUT["validate_cleanup"](verified_cleanup | {"sourceSha": stale_sha},
+                                        verified_ownership | {"sourceSha": stale_sha},
+                                        evidence, CONFIG, stale_sha)
                 git("reset", "--hard", qualify_sha)
                 (root / canary_manifest).write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"

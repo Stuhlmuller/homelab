@@ -68,6 +68,10 @@ not remove the node taint or firewall while any fixture remains. This GitOps
 sequence uses Argo CD ownership; `qualify` never creates or removes Kubernetes
 resources. T019/T027 still require an admitted isolated canary and live
 lifecycle evidence.
+The static registration gate accepts only the five exact source phases in this
+sequence. It does not authorize a live stage: the protected stage still
+requires exact-current-`main`, private qualification and ownership receipts,
+and live resource and Node identity checks.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC. It probes the
@@ -91,8 +95,10 @@ source through Argo CD. The protected `owned-cleanup` stage requires a private
 before enforcement, plus a separately reviewed `firewall-ownership.json`
 pinning the full current firewall snapshot to the same node UID and boot ID.
 The protected Platform Maintenance workflow has separate `ownership-capture`
-and `ownership-approve` stages. After a successful `qualify` run, merge exactly
-two reviewed GitOps commits without intervening commits. The first
+and `ownership-approve` stages. After a successful `qualify` run, merge two
+dedicated reviewed GitOps commits in order. Unrelated `main` commits may land
+before, between, or after them; the protected stage checks complete first-parent
+history and rejects any intervening policy cleanup source change. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
 `allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
 verify the fixture namespace is absent. The second changes only
@@ -162,7 +168,8 @@ absent, dispatch protected `canary-release` on the same current `main` SHA with
 `cleanup_run_id` set to the verified cleanup run. Release reads that immutable
 cleanup receipt, its reviewed ownership receipt, and the original placement
 at the qualify SHA. It accepts that placement only when the two exact GitOps
-prune commits still lead to the current `main` SHA and the cleanup snapshot,
+prune commits still lead through policy-source-invariant history to current
+`main` and the cleanup snapshot,
 capture run, and node identity all match. Keep the cleanup DaemonSet present
 until release: the stage rechecks that its node-local firewall has no
 owned objects, removes the selector label, waits for every cleanup DaemonSet Pod
@@ -171,5 +178,6 @@ then removes the dedicated taint. If Pod
 deletion stalls, the taint remains
 and recovery requires direct review. It checks Node UID, boot ID, and
 `resourceVersion` before each patch and retains private attempt, interrupted,
-and final receipts. A newer `main` blocks this release path until a separately
-reviewed recovery change; no stage infers clearance from a missing DaemonSet.
+and final receipts. A newer `main` invalidates the SHA-bound capture and cleanup
+receipts; recapture, approve, and verify cleanup again on current `main` before
+release. No stage infers clearance from a missing DaemonSet.
