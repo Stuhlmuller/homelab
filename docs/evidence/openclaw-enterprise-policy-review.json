@@ -1388,6 +1388,198 @@
       "trackingApplication": "traefik"
     }
   ],
+  "currentSourceRenderRecheck": {
+    "capturedAt": "2026-10-20T11:35:23.308787+00:00",
+    "sourceSha": "9841f044d282839f030d284f7ba74d1d634447ae",
+    "method": "Offline kubectl kustomize for every repository Kustomization under clusters/homelab; SHA-256 of each complete compact, sorted-key JSON NetworkPolicy spec. Comparison is to the historical policies[].sourceRenderSpecSha256 baseline. No live cluster query or generator execution was made.",
+    "kustomizationCount": 53,
+    "renderedPolicyCount": 55,
+    "historicalSourceSpecMatches": 37,
+    "historicalSourceOnlyOverlays": [
+      "media/media-postgres-restore",
+      "octelium-storage/octelium-postgres-restore-drill"
+    ],
+    "changedSinceHistoricalBaseline": {
+      "harbor/harbor-components": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "bae8160351269f41f03abe3dde109eb9d62848d3f8f628b5074191d95a43328d",
+        "historicalRenderSpecSha256": "0a07b9968e68c471b5fc66169975cac068a5d2bf99145b01ed514b5f5f15e5eb"
+      },
+      "harbor/harbor-nginx": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "3db6549252f1227580e114373247a13a0fed5a0c1b02f8633df5e80ceb727660",
+        "historicalRenderSpecSha256": "3077993944c3d956f14690d47f6b800ccbea93bb0e9fd7fba42a57c68975e496"
+      },
+      "harbor/harbor-postgres-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "0fb20b25dc8ccfa90c6655f164629e3575baf62ed80f3d2d1d1d28b115e96804",
+        "historicalRenderSpecSha256": "44c969a8a91a811e0917ece1032e79c0074da57bdd0c24148d1b800a0dae2590"
+      },
+      "harbor/harbor-vulnerability-exporter": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "e9469e165ce1a7731a3a62b4a1566e0537b2d6420fbc7c5515d8fbe4f0004d3d",
+        "historicalRenderSpecSha256": "80e4b31e30cd5d56667c387c4d00e0534e46a877d72012f952c6c3153c9ee38d"
+      },
+      "mastodon/mastodon-datastores": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/mastodon/networkpolicy.yaml": "e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        "currentRenderSpecSha256": "b8158fa4f9fdd1783149fff29a326a75e152067493a2717c50935d3cf0faa6be",
+        "historicalRenderSpecSha256": "ba4eaa1326467d692a57e256320cd0be9ccb9e7a6d296b5d890a38a9c8cb4911"
+      },
+      "mastodon/mastodon-gateway-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/mastodon/networkpolicy.yaml": "e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        "currentRenderSpecSha256": "5169ae6d245019505bf787b87186257091d6ed0ae159f9c5f286eb0fb019196b",
+        "historicalRenderSpecSha256": "a833c11e143e9ccc041a280db7359cfe9b1742cf93a0e59c376c71c7770c0b9b"
+      },
+      "nix-builder/nix-builder": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/nix-builder/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/nix-builder/networkpolicy.yaml": "3ef10e43a5e4942ad69b81c28936ec78b8e9bc298c80f606ef89f7c933a063ab"
+        },
+        "currentRenderSpecSha256": "c85fe8cd501a2581c6ff4a03be98d27e34e32c75c295a50c229fa0fa61ef554f",
+        "historicalRenderSpecSha256": "23461b9c3832c10c17c77c613d135bd503e4bf4981744242a9db941d2ea3f8c3"
+      },
+      "octelium-public/cloudflared-egress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-public/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/octelium-public/networkpolicy.yaml": "22487ad94034680e20936d33d7703a37858801be8e9e591aa719597f3542bff0"
+        },
+        "currentRenderSpecSha256": "731c8bae79c208b35a0cac3c8a021283bc1c005b7d174c113e21a327077ebd13",
+        "historicalRenderSpecSha256": "422496ace5d03a89fab65fb3124407031f506a850ba1884df448c9ff8c17db27"
+      },
+      "octelium/cordium-cluster-config": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/cordium/networkpolicy.yaml": "ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246"
+        },
+        "currentRenderSpecSha256": "dd36d5583a69f40f6f06e7c66b1db4672a90b6a395598562371dfe8d5aacbc88",
+        "historicalRenderSpecSha256": "79a7ded64e2f1b4d04b0f4994d70660635ff734f6874138ec1221b4c10d116af"
+      },
+      "octelium/cordium-genesis": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/cordium/networkpolicy.yaml": "ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246"
+        },
+        "currentRenderSpecSha256": "1cfb413eadbb9f9feaadb5fee19c3946e4960d0b18332cafe20d9cf11c355bc9",
+        "historicalRenderSpecSha256": "bd922455363c37ca125b76f84a1e7456aab7a3217320632b748e15baab433be2"
+      },
+      "traefik/traefik": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/traefik/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/traefik/networkpolicy.yaml": "a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
+        },
+        "currentRenderSpecSha256": "1af0b69b77174a3b68867b6489df78356be8c28f130a0e83e8d57faf61bac695",
+        "historicalRenderSpecSha256": "05e21ab9882664fee05dc9895c04125755ab5881baab3c26199088b7ab34e7c0"
+      }
+    },
+    "notInHistoricalPolicyRows": {
+      "media/media-postgres-restore": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/media-postgres-recovery/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/media-postgres-recovery/restore-job.yaml": "2eb7096bdc78ca1930b0b2a5b6d5a5363d95066fb8defb64542952878765983b"
+        },
+        "currentRenderSpecSha256": "2bb9a88d1b38b8ac1b35c1cbef124eb795bb24a8b5868eabb923dfc53634ed31"
+      },
+      "monitoring/kiali-server-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/kiali/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/kiali/networkpolicy.yaml": "2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
+        },
+        "currentRenderSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7"
+      },
+      "octelium-storage/octelium-postgres-restore-drill": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-storage/restore-drill-candidate/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/octelium-storage/restore-drill-candidate/restore-drill-cronjob.yaml": "2e4adb79cbd05dcca8220b8c1629d61c734fc2866b1dc49efc693bc265be841b"
+        },
+        "currentRenderSpecSha256": "0531d8a86d3e23741a721b1ccc7b28e688600411dafac8c5c6afcfefa5ab5042"
+      },
+      "openclaw-system/occ-postgres-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml": "611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
+        },
+        "currentRenderSpecSha256": "ce49609122796422dfc7777109c8b0419da83c23e2c6d9c2ba5f43643f482182"
+      },
+      "openclaw-system/occ-postgres-restore-drill-isolation": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml": "611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
+        },
+        "currentRenderSpecSha256": "f1c622f164bf27498ef6dda1e483ec9e756c13ded7300a3f10a5a0814265f3ad"
+      },
+      "openclaw-system/oce-lifecycle-hooks": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise/hooks.yaml": "f06e97ebd6a5b909313a0897dab25f36badec8fce58a0cfb6a39c446eccdf87e"
+        },
+        "currentRenderSpecSha256": "cb1a077ec56637fe74a2431cb51ab0fc14134619270f95bfc443d9fd77032bf9"
+      },
+      "openclaw-system/openclaw-system-default-deny-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml": "611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
+        },
+        "currentRenderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440"
+      }
+    },
+    "strictFindingDisposition": "Historical wildcard-egress findings remain open. Stock Enterprise public TCP/443 with private-range exclusions remains a separate documented exception, not a waiver of strict findings.",
+    "correctionDecision": "No additional behavior-changing manifest edit is justified by source render equality alone. Generated Cordium ws-main and Octelium svc-upstream all-port public egress require pinned generator patches or reviewed forks, then new renders and isolated-canary traffic. Other broad source policies and the current live policy set need traffic and owner review before narrowing.",
+    "status": "source-only recheck; T018 remains incomplete pending fresh live inventory, generator render/correction, ingress and egress owner decisions, and isolated-canary traffic"
+  },
   "requiredCorrections": [
     "All 17 Cordium, Octelium and Octelium Enterprise generated policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has a source-owned replacement. Recheck complete live specs after any generator upgrade and qualify real ingress, egress, and lifecycle behavior on the isolated canary before enforcement.",
     "Pinned Cordium v0.12.7 ws-main and Octelium v0.35.0 svc-upstream constructors hardcode all-port public IPv4/IPv6 egress without an egress input; Cordium creates its policy in non-dev Genesis and Octelium InstallCommon always creates its policy. Patch the owning generators upstream or build reviewed forks, publish and pin corrected images, refresh expected-spec fixtures from actual generator renders, then prove required destinations and private-range denial on an isolated canary. Additive NetworkPolicies cannot narrow either current rule.",
