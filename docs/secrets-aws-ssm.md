@@ -238,6 +238,18 @@ use the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling any
 stage, verify its exact destination and direct recovery access; declarations
 alone do not grant Talos or model access.
 
+Publish the two protected Talos inspection inputs only through
+[`scripts/platform-maintenance-credentials.sh`](../scripts/platform-maintenance-credentials.sh)
+from a clean, current `main` checkout. Its Octelium mode verifies the dedicated
+CLIENT policy and service without deleting the existing clientless CI sessions.
+Its Talos mode issues and tests a separate 30-day client from a valid private
+operator identity; it does not reuse or upload the operator certificate. The
+helper writes fixed `homelab-production` environment secret names and verifies
+their presence without reading them back. Rotate before the Talos client
+expires. Protected inspect run `39362087271` stopped before Talos connection
+because these two inputs were empty; publication and live tunnel validation
+remain outstanding.
+
 ## AI gateway contract
 
 Use the `LiteLLM Provider Credential` workflow to populate or refresh the

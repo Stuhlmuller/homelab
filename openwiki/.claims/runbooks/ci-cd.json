@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5c66a272949cc42926ba126746995174f89ee25b7c3fc463323145e617a21a9b",
+  "pageVersion": "sha256:95071cfd75580ea17218c87941aea643fc0b83682d370cdeb79330226c3ddb38",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -82,7 +82,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:29421604180311a6863252a2235baf1d24b31be3b7195a8d966bde6202707535"
+          "version": "repo-file-v1:sha256:14b1b4fc3860bac4b89e89ada0908f59e302fe7d68caab441b51b3758ffb9e54"
         }
       ]
     },
@@ -119,44 +119,40 @@
       ]
     },
     {
-      "id": "claim_f5083cabdc2d49cfa0c8b95c16bb18c9",
-      "statement": "The protected Octelium private Kubernetes catalog lane verifies exact current main before each of two writes and requires the second apply to be empty; a failed main lookup or advanced commit stops the next write, and source guards alone do not prove a live dispatch.",
+      "id": "claim_a9b102fdcbbe4ee688fc5d4a63fbed79",
+      "statement": "The fixed private Octelium catalog helper rechecks the GitHub main commit before each of its two writes, fails closed on a missing or advanced main SHA, and requires the second write to report no changes. Offline tests prove both stale-SHA stop points and lookup failure; live dispatch remains unverified.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/octelium-private-kubernetes-apply.yml",
-          "version": "repo-file-v1:sha256:27bdb90f445f6799380835651b07f7396b7acd6927184e41da30aebeffd8fa3d"
+          "resource": "repo://docs/ci-cd.md#L48-L53",
+          "version": "repo-lines-v1:sha256:c9c204f058273d04a04350bccdc64d6e83488a2e77b5988ad62f96f0f1cd9a78:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODFiNDc3MjdiYzk0NmNlZmFkNzVhMDg0Y2Y0ZjA0OThiMmJjZGE2MjE3NjJiZTBhYjJmN2M4YWUzYTVmODNkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGYyY2Y5YzQ4NDI2YzhjNTU0ODljYWY1M2Q0YzBhYzg1YjBmYzI2MThiZDRjMDE0ZDM4ZDM5YjU2NmYxMzA5ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGI3YjcyNDUwYWJhMjg2ZjE4NWNhOTI3MDk2MTgyMGZiNzFlMzNiYmQwNTEyZGVmYTdjOTc3ODdkNTNlYTU2NSJ9"
         },
         {
-          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py",
-          "version": "repo-file-v1:sha256:ef4982bd4351ea74bfcd94b0a052efb4c6a3037e465faff6a1e14d954768842a"
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py#L92-L110",
+          "version": "repo-lines-v1:sha256:778cf30123f1f9af242156d2b8491cf4a0ed09a42c6218ec7bf576acfb42d5b0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDFmMjc3MTczMGI5YTA4MjUwOGU2N2RmOWMzZWZlZGQ2NzE0NTEzNWJjMmYwZDkzNzU5ZDQ0NGIwYzAxZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0ZDAxOWZjNjMyZmNlOTcxNWZmYmVmMWZlOTdiZWQ0OTIzMjcyODRkZDUzYWY4ODk1NmRhMjFjOWU0OTkzNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzMDJjZWZiYWE1MzBiNzNmZDNkOGNlZmIxZWFmYmM0YzU4M2UxNmU1ZDBlOGJmZWU2ZDhmOTA2NzQzZDE4MGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
         },
         {
-          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh",
-          "version": "repo-file-v1:sha256:84a474308c9086265b8c5769d9bad552f2d14ef84f821456ca5a6281459fa24c"
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L85-L107",
+          "version": "repo-lines-v1:sha256:9cc750928a802ea05c3402da96a0fab68a4acce4da6da8c8798e29e91dfd8943:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExY2ZmZGIwYmU4YjgyYTFkZTYxYmU4OGJjZjYwNDkzODNlMWZiY2I5ODU0ODQ5ZTRlMDMwMzI3NWYzMWVkYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3M2VlMTcxM2QxNTFhYmFmYjA5YWIyZDgzYmQ5NjcxYTUyZWNkODJkNjUxOTVlY2IxYTAwYmFmOWQ4M2U0NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOWI0MDllMmQ5MWM4N2Y4NGY2MWI2NDVjMmFhZTMxYTJkNmY1NDc1M2Y0ZTY3MTkwNDYxMWRmNDEzOWYwNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
-      "id": "claim_a49bb33b6ca940219917d50829da991d",
-      "statement": "The Octelium source catalog stages a separate homelab-ci-plan workload identity and Kubernetes API read-or-dry-run policy, but merging the source neither applies it nor issues a plan token; protected PR plans still read the existing environment secret.",
+      "id": "claim_c6e0f71a854f4b46abe3572f33ff5286",
+      "statement": "The source Octelium catalog stages a distinct homelab-ci-plan workload User and read-or-dry-run Policy for kubernetes-api-ci; merging source does not apply the catalog or issue a token, and the PR plan continues to read its protected environment secret.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/terragrunt-plan.yml#L88-L119",
-          "version": "repo-lines-v1:sha256:1256ee1d78cb551cb7e7b17d6c4294aa57f0fcf41aeb06e555f784e3a7388d31:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0MzM0YjU1NTFhOWRmMTcwODQ1YzNiZTQyNjFlYmYzOGJiM2QwOWI4ZWUxNmI0ZTc4M2IyN2E2YmViNDJmODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxMjNkZDRkMWZmMzkxNDEzOTk0NmVjMmQzNmIxYWRkZmRmOTRmMjI2MzU2NmFjNmMzMWI0M2Y1NTIwOWM3ZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhZTBmZjJkZjgyNzE5M2QzZGVmM2ExZDgzNTNkNTdhNTYyYzVjYWEwZDEyNzA3ZGRiOWMyNTAyODU3NTgzNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1ODRiYTZhZGE3NTgzOTdhZDI0OGY4YjdkZmU5ZWI2NGFhYTQ0OTNlNmE3YmU3MmZiMjQwMGJlZDk3MDE5ZDEifQ"
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:68f02f18dfac3b95afb25f20089de19c6bc1f2d4e2eac929100ad4b7cdb6bbe8"
         },
         {
-          "resource": "repo://docs/examples/octelium/homelab-services.yaml#L242-L251",
-          "version": "repo-lines-v1:sha256:3f93591b0e55f257da8285a9131be27ea4a6512bbd53576cbc599c7e0fb76a5c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYmRlMTQyMDc5ODY3YTYyMWU5N2M4ZDc5NDZiNDA0NGEzMjI4NWE1NTk4ZTZhNmZhYWFjYmFiYjFlODdhNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MGZiNTExZWNmMmMwNjg4ZTU3YWVhY2RlOTY0ZmQ4NzM5ZGUzNWJmZjBkMzFjZWQzYjBkYTRmZGIwNTk5MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4MDliN2ViMDM1NjFlODQ4MjlkNDljZWRiOTJkY2U4ZWUzYzE5ZTgxMjBiMWJhMzM5MDI5MTlhNGM5ZWQzNWIifQ"
-        },
-        {
-          "resource": "repo://docs/examples/octelium/homelab-services.yaml#L98-L139",
-          "version": "repo-lines-v1:sha256:7dd469848d6a92acb67e79f642e020dee1ccad5dfad2a9b491f06a64f92a2956:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3YmRiZGJhY2Q1ODVlNzZjNDU2ZmQ5NjZiYTc2MjU0ZDk0YzZiM2JlY2Q1MjFjMDJlYzFkMmQ0ZTZmYTgyN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNmY0ZGRhM2VhZWMwMzBmNTUyODI4MWFlYjI1OGRmYzRiOTAyMDhlYjllNWRiZDkxZGJlY2EzMWRiZDFhNTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExODRjN2FhNmEzNjBlMTM5NjNhNWQwN2IyZjczZjc3N2U2NDgwYjUyMTk3ZDBkZTRjYzBhZDFmOTk3MWIzOTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0NmM2NjU1ZWJmN2EyYzgxMTY0ZWQyYWI4YjJmYzk2YjM1ZGJiYjQ4ZTQyZmVmZGVlZDdiYTY4YWQ3N2Y0NDcifQ"
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:56:30.465Z"
+    "at": "2026-10-20T05:13:36.094Z"
   }
 }

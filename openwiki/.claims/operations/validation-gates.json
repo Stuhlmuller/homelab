@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c99ede64126e44a80955f5770e5094bcbde984f69e08747d8f53ba815e781302",
+  "pageVersion": "sha256:3d10b5ac0245b758b894941efeefbeaa367444bcda51c48b7f639a602f6bc1ca",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:82d1f64ea76f1aa1703e4440545e8f9b58f3cefe9963af57501f670599909946"
+          "version": "repo-file-v1:sha256:2b85717891a699199959dbb86e3d1c071530c8c5e9ae4e3744e43383be9fe216"
         }
       ]
     },
@@ -771,10 +771,6 @@
           "version": "repo-file-v1:sha256:5ab39d1b53db6f642573cfee04c8566a8f652cab5b4d946f080efb46a1aca7ce"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
-        },
-        {
           "resource": "repo://scripts/ci/offline-checks.sh",
           "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
@@ -784,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:82d1f64ea76f1aa1703e4440545e8f9b58f3cefe9963af57501f670599909946"
+          "version": "repo-file-v1:sha256:2b85717891a699199959dbb86e3d1c071530c8c5e9ae4e3744e43383be9fe216"
         }
       ]
     },
@@ -910,7 +906,7 @@
     },
     {
       "id": "claim_0cdab53ba21a4cc28472291e3459e80f",
-      "statement": "The dormant Enterprise foundation is rendered in static validation to check restricted namespaces, exact OnChange SSM projections, PostgreSQL TLS and retained claim shape, pre-entrypoint certificate snapshot, backup role, bootstrap-completion readiness, excluded restore drill, ingress denial, and disabled activation; the PostgreSQL 18 fixture checks role separation and isolated recovery locally but does not prove live readiness.",
+      "statement": "The dormant Enterprise foundation is rendered in static validation to check restricted namespaces, tenant RoleBindings, exact OnChange SSM projections, PostgreSQL certificate shape, ingress denial and disabled activation; this does not prove live readiness.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -921,12 +917,8 @@
           "version": "repo-file-v1:sha256:3f88e76aaeb610adbf4676aa87fcc20636d5d480fab2a1c183ec43ee2e549395"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
-          "version": "repo-file-v1:sha256:f726b8be2628220111b2130f42e070e6ea39a80166e70d4ae12bde728f9c2cef"
-        },
-        {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:82d1f64ea76f1aa1703e4440545e8f9b58f3cefe9963af57501f670599909946"
+          "version": "repo-file-v1:sha256:2b85717891a699199959dbb86e3d1c071530c8c5e9ae4e3744e43383be9fe216"
         }
       ]
     },
@@ -1038,7 +1030,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:82d1f64ea76f1aa1703e4440545e8f9b58f3cefe9963af57501f670599909946"
+          "version": "repo-file-v1:sha256:2b85717891a699199959dbb86e3d1c071530c8c5e9ae4e3744e43383be9fe216"
         }
       ]
     },
@@ -1179,8 +1171,30 @@
       ]
     },
     {
+      "id": "claim_a3773f7c38414ba9a5371cf1ae64cc41",
+      "statement": "The protected private Octelium catalog job supplies a read-scoped GitHub token to its fixed helper, which selects exactly three Policies and three Services and rechecks the current main SHA immediately before each of two catalog writes. Missing or advanced main stops the next write, and offline fixtures cover both stale-SHA points and lookup failure; these source checks do not prove a live dispatch.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/octelium-private-kubernetes-apply.yml#L110-L123",
+          "version": "repo-lines-v1:sha256:da59c60e33837de63d99639cd1825abfab5619b390ef67d813575f08bd32ab1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3MTgzYWNlYjQ3OGJhNTFhY2VhNWI1MTg4NGI5ZGY1MzY1OTllNmUyNzI5NTY3YjY4ZTc3NThiYzY1N2JmNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1NzcyOTYzMzZhNmU4NjQ2MWM1MTllNTM0OTU3YmQ0OTA1ZDk0OTU2ZTQyNGU5N2Q3OGJiOGZjNTQzOTdjYjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlNWNiOTliN2JhODA5ZjBiNjVlZTNhMTFlMWI0ZDI0ZWNjN2VlMGY0NzVlMWQ0ODA0MjgxMmI5YzRjNTVkODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlMzNmZTEzMjExZGUxNDNmYmIwMjk5MDQ5YzM4ZTVlMzEwMDRlMjRmZDg4NGU1MmE1OTA4Mjc2OTVlMTI0YzUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py#L75-L112",
+          "version": "repo-lines-v1:sha256:81d7f409438f574e8bdf72982b9d624fe3ade4698e149ad231b296939d3ca87e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4NjczZmYzYmFjZGUyZGZhMjY3M2NhNTczYTVkZjZjMjAwZWMyODdhZmEwNzk3ZjU4YTMzNGQ2ZjUwZjUwNjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkODBiNTU4ODVhNjk4N2Y0ZGI3ZGEwZjMxNzZlMDNiMzA0YjI0NzZlNzVkMTVkNmEzMGUyMDM3NTFhMWNlZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwODI3OWJiYWIxMDRjMTc0M2E5MDAwNWE2MWY1MzA2YzNmZDMxZjUyZGE3ZjZkY2FmMjZmOTE5ZDljZmVhYjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L35-L49",
+          "version": "repo-lines-v1:sha256:5c123935f5cd5373d59890a0f66df8e8b6abcfa9c80e6d6760a3114b5d98903c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZWJjYjhiOGRiNTlhZjM0MWYxMmQ3MjBkYmVmOTA5MWViNDdhZmRjYTI0YTRkMjRjZjZhMzJlODBhZGQ1ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDI0NDU4MmI2ZmIwM2QyM2I4NDE1YWJlY2QzNDZiMGM5ZjQ2NmI2Zjc1MmIwNjgxODljZTdlOWEyZGMzNTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlZDA1ZTYwNTBmNDAzNjMzNjFmZGQ0YTdiNTJlM2Y2MGYwZWE1Mjg3ODFlMDM3YjZhZmIyMTRkMjZhZTA3NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4M2Q4MWU2OTFlMTBkNzA1Y2YzOTIxYjc4MzVlZGRlMGQ2MTk2NzlmY2ZhYTM5YTU5ZTkxMzdkNGM0OTc3NTIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L85-L107",
+          "version": "repo-lines-v1:sha256:9cc750928a802ea05c3402da96a0fab68a4acce4da6da8c8798e29e91dfd8943:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExY2ZmZGIwYmU4YjgyYTFkZTYxYmU4OGJjZjYwNDkzODNlMWZiY2I5ODU0ODQ5ZTRlMDMwMzI3NWYzMWVkYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3M2VlMTcxM2QxNTFhYmFmYjA5YWIyZDgzYmQ5NjcxYTUyZWNkODJkNjUxOTVlY2IxYTAwYmFmOWQ4M2U0NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOWI0MDllMmQ5MWM4N2Y4NGY2MWI2NDVjMmFhZTMxYTJkNmY1NDc1M2Y0ZTY3MTkwNDYxMWRmNDEzOWYwNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
       "id": "claim_a54d750b2e7e4fae9832f7b40921adf5",
-      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures while retaining partial content in one temporary OCI directory and forcing recursive checks on each attempt, report exhaustion after five, and stop on hard failures.",
+      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures in one temporary OCI directory while retaining partial content, forcing recursive checks of nested data, and using bounded backoff. They report exhaustion after five attempts and stop on hard failures.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -1193,30 +1207,30 @@
       ]
     },
     {
-      "id": "claim_e3300df1739642af859195d25bbb30a2",
-      "statement": "The staged homelab-ci-plan policy has an offline fixture for read requests, Kubernetes dry-run writes, live-write denial, and subresource denial; the source check does not prove live enforcement or issue a credential.",
+      "id": "claim_83d895695cfd4b1d88c869cb2ee7094d",
+      "statement": "The staged homelab-ci-plan Octelium workload policy permits Kubernetes read verbs and dry-run writes while denying live writes and subresources; offline fixtures exercise these declared rules, but source checks do not establish live enforcement or issue a plan credential.",
       "evidence": [
         {
-          "resource": "repo://docs/examples/octelium/homelab-services.yaml#L99-L139",
-          "version": "repo-lines-v1:sha256:240f6c4e858d7ce5718d2b1c4626617d14fde282a80ac00108ffc8259bb8f44a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNmY0ZGRhM2VhZWMwMzBmNTUyODI4MWFlYjI1OGRmYzRiOTAyMDhlYjllNWRiZDkxZGJlY2EzMWRiZDFhNTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNmY0ZGRhM2VhZWMwMzBmNTUyODI4MWFlYjI1OGRmYzRiOTAyMDhlYjllNWRiZDkxZGJlY2EzMWRiZDFhNTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkNWM1YTRiZjI2NGJjN2NmMWNhMDkwNmVhNTY3NDE2N2I1ZmY5YzMyZTBkMmY2YjAwY2ZmOTJmYTJhOGRhZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0NmM2NjU1ZWJmN2EyYzgxMTY0ZWQyYWI4YjJmYzk2YjM1ZGJiYjQ4ZTQyZmVmZGVlZDdiYTY4YWQ3N2Y0NDcifQ"
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
-          "resource": "repo://scripts/ci/octelium-plan-policy-test.py#L55-L92",
-          "version": "repo-lines-v1:sha256:aa488094c82a872b7528dd58c28318ba1f3973616893709dce08f4590ef8c317:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3MzRmY2Y5ZDRiYzI4ODI0YThhMTk5MWY2OWZiNjBkMWQzZDNkY2E3MzBiMzQ0NWY5MDRmZjRkNzkxNzdkYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5N2JmMWViNTA2YjY3NTIwNGM4ODAwYzA2ZGZiZWE5ZGYwYjQxNGFjZGY1MjZjNTVkM2M1YjEyOWE4YWE4ZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwODI3OWJiYWIxMDRjMTc0M2E5MDAwNWE2MWY1MzA2YzNmZDMxZjUyZGE3ZjZkY2FmMjZmOTE5ZDljZmVhYjcifQ"
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
+          "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L20-L20",
-          "version": "repo-lines-v1:sha256:85c9b710097a466207d3ac19689c150bc769fd461867a6a39e3fb8267b094db2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODVjOWI3MTAwOTdhNDY2MjA3ZDNhYzE5Njg5YzE1MGJjNzY5ZmQ0NjE4NjdhNmEzOWUzZmI4MjY3YjA5NGRiMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODVjOWI3MTAwOTdhNDY2MjA3ZDNhYzE5Njg5YzE1MGJjNzY5ZmQ0NjE4NjdhNmEzOWUzZmI4MjY3YjA5NGRiMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjA2MWM3MGNhZjEwMzkxMTMxMjE3MzQzNjExNDExM2EyNzZmMDllZjVkNWJjN2QwNTU5MjI5MzE2MDM0OGRjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWYzN2U5ZGJmNjI1Mzg4NGU2YmI3M2JlZTIwZmZkYTI2YzE4NjBkN2E5ZTk5NTQ3ZjYyMzdmMmY0NTMzMWU0NyJ9"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
     {
-      "id": "claim_a623d524c9c54d2394534bd6c420df71",
-      "statement": "Renovate T022 has a durable receipt for 19:00 and 20:00 same-key hits on distinct scheduled Pods and a 21:00 full dry run that refreshed that key after v0.0.2; this does not prove general cache freshness or write safety.",
+      "id": "claim_3d36208235a1487b89c5a0b553a914c9",
+      "statement": "The 19:00 and 20:00 scheduled Renovate dry runs hit the same public canary datasource key on distinct Pods; after protected v0.0.2 publication, the 21:00 scheduled run refreshed that record and selected one new canary branch proposal, completing T022.",
       "evidence": [
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md",
-          "version": "repo-file-v1:sha256:46d0e907b6845b44bd4f52db47d626a5643bbdbfdc00444fb5bee0ee8c33d53d"
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
+          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
@@ -1225,16 +1239,12 @@
       ]
     },
     {
-      "id": "claim_e394784275f84f58995928f469f12856",
-      "statement": "Renovate T045 records a failed 17:00 repository lookup and alerts, a missing 03:00 scheduled Job with alert, and successful 04:00 next-slot recovery; separate cache-fault recovery, QNAP capacity path, parity and writer cutover remain open.",
+      "id": "claim_e6f34f211f6a444a8320b50a4ef75dcf",
+      "statement": "Retained 17:00 logs identified one repository's lookup errors and the Job/alerts failed visibly; the protected 03:00 missed-slot drill fired RenovateHourlyCycleMissing at 03:20:47, and the restored 04:00 scheduled Job succeeded with alert clearance, completing T045.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L194-L212",
-          "version": "repo-lines-v1:sha256:5f35613fc3d5bfa180c757a652430c465ebda827a8a81e86b3258c93093d3ec4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmZWEzZmFhNDI3NTA2MmJjZDUxNzE2YWIzZmU3YzY0ZDE4MDM0ODZjM2UxNGVmOWIzZTU5NTc3YzMyZTQxMDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNDZiYjY0YjdmYjQzZGE3YjMwNWRlMzFkMDRkZTZjMGZlZTAwZDYyOTFiZmM2MDBhNjM1YjA2MTliODA0YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1ZWExYzVhNjE0NjAwNWIyMmFiNmEzZGI0ODg0ZGQ0MDlkYTQ3ODFiZTZiYTVjYWVhODRmYTBlYmU4MTNiNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4YmMzM2JkZTM3ZTM1NDY0YzQxODU5MWYwNGUwOTM2ZjQ4MWVjYWIzYTQ3MmI0OTFkNzIzZDNmMDQ1ZDJmZTQifQ"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L18-L26",
-          "version": "repo-lines-v1:sha256:6e0d855e058f935d7bdb3b961e45b0a21dfdd9ea71f89b7863df6748f59a6448:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzhjZjBhODYzZjkwNzc5YmFkYjliMjFlZDMxZmEwOWI4MDQ5Y2NkMmFlMTEyZGE2ZDZiMDdjMTZiOTM1OTgwNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM2N2M4ZmMzZDIxMzQzZmFjMmY0NjFjYzY1ZjAwZTY3ZWMxODQ1MGJkMWI0Y2JlMjYyOTMyYTNhOGQyN2RhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGZjOWUyZGE0NWY5YTQ1YzUzNTEyNTJmYmMzNmE4YjNhY2Y1NzkzZWRiZTcwZjVlMTNlZGM3M2YxYzk0YjZhNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc4ODQ0ZDdjOWVjOGE3NmJlOGNmNzQ5YjBhOGQwYzlmYTMzNjUzODc3YjgyYTZlYmNmYzEzMzUyY2E1NDdiZCJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L19-L25",
+          "version": "repo-lines-v1:sha256:2315591deb2784921550b063e3ffb743fc67c8c7b106b9bc276820a0f8622985:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE5OGI2Mjg2MTEzOTg0NjA2OTk3MjQ5ZjEzMmNhNTI1NTk0ZWJiZTY4Y2NjNWI1MTA2OTJmYmQ3NjdlNzNhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQzNDllMjBjZDYyZTk3NjQ1MGZlMDhlMDhmODM4NWY5YjZlOWY4MmJjODVhMDQ4ODA4MmU0YWJkNWIzNzMyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMyY2EwNWI5NDgzODA5YmI4ODNlNGVmYTEyYmM3YzM4NDE1NDE5OThhZDI2NjZkMDNmYzRmNzg0MzgxMmVmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTgxMmZlOTk1ODY1ZmU4NTNmZDMxYzJjMWM1ZDNjZTQ4YTdmNTBiY2M1ZmU3ODMyZTVlNDRkYjJhYmVmZmM3NCJ9"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
@@ -1245,6 +1255,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:56:30.465Z"
+    "at": "2026-10-20T05:13:36.094Z"
   }
 }

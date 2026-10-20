@@ -14,6 +14,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
+  - id: openwiki-source-62b4804f94bc9a36375f5db0
+    resource: repo://clusters/homelab/apps/external-secrets/cluster-secret-store.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
@@ -36,14 +38,12 @@ sources:
     resource: repo://clusters/homelab/apps/multica/README.md
   - id: openwiki-source-846efb58b681f5ac619edfd7
     resource: repo://clusters/homelab/apps/multica/runtime/bootstrap.py
-  - id: openwiki-source-5accc732627f3c9818cf76a8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/database-bootstrap.sql
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-4aa900d84e01409d13d834a6
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -62,6 +62,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
@@ -70,6 +72,8 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -86,6 +90,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-cfb569f646f8b7c98a134fdf
+    resource: repo://scripts/ci/platform-maintenance-credentials-test.py
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
@@ -96,18 +104,24 @@ sources:
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
+  - id: openwiki-source-447d6bc69ac6883500089232
+    resource: repo://scripts/platform-maintenance-credentials.sh
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-a44b67b396abfe9ddff04314
+    resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T03:45:43.875Z" }
+generated: { by: "codex", at: "2026-10-20T05:13:36.094Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:56:30.465Z
+    at: 2026-10-20T05:13:36.094Z
 ---
 
 # Secrets And Identity
@@ -236,12 +250,14 @@ every five minutes. Current IAM source removes the temporary exact-scope
 companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, the operator applied the private, un-targeted saved plan with only the
 role and inline-policy deletions. A read-only IAM lookup returned
-`NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
-is running in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
-finished all eight eligible repositories and logged the same public release
-cache-key hit on separate Pods; the protected companion canary published
-`v0.0.2` at 20:20 UTC. Normal refresh, fault recovery, full parity, and writer
-cutover remain open. The legacy GitHub Action remains the only writer. The App
+`NoSuchEntity`, and a fresh full-unit plan had no changes. The CronJob is now
+scheduled hourly in UTC and remains in full dry-run mode. Its earlier
+19:00 and 20:00 UTC Jobs each finished all eight eligible repositories and
+logged the same public release cache-key hit on separate Pods. After the
+protected companion canary published `v0.0.2` at 20:20 UTC, the 21:00 scheduled
+dry run hit that key and selected the new public canary branch proposal. The
+durable aggregate receipt closes T022. Cache-fault recovery, full parity, and
+writer cutover remain open. The legacy GitHub Action remains the only writer. The App
 lacks repository Administration read, a recorded migration exception whose
 first write-enabled outcome still needs policy review.
 After dry-run parity and removal of the entire legacy workflow, a guarded
@@ -530,6 +546,23 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
   affects CI, operator, and Cordium Kubernetes access, so validate both Services
   after rotation.
+  The protected Talos maintenance lane has a separate CLIENT authentication
+  token, `OCE_OCTELIUM_CLIENT_AUTH_TOKEN`, limited by
+  `homelab-platform-talos-ci-access` to the private TCP
+  `talos-api-ci.homelab` Service. Its repository helper
+  [`platform-maintenance-credentials.sh`](../../scripts/platform-maintenance-credentials.sh)
+  runs only from an exact, clean `main` checkout; it verifies the reviewed
+  Octelium WORKLOAD User, policy, and Service before creating or rotating the
+  dedicated Credential. It does not delete the User's CLIENTLESS Kubernetes
+  sessions. The same helper issues a separate 30-day Talos `os:admin` client
+  from a valid operator identity, proves its certificate and key differ from
+  the operator's, tests read-only direct access, and publishes only the encoded
+  client as `OCE_TALOSCONFIG_B64` in `homelab-production`. It never uploads the
+  operator's client config. Protected inspect run `39362087271` stopped at the
+  Talos connection setup with both inputs empty. The helper has only local
+  tests; Octelium admin authentication, CI issuance, tunnel access, and a
+  complete protected inspection receipt remain outstanding. See the
+  [Talos maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d908bd7676b83c79aae0e4058f32d484981d27ffd330b7a1f06dc2a024a8f7e",
+  "pageVersion": "sha256:e8694a93236ecdad96872bf5fbb47c7ce36067a539d293af16b95dbee0fe8afd",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -171,10 +171,24 @@
           "version": "repo-lines-v1:sha256:03244aed459ffeca0a1f53160d5fbc8e9405f1774ff3ae2b7a525f9f2e1e4530:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlODk0MmRiZTc0YTJlMjAzN2YzZGNiMDYyZTQ5MGJjZWIyZmY5MDQ4YzIzYzhmNWM2MTkxNWJmNTgxOTg3NDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3OGJlMDk2MTkyZDJiZGU2NTY2Zjc4NzY2OTg0MTA0Yzg4ZDg0ZjI0NjA0ODVhYTVmN2FlZTZmYjgxYWViNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmYjVjZTk1ZTZjYmQwOWU3YTIxMWNkMjg1MmQxYWUzODM1MTk0ZDE3YmZjZTFkZTI2MmRmMzVkYzNhZjU0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2NDM0MDA0ZDBjYzM1YjgxMzg1OTdkNjhjNGQ2YzdlN2VkNmZhYmI2ODI3YmZhMGU4MjRhZjIyY2UzZjUxNWUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_a1d2283e1ef44106934ed5c6f36fe09a",
+      "statement": "A 2026-10-20 read-only NetworkPolicy inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned. All 49 Argo-owned complete specs matched repository renders; this source convergence does not qualify live enforcement or canary traffic.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py",
+          "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:22:56.208Z"
+    "at": "2026-10-20T05:13:36.094Z"
   }
 }

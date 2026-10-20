@@ -368,6 +368,39 @@ Before the protected inspection can run, provision a distinct Octelium
 `OCE_OCTELIUM_CLIENT_AUTH_TOKEN`, and a separate authenticated Talos client
 config as `OCE_TALOSCONFIG_B64`. The CI policy admits that workload only to
 `talos-api-ci.homelab`; it does not grant access to the owner's Talos Service.
+From an exact, clean `main` checkout, use the fixed repository helper after
+the reviewed Octelium catalog is live:
+
+```sh
+nix develop --command bash scripts/platform-maintenance-credentials.sh octelium-client
+nix develop --command bash \
+  scripts/platform-maintenance-credentials.sh talos-client \
+  --operator-talosconfig /absolute/private/path/to/operator-talosconfig
+```
+
+The first command requires an authenticated Octelium administrator, verifies
+the dedicated WORKLOAD user, CLIENT policy, and TCP service, then creates or
+rotates only the `homelab-platform-talos-ci` authentication-token Credential.
+An Octelium access-token Credential is an HTTP bearer token and cannot serve
+the client tunnel; see [Credential types](https://octelium.com/docs/octelium/latest/management/core/credential).
+The helper does not reset the user's separate clientless Kubernetes sessions.
+The second command requires a valid operator `os:admin`
+client and direct control-plane access. Talos issues a distinct 30-day
+`os:admin` client; the helper tests it against `10.1.0.199`, sets its stored
+endpoint to the reviewed private certificate hostname, and only then publishes
+it. Renew before expiry. Neither command displays the token or client config.
+If Talos issuance fails, restore the original private CA or operator access
+through the documented recovery path; never copy the owner's client certificate
+to CI. A failed GitHub secret write requires a repeat run and a fresh credential.
+
+Protected inspect run `39362087271` on 2026-10-20 passed its static,
+exact-main, and AWS gates, then stopped at `connect_talos`: both dedicated
+environment inputs were empty. The repository helper had not yet been run, and
+the local operator Talos client was valid for read-only direct access; CI
+issuance and Octelium CLIENT access remain unverified until the fixed path is
+run and protected inspect produces a complete receipt. No authenticated
+Octelium administrator session was available to run the credential helper at
+the time of this finding.
 Verify from a protected runner that the fixed local TCP port is reachable and
 `talosctl version` succeeds with the decoded mode-`0600` config. Failure must
 stop before any upgrade; inspect the private S3 receipt under

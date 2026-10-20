@@ -41,7 +41,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:22:56.208Z
+    at: 2026-10-20T05:13:36.094Z
 ---
 
 # Runtime Isolation
@@ -107,7 +107,10 @@ fresh read-only snapshot before the canary. The [source-owner ledger](../../docs
 pins source locations for the original 18 generated policies; 17 still match
 their earlier full-spec hashes after Kiali's handoff. Cordium `ws-main` and
 Octelium `svc-upstream` retain broad public egress findings, and generator
-renders and real traffic remain unqualified. Qualify
+renders and real traffic remain unqualified. A 2026-10-20 read-only cluster
+inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned.
+All 49 Argo-owned specs matched their rendered repository sources; this is
+source convergence, not traffic or enforcement qualification. Qualify
 allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
 IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before

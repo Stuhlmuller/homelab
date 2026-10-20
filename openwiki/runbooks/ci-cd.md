@@ -20,8 +20,6 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
     resource: repo://.github/workflows/nofx-images.yml
-  - id: openwiki-source-70a103e770a716ccc6d4024b
-    resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
@@ -52,10 +50,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T04:41:27.681Z" }
+generated: { by: "codex", at: "2026-10-20T04:22:56.208Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:56:30.465Z
+    at: 2026-10-20T05:13:36.094Z
 ---
 
 # CI/CD
@@ -73,12 +71,11 @@ read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
 applies the catalog nor issues a plan token; the PR plan still reads its
 environment secret.
 
-The separate [Octelium Private Kubernetes Apply](../../.github/workflows/octelium-private-kubernetes-apply.yml)
-dispatch checks its selected `main` commit before entering the protected job.
-Its fixed helper [rechecks current `main`](../../scripts/ci/octelium-private-kubernetes-apply.sh)
-immediately before each of two catalog writes. A failed lookup or advanced
-commit stops the next write; the second apply must report no changes. These
-source guards have not been exercised by a live dispatch in this update.
+The separate Octelium Private Kubernetes Apply dispatch verifies the selected
+`main` commit before the protected job. Its fixed helper rechecks current `main`
+immediately before each of two catalog writes; a failed lookup or newer commit
+stops the next write. The second write must report no changes. These source
+guards have not been exercised by a live dispatch in this update.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.

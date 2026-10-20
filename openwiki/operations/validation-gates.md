@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-70a103e770a716ccc6d4024b
+    resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
@@ -162,6 +164,10 @@ sources:
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-94b1fdad9ed1c1d7d6286c4a
     resource: repo://scripts/ci/octelium-plan-policy-test.py
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -172,8 +178,6 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
-  - id: openwiki-source-6514a0140b512caa7259f135
-    resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-86a40ee4669b4b7843917e87
@@ -256,10 +260,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T04:56:30.465Z" }
+generated: { by: "codex", at: "2026-10-20T05:13:36.094Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:56:30.465Z
+    at: 2026-10-20T05:13:36.094Z
 ---
 
 # Validation Gates
@@ -676,10 +680,9 @@ the protected tag's administration permission without changing resources.
 
 ## Entra owner conversion and Octelium identity checks
 
-The staged `homelab-ci-plan` catalog policy has an offline fixture for read
-requests, Kubernetes dry-run writes, live-write denial, and subresource denial.
-The fixture checks repository source only; it does not prove live Octelium
-enforcement or issue a plan credential.
+The staged `homelab-ci-plan` policy has offline fixtures for reads, dry-run
+writes, live-write denial, and subresource denial. These source checks do not
+prove live Octelium enforcement or issue a plan credential.
 
 Offline validation runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
 native APIs to retain the immutable owner `oid` and disabled email fallback.
@@ -1034,11 +1037,13 @@ in-progress apply. Main-only diagnostics use the same production environment.
 
 The focused Octelium private Kubernetes workflow has the same exact-`main`,
 current-head, production-branch, serialized-run, private-log, static, and
-Conftest gates. Its fixed helper extracts exactly
-`Policy/homelab-private-kubernetes-access` and
-`Service/kubernetes-api.homelab`, never prunes, and requires a second apply to
-report no changes. The lifecycle helper installs cleanup before creating its
-30-minute, one-authentication Credential, binds its watch to the unique run it
+Conftest gates. Its fixed helper selects exactly three private Kubernetes/Talos
+Policies and three Services, and never prunes. It checks current `main` before
+each of the two catalog writes, stopping the next write if lookup fails or
+`main` advances. The second apply must report no changes; offline fixtures
+cover both stale-SHA points and lookup failure. The lifecycle helper installs
+cleanup before creating its 30-minute, one-authentication Credential, binds its
+watch to the unique run it
 dispatches, and verifies Credential, Session, and GitHub-secret revocation on
 exit. See `docs/ci-cd.md`.
 
@@ -2004,9 +2009,8 @@ dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
 17:00 datasource mutex timeout. The 19:00 and 20:00 scheduled Jobs each
 finished all eight eligible repositories with no reported errors and one
 exact public canary datasource-key cache hit on distinct Pods using the same
-bound PVC. These restricted-log observations show same-key reuse across two
-Pods. After the protected `v0.0.2` release, the 21:00 scheduled dry run hit
-that key, refreshed its record, and selected the new public canary branch
+bound PVC. After the protected `v0.0.2` release, the 21:00 scheduled dry run
+hit that key, refreshed its record, and selected the new public canary branch
 proposal. The [aggregate receipt](../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md)
 closes [T022](../../specs/004-run-renovate-in-cluster/tasks.md). This does not
 prove general cache freshness, eligible Harbor discovery, full owner/App
