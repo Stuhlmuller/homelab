@@ -25,10 +25,18 @@ SHA-256, then packaged with the controller/runtime images through the protected
 Enterprise image workflow. Record the signed CLI image digest from that
 workflow's verified pull before replacing the null `source.cli.artifactDigest`.
 
-The Enterprise stage names in the
-[workflow](../.github/workflows/openclaw-enterprise-operations.yml)
-are reserved but currently fail closed. Its GitHub runner has no durable shared
-mount for `privateJournal.mountPath` in
+The [operations workflow](../.github/workflows/openclaw-enterprise-operations.yml)
+has a fixed `bind-installation` lane. It rechecks current `main` after checkout,
+runs under the protected production environment and shared operations queue,
+pins the reviewed binder checksum, and withholds private output. The binder
+can annotate only the already reviewed startup Secret after proving the live
+Installation, Pod, and Secret identities; the patch uses UID/resource-version
+preconditions. The lane requires the owner-controlled, 0600 bootstrap service
+key at the fixed `bootstrap.serviceKeyFile` path. No declared runner currently
+delivers that private file, so hosted dispatch fails before binding. Do not
+dispatch it until credential delivery and the dormant Installation are proven.
+The other Enterprise stages remain reserved and fail closed. The GitHub runner
+has no durable shared mount for `privateJournal.mountPath` in
 [`openclaw-enterprise.json`](../scripts/config/openclaw-enterprise.json).
 Copying a runner-local journal after a command exits would lose a pending API
 intent if that command or runner stops mid-operation. T043 remains open until a

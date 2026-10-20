@@ -19,6 +19,8 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
+BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
+BINDER_SHA256 = '8a2e7961ccdcecd40a8e9eb0bbc28ffaf78eab41e82609894d13f1c2a3f01fe8'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 
@@ -29,14 +31,15 @@ class Operations(unittest.TestCase):
         script = ENTERPRISE_SCRIPT.read_text()
         digest = hashlib.sha256(ENTERPRISE_SCRIPT.read_bytes()).hexdigest()
         self.assertIn(f"{digest}  scripts/ci/openclaw-enterprise-stage.sh", workflow)
-        self.assertIn('options: [none, full-sync, reconcile, stop, verification, '
+        self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop, verification, '
                       'restore, acceptance]', workflow)
         self.assertIn('Choose exactly one fixed operation stage.', workflow)
-        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 2)
-        self.assertEqual(workflow.count('queue: max'), 2)
+        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 3)
+        self.assertEqual(workflow.count('queue: max'), 3)
         self.assertIn("inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
                       workflow)
-        self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none'",
+        self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && "
+                      "inputs.enterprise_stage != 'bind-installation'",
                       workflow)
         self.assertIn('private diagnostics withheld', workflow)
         self.assertIn('durable private journal runner is not declared', script)
@@ -82,6 +85,7 @@ class Operations(unittest.TestCase):
                 'BASELINE_REF': '', 'ARCHIVE_REF': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
+            ('none', 'bind-installation', '', True),
             ('none', 'none', '', False), ('inventory', 'stop', '', False),
             ('none', 'reconcile', 'unexpected', False),
         ):
@@ -113,6 +117,69 @@ class Operations(unittest.TestCase):
                                env={**run_env, 'EXPECTED_SHA': '0' * 40},
                                capture_output=True, text=True, timeout=5)
         self.assertEqual(stale.returncode, 2)
+
+    def test_installation_binding_is_pinned_protected_and_requires_private_file(self):
+        workflow = WORKFLOW.read_text()
+        binding = workflow.split('\n  binding:\n', 1)[1]
+        self.assertIn("inputs.enterprise_stage == 'bind-installation'", binding)
+        self.assertIn('name: homelab-production', binding)
+        self.assertIn('group: openclaw-enterprise-operations-production', binding)
+        self.assertIn('queue: max', binding)
+        self.assertIn('OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}', binding)
+        self.assertNotIn('id-token: write', binding)
+        self.assertLess(binding.index('name: Recheck Current Main Commit Before Binding'),
+                        binding.index('name: Bind Reviewed Installation'))
+        self.assertIn('test "$ACTUAL_SHA" = "$(gh api', binding)
+        self.assertIn(f'{BINDER_SHA256}  scripts/openclaw-enterprise-bind-installation.py',
+                      binding)
+        if BINDER.exists():
+            self.assertEqual(hashlib.sha256(BINDER.read_bytes()).hexdigest(), BINDER_SHA256)
+        self.assertIn('test "$(jq -r \'.bootstrap.serviceKeyFile // empty\' '
+                      'scripts/config/openclaw-enterprise.json)" = '
+                      '/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json',
+                      binding)
+        self.assertIn('test -f /private/openclaw-enterprise/bootstrap/'
+                      'initial-admin-service-key.json', binding)
+        self.assertIn("stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/"
+                      'initial-admin-service-key.json', binding)
+        self.assertIn("timeout 10m nix develop --command bash <<'EOF'", binding)
+        self.assertIn('ulimit -f 1024', binding)
+        self.assertIn('private diagnostics withheld', binding)
+        self.assertNotIn('cat "$private_log"', binding)
+
+        run = textwrap.dedent(binding.split('        run: |\n')[-1])
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory)
+            (fake / 'sha256sum').write_text('#!/bin/sh\nexit 0\n')
+            (fake / 'jq').write_text(
+                '#!/bin/sh\nprintf "%s\\n" '
+                '"/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json"\n')
+            marker = fake / 'ran-binder'
+            (fake / 'timeout').write_text(
+                '#!/bin/sh\ntouch "$BINDER_MARKER"\nexit 0\n')
+            (fake / 'stat').write_text('#!/bin/sh\nprintf "0:644\\n"\n')
+            (fake / 'id').write_text('#!/bin/sh\nprintf "0\\n"\n')
+            for name in ('sha256sum', 'jq', 'timeout', 'stat', 'id'):
+                (fake / name).chmod(0o755)
+            # Reject a missing key and an existing key with weak file mode.
+            for gate, file_tests in (
+                    ('missing', 'return 1'),
+                    ('weak_mode', 'return 0')):
+                with self.subTest(gate=gate):
+                    private_file = ('test() { if [[ "$1" == -f || "$1" == -s ]]; '
+                                    f'then {file_tests}; else builtin test "$@"; fi; }}\n')
+                    result = subprocess.run(['bash', '-c', private_file + run], cwd=ROOT,
+                                            env={**os.environ,
+                                                 'PATH': f'{fake}:{os.environ["PATH"]}',
+                                                 'OCTELIUM_AUTH_TOKEN': 'test',
+                                                 'EXPECTED_SHA': 'a' * 40,
+                                                 'BINDER_MARKER': str(marker)},
+                                            capture_output=True, text=True, timeout=5)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     '::error::Enterprise Installation binding blocked; '
+                                     'private diagnostics withheld.')
+                    self.assertFalse(marker.exists())
 
     def test_workflow_pins_current_operations_script(self):
         pins = re.findall(
