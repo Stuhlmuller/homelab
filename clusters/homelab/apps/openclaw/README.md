@@ -136,12 +136,20 @@ archive into Enterprise.
 ### T014 isolated legacy boot gate
 
 A read-only stopped-source review found 37 NAS symlinks. Nine absolute targets
-leave both archived roots: six resolve to five nonempty directories on the
-reader Pod's overlay filesystem, and three are dangling. The archive preserves
-their link targets, not the external directory contents. Their image-layer
-versus writable-overlay origin is unproven. Classify each dependency privately;
-prove needed files are recreated by the pinned old image or retain and verify
-them separately, and record an explicit disposition for dangling links.
+leave both archived roots. Six point into `/app`: `plugin-skills` links for
+`browser-automation`, `obsidian-vault-maintainer`, `wiki-maintainer`, and
+`canvas`, plus the Discord extension and npm package links to `/app`. On
+2026-10-20, the reader reported the pinned old image digest,
+`readOnlyRootFilesystem: true`, a read-only root overlay, no `/app` volume, and
+all five target directories present and nonempty. This proves that the pinned
+image supplies a baseline for those six links. The former gateway did not set
+`readOnlyRootFilesystem`, so its `/app` overlay could have held added or changed
+files that the reader cannot see. The original contents of all six targets
+remain unclassified until compared with retained evidence. The other three
+external targets are dangling in the reader; their individual dependencies
+and disposition also remain unclassified. The archive preserves each link,
+but no external target payload. Do not assume the baseline image recovers the
+gateway's exact contents or that the dangling links are harmless.
 
 Archive verification and the retained original PVCs do not pass T014. The
 reader restores into NAS scratch and does not start the old image. A rehearsal
@@ -152,7 +160,12 @@ the production Deployment and CronJob stopped. Flannel currently does not
 enforce the declared NetworkPolicies, and no isolated canary is admitted; a
 deny policy on a new Pod is therefore insufficient. Add and validate an
 isolated old-image boot path before claiming compatible recovery, and require
-the verified offsite archive receipt before running it.
+the verified offsite archive receipt before running it. A reviewed offline
+Linux container run with `--network none` could supply the network boundary,
+but it still needs a proven container host, space for separate restored copies,
+the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run.
+Without evidence of the former writable overlay, do not claim exact compatible
+recovery from the image baseline alone.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium

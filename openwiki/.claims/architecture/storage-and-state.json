@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a95515f1a80bf6aa749397dad229bc750db0bbcc87b7c0b6cc733d393173d74",
+  "pageVersion": "sha256:0e44865a982ab8b54140bac9e323868416a27c92f9d3497bdead91d3411ae8e4",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -84,11 +84,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:2e8571c0f26772bc4cc3ce050813342c87933bd8e64c147d328a20cff2a031bf"
+          "version": "repo-file-v1:sha256:d45aeb08e1422396c7581cb52fb127569b9092274b0a6e12fe53c7fd5ec3ed45"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
+          "version": "repo-file-v1:sha256:1e00505a9c8a1a576452d0cfc8a36d3293acb8d421b61e88dcf5a061bd5cb14d"
         }
       ]
     },
@@ -165,7 +165,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise local storage and an isolated canary unadmitted: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady reservation and 9.74 GB root-filesystem space free, all workers have less than 10.74 GB for a 10 GiB local claim under the existing /var/lib pattern, and acer has only 1,802 MiB unreserved versus the 2,304 MiB database-plus-gateway minimum.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L239-L265",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L240-L266",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -186,21 +186,25 @@
     },
     {
       "id": "claim_4afe0e2f538940f5bd4c5287ef5e169a",
-      "statement": "The stopped legacy OpenClaw archive retains link targets, not data outside its archived roots; nine NAS links leave the roots and six reach nonempty Pod-overlay directories of unproven origin. T014 remains blocked until those targets are classified, a separate writable UID 1000 local state copy and isolated NAS copy are prepared, a network boundary prevents external delivery during old-image boot, and the offsite archive receipt is verified; Flannel currently does not enforce the declared NetworkPolicies.",
+      "statement": "The stopped legacy archive retains nine NAS symlinks outside its roots. Six /app links resolve to five nonempty directories in the pinned image baseline, but the former gateway had a writable root, so its original overlay contents remain unclassified. Three dangling targets also remain unclassified. T014 still needs source disposition, verified offsite receipt, separate writable UID 1000 local and isolated NAS copies, and a compatible old-image boot behind an enforced offline network boundary; Flannel does not enforce the declared NetworkPolicies.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:2e8571c0f26772bc4cc3ce050813342c87933bd8e64c147d328a20cff2a031bf"
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L138-L170",
+          "version": "repo-lines-v1:sha256:fe72151206478591b71dbd11bcb4ca7693adaad83accc270cb84300b1521a3c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkMDUwZTE0MTJmMjM0ZmEyZjc0YjJlYTZhMDkyM2Y3Zjc1YzJjMmVlODhkMDA1OGEwYTE1Yzg3NTI3MWVmMDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhNDE2NDVhNTc2MjNkNTZhNDBjMDUwZDk4ZjQ2OGY2MTU5MTVlNGE3NGUwMmEyMTgwNjdkNzUyNzRiZmUyNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwNGExM2MwMjNkM2NiZTcwMjUzOWE4N2VkYmMzNzE1ZmMxMzc2YTc2NGQ2OTU5NmJiYjc2NmRjYjE0NGM5YWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiMTYzMTljNDUxODk4MGFjMThhOGYxZWYxY2U5MWM5NGNkMjBiZDIxNzlhMjNiM2U0NDZmODAwMTM1NjYyNWUifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L455-L466",
+          "version": "repo-lines-v1:sha256:15c6b326d99989ad731766298c3059c5af3de605539b5265855de6d60438dba2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlMDJjZDllNDFiNWI2ZWU2MzYzNzk2NmRmZTFkODY3ZjE5YjNhODZlMGE2MDMyMzc1MjBiNTk1M2IwY2JkMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZjk5MGRjYTY0YTgzMmViYmI3NDk3MmFlMDUwNDkwYTZkNWNjNWUyNzM1YWQ0OTNjNzg5ZjM5MTcyMzgxNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRiMGM2ZDJlZjY5ZDkxNjVhNmExODdiNTdmOGY2ZjlhNWFiMTU5MzJjZThmYzBkY2Q4NjZiZDBhNWE3M2E0MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllOGNlOGMzNzc1NTYyZWQ0OWQxNDlmOTZkNWU5ZWY0ZTcxM2VmYTQ3NDk0ODAwNGFiNGYzNjFkMTMzOTY2OGEifQ"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L23-L23",
+          "version": "repo-lines-v1:sha256:cd43aa98398d18b9291822b8b76c5305426c44f391655857d88a838b31063fc6:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q0M2FhOTgzOThkMThiOTI5MTgyMmI4Yjc2YzUzMDU0MjZjNDRmMzkxNjU1ODU3ZDg4YTgzOGIzMTA2M2ZjNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q0M2FhOTgzOThkMThiOTI5MTgyMmI4Yjc2YzUzMDU0MjZjNDRmMzkxNjU1ODU3ZDg4YTgzOGIzMTA2M2ZjNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDljYzNiZTIxMzgyNDJhMGRiZGMyZTQwNjJkNWNiZGMwZGM3YmUyZTg5M2Q0MmYwNDRmNTM2NmY4MDI3NzBkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2MwMzAwMTgxZjcyOWE0M2NlNGY0ZmM2YzA3OTY4MGJlM2FmNTg1NzJkZTBiZDM2Y2RjZTM4NzI0YzJkYzIwMCJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T15:10:13.266Z"
+    "at": "2026-10-20T16:13:57.200Z"
   }
 }

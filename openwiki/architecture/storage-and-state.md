@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-b26876230e53fd853d7bcbea
+    resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
@@ -38,10 +40,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
+generated: { by: "codex", at: "2026-10-20T15:58:42.704Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:10:13.266Z
+    at: 2026-10-20T16:13:57.200Z
 ---
 
 # Storage And State
@@ -282,14 +284,16 @@ but not node-disk loss; there is no automatic node failover and recovery can los
 writes since the last backup. Native caches are reconstructed on disaster restore.
 The post-shutdown inventory passed, but a complete independent archive/restore
 and any new Enterprise recovery set remain unverified; keep all retained claims.
-The legacy archive retains NAS symlink targets but not data outside its roots;
-nine links leave those roots, and six reach nonempty Pod-overlay directories
-whose image-layer or writable origin is unproven. T014 needs a private
-classification of those targets, a separate writable UID 1000 copy of the
-local state layout and an isolated NAS copy before an old-image boot. Its
-network boundary must prevent external deliveries; Flannel does not enforce
-the declared NetworkPolicies, so the proposed deny policy alone cannot qualify
-the rehearsal. The offsite archive receipt is also still required.
+The legacy archive retains NAS symlink targets but not data outside its roots.
+Nine links leave those roots. Six point into `/app` and resolve to five nonempty
+directories in the pinned image baseline without an `/app` volume. The former
+gateway had a writable root, so its overlay may have changed those targets;
+their original contents remain unclassified until compared with retained
+evidence. Three dangling external targets also remain unclassified. T014 still
+needs their disposition, a separate writable UID 1000 local-state copy, an
+isolated NAS copy, the verified offsite archive receipt and an old-image boot
+behind an enforced offline network boundary. Flannel does not enforce the
+declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
