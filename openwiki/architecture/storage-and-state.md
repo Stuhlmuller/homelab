@@ -6,6 +6,8 @@ tags: ["architecture", "storage", "stateful"]
 sources:
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -40,10 +42,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T06:35:13.441Z" }
+generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:00:11.238Z
+    at: 2026-10-20T07:15:02.535Z
 ---
 
 # Storage And State

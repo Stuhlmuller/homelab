@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1c3604589f60976f8f322f1f76e4844016750c44f5d067bf745803fd73e1f900",
+  "pageVersion": "sha256:8f43e785569018b10b849a47062908490b76e281ee1ea3190c037e5b2215dc3a",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -388,7 +388,7 @@
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted system and tenant namespaces, scoped tenant RoleBindings, eight retained exact SSM projections, ingress denial, PostgreSQL 18.6 with TLS, roles and a 10Gi retained local claim template. No Enterprise database, claim or Installation workload is running or bound from this source alone.",
+      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted system and tenant namespaces, tenant RoleBindings, eight retained exact SSM projections, system ingress denial, PostgreSQL 18.6 with TLS and separate roles, and a 10Gi retained local claim template. No Enterprise database, claim, route or Installation workload is running or bound from this source alone.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -440,7 +440,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:16b799b1caf40564f0e6e37b04717915f40e3a0d8faaae561d3cd8b93486e571"
+          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
         }
       ]
     },
@@ -581,26 +581,26 @@
       ]
     },
     {
-      "id": "claim_2a4126b4f26743e1917f1138af7cad22",
-      "statement": "The unregistered Enterprise foundation declares eight retained OnChange ExternalSecret projections across the system and tenant namespaces, including a separate PostgreSQL backup-role password; none is a live readiness receipt.",
+      "id": "claim_177aaa90270b469cb95319ead02bf1a7",
+      "statement": "The Enterprise full-sync stage is source-tested but cannot run until both Applications are registered and the reviewed installation phase is selected; it would sync foundation before Enterprise at explicit revisions.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
-          "version": "repo-file-v1:sha256:13e2049fdb039f9b24df9c7d1c9aff6f9005fdf09adf981e95a8dfe1f88a4370"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
         },
         {
-          "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:f1adc8e2a4c3f57d8263bf092bdf7ea8131973cdb22e2c0de69efbe378fc5084"
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:09:39.748Z"
+    "at": "2026-10-20T07:15:02.535Z"
   }
 }

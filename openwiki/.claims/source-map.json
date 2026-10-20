@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:895169f8afa7f706243f9e8216a17b020ee7958ed9c34babf10b64f0b5973623",
+  "pageVersion": "sha256:2490f036bbdca4777750bcb620e29843024e150d883f108554406f3e8bd2e056",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -138,7 +138,7 @@
     },
     {
       "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
-      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, PostgreSQL TLS, database, backup and network-policy declarations. The Python helper owns exact-origin and model validation plus guarded logical-Namespace reconciliation; foundation, PostgreSQL and reconciler fixtures run in CI.",
+      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, TLS, PostgreSQL, and network-policy declarations. The Python helper owns exact-origin and model validation plus guarded logical-Namespace reconciliation that can POST after proof; separate foundation, PostgreSQL, and reconciler fixtures run in CI.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -153,12 +153,12 @@
           "version": "repo-file-v1:sha256:f726b8be2628220111b2130f42e070e6ea39a80166e70d4ae12bde728f9c2cef"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
-          "version": "repo-file-v1:sha256:4142f2ed1227501de2ee1da34d66a5f03807b09c98f5319c82d7f05c014494e8"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L551-L725",
+          "version": "repo-lines-v1:sha256:cc960fd8d70ebe4baf4c640ae0afd16af373132465d767c12303e803659cf91e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTc1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0N2FhNmEyYTE3ODI1NWIwMmFiMWQyOWE3MjU2NGNhYzFhZjQyNzg4YzJlZTUyYTUzZmRjMzZhNjliNDhiMzE3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmOTI5NGZjYjU5YzJjNDY4YWFmY2I1ZDg3OTYzODVkZWM2NDRjZTViOGExMzUxYTA0OWE3ODY2ODZjZjNjNmY5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzZDQxYmE5ZDRhN2YyNDVlNGY4YTA5YjJiOTAyZmUyYzNiMDRmYjlkNzM0ZWFjYTRkNWM1OWE3MTE2NDc1ZTllIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJiMThkOTFhZjg0ZTZhOTNkNDhiYzI0ZjM3Mjk1NWNhMzk2YTIwOTJiZGM4MDA4MWNjNjM3MzBkN2UxYmY5Y2NkIn0"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:687fec0d9ad09379712d011fe6eab56c29b1d5475562404265001c07cfbe6e21"
+          "resource": "repo://scripts/openclaw-enterprise.py#L395-L524",
+          "version": "repo-lines-v1:sha256:790979518504d4896a1d313fbdbf6e94603ec72a4cae474897582d91a4a344e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhYzY0MWQxNGU3YzM5YWE4MGQ3NzE4Yjk4YzliYzE3NTM5ODViYWU4MmVhNmU3MjdmMjhjYzBiODJmN2QyYTliIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhYjBhYWJiZTMxMWY5YTBlNjQ4YzA4MDA1MWQzYzBiZmI0OGZmODNkMTBlNDQyZWE2ZDMzYzk5ZWQ0NGViOTg4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmNjkwOGE3ODNkNzQzN2JhNDQ2ZjA4MmQ5MTVmMDgxMjQyYTk4YzgxMzI3MmNhNTIxNzA2N2RlNWI1OWNmN2QwIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MjgzMDEwYWZlZTAwYWM3NzA4MmRiMWI1MDZkMjY1ZTY1ZTNiYjc3ODIwOWZmYzk3M2VmZTZkMDgxMTQwZTMzIn0"
         }
       ]
     },
@@ -194,17 +194,35 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
           "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         }
       ]
+    },
+    {
+      "id": "claim_31cc2638d1bc4ac5ac37886991d4d7c8",
+      "statement": "The Enterprise operations workflow and full-sync shell helper own the protected fixed full-sync sequence; the focused fixture tests source and ordering guards before live use.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
+          "version": "repo-file-v1:sha256:293c9d1c13d141a32f60f38bf989f55860d8f390d07495e593a0ed9ef98b8992"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:58:23.168Z"
+    "at": "2026-10-20T07:15:02.535Z"
   }
 }

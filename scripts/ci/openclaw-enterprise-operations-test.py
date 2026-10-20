@@ -272,7 +272,8 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [inventory, publish-inventory, archive, publish-archive, verify]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify]',
+            'options: [none, full-sync]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',

@@ -82,3 +82,15 @@ The chart comparison asserts exactly one repeated resource identity, the
 `oce-private-gateway` EnvoyProxy, and exact equality after adding only its
 mirrored Envoy image. Actual Argo `RepeatedResourceWarning` count and the
 installed Argo hook failure matrix remain live gates before registration.
+
+The protected [operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
+also offers `enterprise_stage=full-sync` after registration and an approved
+`installationPhase`. Dispatch with `expected_sha=<CURRENT_MAIN_SHA>` and leave
+`legacy_stage=none`. It verifies both Application sources, checks the platform
+Envoy Gateway, then runs complete foundation and Enterprise Argo syncs at that
+exact commit. It never selects resources, skips hooks, prunes, or forces apply.
+The foundation must be healthy before Enterprise runs; a failed or interrupted
+sync leaves the quiesce gate in charge of writer safety. Re-dispatch against
+current `main` after inspecting failed hook and Application state. The separate
+Enterprise reconcile, stop, restore, and acceptance stages remain unavailable
+until a declared durable private journal and recovery operator exist.

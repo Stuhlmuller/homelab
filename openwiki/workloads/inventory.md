@@ -8,6 +8,8 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -130,8 +132,6 @@ sources:
     resource: repo://docs/rollback-argocd-apps.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-  - id: openwiki-source-2170f836209310971c5e7b70
-    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-59f51b5800f473496977b52a
     resource: repo://IaC/argocd-image-updater/stack.hcl
   - id: openwiki-source-1ee0d946130d3ad97636dfdc
@@ -154,6 +154,8 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -166,10 +168,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T07:09:39.748Z" }
+generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:09:39.748Z
+    at: 2026-10-20T07:15:02.535Z
 ---
 
 # Workload Inventory
@@ -390,14 +392,19 @@ agent has been deployed. The unregistered
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. A PostgreSQL 18.6 StatefulSet, retained 10Gi local claim template,
-role bootstrap, and isolated restore candidate are declared but unregistered;
-no Enterprise database or claim is running or bound. A separate dormant
-[stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+certificate. It also declares a dormant TLS-only PostgreSQL 18.6 StatefulSet
+with separate admin, migrator, app and backup roles and a retained 10Gi local
+claim template. Its interrupted-bootstrap marker keeps an incomplete first run
+unready; the guarded dump and isolated restore fixture remain source-only. No
+Enterprise database, local claim, or Installation workload has been bound or
+started from this source. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
 placeholder administrator email, missing placement labels, and unfinished
-database/storage gates prevent activation. Separate staged Traefik and Octelium declarations provide an
+database/storage gates prevent activation. A protected full-sync stage is
+source-tested, but cannot run until registration and the reviewed installation
+phase; it would sync Foundation before Enterprise at explicit revisions.
+Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner

@@ -118,10 +118,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T07:09:39.748Z" }
+generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:09:39.748Z
+    at: 2026-10-20T07:15:02.535Z
 ---
 
 # Secrets And Identity

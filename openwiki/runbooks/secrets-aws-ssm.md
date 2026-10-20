@@ -30,10 +30,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T05:58:23.168Z" }
+generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:00:11.238Z
+    at: 2026-10-20T07:15:02.535Z
 ---
 
 # AWS SSM Secret References
@@ -95,7 +95,7 @@ are not registered with Argo, so source alone proves no SSM value, projected
 Secret, issued certificate, or running database.
 
 The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
-contains non-secret startup configuration. It is separate from those distinct SSM
+contains non-secret startup configuration. It is separate from those eight SSM
 credentials. The protected startup workflow copies its exact bytes into a
 versioned immutable Kubernetes Secret because the stock chart mounts that
 Secret at startup. Initial creation precedes the installation ID; T041 must

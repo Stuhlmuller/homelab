@@ -20,6 +20,8 @@ sources:
     resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-885831275c8e751281369a80
@@ -184,6 +186,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
@@ -274,10 +280,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T07:09:39.748Z" }
+generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:09:39.748Z
+    at: 2026-10-20T07:15:02.535Z
 ---
 
 # Validation Gates
@@ -1696,6 +1702,13 @@ Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
 Secret creation/readback and bounded hook behavior; Checkov uses an exact
 three-finding baseline for public Secret-name strings. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
+The protected Enterprise operations workflow exposes one fixed `full-sync`
+stage. Its source test and workflow policy require an exact current-`main` SHA,
+manual Argo Applications with the reviewed repository sources, healthy Envoy
+Gateway, and a pinned upstream chart revision. The executor checks each gate
+again before syncing the foundation and then Enterprise with explicit source
+revisions. Fixture and policy success do not prove a live sync, journaled
+reconciliation, rollback, or runtime acceptance.
 The staged private-access check runs
 [`openclaw-enterprise-access-test.py`](../../scripts/ci/openclaw-enterprise-access-test.py)
 in the static gate. It validates the scoped Octelium catalog and exact-main

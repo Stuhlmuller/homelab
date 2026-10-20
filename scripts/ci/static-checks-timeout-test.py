@@ -25,6 +25,7 @@ class Timeout(unittest.TestCase):
             for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
                          "openclaw-retirement-status-test.py",
                          "openclaw-enterprise-operations-test.py",
+                         "openclaw-enterprise-full-sync-test.py",
                          "openclaw-enterprise-access-test.py",
                          "renovate-config-test.js", "tailnet-dns-test.py",
                          "openclaw-enterprise-foundation-test.py",
