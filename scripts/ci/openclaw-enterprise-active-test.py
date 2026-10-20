@@ -84,6 +84,15 @@ class ActiveAgentReconciliation(unittest.TestCase):
                 OCE.reconcile(self.config, self.api, self.kube, "a" * 40)
         proof.assert_not_called()
 
+    def test_placeholder_key_cannot_start_active_reconciliation(self):
+        before = list(self.api.calls)
+        with patch.object(OCE, "prove_driver_identity") as proof:
+            with self.assertRaisesRegex(OCE.Blocked, "protected model credential"):
+                OCE.reconcile(self.config, self.api, self.kube, "a" * 40,
+                              {"version": 1, "key": "REPLACE_ME"})
+        proof.assert_not_called()
+        self.assertEqual(self.api.calls, before)
+
     def test_mutation_config_must_match_exact_committed_file(self):
         source = ROOT / "scripts/config/openclaw-enterprise.json"
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()

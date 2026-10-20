@@ -447,7 +447,9 @@ def reconcile(config, api, kube, expected_sha, model_credential=None):
         _require(isinstance(model_credential, dict) and
                  set(model_credential) == {"version", "key"} and
                  type(model_credential["version"]) is int and
-                 isinstance(model_credential["key"], str) and model_credential["key"],
+                 model_credential["version"] > 0 and
+                 isinstance(model_credential["key"], str) and
+                 model_credential["key"] not in ("", "REPLACE_ME"),
                  "active Enterprise reconciliation requires a protected model credential")
         return reconcile_active(config, api, kube, model_credential)
     installation = prove_driver_identity(config, api, kube)
