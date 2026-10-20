@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f141f2245a77d225427f7938573b6502013b9a4db743c779cf299dc45fa8921",
+  "pageVersion": "sha256:34550981c1c25f7637fe5563e3efd13a207ec27146074b209a4e553715836a52",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:08fa5661346b1b8b92ad9c7e5cf2cf957734164ec28bf20eb571a1b47c5e2c46"
+          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
         }
       ]
     },
@@ -472,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
+          "version": "repo-file-v1:sha256:f18aa0846f602d11a547f7d3609a9ef785699ace1cebb86e4972d395f33493a1"
         }
       ]
     },
@@ -673,6 +673,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:28:35.536Z"
   }
 }

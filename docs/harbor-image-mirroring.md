@@ -83,12 +83,15 @@ The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
 The protected `openclaw-enterprise-images.yml` workflow builds the stock
-controller and runtime Dockerfiles from the checksum-verified Enterprise source
-revision in `builds/openclaw-enterprise/source.json`. It verifies both revision
+controller, runtime, and CLI from the checksum-verified Enterprise source
+revision in `builds/openclaw-enterprise/source.json`. It verifies revision
 labels before using Harbor credentials, then publishes, signs and completely
-pulls the paired images in the private `homelab` project. Dispatch it only with
+pulls all three images in the private `homelab` project. Dispatch it only with
 the current `main` SHA; use its immutable digest receipts for the Enterprise
-chart and CLI. A source revision change requires a new reviewed archive hash.
+chart and CLI. On failure, the job summary reports one fixed publisher phase;
+private transport and registry output remains encrypted, and no successful
+digest receipt is issued. A source revision change requires a new reviewed
+archive hash.
 
 Talos 1.14.4 [`upgrade-k8s`](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L177)
 appends `:v1.35.9` to the five component image bases,
