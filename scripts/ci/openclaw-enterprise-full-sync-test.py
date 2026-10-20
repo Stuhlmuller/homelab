@@ -29,7 +29,7 @@ class FullSync(unittest.TestCase):
 
     def run_stage(self, *, phase="lifecycle-validation", ref="refs/heads/main",
                   upstream=UPSTREAM, enterprise_enabled=False, foundation_path=None,
-                  enterprise_path=None):
+                  enterprise_path=None, enterprise_sync_exit=0):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "scripts/config").mkdir(parents=True)
@@ -48,6 +48,8 @@ with open(os.environ["CALLS"], "a") as output:
     output.write(json.dumps([name, *args]) + "\\n")
 if name in ("git", "gh"):
     print(os.environ["EXPECTED_SHA"])
+elif name == "argocd" and args[:3] == ["app", "sync", "openclaw-enterprise"]:
+    sys.exit(int(os.environ["ENTERPRISE_SYNC_EXIT"]))
 elif name == "kubectl":
     app = args[args.index("application") + 1]
     history = [json.loads(line) for line in Path(os.environ["CALLS"]).read_text().splitlines()]
@@ -88,7 +90,8 @@ elif name == "kubectl":
                      "REPO": REPO, "UPSTREAM": upstream,
                      "FOUNDATION_PATH": foundation_path or "clusters/homelab/apps/openclaw-enterprise-foundation",
                      "ENTERPRISE_PATH": enterprise_path or "clusters/homelab/apps/openclaw-enterprise",
-                     "ENTERPRISE_ENABLED": str(enterprise_enabled).lower()}, check=False,
+                     "ENTERPRISE_ENABLED": str(enterprise_enabled).lower(),
+                     "ENTERPRISE_SYNC_EXIT": str(enterprise_sync_exit)}, check=False,
             )
             return result, [json.loads(line) for line in calls.read_text().splitlines()] if calls.exists() else []
 
@@ -119,6 +122,18 @@ elif name == "kubectl":
                 result, calls = self.run_stage(**options)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse(any(call[0] == "argocd" for call in calls))
+
+    def test_failed_or_cancelled_migration_stops_before_any_resuming_sync(self):
+        for exit_code in (1, 130):
+            with self.subTest(exit_code=exit_code):
+                result, calls = self.run_stage(enterprise_sync_exit=exit_code)
+                self.assertEqual(result.returncode, exit_code, result.stderr)
+                self.assertEqual([call[1:4] for call in calls if call[0] == "argocd"], [
+                    ["app", "wait", "platform-envoy-gateway"],
+                    ["app", "sync", "openclaw-enterprise-foundation"],
+                    ["app", "wait", "openclaw-enterprise-foundation"],
+                    ["app", "sync", "openclaw-enterprise"],
+                ])
 
 
 if __name__ == "__main__":
