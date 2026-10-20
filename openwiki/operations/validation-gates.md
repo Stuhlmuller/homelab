@@ -1716,7 +1716,9 @@ The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
 Secret creation/readback and bounded hook behavior; Checkov uses an exact
-three-finding baseline for public Secret-name strings. These offline checks do
+four-finding baseline: three public Secret-name strings in the dormant chart
+and one generated `octeliumee-secretman` policy name paired with its reviewed
+spec hash. The static gate rejects any wider baseline. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
 The protected Enterprise operations workflow exposes one fixed `full-sync`
 stage. Its source test and workflow policy require an exact current-`main` SHA,
