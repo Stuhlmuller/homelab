@@ -37,7 +37,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:42:24.095Z
+    at: 2026-10-20T22:27:13.661Z
 ---
 
 # Talos Control-Plane Maintenance

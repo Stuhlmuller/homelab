@@ -330,10 +330,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
+generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:46:33.950Z
+    at: 2026-10-20T22:37:00.141Z
 ---
 
 # Validation Gates
@@ -1906,11 +1906,14 @@ current `main`, pins the binder and stage helper, serializes the production
 jobs, and withholds private output. Binding requires the configured
 owner-controlled 0600 service-key file; no declared hosted-runner delivery or
 live binding exists. The six runtime selections invoke the
-[stage guard](../../scripts/ci/openclaw-enterprise-stage.sh), which exits
+[stage guard](../../scripts/ci/openclaw-enterprise-stage.sh). Its `full-sync`
+branch calls the pinned [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh),
+which checks source, approved installation phase, and Application state before
+sync; the committed `unselected` phase blocks it before cluster access.
+`reconcile`, `stop`, `verification`, `restore`, and `acceptance` still exit
 before mutation because no durable shared private journal and lock are mounted.
-The separate full-sync helper still has offline dependency-order fixtures, but
-the workflow does not call it. Source and policy checks do not prove a live
-sync, reconciliation, rollback, or runtime acceptance.
+Offline dependency-order fixtures and policy checks do not prove a live sync,
+reconciliation, rollback, or runtime acceptance.
 The static gate also runs
 [`openclaw-enterprise-registration-test.py`](../../scripts/ci/openclaw-enterprise-registration-test.py).
 It renders both generated Applications, checks disabled automatic sync and the

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3e9a7c041bc7e0781688ad3124c30096ce4041a93ab5ca9052b77b92ef71f66d",
+  "pageVersion": "sha256:2bc8b4e36e4671f5f9fc4d16ce89c6e86e4d106dea4b43208f2bfac563ae3cc5",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -138,7 +138,7 @@
     },
     {
       "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
-      "statement": "The unsynced Enterprise foundation owns namespace, ExternalSecret, TLS, PostgreSQL and network-policy source. The Python helper owns journaled inactive reconciliation and source-only active, native-origin generation-2, stop and recovery paths; CI fixtures exercise them, while activation stays disabled and the protected runtime stage guard blocks mutation.",
+      "statement": "The unsynced Enterprise foundation owns namespace, ExternalSecret, TLS, PostgreSQL and network-policy source. The Python helper owns journaled inactive reconciliation and source-only active, native-origin generation-2, stop and recovery paths; CI fixtures exercise them, while activation stays disabled and protected journal-dependent runtime stages block mutation.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -154,7 +154,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+          "version": "repo-file-v1:sha256:5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json#L38-L66",
@@ -198,7 +198,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:4865783fe5547e4b8c6202ca3af20318398814ff2eda30215e51f3dc80822a82"
+          "version": "repo-file-v1:sha256:e92e7aec5ae5a2a8f193c2b0fc9454a65896ad6de46f990fd5d49532275ac312"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
@@ -208,23 +208,27 @@
     },
     {
       "id": "claim_31cc2638d1bc4ac5ac37886991d4d7c8",
-      "statement": "The Enterprise operations workflow owns protected binding and reserved runtime stages; its pinned stage helper blocks runtime mutation without a durable shared private journal. The separate full-sync shell helper retains offline source/order tests but no protected workflow invokes it.",
+      "statement": "The Enterprise operations workflow owns protected binding and fixed runtime stages. Its pinned stage helper invokes the full-sync helper after source and credential guards, but the committed unselected phase blocks Kubernetes sync. Reconcile and recovery stages still block mutation without a durable shared private journal; offline fixtures check full-sync source and dependency order.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
+          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
-          "version": "repo-file-v1:sha256:437afc0f6e72426e608641d022e4c115da32b568d8fc173a729d7ba00202aab0"
+          "version": "repo-file-v1:sha256:f64f37749ef776a5c5c192d1de602a674a3554eff7621e1ad0de606eab5be73d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
-          "version": "repo-file-v1:sha256:80b3983660b45df9ecfc590c894865ccc5d955c4b302d99f39c0792ecaeb37d0"
+          "version": "repo-file-v1:sha256:21956e86906ad904abecd3b6aed23c82aa13c6ac5acef2cba6e5a959e5c0d8ed"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+          "version": "repo-file-v1:sha256:5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:dbeede68eb84c8b8b0db415d6fa98a927d4f08a404152c57fad972700a1a6115"
         }
       ]
     },
@@ -234,11 +238,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
+          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
+          "version": "repo-file-v1:sha256:d534ebbaa128c39782ccdf4d0daf6fee7c9ac2601028118b71bd25099ad7fe32"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -264,7 +268,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -286,13 +290,13 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
-          "version": "repo-file-v1:sha256:09d57cdebfa0e75bd74e84d5d89965b6ab021557826fb6ac23d5e3fd964274dc"
+          "version": "repo-file-v1:sha256:9bbb0c6b8ccb48a27ded3657d09bb64fe546694e815df0e3d689d2440b2355d7"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:42:24.095Z"
+    "at": "2026-10-20T22:37:00.141Z"
   }
 }

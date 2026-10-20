@@ -199,6 +199,8 @@ sys.stdout.buffer.write(chunk)
         script = ENTERPRISE_SCRIPT.read_text()
         digest = hashlib.sha256(ENTERPRISE_SCRIPT.read_bytes()).hexdigest()
         self.assertIn(f"{digest}  scripts/ci/openclaw-enterprise-stage.sh", workflow)
+        sync_digest = hashlib.sha256((ROOT / 'scripts/ci/openclaw-enterprise-full-sync.sh').read_bytes()).hexdigest()
+        self.assertIn(f"{sync_digest}  scripts/ci/openclaw-enterprise-full-sync.sh", workflow)
         self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop, verification, '
                       'restore, acceptance]', workflow)
         self.assertIn('Choose exactly one fixed operation stage.', workflow)
@@ -211,8 +213,7 @@ sys.stdout.buffer.write(chunk)
                       workflow)
         self.assertIn('private diagnostics withheld', workflow)
         self.assertIn('durable private journal runner is not declared', script)
-        self.assertNotIn('kubectl', script)
-        self.assertNotIn('argocd', script)
+        self.assertIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', script)
         self.assertNotIn('openclaw-enterprise.py', script)
 
         stage_run = textwrap.dedent(workflow.split('\n  enterprise:\n', 1)[1]
@@ -289,9 +290,12 @@ sys.stdout.buffer.write(chunk)
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                       text=True).strip()
         run_env = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha,
-                   'EXPECTED_SHA': sha}
-        for stage in ('full-sync', 'reconcile', 'stop', 'verification',
-                      'restore', 'acceptance'):
+                   'EXPECTED_SHA': sha, 'OCTELIUM_AUTH_TOKEN': '',
+                   'GH_REPO': '', 'GH_TOKEN': ''}
+        full_sync = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), 'full-sync'], cwd=ROOT,
+                                   env=run_env, capture_output=True, text=True, timeout=5)
+        self.assertEqual(full_sync.returncode, 2)
+        for stage in ('reconcile', 'stop', 'verification', 'restore', 'acceptance'):
             with self.subTest(stage=stage):
                 result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,
                                         env=run_env, capture_output=True, text=True, timeout=5)

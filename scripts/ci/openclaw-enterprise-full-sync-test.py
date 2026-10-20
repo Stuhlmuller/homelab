@@ -17,15 +17,20 @@ REPO = "https://github.com/Stuhlmuller/homelab.git"
 
 
 class FullSync(unittest.TestCase):
-    def test_workflow_reserves_full_sync_until_durable_journal(self):
+    def test_workflow_runs_only_full_sync_without_a_journal(self):
         workflow = (ROOT / ".github/workflows/openclaw-enterprise-operations.yml").read_text()
+        stage = (ROOT / "scripts/ci/openclaw-enterprise-stage.sh").read_text()
         self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop,', workflow)
-        self.assertIn('bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"', workflow)
-        self.assertNotIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', workflow)
+        self.assertIn('nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"', workflow)
+        self.assertIn('if [[ "$stage" == full-sync ]]; then', stage)
+        self.assertIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', stage)
+        self.assertIn('durable private journal runner is not declared', stage)
 
     def run_stage(self, *, phase="lifecycle-validation", ref="refs/heads/main",
                   upstream=UPSTREAM, enterprise_enabled=False, foundation_path=None,
-                  enterprise_path=None, enterprise_sync_exit=0):
+                  enterprise_path=None, enterprise_sync_exit=0,
+                  foundation_sync_options=None, enterprise_sync_options=None,
+                  foundation_retry_limit=0, enterprise_retry_limit=0):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "scripts/config").mkdir(parents=True)
@@ -60,7 +65,12 @@ elif name == "kubectl":
             "project": "openclaw-enterprise", "destination": {"namespace": "openclaw-system"},
             "sources": [{"repoURL": os.environ["REPO"],
                          "path": os.environ["FOUNDATION_PATH"], "targetRevision": "main"}],
-            "syncPolicy": {"automated": {"enabled": False, "prune": False, "selfHeal": False}}}}))
+            "syncPolicy": {"automated": {"allowEmpty": False, "enabled": False,
+                                         "prune": False, "selfHeal": False},
+                           "syncOptions": json.loads(os.environ["FOUNDATION_SYNC_OPTIONS"]),
+                           "retry": {"limit": int(os.environ["FOUNDATION_RETRY_LIMIT"]),
+                                     "backoff": {"duration": "30s", "factor": 2,
+                                                 "maxDuration": "2m"}}}}}))
     else:
         print(json.dumps({"metadata": {"name": app}, "status": status, "spec": {
             "project": "openclaw-enterprise", "destination": {"namespace": "openclaw-system"},
@@ -72,8 +82,13 @@ elif name == "kubectl":
                  "ref": "values", "directory": {"include": ".argocd-values-ref-placeholder.yaml"}},
                 {"repoURL": os.environ["REPO"], "path": os.environ["ENTERPRISE_PATH"],
                  "targetRevision": "main"}],
-            "syncPolicy": {"automated": {"enabled": os.environ["ENTERPRISE_ENABLED"] == "true",
-                                           "prune": False, "selfHeal": False}}}}))
+            "syncPolicy": {"automated": {"allowEmpty": False,
+                                           "enabled": os.environ["ENTERPRISE_ENABLED"] == "true",
+                                           "prune": False, "selfHeal": False},
+                           "syncOptions": json.loads(os.environ["ENTERPRISE_SYNC_OPTIONS"]),
+                           "retry": {"limit": int(os.environ["ENTERPRISE_RETRY_LIMIT"]),
+                                     "backoff": {"duration": "30s", "factor": 2,
+                                                 "maxDuration": "2m"}}}}}))
 ''')
             fixture.chmod(0o755)
             for name in ("git", "gh", "kubectl", "argocd"):
@@ -87,7 +102,13 @@ elif name == "kubectl":
                      "FOUNDATION_PATH": foundation_path or "clusters/homelab/apps/openclaw-enterprise-foundation",
                      "ENTERPRISE_PATH": enterprise_path or "clusters/homelab/apps/openclaw-enterprise",
                      "ENTERPRISE_ENABLED": str(enterprise_enabled).lower(),
-                     "ENTERPRISE_SYNC_EXIT": str(enterprise_sync_exit)}, check=False,
+                     "ENTERPRISE_SYNC_EXIT": str(enterprise_sync_exit),
+                     "FOUNDATION_SYNC_OPTIONS": json.dumps(foundation_sync_options or
+                                                              ["CreateNamespace=false", "ServerSideApply=true"]),
+                     "ENTERPRISE_SYNC_OPTIONS": json.dumps(enterprise_sync_options or
+                                                              ["CreateNamespace=false", "ServerSideApply=true"]),
+                     "FOUNDATION_RETRY_LIMIT": str(foundation_retry_limit),
+                     "ENTERPRISE_RETRY_LIMIT": str(enterprise_retry_limit)}, check=False,
             )
             return result, [json.loads(line) for line in calls.read_text().splitlines()] if calls.exists() else []
 
@@ -113,7 +134,10 @@ elif name == "kubectl":
         for options in ({"phase": "unselected"}, {"ref": "refs/heads/feature"},
                         {"upstream": "b" * 40}, {"enterprise_enabled": True},
                         {"foundation_path": "clusters/homelab/apps/openclaw"},
-                        {"enterprise_path": "clusters/homelab/apps/openclaw"}):
+                        {"enterprise_path": "clusters/homelab/apps/openclaw"},
+                        {"foundation_sync_options": ["ApplyOutOfSyncOnly=true"]},
+                        {"enterprise_sync_options": ["ApplyOutOfSyncOnly=true"]},
+                        {"foundation_retry_limit": 1}, {"enterprise_retry_limit": 1}):
             with self.subTest(options=options):
                 result, calls = self.run_stage(**options)
                 self.assertNotEqual(result.returncode, 0)

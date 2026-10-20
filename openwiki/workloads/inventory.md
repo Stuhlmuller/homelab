@@ -190,10 +190,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T20:48:40.649Z" }
+generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:42:24.095Z
+    at: 2026-10-20T22:37:00.141Z
 ---
 
 # Workload Inventory
@@ -429,10 +429,11 @@ applied or synced. The candidate's
 placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. The
 [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-reserves fixed `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
-`acceptance` stages, but its pinned helper exits before mutation until a durable
-shared private journal and lock are declared. The separate full-sync helper is
-offline-tested but not dispatched.
+offers fixed `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
+`acceptance` stages. Its pinned stage helper calls the full-sync helper, but the
+committed `unselected` installation phase blocks sync before Kubernetes access.
+The remaining runtime stages still exit before mutation until a durable shared
+private journal and lock are declared.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
 Embedded Agent; no live Agent or durable operator Job exists. A protected

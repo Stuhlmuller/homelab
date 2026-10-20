@@ -147,12 +147,12 @@ class Registration(unittest.TestCase):
             self.assertEqual(spec["project"], "openclaw-enterprise")
             self.assertEqual(spec["destination"]["namespace"], SYSTEM)
             sync = spec["syncPolicy"]
-            self.assertEqual(sync["automated"], {
-                "allowEmpty": False, "enabled": False,
-                "prune": False, "selfHeal": False})
-            self.assertEqual(sync["syncOptions"],
-                             ["CreateNamespace=false", "ServerSideApply=true"])
-            self.assertEqual(int(sync["retry"]["limit"]), 0)
+            self.assertEqual(sync, {
+                "automated": {"allowEmpty": False, "enabled": False,
+                              "prune": False, "selfHeal": False},
+                "syncOptions": ["CreateNamespace=false", "ServerSideApply=true"],
+                "retry": {"limit": 0, "backoff": {
+                    "duration": "30s", "factor": "2", "maxDuration": "2m"}}})
             self.assertNotIn("ApplyOutOfSyncOnly", json.dumps(sync))
             self.assertNotIn("Skip", json.dumps(sync))
         foundation = self.apps["openclaw-enterprise-foundation"]["inputs"]["manifest"]

@@ -164,9 +164,11 @@ generation; an absent or foreign result blocks reposting. Read-only verify
 checks both immutable revisions and the selected second deployment without
 sending inference. T041 remains open for protected live proof. The GitHub
 runner also lacks a declared persistent
-`/private/openclaw-enterprise/journal.json` volume; T043 must keep mutating
-workflow stages disabled until an in-cluster durable mount is declared and
-verified. A source-built `occ` CLI digest is still absent under T004; this
+`/private/openclaw-enterprise/journal.json` volume; T043 keeps reconcile and
+recovery stages disabled until an in-cluster durable mount is declared and
+verified. The separate full-sync stage uses no journal and requires a reviewed
+installation phase before Argo can sync. A source-built `occ` CLI digest is
+still absent under T004; this
 reconciler uses the pinned public HTTP Agent routes and never executes an
 ambient binary.
 

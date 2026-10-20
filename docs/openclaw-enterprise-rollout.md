@@ -35,13 +35,16 @@ preconditions. The lane requires the owner-controlled, 0600 bootstrap service
 key at the fixed `bootstrap.serviceKeyFile` path. No declared runner currently
 delivers that private file, so hosted dispatch fails before binding. Do not
 dispatch it until credential delivery and the dormant Installation are proven.
-The other Enterprise stages remain reserved and fail closed. The GitHub runner
-has no durable shared mount for `privateJournal.mountPath` in
+The fixed `full-sync` lane can sync both Applications only after a reviewed
+`installationPhase` and source registration; the current `unselected` phase
+blocks it before cluster access. Reconcile, stop, verification, restore and
+acceptance remain reserved and fail closed. The GitHub runner has no durable
+shared mount for `privateJournal.mountPath` in
 [`openclaw-enterprise.json`](../scripts/config/openclaw-enterprise.json).
 Copying a runner-local journal after a command exits would lose a pending API
 intent if that command or runner stops mid-operation. T043 remains open until a
 declared private runner mounts the same journal and lock across retries, and the
-full-sync, stop, restore and acceptance commands have tested source-owned paths.
+remaining runtime and recovery stages have tested source-owned paths.
 Read-only verification never sends inference. Native-origin and browser checks
 need the owner's OCE session and remain T048 acceptance evidence.
 
