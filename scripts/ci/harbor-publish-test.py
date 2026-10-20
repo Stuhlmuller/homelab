@@ -217,6 +217,8 @@ class HarborPublicationGates(unittest.TestCase):
                     (root / "host-route").write_text(sys.stdin.read())
                 elif args[0] == "sed":
                     (root / "host-route").unlink(missing_ok=True)
+                    if FIXTURE["failure"] == "enterprise-cleanup":
+                        raise SystemExit(23)
                 elif args[0] != "setcap":
                     raise SystemExit(96)
             elif command == "kubectl":
@@ -1631,6 +1633,40 @@ class HarborPublicationGates(unittest.TestCase):
         pulls = [args for args in self.calls_for("skopeo")
                  if args[0] == "copy" and args[-1].startswith("dir:")]
         self.assertEqual(len(pulls), 3)
+        self.assert_cleaned()
+
+    def test_enterprise_failure_reports_only_fixed_public_phase(self):
+        for failure, phase in (("pull", "authenticated-pull-controller"),
+                               ("sign", "signing-wait")):
+            with self.subTest(failure=failure):
+                self.transport_mocks(enterprise=True, failure=failure)
+                result = self.run_helper(mode="publish-openclaw-enterprise")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "outputs").exists())
+                self.assertEqual((self.root / "summary").read_text().splitlines(), [
+                    f"Enterprise image publication failed at phase: {phase}"
+                ])
+                self.assert_cleaned()
+                (self.root / "summary").unlink()
+                (self.root / "published-images.json").unlink(missing_ok=True)
+
+    def test_enterprise_preflight_and_cleanup_failures_have_fixed_phases(self):
+        self.transport_mocks(enterprise=True)
+        self.env["EXPECTED_SHA"] = "0" * 40
+        result = self.run_helper(mode="publish-openclaw-enterprise")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.calls.exists())
+        self.assertEqual((self.root / "summary").read_text().splitlines(), [
+            "Enterprise image publication failed at phase: preflight"
+        ])
+        (self.root / "summary").unlink()
+        self.env["EXPECTED_SHA"] = SHA
+
+        self.transport_mocks(enterprise=True, failure="enterprise-cleanup")
+        result = self.run_helper(mode="publish-openclaw-enterprise")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual((self.root / "summary").read_text().splitlines()[-1],
+                         "Enterprise image publication failed at phase: cleanup")
         self.assert_cleaned()
 
     def test_enterprise_pair_refuses_other_workflow_before_credentials(self):

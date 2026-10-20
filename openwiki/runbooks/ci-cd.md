@@ -22,6 +22,8 @@ sources:
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
@@ -38,6 +40,8 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -50,6 +54,8 @@ sources:
     resource: repo://policy/workflows.rego
   - id: openwiki-source-6044cd3de00b52da78c6cf44
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-a176afce8833edc1068e3844
     resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
   - id: openwiki-source-2b445535596913b662665f3c
@@ -78,10 +84,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T19:05:38.546Z" }
+generated: { by: "codex", at: "2026-10-20T19:28:35.536Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:05:38.546Z
+    at: 2026-10-20T19:28:35.536Z
 ---
 
 # CI/CD
@@ -146,6 +152,12 @@ verification now run on matching `main` pushes or reviewed manual dispatches,
 without optional pull-request runs. Image automation no longer observes every
 five minutes; dispatch its `verify` operation from `main` for a deliberate
 journal check. Required pull-request checks retain their existing producers.
+
+The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
+builds and publishes the stock controller, runtime, and CLI from exact current
+`main`. A failed run reports only a fixed publication phase in its job summary;
+private transport and registry output remains encrypted. A failure produces no
+accepted image receipt. Retry from current `main` after resolving that phase.
 
 The separate [OpenClaw Enterprise model-credential workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
 accepts only an exact current-`main` dispatch into `homelab-production`. Its

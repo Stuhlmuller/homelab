@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fd9eb1b57510de4895b5cbc96d034bba2bcaac95241da4cc6e04af20bf3d0b8a",
+  "pageVersion": "sha256:9f4402e1e9d6878758b3e63314b8406c8ee972bd8c203c46438f1b3b69fe6595",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f43a4da2c38216033a57625f1b88c0e78f4134f1f0783218c9ef1e28d260c507"
+          "version": "repo-file-v1:sha256:f18aa0846f602d11a547f7d3609a9ef785699ace1cebb86e4972d395f33493a1"
         }
       ]
     },
@@ -317,10 +317,32 @@
           "version": "repo-lines-v1:sha256:d07f6255c193667ceb01531858e30f4cf2e8c1593d61152386941cd46f36f9f7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3OWEwMjUyZWNkZTJlN2Y3YTY1ZDk2Y2IxMTM5MjA0ZjE4ZTg2NzBiYTZiNmZlZjkxY2NkZDhmMDNhNmQyY2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNDc2NjMxZDEyZmY5ODBlMDg0MWU1OGY5NzVlNmVhZGZmYzNiNTkwNzM2MTA3MTBjZWIxZDU0MjViOTk5ZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2NGY2MzM4MDQ1NmRlZmM5OTllNWExNDY1MjAyMGU4ZTczY2FmMWM1YjU3OTE0NDY0YmUyOWQ4MjI2ZmI3NDcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_8bdae7d2e7d94188ab226b888a997d6b",
+      "statement": "The protected OpenClaw Enterprise image workflow publishes stock controller, runtime, and CLI only from exact current main; on failure the publisher writes a fixed phase to the job summary while private registry logs remain encrypted, and no accepted image receipt is produced.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml#L1-L110",
+          "version": "repo-lines-v1:sha256:8a2c45266488c4d9383b1672a79a6aeb12c3a4210c23ca46e9b39eb73c4d183c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNTBjYzc2Zjg2MGU4MGI0ZDRiYWVlY2MxODVmNGMzMGI0NjU1NTZjNjc0MjYwZjE2MDRmYWE0Mzk4NjhhOWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5YWU2ZTcyOTE2ZDYzNDEzNmI5MTViN2E1ZmNmOTU1MWQzOGYxN2I2OTg5NGRlMGUzMTJkNTZkYzMzMzQ5Mjk0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyZTdhMDFmYmYxMzdhZDUyOGJhOTI0OTUzYmJiNzRkOGNhMjMzZDhhZDQ3ZjI3ZmM2ZGY1ZjJkMTZjYzI2M2IyIn0"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L315-L327",
+          "version": "repo-lines-v1:sha256:1cb8c2c5d08af387eef77a12e7fbd596c6ab8269164e16d6c50485b6d076e4b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMDY3MTJhZjA4ODkxNWZkMWRhZDk4MDIyYmY3MzhlODU3NjFhY2U3NmFiMjI5NTg1YjE0ZjVmNWY1NTNmMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0ZDNkMTQ1NGNiYWEzMzQ2ZjcxNjc0ZGQwZWIwNmE0ZjY5ZmMzY2M3NGU1M2Q0MjdiNzg4NzhlZWM5MDc1NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2NmQ1MmJjOTViZWM2NjE5NmYxNzQ2NzcxM2QxZGQ5YmNhZDE0MDlmOTZhZjEyMGQyNDU2YzU3ZTMyZTFiNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNlNjk1MjJiMTk3ZjMzY2M5OGIzNDhjNTAxOTAyMDgzZWFlMGIwNmViNjBlMzljNmE4YTVmMGY1ZGUzZDlmOGQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh#L10-L39",
+          "version": "repo-lines-v1:sha256:c646c8aba699838e8fd318ce1c60c30d93d127f4c2c83572aee991ef4630f6da:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhYzlmN2FiNzQwNTJlNzhjYjIzODQyYjIxOTMzYzRkMTQ3Njk2N2JlNmRiZDI2MmVmMjgwNDY0MTU3NWI0YWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5NWQ1YWYyN2M0ODAyYzc3YzI4MTlhMzYyYWZmNWU0ZjExY2FjMjkxNzdkN2M3ZTZmNTE3YTQ5ZmUxNzZmYWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4NjQ2OGRmNTQ5M2NiMzFiNDJmZDA0YmEyMGM3ZTE4MDYzYTZmZmFhMThkNTkwOTdkODJmMzQ2YmE0OWQ5NzkifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh#L151-L215",
+          "version": "repo-lines-v1:sha256:b3ba964869cef176d9e6e1be30533a0850944076893f7f6f693c4b391eb062a6:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5OGY5M2M3ZTA0ZDljYzQ0NmMyNTJjZTRhYzljYzYyYTA5ZDQxYjdjNWU0OTVhYzViZDc1M2NmZjAxZmYxMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwMWVjMDUwZTk2NDc3NmQwNWQxNDdlNzE3MzkwODM2N2QxMzFkMjUxNmE4ZGM1MWM2YTE2ZTU2MGYzNTQ5ZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4MzU5MDI3MDU3ZDNjMzMwNzU5ZTBmNGVlOTkxNmNlZTUwZmM2NWE0MmE3M2YzNTQ5NmI2ZDE4YjE2ODllZmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlMjFjMmZjMTE1YjI5YTgzODNiYzhlYTY5MmRhOTBjZmEwMTNhMjFjNDYyNTM4NGE1ZWQ2MjNlOTlhNTY5NzEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:05:38.546Z"
+    "at": "2026-10-20T19:28:35.536Z"
   }
 }

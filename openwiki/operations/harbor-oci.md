@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -162,10 +164,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T06:38:44.829Z" }
+generated: { by: "codex", at: "2026-10-20T19:28:35.536Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:25:19.174Z
+    at: 2026-10-20T19:28:35.536Z
 ---
 
 # Harbor Private OCI Registry
@@ -883,6 +885,9 @@ The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
+The protected three-image controller/runtime/CLI publisher now reports one fixed
+failure phase, including preflight and cleanup, in the job summary. Its private
+transport output stays withheld, and a failed run supplies no acceptance receipt.
 The [post-shutdown capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
 also leaves isolated canary placement blocked; a mirror receipt cannot clear
 that independent gate.

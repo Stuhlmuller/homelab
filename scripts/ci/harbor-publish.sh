@@ -9,6 +9,12 @@ set -euo pipefail
 mode="$1"
 publish_outputs=(backend frontend)
 core_publication=false
+enterprise_publication=false
+publish_phase="preflight"
+if [[ "$mode" == publish-openclaw-enterprise ]]; then
+  # Preflight may fail before the private transport cleanup trap is installed.
+  trap 'if [[ $? -ne 0 && -n "${GITHUB_STEP_SUMMARY:-}" ]]; then printf "Enterprise image publication failed at phase: %s\n" "$publish_phase" >>"$GITHUB_STEP_SUMMARY"; fi' EXIT
+fi
 publish_names=(homelab-nofx-backend homelab-nofx-frontend)
 if [[ "$mode" == publish-harbor-core ]]; then
   core_publication=true
@@ -24,6 +30,7 @@ if [[ "$mode" == publish-cordium ]]; then
   publish_outputs=(runner controller)
 fi
 if [[ "$mode" == publish-openclaw-enterprise ]]; then
+  enterprise_publication=true
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
   mode=publish
@@ -141,9 +148,13 @@ kubeconfig_added=false
 mirror_source=setup
 mirror_phase="setup"
 mirror_category="command-failed"
+publish_phase="private-route"
 cleanup() {
   local result=$?
   trap - EXIT INT TERM
+  if "$enterprise_publication" && [[ "$result" -eq 0 ]]; then
+    publish_phase="cleanup"
+  fi
   if [[ "$mode" == mirror && "$mirror_category" == command-failed && -f "$scratch/mirror-error" ]]; then
     if grep -Eiq 'toomanyrequests|too many requests|status code:? 429' "$scratch/mirror-error"; then
       mirror_category="rate-limited"
@@ -190,6 +201,10 @@ cleanup() {
     fi
   fi
   rm -rf -- "$scratch" || result=1
+  if "$enterprise_publication" && [[ "$result" -ne 0 && -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+    # Only a fixed publisher phase is public; transfer output remains encrypted.
+    printf "Enterprise image publication failed at phase: %s\n" "$publish_phase" >>"$GITHUB_STEP_SUMMARY" || result=1
+  fi
   if [[ "$mode" == mirror && "$result" -ne 0 ]]; then
     # Only reviewed catalog text, fixed labels, and the exit status are public.
     printf 'source=%s\nphase=%s\nexit_status=%s\ncategory=%s\n' \
@@ -288,6 +303,7 @@ if [[ "$mode" == mirror ]]; then
     --pass-stdin --skip-check <"$scratch/mirror-pull-password" >/dev/null
   rm -f -- "$scratch/mirror-pull-password"
 else
+  publish_phase="harbor-auth"
   aws ssm get-parameter --region us-west-2 \
     --name /homelab/harbor/robot-push-password --with-decryption \
     --query Parameter.Value --output text >"$scratch/harbor-password"
@@ -526,8 +542,10 @@ fi
 for name in "${publish_names[@]}"; do
   tag="homelab-${GITHUB_SHA}"
   destination="harbor.stinkyboi.com/homelab/${name}"
+  publish_phase="push-${name#homelab-oce-}"
   docker tag "${name}:build" "${destination}:${tag}"
   docker --config "$scratch/docker" push "${destination}:${tag}"
+  publish_phase="upload-verify-${name#homelab-oce-}"
   source_digest="$(docker image inspect --format '{{json .RepoDigests}}' "${destination}:${tag}" |
     jq --raw-output --arg prefix "${destination}@" '.[] | select(startswith($prefix)) | split("@")[1]')"
   [[ "$source_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
@@ -535,6 +553,7 @@ for name in "${publish_names[@]}"; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
+  publish_phase="authenticated-pull-${name#homelab-oce-}"
   pull_directory="$(mktemp -d "$scratch/published-pull.XXXXXX")"
   skopeo copy --all --preserve-digests --src-authfile "$scratch/auth.json" \
     "docker://${destination}@${destination_digest}" "dir:${pull_directory}"
@@ -545,6 +564,7 @@ for name in "${publish_names[@]}"; do
 done
 
 if [[ "$mode" == publish ]]; then
+  publish_phase="signing-prepare"
   # Only verified, allowlisted digests enter the repository-owned Job template.
   signing_references=()
   while IFS=@ read -r tagged_repository digest; do
@@ -564,13 +584,16 @@ if [[ "$mode" == publish ]]; then
       "$scratch/signing-job.json" >"$scratch/private-signing-job.json"
     mv "$scratch/private-signing-job.json" "$scratch/signing-job.json"
   fi
+  publish_phase="signing-create"
   kubectl --namespace harbor create -f "$scratch/signing-job.json" -o json >"$scratch/created-job.json"
   signing_job="$(jq -er '.metadata.name' "$scratch/created-job.json")"
   signing_uid="$(jq -er '.metadata.uid' "$scratch/created-job.json")"
   [[ "$signing_job" =~ ^harbor-sign-[a-z0-9]+$ && "$signing_uid" =~ ^[a-f0-9-]{36}$ ]]
+  publish_phase="signing-wait"
   kubectl --namespace harbor wait --for=condition=complete --timeout=360s "job/${signing_job}"
   # Pod status contains only the public key emitted by the successful signer.
   # CI never GETs the signing Secret or receives the private key.
+  publish_phase="signing-key"
   kubectl --namespace harbor get pods -l "batch.kubernetes.io/controller-uid=${signing_uid}" -o json |
     jq -er --arg uid "$signing_uid" '
       .items | select(length == 1) | .[0] |
@@ -581,6 +604,7 @@ if [[ "$mode" == publish ]]; then
     echo 'Harbor signing identity differs from the reviewed fingerprint.' >&2
     exit 1
   }
+  publish_phase="signature-verify"
   for reference in "${signing_references[@]}"; do
     DOCKER_CONFIG="$scratch/docker" cosign verify \
       --key "$scratch/signing.pub" --insecure-ignore-tlog \
@@ -590,6 +614,7 @@ fi
 
 # Publish only allowlisted references after transfer and required acceptance pass.
 if [[ "$mode" == publish ]]; then
+  publish_phase="receipt"
   mapfile -t published_refs <"$scratch/verified-digests"
   if "$core_publication"; then
     [[ "${#published_refs[@]}" -eq 1 ]]
