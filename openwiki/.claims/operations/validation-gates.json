@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c4396c2cfccb1b2925ff83b7feabc6e028b8ee98fb9d4ef2fd19a85373eb16c6",
+  "pageVersion": "sha256:38830b38540d89f40332eeba5a842b9245bd3aa97141e03720d340a6ec7f8612",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:f6420353a267eae46a5e907d835cc23277fd2be1028c339c48a9b516e1b13092"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:7ecad2f323944f6287f2b7afe9ad0c8e59ba86c65d34df969b02d4cceac5e491"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -582,7 +582,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -596,7 +596,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -678,15 +678,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:0235b83c7cb0758a3b6cb1c96178a37ec829cd5a94215f565b98020c375586dd"
+          "version": "repo-file-v1:sha256:281ea64a84eff2ca270deec607cd3eefd52fb660919cc9a2f99a469886cdd0a2"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:e3c9de143a6fced87a8fd926f61ccf7b26197a163092bf9f149d0b81634657d7"
+          "version": "repo-file-v1:sha256:7aeee5e876af69fe4343c8dff163f85648afe42fabd4a9a843595967e3e31acc"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -699,12 +699,12 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L944-L1009",
-          "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L313-L409",
-          "version": "repo-lines-v1:sha256:5c0907f1fe131f4f72c971861ecad030beb84467dfd985fea3fe6306f918f5ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
     },
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:7ecad2f323944f6287f2b7afe9ad0c8e59ba86c65d34df969b02d4cceac5e491"
         }
       ]
     },
@@ -764,15 +764,15 @@
     },
     {
       "id": "claim_823a08a8670e4b57b50e4cf8ce0507c7",
-      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures for missed starts, incomplete cycles, late prior success, suspension and resume just before an hour boundary, and a missing CronJob. Its first post-resume slot alerts after the 15-minute start grace; the completion alert's 56-minute threshold exceeds the 15-minute start allowance plus 40-minute Job runtime. These checks do not establish live credential, cache, or scheduled-Job acceptance.",
+      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures built for hourly starts, including missed and incomplete cycles, suspension, resume, and a missing CronJob. The current CronJob schedules every two hours while the rules and fixture still assume hourly starts and a 56-minute completion threshold, so these checks no longer verify the declared cadence and can falsely alert between healthy runs; live acceptance remains open.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
           "version": "repo-file-v1:sha256:5ab39d1b53db6f642573cfee04c8566a8f652cab5b4d946f080efb46a1aca7ce"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:f6420353a267eae46a5e907d835cc23277fd2be1028c339c48a9b516e1b13092"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -794,7 +794,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
+          "version": "repo-file-v1:sha256:0e5d1bee57bfdd2222d092ca0758ad049d29cb6881a2dfe41b7e1c66f0a04294"
         }
       ]
     },
@@ -848,11 +848,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:f9e7339105652f389ec6a48604bc29bf0a20ab1c7c1e7828fd6252c9ea515fbb"
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -910,7 +910,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
+          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
-          "version": "repo-file-v1:sha256:89b2b2494faab752b1667d3a5f41c1f980f2ad5942a049fc6dc9d8cbb3b2ed1d"
+          "version": "repo-file-v1:sha256:f726b8be2628220111b2130f42e070e6ea39a80166e70d4ae12bde728f9c2cef"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -1016,7 +1016,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-quiesce-test.py",
-          "version": "repo-file-v1:sha256:a2da4b24607829dae226e226a834cf6551ab043ed8092727f18c28cc4567c1d0"
+          "version": "repo-file-v1:sha256:d00b6a250af18b72e22d7f7a9e30311175c85ab264b97ea8f03d7722afbd141f"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-startup-test.py",
@@ -1062,7 +1062,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         }
       ]
     },
@@ -1126,7 +1126,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:7ecad2f323944f6287f2b7afe9ad0c8e59ba86c65d34df969b02d4cceac5e491"
         }
       ]
     },
@@ -1176,17 +1176,21 @@
     },
     {
       "id": "claim_a54d750b2e7e4fae9832f7b40921adf5",
-      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures with fresh directories and bounded backoff, report exhaustion after five, and stop on hard failures.",
+      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures while retaining partial content in one temporary OCI directory and forcing recursive checks on each attempt, report exhaustion after five, and stop on hard failures.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:06:40.149Z"
+    "at": "2026-10-20T03:38:09.386Z"
   }
 }

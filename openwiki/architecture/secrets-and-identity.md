@@ -104,10 +104,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T03:33:56.360Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T03:38:09.386Z
 ---
 
 # Secrets And Identity
@@ -236,8 +236,8 @@ every five minutes. Current IAM source removes the temporary exact-scope
 companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, the operator applied the private, un-targeted saved plan with only the
 role and inline-policy deletions. A read-only IAM lookup returned
-`NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
-is running in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
+`NoSuchEntity`, and a fresh full-unit plan had no changes. The every-two-hours CronJob
+is running in full dry-run mode. Its earlier 19:00 and 20:00 UTC scheduled Jobs each
 finished all eight eligible repositories and logged the same public release
 cache-key hit on separate Pods; the protected companion canary published
 `v0.0.2` at 20:20 UTC. Normal refresh, fault recovery, full parity, and writer

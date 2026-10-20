@@ -250,10 +250,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T03:33:56.360Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T03:38:09.386Z
 ---
 
 # Validation Gates
@@ -1980,7 +1980,7 @@ copy and authenticated-pull path. The workflow's exact security hash
 locks the reviewed fixed-scope choices; a passing fixture does not publish the images or
 validate consuming workloads.
 
-The staged hourly Renovate runner has a credential-free config and discovery
+The staged Renovate runner has a credential-free config and discovery
 test in `static-checks.sh`. The config test injects a cache write failure and
 checks that no GitHub API request follows; live PVC-failure behavior remains
 unverified. `offline-checks.sh` runs its Prometheus rule
@@ -1988,7 +1988,11 @@ fixture, which checks missed starts, incomplete cycles, a missing CronJob,
 late prior-Job completion, and schedules before and after suspension. These
 fixtures also enforce that the 15-minute allowed late start plus the 40-minute
 Job runtime ends before the completion alert's 56-minute threshold and the next
-hourly slot. These checks verify declared behavior. The unsuspended full
+hourly slot assumed by those rules. The [CronJob](../../clusters/homelab/apps/renovate/cronjob.yaml)
+now schedules every two hours, while the [alerts](../../clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml)
+still assume hourly starts; they can fire during a healthy interval. Align the
+rules, fixture, and runbook with the two-hour schedule in a separate reviewed
+change; these checks no longer verify the declared cadence. The unsuspended full
 dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
 17:00 datasource mutex timeout. The 19:00 and 20:00 scheduled Jobs each
 finished all eight eligible repositories with no reported errors and one
@@ -1999,8 +2003,8 @@ at this draft revision, its task record still lacks a durable receipt for
 those Pod UIDs and acceptance of the `v0.0.2` refresh. They also do not prove
 general cache freshness, eligible Harbor discovery, full
 owner/App policy parity, or write safety.
-The alert fixture also checks a resume just before an hour boundary: it stays
-quiet during the first slot's grace period and alerts if that slot is missed.
+The alert fixture checks a resume just before an hour boundary under the old
+hourly schedule; it does not verify the current two-hour cadence.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
@@ -2026,9 +2030,10 @@ generic destination errors still fail closed. Alias lookup fixtures also require
 one transient read to recover and an authorization failure to stop without a
 retry. These fixtures do not establish that the protected full-catalog
 publication succeeded. OCI-index pull fixtures also require recovery after
-four classified transport failures with fresh directories and
-2/4/8/16-second backoff, exhaustion after five attempts, and immediate
-stop on hard errors.
+four classified transport failures while retaining partial content in one
+temporary OCI directory, forcing recursive checks on each attempt, and
+2/4/8/16-second backoff. They require exhaustion after five attempts and an
+immediate stop on hard errors.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child

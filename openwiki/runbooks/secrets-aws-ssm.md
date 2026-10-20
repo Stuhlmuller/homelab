@@ -20,8 +20,6 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
-  - id: openwiki-source-01fc0bedc522f2abd58d6698
-    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -30,10 +28,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T03:33:56.360Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T03:33:56.360Z
 ---
 
 # AWS SSM Secret References
@@ -66,7 +64,7 @@ desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
-reintroduction of the exact-scope grant. The hourly CronJob is now declared
+reintroduction of the exact-scope grant. The every-two-hours CronJob is declared
 unsuspended in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
 finished all eight eligible repositories with no reported errors. The legacy
 GitHub Action remains the only writer. Full App-policy parity, fault recovery,

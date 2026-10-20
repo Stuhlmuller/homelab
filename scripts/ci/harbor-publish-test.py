@@ -444,15 +444,17 @@ class HarborPublicationGates(unittest.TestCase):
                     config.write_text(json.dumps({"username": user}))
                     assert config.stat().st_mode & 0o077 == 0
                 elif args[:2] == ["image", "copy"]:
-                    source, target = args[2:]
+                    source, target = args[-2:]
                     assert "@sha256:" in source
                     user = json.loads(config.read_text())["username"]
                     if target.startswith("ocidir://"):
                         assert user == "robot$mirror+pull"
+                        assert args[2:-2] == ["--force-recursive"]
                         if FIXTURE["failure"] == "mirror-regctl-pull":
                             raise SystemExit(21)
                         directory = Path(target.removeprefix("ocidir://").split(":", 1)[0])
-                        assert list(directory.iterdir()) == []
+                        contents = list(directory.iterdir())
+                        assert contents == [] or contents == [directory / "partial"]
                         fail_read("regctl-pull", {
                             "mirror-regctl-pull-once": "TLS handshake timeout",
                             "mirror-regctl-pull-four": "TLS handshake timeout",
@@ -461,6 +463,7 @@ class HarborPublicationGates(unittest.TestCase):
                         }, directory)
                         (directory / "digest").write_text(source.rsplit("@", 1)[1])
                     else:
+                        assert args[2:-2] == []
                         assert user == "robot$mirror+publisher"
                         assert target.startswith("harbor.stinkyboi.com/mirror/")
                         reference = target
@@ -911,7 +914,7 @@ class HarborPublicationGates(unittest.TestCase):
             [f"{destination}@{digest}", f"{destination}:stable"],
         ])
         self.assertEqual(len(regctl_copies), 3)
-        self.assertEqual(regctl_copies[-1][0], f"{destination}@{digest}")
+        self.assertEqual(regctl_copies[-1][-2], f"{destination}@{digest}")
         self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
         self.assertEqual((self.root / "summary").read_text().splitlines(),
                          [f"{destination}:{digest[7:]}@{digest}"])
@@ -939,7 +942,7 @@ class HarborPublicationGates(unittest.TestCase):
             [f"{destination}@{digest}", f"{destination}:stable"],
         ])
         self.assertEqual(len(regctl_copies), 3)
-        self.assertEqual(regctl_copies[-1][0], f"{destination}@{digest}")
+        self.assertEqual(regctl_copies[-1][-2], f"{destination}@{digest}")
         self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
         self.assertEqual((self.root / "summary").read_text().splitlines(),
                          [f"{destination}:{digest[7:]}@{digest}"])
@@ -978,7 +981,7 @@ class HarborPublicationGates(unittest.TestCase):
         regctl_copies = [args[2:] for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]
         self.assertEqual(regctl_copies[0], [f"{destination}@{digest}", f"{destination}:stable"])
         self.assertEqual(len(regctl_copies), 2)
-        self.assertEqual(regctl_copies[-1][0], f"{destination}@{digest}")
+        self.assertEqual(regctl_copies[-1][-2], f"{destination}@{digest}")
         self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
         self.assertEqual((self.root / "summary").read_text().splitlines(),
                          [f"{destination}:{digest[7:]}@{digest}"])
@@ -1272,7 +1275,8 @@ class HarborPublicationGates(unittest.TestCase):
                     reads = [args[-1] for args in self.calls_for("regctl")
                              if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
                     self.assertEqual(len(reads), 3)
-                    self.assertEqual(len(set(reads)), 3)
+                    self.assertEqual(reads[0], reads[1])
+                    self.assertEqual(len(set(reads)), 2)
                 self.assert_cleaned()
 
     def test_mirror_index_pull_recovers_after_four_transport_failures(self):
@@ -1283,7 +1287,7 @@ class HarborPublicationGates(unittest.TestCase):
         pulls = [args[-1] for args in self.calls_for("regctl")
                  if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
         self.assertEqual(len(pulls), 5)
-        self.assertEqual(len(set(pulls)), 5)
+        self.assertEqual(len(set(pulls)), 1)
         self.assertEqual([args[0] for args in self.calls_for("sleep")], ["2", "4", "8", "16"])
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
         self.assert_cleaned()
@@ -1296,7 +1300,7 @@ class HarborPublicationGates(unittest.TestCase):
         pulls = [args[-1] for args in self.calls_for("regctl")
                  if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
         self.assertEqual(len(pulls), 5)
-        self.assertEqual(len(set(pulls)), 5)
+        self.assertEqual(len(set(pulls)), 1)
         self.assertEqual([args[0] for args in self.calls_for("sleep")], ["2", "4", "8", "16"])
         self.assertFalse((self.root / "summary").exists())
         self.assertIn("phase=authenticated-pull\n", self.public_status)
