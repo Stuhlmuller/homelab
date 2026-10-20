@@ -38,7 +38,10 @@ ownership, and exact reviewed Pod UID; it cannot identify arbitrary
 `kube-system` applications, so review each listed identity. The stage rejects
 existing enforcer/cleanup DaemonSets and fixture namespace, adds the dedicated
 taint, then checks the live assigned Pod list before adding the selector label.
-It checks the Pod list again after labeling. Each Node patch tests
+It requires a complete cluster-wide Node label inventory with no other canary
+selected before mutation and immediately before labeling; a post-label check
+removes this Node's label if another selected Node appears. It checks the Pod
+list again after labeling. Each Node patch tests
 `resourceVersion` and UID and touches only the owned taint or label. A
 taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.

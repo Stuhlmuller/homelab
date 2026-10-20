@@ -46,6 +46,27 @@ def node_state(config, placement):
     return node, labels.get(CANARY) == "true", bool(owned)
 
 
+def require_exclusive_canary_label(config, placement, selected):
+    listing = CLEANUP["kubernetes_json"]("get", "nodes", "-l", f"{CANARY}=true",
+                                         "--chunk-size=0")
+    if (not isinstance(listing, dict) or not isinstance(listing.get("items"), list) or
+            not isinstance(listing.get("metadata", {}), dict) or
+            listing.get("metadata", {}).get("continue")):
+        raise ValueError("canary label inventory is incomplete")
+    matches = []
+    for item in listing["items"]:
+        metadata = item.get("metadata") if isinstance(item, dict) else None
+        labels = metadata.get("labels") if isinstance(metadata, dict) else None
+        if (not isinstance(labels, dict) or labels.get(CANARY) != "true" or
+                not isinstance(metadata.get("name"), str) or not metadata["name"] or
+                not isinstance(metadata.get("uid"), str) or not metadata["uid"]):
+            raise ValueError("canary label inventory has an invalid Node")
+        matches.append((metadata["name"], metadata["uid"]))
+    expected = [(config["canary"]["node"], placement["nodeUid"])] if selected else []
+    if matches != expected:
+        raise ValueError("canary label matches another Node or changed")
+
+
 def require_runtime_absent(admit):
     for name in (CLEANUP["ENFORCER"], CLEANUP["CLEANUP"] if admit else None):
         if name is None:
@@ -200,6 +221,7 @@ def execute(args):
     if args.action == "admit":
         if labeled:
             raise ValueError("canary Node is already labeled; review admission state")
+        require_exclusive_canary_label(config, placement, False)
     elif labeled != tainted:
         raise ValueError("canary label and isolation taint differ")
     if args.action == "release":
@@ -227,6 +249,7 @@ def execute(args):
                 raise ValueError("canary Node taint readback differs")
             require_runtime_absent(True)
             verify_live_pods(config, placement)
+            require_exclusive_canary_label(config, placement, False)
             labels = node["metadata"].get("labels")
             label_add = {"op": "add", "path": LABEL_PATH, "value": "true"} if labels \
                 else {"op": "add", "path": "/metadata/labels", "value": {CANARY: "true"}}
@@ -251,6 +274,7 @@ def execute(args):
             raise ValueError("canary Node readback differs")
         if args.action == "admit":
             try:
+                require_exclusive_canary_label(config, placement, True)
                 verify_live_pods(config, placement)
             except (OSError, ValueError, KeyError, TypeError,
                     subprocess.CalledProcessError, subprocess.TimeoutExpired):

@@ -170,7 +170,7 @@ class CanaryNodeTests(unittest.TestCase):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
-                   cleanup_pods=None):
+                   cleanup_pods=None, label_inventory=None):
         commands, records, events = [], [], []
         self.last_records = records
         self.last_events = events
@@ -182,6 +182,13 @@ class CanaryNodeTests(unittest.TestCase):
         def kube_json(*args):
             if args[:2] == ("get", "node"):
                 return copy.deepcopy(state)
+            if args[:2] == ("get", "nodes"):
+                if label_inventory is not None:
+                    return copy.deepcopy(label_inventory() if callable(label_inventory)
+                                         else label_inventory)
+                selected = [copy.deepcopy(state)] if state["metadata"]["labels"].get(CANARY) \
+                    == "true" else []
+                return {"items": selected}
             if (action == "release" and args[:4] == ("-n", "kube-system", "get", "pods")
                     and "--chunk-size=0" in args):
                 events.append("cleanup-inventory")
@@ -312,6 +319,59 @@ class CanaryNodeTests(unittest.TestCase):
                 state["metadata"]["labels"][CANARY] = "true"
             with self.assertRaisesRegex(ValueError, "already labeled"):
                 self.run_action("admit", state)
+
+    def test_admit_refuses_another_labeled_node_before_mutation(self):
+        state = node()
+        other = {"metadata": {"name": "zimaboard-2", "uid": "other-uid",
+                              "labels": {CANARY: "true"}}}
+        with self.assertRaisesRegex(ValueError, "another Node"):
+            self.run_action("admit", state, label_inventory={"items": [other]})
+        self.assertEqual(len(state["spec"]["taints"]), 1)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(self.last_records, [])
+
+    def test_admit_rechecks_other_node_after_taint_before_label(self):
+        state = node()
+        other = {"metadata": {"name": "zimaboard-2", "uid": "other-uid",
+                              "labels": {CANARY: "true"}}}
+        inventories = iter(({"items": []}, {"items": [other]}))
+        with self.assertRaisesRegex(ValueError, "another Node"):
+            self.run_action("admit", state, label_inventory=lambda: next(inventories))
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
+
+    def test_admit_rolls_back_label_if_other_node_appears_after_patch(self):
+        state = node()
+        other = {"metadata": {"name": "zimaboard-2", "uid": "other-uid",
+                              "labels": {CANARY: "true"}}}
+        calls = 0
+
+        def inventory():
+            nonlocal calls
+            calls += 1
+            return {"items": [copy.deepcopy(state), other] if calls == 3 else []}
+
+        with self.assertRaisesRegex(ValueError, "another Node"):
+            self.run_action("admit", state, label_inventory=inventory)
+        self.assertEqual(calls, 3)
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
+
+    def test_label_inventory_is_complete_and_well_formed(self):
+        invalid = ({}, {"items": None}, {"items": [], "metadata": {"continue": "next"}},
+                   {"items": [{"metadata": {"name": "other", "uid": "uid",
+                                            "labels": {CANARY: "false"}}}]},
+                   {"items": [{"metadata": {"name": "other", "uid": "",
+                                            "labels": {CANARY: "true"}}}]})
+        for listing in invalid:
+            with self.subTest(listing=listing), patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": lambda *args: listing}):
+                with self.assertRaisesRegex(ValueError, "canary label inventory"):
+                    SUT["require_exclusive_canary_label"](CONFIG, placement(), False)
 
     def test_stale_or_foreign_pod_blocks_label_after_taint(self):
         stale = system_pod()

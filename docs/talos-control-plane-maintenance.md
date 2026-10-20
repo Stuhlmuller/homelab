@@ -418,7 +418,9 @@ admitted canary exist. Any probe receipt leaves lifecycle qualification
 unresolved.
 The dormant `canary-admit` stage requires a fresh, reviewed placement and empty
 pre-enable firewall baseline receipt. Its guarded Node JSON Patches add the
-dedicated taint before the selector label. After verified `owned-cleanup`,
+dedicated taint before the selector label. Admission rejects another Node
+carrying that label, including a change detected just before or after labeling.
+After verified `owned-cleanup`,
 `canary-release` requires that run's receipt, empty fixture namespace, absent
 enforcer, and empty owned firewall before removing the label, waiting for all
 cleanup DaemonSet Pods to be deleted, and removing the taint. A stalled deletion
