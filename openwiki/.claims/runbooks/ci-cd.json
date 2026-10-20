@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:86a8377e9fe05ae67420341edd25534a75e1a3f622d925724785276b870c2558",
+  "pageVersion": "sha256:bd1085f631c61564cb747b32574e3068a3aa14788a33ac5f9ed7bf4e09ae7d62",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -135,10 +135,24 @@
           "version": "repo-lines-v1:sha256:9cc750928a802ea05c3402da96a0fab68a4acce4da6da8c8798e29e91dfd8943:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExY2ZmZGIwYmU4YjgyYTFkZTYxYmU4OGJjZjYwNDkzODNlMWZiY2I5ODU0ODQ5ZTRlMDMwMzI3NWYzMWVkYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3M2VlMTcxM2QxNTFhYmFmYjA5YWIyZDgzYmQ5NjcxYTUyZWNkODJkNjUxOTVlY2IxYTAwYmFmOWQ4M2U0NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOWI0MDllMmQ5MWM4N2Y4NGY2MWI2NDVjMmFhZTMxYTJkNmY1NDc1M2Y0ZTY3MTkwNDYxMWRmNDEzOWYwNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c6e0f71a854f4b46abe3572f33ff5286",
+      "statement": "The source Octelium catalog stages a distinct homelab-ci-plan workload User and read-or-dry-run Policy for kubernetes-api-ci; merging source does not apply the catalog or issue a token, and the PR plan continues to read its protected environment secret.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:68f02f18dfac3b95afb25f20089de19c6bc1f2d4e2eac929100ad4b7cdb6bbe8"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:43:08.437Z"
+    "at": "2026-10-20T04:22:56.208Z"
   }
 }

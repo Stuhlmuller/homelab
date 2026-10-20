@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:45ffd2db1e16fee0dd8826957f562fe8cd321a57488b35f73d3e431d622d9eca",
+  "pageVersion": "sha256:1d85af810d09e721080be340a81e5fa15df3f94fad1cbbf1be5cc89bc743669e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -927,7 +927,7 @@
       "statement": "Enterprise reconciler fixtures run in static and offline validation. `check` attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded `reconcile` may journal and POST/adopt the prepared logical Namespace, then blocks before Agent creation, while `verify` remains read-only and blocked.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L61-L66",
+          "resource": "repo://scripts/ci/offline-checks.sh#L62-L67",
           "version": "repo-lines-v1:sha256:4708ad92af0c4026a38532a319907dfbaace12b2ff79cbc9ff55ecd81f3f695a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjY3OTFkZjZiNDRhOTM3YzA3MTFmMzkyZjhkMDZhYWIzODExNzA0ZWYyYjRhNjU0NDhkYmExNzJjYjQzMjc4YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE1M2RjMzBiNjdhYzRmYjY0NjkyOTRiMWYzNTRkOTUxODRjOTVkYWIzZTQzYjE4NDBmOGZlYzE2YmU3ZWM4ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDJhYTYxMjA3Y2QxMzRmYWFjMDE2ZmFiNTIzM2JkNGJmOGNmZjEzNDA3NTk5YTcwNDQxYjdhZGFjOTgxMGNlNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGZhZTIyNjdkMTUxMjcwN2VmMWMxYzI3ZWZhOTI1N2FmNTYzOWMwYWU0ZDIyY2I2MjJjOWNmZTUxMzQ3NGExMSJ9"
         },
         {
@@ -1122,7 +1122,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a663945c33f5e5ca819a092b2ae07b78cb044480f8851598a236ec488ba504bd"
+          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
         }
       ]
     },
@@ -1166,7 +1166,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -1205,10 +1205,28 @@
           "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
+    },
+    {
+      "id": "claim_83d895695cfd4b1d88c869cb2ee7094d",
+      "statement": "The staged homelab-ci-plan Octelium workload policy permits Kubernetes read verbs and dry-run writes while denying live writes and subresources; offline fixtures exercise these declared rules, but source checks do not establish live enforcement or issue a plan credential.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
+          "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:49:43.338Z"
+    "at": "2026-10-20T04:22:56.208Z"
   }
 }

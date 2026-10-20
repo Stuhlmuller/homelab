@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:751bef103b673c0df5b642ec13cd9a7059c863122511d9c7e05275479e0dd4a3",
+  "pageVersion": "sha256:4bcec8ddcd5ceb0730ecaeaa83e0ec99eefd14af2f81ee649d3f66b301733002",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
           "resource": "repo://docs/octelium.md",
@@ -58,7 +58,7 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -69,10 +69,24 @@
           "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
         }
       ]
+    },
+    {
+      "id": "claim_cb4a3cbde1f84a20b7611bdf9760ebe3",
+      "statement": "The source Octelium catalog stages a distinct homelab-ci-plan workload User and Policy on kubernetes-api-ci that allows reads and dry-run writes while denying live writes and subresources; merging source does not apply the catalog or issue a plan token, and offline fixtures only test declared rules.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
+          "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:49:43.338Z"
+    "at": "2026-10-20T04:22:56.208Z"
   }
 }
