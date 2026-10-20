@@ -316,6 +316,7 @@ test_rejects_changed_openclaw_enterprise_operation if {
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "single"}})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], object.union(steps[2], {"run": "true"}), steps[3]]})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": replace(openclaw_enterprise_blocked_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": replace(openclaw_enterprise_blocked_run, "stage.sh' &&", "stage.sh'")})]})})}),
 	] {
 		violations := deny with input as changed
 		some msg in violations

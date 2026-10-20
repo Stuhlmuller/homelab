@@ -450,7 +450,7 @@ openclaw_enterprise_blocked_run := `set -euo pipefail
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972  scripts/ci/openclaw-enterprise-stage.sh'
+  sha256sum --check --status <<<'53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972  scripts/ci/openclaw-enterprise-stage.sh' &&
   bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise stage blocked; private diagnostics withheld.'

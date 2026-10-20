@@ -215,6 +215,27 @@ sys.stdout.buffer.write(chunk)
         self.assertNotIn('argocd', script)
         self.assertNotIn('openclaw-enterprise.py', script)
 
+        stage_run = textwrap.dedent(workflow.split('\n  enterprise:\n', 1)[1]
+                                    .split('\n  binding:\n', 1)[0]
+                                    .split('        run: |\n')[-1])
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory)
+            marker = fake / 'ran-stage'
+            (fake / 'sha256sum').write_text('#!/bin/sh\nexit 1\n')
+            (fake / 'bash').write_text('#!/bin/sh\n: > "$STAGE_MARKER"\n')
+            (fake / 'sha256sum').chmod(0o755)
+            (fake / 'bash').chmod(0o755)
+            result = subprocess.run(['/bin/bash', '-c', stage_run], cwd=ROOT,
+                                    env={**os.environ,
+                                         'PATH': f'{fake}:{os.environ["PATH"]}',
+                                         'RUN_STAGE': 'verification',
+                                         'EXPECTED_SHA': 'a' * 40,
+                                         'STAGE_MARKER': str(marker)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertFalse(marker.exists(), 'a failed checksum ran the stage')
+            self.assertIn('Enterprise stage blocked', result.stdout)
+
         enterprise_job = workflow.split('\n  enterprise:\n', 1)[1]
         self.assertLess(enterprise_job.index('name: Check Out Repository'),
                         enterprise_job.index('name: Recheck Current Main Commit Before Enterprise Stage'))
