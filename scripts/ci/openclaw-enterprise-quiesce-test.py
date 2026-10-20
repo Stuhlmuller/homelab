@@ -87,6 +87,27 @@ class QuiesceContract(unittest.TestCase):
             MODULE.main()
         self.assertEqual(fake.updates, [])
 
+    def test_foreign_deployment_blocks_before_scale(self):
+        for change in (
+            lambda item: item["metadata"]["labels"].update({"app.kubernetes.io/instance": "foreign"}),
+            lambda item: item["spec"]["selector"]["matchLabels"].update({"app.kubernetes.io/component": "foreign"}),
+            lambda item: item["metadata"].update({"namespace": "foreign"}),
+        ):
+            with self.subTest(change=change):
+                fake = FakeAPI()
+                change(fake.deployments["worker"])
+                MODULE.api, MODULE.pods = fake, lambda: []
+                with self.assertRaisesRegex(RuntimeError, "unexpected"):
+                    MODULE.main()
+                self.assertEqual(fake.updates, [])
+
+    def test_multiple_matching_writer_pods_block_before_scale(self):
+        fake = FakeAPI()
+        MODULE.api, MODULE.pods = fake, lambda: [pod("api"), pod("api")]
+        with self.assertRaisesRegex(RuntimeError, "multiple API/worker Pods"):
+            MODULE.main()
+        self.assertEqual(fake.updates, [])
+
     def test_both_exact_writers_reach_zero_before_migration(self):
         fake = FakeAPI()
         MODULE.api = fake
