@@ -32,16 +32,18 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T01:12:45.818Z
 ---
 
 # Storage And State
@@ -297,7 +299,7 @@ database unready. No automatic replay or declared repair workflow exists yet.
 The backup script rejects incomplete recovery material and an already-published
 timestamp. Its isolated restore candidate is excluded from the Kustomization.
 No Enterprise PVC, database, off-node backup, or live restore proof exists from
-this unregistered source alone.
+this declared but unapplied Argo source alone.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to

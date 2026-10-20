@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1cf80d7659e4493db3465447469548a26670a7619b7bca2b1ba76e76b2374383",
+  "pageVersion": "sha256:c666df16000874185e94354efe3739a9bd826cbea9bd2e5745ba5a4223b45ecc",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -738,11 +738,15 @@
     },
     {
       "id": "claim_1ae7d021eb1540109148bb2d07fda36a",
-      "statement": "The signed stock OpenClaw Enterprise image pair is published separately from the unregistered foundation, which deploys neither image and does not release the Enterprise rollout.",
+      "statement": "The signed stock OpenClaw Enterprise image pair is published separately from the declared but unapplied foundation, which deploys neither image and does not release the Enterprise rollout.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
+          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -756,7 +760,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:94151af2191bb7e11132a2727f0d5a8ee265158bacf3afbb45e9e3e2b79e1c5e"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
@@ -823,6 +827,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:06:40.149Z"
+    "at": "2026-10-20T01:12:45.818Z"
   }
 }

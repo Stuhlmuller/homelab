@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2d515a142f627147674434297c3b3c937168d6a8896e1c1524d27dca0906c1d6",
+  "pageVersion": "sha256:36ec2dbf31dbcbd71707e55a55f0d373b12d74479d035386d92bff8db1eb8eb5",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -94,11 +94,15 @@
     },
     {
       "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
-      "statement": "The unregistered Enterprise foundation declares a retained PostgreSQL CA, TLS 1.3 PostgreSQL 18.6 StatefulSet with a retained 10Gi local claim template, role bootstrap, complete-recovery-material backup script, and isolated restore candidate; no Enterprise PVC, database, off-node backup, or live restore proof exists from this source alone.",
+      "statement": "The declared but unapplied Enterprise foundation has a retained PostgreSQL CA, TLS 1.3 PostgreSQL 18.6 StatefulSet with a retained 10Gi local claim template, role bootstrap, complete-recovery-material backup script, and isolated restore candidate; no Enterprise PVC, database, off-node backup, or live restore proof exists from this source alone.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
+          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
@@ -120,7 +124,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:94151af2191bb7e11132a2727f0d5a8ee265158bacf3afbb45e9e3e2b79e1c5e"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
@@ -149,6 +153,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:06:40.149Z"
+    "at": "2026-10-20T01:12:45.818Z"
   }
 }

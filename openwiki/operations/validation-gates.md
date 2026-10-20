@@ -72,6 +72,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
+  - id: openwiki-source-eadf0e51039eed966d58db54
+    resource: repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml
   - id: openwiki-source-2b75865bb7a2424915c916d3
     resource: repo://clusters/homelab/platform/dns/coredns-deployment.yaml
   - id: openwiki-source-8aef4e7455acf1892a6ac497
@@ -106,6 +108,10 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/openclaw-enterprise/stack.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -172,6 +178,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
+    resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
   - id: openwiki-source-86a40ee4669b4b7843917e87
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
@@ -250,10 +258,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T01:12:45.818Z
 ---
 
 # Validation Gates
@@ -1620,6 +1628,14 @@ namespace and policies before retrying. Rollback needs a reviewed cleanup path
 for the logical Namespace; retain the physical tenant Namespace. These local
 tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
 network-policy enforcement, hooks, routes, Namespace adoption or restore.
+The focused
+[`openclaw-enterprise-registration-test.py`](../../scripts/ci/openclaw-enterprise-registration-test.py)
+runs after stack generation and inspects both rendered Applications and the
+dedicated AppProject. It checks the pinned upstream chart and local values,
+restricted destinations/resources, ordered dependencies, disabled automatic
+sync/pruning/self-heal/retries, and absence of selective-sync options. This is
+source validation only; an authenticated Terragrunt plan, Application
+registration, and full-sync acceptance remain separate gates.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main

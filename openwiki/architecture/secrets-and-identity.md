@@ -70,6 +70,8 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -104,10 +106,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T01:12:45.818Z
 ---
 
 # Secrets And Identity
@@ -274,7 +276,7 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 ### Dormant OpenClaw Enterprise boundary
 
-The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+The declared but unapplied [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
 The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
@@ -293,8 +295,7 @@ StatefulSet snapshots the projected TLS pair before its image entrypoint
 starts PostgreSQL; renewal fails readiness and liveness until a restart loads
 the new pair. It bootstraps separate admin, migrator, app, and read-only backup
 roles. Password rotation needs a declared `ALTER ROLE` path; advancing an
-ExternalSecret alone does not rerun bootstrap SQL. The foundation is
-unregistered; scheduled backup, chart consumers, and live TLS verification
+ExternalSecret alone does not rerun bootstrap SQL. The foundation's Argo Application has not been applied; scheduled backup, chart consumers, and live TLS verification
 remain pending.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)

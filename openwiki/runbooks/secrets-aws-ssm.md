@@ -26,14 +26,16 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:06:40.149Z
+    at: 2026-10-20T01:12:45.818Z
 ---
 
 # AWS SSM Secret References
@@ -91,8 +93,8 @@ application and migration URLs from generated passwords; both require
 PostgreSQL `verify-full` TLS against the declared retained root CA. The admin
 and backup passwords remain in separate Secrets. Rotation needs a committed
 `generated-secret-revision` advance and consumer verification. The manifests
-are not registered with Argo, so source alone proves no SSM value, projected
-Secret, issued certificate, or running database.
+have a declared but unapplied Argo Application, so source alone proves no SSM
+value, projected Secret, issued certificate, or running database.
 
 The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
 contains non-secret startup configuration. It is separate from those distinct SSM

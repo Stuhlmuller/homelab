@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6da047c5bcbcb67de0b9d007a020975c92ab9c16a363950915774800effe3acb",
+  "pageVersion": "sha256:e8dc999e27dcc35683faf15025a7456a1da5addd2fa852d85353fda83698df8d",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -214,7 +214,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -344,7 +344,7 @@
     },
     {
       "id": "claim_49dae6fe73894d9cbe7749c26f7ef825",
-      "statement": "The Enterprise platform branch registers NetworkPolicy, canary, cleanup and Envoy Gateway Argo Applications with automatic sync disabled; kube-router selects no node, canary fixtures stay empty before admission, and no private route or firewall enforcement is accepted from registration alone.",
+      "statement": "The Enterprise platform source registers NetworkPolicy, canary, cleanup and Envoy Gateway Argo Applications with automatic sync disabled; kube-router selects no node, canary fixtures stay empty before admission, and no private route or firewall enforcement is accepted from registration alone.",
       "evidence": [
         {
           "resource": "repo://IaC/platform-envoy-gateway/stack.hcl",
@@ -356,11 +356,11 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
         },
         {
-          "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
-          "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:041820d8897cda37f448cb4f7ec5e3a55317f9ec1e90c7eff52efcc3691bce89"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -392,23 +392,19 @@
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted control-plane and tenant namespaces, tenant RoleBindings, eight retained OnChange SSM projections, system ingress denial, PostgreSQL certificates, and a PostgreSQL 18 StatefulSet with a retained local claim template; it has no registered or running database, bound storage, route, or Installation workload.",
+      "statement": "OpenClaw Enterprise's declared but unapplied foundation includes restricted control-plane and tenant namespaces, tenant RoleBindings, eight retained OnChange SSM projections, system ingress denial, PostgreSQL certificates, and a PostgreSQL 18 StatefulSet with a retained local claim template; it has no running database, bound storage, route, or Installation workload.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
-          "version": "repo-file-v1:sha256:13e2049fdb039f9b24df9c7d1c9aff6f9005fdf09adf981e95a8dfe1f88a4370"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
           "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
@@ -436,11 +432,15 @@
     },
     {
       "id": "claim_c0276db66dfe4a428c7de7fa5fb37afb",
-      "statement": "A dormant OpenClaw Enterprise stock-chart candidate now declares reviewed Installation startup bytes, immutable Secret contract, Helm values and lifecycle hooks, but has no Argo registration or running Enterprise workload; placeholder admin, absent placement labels and database/storage gates prevent activation.",
+      "statement": "The dormant OpenClaw Enterprise stock-chart candidate declares reviewed Installation startup bytes, immutable Secret contract, Helm values and lifecycle hooks, and a declared but unapplied Argo Application with automatic sync, pruning, self-heal, and retries disabled; placeholder admin, absent placement labels, and database/storage gates prevent activation.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:94151af2191bb7e11132a2727f0d5a8ee265158bacf3afbb45e9e3e2b79e1c5e"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -517,6 +517,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:06:40.149Z"
+    "at": "2026-10-20T01:12:45.818Z"
   }
 }

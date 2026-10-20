@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:047292da433d312ce5d7b8b48f4eb1befecd906006fca5418ac9f10765d1e2e9",
+  "pageVersion": "sha256:ea7caafa56b08577b4ddb0c8bfd9b8e6fc7144a8435156c15d1351aac9f4985d",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -138,11 +138,15 @@
     },
     {
       "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
-      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, PostgreSQL TLS and network-policy declarations. The Python helper owns exact-origin and model validation plus guarded logical-Namespace reconciliation; separate foundation, PostgreSQL 18, and reconciler fixtures run in CI.",
+      "statement": "The declared but unapplied Enterprise foundation owns dormant namespace, ExternalSecret, PostgreSQL TLS and network-policy declarations. The Python helper owns exact-origin and model validation plus guarded logical-Namespace reconciliation; separate foundation, PostgreSQL 18, and reconciler fixtures run in CI.",
       "evidence": [
         {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
+          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -190,17 +194,39 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:94151af2191bb7e11132a2727f0d5a8ee265158bacf3afbb45e9e3e2b79e1c5e"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
           "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         }
       ]
+    },
+    {
+      "id": "claim_a7ee34f44fbf42c882198845b76418e7",
+      "statement": "The two Enterprise Terragrunt units and dedicated AppProject declare disabled-auto-sync registration with scoped source and destination ownership; a focused registration fixture checks their rendered source contract before any live apply.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
+          "version": "repo-file-v1:sha256:207beafeb472afa0248153c28eba7b6f0ad55b6e5231df3de26ae2d996399d0b"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
+          "version": "repo-file-v1:sha256:67c41d289779f72fb596ae9a9eb16c590b672b2e1b9eb2c3f0a78dfa6125d186"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:06:40.149Z"
+    "at": "2026-10-20T01:12:45.818Z"
   }
 }
