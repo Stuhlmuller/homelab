@@ -6,6 +6,31 @@ test_allows_exact_openclaw_startup if {
 	approved_openclaw_startup with input as openclaw_startup_fixture
 }
 
+test_rejects_reusable_openclaw_startup if {
+	events := object.union(openclaw_startup_fixture["true"], {"workflow_call": {}})
+	candidate := object.union(openclaw_startup_fixture, {"true": events})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "OpenClaw Enterprise startup requires exact-main protected create")
+}
+
+test_rejects_openclaw_startup_run_overrides if {
+	every candidate in [
+		object.union(openclaw_startup_fixture, {"defaults": {"run": {"shell": "python"}}}),
+		object.union(openclaw_startup_fixture, {"env": object.union(openclaw_startup_fixture.env, {"BASH_ENV": "unreviewed"})}),
+		with_job_run_defaults(openclaw_startup_fixture, "startup"),
+		with_job_run_env(openclaw_startup_fixture, "startup", {"BASH_ENV": "unreviewed"}),
+		with_step_run_setting(openclaw_startup_fixture, "startup", 3, {"shell": "python"}),
+		with_step_run_setting(openclaw_startup_fixture, "startup", 3, {"working-directory": "unreviewed"}),
+		with_step_run_env(openclaw_startup_fixture, "static-policy", 3, {"ENV": "unreviewed"}),
+		with_step_run_env(openclaw_startup_fixture, "startup", 3, {"BASH_ENV": "unreviewed"}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "OpenClaw Enterprise startup requires exact-main protected create")
+	}
+}
+
 test_rejects_changed_openclaw_startup if {
 	job := openclaw_startup_fixture.jobs.startup
 	every candidate in [
@@ -21,6 +46,7 @@ openclaw_startup_fixture := {
 	"name": "OpenClaw Enterprise Startup Candidate",
 	"permissions": {},
 	"concurrency": {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false},
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {"expected_sha": {"required": true}}}},
 	"jobs": {
 		"static-policy": {"permissions": {"contents": "read"}, "steps": [
@@ -47,6 +73,14 @@ openclaw_startup_fixture := {
 test_allows_protected_platform_maintenance if {
 	violations := deny with input as platform_maintenance_fixture
 	count(violations) == 0
+}
+
+test_rejects_reusable_platform_maintenance if {
+	events := object.union(platform_maintenance_fixture["true"], {"workflow_call": {}})
+	candidate := object.union(platform_maintenance_fixture, {"true": events})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform maintenance requires exact protected stages")
 }
 
 test_rejects_changed_platform_maintenance if {
@@ -203,6 +237,38 @@ test_allows_exact_openclaw_legacy_operation if {
 	count(violations) == 0
 }
 
+test_rejects_reusable_openclaw_operations if {
+	workflow := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	events := object.union(workflow["true"], {"workflow_call": {}})
+	candidate := object.union(workflow, {"true": events})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "OpenClaw Enterprise operations require exact protected stages")
+}
+
+test_rejects_openclaw_operations_run_overrides if {
+	workflow := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	every candidate in [
+		object.union(workflow, {"defaults": {"run": {"shell": "python"}}}),
+		object.union(workflow, {"env": object.union(workflow.env, {"BASH_ENV": "unreviewed"})}),
+		with_job_run_defaults(workflow, "legacy"),
+		with_job_run_defaults(workflow, "enterprise-sync"),
+		with_job_run_env(workflow, "legacy", {"BASH_ENV": "unreviewed"}),
+		with_job_run_env(workflow, "enterprise-sync", {"ENV": "unreviewed"}),
+		with_step_run_setting(workflow, "legacy", 1, {"shell": "python"}),
+		with_step_run_setting(workflow, "enterprise-sync", 3, {"shell": "python"}),
+		with_step_run_setting(workflow, "enterprise-sync", 3, {"working-directory": "unreviewed"}),
+		with_step_run_env(workflow, "static-policy", 0, {"BASH_ENV": "unreviewed"}),
+		with_step_run_env(workflow, "legacy", 1, {"BASH_ENV": "unreviewed"}),
+		with_step_run_env(workflow, "legacy", 1, {"UNREVIEWED": "value"}),
+		with_step_run_env(workflow, "enterprise-sync", 3, {"ENV": "unreviewed"}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "OpenClaw Enterprise operations require exact protected stages")
+	}
+}
+
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
@@ -284,7 +350,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
 		"steps": [{"name": "Configure AWS Credentials", "with": {"role-duration-seconds": 25200}}, {
 			"name": "Run Legacy Stage",
-			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+				"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,
 		}],
 		},
@@ -1130,4 +1196,31 @@ test_encrypted_oce_image_artifact_exception_is_exact if {
 	forged := object.union(base, {"jobs": {"publish": forged_job}})
 	forged_denials := deny with input as forged
 	count(forged_denials) > 0
+}
+
+with_job_run_defaults(workflow, job_name) := candidate if {
+	job := object.union(workflow.jobs[job_name], {"defaults": {"run": {"shell": "python"}}})
+	candidate := object.union(workflow, {"jobs": object.union(workflow.jobs, {job_name: job})})
+}
+
+with_job_run_env(workflow, job_name, env) := candidate if {
+	job := object.union(workflow.jobs[job_name], {"env": env})
+	candidate := object.union(workflow, {"jobs": object.union(workflow.jobs, {job_name: job})})
+}
+
+with_step_run_env(workflow, job_name, index, env) := candidate if {
+	step := workflow.jobs[job_name].steps[index]
+	merged_env := object.union(object.get(step, "env", {}), env)
+	candidate := with_step_run_setting(workflow, job_name, index, {"env": merged_env})
+}
+
+with_step_run_setting(workflow, job_name, index, setting) := candidate if {
+	steps := workflow.jobs[job_name].steps
+	changed := object.union(steps[index], setting)
+	updated := array.concat(
+		array.concat(array.slice(steps, 0, index), [changed]),
+		array.slice(steps, index + 1, count(steps)),
+	)
+	job := object.union(workflow.jobs[job_name], {"steps": updated})
+	candidate := object.union(workflow, {"jobs": object.union(workflow.jobs, {job_name: job})})
 }
