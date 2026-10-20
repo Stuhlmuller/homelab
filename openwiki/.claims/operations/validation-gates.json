@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:82b9d0c991df59417cdc16262d3898660b3d20fb1d87fd98907a591fafb535da",
+  "pageVersion": "sha256:cb0cefe396e104b2ae083046f67abb56d040b31068973dca0e7f028ef961a8d1",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -713,12 +713,12 @@
       "statement": "The repository's local validation entry point is `nix run .#validate`; the flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
       "evidence": [
         {
-          "resource": "repo://README.md",
-          "version": "repo-file-v1:sha256:1375e6160581b192c6c6088127cd32235c5b98bd2d16d086c814f4d75e15f8be"
+          "resource": "repo://README.md#L66-L90",
+          "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
         },
         {
-          "resource": "repo://flake.nix",
-          "version": "repo-file-v1:sha256:7bb0abb6937d54ed614a86b67524b15d9946574c49b4b9b94cee8c70d1c7d5c5"
+          "resource": "repo://flake.nix#L69-L88",
+          "version": "repo-lines-v1:sha256:c33ceed0c9d6c077ed17f180004125715d874e338bc787ca7303c7dec4451527:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlZWEyNzA1MDE5NGM2NmQ3ODVjNmMwMjgyMjhhMmEyZWI4ODVhZDdlMzA5MzY4YmFkODZjOTRmZGQ5ZjMwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0ZmZkYzdhN2M3Mzg5OWE2NWUyMDY2NjE1ODQ3OGY0ZjQ1OTFiN2I5OGNiMjY5NWIyZjc3N2M2MTBlOGUzNDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNiNWZmNzYzMDYwYTQ3MDgxMzQ5NTM0ZjE5MmY3YjBmMzczY2NlODkwNWNkMDQzZmNlNGIyNGFjZTExYWU5ZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMTcyYmYxZWI3ODE0ZTFmOTE2YWUwYzQyMTQ5MzZmNWJmNzcwOTViYjUyMGMwYzMzN2U5NTJjMGM5YmRmMzEifQ"
         }
       ]
     },
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -906,7 +906,7 @@
     },
     {
       "id": "claim_0cdab53ba21a4cc28472291e3459e80f",
-      "statement": "The dormant Enterprise foundation is rendered in static validation for restricted namespaces, tenant RoleBindings, exact OnChange SSM projections, PostgreSQL certificate shape, ingress denial and disabled activation. A separate PostgreSQL fixture checks role isolation, interrupted bootstrap, complete backup input and isolated restore, but neither gate proves live readiness or restore.",
+      "statement": "Static validation renders the dormant Enterprise foundation for restricted namespaces, tenant RoleBindings, exact OnChange SSM projections, PostgreSQL certificate shape, ingress denial and disabled activation; a separate PostgreSQL 18.6 fixture tests pinned upstream migration grants, TLS, backup, interrupted bootstrap and isolated restore. These fixtures do not prove live readiness or recovery.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -1122,7 +1122,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -1139,7 +1139,7 @@
           "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L180-L268",
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L200-L288",
           "version": "repo-lines-v1:sha256:2c2e93861c3fdba4894a9e725ba19fc1560e0ba33cdf9467674691304847f681:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjN2U1NDg5YzUwNWQ2MmI3NGUwYzRhZWFlNzY3NDllZGM3OTljNWYyNTEyMTRjYmQ3MGZhNzMwNGYzYjk1YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZDYzNmIxMTdjNjBmNTBmMTI2ZDVlMDA4MmY4MDNjMDQxNWZiMWM0OTYwMjE5NmM5Mzc3YTRiMDNlZGNmZDUifQ"
         },
         {
@@ -1162,7 +1162,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
+          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1262,7 +1262,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+          "version": "repo-file-v1:sha256:d420077d887073b05546bd4cfcca2ff7d7f2ee75b7a04698a9d01ed28388a854"
         }
       ]
     },
@@ -1318,19 +1318,23 @@
     },
     {
       "id": "claim_d2bb7c4027b140ae90c7db26e4b9c3c5",
-      "statement": "A read-only fixture binds complete expected NetworkPolicy specs for three pinned Cordium v0.12.7 Genesis policies, leaving 14 Cordium/Octelium generated policies without source-bound fixtures; it does not prove pinned binary rendering or live enforcement.",
+      "statement": "Read-only fixtures bind complete expected NetworkPolicy specs for three pinned Cordium v0.12.7 and four pinned Octelium v0.35.0 Genesis policies, leaving ten Octelium Enterprise generated policies without source-bound fixtures; they do not prove pinned binary rendering or live enforcement.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
           "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
         },
         {
+          "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7"
+        },
+        {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
         },
         {
           "resource": "repo://scripts/ci/network-policy-inventory-test.py",
-          "version": "repo-file-v1:sha256:3b92bf94f576551cdd1d1242ca4d4a461c89e2606c68c8df30f2eda1b558fda1"
+          "version": "repo-file-v1:sha256:c6ef44758bac4fc6f0d69fc94fd27e8a21a5c1925ac752b2dbb059adb09acc6c"
         }
       ]
     },
@@ -1340,11 +1344,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+          "version": "repo-file-v1:sha256:b1085b82b22842d8a1b8b0e5b9d5f0f65beca1d1bfc81a4aa3c801127e551b1c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
+          "version": "repo-file-v1:sha256:707f26f78f58988d7d8334cffc85d8e0295fc146bdb61358bea2764384cefad1"
         }
       ]
     },
@@ -1373,6 +1377,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T07:15:02.535Z"
+    "at": "2026-10-20T07:33:02.341Z"
   }
 }

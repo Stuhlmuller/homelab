@@ -140,6 +140,9 @@ For Cordium and Octelium snapshots, repeat `--render` with
 `clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json` to
 compare the three source-reviewed Cordium Genesis policies with live specs.
 The fixture is not a Kustomize resource and does not approve their traffic.
+Also pass `clusters/homelab/apps/octelium/generated-networkpolicies.json`
+as another `--render` input for the four source-reviewed Octelium Genesis
+policies. It does not approve `svc-upstream` public all-port egress.
 
 Stock OCE's public TCP/443 rule intentionally fails the stricter broad-egress
 finding in this helper. Preserve that finding and the helper's strict behavior;

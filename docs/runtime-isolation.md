@@ -171,8 +171,15 @@ recheck and the constructors in pinned [Cordium v0.12.7](https://github.com/octe
 Pass this fixture as an additional `--render` input when auditing Cordium and
 Octelium; it is not applied by Kustomize. `ws-main` still allows every port to
 public IPv4/IPv6 ranges after private-range exclusions, so its strict broad
-egress finding and canary traffic review remain open. The other 14 generated
-policies also need source binding before enforcement.
+egress finding and canary traffic review remain open.
+
+Four Octelium Genesis policies have a separate [v0.35.0 expected-spec fixture](../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+based on the pinned [constructors](https://github.com/octelium/octelium/tree/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components).
+Their complete specs matched a fresh read-only live check on October 20.
+Pass that fixture as another `--render` input; it is not a deployed owner.
+`octelium/svc-upstream` still allows all ports to public IPv4/IPv6 ranges,
+so source binding does not qualify its traffic. Ten Octelium Enterprise
+Genesis policies still lack bound fixtures.
 
 The source policies now limit cloudflared's private egress to the two routed
 Istio gateways and Octelium ingress dataplane, Harbor metrics ingress to the

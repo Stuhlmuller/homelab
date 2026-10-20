@@ -60,6 +60,8 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-f8f5d3b6cb788d6762c27993
+    resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -280,10 +282,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
+generated: { by: "codex", at: "2026-10-20T07:33:02.341Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T07:15:02.535Z
+    at: 2026-10-20T07:33:02.341Z
 ---
 
 # Validation Gates
@@ -611,11 +613,12 @@ between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 an empty `egress` field alone does not add Egress.
 
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
-binds the complete source shapes of `cordium/ws-main`,
-`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` to pinned
-`v0.12.7` constructors. Inventory tests compare these three full specs; 14
-other Cordium/Octelium generated policies still lack bound fixtures. This is
-source review, not a pinned generator-binary render or live traffic result.
+binds three complete policy shapes to pinned `v0.12.7` constructors. The
+[Octelium fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+adds four policies from pinned `v0.35.0` constructors. Inventory tests compare
+all seven full specs; ten Octelium Enterprise generated policies still lack
+bound fixtures. This is source review, not a pinned generator-binary render
+or live traffic result.
 The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
 IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
 generator needs a reviewed correction and an isolated canary must qualify
@@ -1668,10 +1671,13 @@ The dormant foundation adds
 to `static-checks.sh`. It renders the Kustomization and checks restricted
 namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
 RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
-private server SAN, and `activationEnabled: false`. The same static gate runs a
-separate PostgreSQL fixture for role isolation, first-run readiness, the
-complete backup set, and the excluded restore drill. These tests do not bind
-the local claim or prove a live database restore. The separate
+private server SAN, and `activationEnabled: false`. The separate
+[`openclaw-enterprise-postgres-test.py`](../../scripts/ci/openclaw-enterprise-postgres-test.py)
+starts disposable PostgreSQL 18.6, runs pinned upstream migration 0008 as
+`occ_migrator`, and proves `occ_app` can use its auth table without gaining
+schema creation or unrelated table access. It checks TLS, backup roles, dump,
+interrupted bootstrap, and isolated restore; this is source and fixture proof,
+not a bound claim or live recovery receipt. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
 fixtures exercise reconciliation and workload attestation. Config validation

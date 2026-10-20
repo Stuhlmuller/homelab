@@ -20,6 +20,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-f8f5d3b6cb788d6762c27993
+    resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
@@ -40,10 +42,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
+generated: { by: "codex", at: "2026-10-20T07:12:19.109Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:54:44.714Z
+    at: 2026-10-20T07:12:19.109Z
 ---
 
 # Runtime Isolation
@@ -118,14 +120,14 @@ inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned.
 All 49 Argo-owned specs matched their rendered repository sources; this is
 source convergence, not traffic or enforcement qualification.
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
-binds complete source-reviewed shapes for `cordium/ws-main`,
-`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` to pinned
-`v0.12.7` constructors. Fourteen generated policies still lack source-bound
-fixtures, and a pinned generator-binary render remains unverified. The pinned
-`ws-main` and `svc-upstream` constructors admit all ports to public IPv4 and
-IPv6; additive NetworkPolicies cannot narrow those allows. Correct the
-generators and qualify required traffic on an isolated canary before any
-enforcement.
+binds three complete policy shapes to pinned `v0.12.7` constructors. The
+[Octelium expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+binds four more to pinned `v0.35.0` constructors. Ten Octelium Enterprise
+generated policies still lack source-bound fixtures, and pinned generator-binary
+renders remain unverified. The pinned `ws-main` and `svc-upstream` constructors
+admit all ports to public IPv4 and IPv6; additive NetworkPolicies cannot narrow
+those allows. Correct the generators and qualify required traffic on an isolated
+canary before any enforcement.
 
 Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
