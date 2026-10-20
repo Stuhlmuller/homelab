@@ -32,10 +32,10 @@ have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
 snapshot. It must also list every permitted system DaemonSet Pod under
 `systemDaemonSetPods` as exact `{namespace, name, uid}` identities; an empty
 list is valid only when the node has no assigned Pods. Only `kube-system`
-(including Flannel and Multus) and `istio-system` (only the `ztunnel`
-DaemonSet) are eligible. The guard checks namespace, DaemonSet controller
-ownership, and exact reviewed Pod UID; it cannot identify arbitrary
-`kube-system` applications, so review each listed identity. The stage rejects
+(including Flannel and Multus) and `istio-system` (only the `ztunnel` and
+`istio-cni-node` DaemonSets) are eligible. The guard checks namespace,
+DaemonSet controller ownership, and exact reviewed Pod UID; it cannot identify
+arbitrary `kube-system` applications, so review each listed identity. The stage rejects
 existing enforcer/cleanup DaemonSets and fixture namespace, adds the dedicated
 taint, then checks the live assigned Pod list before adding the selector label.
 It requires a complete cluster-wide Node label inventory with no other canary
