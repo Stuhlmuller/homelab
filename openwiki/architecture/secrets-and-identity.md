@@ -107,7 +107,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:08:27.886Z
+    at: 2026-10-20T03:36:01.758Z
 ---
 
 # Secrets And Identity
@@ -236,10 +236,10 @@ every five minutes. Current IAM source removes the temporary exact-scope
 companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, the operator applied the private, un-targeted saved plan with only the
 role and inline-policy deletions. A read-only IAM lookup returned
-`NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
-is running in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
-finished all eight eligible repositories and logged the same public release
-cache-key hit on separate Pods; the protected companion canary published
+`NoSuchEntity`, and a fresh full-unit plan had no changes. The CronJob is now
+scheduled hourly in UTC and remains in full dry-run mode. Its earlier
+19:00 and 20:00 UTC Jobs each finished all eight eligible repositories and
+logged the same public release cache-key hit on separate Pods; the protected companion canary published
 `v0.0.2` at 20:20 UTC. Normal refresh, fault recovery, full parity, and writer
 cutover remain open. The legacy GitHub Action remains the only writer. The App
 lacks repository Administration read, a recorded migration exception whose

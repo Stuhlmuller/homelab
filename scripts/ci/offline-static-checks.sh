@@ -1004,7 +1004,7 @@ done <<'EOF'
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
-.github/workflows/octelium-private-kubernetes-apply.yml 5bccd9e772bb094397f69697a4153c754513e3c0dbb392c231b2f57dc748e5e1
+.github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
@@ -1313,6 +1313,7 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
       contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
     ($catalog_steps | length) == 1 and
     $catalog_steps[0].env == {
+      "GH_TOKEN": "${{ github.token }}",
       "OCTELIUM_CATALOG_AUTH_TOKEN": "${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}"
     } and
     ($catalog_steps[0].run |
@@ -1330,7 +1331,7 @@ bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "f91c07dbf100ff0ea84837c4968f632939696eaccbe235a3380cacfcebb11a50" ]] || {
+  "84a474308c9086265b8c5769d9bad552f2d14ef84f821456ca5a6281459fa24c" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }

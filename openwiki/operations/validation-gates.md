@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-70a103e770a716ccc6d4024b
+    resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
@@ -158,6 +160,10 @@ sources:
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -251,7 +257,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T01:08:27.886Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:08:27.886Z
+    at: 2026-10-20T03:49:43.338Z
 ---
 
 # Validation Gates
@@ -1021,11 +1027,13 @@ in-progress apply. Main-only diagnostics use the same production environment.
 
 The focused Octelium private Kubernetes workflow has the same exact-`main`,
 current-head, production-branch, serialized-run, private-log, static, and
-Conftest gates. Its fixed helper extracts exactly
-`Policy/homelab-private-kubernetes-access` and
-`Service/kubernetes-api.homelab`, never prunes, and requires a second apply to
-report no changes. The lifecycle helper installs cleanup before creating its
-30-minute, one-authentication Credential, binds its watch to the unique run it
+Conftest gates. Its fixed helper selects exactly three private Kubernetes/Talos
+Policies and three Services, and never prunes. It checks current `main` before
+each of the two catalog writes, stopping the next write if lookup fails or
+`main` advances. The second apply must report no changes; offline fixtures
+cover both stale-SHA points and lookup failure. The lifecycle helper installs
+cleanup before creating its 30-minute, one-authentication Credential, binds its
+watch to the unique run it
 dispatches, and verifies Credential, Session, and GitHub-secret revocation on
 exit. See `docs/ci-cd.md`.
 

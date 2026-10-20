@@ -34,6 +34,10 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -42,10 +46,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-19T21:54:24.498Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T22:21:44.110Z
+    at: 2026-10-20T03:43:08.437Z
 ---
 
 # CI/CD
@@ -57,6 +61,12 @@ to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
+
+The separate Octelium Private Kubernetes Apply dispatch verifies the selected
+`main` commit before the protected job. Its fixed helper rechecks current `main`
+immediately before each of two catalog writes; a failed lookup or newer commit
+stops the next write. The second write must report no changes. These source
+guards have not been exercised by a live dispatch in this update.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
