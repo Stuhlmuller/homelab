@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fac1dbf6d5db272e63e7fb3a66b7863c8cf53ae962a30ee34df9548d45e3c13b",
+  "pageVersion": "sha256:236a194943992cd4e966f3648cdd99439d3ff50b6ef1547ab3a81bc793709064",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         }
       ]
     },
@@ -56,7 +56,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+          "version": "repo-file-v1:sha256:8ea16fbde91ff32aa825ad7abcf4467b88718d4a90e70f92bbf0ad333aea84b8"
         },
         {
           "resource": "repo://.github/workflows/lint.yml",
@@ -64,11 +64,11 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
+          "version": "repo-file-v1:sha256:e69601fcdb89056ab21e33c811e26903fc7f47cf6f48fb3c8d0b26363675440b"
         }
       ]
     },
@@ -156,7 +156,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
+          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
@@ -181,10 +181,24 @@
           "version": "repo-file-v1:sha256:2a9e5922387211a72f2caff4226ea5b1580890de82a92dc44baa4fff12bbd29e"
         }
       ]
+    },
+    {
+      "id": "claim_3dfaeab94e2a4085a3dade66f1e23c4c",
+      "statement": "The native Chainguard receipt provenance workflow is the narrowly permitted trusted-base pull_request_target status writer: it targets the event PR and rechecks on main pushes only exact-revision native receipt differences, including unreadable state. The manifest policy locks its workflow shape and run body.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml#L1-L101",
+          "version": "repo-lines-v1:sha256:8ea16fbde91ff32aa825ad7abcf4467b88718d4a90e70f92bbf0ad333aea84b8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyMjdlNzlmOWU3OGQxMTk3OGQ3MWJmMmJiODFhZjQwZTc3YzE5NjE0YmY1MGYyZDY2NDA4ZGVhYmE4ODIwZWQ5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkMDY3NDdhNTE3MWRkMDhjMDM3OWM3YmVhM2RmMGIyM2VjNTY0YWRkODk2NzE5ODA3MmNhNWY2MmYxZDVhZTFlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://policy/workflows.rego#L354-L447",
+          "version": "repo-lines-v1:sha256:78af7914a1a60f97ea5de22b2e00e11c95fdb15bf1425596ebdd1bee5810b45f:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:58:28.951Z"
+    "at": "2026-10-20T06:30:04.855Z"
   }
 }

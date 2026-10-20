@@ -38,6 +38,8 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-a176afce8833edc1068e3844
     resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
   - id: openwiki-source-2b445535596913b662665f3c
@@ -54,10 +56,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T05:34:43.418Z" }
+generated: { by: "codex", at: "2026-10-20T06:26:06.304Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:28.951Z
+    at: 2026-10-20T06:30:04.855Z
 ---
 
 # CI/CD
@@ -95,7 +97,10 @@ Policy Bot automatically approves PRs through `requires.count: 0` in
 The pull-request `Lint` job reports its own conclusion without commit-status
 write permission. The static gate rejects that permission in any PR workflow;
 the trusted-base native Chainguard receipt workflow alone sets its provenance
-status after checking the current main and PR head.
+status after checking the current main and PR head. Its tightly pinned
+`pull_request_target` exception checks only the event PR; on `main` pushes it
+rechecks heads with changed native receipt entries between exact revisions,
+including unreadable state, while unrelated heads keep their prior status.
 Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.

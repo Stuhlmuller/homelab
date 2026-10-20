@@ -344,7 +344,11 @@ indexes into local OCI layouts, then compares their root bytes and required
 platform descriptors. Exact child scan queries request Harbor's vulnerability
 report type before accepting complete zero-count scans. Pull-request lint lacks
 commit-status write permission; the trusted base provenance workflow owns its
-receipt status. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
+receipt status. It checks the event PR, then rechecks on `main` pushes only
+when exact base/head native receipt entries differ. Unreadable state or a
+missing receipt map is included and fails closed. Unrelated open PR heads keep
+their earlier status, avoiding repeated writes to GitHub's per-head/context
+status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.

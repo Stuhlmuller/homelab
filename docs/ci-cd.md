@@ -85,8 +85,9 @@ Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache
 Static jobs verify cache signatures or build on a miss; live plans and cluster
 checks remain fresh.
 
-- Workflows use `pull_request` and `push`; they do not use
-  `pull_request_target`.
+- Workflows use `pull_request` and `push`, except the exact trusted-base native
+  Chainguard receipt provenance workflow. Its pinned `pull_request_target`
+  path reads PR state as bounded API data and owns only its receipt status.
 - The lint workflow is a lightweight changed-file gate that preserves the
   required `Lint` status context without replacing the repository's stricter
   static and Terragrunt gates. It runs the upstream Super-Linter action with
