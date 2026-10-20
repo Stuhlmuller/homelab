@@ -190,6 +190,24 @@ CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
 
+For per-repository failures, correlate restricted `ERROR`/`FATAL` records and
+their repository tags with the final repository summaries. Pinned Renovate can
+log `Repository finished` with `done`/`exitCode 0` after a datasource lookup
+error, then exit the overall Job nonzero for retained error records. Do not
+treat a final per-repository processing summary alone as an error-free scan.
+
+The protected missed-slot drill produced no 03:00 UTC Job, and
+`RenovateHourlyCycleMissing` fired at 03:20:47 UTC. The reviewed recovery
+restored hourly desired state at 03:35:11 UTC. The unsuspended CronJob created
+Job `renovate-29874480` at 04:00:00 UTC; a read-only Prometheus check at
+04:00:38 UTC found the missed-cycle rule inactive with no `ALERTS` series.
+That Job succeeded at 04:20:23 UTC using Pod UID
+`dd063320-8d27-493e-8c62-104aadbb6140`: eight repository starts and
+finishes, 124 dry-run markers, one exact public canary cache hit, and zero
+error headers, lookup errors, or mutex timeouts. Argo CD was Synced/Healthy
+at main `90fc7761618c43a9f120130d584dd7ae4eea0da5`. T045 is complete;
+cache-fault recovery under T024/T042 remains open.
+
 A temporary acceptance observer is planned but not yet declared. Once added,
 keep it suspended until its private sample is fixed before the seven-day
 window. It must poll upstream without the Renovate cache or GitHub writes;
