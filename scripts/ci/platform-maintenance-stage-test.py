@@ -259,7 +259,7 @@ aws() {
                         workflow.index("Configure AWS Credentials"))
         maintenance_checkout = workflow.split("  maintenance:\n", 1)[1].split(
             "      - name: Check Out Repository\n", 1)[1].split("      - name: Install Nix\n", 1)[0]
-        self.assertIn("fetch-depth: 3", maintenance_checkout)
+        self.assertIn("fetch-depth: 0", maintenance_checkout)
 
 
 if __name__ == "__main__":

@@ -149,7 +149,7 @@ class CanaryNodeTests(unittest.TestCase):
                     action="release", config=ROOT / "scripts/config/platform-maintenance.json",
                     expected_sha=SHA, receipt_dir=Path("/unused"), output=Path("/unused")))
 
-    def test_release_accepts_only_exact_qualify_fixture_firewall_chain(self):
+    def test_release_accepts_invariant_history_with_fresh_receipts(self):
         manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
         application = "IaC/platform-network-policy/stack.hcl"
         canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
@@ -160,6 +160,22 @@ class CanaryNodeTests(unittest.TestCase):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((ROOT / name).read_bytes())
+            dormant = "        enabled = false\n        prune   = false\n"
+            active = "        enabled = true\n        prune   = true\n"
+            empty_active = ("        enabled    = true\n        prune      = true\n"
+                            "        allowEmpty = true\n")
+            for name, variants in ((application, (dormant, active, empty_active)),
+                                   (canary_application, (dormant, active, empty_active))):
+                target = root / name
+                source = target.read_text()
+                matches = [variant for variant in variants if source.count(variant) == 1]
+                self.assertEqual(len(matches), 1, f"unreviewed source state: {name}")
+                target.write_text(source.replace(matches[0], dormant))
+            (root / manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources:\n  - daemonset.yaml\n")
+            (root / canary_manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
 
             def git(*args):
                 return subprocess.run(["git", *args], cwd=root, check=True,
@@ -175,6 +191,8 @@ class CanaryNodeTests(unittest.TestCase):
             (root / canary_manifest).write_text(
                 "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
                 "resources:\n  - fixtures.yaml\n")
+            source = (root / application).read_text()
+            (root / application).write_text(source.replace(dormant, active))
             source = (root / canary_application).read_text()
             (root / canary_application).write_text(source.replace(
                 "        enabled = false\n        prune   = false\n",
@@ -194,7 +212,7 @@ class CanaryNodeTests(unittest.TestCase):
                 "resources: []\n")
             source = (root / application).read_text()
             (root / application).write_text(source.replace(
-                "        enabled = false\n        prune   = false\n",
+                "        enabled = true\n        prune   = true\n",
                 "        enabled    = true\n        prune      = true\n"
                 "        allowEmpty = true\n"))
             removal_sha = commit("pruned firewall")
@@ -209,10 +227,12 @@ class CanaryNodeTests(unittest.TestCase):
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
                     "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-qm", "unrelated")
                 stale_sha = git("rev-parse", "HEAD")
-                with self.assertRaisesRegex(ValueError, "two direct commits"):
-                    SUT["validate_cleanup"](verified_cleanup | {"sourceSha": stale_sha},
-                                            verified_ownership | {"sourceSha": stale_sha},
+                with self.assertRaisesRegex(ValueError, "reviewed firewall ownership receipt"):
+                    SUT["validate_cleanup"](verified_cleanup, verified_ownership,
                                             evidence, CONFIG, stale_sha)
+                SUT["validate_cleanup"](verified_cleanup | {"sourceSha": stale_sha},
+                                        verified_ownership | {"sourceSha": stale_sha},
+                                        evidence, CONFIG, stale_sha)
                 git("reset", "--hard", qualify_sha)
                 (root / canary_manifest).write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
@@ -229,7 +249,7 @@ class CanaryNodeTests(unittest.TestCase):
                     "resources: []\n")
                 source = (root / application).read_text()
                 (root / application).write_text(source.replace(
-                    "        enabled = false\n        prune   = false\n",
+                    "        enabled = true\n        prune   = true\n",
                     "        enabled    = true\n        prune      = true\n"
                     "        allowEmpty = true\n"))
                 drift_sha = commit("firewall prune after source drift")

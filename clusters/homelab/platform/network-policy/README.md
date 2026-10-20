@@ -47,15 +47,17 @@ taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.
 
 After a tainted node passes capacity admission and the fixture image is mirrored,
-merge a reviewed change that lists `fixtures.yaml` in `canary/kustomization.yaml`
-and sets `IaC/platform-network-policy-canary/stack.hcl` automated
-`enabled = true` and `prune = true`. Dispatch the protected Terragrunt Apply
-workflow on the exact current `main` SHA with
-`argocd_app=platform-network-policy-canary`; it applies the reviewed Application
-through a saved, policy-checked plan. Argo CD then syncs the fixtures. Verify
-the Application is Synced/Healthy and the three Pods are Ready on the admitted
-node before dispatching the read-only `qualify` stage. An unrelated merge that
-stales the dispatch requires a retry against current `main`.
+merge one reviewed change that enables automated sync and pruning in both
+`IaC/platform-network-policy/stack.hcl` and
+`IaC/platform-network-policy-canary/stack.hcl`, and lists `fixtures.yaml` in
+`canary/kustomization.yaml`. Dispatch the protected Terragrunt Apply workflow
+on the exact current `main` SHA for `argocd_app=platform-network-policy` first;
+verify its DaemonSet is Ready on the admitted node. Then dispatch it for
+`argocd_app=platform-network-policy-canary`. Argo CD syncs the fixtures. Verify
+both Applications are Synced/Healthy and the three fixture Pods are Ready on
+the admitted node before dispatching the read-only `qualify` stage. An
+unrelated merge that stales either dispatch requires a retry against current
+`main`.
 
 To remove the fixtures, first merge a reviewed change restoring `resources: []`
 while leaving automatic sync and pruning enabled and setting `allowEmpty = true`.
@@ -68,6 +70,10 @@ not remove the node taint or firewall while any fixture remains. This GitOps
 sequence uses Argo CD ownership; `qualify` never creates or removes Kubernetes
 resources. T019/T027 still require an admitted isolated canary and live
 lifecycle evidence.
+The static registration gate accepts only the five exact source phases in this
+sequence. It does not authorize a live stage: the protected stage still
+requires exact-current-`main`, private qualification and ownership receipts,
+and live resource and Node identity checks.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC. It probes the
@@ -91,14 +97,21 @@ source through Argo CD. The protected `owned-cleanup` stage requires a private
 before enforcement, plus a separately reviewed `firewall-ownership.json`
 pinning the full current firewall snapshot to the same node UID and boot ID.
 The protected Platform Maintenance workflow has separate `ownership-capture`
-and `ownership-approve` stages. After a successful `qualify` run, merge exactly
-two reviewed GitOps commits without intervening commits. The first
+and `ownership-approve` stages. After a successful `qualify` run, merge two
+dedicated reviewed GitOps commits in order. Unrelated `main` commits may land
+before, between, or after them; the protected stage checks complete first-parent
+history and rejects every intervening source change except Markdown under
+`docs/`, JSON under `docs/evidence/`, OpenWiki, specs, and named root prose
+files. This fail-closed allowlist keeps runtime manifests, the private receipt
+bucket, hidden Argo inputs, and validation configuration fixed while allowing
+documentation and inventory evidence merges. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
 `allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
 verify the fixture namespace is absent. The second changes only
 `kustomization.yaml` here from the enforcer DaemonSet to `resources: []` and
-`IaC/platform-network-policy/stack.hcl` from disabled sync to automated sync
-with pruning and `allowEmpty`. Apply it and verify the enforcer is gone.
+adds `allowEmpty = true` to the already automated
+`IaC/platform-network-policy/stack.hcl`. Apply it and verify the enforcer is
+gone.
 Each commit may also include native updates to the affected OpenWiki pages,
 Claims, and run metadata; no other source changes are accepted.
 Quiesce tenants and sync the cleanup Pod. Capture, approval, cleanup, and
@@ -162,7 +175,8 @@ absent, dispatch protected `canary-release` on the same current `main` SHA with
 `cleanup_run_id` set to the verified cleanup run. Release reads that immutable
 cleanup receipt, its reviewed ownership receipt, and the original placement
 at the qualify SHA. It accepts that placement only when the two exact GitOps
-prune commits still lead to the current `main` SHA and the cleanup snapshot,
+prune commits still lead through operational-source-invariant history to current
+`main` and the cleanup snapshot,
 capture run, and node identity all match. Keep the cleanup DaemonSet present
 until release: the stage rechecks that its node-local firewall has no
 owned objects, removes the selector label, waits for every cleanup DaemonSet Pod
@@ -171,5 +185,6 @@ then removes the dedicated taint. If Pod
 deletion stalls, the taint remains
 and recovery requires direct review. It checks Node UID, boot ID, and
 `resourceVersion` before each patch and retains private attempt, interrupted,
-and final receipts. A newer `main` blocks this release path until a separately
-reviewed recovery change; no stage infers clearance from a missing DaemonSet.
+and final receipts. A newer `main` invalidates the SHA-bound capture and cleanup
+receipts; recapture, approve, and verify cleanup again on current `main` before
+release. No stage infers clearance from a missing DaemonSet.

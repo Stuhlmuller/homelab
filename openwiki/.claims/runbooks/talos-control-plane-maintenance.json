@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:585f525e59c3681bc71172a176ec3d0cac977280aba68074155b44e06301971e",
+  "pageVersion": "sha256:fd5ad1b2e98b809523b522437718fc14fc55b77df29228cbd16047a4a3b14f36",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
       "statement": "The first 2026-10-10 zimaboard-2 stall involved NFS-backed n8n PostgreSQL and NOFX Pods, so the no-PVC remote-reboot exception did not apply; a physical power-cycle recovered the worker.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L1102-L1110",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1106-L1114",
           "version": "repo-lines-v1:sha256:8ddb89afc2ddedf13089ad08ca1770687ec67bab1e008749c64164b3b00e4586:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzkzYzAxM2JhNjI0MzY4OTBmNWY2ZGJlNjg4MzY0NDk5MGZhZGMyODgwMjU2OGI0YTBlODkxNjVjYThjMTc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBmNDEzY2Y1MTJiNzZmYTUxMjI3MzkyZTc1ZDcxMTFjZTQwODBiNTFjMjcwOGZlNTViNzFmNzU3MTZjNjE5YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2I1NTdmMDY3YzhkNWY5Y2Y1MjExNWJiMjI4OGE2NTY5MDA0YjA3ZTc4YTg4MWFlNzcyYmY1MzRkY2JjNmJmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDhjMjNkOWFkOGNlYjhlYmMwNjYwY2RiMDg4OTc0MTU1ZjM5YzdlM2U2NWI5Y2Y3YzdlZTJiMjZhNjA1YzM1NiJ9"
         }
       ]
@@ -29,7 +29,7 @@
           "version": "repo-lines-v1:sha256:ae9b60e40aac1039466761279e2049d285dc168fbf80d53c09c7714f6373184c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNThmYmFkNmJlYmI0YjdjYTUyYjA3MzhjNTEwMTBhNzU3Mzk4NGZjMjk4M2ViOTMzZmNhNTNjMGJjOTAzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTFhOWVhNWJmN2UwYTFiNzcyZjA1YmMxMjkwODhiYzFiYWI3MmZiMzkxZmFhMjM5NGVmZjUzM2EyOTZmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L1111-L1113",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1115-L1117",
           "version": "repo-lines-v1:sha256:08c23d9ad8ceb8ebc0660cdb088974155f39c7e3e65b9cf7c7ee2b26a605c356:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDNjNmM2OTEzZjc4MTQ4YzcyMzI5ODc4N2Q0NmMzMmNlMmRjODJkMDczOGE5YTM1ODlhMjI1MzA3ZTQwODYyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZkOTgwY2ExODE3YjA0NGQ4MTM2NDdhZDBkZjI4ZjRkMDczZjFhZjU5MzU1OTRjMDNmYmI2M2E1NTc1ZjE4MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE3MjVmNTBhMjQ1NzVkMmU1YzYxY2E5MTgzMzAyZTkxYThjZDhkMWM0YzhhNzU4ZWIwNDFlMzczODI0N2I5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NjNhNDkxZGNmNDY5ZTMwZWQ2MzdmZmZiNWQ1MDAwZmM1Y2M5NmNhNDRmN2UyZWUxOTVhMTNiNTMyYjgzOSJ9"
         }
       ]
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:6832e2d2c4c737e030671566849d0be5c0d6002dfe409cb3ca835d7f8a0a6fb0"
+          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -98,7 +98,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:6832e2d2c4c737e030671566849d0be5c0d6002dfe409cb3ca835d7f8a0a6fb0"
+          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -114,7 +114,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -128,11 +128,11 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:7af1788e6e0334d47cef0cba6c6c891c4e8de52e5b1c6d31e17ab18e7bb45958"
+          "version": "repo-file-v1:sha256:dd22fad7bb267904ce481c12aa9a3138c22828d3d68df80ef870714c1cc4ea15"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         }
       ]
     },
@@ -159,7 +159,7 @@
       "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 references, fully observed and ready controllers not marked for deletion, Deployment total replicas equal to desired, and complete DaemonSet placement. Matching mutable tags fail; T025 must align chart image hubs and injected proxy digests before the gate can pass.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L513-L523",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L517-L527",
           "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
@@ -171,10 +171,32 @@
           "version": "repo-lines-v1:sha256:45f630b8ea44c02806fabc6b01460d26740c9439ee9d12b717411b9066b52d28:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExOGVmYTc2OWZjNGQ0NTBiNTNlMzcxYzZjYjJkNzlkMGQ0YTdmZmU4ZDBlOTc3OTA0ZTcyODZhODdmN2UwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYzJiOWZlMTUzYWVjYWYyZjljYWI0NzVmNjMwOTExY2Q4NzBjNWQ3YjZlYTU3YjZjMzRlYTkzNWQ2YzdjZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhMWEwM2RjOGNkNTM5YTFjOTNmODI0MDViODZhNGY1ZmM5ZTJlMGVmYTgxYTM4YmQ3MGE3MmQyNDdkMGExNDQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_0b76ce685f9946cda16a284f3a6c7828",
+      "statement": "The policy cleanup guard requires dedicated fixture and enforcer prune commits in first-parent order. It allows intervening documentation and inventory evidence commits but rejects other source changes, including private receipt bucket and validation inputs. The static gate verifies exact source phases; current-main ownership capture, approval, and cleanup receipts remain required before release.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md",
+          "version": "repo-file-v1:sha256:dd22fad7bb267904ce481c12aa9a3138c22828d3d68df80ef870714c1cc4ea15"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-registration-test.py",
+          "version": "repo-file-v1:sha256:e512d79b4210bd83d430ee8c22a1fd9e776645817ee0efdc08945ece24609c91"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T17:08:07.139Z"
+    "at": "2026-10-20T21:42:24.095Z"
   }
 }

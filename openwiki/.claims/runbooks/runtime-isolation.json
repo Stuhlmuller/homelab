@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:84aebb02cd72165be98bd9ed5f6cc5177cdbd08cbf8f889647af443934a2a953",
+  "pageVersion": "sha256:b78c151f3c8e82abf626a0aca00ed56a303a9eb19d152e2d50dd38db813d54de",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -29,7 +29,7 @@
       "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, admitted tainted node, and exact fixture commands, arguments, container security contexts, identities, and policy before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L71-L87",
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L75-L91",
           "version": "repo-lines-v1:sha256:e096727a973080c1a15653f753c5d2ea4d1d40e831260cb9878c4e20157009d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
         },
         {
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:714a05d106487f15e36dce1bf2d3b6c2bc8994a6f4eb623aac2bfafed64eedde"
+          "version": "repo-file-v1:sha256:9e06a2b5b4986cb01eaa7b11a1e5b157db17d28db26e01f573686bc125b68e89"
         }
       ]
     },
@@ -159,7 +159,7 @@
       "statement": "The protected canary qualifier probes Kubernetes Service DNS through the reviewed kube-dns Service over TCP and UDP 53, rejects malformed replies or an A record differing from the live Kubernetes Service IP, and records both DNS outcomes; lifecycle and real-workload qualification remain pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L71-L84",
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L75-L88",
           "version": "repo-lines-v1:sha256:766abf4d327a432962220174dcdd72e60cd9d30d353405e3d132e5519547108f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMmE3MmNjMDRkNmQ5YmJhYjcyYWZlZjVhMmVlNjU5MTAzM2U1ZmQ5ZmQwYTkyYjZiNzUyOGNlNDFhNGNhYTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwYjBkNzQyNDI0ODkwMzE0YWYwY2QyODQxODJjYmM0YTY1NDY0MWYyZDQwMDY4ZDM2ZTQzMzU5NjU4ODY3ZTUifQ"
         },
         {
@@ -238,11 +238,11 @@
     },
     {
       "id": "claim_b74a0aa4689d47f491bdfac25d4ac038",
-      "statement": "After exact fixture-prune and firewall-prune GitOps commits, protected ownership capture and approval bind a private versioned firewall snapshot and owner digest. Capture through release require absent fixture resources and complete canary-node Pod inventory matching reviewed system DaemonSet UIDs plus the validated cleanup Pod while it runs. Release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint; changed system Pod UID blocks this path pending separate recovery.",
+      "statement": "Protected first-parent history accepts unrelated commits around the two dedicated fixture-prune and firewall-prune GitOps commits while rejecting intervening changes under operational source roots or Nix flake inputs. Ownership capture and approval bind a private versioned firewall snapshot and owner digest. Capture through release require absent fixture resources and complete canary-node Pod inventory matching reviewed system DaemonSet UIDs plus the validated cleanup Pod while it runs. Release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint; changed system Pod UID blocks this path pending separate recovery.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -254,7 +254,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -268,17 +268,17 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:15:11.040Z"
+    "at": "2026-10-20T21:46:33.950Z"
   }
 }

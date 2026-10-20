@@ -190,6 +190,8 @@ sources:
     resource: repo://scripts/ci/network-policy-inventory-test.py
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
+  - id: openwiki-source-2a039ed5aad5ca72f1f03c9a
+    resource: repo://scripts/ci/network-policy-registration-test.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -328,10 +330,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T21:15:11.040Z" }
+generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:15:11.040Z
+    at: 2026-10-20T21:46:33.950Z
 ---
 
 # Validation Gates
@@ -1761,6 +1763,15 @@ flag and canary node remain unset. Current-SHA recovery receipts,
 full-catalog publication, five-tag Harbor lock and an isolated canary remain
 live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
+The static registration fixture accepts only five exact policy/canary GitOps
+source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
+canary retired. It rejects mismatched sync settings and manifests. Protected
+maintenance fetches full Git history and walks first-parent commits from the
+qualified evidence SHA to current `main`, requiring the two dedicated prunes
+in order while allowing unrelated merges and rejecting intervening policy
+runtime-source edits, including the private receipt bucket and static gate.
+Static phase acceptance does not replace current-SHA private
+ownership capture, approval, and cleanup receipts or live resource checks.
 The Kubernetes stage also reads live Istiod, CNI, ztunnel and both injected
 gateway workloads before the command and after stage verification. It rejects
 missing, deleting, or degraded controllers, including Deployments with old

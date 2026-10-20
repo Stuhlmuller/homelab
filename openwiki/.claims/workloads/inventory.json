@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:45b4a66ab6567e4a1f9f23b4a33aab3f242900e44e818816e0db251d1b593901",
+  "pageVersion": "sha256:40c767e85be3aa3519aee360872e17adc77bd974a5107a6cc5bdde2d73b2608f",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:714a05d106487f15e36dce1bf2d3b6c2bc8994a6f4eb623aac2bfafed64eedde"
+          "version": "repo-file-v1:sha256:9e06a2b5b4986cb01eaa7b11a1e5b157db17d28db26e01f573686bc125b68e89"
         }
       ]
     },
@@ -656,7 +656,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -664,7 +664,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -678,17 +678,17 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:15:11.040Z"
+    "at": "2026-10-20T21:42:24.095Z"
   }
 }

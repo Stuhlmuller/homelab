@@ -51,10 +51,27 @@ class FirewallCleanupTests(unittest.TestCase):
         canary_application = "IaC/platform-network-policy-canary/stack.hcl"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for name in (manifest, application, canary_manifest, canary_application):
+            for name in (manifest, application, canary_manifest, canary_application,
+                         "clusters/homelab/platform/network-policy/daemonset.yaml"):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((ROOT / name).read_bytes())
+            dormant = "        enabled = false\n        prune   = false\n"
+            active = "        enabled = true\n        prune   = true\n"
+            empty_active = ("        enabled    = true\n        prune      = true\n"
+                            "        allowEmpty = true\n")
+            for name, variants in ((application, (dormant, active, empty_active)),
+                                   (canary_application, (dormant, active, empty_active))):
+                target = root / name
+                source = target.read_text()
+                matches = [variant for variant in variants if source.count(variant) == 1]
+                self.assertEqual(len(matches), 1, f"unreviewed source state: {name}")
+                target.write_text(source.replace(matches[0], dormant))
+            (root / manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources:\n  - daemonset.yaml\n")
+            (root / canary_manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
             def git(*args):
                 return subprocess.run(["git", *args], cwd=root, check=True,
                                       capture_output=True, text=True).stdout.strip()
@@ -63,6 +80,10 @@ class FirewallCleanupTests(unittest.TestCase):
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
                     "-c", "commit.gpgsign=false", "commit", "-qm", message)
                 return git("rev-parse", "HEAD")
+            def document(name, contents):
+                target = root / "docs" / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(contents)
             def prune_fixtures():
                 (root / canary_manifest).write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
@@ -75,7 +96,7 @@ class FirewallCleanupTests(unittest.TestCase):
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
                 original = (root / application).read_text()
                 (root / application).write_text(original.replace(
-                    "        enabled = false\n        prune   = false\n",
+                    "        enabled = true\n        prune   = true\n",
                     "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"))
             def wiki_update(name):
                 target = root / name
@@ -84,11 +105,15 @@ class FirewallCleanupTests(unittest.TestCase):
             git("init", "-q")
             (root / canary_manifest).write_text(
                 "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml\n")
+            original = (root / application).read_text()
+            (root / application).write_text(original.replace(dormant, active))
             original = (root / canary_application).read_text()
             (root / canary_application).write_text(original.replace(
                 "        enabled = false\n        prune   = false\n",
                 "        enabled = true\n        prune   = true\n"))
             qualify_sha = commit("qualify with fixtures")
+            document("unrelated.md", "before\n")
+            commit("unrelated change before fixture prune")
             prune_fixtures()
             wiki_update("openwiki/unreviewed.md")
             commit("fixture prune with unreviewed wiki change")
@@ -99,27 +124,108 @@ class FirewallCleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "fixture removal differs"):
                     transition(qualify_sha, drift_sha)
                 git("reset", "--hard", qualify_sha)
+                document("unrelated.md", "before\n")
+                commit("unrelated before valid prunes")
                 prune_fixtures()
                 wiki_update("openwiki/runbooks/runtime-isolation.md")
                 wiki_update("openwiki/.last-update.json")
                 fixture_sha = commit("fixture prune with reviewed wiki update")
-                with self.assertRaisesRegex(ValueError, "two direct commits"):
+                with self.assertRaisesRegex(ValueError, "both reviewed GitOps prune"):
                     transition(qualify_sha, fixture_sha)
+                document("unrelated.md", "between\n")
+                middle_sha = commit("unrelated change between prunes")
                 prune_firewall()
-                (root / "unrelated.txt").write_text("drift\n")
+                document("unrelated.md", "drift\n")
                 drift_sha = commit("firewall prune with unrelated change")
                 with self.assertRaisesRegex(ValueError, "firewall removal differs"):
                     transition(qualify_sha, drift_sha)
-                git("reset", "--hard", fixture_sha)
+                git("reset", "--hard", middle_sha)
                 prune_firewall()
                 wiki_update("openwiki/workloads/inventory.md")
                 wiki_update("openwiki/.claims/workloads/inventory.json")
                 wiki_update("openwiki/.page-manifest.json")
                 removal_sha = commit("firewall prune with reviewed wiki update")
                 transition(qualify_sha, removal_sha)
+                document("unrelated.md", "after\n")
+                later_sha = commit("unrelated change after prunes")
+                transition(qualify_sha, later_sha)
+                main_branch = git("branch", "--show-current")
+                git("checkout", "-qb", "unrelated-topic", qualify_sha)
+                document("side-topic.md", "side branch\n")
+                side_sha = commit("unrelated side branch")
+                git("checkout", "-q", main_branch)
                 git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
-                    "-c", "commit.gpgsign=false", "commit", "-qm", "unrelated", "--allow-empty")
-                with self.assertRaisesRegex(ValueError, "two direct commits"):
+                    "-c", "commit.gpgsign=false", "merge", "-q", "--no-ff", "-m",
+                    "merge unrelated side branch", side_sha)
+                transition(qualify_sha, git("rev-parse", "HEAD"))
+                with self.assertRaisesRegex(ValueError, "first-parent history"):
+                    transition(side_sha, git("rev-parse", "HEAD"))
+                git("mv", "clusters/homelab/platform/network-policy/daemonset.yaml",
+                    "renamed-unrelated.yaml")
+                commit("rename protected policy source")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                protected = root / "scripts/network-policy-qualification.py"
+                protected.parent.mkdir(parents=True)
+                protected.write_text("changed\n")
+                commit("change protected policy source")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                protected.unlink()
+                commit("revert protected policy source")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~2")
+                root_stack = root / "IaC/terragrunt.stack.hcl"
+                root_stack.write_text("unreviewed root registration\n")
+                commit("change root Application registration")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                project = root / "clusters/homelab/argocd/self-management/appproject.yaml"
+                project.parent.mkdir(parents=True, exist_ok=True)
+                project.write_text("unreviewed AppProject permissions\n")
+                commit("change canary AppProject permissions")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                gate = root / "scripts/ci/network-policy-registration-test.py"
+                gate.parent.mkdir(parents=True, exist_ok=True)
+                gate.write_text("weakened static phase check\n")
+                commit("change protected static gate")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                anchor = git("rev-parse", "HEAD")
+                for name in (
+                        "IaC/application-backup-storage.hcl",
+                        "IaC/unrelated-unit/stack.hcl",
+                        "clusters/unrelated-app/kustomization.yaml",
+                        "scripts/unrelated-helper.py",
+                        ".github/actions/unrelated/action.yml",
+                        ".talos/unrelated.yaml",
+                        "builds/unrelated/Dockerfile",
+                        "policy/unrelated.rego",
+                        "recovery/unrelated.json",
+                        "flake.nix", "flake.lock", ".unexpected-policy.toml",
+                        ".argocd-values-ref-placeholder.yaml", ".checkov.yaml",
+                        "docs/examples/octelium/runtime.yaml"):
+                    with self.subTest(protected_path=name):
+                        git("reset", "--hard", anchor)
+                        protected = root / name
+                        protected.parent.mkdir(parents=True, exist_ok=True)
+                        protected.write_text("unreviewed operational source\n")
+                        commit("change operational source")
+                        with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                            transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", anchor)
+                newline_name = "clusters/homelab/apps/unreviewed/bad\nmanifest.yaml"
+                protected = root / newline_name
+                protected.parent.mkdir(parents=True, exist_ok=True)
+                protected.write_text("unreviewed manifest\n")
+                commit("change source with a quoted Git path")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                     transition(qualify_sha, git("rev-parse", "HEAD"))
 
     def test_unadmitted_config_refuses_before_any_cluster_command(self):
