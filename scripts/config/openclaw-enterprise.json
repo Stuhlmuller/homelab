@@ -39,6 +39,7 @@
   },
   "privateOrigins": {
     "console": "https://console.oce.stinkyboi.com",
+    "nativeOrigin": null,
     "agentSuffix": "agents.oce.stinkyboi.com",
     "cookieDomain": "oce.stinkyboi.com",
     "gateway": "oce-private-gateway"

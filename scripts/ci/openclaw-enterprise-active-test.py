@@ -39,12 +39,12 @@ class ActiveAgentReconciliation(unittest.TestCase):
 
     def _active(self):
         with patch.object(OCE, "prove_driver_identity", return_value={"installationId": "ins_one"}):
-            return OCE.reconcile(self.config, self.api, self.kube, "a" * 40,
-                                 self.credential)
+            return OCE.reconcile_active(self.config, self.api, self.kube,
+                                        self.credential)
 
     def _verify(self):
         with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
-            return OCE.verify(self.config, self.api, self.kube)
+            return OCE._verify_active_state(self.config, self.api, self.kube)
 
     def _stop(self):
         with patch.object(OCE, "prove_driver_identity", return_value={"installationId": "ins_one"}):
@@ -54,6 +54,18 @@ class ActiveAgentReconciliation(unittest.TestCase):
         return OCE.read_journal(self.config["privateJournal"]["mountPath"],
                                 self.config["source"]["revision"],
                                 OCE._identity_hash(self.config))[0]
+
+    def _reviewed_origin(self):
+        changed = copy.deepcopy(self.config)
+        changed["privateOrigins"]["nativeOrigin"] = (
+            "https://agent-" + "a" * 32 + ".agents.oce.stinkyboi.com")
+        return changed
+
+    def _reconcile_origin(self, changed):
+        with patch.object(OCE, "prove_driver_identity",
+                          return_value={"installationId": "ins_one"}):
+            return OCE.reconcile(changed, self.api, self.kube, "a" * 40,
+                                 self.credential)
 
     def test_active_repeat_verify_and_stop_are_idempotent(self):
         self.assertEqual(self._active()["revisionId"], "rev_one")
@@ -92,6 +104,230 @@ class ActiveAgentReconciliation(unittest.TestCase):
                               {"version": 1, "key": "REPLACE_ME"})
         proof.assert_not_called()
         self.assertEqual(self.api.calls, before)
+
+    def test_automated_acceptance_waits_for_returned_native_origin(self):
+        self.assertIsNone(self.config["privateOrigins"]["nativeOrigin"])
+        self.assertEqual(self._active()["revisionId"], "rev_one")
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            with self.assertRaisesRegex(OCE.Blocked, "owner-session return"):
+                OCE.verify(self.config, self.api, self.kube)
+        with patch.object(OCE, "prove_driver_identity",
+                          return_value={"installationId": "ins_one"}):
+            with self.assertRaisesRegex(OCE.Blocked, "owner-session return"):
+                OCE.reconcile(self.config, self.api, self.kube, "a" * 40,
+                              self.credential)
+        self.assertEqual(len([call for call in self.api.calls
+                              if call[1].endswith("/deploy")]), 1)
+
+    def test_reviewed_native_origin_shape_requires_configuration_update(self):
+        self._active()
+        changed = self._reviewed_origin()
+        values = OCE.desired_configuration(changed)
+        self.assertEqual(values["gateway"]["publicOrigin"],
+                         changed["privateOrigins"]["nativeOrigin"])
+        self.assertEqual(values["gateway"]["controlUi"], {
+            "enabled": True,
+            "allowedOrigins": [changed["privateOrigins"]["nativeOrigin"]]})
+        self.assertEqual(values["gateway"]["auth"]["trustedProxy"]["allowUsers"],
+                         ["occ-workspace-files"])
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        self.assertEqual(self.api.configurations["cfg_one"]["generation"], 2)
+        self.assertEqual(self.api.configurations["cfg_one"]["values"], values)
+        self.assertEqual(self._journal()["configurationGeneration"], 2)
+        self.assertEqual(self._journal()["firstRevisionId"], "rev_one")
+        self.assertEqual(self._journal()["revisionId"], "rev_two")
+        self.assertEqual(self._journal()["desiredHash"], OCE.hashlib.sha256(
+            json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest())
+        self.assertNotIn("pending", self._journal())
+        updates = [call for call in self.api.calls if call[:2] == (
+            "PATCH", "/namespaces/ns_one/configurations/cfg_one")]
+        self.assertEqual(len(updates), 1)
+        self.assertEqual(updates[0][2], {"values": values, "expectedGeneration": 1})
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        self.assertEqual(len([call for call in self.api.calls if call[:2] == updates[0][:2]]), 1)
+        self.assertEqual(len([call for call in self.api.calls
+                              if call[1].endswith("/deploy")]), 2)
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            self.assertEqual(OCE.verify_active(changed, self.api, self.kube)["revisionId"],
+                             "rev_two")
+        changed["privateOrigins"]["nativeOrigin"] = "https://other.example"
+        with self.assertRaisesRegex(OCE.Blocked, "native origin"):
+            OCE._validate_config(changed)
+        del changed["privateOrigins"]["nativeOrigin"]
+        with self.assertRaisesRegex(OCE.Blocked, "console origin"):
+            OCE._validate_config(changed)
+
+    def test_lost_native_origin_update_recovers_without_repost(self):
+        self._active()
+        changed = self._reviewed_origin()
+        self.api.lose = "configuration-update"
+        with self.assertRaisesRegex(OCE.Blocked, "lost Configuration update response"):
+            self._reconcile_origin(changed)
+        self.assertEqual(self._journal()["pending"], {"operation": "configuration-update"})
+        self.assertEqual(self._journal()["configurationGeneration"], 1)
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        self.assertEqual(self._journal()["configurationGeneration"], 2)
+        self.assertNotIn("pending", self._journal())
+        self.assertEqual(len([call for call in self.api.calls if call[:2] == (
+            "PATCH", "/namespaces/ns_one/configurations/cfg_one")]), 1)
+
+    def test_lost_post_origin_deploy_adopts_one_exact_second_revision(self):
+        self._active()
+        changed = self._reviewed_origin()
+        self.api.lose = "deploy"
+        with self.assertRaisesRegex(OCE.Blocked, "lost deploy response"):
+            self._reconcile_origin(changed)
+        self.assertEqual(self._journal()["pending"], {
+            "operation": "deploy", "baselineRevisionIds": ["rev_one"]})
+        self.assertEqual(self._journal()["revisionId"], "rev_one")
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        self.assertEqual(self._journal()["firstRevisionId"], "rev_one")
+        self.assertEqual(len([call for call in self.api.calls
+                              if call[1].endswith("/deploy")]), 2)
+
+    def test_unknown_post_origin_deploy_blocks_repost_and_verify(self):
+        self._active()
+        changed = self._reviewed_origin()
+        with patch.object(self.api, "post_accepted", side_effect=OCE.Blocked("lost deploy")) as attempt:
+            with self.assertRaisesRegex(OCE.Blocked, "lost deploy"):
+                self._reconcile_origin(changed)
+            with self.assertRaisesRegex(OCE.Blocked, "outcome remains unknown"):
+                self._reconcile_origin(changed)
+        self.assertEqual(attempt.call_count, 1)
+        self.assertEqual(self._journal()["pending"], {
+            "operation": "deploy", "baselineRevisionIds": ["rev_one"]})
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            with self.assertRaisesRegex(OCE.Blocked, "active journal is incomplete"):
+                OCE.verify_active(changed, self.api, self.kube)
+
+    def test_foreign_post_origin_revision_blocks_adoption(self):
+        self._active()
+        changed = self._reviewed_origin()
+        with patch.object(self.api, "post_accepted", side_effect=OCE.Blocked("lost deploy")):
+            with self.assertRaisesRegex(OCE.Blocked, "lost deploy"):
+                self._reconcile_origin(changed)
+        foreign = copy.deepcopy(self.api.revisions["rev_one"])
+        foreign["id"] = "rev_foreign"
+        foreign["configurationGeneration"] = 99
+        self.api.revisions["rev_foreign"] = foreign
+        with self.assertRaisesRegex(OCE.Blocked, "ambiguous deploy outcome"):
+            self._reconcile_origin(changed)
+        self.assertEqual(self._journal()["revisionId"], "rev_one")
+
+    def test_post_origin_stop_verifies_two_revision_history(self):
+        self._active()
+        changed = self._reviewed_origin()
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        with patch.object(OCE, "prove_driver_identity",
+                          return_value={"installationId": "ins_one"}):
+            self.assertEqual(OCE.stop_agent(changed, self.api, self.kube,
+                                            "a" * 40)["revisionId"], "rev_two")
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            self.assertEqual(OCE.verify_active(changed, self.api, self.kube)[
+                "desiredRuntimeState"], "stopped")
+
+    def test_post_origin_deployment_waits_for_success(self):
+        self._active()
+        changed = self._reviewed_origin()
+        original_post = self.api.post_accepted
+
+        def queue(path, body=None):
+            result = original_post(path, body)
+            self.api.deployments["rev_two"]["status"] = "running"
+            return result
+
+        with patch.object(self.api, "post_accepted", side_effect=queue):
+            with self.assertRaisesRegex(OCE.Blocked, "deployment is not complete"):
+                self._reconcile_origin(changed)
+        self.assertEqual(self._journal()["revisionId"], "rev_two")
+        self.assertEqual(self._journal()["firstRevisionId"], "rev_one")
+        self.api.deployments["rev_two"]["status"] = "succeeded"
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        self.assertEqual(len([call for call in self.api.calls
+                              if call[1].endswith("/deploy")]), 2)
+
+    def test_post_origin_verify_checks_first_immutable_revision(self):
+        self._active()
+        changed = self._reviewed_origin()
+        self._reconcile_origin(changed)
+        self.api.revisions["rev_one"]["configuration"]["model"] = "foreign"
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            with self.assertRaisesRegex(OCE.Blocked, "active revision changed"):
+                OCE.verify_active(changed, self.api, self.kube)
+
+    def test_unapplied_native_origin_update_keeps_pending_without_repost(self):
+        self._active()
+        changed = self._reviewed_origin()
+        with patch.object(self.api, "patch", side_effect=OCE.Blocked("lost PATCH")) as attempt:
+            with self.assertRaisesRegex(OCE.Blocked, "lost PATCH"):
+                self._reconcile_origin(changed)
+            with self.assertRaisesRegex(OCE.Blocked, "outcome remains unknown"):
+                self._reconcile_origin(changed)
+        self.assertEqual(attempt.call_count, 1)
+        self.assertEqual(self._journal()["pending"], {"operation": "configuration-update"})
+        self.assertEqual(self.api.configurations["cfg_one"]["generation"], 1)
+
+    def test_native_origin_generation_or_foreign_values_block(self):
+        self._active()
+        changed = self._reviewed_origin()
+        self.api.configurations["cfg_one"]["generation"] = 2
+        with self.assertRaisesRegex(OCE.Blocked, "Configuration readback changed"):
+            self._reconcile_origin(changed)
+        self.assertFalse(any(call[:2] == ("PATCH", "/namespaces/ns_one/configurations/cfg_one")
+                             for call in self.api.calls))
+        self.api.configurations["cfg_one"]["generation"] = 1
+        self.api.lose = "configuration-update"
+        with self.assertRaisesRegex(OCE.Blocked, "lost Configuration update response"):
+            self._reconcile_origin(changed)
+        self.api.configurations["cfg_one"]["values"]["tools"] = {"deny": []}
+        with self.assertRaisesRegex(OCE.Blocked, "Configuration readback changed"):
+            self._reconcile_origin(changed)
+        self.assertEqual(self._journal()["pending"], {"operation": "configuration-update"})
+
+    def test_native_origin_requires_exact_first_configuration_generation(self):
+        self._active()
+        changed = self._reviewed_origin()
+        path = Path(self.config["privateJournal"]["mountPath"])
+        with OCE.ProtectedJournal(path, self.config["source"]["revision"],
+                                  OCE._identity_hash(self.config)) as journal:
+            state = dict(journal.state)
+            state["configurationGeneration"] = 2
+            journal.save(state)
+        with self.assertRaisesRegex(OCE.Blocked, "first Enterprise Configuration generation"):
+            self._reconcile_origin(changed)
+        self.assertFalse(any(call[:2] == ("PATCH", "/namespaces/ns_one/configurations/cfg_one")
+                             for call in self.api.calls))
+
+    def test_native_origin_update_needs_matching_driver_configmap(self):
+        self._active()
+        changed = self._reviewed_origin()
+        original = self.kube.configuration_candidates
+
+        def stale_candidate(namespace_id):
+            candidates = original(namespace_id)
+            candidates[0]["metadata"]["annotations"]["openclaw.dev/configuration-generation"] = "1"
+            return candidates
+
+        with patch.object(self.kube, "configuration_candidates", side_effect=stale_candidate):
+            with self.assertRaisesRegex(OCE.Blocked, "foreign Configuration recovery candidate"):
+                self._reconcile_origin(changed)
+        self.assertEqual(self._journal()["pending"], {"operation": "configuration-update"})
+        self.assertEqual(self._journal()["configurationGeneration"], 1)
+        self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        self.assertEqual(self._journal()["configurationGeneration"], 2)
+
+    def test_native_origin_update_requires_original_key_version_and_running_revision(self):
+        self._active()
+        changed = self._reviewed_origin()
+        self.credential["version"] = 2
+        with self.assertRaisesRegex(OCE.Blocked, "model key version changed"):
+            self._reconcile_origin(changed)
+        self.credential["version"] = 1
+        self._stop()
+        with self.assertRaisesRegex(OCE.Blocked, "first Enterprise revision is not running"):
+            self._reconcile_origin(changed)
+        self.assertFalse(any(call[:2] == ("PATCH", "/namespaces/ns_one/configurations/cfg_one")
+                             for call in self.api.calls))
 
     def test_mutation_config_must_match_exact_committed_file(self):
         source = ROOT / "scripts/config/openclaw-enterprise.json"

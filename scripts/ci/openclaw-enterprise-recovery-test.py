@@ -47,9 +47,11 @@ class RecoveryBoundaries(unittest.TestCase):
         self.config["activationEnabled"] = True
 
     def active(self):
+        # Stage the first revision directly: public reconcile remains blocked
+        # until an owner reviews the returned native origin.
         with patch.object(OCE, "prove_driver_identity", return_value={"installationId": "ins_one"}):
-            OCE.reconcile(self.config, self.api, self.kube, "a" * 40,
-                          {"version": 1, "key": "fixture-openrouter-key"})
+            OCE.reconcile_active(self.config, self.api, self.kube,
+                                 {"version": 1, "key": "fixture-openrouter-key"})
 
     def stop(self):
         with patch.object(OCE, "prove_driver_identity", return_value={"installationId": "ins_one"}):

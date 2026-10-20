@@ -60,7 +60,9 @@ file, exact main SHA and journal, `reconcile` can create/adopt the logical
 Agent Configuration, and one stopped Embedded Agent. The Configuration uses
 native model reference
 `openai/openrouter/free` so OCE selects its supported `openai` Harness provider;
-the OpenRouter wire model remains `openrouter/free`. The dedicated model key is
+the OpenRouter wire model remains `openrouter/free`. It follows the pinned
+first-Agent helper's `OPENAI_API_KEY` model secret reference, denies tools,
+and starts with native control UI disabled. The dedicated model key is
 still absent, so the agent has no `harnessAuth` binding and cannot be deployed.
 `verify` checks the journaled identities, complete Configuration values,
 generation and stopped Agent without sending inference. A failed `reconcile`
@@ -120,8 +122,21 @@ reconcile, stop, or verify stage may be exposed as an executable cutover step.
 
 At the pinned upstream revision, `native-admin` requires an authenticated
 human session with exact Agent `administer`. Service keys cannot inspect its
-origin. T048 records the returned `data.origin` during browser acceptance;
-the service-key reconciler cannot supply that receipt.
+origin. T048 records the returned `data.origin` during browser acceptance and
+commits it as `privateOrigins.nativeOrigin`. Until that reviewed origin is
+present, automated active reconciliation and verification block after the
+first revision. With a reviewed origin, the source-only reconciler verifies
+the first revision, journals a pending Configuration update, and PATCHes only
+with its exact prior generation. A lost response is adopted only when the API
+and owned Driver ConfigMap agree on the next generation and reviewed values;
+an unchanged or foreign result blocks a second PATCH. The transition requires
+the original generation 1 and journals the first revision before admitting
+one generation 2 revision from the reviewed Configuration.
+Lost deployment responses are adopted only from one exact new revision;
+unknown or foreign outcomes block reposting. Read-only verification checks
+both revisions and the active second deployment. T041 still needs protected
+live proof. The GitHub runner also has no durable private journal mount, so
+mutating workflow stages remain disabled pending a declared in-cluster path.
 The chart's Kubernetes policy also needs nonempty reviewed `database.cidrs` and
 `cluster.cidrs`; this candidate has explicit destinations, but Service DNAT
 behavior still needs the isolated canary qualification.

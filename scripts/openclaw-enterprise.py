@@ -40,12 +40,13 @@ HEX64 = re.compile(r"^[0-9a-f]{64}$")
 JOURNAL_FIELDS = frozenset({
     "installationId", "namespaceId", "secretId", "configurationId",
     "configurationGeneration", "agentId", "servicePrincipalId", "roleId",
-    "bindingId", "revisionId", "desiredHash", "pending", "secretName",
+    "bindingId", "revisionId", "firstRevisionId", "desiredHash", "pending", "secretName",
     "roleName", "modelKeyVersion",
 })
 ID_PREFIXES = {
     "installationId": "ins_", "namespaceId": "ns_", "secretId": "sec_",
     "configurationId": "cfg_", "agentId": "agt_", "revisionId": "rev_",
+    "firstRevisionId": "rev_",
 }
 
 # Pinned chart rbac.yaml at source revision 33bb745; repositoryCredentials=false,
@@ -451,7 +452,10 @@ def reconcile(config, api, kube, expected_sha, model_credential=None):
                  isinstance(model_credential["key"], str) and
                  model_credential["key"] not in ("", "REPLACE_ME"),
                  "active Enterprise reconciliation requires a protected model credential")
-        return reconcile_active(config, api, kube, model_credential)
+        result = reconcile_active(config, api, kube, model_credential)
+        _require(config["privateOrigins"]["nativeOrigin"] is not None,
+                 "native origin needs an owner-session return and reviewed Configuration update")
+        return result
     installation = prove_driver_identity(config, api, kube)
     source_sha = config["source"]["revision"]
     identity_sha = _identity_hash(config)
@@ -475,6 +479,7 @@ def reconcile(config, api, kube, expected_sha, model_credential=None):
 
 def verify(config, api, kube):
     # Verification is a read, never an inference probe or implicit deployment.
+    _validate_config(config)
     if config["activationEnabled"]:
         return verify_active(config, api, kube)
     installation = check(config, api, kube)
@@ -538,19 +543,34 @@ def desired_configuration(config):
     model = config["model"]
     native_ref = model["provider"] + "/" + model["id"]
     _require(native_ref == "openai/openrouter/free", "Enterprise native model ref changed")
+    native_origin = config["privateOrigins"]["nativeOrigin"]
+    gateway = {
+        "mode": "local", "bind": "lan",
+        "controlUi": ({"enabled": False} if native_origin is None else
+                      {"enabled": True, "allowedOrigins": [native_origin]}),
+        "auth": {"password": {"source": "env", "provider": "default",
+                              "id": "OPENCLAW_GATEWAY_PASSWORD"}},
+        "http": {"endpoints": {"chatCompletions": {"enabled": True}}},
+    }
+    if native_origin is not None:
+        gateway["publicOrigin"] = native_origin
+        gateway["auth"].update({
+            "mode": "trusted-proxy",
+            "trustedProxy": {"userHeader": "x-occ-identity",
+                             "allowUsers": ["occ-workspace-files"],
+                             "deviceAutoApprove": {"enabled": True,
+                                                   "scopes": ["operator.admin"]}},
+            "identityScopes": {"occ-workspace-files": ["operator.admin"]},
+        })
     return {
-        "gateway": {
-            "mode": "local", "bind": "lan",
-            "controlUi": {"enabled": True, "allowedOrigins": [
-                "http://127.0.0.1:18789", "http://localhost:18789"]},
-            "auth": {"password": {"source": "env", "provider": "default",
-                                  "id": "OPENCLAW_GATEWAY_PASSWORD"}},
-            "http": {"endpoints": {"chatCompletions": {"enabled": True}}},
-        },
+        "gateway": gateway,
         "agents": {"defaults": {"model": native_ref, "skipBootstrap": True,
                                 "models": {native_ref: {"agentRuntime": {"id": "openclaw"}}}}},
+        "tools": {"deny": ["*"]},
+        "secrets": {"providers": {"model": {"source": "env", "allowlist": ["OPENAI_API_KEY"]}}},
         "models": {"providers": {model["provider"]: {
             "baseUrl": model["baseUrl"], "api": model["api"],
+            "apiKey": {"source": "env", "provider": "model", "id": "OPENAI_API_KEY"},
             "models": [{"id": model["id"], "name": model["id"]}],
         }}},
     }
@@ -1317,6 +1337,15 @@ def reconcile_active(config, api, kube, model_credential):
         state = dict(journal.state)
         _require(state.get("installationId") == installation["installationId"],
                  "journaled Installation identity changed")
+        if config["privateOrigins"]["nativeOrigin"] is not None:
+            _require(model_credential["version"] == state.get("modelKeyVersion"),
+                     "Enterprise model key version changed without a reviewed rotation")
+            reconcile_native_origin_configuration(config, api, kube, journal)
+            revision_id = reconcile_native_origin_deployment(config, api, kube, journal)
+            state = dict(journal.state)
+            return {"namespaceId": state["namespaceId"],
+                    "configurationId": state["configurationId"], "agentId": state["agentId"],
+                    "revisionId": revision_id, "desiredRuntimeState": "running"}
         _read_registered(config, api, kube, state)
         reconcile_model_secret(config, api, journal, model_credential)
         reconcile_model_grant(api, journal)
@@ -1329,7 +1358,178 @@ def reconcile_active(config, api, kube, model_credential):
             "revisionId": revision_id, "desiredRuntimeState": "running"}
 
 
+def reconcile_native_origin_configuration(config, api, kube, journal):
+    """Save the owner-reviewed origin once, without redeploying the first revision.
+
+    A lost PATCH response is recovered only from the exact next generation and
+    owned Driver ConfigMap. An unchanged read cannot prove an in-flight PATCH
+    will not complete, so it keeps the pending intent and blocks a repost.
+    """
+    _require(config["privateOrigins"]["nativeOrigin"] is not None,
+             "native origin needs an owner-session return")
+    before_config = {**config, "privateOrigins": {**config["privateOrigins"],
+                                                  "nativeOrigin": None}}
+    before_values = desired_configuration(before_config)
+    after_values = desired_configuration(config)
+    before_hash = hashlib.sha256(json.dumps(before_values, sort_keys=True,
+                                             separators=(",", ":")).encode()).hexdigest()
+    after_hash = hashlib.sha256(json.dumps(after_values, sort_keys=True,
+                                            separators=(",", ":")).encode()).hexdigest()
+    state = dict(journal.state)
+    generation = state.get("configurationGeneration")
+    _require(type(generation) is int and 1 <= generation < 9007199254740991 and
+             _valid_resource_id(state.get("revisionId"), "rev_") and
+             state.get("desiredHash") in (before_hash, after_hash),
+             "first Enterprise revision or reviewed Configuration is missing")
+    pending = state.get("pending")
+    if state["desiredHash"] == after_hash:
+        _require(generation == 2, "post-origin Configuration generation is invalid")
+        _require(pending is None or pending == {
+            "operation": "deploy", "baselineRevisionIds": [state["revisionId"]]},
+            "journaled Configuration update is incomplete")
+        _read_registered(config, api, kube, state)
+        return
+    _require(generation == 1, "first Enterprise Configuration generation changed")
+    _require(pending is None or pending == {"operation": "configuration-update"},
+             "another Enterprise operation is pending")
+    namespace_id, configuration_id, agent_id = (state["namespaceId"],
+                                                state["configurationId"], state["agentId"])
+    path = f"/namespaces/{namespace_id}/configurations/{configuration_id}"
+    if pending is None:
+        # Prove the first revision, grants, deployment, and ownership before
+        # changing its saved Configuration. The revision itself stays immutable.
+        first = _verify_active_state(before_config, api, kube)
+        _require(first["desiredRuntimeState"] == "running",
+                 "first Enterprise revision is not running")
+        current = api.get(path)
+        _assert_configuration(current, namespace_id, configuration_id,
+                              before_values, generation)
+        state["pending"] = {"operation": "configuration-update"}
+        journal.save(state)
+        try:
+            updated = api.patch(path, configuration_patch(current, after_values, generation))
+        except DefinitiveRejection:
+            unchanged = api.get(path)
+            _assert_configuration(unchanged, namespace_id, configuration_id,
+                                  before_values, generation)
+            candidates = kube.configuration_candidates(namespace_id)
+            _require(len(candidates) == 1, "Configuration ConfigMap set is ambiguous")
+            recover_configuration(candidates, unchanged, "openclaw-agents")
+            state.pop("pending")
+            journal.save(state)
+            raise
+        _assert_configuration(updated, namespace_id, configuration_id,
+                              after_values, generation + 1)
+    exact = api.get(path)
+    _require(isinstance(exact, dict), "Enterprise Configuration readback changed")
+    if exact.get("generation") == generation:
+        _assert_configuration(exact, namespace_id, configuration_id,
+                              before_values, generation)
+        raise Blocked("Configuration update outcome remains unknown; do not retry")
+    _assert_configuration(exact, namespace_id, configuration_id,
+                          after_values, generation + 1)
+    candidates = kube.configuration_candidates(namespace_id)
+    _require(len(candidates) == 1, "Configuration ConfigMap set is ambiguous")
+    recover_configuration(candidates, exact, "openclaw-agents")
+    agent_path = f"/namespaces/{namespace_id}/agents/{agent_id}"
+    agent = api.get(agent_path)
+    _assert_agent(agent, before_config, namespace_id, configuration_id, agent_id)
+    _require(agent.get("servicePrincipalId") == state["servicePrincipalId"] and
+             agent.get("desiredRuntimeState") == "running" and
+             agent.get("activeRevisionId") == state["revisionId"],
+             "first Enterprise revision changed during Configuration update")
+    first_revision = api.get(agent_path + "/revisions/" + state["revisionId"])
+    _assert_active_revision(first_revision, before_config, state)
+    state["configurationGeneration"] = generation + 1
+    state["desiredHash"] = after_hash
+    state.pop("pending")
+    journal.save(state)
+
+
+def reconcile_native_origin_deployment(config, api, kube, journal):
+    """Admit one post-origin revision; never repost an unknown deploy."""
+    state = dict(journal.state)
+    if state.get("firstRevisionId") is not None:
+        current = _verify_active_state(config, api, kube)
+        _require(current["desiredRuntimeState"] == "running",
+                 "Enterprise post-origin revision is stopped")
+        return current["revisionId"]
+    first_id = state.get("revisionId")
+    _require(_valid_resource_id(first_id, "rev_") and
+             type(state.get("configurationGeneration")) is int and
+             state["configurationGeneration"] == 2,
+             "first Enterprise revision or updated Configuration is missing")
+    pending = state.get("pending")
+    _require(pending is None or pending == {
+        "operation": "deploy", "baselineRevisionIds": [first_id]},
+        "another Enterprise operation is pending")
+    namespace_id, agent_id = state["namespaceId"], state["agentId"]
+    base = f"/namespaces/{namespace_id}/agents/{agent_id}"
+    revisions = list_agent_revisions(api, namespace_id, agent_id)
+    if pending is None:
+        first = _verify_active_state(config, api, kube, allow_transitional=True)
+        _require(first["revisionId"] == first_id and
+                 first["desiredRuntimeState"] == "running" and
+                 len(revisions) == 1 and revisions[0]["id"] == first_id,
+                 "first Enterprise revision is not stable")
+        agent = api.get(base)
+        revision = api.get(base + "/revisions/" + first_id)
+        deployment = api.get(base + "/deployments/" + first_id)
+        _require(should_deploy(agent, revision, deployment, state["configurationId"],
+                               state["configurationGeneration"]),
+                 "unchanged Enterprise Configuration must not redeploy")
+        latest = list_agent_revisions(api, namespace_id, agent_id)
+        _require(len(latest) == 1 and latest[0]["id"] == first_id,
+                 "first Enterprise revision changed before deployment")
+        state["pending"] = {"operation": "deploy", "baselineRevisionIds": [first_id]}
+        journal.save(state)
+        try:
+            created = api.post_accepted(base + "/deploy")
+        except DefinitiveRejection:
+            after = list_agent_revisions(api, namespace_id, agent_id)
+            exact_agent = api.get(base)
+            _require(len(after) == 1 and after[0]["id"] == first_id and
+                     exact_agent.get("desiredRuntimeState") == "running" and
+                     exact_agent.get("activeRevisionId") == first_id,
+                     "deploy outcome changed after rejection")
+            state.pop("pending")
+            journal.save(state)
+            raise
+
+        _require(isinstance(created, dict) and created.get("agentId") == agent_id and
+                 created.get("namespaceId") == namespace_id and
+                 created.get("configurationId") == state["configurationId"] and
+                 created.get("configurationGeneration") == state["configurationGeneration"],
+                 "Enterprise post-origin deploy response changed")
+        second_id = created.get("id")
+    else:
+        _require(len(revisions) in (1, 2) and
+                 len([item for item in revisions if item["id"] == first_id]) == 1,
+                 "post-origin revision history is incomplete or foreign")
+        second_id = recover_revision(revisions, {first_id}, agent_id,
+                                     state["configurationId"],
+                                     state["configurationGeneration"])
+    _require(_valid_resource_id(second_id, "rev_") and second_id != first_id,
+             "post-origin revision ID is invalid")
+    second = api.get(base + "/revisions/" + second_id)
+    _assert_active_revision(second, config, {**state, "revisionId": second_id})
+    state["firstRevisionId"] = first_id
+    state["revisionId"] = second_id
+    state.pop("pending")
+    journal.save(state)
+    current = _verify_active_state(config, api, kube)
+    _require(current["desiredRuntimeState"] == "running",
+             "Enterprise post-origin revision is not running")
+    return second_id
+
+
 def verify_active(config, api, kube):
+    _require(config["privateOrigins"]["nativeOrigin"] is not None,
+             "native origin needs an owner-session return and reviewed Configuration update")
+    return _verify_active_state(config, api, kube)
+
+
+def _verify_active_state(config, api, kube, *, allow_transitional=False):
     installation = check(config, api, kube)
     path = config["privateJournal"]["mountPath"]
     state, raw = read_journal(path, config["source"]["revision"], _identity_hash(config))
@@ -1367,9 +1567,45 @@ def verify_active(config, api, kube):
     _require(_valid_resource_id(revision_id, "rev_"), "Enterprise active revision is missing")
     base = f"/namespaces/{namespace_id}/agents/{agent_id}"
     revisions = list_agent_revisions(api, namespace_id, agent_id)
-    _require(len(revisions) == 1 and revisions[0].get("id") == revision_id,
-             "Enterprise revision history changed")
-    _assert_active_revision(api.get(base + "/revisions/" + revision_id), config, state)
+    desired_hash = hashlib.sha256(json.dumps(desired_configuration(config), sort_keys=True,
+                                              separators=(",", ":")).encode()).hexdigest()
+    _require(state.get("desiredHash") == desired_hash,
+             "Enterprise journaled Configuration changed")
+    native_origin = config["privateOrigins"]["nativeOrigin"]
+    first_id = state.get("firstRevisionId")
+    if native_origin is None:
+        _require(first_id is None and len(revisions) == 1 and
+                 revisions[0].get("id") == revision_id,
+                 "Enterprise revision history changed")
+    else:
+        _require(type(state["configurationGeneration"]) is int and
+                 state["configurationGeneration"] == 2,
+                 "post-origin Configuration generation is invalid")
+        before_config = {**config, "privateOrigins": {**config["privateOrigins"],
+                                                      "nativeOrigin": None}}
+        if first_id is None:
+            _require(allow_transitional and len(revisions) == 1 and
+                     revisions[0].get("id") == revision_id,
+                     "post-origin revision is not deployed")
+            first_id = revision_id
+        else:
+            _require(_valid_resource_id(first_id, "rev_") and first_id != revision_id and
+                     len(revisions) == 2 and
+                     {item["id"] for item in revisions} == {first_id, revision_id},
+                     "Enterprise revision history changed")
+        first_state = {**state, "revisionId": first_id,
+                       "configurationGeneration": state["configurationGeneration"] - 1}
+        _assert_active_revision(api.get(base + "/revisions/" + first_id),
+                                before_config, first_state)
+        first_deployment = api.get(base + "/deployments/" + first_id)
+        _require(isinstance(first_deployment, dict) and
+                 first_deployment.get("deploymentId") == first_id and
+                 first_deployment.get("namespaceId") == namespace_id and
+                 first_deployment.get("agentId") == agent_id and
+                 first_deployment.get("status") == "succeeded",
+                 "first Enterprise deployment changed")
+    if native_origin is None or first_id != revision_id:
+        _assert_active_revision(api.get(base + "/revisions/" + revision_id), config, state)
     deployment = api.get(base + "/deployments/" + revision_id)
     _require(isinstance(deployment, dict) and deployment.get("deploymentId") == revision_id and
              deployment.get("namespaceId") == namespace_id and
@@ -1473,8 +1709,13 @@ def _validate_config(config):
     if source.get("revision") != "33bb74590a749f37934da4502fca6035cd234a55":
         raise Blocked("Enterprise source revision changed")
     origins = config.get("privateOrigins")
-    if not isinstance(origins, dict) or origins.get("console") != CONSOLE_ORIGIN:
+    if (not isinstance(origins, dict) or origins.get("console") != CONSOLE_ORIGIN or
+            "nativeOrigin" not in origins):
         raise Blocked("Enterprise console origin changed")
+    native_origin = origins.get("nativeOrigin")
+    if native_origin is not None and (not isinstance(native_origin, str) or not re.fullmatch(
+            r"https://agent-[0-9a-f]{32}\.agents\.oce\.stinkyboi\.com", native_origin)):
+        raise Blocked("Enterprise native origin is not a reviewed returned origin")
     namespace = config.get("namespace")
     if not isinstance(namespace, dict):
         raise Blocked("Enterprise Namespace definition is invalid")
@@ -1919,7 +2160,7 @@ class ProtectedJournal:
                                                      "agent-create", "secret-create",
                                                      "role-create", "binding-create",
                                                      "agent-bind", "runtime-credentials",
-                                                     "deploy", "stop") or
+                                                     "deploy", "stop", "configuration-update") or
                     not isinstance(pending.get("baselineRevisionIds", []), list) or
                     any(not isinstance(item, str) or not item.startswith("rev_") or
                         not re.fullmatch(r"[A-Za-z0-9._~:@/-]{1,200}", item)

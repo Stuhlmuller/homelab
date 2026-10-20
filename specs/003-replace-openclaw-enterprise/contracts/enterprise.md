@@ -31,8 +31,13 @@ OpenRouter key must be registered as an Agent `harnessAuth` OCC Secret; direct
 Configuration secret binding or an ExternalSecret model mount is unsupported.
 OCE projects it as `OPENAI_API_KEY` only into this agent. Foundation,
 Configuration and stopped Agent creation may proceed without the key. An
-`occ agent deploy` requires a bound Secret and runs a real provider probe; never
+Agent deploy requires a bound Secret and runs a real provider probe; never
 use it in the inactive phase.
+The initial managed Configuration follows the pinned first-Agent helper:
+OpenRouter uses the `openai` transport, `openrouter/free` wire model,
+`OPENAI_API_KEY` env credential reference and narrow model secret provider;
+tools are denied. Native `controlUi` starts disabled, with no localhost browser
+origins. The origin is `null` in committed desired state until T048 returns it.
 
 Planned `scripts/openclaw-enterprise.py` commands are `check`, `reconcile`, and
 `verify`, each accepting `--config PATH`. `reconcile` also requires the protected
@@ -142,6 +147,33 @@ Test duplicate names, foreign ownership, changed input on retry, lost responses,
 worker restart, generation conflicts, permission revocation and partial grants.
 A second run must preserve the same IDs and grants without redeployment unless
 configuration actually changed.
+
+The pinned native-admin status handler returns `data.origin` with a derived
+target even when the first active revision reports `unsupported` because its
+native UI is disabled. An authorized owner must review that non-secret value
+and commit it as `privateOrigins.nativeOrigin`. The accepted shape is the exact
+`https://agent-<32 lowercase hex>.agents.oce.stinkyboi.com` origin. Final
+automated active reconciliation and verification remain blocked while it is
+`null`.
+The source-only reconciler checks the first running revision and grants, then
+CAS-updates the saved Configuration from generation 1 to 2. It journals the
+first revision before admitting one second revision. Lost deployment responses
+are recovered only from one exact new revision at the reviewed Configuration
+generation; an absent or foreign result blocks reposting. Read-only verify
+checks both immutable revisions and the selected second deployment without
+sending inference. T041 remains open for protected live proof. The GitHub
+runner also lacks a declared persistent
+`/private/openclaw-enterprise/journal.json` volume; T043 must keep mutating
+workflow stages disabled until an in-cluster durable mount is declared and
+verified. A source-built `occ` CLI digest is still absent under T004; this
+reconciler uses the pinned public HTTP Agent routes and never executes an
+ambient binary.
+
+Pinned source: [first-Agent Configuration builder](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/first-agent.mjs),
+[Agent create/deploy/stop API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md),
+[route schemas](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/routes.ts),
+[native-admin human-session and response handler](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/http/native-admin.ts),
+and [native-admin operator contract](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agent-native-admin.md).
 
 ## Installation and Upgrades
 
