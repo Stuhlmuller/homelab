@@ -33,6 +33,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-chart-hooks-test.py",
                          "openclaw-enterprise-lifecycle-test.py",
                          "openclaw-enterprise-startup-test.py",
+                         "openclaw-enterprise-bootstrap-key-test.py",
                          "openclaw-enterprise-quiesce-test.py",
                          "openclaw-enterprise-bind-installation-test.py",
                          "openclaw-enterprise-test.py",
