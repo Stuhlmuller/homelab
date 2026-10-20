@@ -58,7 +58,7 @@ class ActiveAgentReconciliation(unittest.TestCase):
     def _reviewed_origin(self):
         changed = copy.deepcopy(self.config)
         changed["privateOrigins"]["nativeOrigin"] = (
-            "https://agent-" + "a" * 32 + ".agents.oce.stinkyboi.com")
+            "https://agent-da7e7bd6a45b40f25fcbdbf97f38683e.agents.oce.stinkyboi.com")
         return changed
 
     def _reconcile_origin(self, changed):
@@ -118,6 +118,44 @@ class ActiveAgentReconciliation(unittest.TestCase):
                               self.credential)
         self.assertEqual(len([call for call in self.api.calls
                               if call[1].endswith("/deploy")]), 1)
+
+    def test_native_origin_before_first_revision_cannot_create_configuration(self):
+        changed = self._reviewed_origin()
+        changed["activationEnabled"] = False
+        changed["privateJournal"]["mountPath"] = str(Path(
+            self.config["privateJournal"]["mountPath"]).with_name("early-origin.json"))
+        api = BASE.ActiveTenantAPI()
+        kube = BASE.TenantKubernetes(api)
+        initial = {"installationId": "ins_one", "namespaceId": "ns_one"}
+        with OCE.ProtectedJournal(changed["privateJournal"]["mountPath"],
+                                  changed["source"]["revision"],
+                                  OCE._identity_hash(changed)) as journal:
+            journal.save(initial)
+        with patch.object(OCE, "prove_driver_identity",
+                          return_value={"installationId": "ins_one"}):
+            with self.assertRaisesRegex(OCE.Blocked, "first active revision"):
+                OCE.reconcile(changed, api, kube, "a" * 40)
+        self.assertEqual(api.configurations, {})
+        self.assertEqual(api.agents, {})
+        self.assertFalse(any(call[0] in ("POST", "PATCH", "POST-200", "POST-202")
+                             for call in api.calls))
+        self.assertEqual(OCE.read_journal(changed["privateJournal"]["mountPath"],
+                                          changed["source"]["revision"],
+                                          OCE._identity_hash(changed))[0], initial)
+
+    def test_other_valid_agent_host_cannot_change_configuration(self):
+        self._active()
+        changed = self._reviewed_origin()
+        changed["privateOrigins"]["nativeOrigin"] = (
+            "https://agent-" + "a" * 32 + ".agents.oce.stinkyboi.com")
+        writes = len([call for call in self.api.calls if
+                      call[0] in ("POST", "PATCH", "POST-200", "POST-202")])
+        with self.assertRaisesRegex(OCE.Blocked, "returned Agent host"):
+            self._reconcile_origin(changed)
+        self.assertEqual(len([call for call in self.api.calls if
+                              call[0] in ("POST", "PATCH", "POST-200", "POST-202")]), writes)
+        self.assertEqual(self.api.configurations["cfg_one"]["generation"], 1)
+        self.assertNotIn("pending", self._journal())
 
     def test_reviewed_native_origin_shape_requires_configuration_update(self):
         self._active()
@@ -218,6 +256,7 @@ class ActiveAgentReconciliation(unittest.TestCase):
         self._active()
         changed = self._reviewed_origin()
         self.assertEqual(self._reconcile_origin(changed)["revisionId"], "rev_two")
+        changed["activationEnabled"] = False
         with patch.object(OCE, "prove_driver_identity",
                           return_value={"installationId": "ins_one"}):
             self.assertEqual(OCE.stop_agent(changed, self.api, self.kube,

@@ -464,6 +464,10 @@ def reconcile(config, api, kube, expected_sha, model_credential=None):
         installation_id = installation["installationId"]
         _require(state.get("installationId", installation_id) == installation_id,
                  "journaled Installation identity changed")
+        if config["privateOrigins"]["nativeOrigin"] is not None:
+            _require(_valid_resource_id(state.get("revisionId"), "rev_") and
+                     type(state.get("modelKeyVersion")) is int,
+                     "native origin requires the first active revision")
         if "installationId" not in state:
             state["installationId"] = installation_id
             journal.save(state)
@@ -1378,9 +1382,17 @@ def reconcile_native_origin_configuration(config, api, kube, journal):
     state = dict(journal.state)
     generation = state.get("configurationGeneration")
     _require(type(generation) is int and 1 <= generation < 9007199254740991 and
+             _valid_resource_id(state.get("namespaceId"), "ns_") and
+             _valid_resource_id(state.get("agentId"), "agt_") and
              _valid_resource_id(state.get("revisionId"), "rev_") and
              state.get("desiredHash") in (before_hash, after_hash),
              "first Enterprise revision or reviewed Configuration is missing")
+    expected_host = hashlib.sha256(
+        f"{state['installationId']}\0{state['namespaceId']}\0{state['agentId']}".encode()
+    ).hexdigest()[:32]
+    _require(config["privateOrigins"]["nativeOrigin"] ==
+             f"https://agent-{expected_host}.agents.oce.stinkyboi.com",
+             "native origin does not match the returned Agent host")
     pending = state.get("pending")
     if state["desiredHash"] == after_hash:
         _require(generation == 2, "post-origin Configuration generation is invalid")

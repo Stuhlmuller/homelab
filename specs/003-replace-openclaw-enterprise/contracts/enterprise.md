@@ -152,7 +152,8 @@ The pinned native-admin status handler returns `data.origin` with a derived
 target even when the first active revision reports `unsupported` because its
 native UI is disabled. An authorized owner must review that non-secret value
 and commit it as `privateOrigins.nativeOrigin`. The accepted shape is the exact
-`https://agent-<32 lowercase hex>.agents.oce.stinkyboi.com` origin. Final
+`https://agent-<32 lowercase hex>.agents.oce.stinkyboi.com` origin, with its
+host hash bound to the journaled Installation, Namespace, and Agent IDs. Final
 automated active reconciliation and verification remain blocked while it is
 `null`.
 The source-only reconciler checks the first running revision and grants, then
@@ -172,6 +173,7 @@ ambient binary.
 Pinned source: [first-Agent Configuration builder](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/first-agent.mjs),
 [Agent create/deploy/stop API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md),
 [route schemas](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/routes.ts),
+[native-admin host derivation](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/gateway/native-admin-host.mjs),
 [native-admin human-session and response handler](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/http/native-admin.ts),
 and [native-admin operator contract](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agent-native-admin.md).
 
