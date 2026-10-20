@@ -305,20 +305,26 @@ case "$stage" in
       esac
       exit 1
     fi
-    phase=publication-version
+    phase=publication-archive-head
     aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
       --output json >"$work/archive-head.json"
+    phase=publication-archive-metadata
     jq -e --argjson size "$archive_size" \
       '.ContentLength == $size and .ServerSideEncryption == "aws:kms" and
-       (.VersionId | type) == "string" and .VersionId != ""' \
+       (.VersionId | type) == "string" and .VersionId != "" and .VersionId != "None"' \
       "$work/archive-head.json" >/dev/null
-    aws s3 cp "$work/receipt.json" "s3://${bucket}/${prefix}/receipt.json"
     archive_version="$(jq -er .VersionId "$work/archive-head.json")"
+    phase=publication-receipt-upload
+    aws s3 cp "$work/receipt.json" "s3://${bucket}/${prefix}/receipt.json"
+    phase=publication-receipt-head
     receipt_version="$(aws s3api head-object --bucket "$bucket" --key "$prefix/receipt.json" --query VersionId --output text)"
-    [[ -n "$archive_version" && "$archive_version" != None && -n "$receipt_version" && "$receipt_version" != None ]] || exit 1
+    [[ -n "$receipt_version" && "$receipt_version" != None ]] || exit 1
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
+    phase=publication-restore-prepare
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
+    phase=publication-restore-archive
     restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
+    phase=publication-restore-receipt
     restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
     phase=verification
     verify_restored_archive "$restore/receipt.json"

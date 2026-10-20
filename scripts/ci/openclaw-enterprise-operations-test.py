@@ -565,7 +565,11 @@ restore_version key version-1 "$2"
                           'publication-lookup-response|publication-upload|'
                           'publication-source-read|publication-s3-create|publication-s3-part|'
                           'publication-s3-complete|publication-digest|'
-                          'publication-version|verification', workflow)
+                          'publication-version|publication-archive-head|'
+                          'publication-archive-metadata|publication-receipt-upload|'
+                          'publication-receipt-head|publication-restore-prepare|'
+                          'publication-restore-archive|publication-restore-receipt|'
+                          'verification', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
@@ -598,6 +602,74 @@ false
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(phase.read_text(), 'preflight\n')
+
+    def test_archive_publication_reports_exact_fixed_post_upload_phase(self):
+        source = SCRIPT.read_text()
+        block = ('    phase=publication-archive-head\n' + source.split(
+            '    phase=publication-archive-head\n', 1)[1].split(
+                '    phase=verification\n', 1)[0])
+        categories = (
+            'publication-archive-head', 'publication-archive-metadata',
+            'publication-receipt-upload', 'publication-receipt-head',
+            'publication-restore-prepare', 'publication-restore-archive',
+            'publication-restore-receipt',
+        )
+        workflow = WORKFLOW.read_text()
+        for category in categories:
+            self.assertIn('|' + category + '|', workflow)
+        shell = '''set -euo pipefail
+work="$TEST_WORK"
+bucket=test-bucket
+prefix=test-prefix
+archive_size=10
+GITHUB_RUN_ID=123
+reader=(reader_stub)
+trap 'result=$?; printf "%s\\n" "$phase" >"$TEST_PHASE"; exit "$result"' EXIT
+aws() {
+  if [[ "$1 $2" == 's3api head-object' ]]; then
+    if [[ " $* " == *'/legacy.tar.gz '* ]]; then
+      [[ "$TEST_FAIL" != publication-archive-head ]] || return 7
+      if [[ "$TEST_FAIL" == publication-archive-metadata ]]; then
+        printf '{"ContentLength":9,"ServerSideEncryption":"aws:kms","VersionId":"archive-v1"}\\n'
+      elif [[ "$TEST_FAIL" == publication-archive-version-none ]]; then
+        printf '{"ContentLength":10,"ServerSideEncryption":"aws:kms","VersionId":"None"}\\n'
+      else
+        printf '{"ContentLength":10,"ServerSideEncryption":"aws:kms","VersionId":"archive-v1"}\\n'
+      fi
+    else
+      [[ "$TEST_FAIL" != publication-receipt-head ]] || return 7
+      printf 'receipt-v1\\n'
+    fi
+  elif [[ "$1 $2" == 's3 cp' ]]; then
+    [[ "$TEST_FAIL" != publication-receipt-upload ]] || return 7
+  else
+    return 7
+  fi
+}
+reader_stub() { [[ "$TEST_FAIL" != publication-restore-prepare ]]; }
+restore_version() {
+  if [[ "$2" == archive-v1 ]]; then
+    [[ "$TEST_FAIL" != publication-restore-archive ]]
+  else
+    [[ "$TEST_FAIL" != publication-restore-receipt ]]
+  fi
+}
+''' + block
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory)
+            (private / 'receipt.json').write_text('{}')
+            phase = private / 'phase'
+            for failed in (*categories, 'publication-archive-version-none', 'none'):
+                result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
+                                        env={**os.environ, 'TEST_WORK': directory,
+                                             'TEST_PHASE': str(phase), 'TEST_FAIL': failed},
+                                        capture_output=True, text=True, timeout=10,
+                                        check=False)
+                self.assertEqual(result.returncode == 0, failed == 'none',
+                                 (failed, result.stderr))
+                self.assertEqual(phase.read_text().strip(),
+                                 'publication-archive-metadata' if failed == 'publication-archive-version-none'
+                                 else failed if failed != 'none' else categories[-1])
 
     def test_s3_lookup_reports_only_fixed_error_category(self):
         shell = '''set -euo pipefail

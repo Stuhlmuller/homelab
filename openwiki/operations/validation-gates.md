@@ -218,6 +218,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-b3bdcadf54edf75020440bdd
+    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
@@ -326,10 +328,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T20:48:40.649Z" }
+generated: { by: "codex", at: "2026-10-20T21:15:11.040Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T20:48:40.649Z
+    at: 2026-10-20T21:15:11.040Z
 ---
 
 # Validation Gates
@@ -1708,6 +1710,15 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
+
+Protected `publish-archive` run `39466313228` passed its exact-main guard
+and completed bounded multipart upload, then failed at 20:34:59 UTC in the
+former broad public `publication-version` category. No final offsite restore
+receipt exists and independent `verify` was not dispatched; T013 stays open.
+The reviewed operations helper now assigns fixed public subphases to archive
+HEAD/metadata, receipt upload/HEAD, and archive/receipt restore steps while
+the workflow withholds private diagnostics.
+
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
@@ -1729,6 +1740,16 @@ the existing `/var/lib` pattern. `acer` has only 1,802 MiB unreserved, below
 the 2,304 MiB database-plus-gateway minimum. Unrelated Pods remain on every
 worker, so a new `NoSchedule` taint cannot isolate a canary. Storage placement
 and actual network-policy lifecycle traffic are separate unpassed gates.
+
+A fresh read-only check at about 21:00 UTC still found every node Ready
+and untainted. `zimaboard-1` had about 3,397 MiB unreserved and 9.08 GiB
+node-filesystem free; other workers had 5 or 230 MiB unreserved and 5.03 or
+8.65 GiB free. Only control-plane `acer` had space for the distinct 21 GiB
+local claims, but its 1,801 MiB unreserved was below the 2,304 MiB database-
+plus-gateway request. Unrelated running Pods and absent custom canary taint
+tolerations prevent isolation by a `NoSchedule` taint. T022, T027 and T035
+remain blocked; no live taint, relocation or storage admission occurred.
+
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
 Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and
