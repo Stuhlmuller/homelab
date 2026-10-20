@@ -136,6 +136,10 @@ Expected canary result: no unreviewed/drifted/bypass findings. Review ingress
 separately; this helper primarily checks egress. Repeat for affected namespaces
 and expand only after [all required traffic/lifecycle cases](contracts/platform.md#required-traffic-matrix)
 pass on actual Talos nodes.
+For Cordium and Octelium snapshots, repeat `--render` with
+`clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json` to
+compare the three source-reviewed Cordium Genesis policies with live specs.
+The fixture is not a Kustomize resource and does not approve their traffic.
 
 Stock OCE's public TCP/443 rule intentionally fails the stricter broad-egress
 finding in this helper. Preserve that finding and the helper's strict behavior;

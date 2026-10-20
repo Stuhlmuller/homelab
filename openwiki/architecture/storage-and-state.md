@@ -40,10 +40,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T05:58:23.168Z" }
+generated: { by: "codex", at: "2026-10-20T06:35:13.441Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:15:08.991Z
+    at: 2026-10-20T06:35:13.441Z
 ---
 
 # Storage And State
@@ -288,19 +288,16 @@ See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
 nonrotating private key. Preserve that Secret with any eventual database
-recovery set. It also declares a TLS 1.3 PostgreSQL 18.6 StatefulSet that
-snapshots the projected certificate and key before the database entrypoint,
-so rotation makes probes fail until restart loads the new pair. It has
-separate roles and a retained 10Gi local claim template. T035 must prebind its
-expected claim after node admission. Readiness requires a last-statement
-bootstrap marker; interrupted first-run SQL leaves the PVC retained and the
-database unready. No automatic replay or declared repair workflow exists yet.
-
-The backup script rejects incomplete recovery material and an already-published
-timestamp. Its isolated restore candidate is excluded from the Kustomization.
-No Enterprise PVC, database, off-node backup, or live restore proof exists from
-this unregistered source alone.
-The 2026-10-20 post-shutdown capacity receipt found only
+recovery set. The foundation is not registered with Argo; node placement,
+distinct bound storage, scheduled backup, and live isolated restore remain
+pending. Source declares a PostgreSQL 18.6 TLS StatefulSet with separate
+admin, migrator, app, and read-only backup roles plus a retained 10Gi local
+claim template. A last-statement marker leaves interrupted first-run SQL
+unready on its retained claim; there is no automatic repair. The backup script
+rejects incomplete recovery material and duplicate publication, while the
+isolated restore candidate is excluded from the Kustomization. No new
+Enterprise PVC or live database exists from this source alone. The 2026-10-20
+post-shutdown capacity receipt found only
 3,909.5 MiB of unreserved memory on the best worker, below the 4,096 MiB
 initial Enterprise reservation before transient and host headroom. It does
 not admit the local claims or an isolated canary; see the
@@ -310,7 +307,7 @@ names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
 before chart initialization. The required retained local classes, claims,
-dedicated PostgreSQL and restore proof are still absent; the candidate does not
+ready PostgreSQL and restore proof are still absent; the candidate does not
 adopt legacy OpenClaw state.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL

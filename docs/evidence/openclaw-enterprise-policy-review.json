@@ -1,7 +1,7 @@
 {
   "acceptedEnterpriseBoundary": "Stock OCE public TCP/443 rule with private-range exclusions is a documented exception; it must still produce a strict broad-egress finding.",
   "capturedAt": "2026-10-19T02:30:39.199767+00:00",
-  "snapshotStatus": "Historical baseline: findingCounts, generatedOwnerAudit managers and decisions, ingressAudit, live counts, and policies describe capturedAt only. The later Kiali replacement is recorded in generatedOwnerAudit.pinnedSourceReview.currentLiveRecheck; capture a fresh full inventory before enforcement.",
+  "snapshotStatus": "Historical baseline: findingCounts, generatedOwnerAudit managers and decisions, ingressAudit, live counts, and policies describe capturedAt only. Later Kiali replacement and Cordium source binding are recorded separately; capture a fresh full inventory before enforcement.",
   "findingCounts": {
     "pod-requires-separate-review": 178,
     "unisolated-pod": 196,
@@ -163,6 +163,26 @@
         "readOnlyObservation": "The Ready Kiali Pod is ambient redirected; its Service targets TCP 20001/9090 and the live Istio ALLOW policy matches the repository principals.",
         "stillUnverified": "No canary has proven which Pod identities kube-router sees for gateway, Traefik, Prometheus and Octelium traffic through ambient and Service translation."
       }
+    },
+    "cordiumSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "pinnedTag": "v0.12.7",
+      "pinnedCommit": "e12b0b16d5fe94716e414fca7cfdc10b21014f2c",
+      "imageDigest": "sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401",
+      "fixture": "clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+      "fixtureSha256": "2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0",
+      "sourceRefs": {
+        "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
+        "octelium/cordium-nocturne": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/nocturne.go#L152",
+        "octelium/cordium-rscserver": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/rscserver.go#L131"
+      },
+      "completeSpecSha256": {
+        "cordium/ws-main": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+        "octelium/cordium-nocturne": "fb32c2ee1ea55c51743b1d4ffcfedb234c99d003929322ea507e9391351314bf",
+        "octelium/cordium-rscserver": "4ce6a7059f9b58a3f3ac6b35c97cb5312da100a9d1aec176a459b40c2e429543"
+      },
+      "method": "Compared the pinned upstream constructors and common labels with a sanitized fixture containing complete NetworkPolicy specs; read-only live specs match the prior hashes. The fixture is inventory input, not a deployed policy.",
+      "status": "source shape bound for 3 of 17 remaining generated policies; all-port public egress and traffic are unqualified"
     }
   },
   "ingressAudit": {
@@ -1312,7 +1332,7 @@
     }
   ],
   "requiredCorrections": [
-    "Render or otherwise source-bind the 17 remaining Cordium and Octelium generated policies to their pinned owners; the former Kiali operator policy has an equivalent source-owned replacement. Compare complete live ingress and egress specs before enforcement.",
+    "Render or otherwise source-bind the 14 Cordium and Octelium generated policies still lacking fixtures to their pinned owners; three Cordium policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has an equivalent source-owned replacement. Compare fresh complete live ingress and egress specs before enforcement.",
     "For cordium/ws-main and octelium/svc-upstream, determine the pinned generator's supported public-egress configuration and prove required destinations and private-range denial on the canary; neither all-port 0/0 rule is approved by owner binding alone.",
     "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
     "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",

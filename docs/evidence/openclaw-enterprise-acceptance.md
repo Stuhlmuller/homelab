@@ -73,6 +73,14 @@ the earlier live baseline. Their live reconciliation and enforced DNS traffic,
 generated-owner decisions, and real canary enforcement remain pending, so
 firewall activation is blocked. Private snapshots and detailed findings were
 not committed.
+At 2026-10-20 00:38 UTC, a read-only recheck of the three Cordium Genesis
+policies matched their saved complete-spec hashes and the reviewed v0.12.7
+constructors. Their [expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+is an additional inventory render input, not a live policy owner. Kiali's
+operator policy was separately replaced by source-owned equivalent policy;
+14 Cordium/Octelium-generated policies still lack bound render fixtures.
+`cordium/ws-main` public all-port egress, actual traffic, and the tainted
+canary remain unqualified; this does not pass T018 or T027.
 Read-only `kubectl top nodes` at 2026-10-18 11:57 UTC showed memory use of
 69% on `acer`, 82% on `zimaboard-0`, 85% on `zimaboard-1` and 81% on
 `zimaboard-2`; all four nodes were Ready and none had a dedicated canary

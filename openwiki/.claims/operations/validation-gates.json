@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fd62bdd9bfc7dbc02f1d36dd2ec8dc22f9d58568a6d89b6547cab8082136d3c4",
+  "pageVersion": "sha256:67ec4b58ba00e94cf5bb94f77756ecf2a6e065a1b75438928b6cf5d9c31f64d7",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -1122,7 +1122,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -1139,7 +1139,7 @@
           "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L159-L247",
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L180-L268",
           "version": "repo-lines-v1:sha256:2c2e93861c3fdba4894a9e725ba19fc1560e0ba33cdf9467674691304847f681:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjN2U1NDg5YzUwNWQ2MmI3NGUwYzRhZWFlNzY3NDllZGM3OTljNWYyNTEyMTRjYmQ3MGZhNzMwNGYzYjk1YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZDYzNmIxMTdjNjBmNTBmMTI2ZDVlMDA4MmY4MDNjMDQxNWZiMWM0OTYwMjE5NmM5Mzc3YTRiMDNlZGNmZDUifQ"
         },
         {
@@ -1162,7 +1162,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1262,7 +1262,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         }
       ]
     },
@@ -1315,10 +1315,42 @@
           "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
         }
       ]
+    },
+    {
+      "id": "claim_d2bb7c4027b140ae90c7db26e4b9c3c5",
+      "statement": "A read-only fixture binds complete expected NetworkPolicy specs for three pinned Cordium v0.12.7 Genesis policies, leaving 14 Cordium/Octelium generated policies without source-bound fixtures; it does not prove pinned binary rendering or live enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py",
+          "version": "repo-file-v1:sha256:3b92bf94f576551cdd1d1242ca4d4a461c89e2606c68c8df30f2eda1b558fda1"
+        }
+      ]
+    },
+    {
+      "id": "claim_401e6ef8883345159579fb1c697cace1",
+      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors admit public IPv4 and IPv6 on all ports, which additive NetworkPolicies cannot narrow; generator-owned correction and isolated canary traffic qualification remain required before enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:15:08.991Z"
+    "at": "2026-10-20T06:35:13.441Z"
   }
 }

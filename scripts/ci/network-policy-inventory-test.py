@@ -2,6 +2,7 @@
 """Regression coverage for the read-only effective NetworkPolicy inventory."""
 
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -47,6 +48,26 @@ def policy(namespace, name, selector, egress=None, policy_types=None, ingress=No
 
 
 class NetworkPolicyInventoryTests(unittest.TestCase):
+    def test_pinned_cordium_generated_policy_shapes(self):
+        manifest = (ROOT / "clusters/homelab/apps/cordium-bootstrap/genesis.yaml").read_text()
+        self.assertIn("ghcr.io/octelium/cordium-genesis:0.12.7@sha256:"
+                      "bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401", manifest)
+        items = inventory.load_items(ROOT / "clusters/homelab/apps/cordium-bootstrap/"
+                                     "generated-networkpolicies.json")
+        hashes = {
+            f"{item['metadata']['namespace']}/{item['metadata']['name']}":
+            hashlib.sha256(json.dumps(item["spec"], sort_keys=True,
+                                      separators=(",", ":")).encode()).hexdigest()
+            for item in items
+        }
+        self.assertEqual(hashes, {
+            "cordium/ws-main": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+            "octelium/cordium-nocturne": "fb32c2ee1ea55c51743b1d4ffcfedb234c99d003929322ea507e9391351314bf",
+            "octelium/cordium-rscserver": "4ce6a7059f9b58a3f3ac6b35c97cb5312da100a9d1aec176a459b40c2e429543",
+        })
+        self.assertEqual(len(inventory.policies(items, strict=True)), 3)
+        self.assertIn("all-ports", inventory.broad_rule(items[0]["spec"]["egress"][0]))
+
     def test_reports_additive_union_drift_and_exceptions(self):
         narrow = policy("apps", "narrow", {"matchLabels": {"app": "client"}}, [{
             "to": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "data"}},
