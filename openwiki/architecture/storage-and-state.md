@@ -4,10 +4,14 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-7c9faa7724c75fa77db675cb
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml
   - id: openwiki-source-20275bab1ec480742e28a50f
     resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -34,10 +38,10 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T21:32:39.892Z" }
+generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:06:40.149Z
 ---
 
 # Storage And State
@@ -282,10 +286,18 @@ See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
 nonrotating private key. Preserve that Secret with any eventual database
-recovery set. The foundation is not registered with Argo; node placement,
-distinct storage, PostgreSQL roles, database and agent backups, and isolated
-restore remain pending. No new Enterprise PVC or live database exists from
-this source alone.
+recovery set. It also declares a TLS 1.3 PostgreSQL 18.6 StatefulSet that
+snapshots the projected certificate and key before the database entrypoint,
+so rotation makes probes fail until restart loads the new pair. It has
+separate roles and a retained 10Gi local claim template. T035 must prebind its
+expected claim after node admission. Readiness requires a last-statement
+bootstrap marker; interrupted first-run SQL leaves the PVC retained and the
+database unready. No automatic replay or declared repair workflow exists yet.
+
+The backup script rejects incomplete recovery material and an already-published
+timestamp. Its isolated restore candidate is excluded from the Kustomization.
+No Enterprise PVC, database, off-node backup, or live restore proof exists from
+this unregistered source alone.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to

@@ -14,8 +14,6 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
-  - id: openwiki-source-62b4804f94bc9a36375f5db0
-    resource: repo://clusters/homelab/apps/external-secrets/cluster-secret-store.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
@@ -38,12 +36,14 @@ sources:
     resource: repo://clusters/homelab/apps/multica/README.md
   - id: openwiki-source-846efb58b681f5ac619edfd7
     resource: repo://clusters/homelab/apps/multica/runtime/bootstrap.py
+  - id: openwiki-source-5accc732627f3c9818cf76a8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/database-bootstrap.sql
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -104,10 +104,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:06:40.149Z
 ---
 
 # Secrets And Identity
@@ -276,9 +276,10 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
-The `aws-ssm` store allow-list includes both; seven `OnChange` ExternalSecrets
+The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
-Secrets on deletion. The model key remains a placeholder until the protected
+Secrets on deletion. The eighth projects a dedicated PostgreSQL backup
+password. The model key remains a placeholder until the protected
 workflow supplies a distinct OpenRouter key. These declarations do not prove
 materialization or authorize activation.
 
@@ -286,9 +287,15 @@ materialization or authorize activation.
 from generated app and migrator passwords. Both URLs name the private
 `occ-postgres` Service and require `sslmode=verify-full` with the retained
 `occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
-password is a separate target. cert-manager declares that CA and a server
-certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
-and live TLS verification remain pending.
+and backup passwords have separate targets. cert-manager declares that CA
+and a server certificate for the Service DNS name. The dormant PostgreSQL
+StatefulSet snapshots the projected TLS pair before its image entrypoint
+starts PostgreSQL; renewal fails readiness and liveness until a restart loads
+the new pair. It bootstraps separate admin, migrator, app, and read-only backup
+roles. Password rotation needs a declared `ALTER ROLE` path; advancing an
+ExternalSecret alone does not rerun bootstrap SQL. The foundation is
+unregistered; scheduled backup, chart consumers, and live TLS verification
+remain pending.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,

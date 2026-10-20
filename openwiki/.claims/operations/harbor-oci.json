@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e8aff229ad85e72df0552ca106944c3dbba7c03e43321aad9df7280699ca201e",
+  "pageVersion": "sha256:1cf80d7659e4493db3465447469548a26670a7619b7bca2b1ba76e76b2374383",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -442,7 +442,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:3e02afd5fa5bf89459e99bdf72e1ff0eb9d5b73e9e1d5b16826b89b9a35452cc"
+          "version": "repo-file-v1:sha256:a0062a6131bb514134906dd72cd92f75b9c58ad2238b51b10824e188557d1500"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
@@ -458,7 +458,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
+          "version": "repo-file-v1:sha256:aaddee17f62ef62ce40180a502f08a7d9788b0f2efa1f3aa7cb9aba2be3aa633"
         }
       ]
     },
@@ -532,7 +532,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:3e02afd5fa5bf89459e99bdf72e1ff0eb9d5b73e9e1d5b16826b89b9a35452cc"
+          "version": "repo-file-v1:sha256:a0062a6131bb514134906dd72cd92f75b9c58ad2238b51b10824e188557d1500"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -540,7 +540,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
+          "version": "repo-file-v1:sha256:aaddee17f62ef62ce40180a502f08a7d9788b0f2efa1f3aa7cb9aba2be3aa633"
         }
       ]
     },
@@ -742,7 +742,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
+          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -823,6 +823,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:06:40.149Z"
   }
 }

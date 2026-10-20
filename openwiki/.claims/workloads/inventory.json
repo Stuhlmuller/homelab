@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:21124e9a9002b56c995f025e40cca8f1b37d686bdd8c75e7e451583b489de2ef",
+  "pageVersion": "sha256:6da047c5bcbcb67de0b9d007a020975c92ab9c16a363950915774800effe3acb",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -338,7 +338,7 @@
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:8f2b12a2cba37d431e85edaa2cae0f816e8f1b366ec8ea67e8dc45886fbe9e56"
+          "version": "repo-file-v1:sha256:5acded19050abc00e555f632f5fc2d52510fb0468b635825609c169214562871"
         }
       ]
     },
@@ -392,31 +392,27 @@
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted control-plane and tenant namespaces, tenant RoleBindings, exact retained SSM projections, system ingress denial and PostgreSQL certificates, but no running database, storage, route or Installation workload.",
+      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted control-plane and tenant namespaces, tenant RoleBindings, eight retained OnChange SSM projections, system ingress denial, PostgreSQL certificates, and a PostgreSQL 18 StatefulSet with a retained local claim template; it has no registered or running database, bound storage, route, or Installation workload.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
+          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml#L1-L142",
-          "version": "repo-lines-v1:sha256:2f47ce2f94290cdbc7ba3a162ec900294f37a1783a77505beba6be9dc5695e2f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlY2E5YWY0YzA1NWUyYmYxOWM2NGFjZjIzMmVkM2QxMzg3Njc2NmNjYzk5YjQ0MzM3OTdmNzljZDYzYWJhMWU2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJlYTY1ZTI4ZDAzMDY4ZGU5M2RjNjFiYWZmNWM3YWM1ZjUxMWNlOGExZWZkODY3YzQzNTMxNmM2NmYzYjI0MGMyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
+          "version": "repo-file-v1:sha256:13e2049fdb039f9b24df9c7d1c9aff6f9005fdf09adf981e95a8dfe1f88a4370"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
-          "version": "repo-file-v1:sha256:cdc8578bea1b004134ae7841f8a2520e413e8e18699499704c62b30369d3c3ba"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml#L1-L74",
-          "version": "repo-lines-v1:sha256:3c29eabbfed512e21ad464a2b2fba989b8ded8e845f93a576aa133e761e17bf4:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2YjE1YmM5ZDkzNDY5ZjBjZTliM2Q4NGViM2FjMGM1OTYyZWVlNmFjOWIzMTg2NWZhOWZlMzE4OGUyMGU4YzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:f68ddf093904b0aa8bdb7beb3c59acd25bc7df9a8cc5452e70bd7ea6d237c48e"
+          "version": "repo-file-v1:sha256:611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
-          "version": "repo-file-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
+          "version": "repo-file-v1:sha256:5b01d9104cce65ef4cdd9d3b908c2269583dbf6550ec355c6918bc018987ea7a"
         }
       ]
     },
@@ -521,6 +517,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:06:40.149Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:914a5c4828924db45536c732f1ea283c702ae10c795be6336445f60d7a996153",
+  "pageVersion": "sha256:2d515a142f627147674434297c3b3c937168d6a8896e1c1524d27dca0906c1d6",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -94,15 +94,23 @@
     },
     {
       "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
-      "statement": "The unregistered Enterprise foundation declares a retained nonrotating PostgreSQL CA, but does not create a PVC or live database; placement, roles, backups and isolated restore are still pending.",
+      "statement": "The unregistered Enterprise foundation declares a retained PostgreSQL CA, TLS 1.3 PostgreSQL 18.6 StatefulSet with a retained 10Gi local claim template, role bootstrap, complete-recovery-material backup script, and isolated restore candidate; no Enterprise PVC, database, off-node backup, or live restore proof exists from this source alone.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
+          "version": "repo-file-v1:sha256:f984e8e2d747cb54e065acb571beae85fa1fa7f4f62847f9c111af20b9f2bd48"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml#L1-L65",
-          "version": "repo-lines-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzZjdiMzVjZjkxMTQ1MDBkN2IyN2E5YjFhNTM3N2NiM2I4NDJlM2E4YzMwNTllN2Y0ZTk1ZjlhNjgyMGM0MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNmJiYmZhM2NlYjlkNzZhMGJkMDljNWRkM2FiZmUwYjY3NDM0M2JmZmQ1Yzk2YzJlYTY0OGZhMzQ1NzY4ZDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
+          "version": "repo-file-v1:sha256:22892a3dbdd7652a068606a4bf907a7b1d74a1225a64d5620813d2c7c8294459"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
+          "version": "repo-file-v1:sha256:5b01d9104cce65ef4cdd9d3b908c2269583dbf6550ec355c6918bc018987ea7a"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml",
+          "version": "repo-file-v1:sha256:aff9913c5753e69880f2be5236c5141303fea0910cc02e08d67b89bd28490337"
         }
       ]
     },
@@ -141,6 +149,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:06:40.149Z"
   }
 }

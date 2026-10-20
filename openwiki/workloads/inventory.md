@@ -66,12 +66,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
-  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
   - id: openwiki-source-855f2c27f3fa7ed6f006f4be
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -160,10 +158,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
+generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:06:40.149Z
 ---
 
 # Workload Inventory
@@ -373,9 +371,11 @@ The OpenClaw Enterprise replacement is staged in source with
 agent has been deployed. The unregistered
 [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
-scoped tenant RoleBindings, seven retained `OnChange` secret projections,
+scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It declares no running PostgreSQL, local volumes, or Installation
+certificate. It also declares a PostgreSQL 18 StatefulSet with a retained
+10Gi local claim template and marker-gated bootstrap readiness. It has no
+registered or running database, bound storage, route, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its

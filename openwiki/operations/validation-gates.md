@@ -168,6 +168,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-6514a0140b512caa7259f135
+    resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-86a40ee4669b4b7843917e87
@@ -248,10 +250,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
+generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:06:40.149Z
 ---
 
 # Validation Gates
@@ -1588,7 +1590,12 @@ The dormant foundation adds
 to `static-checks.sh`. It renders the Kustomization and checks restricted
 namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
 RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
-private server SAN, and `activationEnabled: false`. The separate
+private server SAN, PostgreSQL TLS and retained claim shape, pre-entrypoint
+TLS snapshot and renewal probe failure, backup role, bootstrap-completion
+readiness, excluded restore Job isolation, and `activationEnabled: false`.
+The PostgreSQL 18 fixture checks TLS, role separation, backup publication,
+isolated restore, and interrupted bootstrap without establishing live recovery.
+The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
 fixtures exercise reconciliation and workload attestation. Config validation
