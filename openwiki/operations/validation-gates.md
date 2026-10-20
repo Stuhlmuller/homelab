@@ -316,10 +316,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T17:42:58.784Z" }
+generated: { by: "codex", at: "2026-10-20T19:05:38.546Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:25:19.174Z
+    at: 2026-10-20T19:05:38.546Z
 ---
 
 # Validation Gates
@@ -850,13 +850,23 @@ rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
 
-The Platform Maintenance Conftest rule binds the workflow's explicit empty
-permissions map, fixed inputs and endpoint, both jobs' commands, pinned actions,
-job settings and private credential mapping. Its regression fixture rejects a
-missing permissions key paired with a workflow-level custom shell, which could
-otherwise reinterpret the exact run scripts. The repository also hashes the
-credentialed workflow and inventories both jobs. These are source checks;
-private recovery and capacity receipts still gate any live maintenance stage.
+The Platform Maintenance Conftest rule accepts only `workflow_dispatch` and binds
+the explicit empty permissions map, fixed inputs and endpoint, both jobs'
+commands, pinned actions, job settings and private credential mapping. Regression
+fixtures reject an added `workflow_call` trigger and a missing permissions key
+paired with a custom shell; either could bypass the reviewed manual workflow
+boundary. A shared rule also rejects workflow and job run defaults or extra
+environment, step shell and working-directory overrides, and `BASH_ENV` or
+`ENV` on any step. The repository also hashes the credentialed workflow and
+inventories both jobs. These are source checks; private recovery and capacity
+receipts still gate any live maintenance stage.
+
+The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
+require `workflow_dispatch` as their sole event and use the same run-setting
+guard. Regression fixtures reject a reusable `workflow_call` trigger, shell or
+working-directory overrides, and shell-prelude environment variables. The
+credentialed legacy operation has an exact four-variable environment map. These
+are source checks, not evidence that either workflow has run.
 
 The live-plan and protected-apply diagnostic exceptions check a classifier's
 SHA-256 inside the hashed workflow before reading private output. A changed or

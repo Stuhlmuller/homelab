@@ -78,10 +78,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T17:42:58.784Z" }
+generated: { by: "codex", at: "2026-10-20T19:05:38.546Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T18:08:01.242Z
+    at: 2026-10-20T19:05:38.546Z
 ---
 
 # CI/CD
@@ -171,6 +171,15 @@ Enterprise at explicit repository and chart revisions. Source tests pass; this
 stage has not run on the cluster. Reconciliation, stop, restore and acceptance
 remain separate gates.
 
+The startup and operations [workflow policy](../../policy/workflows.rego) rules
+accept only `workflow_dispatch`. Regression fixtures reject an added
+`workflow_call` event, so another workflow cannot reuse those protected jobs
+without manual dispatch. They also reject unreviewed workflow or job run
+defaults and environment, step shell or working-directory overrides, and
+`BASH_ENV` or `ENV` on any step. The credentialed legacy stage binds its exact
+four-variable environment. This is source validation, not a live execution
+receipt.
+
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
 accepts fixed inspect, canary and upgrade stages only from the exact current
 `main` commit. It runs static checks before the protected job, rechecks the SHA
@@ -179,10 +188,12 @@ The executor keeps activation and canary placement disabled until private
 recovery, image-publication and isolated-node evidence is available; no upgrade
 stage has run from this source change.
 
-The [workflow policy](../../policy/workflows.rego) requires explicit empty
-workflow permissions and pins both jobs' commands, actions, settings and private
-credential mapping. Its regression test rejects a workflow-level custom shell
-that could bypass those run commands. This is a source guard, not live readiness.
+The [workflow policy](../../policy/workflows.rego) accepts only manual
+`workflow_dispatch`, requires explicit empty workflow permissions, and pins both
+jobs' commands, actions, settings and private credential mapping. Regression
+tests reject an added reusable `workflow_call` trigger, run defaults, environment
+overrides, and custom shells that could bypass the reviewed commands. This is a
+source guard, not live readiness.
 
 The protected canary and firewall stages require a configured canary node and
 exact-current-main dispatch. Admission verifies private placement and

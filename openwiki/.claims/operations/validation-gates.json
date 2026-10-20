@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eb5f129c0cbdeb48774b5204babd509de722fcfb3cf36dee05f5d29e87dae91b",
+  "pageVersion": "sha256:f2703b225544c91d9782c70531c234298e4cc841ff1ecfc1146fbe785ccb6a58",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:85bd0002c1c27894e1c51cfc3939f9a7e8162405a38cd0a53b40f16a3b0a3e44"
+          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:85bd0002c1c27894e1c51cfc3939f9a7e8162405a38cd0a53b40f16a3b0a3e44"
+          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
         }
       ]
     },
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:ac05fd9c88e70acf93d3bfdae1e22ce2bba4528d52c5fadf96e6ef1c433814ec"
+          "version": "repo-file-v1:sha256:80169f858afe84f63453dbfe7c98c21c29e1fce93ac674e90181df947df756c9"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -1370,7 +1370,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:ac05fd9c88e70acf93d3bfdae1e22ce2bba4528d52c5fadf96e6ef1c433814ec"
+          "version": "repo-file-v1:sha256:80169f858afe84f63453dbfe7c98c21c29e1fce93ac674e90181df947df756c9"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -1550,25 +1550,59 @@
     },
     {
       "id": "claim_f8791ed056a5493297e5f36d804de25b",
-      "statement": "The Platform Maintenance policy requires explicit empty workflow permissions and binds both jobs' settings, commands, pinned actions, and private credential mapping; a regression fixture rejects a missing permissions key with custom workflow shell. This source gate does not establish live maintenance readiness.",
+      "statement": "The Platform Maintenance policy accepts only workflow_dispatch, requires explicit empty workflow permissions, and binds both jobs. A shared rule rejects workflow and job run defaults or environment, step shell and working-directory overrides, and BASH_ENV or ENV on any step. Regression fixtures cover trigger and run-setting changes; this source gate does not establish live maintenance readiness.",
       "evidence": [
         {
-          "resource": "repo://docs/ci-cd.md#L102-L115",
-          "version": "repo-lines-v1:sha256:860eacaf90e5edd4d51ccf43bd0637098c17206e3a3db3b5fd3bb7e4ccca7618:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiYmFiZmZlZDQwMjIzZWYxZDk3MjhkZjc2YTA0NGZmODM3ZGUwMDFjMWYzNWUxYmE3M2ZlNjkxYjJlYWUyNzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5MGE4ODU5NTExMDI3OWI4OTJiZGMzMjcyNzlhNGI0ZjExM2NkYTY3ZTYzNDgyMjVjMTAxYjE2ZDlhYTMzNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhNDg3MmM5OWY1ZjczOGQxNDk3MzkyZjcyNWVkMjUyOGI3ODM1OTg5MGNiNjk3MmVlYzg2N2VlYzcyNDc4MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3MjA2ZmQwZmFjYjJkOWU3OGFkM2I4MzdmY2NiOTBjNjZlMTdlN2FkOWRjYzlhNjg5MzZlNWI4YjBlOWY3YmQifQ"
+          "resource": "repo://docs/ci-cd.md#L105-L119",
+          "version": "repo-lines-v1:sha256:aaeb48c6c4815f846b0627a971dfd814e19cd33725e5606c0f5873254db0a2b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiZjgzNzA0M2UxZGI4YjYzZGVjZDdjNDdlZmYyODI3MjU4MmJkNjJiZGVhYTEwNjgwYzk0OWI2OWIzOWUwZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0YTBjMTlkY2I5ODViNzg1NGYzYTkwNDg5NWM0NDM0YzRlNWRlZGQxZGRmNDU5MGJjNWUwNDVmNzFjZGFmZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1M2U4NTg3OTE3YjNjOTE5YzRmZDg1ODdmM2M1ZjMwODc3MTU4N2RkMTI4MThmY2VmYjgxYWYwMGRkODM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5ZmYxNjliZDJlOWQyODVlNjQzYWIwN2ZmMjAwODM1ODgxZTU3MjcyMmUwY2I3YThmNzJlNDc4OGMxZmVlMWIifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L229-L304",
-          "version": "repo-lines-v1:sha256:ad97fbbe06974c8b4ed3d724c8f13f4dc75077c86b1e15ac5a5a0d48e678a367:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMTIxODBjMzNlMTJjYmU3ZWYxNzNiNTExMmViZDhiMjI2YzM0N2ZiYWU2ZmE1MjQ4ZTg1NWNjZTJhYWU0MGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiZGNkNGNjZGMwM2UwOWUwMDcxMzU4MmFhMDE5NGFkOGI3M2I0NWFjMGUwZThiMmM4ZGMzZWJiNDM3NmM2YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4NTkxNmE2NzkxNmYwOWY3Zjg3ZGYwY2I3Mzg4ODNmY2Y4NTBkMTE0ZTI4NmY4NGI0OGIyNDBiMzljOWJmZWEifQ"
+          "resource": "repo://policy/workflows.rego#L232-L243",
+          "version": "repo-lines-v1:sha256:8262c5e3f51c69b969d5d15b29da28dd2bb9a0a4f013485dd0a2dd09bfa47f7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZWFlNDk2Yjc4ZmQ0OTU1ZGFiNThmNmFjMTJiNDcxMDg3ZWZmY2FkYjhjNGE1ZDc1OWE5YjczZDdjMWVhN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMzIwMjgwODNjNDdhNmQ5ZmE0YTY0NzFjZGFmMjY1OGJjNzA1ZTlkNTg2ZTY1MTZjNTdhNThmNjFhYmU2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlODA3MGYyNThkMzFhMjUxNmZjZDQzYWZlZjVmZjUyZDhlZDI3ZmJiMTY1MjBmZDc4ZjJlYmRmYjg3MGY1MWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjYmI2YjFiNzJkNzNmMDdkYzlmMTNlMTU0Y2JmMzk2MDI3ZWM4ZTA5NzhhZTRmZjgwMmZmYmQwOGRhNWM1NDMifQ"
         },
         {
-          "resource": "repo://policy/workflows_test.rego#L106-L149",
-          "version": "repo-lines-v1:sha256:0f19c05b30480bac64ab99b7b92f8b44575bf3f074f90cddbc3c1f84c0b128e8:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNzE0OTJlMWZjZjZhZDQxMzJhMzAwNzNjMDEyMjVmNjMwY2ZhYjdkYTZmMmViZTlkZThjNDIwYzFjZDRkYjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhMjA4NWM4ODcxYmU2YzNmYmZiMzg0NzU2OTliNTQ2MDE5YTI4OTQ1Mjc3MGM0N2M4NWEzOTVhNGFkMDc2ZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3MTgwYTdlM2ExNDFmMjMzZmYzNjYxZTAyOGZkMmNlYTgyMGQ5MmNmYzMxMTg3ODQxNTU2NTk0OTY2ZTYzYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYyOTY0MDc5YzNjNWM4MTUyMGVmMzNhMmI5ZDJlMTVhMWI4NGQ3MjgwZGI4NTkwZGNkNjU3NDdlM2UwMTJhNDAifQ"
+          "resource": "repo://policy/workflows.rego#L450-L464",
+          "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
+        },
+        {
+          "resource": "repo://policy/workflows_test.rego#L17-L32",
+          "version": "repo-lines-v1:sha256:e7044319f484fe20e80a54a629e06be1ac84767a9d4fc2eed645b9d2f50d25c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhOThkNzZkNjAyNDJhNGY3ZTZiZWRmYTI0ZjdjYjM2MjhkM2RlYjAxNjRhMDc4ZTBhMjU0ZWZjN2E2YzhjMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzNGM5ZDY3YmVmMGY5MThhYWVlNTRkYjI4YzkyMjA1YzI3MTg3N2RjMWMxZmZlZDcxNTQ2OWUxYWY2NjE5YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmMDdhY2M4YjI3ZTZjNWU4NGMyZjlhMDZkYWEyMTRiZjk2ZTYyM2EzNzJmZjUwNDM5OWUyMDg2YWU2ZjczZmEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_bf27974da2eb4d47b9aacd6c132b40a4",
+      "statement": "The protected Enterprise Startup Candidate and Enterprise Operations policy rules require workflow_dispatch as their sole event and share a run-setting guard that rejects unreviewed defaults, environment, shell and working-directory settings. The credentialed legacy stage requires an exact four-variable environment. Regression fixtures cover reusable triggers and shell-prelude overrides; these checks do not prove live execution.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md#L105-L110",
+          "version": "repo-lines-v1:sha256:edc25acf34488eab677b9beb460d2cefe2476e3e665f8726948cb475ed472e07:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmJmODM3MDQzZTFkYjhiNjNkZWNkN2M0N2VmZjI4MjcyNTgyYmQ2MmJkZWFhMTA2ODBjOTQ5YjY5YjM5ZTBlYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGU1YzU3MjMwOWIxZjgwNGQwNDM2NzVhN2Y3NGU2YWMwN2MyZTY2ZDIyZTk4N2FkMmM3N2EyMzA4NjQ1YWFlMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjUzZTg1ODc5MTdiM2M5MTljNGZkODU4N2YzYzVmMzA4NzcxNTg3ZGQxMjgxOGZjZWZiODFhZjAwZGQ4MzU1ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTVhN2E4NTNiZTk5OTUyNTJlMjI0YWZjM2Y5NDI1YzQzZTJmYWMwNmRlYjFkZTMwYjQ0NmY2YjJjODVkNmExMiJ9"
+        },
+        {
+          "resource": "repo://policy/workflows.rego#L172-L179",
+          "version": "repo-lines-v1:sha256:330ab1ec5e4daf2ec92ca717572127bc5883f3d6434f65f2ffea18d205431bca:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTNlM2Q5YmE5MGU5MDQxNDQ1NTJhZDU1ZDIzYTg2MDY3ZjVlMDQ1M2Q3NWFmZjlhOGFlNzI3OTQ4ZDcyZTg1ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTk2YzAwNjQ0NzA0NzUxOWViMjM5YzVmYzI0ZGRlODQ4Zjc4Mzg2YjhhNzZkNWZmMTQ4NzU4MDZiMjhhYzYwNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjFlNjMwNTA0MWI5ZTNjNTRiYWM5Njc4NThhNDg3ODlmMjUwNjBkNDQxODEzOGYxODcyZWMxNjU4MGJmM2RlNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTRkNmY2OTJkOThhNGFkMmQ4YjA1M2YyN2NhZjY2MWFkMTc5NjgwZjQ1ZjQwMTRmYmZmYTI4OGJmNzQ5ZWQzMyJ9"
+        },
+        {
+          "resource": "repo://policy/workflows.rego#L340-L350",
+          "version": "repo-lines-v1:sha256:b88c5a16b9fbba7aa37d49ccab510e977e00fb351e68fa0160241308ed138351:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhMzgwOTE1ZmFkMzhhMmEwNGY4NWQ2MWYxYzNhNzA0NmYxMjI5MmRkYjYyMjgyMDM4OWNiMjRmYTM4YWRhY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MmFkYjhiMjcxYzBkNmZjMGI3NjcwMGU3MzU1Yzk1NDNlYmUxMWQyODU2OGRjNWRkOWM1MmY5M2IyMzNhMmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjNWRlY2I5ZjNiYzk4NmI2N2M5ZWVmZDMxYjhiNDdkNzFjNjc3ZGExOGY1YjZlY2ZjMGNhYWUyYzZhYWNlNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxZjE1ZTRhMDFlODJjYTAzOWU5NWEwZDQ0ODAwYmY0OWQ5ZGU0YmU3Y2EyMDVmNTgzNzk0NTQ2MmRlZGE5ZmQifQ"
+        },
+        {
+          "resource": "repo://policy/workflows.rego#L450-L464",
+          "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
+        },
+        {
+          "resource": "repo://policy/workflows_test.rego#L17-L32",
+          "version": "repo-lines-v1:sha256:e7044319f484fe20e80a54a629e06be1ac84767a9d4fc2eed645b9d2f50d25c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhOThkNzZkNjAyNDJhNGY3ZTZiZWRmYTI0ZjdjYjM2MjhkM2RlYjAxNjRhMDc4ZTBhMjU0ZWZjN2E2YzhjMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzNGM5ZDY3YmVmMGY5MThhYWVlNTRkYjI4YzkyMjA1YzI3MTg3N2RjMWMxZmZlZDcxNTQ2OWUxYWY2NjE5YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmMDdhY2M4YjI3ZTZjNWU4NGMyZjlhMDZkYWEyMTRiZjk2ZTYyM2EzNzJmZjUwNDM5OWUyMDg2YWU2ZjczZmEifQ"
+        },
+        {
+          "resource": "repo://policy/workflows_test.rego#L240-L270",
+          "version": "repo-lines-v1:sha256:d07f6255c193667ceb01531858e30f4cf2e8c1593d61152386941cd46f36f9f7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3OWEwMjUyZWNkZTJlN2Y3YTY1ZDk2Y2IxMTM5MjA0ZjE4ZTg2NzBiYTZiNmZlZjkxY2NkZDhmMDNhNmQyY2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNDc2NjMxZDEyZmY5ODBlMDg0MWU1OGY5NzVlNmVhZGZmYzNiNTkwNzM2MTA3MTBjZWIxZDU0MjViOTk5ZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2NGY2MzM4MDQ1NmRlZmM5OTllNWExNDY1MjAyMGU4ZTczY2FmMWM1YjU3OTE0NDY0YmUyOWQ4MjI2ZmI3NDcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T18:25:19.174Z"
+    "at": "2026-10-20T19:05:38.546Z"
   }
 }

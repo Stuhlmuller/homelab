@@ -171,6 +171,8 @@ deny contains msg if {
 
 approved_openclaw_startup if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
 	count(dispatch.inputs) == 1
 	dispatch.inputs.expected_sha.required == true
 	input.permissions == {}
@@ -229,6 +231,8 @@ deny contains msg if {
 
 approved_platform_maintenance if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
 	count(dispatch.inputs) == 7
 	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
@@ -335,6 +339,8 @@ echo "Platform stage completed; private receipts withheld."`
 
 approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
 	count(dispatch.inputs) == 5
 	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
 	dispatch.inputs.legacy_stage.default == "none"
@@ -363,8 +369,7 @@ approved_openclaw_legacy_operation if {
 	credentials[0]["with"]["role-duration-seconds"] == 25200
 	some step in job.steps
 	step.name == "Run Legacy Stage"
-	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
-	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
 	contains(step.run, concat("", [`sha256sum --check --status <<<'a387eb51665bde09dd14c3db190c31a37f11922bb4e3512956d3c0dee9feec54  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
@@ -441,6 +446,22 @@ deny contains msg if {
 }
 
 workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
+
+protected_workflow_run_settings if {
+	not "defaults" in object.keys(input)
+	input.env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}
+	every _, job in input.jobs {
+		not "defaults" in object.keys(job)
+		not "env" in object.keys(job)
+		every step in job.steps {
+			not "shell" in object.keys(step)
+			not "working-directory" in object.keys(step)
+			env := object.get(step, "env", {})
+			not "BASH_ENV" in object.keys(env)
+			not "ENV" in object.keys(env)
+		}
+	}
+}
 
 # This checker runs only trusted base-branch code and reads a receipt-only PR
 # as bounded API data. Any shape change must also update the exact workflow hash.

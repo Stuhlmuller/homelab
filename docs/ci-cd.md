@@ -102,10 +102,19 @@ checks remain fresh.
   effect after the policy change lands on `main`.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
+- The protected OpenClaw Enterprise startup and operations policies accept only
+  `workflow_dispatch`. Their regression fixtures reject an added `workflow_call`
+  trigger that could bypass manual invocation of credentialed jobs. The shared
+  policy rejects unreviewed workflow and job run defaults or environment,
+  per-step shell and working-directory overrides, and `BASH_ENV` or `ENV` on
+  any step. The credentialed legacy stage requires its exact four-variable map.
 - The Platform Maintenance policy pins both the static gate and protected job:
-  exact check commands, action identities and inputs, job settings, and the
-  private credential mapping. A renamed or skipped static check, substituted
-  action, or `continue-on-error` cannot satisfy the reviewed workflow contract.
+  only `workflow_dispatch`, explicit empty workflow permissions, exact check
+  commands, action identities and inputs, job settings, and the private
+  credential mapping. A reusable trigger, renamed or skipped static check,
+  substituted action, or `continue-on-error` cannot satisfy the reviewed
+  workflow contract. The same run-setting guard prevents shell or environment
+  overrides from changing checked commands.
   This is a source gate; private recovery and capacity receipts still control
   whether a maintenance stage may run.
 - The `main` ruleset requires pull requests, squash-only linear history,
