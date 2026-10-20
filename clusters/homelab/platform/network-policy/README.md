@@ -95,22 +95,29 @@ and `ownership-approve` stages. After a successful `qualify` run, merge exactly
 two reviewed GitOps commits without intervening commits. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
 `allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
-verify the fixture Pods are gone. The second changes only `kustomization.yaml`
-here from the enforcer DaemonSet to `resources: []` and
+verify the fixture namespace is absent. The second changes only
+`kustomization.yaml` here from the enforcer DaemonSet to `resources: []` and
 `IaC/platform-network-policy/stack.hcl` from disabled sync to automated sync
 with pruning and `allowEmpty`. Apply it and verify the enforcer is gone.
 Each commit may also include native updates to the affected OpenWiki pages,
 Claims, and run metadata; no other source changes are accepted.
-Quiesce tenants and sync the cleanup Pod. Dispatch `ownership-capture` on the
-new exact current `main` with the qualify SHA as `evidence_source_sha` and
+Quiesce tenants and sync the cleanup Pod. Capture, approval, cleanup, and
+release require a complete live inventory of Pods assigned to the canary:
+exactly the reviewed `systemDaemonSetPods` identities plus the validated
+cleanup Pod. A foreign, replaced, or extra Pod blocks the stage. A normal
+system DaemonSet Pod restart changes its UID and blocks this flow; the
+immutable qualify-SHA placement cannot be refreshed after removal through
+the current workflow. Stop for a separately reviewed recovery path; do not
+substitute an unreviewed Pod identity. Dispatch `ownership-capture` on the new
+exact current `main` with the qualify SHA as `evidence_source_sha` and
 the qualify run ID. It verifies both exact commit transitions and reads the
 pre-removal placement and traffic receipts,
-checks the cleanup Pod and owned-rule plan without deleting anything, then
-stores the full IPv4/IPv6/ipset snapshot privately under
+checks that the fixture namespace and any lingering fixture workload are absent,
+then reviews the cleanup Pod and owned-rule plan without deleting anything.
+It stores the full IPv4/IPv6/ipset
+snapshot privately under
 `openclaw-enterprise/platform/<source-sha>/<capture-run-id>/firewall-capture.json`.
 The capture is write-once, KMS-encrypted, checksummed, and version-pinned.
-Capture, approval, and cleanup each reject a live fixture namespace or workload,
-even after the fixture-prune commit merges.
 
 The repository owner reviews that private snapshot against the expected
 kube-router filter chains, top-level jumps, and ipsets, plus the captured node

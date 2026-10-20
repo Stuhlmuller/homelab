@@ -286,37 +286,126 @@ class FirewallCleanupTests(unittest.TestCase):
                                      "effect": "NoSchedule"}]}}
         placement = {"nodeUid": "uid", "bootID": "boot"}
         with patch.dict(SUT["inspect_cluster"].__globals__, {
-                "kubernetes_json": lambda *args: node if "node" in args else {"items": []},
-                "command": lambda *args: "" if "namespace" in args else
-                '{"status":{"desiredNumberScheduled":0}}'}, clear=False):
+                "kubernetes_json": lambda *args: node if "node" in args else
+                {"metadata": {}, "items": []},
+                "command": lambda *args: '{"status":{"desiredNumberScheduled":0}}'}, clear=False):
             with self.assertRaisesRegex(ValueError, "DaemonSet still exists"):
                 SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}}, placement)
 
-    def test_live_canary_fixture_must_be_absent_before_ownership_snapshot(self):
-        canary = SUT["CANARY"]
+    def test_fixture_namespace_must_be_gone_before_firewall_review_or_cleanup(self):
+        canary, cleanup = SUT["CANARY"], SUT["CLEANUP"]
         node = {"metadata": {"uid": "uid", "labels": {canary: "true"}},
                 "status": {"nodeInfo": {"bootID": "boot"},
                            "conditions": [{"type": "Ready", "status": "True"}]},
                 "spec": {"taints": [{"key": canary, "value": "true",
                                      "effect": "NoSchedule"}]}}
-        placement = {"nodeUid": "uid", "bootID": "boot"}
-        fixture_pod = {"kind": "Pod", "metadata": {
+        daemonset = {"metadata": {"name": cleanup, "uid": "ds-uid"},
+                     "status": {"desiredNumberScheduled": 1, "numberReady": 1},
+                     "spec": {"selector": {"matchLabels": {"app.kubernetes.io/name": cleanup}},
+                              "template": {"spec": {
+                                  "nodeSelector": {canary: "true"},
+                                  "automountServiceAccountToken": False,
+                                  "hostNetwork": True,
+                                  "containers": [{"image": SUT["IMAGE"],
+                                                  "command": ["/bin/sh", "-c"],
+                                                  "args": ["sleep 86400"],
+                                                  "securityContext": {"privileged": True}}]}}}}
+        pod = {"metadata": {"namespace": "kube-system", "name": "cleanup-pod",
+                            "uid": "pod-uid", "ownerReferences": [{"kind": "DaemonSet",
+                            "name": cleanup, "uid": "ds-uid", "controller": True}]},
+               "status": {"conditions": [{"type": "Ready", "status": "True"}]},
+               "spec": {"nodeName": "zimaboard-1", "hostNetwork": True,
+                        "containers": [{"image": SUT["IMAGE"]}]}}
+        system = {"metadata": {"namespace": "kube-system", "name": "flannel-pod",
+                               "uid": "system-uid", "ownerReferences": [{"kind": "DaemonSet",
+                               "name": "flannel", "controller": True}]},
+                  "spec": {"nodeName": "zimaboard-1"}}
+        placement = {"nodeUid": "uid", "bootID": "boot", "systemDaemonSetPods": [
+            {"namespace": "kube-system", "name": "flannel-pod", "uid": "system-uid"}]}
+        fixture = {"kind": "Pod", "metadata": {
             "name": "npq-client", "namespace": SUT["FIXTURE_NAMESPACE"]},
             "status": {"phase": "Running"}}
-        for namespace, workloads, message in (
-                ('{"kind":"Namespace"}', [], "fixture namespace still exists"),
-                ("", [fixture_pod], "fixture workload still exists")):
-            with self.subTest(message=message):
+        for namespace, fixture_items, expected_error in (
+                ('{"kind":"Namespace"}', [], "fixture namespace must be absent"),
+                ("", [fixture], "fixture workload still exists"),
+                ("", [], None)):
+            with self.subTest(namespace_present=bool(namespace),
+                              fixture_present=bool(fixture_items)):
+                responses = iter((node, {"metadata": {}, "items": fixture_items},
+                                  {"metadata": {}, "items": []}, daemonset,
+                                  {"metadata": {}, "items": [pod]},
+                                  {"metadata": {}, "items": [system, pod]}))
                 def command(*args):
                     if "namespace" in args:
+                        self.assertIn("--ignore-not-found", args)
                         return namespace
-                    self.fail("inspection passed fixture absence gate")
+                    return ""
                 with patch.dict(SUT["inspect_cluster"].__globals__, {
-                        "kubernetes_json": lambda *args: node if "node" in args else
-                        {"items": workloads}, "command": command}, clear=False):
-                    with self.assertRaisesRegex(ValueError, message):
-                        SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}},
-                                               placement)
+                        "kubernetes_json": lambda *args: next(responses),
+                        "command": command}):
+                    if expected_error:
+                        with self.assertRaisesRegex(ValueError, expected_error):
+                            SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}},
+                                                   placement)
+                    else:
+                        self.assertEqual(
+                            SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}},
+                                                   placement), ("cleanup-pod", "pod-uid"))
+        foreign = {"metadata": {"namespace": "default", "name": "tolerating-app",
+                                "uid": "foreign-uid", "ownerReferences": [{
+                                    "kind": "ReplicaSet", "name": "app"}]},
+                   "spec": {"nodeName": "zimaboard-1"}}
+        responses = iter((node, {"metadata": {}, "items": []},
+                          {"metadata": {}, "items": []}, daemonset,
+                          {"metadata": {}, "items": [pod]}, {"metadata": {},
+                                             "items": [system, pod, foreign]}))
+        with patch.dict(SUT["inspect_cluster"].__globals__, {
+                "kubernetes_json": lambda *args: next(responses),
+                "command": lambda *args: ""}):
+            with self.assertRaisesRegex(ValueError, "unreviewed Pod"):
+                SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}}, placement)
+
+    def test_canary_node_inventory_rejects_unreviewed_or_incomplete_pods(self):
+        cleanup = {"metadata": {"namespace": "kube-system", "name": "cleanup-pod",
+                                "uid": "cleanup-uid", "ownerReferences": [{
+                                    "kind": "DaemonSet", "name": SUT["CLEANUP"],
+                                    "uid": "cleanup-ds-uid", "controller": True}]},
+                   "spec": {"nodeName": "zimaboard-1"}}
+        system = {"metadata": {"namespace": "kube-system", "name": "flannel-pod",
+                               "uid": "system-uid", "ownerReferences": [{
+                                   "kind": "DaemonSet", "name": "flannel",
+                                   "controller": True}]},
+                  "spec": {"nodeName": "zimaboard-1"}}
+        placement = {"systemDaemonSetPods": [{"namespace": "kube-system",
+                                               "name": "flannel-pod", "uid": "system-uid"}]}
+        foreign = {"metadata": {"namespace": "default", "name": "tolerating-app",
+                                "uid": "foreign-uid", "ownerReferences": [{
+                                    "kind": "ReplicaSet", "name": "app"}]},
+                   "spec": {"nodeName": "zimaboard-1", "tolerations": [{
+                       "key": SUT["CANARY"], "operator": "Exists"}]}}
+        cases = (({"metadata": {}, "items": [system, cleanup]}, True),
+                 ({"metadata": {}, "items": [system, cleanup, foreign]}, False),
+                 ({"metadata": {}, "items": [cleanup]}, False),
+                 ({"metadata": {}, "items": [system | {"metadata": system["metadata"] |
+                            {"uid": "replacement"}}, cleanup]}, False),
+                 ({"items": [system, cleanup], "metadata": {"continue": "next"}}, False),
+                 ({"items": [system, cleanup]}, False),
+                 ({"metadata": {}}, False))
+        for listing, allowed in cases:
+            with self.subTest(listing=listing):
+                def inventory(*args):
+                    self.assertIn("--chunk-size=0", args)
+                    self.assertIn("spec.nodeName=zimaboard-1", args)
+                    return listing
+                with patch.dict(SUT["require_reviewed_node_pods"].__globals__, {
+                        "kubernetes_json": inventory}):
+                    if allowed:
+                        SUT["require_reviewed_node_pods"](
+                            "zimaboard-1", placement, cleanup, "cleanup-ds-uid")
+                    else:
+                        with self.assertRaisesRegex(ValueError, "canary node"):
+                            SUT["require_reviewed_node_pods"](
+                                "zimaboard-1", placement, cleanup, "cleanup-ds-uid")
 
     def test_unknown_prefix_other_backend_and_nonfilter_reference_block(self):
         for field, value in (("nft", ":KUBE-POD-FW-UNKNOWN - [0:0]\n"),

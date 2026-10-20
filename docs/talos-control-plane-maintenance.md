@@ -444,10 +444,16 @@ retry. The stage retains a versioned `cleanup-attempt.json` before invoking
 the firewall helper, so an unavailable final receipt still leaves a private
 attempt marker. `ownership-capture` now retains the full private firewall
 snapshot after a successful traffic probe on the qualify main SHA, followed by
-exact fixture-prune and enforcer-prune commits, with the enforcer gone and the
-cleanup Pod Ready. Pre-enable placement and probe receipts stay bound to the
-qualify SHA. Keep the empty canary Application automated until owned cleanup
-and release checks complete.
+exact fixture-prune and enforcer-prune commits, with the fixture namespace and
+enforcer gone and the cleanup Pod Ready. Capture, approval, cleanup, and
+release compare a complete live canary-node Pod inventory to the reviewed
+system DaemonSet Pod identities plus that validated cleanup Pod; a foreign or
+replaced Pod blocks the stage. A normal system DaemonSet Pod restart changes
+its UID and also blocks capture, approval, cleanup, and release. The immutable
+qualify-SHA placement cannot be refreshed after removal in this workflow;
+stop for a separately reviewed recovery path. Pre-enable placement and probe
+receipts stay bound to the qualify SHA. Keep the empty canary Application
+automated until owned cleanup and release checks complete.
 The repository owner checks that versioned capture
 outside public logs, then freshly dispatches `ownership-approve` with its run
 ID and exact snapshot SHA-256. The protected job rechecks placement,
