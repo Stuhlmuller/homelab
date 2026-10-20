@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:83216854d5bf100a99e25e2b37527230ce9caf912b7c9df33ae26c9e1d9958e2",
+  "pageVersion": "sha256:585f525e59c3681bc71172a176ec3d0cac977280aba68074155b44e06301971e",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
@@ -83,11 +83,11 @@
           "version": "repo-lines-v1:sha256:a542e6f1613b2e19b2174e6efd236a34925625b3ad0761ea52ce8e6b7f42a87e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2OWMyNzEzY2RmZjI5NGY2OWFkOWI2YWI2MTZhZDdjMzI1ZDQxYTRiOTk5MjIyOGUzZmE3NjU3MDg4OTE4ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxZDVkZGYwNTkxYWU4NTYzZTk1NmJhNTdlYjNjZjllZDc1MDhkNDBiMTAyOGVmOGViMTc2MGZlOTYxZmQ2NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjODRkMjE0MmEyM2NjYTNjOWQ5MjdlYWQyZTRiMTg1NmM3NzFmNTVjZGZhZTZkMGIzYTY2ODQxNWJhNzhlMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjNWEzOWQyZGE5ZTMxNmMyYjBkZjU5NzU2MGMwMjcwZjAyMGUzYjRhZTZlMjkyM2U5NmY3ZmRhZGM3MmZjNmYifQ"
         },
         {
-          "resource": "repo://scripts/platform-maintenance.py#L814-L873",
+          "resource": "repo://scripts/platform-maintenance.py#L816-L875",
           "version": "repo-lines-v1:sha256:c794b1e7a8203708429ea9f16a11d3306e5bf3e2daede5b74d6eed3da4fcd8a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyNDQ2N2E4YzliYjBmNjE1MjQ2NzI3NGViNTdlY2Q2MjlhNmUwNzNkNjZjNjA0OGE2ZmE1YjI2NTQzYTBjNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNDc3NjQ4NDcxNGMzNDdmYTc2M2ZjMjY3YmNhOThlMmY0NGY0MDBlMTE1MjkzNjQxZThmMDVjMTE3ZDcwZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjczNWQ2ZmIwZGY0NGQwYzFkYzdiMDY3YThkODRiODllMjY5NWE3YzljNmM1MWJjYmU0NTE2NzdmMjZkNDJkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyM2M1YWE2ODc2MjQwZjAzYzgwZTVhZDU2M2FhYjMxOTgzYjM1OGY2NDhlYTY3NWFkYzIyMWZlYjI1YzE1YzYifQ"
         },
         {
-          "resource": "repo://scripts/platform-maintenance.py#L891-L927",
+          "resource": "repo://scripts/platform-maintenance.py#L893-L929",
           "version": "repo-lines-v1:sha256:9f765e54cfb3c1f8ec7bba3cb239241b67ff49cdd75b4fe227b9bdc6df5593c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MzFiNWVkMjE3YTM4NjExNjM4ODgxZGRmZmZkNTA0YzBkMDdjZTgxNTg2OWYyNDdjODZhYTdmMjhlYjhjZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNzJiZTAwOTNkNDViYTYwNzQxOGM5MDk3MTdjYjNhZWFhNzQ2MDkzNmU4MjQ0OTk4ZDQwOTFmNDY0OGVjYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NGI1ZjA1NmFkMGY4MzBjMDYyNTc2MjgzYjUwYWJlOTA4YjEyNDkyMmUwZDFlNGJiZGFjZTNhYWMzNzU3YWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2NGRlYzQ3Y2ZjNDIwODU0NzhmMjdjNzM2NWRjMTY0OTExMDdlYmI4NDY3ZWZmMzk5MDA4NGFjODliY2UwODgifQ"
         }
       ]
@@ -128,7 +128,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:69ae6d56bf5748c8b9be2d2dc8210ec4fbe25b8c0e2d335cc8cedd97fb980460"
+          "version": "repo-file-v1:sha256:7af1788e6e0334d47cef0cba6c6c891c4e8de52e5b1c6d31e17ab18e7bb45958"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
@@ -142,7 +142,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/platform-maintenance-test.py",
-          "version": "repo-file-v1:sha256:fd42f8d7b173e46516a1ff3327653ef12130ef067dc3d866f0ba17c53811379b"
+          "version": "repo-file-v1:sha256:d99eefb0b53d893792280fd9a0f4715ce3e78460ce2fa6f630f1fa17453b52c2"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -150,31 +150,31 @@
         },
         {
           "resource": "repo://scripts/platform-maintenance.py",
-          "version": "repo-file-v1:sha256:2ec82f5d5832bf3e7257693fdcc4019cd5af068cbfa9c627b41d39342c9ff2e2"
+          "version": "repo-file-v1:sha256:d5b2cb22239b9c6d9c196f238af71a0a06038e537f3af65501b57031ed021714"
         }
       ]
     },
     {
       "id": "claim_c97e238e181b4c739a2b69476c970504",
-      "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 references, fully observed and ready rollouts, Deployment total replicas equal to desired, and complete DaemonSet placement. Matching mutable tags fail; T025 must align chart image hubs and injected proxy digests before the gate can pass.",
+      "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 references, fully observed and ready controllers not marked for deletion, Deployment total replicas equal to desired, and complete DaemonSet placement. Matching mutable tags fail; T025 must align chart image hubs and injected proxy digests before the gate can pass.",
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md#L513-L523",
-          "version": "repo-lines-v1:sha256:c0efebfee821fe4bcab60130408ae29e2ccf316a04c164afd4061c81a024c032:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
+          "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
-          "resource": "repo://scripts/ci/platform-maintenance-test.py#L980-L1056",
-          "version": "repo-lines-v1:sha256:56419eab0b78e81440eb7bbedfa3fc019c080861fba24d8eb315baa73c30ecab:eyJzZWxlY3RlZExpbmVDb3VudCI6NzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzN2UwZTIxYzU3YjdjMTIwMzk3NGRlODEwMmUxNmE1OWNmYjJjMjU4YjFlOTllZWJlMzJkOTE4YzFjNWE5YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzNTE1ZWUyN2I2ZmQ1MTFiMDc3Yzg2MTA5ZGNjMzMyOGVkOTRmZDllYzRjZTI2YmRiYzc4MTUyNjc1ZDRiNTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0YWEyZTZjNTVhYjlhY2EyZDdmNjA1MmY3ZjAzZmQwYTk5NjFjMWM0ZWMwZmIzMDIyNDI3Y2FkNjMwYjYwOTQifQ"
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L985-L1065",
+          "version": "repo-lines-v1:sha256:4ccb1c85028c8db039eaec2d99492d183e523823f46817ece3da7b3a547af4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YzhkY2Q2MzI5M2E1OTczZDMyNjMwNjJmYTM2MjViNjVhMGE3MGJhNmExZDVjYmFmNGNhMjdmNWUxZDE4N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmJiYTM4YTA0MWE5ZjdhOTdjZDlkZTRkN2U0YWUwYTZhYmRmOGJkZTFkNTNiYWFiNDJhNjdmZjUwODBmNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjYwNTdmNGQzNTdmNGE2NjFjODVmNzMyZmU5ZDY0MDIwMjRjOTYzYjQ2ZTkwY2EwNjEyZmQxMjMzZDQ5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2MTdhZmI4YjQxZmNkN2FlMDFlYjRlMTM0YTA3N2Q5NDA0NWJjNTMwYjhiNzVmZjJmNTIxZmI1NWM2M2YwMGYifQ"
         },
         {
-          "resource": "repo://scripts/platform-maintenance.py#L604-L690",
-          "version": "repo-lines-v1:sha256:8cc5336353484b1d656edb54cb7024e17fbedcda9e95cb6624249c62a4ad4b1b:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5YjZkNDc1NDhjZDI4NzcwYjIyZDkwMzU2OWRkZDM1MmEzNzM0Njc5OTUxNWU5ZGRiZjcyYmYwYTI0ZTRlYzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxNjQ1OGE5Yjc2MmY5MmFhNGQzNGE1OWI5NDk0YmM1MGIwMTE4N2M3MDlmMzZiZDUyYTM5YzlkZGQ1NDVjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlYTJlOGNlYzJkODc0ZGEzYWY2MDhlN2ZiZjljNzU5ZTgxZWZkNTYwODYyNjU4NjBkOGE1YzQ0MWI3ZTBhMzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzNGRhOGM3MDMzMjQ3OTcwMGFkMGM1OTU2ODQzYTRhZjg2NGEzYzQyYzhjYTIxNWI2ZDhhNzJkZDlmMjA2ZDkifQ"
+          "resource": "repo://scripts/platform-maintenance.py#L607-L695",
+          "version": "repo-lines-v1:sha256:45f630b8ea44c02806fabc6b01460d26740c9439ee9d12b717411b9066b52d28:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExOGVmYTc2OWZjNGQ0NTBiNTNlMzcxYzZjYjJkNzlkMGQ0YTdmZmU4ZDBlOTc3OTA0ZTcyODZhODdmN2UwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYzJiOWZlMTUzYWVjYWYyZjljYWI0NzVmNjMwOTExY2Q4NzBjNWQ3YjZlYTU3YjZjMzRlYTkzNWQ2YzdjZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhMWEwM2RjOGNkNTM5YTFjOTNmODI0MDViODZhNGY1ZmM5ZTJlMGVmYTgxYTM4YmQ3MGE3MmQyNDdkMGExNDQifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T16:40:47.303Z"
+    "at": "2026-10-20T17:08:07.139Z"
   }
 }

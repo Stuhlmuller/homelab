@@ -638,6 +638,8 @@ def verify_live_istio_target(config):
         elif images != [image]:
             raise ValueError("live Istio image differs from the reviewed target")
         metadata, spec, status = item["metadata"], item["spec"], item.get("status", {})
+        if metadata.get("deletionTimestamp") is not None:
+            raise ValueError("live Istio workload is deleting")
         if (not isinstance(metadata.get("generation"), int) or
                 status.get("observedGeneration") != metadata["generation"]):
             raise ValueError("live Istio rollout is not observed")

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:94a8f280963aa05bb7163decdd77559452416387a6fd370114b1ac37ff326b36",
+  "pageVersion": "sha256:1ff1c30461287a2f39c27f5fcaaa1ba44563bcebd7c6138cf227d2cc26fd61e7",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
+          "version": "repo-file-v1:sha256:889043351a19997299bc137c0446afe65682606dc38d26face296089ae488d04"
         }
       ]
     },
@@ -206,7 +206,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:a978da1db8024e74e7ce03372875615fa0563cea08fa3338b523f788c1403705"
+          "version": "repo-file-v1:sha256:f5a9ac5b8c257f6ad68dad7e2504541145d859d6ba8cb7aa7d866dda8a22236b"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -269,6 +269,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T15:35:56.635Z"
+    "at": "2026-10-20T17:28:41.182Z"
   }
 }

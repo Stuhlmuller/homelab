@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:76159baa100513667aad45733ac65098854e30d973bcd306bb3608750a7a9907",
+  "pageVersion": "sha256:a5ab2de35b58ee5cbe34282958b1f4a5aac2212e76d40a8fd8b27ce4a5a6bee3",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -326,11 +326,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:d45aeb08e1422396c7581cb52fb127569b9092274b0a6e12fe53c7fd5ec3ed45"
+          "version": "repo-file-v1:sha256:87586e53c835110d98f95383384fc5f0cf2f084817371e97c05ea5ccec6e56b3"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:1e00505a9c8a1a576452d0cfc8a36d3293acb8d421b61e88dcf5a061bd5cb14d"
+          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:1e00505a9c8a1a576452d0cfc8a36d3293acb8d421b61e88dcf5a061bd5cb14d"
+          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:1e00505a9c8a1a576452d0cfc8a36d3293acb8d421b61e88dcf5a061bd5cb14d"
+          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -418,7 +418,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:0ee5d73c0c598d7b5d13ff0d37ca104ad8d02acc4b4caa9994ad185f73b35301"
+          "version": "repo-file-v1:sha256:b3d5bd69d90f320a6072b8efc8b4c3adc6cb94f909eb7ff257939d288abf6303"
         }
       ]
     },
@@ -436,7 +436,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:0ee5d73c0c598d7b5d13ff0d37ca104ad8d02acc4b4caa9994ad185f73b35301"
+          "version": "repo-file-v1:sha256:b3d5bd69d90f320a6072b8efc8b4c3adc6cb94f909eb7ff257939d288abf6303"
         }
       ]
     },
@@ -464,7 +464,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:1e00505a9c8a1a576452d0cfc8a36d3293acb8d421b61e88dcf5a061bd5cb14d"
+          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -472,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
+          "version": "repo-file-v1:sha256:889043351a19997299bc137c0446afe65682606dc38d26face296089ae488d04"
         }
       ]
     },
@@ -535,7 +535,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L240-L266",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L246-L272",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -582,7 +582,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:a978da1db8024e74e7ce03372875615fa0563cea08fa3338b523f788c1403705"
+          "version": "repo-file-v1:sha256:f5a9ac5b8c257f6ad68dad7e2504541145d859d6ba8cb7aa7d866dda8a22236b"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
@@ -622,7 +622,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
-          "version": "repo-file-v1:sha256:0472059f9056b2c1e0f33fd544502e40f1c3109e6d95baa67aff94e35b8a3513"
+          "version": "repo-file-v1:sha256:7e9d35566dba27949be4aebe59da1df832f016e01e5f998b3719173736cd0d7d"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -630,7 +630,7 @@
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:08c6a099b8a84d67179ce3e684275ebad0043209ccd83d5c13482a509a5a0ab9"
+          "version": "repo-file-v1:sha256:2f45979a0dea227e7f7059889e019f0d841005f46a77e5b77ec549eba17f72a8"
         }
       ]
     },
@@ -673,6 +673,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T16:13:57.200Z"
+    "at": "2026-10-20T17:28:41.182Z"
   }
 }

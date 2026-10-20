@@ -1040,6 +1040,11 @@ class PlatformMaintenance(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "image differs"):
                 self.istio_target_function(self.config)
             items[0]["spec"]["template"]["spec"]["containers"][0]["image"] = target["pilot"]
+            for item in (items[0], items[3]):
+                item["metadata"]["deletionTimestamp"] = "2026-10-20T17:00:00Z"
+                with self.assertRaisesRegex(ValueError, "is deleting"):
+                    self.istio_target_function(self.config)
+                del item["metadata"]["deletionTimestamp"]
             items[0]["status"]["replicas"] = 2
             with self.assertRaisesRegex(ValueError, "not fully ready"):
                 self.istio_target_function(self.config)
