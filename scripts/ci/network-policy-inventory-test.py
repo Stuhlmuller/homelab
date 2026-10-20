@@ -3,7 +3,6 @@
 
 import hashlib
 import importlib.util
-import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -88,6 +87,7 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
         })
         self.assertEqual(len(inventory.policies(items, strict=True)), 3)
         self.assertIn("all-ports", inventory.broad_rule(items[0]["spec"]["egress"][0]))
+
     def test_octelium_enterprise_generated_policy_fixture(self):
         fixture = ROOT / "clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json"
         expected = {
