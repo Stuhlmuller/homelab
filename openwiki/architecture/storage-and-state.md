@@ -34,14 +34,14 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
-  - id: openwiki-source-9100b7266ad774f6eeda0265
-    resource: repo://scripts/ci/renovate-config-test.js
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:06:40.149Z" }
+generated: { by: "codex", at: "2026-10-20T04:56:30.465Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:06:01.306Z
+    at: 2026-10-20T04:56:30.465Z
 ---
 
 # Storage And State
@@ -578,16 +578,22 @@ through a declared path; increasing the PVC request cannot restore writes. For
 corruption, suspend the CronJob, clear only cache contents with a reviewed
 temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
+No verified QNAP `/homelab` capacity-restoration operation is declared. An
+isolated tmpfs `ENOSPC` drill can test failure visibility and later normal
+PVC use, but cannot prove recovery from a full NAS export. T024/T042 and
+writer cutover remain blocked on a declared capacity path and direct recovery.
+
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the
 19:00 and 20:00 UTC scheduled Pods showed one exact public canary
 datasource-key hit each, on distinct Pod UIDs using the same PVC. These
-observations do not close [T022](../../specs/004-run-renovate-in-cluster/tasks.md):
-at this draft revision, its task record still lacks a durable receipt for
-those Pod UIDs and acceptance of the `v0.0.2` refresh. The protected release
-was published at 20:20 UTC. A live cache-failure cycle and next-slot recovery
-also remain open.
+observations are recorded in the durable
+[T022 receipt](../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md).
+After the protected `v0.0.2` release at 20:20 UTC, the 21:00 scheduled dry run
+hit the same key, refreshed its record, and selected the new public canary
+branch proposal. T022 is complete. A live cache-failure cycle and next-slot
+recovery remain open.
 
 ## Staged independent application recovery (HOME-2)
 

@@ -366,7 +366,9 @@ merged, the operator applied a private, un-targeted saved plan whose only
 managed-resource changes deleted `aws_iam_role.renovate_transfer` and
 `aws_iam_role_policy.renovate_transfer`. The apply succeeded; a read-only IAM
 role lookup returned `NoSuchEntity`, and a fresh full-unit plan reported no
-changes. The hourly Renovate CronJob remains suspended pending dry-run parity.
+changes. The [hourly Renovate CronJob](../clusters/homelab/apps/renovate/cronjob.yaml)
+is now declared unsuspended in [full dry-run mode](../clusters/homelab/apps/renovate/config.js);
+the legacy Action remains the only writer pending parity and cutover.
 
 The September 29, 2026 Langfuse apply reached SSM refresh but failed because
 the workflow role's KMS grant still named the former runtime key, not the
