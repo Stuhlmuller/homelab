@@ -159,8 +159,8 @@ deny contains msg if {
 
 deny contains msg if {
 	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
-	not approved_openclaw_legacy_operation
-	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
+	not approved_openclaw_operations
+	msg := "OpenClaw Enterprise operations require exact protected stages, permissions, and script hashes"
 }
 
 deny contains msg if {
@@ -277,15 +277,30 @@ then
 fi
 echo "Platform stage completed; private receipts withheld."`
 
-approved_openclaw_legacy_operation if {
+approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	count(dispatch.inputs) == 5
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	dispatch.inputs.legacy_stage.default == "none"
+	dispatch.inputs.enterprise_stage.options == ["none", "full-sync"]
+	dispatch.inputs.enterprise_stage.default == "none"
+	count(input.jobs) == 3
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	static.steps[0].env.LEGACY_STAGE == "${{ inputs.legacy_stage }}"
+	static.steps[0].env.ENTERPRISE_STAGE == "${{ inputs.enterprise_stage }}"
+	contains(static.steps[0].run, "inventory/none|publish-inventory/none|archive/none|publish-archive/none|verify/none|none/full-sync)")
+	approved_openclaw_legacy_operation
+	approved_openclaw_enterprise_sync
+}
+
+approved_openclaw_legacy_operation if {
 	job := input.jobs.legacy
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
 	job.concurrency.group == "openclaw-enterprise-operations-production"
 	job.permissions == {"contents": "read", "id-token": "write"}
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
 	some step in job.steps
 	step.name == "Run Legacy Stage"
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
@@ -293,6 +308,24 @@ approved_openclaw_legacy_operation if {
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
 	contains(step.run, concat("", [`sha256sum --check --status <<<'e812cd9a3361753f7eec82396c5e94dfc1cae96f682c8c7714e3fd2dc2c210fa  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+}
+
+approved_openclaw_enterprise_sync if {
+	job := input.jobs["enterprise-sync"]
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false}
+	job.permissions == {"contents": "read"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'full-sync'"
+	count(job.steps) == 4
+	job.steps[0].name == "Verify Current Main Commit Before Credentials"
+	contains(job.steps[0].run, `test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)`)
+	job.steps[3].name == "Run Full Sync"
+	job.steps[3].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	contains(job.steps[3].run, "bash scripts/ci/install-kubeconfig.sh\n")
+	contains(job.steps[3].run, "sha256sum --check --status <<<'0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc  scripts/ci/openclaw-enterprise-full-sync.sh'\n")
+	contains(job.steps[3].run, "bash scripts/ci/openclaw-enterprise-full-sync.sh\n")
+	contains(job.steps[3].run, "private cluster diagnostics withheld")
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {

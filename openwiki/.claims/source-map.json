@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:98853a4b4d39879ec588f5edb1dbd7a4ee8934a198f6156562e1c2bf1d70847a",
+  "pageVersion": "sha256:1f7a09f6219002a90849f5f4a6da8e17ad7c8e261fb8bd1ff69a92e1be3454e1",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -194,17 +194,35 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e3e8c0d95ed4382fe37405d028c2232366959968686e0e58adadf4af7847c542"
+          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
           "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         }
       ]
+    },
+    {
+      "id": "claim_31cc2638d1bc4ac5ac37886991d4d7c8",
+      "statement": "The Enterprise operations workflow and full-sync shell helper own the protected fixed full-sync sequence; the focused fixture tests source and ordering guards before live use.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
+          "version": "repo-file-v1:sha256:293c9d1c13d141a32f60f38bf989f55860d8f390d07495e593a0ed9ef98b8992"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:22:56.208Z"
+    "at": "2026-10-20T06:54:44.714Z"
   }
 }

@@ -24,6 +24,8 @@ sources:
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
@@ -48,6 +50,8 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
@@ -58,10 +62,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T06:38:44.829Z" }
+generated: { by: "codex", at: "2026-10-20T06:54:44.714Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:38:44.829Z
+    at: 2026-10-20T06:54:44.714Z
 ---
 
 # CI/CD
@@ -134,6 +138,16 @@ the versioned immutable Installation Secret from reviewed repository bytes.
 The create-only path does not register the dormant Application or run an Agent;
 the post-bootstrap installation-ID annotation and live Pod binding remain
 separate proof work.
+
+The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+keeps the legacy retention stages behind `legacy_stage` and adds
+`enterprise_stage=full-sync`. Select exactly one stage. The protected full sync
+checks that the dispatched SHA is still current `main` before credentials and
+before each Argo write. It requires healthy Envoy Gateway and manually
+controlled Foundation and Enterprise Applications, then syncs foundation before
+Enterprise at explicit repository and chart revisions. Source tests pass; this
+stage has not run on the cluster. Reconciliation, stop, restore and acceptance
+remain separate gates.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
 accepts fixed inspect, canary and upgrade stages only from the exact current

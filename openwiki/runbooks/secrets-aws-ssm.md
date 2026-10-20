@@ -33,7 +33,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T02:36:08.776Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:59:53.605Z
+    at: 2026-10-20T06:54:44.714Z
 ---
 
 # AWS SSM Secret References
