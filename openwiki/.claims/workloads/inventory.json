@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:995ec85cbe183bd28946a651874b545ee31a7da2a4a107ca8b45e2a73b7485bf",
+  "pageVersion": "sha256:a9d667d9ebe4e83aa93ede8d7599d1485214d1c57430f3d5d357ce0e3ba06683",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,23 +292,31 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly full-dry-run CronJob with a retained 20Gi NFS cache and dedicated no-token identity; App-key transfer and writer-grant retirement are complete while the legacy Action remains sole writer. T017, T022 same-key cache refresh, and T045 missed-slot recovery are accepted; NAS capacity/cache-fault recovery, full parity and writer cutover remain open.",
+      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor alias to a registry-only Traefik listener. Protected App-key transfer and temporary writer-grant retirement are complete; the legacy GitHub Action remains the writer while eligible Harbor discovery, T024/T042 cache-fault and NAS-capacity recovery, full dry-run parity, and reviewed cutover remain open.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L160-L212",
-          "version": "repo-lines-v1:sha256:859b9cbfaa89eebd66edf9044bfd392458ba08747ddf5f5439dc1ff0744ef469:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkYmM4NzVjNTQ3MGM3NWQxYWI1YWI3YTM0ZWU2NTg0NWEyY2NlMTAxMjA4YWU2MzY4Njc5MjBhODg3ZTcyN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNDZiYjY0YjdmYjQzZGE3YjMwNWRlMzFkMDRkZTZjMGZlZTAwZDYyOTFiZmM2MDBhNjM1YjA2MTliODA0YWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjBjNjk0NzQyMjUyOWU3MTllZTAxYWFmMjQwNTVhNWIxZDNmM2I2Njg5Njc5NmJhNDZjYjBlYWFhNDFiZjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4YmMzM2JkZTM3ZTM1NDY0YzQxODU5MWYwNGUwOTM2ZjQ4MWVjYWIzYTQ3MmI0OTFkNzIzZDNmMDQ1ZDJmZTQifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
+          "version": "repo-lines-v1:sha256:35b66f1c4e3dde01914dfeb0e0d1d0001d0c496a44e6b8998520828c0948a587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUxMzZhZTZiYTZmZmE2ZDJmMTY5OTc1ZTFiNmVjMTI0ZmQ0NTBjZTZjYTkwZGI4NjgwMzAyMWZiMGE4NWVjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md",
-          "version": "repo-file-v1:sha256:46d0e907b6845b44bd4f52db47d626a5643bbdbfdc00444fb5bee0ee8c33d53d"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L42-L117",
+          "version": "repo-lines-v1:sha256:9e28f9139d0e66a416326d1eca79e62db3588416d18568433e6d048431055089:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTRkNTU3NTJjMDliMzQwMDAyN2EzZjQyNTEwMjAyNmI5MzJhYWMzNjk2ZjQwZWJjODkzZDM4YWVmYzNiYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMWNjMWUyYWE5ZjA3ZDlkMGIwYTllODg0OWI1ZTM3NTQwZTU5NGEwYTZkZDVhOTk2OGNhZjk2MTg5Y2E1YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
-          "version": "repo-lines-v1:sha256:06114a754a7662215d2c7c8d6f10990b4c72e9fad5ded30a6155cc8b62abc75c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2IyMjg0NTM0MzBiNWE4YzlhODFlYmM5OWE4NjZiMWExNmM3MWIyMGUxMjczOGQ2Y2Y1YmI2MjY0MWFlN2Y0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3YjgxYTQ2Zjc2YzRmYjFiNTU4ZjdkNjEyOTAwYTVjZjBlYTkyMzZkMTI4NTFiZjYwZGExZmM2YWZjMjBkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE0NmU3MTQwY2Q5ODVhMjQ1OWNkMGU3MGI1MTY3Njc5YTM1Y2VlNjY1YTBjYTMyODIyY2FkNGI2N2FkYjkyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmNlNTIxNDIxOTQ4ZTQ2MDk4N2UzYzMwNjMyYzMyMzE2ZGMzODJhNjg0OWQwNGQwZGVlNjQ1OWE4MjE0OTc0MSJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L70-L76",
-          "version": "repo-lines-v1:sha256:b9003bd767fc75c9d7c48ad46c28be414100ec79e2fe2274924d7bfe375680d7:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzJhMGJkMzAyMzIxODFhOTQzZGQ2ZjVmNTY5YjYwNTk1YTY0ZGE3OGM2NjBhNjdmYTcyOWMyNDU0ZTQ4YWExOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTE2Yzc0YzFmNjIwNjdmOTk5ZjdmNmIzOTVhZTRiZDUwNGM5MmViNGM1MjY5ODhmZTVlOGEyODcxYmQzZWI3NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjRkYjc1ZWJlNDBiNTA2MDUzNjQ4NzUzMDEwNzQ4MTNjMDQ2ZjFmNzk5ZDM3ZTc4MzM5NzJiMzY2MGJhZGJkNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2I0Y2E0NTFkNzA2N2U2YTdjNWQzNGI5YzYyNzZlNDhiMjk0OTdkMjg5OWI0M2M2MzdjZGUxYzBlMTdiZjlkOSJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
+          "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L78",
+          "version": "repo-lines-v1:sha256:b87211f2f028492ff8c514a060962cebcb7043c98044f1e093e31abd89a2bccb:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
         }
       ]
     },
@@ -322,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -352,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         }
       ]
     },
@@ -370,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -393,10 +401,6 @@
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
           "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
@@ -464,7 +468,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -503,26 +507,46 @@
       ]
     },
     {
-      "id": "claim_cf5345a3231341038afec1bdd6b80522",
-      "statement": "The stopped legacy archive reader mounts its private volume at /tmp so SQLite can create temporary indexes during independent restore without writing the retained source volumes; the full archive and offsite restore remain unverified.",
+      "id": "claim_08b85c651e184aabab1073f5789205d3",
+      "statement": "Renovate T022 is complete: scheduled 19:00 and 20:00 Pods hit the same public canary cache key, and after protected v0.0.2 publication the 21:00 scheduled run refreshed the record and selected a new canary branch proposal.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:8dad9ee7ae9ca40462edc31ea8f94d1438e4f26e82da8c589e2d7d729e1cd38c"
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
+          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/retirement-reader.yaml",
-          "version": "repo-file-v1:sha256:9dcc82ae6a663ab64f4cc77420585a6bdee6c93c65aa94d38fb4c14bd909526f"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
+          "version": "repo-lines-v1:sha256:688e58fa7162abea026b2d4980cce4c2fb37392ab18f699405cc731f2cb4d6ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDVkOGY2M2E0YmQ0YTI4ZjNkYmRkYzU3ODBmOTAyZTg0NjIyOTEzY2Q3ZGM2ZjZmNDEzYWRjNzk4ZjFiODQ1OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8b5c600e23284fbc994c8765a7e95b60",
+      "statement": "Renovate T045 is complete: retained 17:00 repository-tagged lookup failures and alerts recovered in the 18:00 Job; the 03:00 missed-slot drill fired RenovateHourlyCycleMissing, and the restored 04:00 scheduled Job succeeded after alert clearance.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L19-L25",
+          "version": "repo-lines-v1:sha256:2315591deb2784921550b063e3ffb743fc67c8c7b106b9bc276820a0f8622985:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE5OGI2Mjg2MTEzOTg0NjA2OTk3MjQ5ZjEzMmNhNTI1NTk0ZWJiZTY4Y2NjNWI1MTA2OTJmYmQ3NjdlNzNhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQzNDllMjBjZDYyZTk3NjQ1MGZlMDhlMDhmODM4NWY5YjZlOWY4MmJjODVhMDQ4ODA4MmU0YWJkNWIzNzMyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMyY2EwNWI5NDgzODA5YmI4ODNlNGVmYTEyYmM3YzM4NDE1NDE5OThhZDI2NjZkMDNmYzRmNzg0MzgxMmVmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTgxMmZlOTk1ODY1ZmU4NTNmZDMxYzJjMWM1ZDNjZTQ4YTdmNTBiY2M1ZmU3ODMyZTVlNDRkYjJhYmVmZmM3NCJ9"
         },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
+          "version": "repo-lines-v1:sha256:06114a754a7662215d2c7c8d6f10990b4c72e9fad5ded30a6155cc8b62abc75c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2IyMjg0NTM0MzBiNWE4YzlhODFlYmM5OWE4NjZiMWExNmM3MWIyMGUxMjczOGQ2Y2Y1YmI2MjY0MWFlN2Y0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3YjgxYTQ2Zjc2YzRmYjFiNTU4ZjdkNjEyOTAwYTVjZjBlYTkyMzZkMTI4NTFiZjYwZGExZmM2YWZjMjBkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE0NmU3MTQwY2Q5ODVhMjQ1OWNkMGU3MGI1MTY3Njc5YTM1Y2VlNjY1YTBjYTMyODIyY2FkNGI2N2FkYjkyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmNlNTIxNDIxOTQ4ZTQ2MDk4N2UzYzMwNjMyYzMyMzE2ZGMzODJhNjg0OWQwNGQwZGVlNjQ1OWE4MjE0OTc0MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a5f8cba223b046b2baacb669a1513c02",
+      "statement": "The 2026-10-20 capacity receipt finds 3,909.5 MiB unreserved on the best worker against a 4,096 MiB initial Enterprise steady request, while 43 co-resident Pods prevent a new NoSchedule taint from providing isolation.",
+      "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:56:30.465Z"
+    "at": "2026-10-20T05:36:50.120Z"
   }
 }

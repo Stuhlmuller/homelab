@@ -20,7 +20,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [earlier attempts `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916), [`39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077); [detached attempt `39181763037`](https://github.com/Stuhlmuller/homelab/actions/runs/39181763037); [merged repair #1401](https://github.com/Stuhlmuller/homelab/pull/1401); [main `2f94bec3`, retry `39204434898`](https://github.com/Stuhlmuller/homelab/actions/runs/39204434898); [checksum repair #1416](https://github.com/Stuhlmuller/homelab/pull/1416); [archive launcher `39207560733`](https://github.com/Stuhlmuller/homelab/actions/runs/39207560733); [archive launcher `39261391546`](https://github.com/Stuhlmuller/homelab/actions/runs/39261391546); [archive launcher `39299971435`](https://github.com/Stuhlmuller/homelab/actions/runs/39299971435) | — | Pending. `39204434898` failed before worker creation because the workflow's pinned helper checksum was stale; #1416 updated that guard. Launcher `39207560733` passed, but its detached worker was OOM-killed during local `verify_bundle` under the reader's 512 MiB limit. The later detached worker finished the second archive pass, then failed during local restore with `OperationalError`, without an OOM or result marker; the specific SQLite operation was not logged. No private result or offsite restore receipt exists. The `39299971435` detached writer completed its bundle, then failed independent member indexing with `SQLITE_IOERR_GETTEMPPATH` under the reader's read-only root; its result is absent. Six unpublished partial directories remain on the archive claim. The proposed reader mount gives SQLite writable private `/tmp` scratch; another exact-main protected run and offsite restore are required after rollout. Keep original sources and partial scratch intact. |
-| Capacity and isolated canary | Read-only node/top/Talos disk snapshots through 2026-10-19 19:50 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
+| Capacity and isolated canary | Read-only node/top/Talos disk snapshots and 24-hour Pod memory peaks through 2026-10-20 01:47 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -159,6 +159,30 @@ rolling overlap. Grafana and Langfuse PostgreSQL are single-replica
 `Recreate` workloads; moving them would interrupt unrelated services. No
 such move is authorized, no peak or transient fit is proven, and a taint alone
 would not remove already-running Pods. This candidate does not admit T022.
+
+At 2026-10-20 01:47 UTC, after the legacy shutdown, all four nodes were Ready,
+reported no memory, disk or PID pressure, and had no canary taint. Read-only
+`kubectl describe node` and `kubectl top nodes` showed:
+
+| Node | Unreserved memory | Current node memory use | 24-hour Pod working-set peak |
+| --- | ---: | ---: | ---: |
+| `acer` | 1,801.7 MiB | 11,259 MiB | 10,897 MiB |
+| `zimaboard-0` | 5.5 MiB | 6,167 MiB | 4,697 MiB |
+| `zimaboard-1` | 3,909.5 MiB | 5,647 MiB | 5,997 MiB |
+| `zimaboard-2` | 230.1 MiB | 924 MiB | 521 MiB |
+
+The peak is Prometheus `max_over_time` of the per-node sum of non-sandbox
+container working sets over 24 hours at five-minute resolution (288 samples
+per node). It excludes host processes, so it is not free-memory proof.
+`zimaboard-1` is the best worker by requests, yet its 3,909.5 MiB margin is
+186.5 MiB below the initial 4,096 MiB Enterprise steady reservation before
+startup, backup, enforcement and system headroom. Its 5,997 MiB Pod peak leaves
+at most about 1,284 MiB of allocatable RAM before host overhead. It already
+hosts 43 running Pods, including infrastructure DaemonSets and the retained
+legacy reader; a `NoSchedule` taint would not isolate them. No existing worker
+qualifies as the dedicated canary without moving unrelated workloads. The
+independent legacy archive/restore and measured storage/transient placement
+remain pending; T022 stays unchecked.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during

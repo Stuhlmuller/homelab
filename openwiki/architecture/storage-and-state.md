@@ -34,14 +34,16 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
+  - id: openwiki-source-9100b7266ad774f6eeda0265
+    resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T04:56:30.465Z" }
+generated: { by: "codex", at: "2026-10-20T05:36:50.120Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:56:30.465Z
+    at: 2026-10-20T05:36:50.120Z
 ---
 
 # Storage And State
@@ -298,6 +300,11 @@ The backup script rejects incomplete recovery material and an already-published
 timestamp. Its isolated restore candidate is excluded from the Kustomization.
 No Enterprise PVC, database, off-node backup, or live restore proof exists from
 this unregistered source alone.
+The 2026-10-20 post-shutdown capacity receipt found only
+3,909.5 MiB of unreserved memory on the best worker, below the 4,096 MiB
+initial Enterprise reservation before transient and host headroom. It does
+not admit the local claims or an isolated canary; see the
+[acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
@@ -574,15 +581,14 @@ not prune the PVC. Before requesting a GitHub token, each run flushes a small
 write to the claim so a full or unwritable cache fails visibly. The `20Gi`
 request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
 PVCs or enforce their requested size. A full export needs restored NAS capacity
-through a declared path; increasing the PVC request cannot restore writes. For
-corruption, suspend the CronJob, clear only cache contents with a reviewed
-temporary GitOps Job, then let the next run rebuild them. See [the workload
-runbook](../../clusters/homelab/apps/renovate/README.md).
+through a declared path; increasing the PVC request cannot restore writes.
 No verified QNAP `/homelab` capacity-restoration operation is declared. An
 isolated tmpfs `ENOSPC` drill can test failure visibility and later normal
 PVC use, but cannot prove recovery from a full NAS export. T024/T042 and
-writer cutover remain blocked on a declared capacity path and direct recovery.
-
+writer cutover remain blocked on a declared capacity path and direct recovery
+evidence. For corruption, suspend the CronJob, clear only cache contents with
+a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
+runbook](../../clusters/homelab/apps/renovate/README.md).
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the

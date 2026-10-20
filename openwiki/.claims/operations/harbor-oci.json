@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d313171191d600f275a885ae5da6f99c4d7c9347eaedc5274067ff13649ca2ce",
+  "pageVersion": "sha256:3da6e90ed45bf8fc08732c99854487316dc4c0f9b36349cc1475eb8fc7bb73c3",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -728,7 +728,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e65965ac2b4f3d08dc0539586978cf37130b36bdc29f019d16ee86342d0444c4"
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         }
       ]
     },
@@ -823,10 +823,20 @@
           "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
+    },
+    {
+      "id": "claim_442713dd84164cda9cae2f79038ae35b",
+      "statement": "The post-shutdown capacity receipt leaves isolated Enterprise canary placement blocked independently of the pending full Harbor catalog publication.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:13:36.094Z"
+    "at": "2026-10-20T05:36:50.120Z"
   }
 }

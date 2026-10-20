@@ -66,8 +66,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
-  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -78,12 +76,16 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
-  - id: openwiki-source-ab3ca049e4829053c335f750
-    resource: repo://clusters/homelab/apps/openclaw/retirement-reader.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-caf6d77fd092a28e8583a6a2
+    resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
+    resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-19486243ca5f1efdd808adf2
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -156,10 +158,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T04:56:30.465Z" }
+generated: { by: "codex", at: "2026-10-20T05:36:50.120Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:56:30.465Z
+    at: 2026-10-20T05:36:50.120Z
 ---
 
 # Workload Inventory
@@ -390,6 +392,11 @@ the source volumes remain read-only. This repairs a failed scratch-path attempt;
 the full archive and offsite restore are still unverified. See the
 [retirement reader](../../clusters/homelab/apps/openclaw/retirement-reader.yaml)
 and [archive runbook](../../clusters/homelab/apps/openclaw/README.md).
+The [2026-10-20 read-only capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
+still blocks placement: the best worker has 3,909.5 MiB unreserved versus the
+initial 4,096 MiB Enterprise steady request, before transient and host
+headroom. Its 43 co-resident Pods prevent an added `NoSchedule` taint from
+providing isolation.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
