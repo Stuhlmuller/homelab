@@ -18,6 +18,8 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-2a039ed5aad5ca72f1f03c9a
+    resource: repo://scripts/ci/network-policy-registration-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-719a8f57b80adfae662090ca
@@ -32,10 +34,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-20T17:08:07.139Z" }
+generated: { by: "codex", at: "2026-10-20T21:18:04.847Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T17:08:07.139Z
+    at: 2026-10-20T21:18:04.847Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -208,7 +210,11 @@ from upgrades. Admission requires reviewed placement and adds the isolation
 taint before the selector label. It rejects another Node with that label before
 mutation and immediately before labeling, and removes its own label if a
 post-patch check detects a conflict. After qualification, the exact qualify →
-fixture-prune → firewall-prune commits must lead to current `main`. Apply the
+fixture-prune → firewall-prune order must hold on the first-parent history of
+current `main`. Unrelated commits may interleave; policy cleanup source edits
+cannot. The static gate checks exact GitOps source phases, while private
+ownership and cleanup receipts still bind each protected run to current
+`main`. Apply the
 fixture prune and verify the live `network-policy-canary` namespace and all
 fixture workloads are absent before capture. Protected `ownership-capture`
 stores the full remaining firewall snapshot in private versioned S3; the owner
@@ -228,7 +234,9 @@ and firewall deletion are not atomic; a Pod tolerating the taint could arrive
 during deletion. Live activation stays blocked until isolated placement rules
 out that arrival or a reviewed repository-owned isolation path is added.
 Release verifies the cleanup and ownership receipts, original placement,
-exact removal chain and fixture absence. It removes the label, waits for
+reviewed removal history and fixture absence. A newer `main` requires fresh
+SHA-bound capture, approval, and cleanup before release. It removes the label,
+waits for
 cleanup DaemonSet Pods to disappear cluster-wide, rechecks the node Pod
 inventory, then removes the taint. An interrupted release keeps the taint for
 direct review; the committed `canary.node` is unset.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc8da666de2f0bfd5a86afe0fc75b09bff1b6f8a08dccd2cbcf1cb7d2febeec7",
+  "pageVersion": "sha256:003d503467b592dd646c057b6eb9def781fd1625aa0ecae9f32c95a0e88cd750",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:69cb42c72bf7ff6ffa0bb0f210d2025d81243f47c0f6bc26ddec321259eca91e"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:03789d10b9a57b886290b0966677471b2961a01fbef743208b1b2255e0362fe6"
+          "version": "repo-file-v1:sha256:69cb42c72bf7ff6ffa0bb0f210d2025d81243f47c0f6bc26ddec321259eca91e"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -42,7 +42,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:0d4bbcd44927054103f21e8bb277be98cafa2f7a819ce98b2aa00dbd9ab6b9b9"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -75,6 +75,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:18:26.448Z"
+    "at": "2026-10-20T21:18:04.847Z"
   }
 }
