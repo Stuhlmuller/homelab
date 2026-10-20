@@ -5,8 +5,6 @@ const issuerPath = '/var/run/secrets/renovate/issuer-id';
 const privateKeyPath = '/var/run/secrets/renovate/private-key';
 const api = 'https://api.github.com';
 const owner = 'Stuhlmuller';
-// Temporary acceptance fault: one scheduled UTC hour, then normal PVC use resumes.
-const fullCacheFaultHour = Date.parse('2026-10-20T10:00:00Z');
 
 async function githubJson(path, authorization, method = 'GET') {
   let response;
@@ -79,27 +77,13 @@ async function installationToken() {
 }
 
 module.exports = async function config() {
-  const now = Date.now();
-  const faultHour = now >= fullCacheFaultHour && now < fullCacheFaultHour + 3600_000;
-  const cacheDir = faultHour ? '/cache/renovate-fault' : '/cache/renovate';
-  if (faultHour) {
-    try {
-      fs.writeFileSync(`${cacheDir}/.full-fixture`, Buffer.alloc(2 * 1024 * 1024));
-      throw new Error('Renovate cache fault fixture did not reach ENOSPC');
-    } catch (error) {
-      if (error.code !== 'ENOSPC') throw error;
-    }
-  }
-  const probe = `${cacheDir}/.storage-probe-${crypto.randomUUID()}`;
+  const probe = `/cache/renovate/.storage-probe-${crypto.randomUUID()}`;
   try {
     fs.writeFileSync(probe, Buffer.alloc(4096), { flush: true });
     fs.unlinkSync(probe);
   } catch {
     try { fs.unlinkSync(probe); } catch {}
     throw new Error('Renovate cache volume is unavailable or full');
-  }
-  if (faultHour) {
-    throw new Error('Renovate cache fault probe unexpectedly succeeded');
   }
   return {
     platform: 'github',
@@ -125,7 +109,7 @@ module.exports = async function config() {
     lockFileMaintenance: { enabled: true },
     vulnerabilityAlerts: { enabled: true, labels: ['security'] },
     baseDir: '/tmp/renovate',
-    cacheDir,
+    cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
     logLevelRemap: [{ matchMessage: '/^Returning cached value$/', newLogLevel: 'info' }],
