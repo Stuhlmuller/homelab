@@ -48,6 +48,26 @@ def policy(namespace, name, selector, egress=None, policy_types=None, ingress=No
 
 
 class NetworkPolicyInventoryTests(unittest.TestCase):
+    def test_pinned_octelium_generated_policy_shapes(self):
+        bootstrap = (ROOT / "scripts/octelium-cluster-bootstrap.sh").read_text()
+        self.assertIn('version="0.35.0"', bootstrap)
+        items = inventory.load_items(ROOT / "clusters/homelab/apps/octelium/"
+                                     "generated-networkpolicies.json")
+        hashes = {
+            f"{item['metadata']['namespace']}/{item['metadata']['name']}":
+            hashlib.sha256(json.dumps(item["spec"], sort_keys=True,
+                                      separators=(",", ":")).encode()).hexdigest()
+            for item in items
+        }
+        self.assertEqual(hashes, {
+            "octelium/octelium-ingress": "98604d834f9b0c583f65f14c8f70195df706044658b21d302f33dc62caae2199",
+            "octelium/octelium-nocturne": "5cd2281cdd4996d94b456d65a2f4b244e63bf1a37ed47d0c005ba15d1a3e5a35",
+            "octelium/octelium-octovigil": "ab5b0dcb621fc89813ce9dd2833ebf14a8ab0187635140269f486714cfb5ccf1",
+            "octelium/svc-upstream": "09c86331a6a384a28f6ed34e5b185c3706efdf18395bd8ef82b44c374a69c4b9",
+        })
+        self.assertEqual(len(inventory.policies(items, strict=True)), 4)
+        self.assertIn("all-ports", inventory.broad_rule(items[3]["spec"]["egress"][0]))
+
     def test_pinned_cordium_generated_policy_shapes(self):
         manifest = (ROOT / "clusters/homelab/apps/cordium-bootstrap/genesis.yaml").read_text()
         self.assertIn("ghcr.io/octelium/cordium-genesis:0.12.7@sha256:"
