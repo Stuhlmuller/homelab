@@ -158,6 +158,8 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-8047752c8d0bc59d19d7605b
+    resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-8483d28614308625b1073872
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -168,14 +170,16 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
+  - id: openwiki-source-7941d9a35910fdb69c63e9c1
+    resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T08:35:40.829Z" }
+generated: { by: "codex", at: "2026-10-20T08:57:21.938Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:35:40.829Z
+    at: 2026-10-20T08:57:21.938Z
 ---
 
 # Workload Inventory
@@ -408,6 +412,9 @@ placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. A protected full-sync stage is
 source-tested, but cannot run until registration and the reviewed installation
 phase; it would sync Foundation before Enterprise at explicit revisions.
+An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
+exists in source; no protected post-bootstrap invocation or live Secret binding
+has occurred.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy

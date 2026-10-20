@@ -73,8 +73,12 @@ Namespace, Pod Security, NetworkPolicy and RBAC preflight. It verifies the
 ready API object and Kubernetes ownership before journaling its ID. The command
 then exits blocked because Agent reconciliation is unfinished; that failure
 does **not** imply that no mutation occurred. `verify` remains read-only and
-blocked. The post-bootstrap annotation binder and later credential/deployment
-flows remain pending.
+blocked. `scripts/openclaw-enterprise-bind-installation.py` implements the post-bootstrap
+annotation write as a source-only protected entrypoint. It requires exact-main
+review, a private bootstrap key, two stable Ready-Pod proofs around the first
+Installation API read, UID/resource-version JSON Patch tests, and a second
+Installation API read with exact Secret readback. A protected workflow has not
+yet been wired to invoke it; later credential/deployment flows remain pending.
 
 After a blocked `reconcile`, inspect the protected journal's `namespaceId`,
 `GET /namespaces/:id`, and the owned `openclaw-agents` Namespace/NetworkPolicies
