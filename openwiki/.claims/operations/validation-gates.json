@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fc19b226327f1f4e147944aa96a8352bbc0938b7f51124f93197df04df06ffc2",
+  "pageVersion": "sha256:996a0d227ef023cd6b74e0d3db2f758e271304196271543c9a2ebeabdbeb035a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -582,7 +582,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -596,7 +596,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -678,15 +678,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:0235b83c7cb0758a3b6cb1c96178a37ec829cd5a94215f565b98020c375586dd"
+          "version": "repo-file-v1:sha256:281ea64a84eff2ca270deec607cd3eefd52fb660919cc9a2f99a469886cdd0a2"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:e3c9de143a6fced87a8fd926f61ccf7b26197a163092bf9f149d0b81634657d7"
+          "version": "repo-file-v1:sha256:7aeee5e876af69fe4343c8dff163f85648afe42fabd4a9a843595967e3e31acc"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -699,12 +699,12 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L944-L1009",
-          "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L313-L409",
-          "version": "repo-lines-v1:sha256:5c0907f1fe131f4f72c971861ecad030beb84467dfd985fea3fe6306f918f5ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
     },
@@ -848,11 +848,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:f9e7339105652f389ec6a48604bc29bf0a20ab1c7c1e7828fd6252c9ea515fbb"
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -1058,7 +1058,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         }
       ]
     },
@@ -1172,17 +1172,21 @@
     },
     {
       "id": "claim_a54d750b2e7e4fae9832f7b40921adf5",
-      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures with fresh directories and bounded backoff, report exhaustion after five, and stop on hard failures.",
+      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures in one temporary OCI directory while retaining partial content, forcing recursive checks of nested data, and using bounded backoff. They report exhaustion after five attempts and stop on hard failures.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:08:27.886Z"
   }
 }

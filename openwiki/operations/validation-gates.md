@@ -248,10 +248,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
+generated: { by: "codex", at: "2026-10-20T01:08:27.886Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:08:27.886Z
 ---
 
 # Validation Gates
@@ -2019,9 +2019,10 @@ generic destination errors still fail closed. Alias lookup fixtures also require
 one transient read to recover and an authorization failure to stop without a
 retry. These fixtures do not establish that the protected full-catalog
 publication succeeded. OCI-index pull fixtures also require recovery after
-four classified transport failures with fresh directories and
-2/4/8/16-second backoff, exhaustion after five attempts, and immediate
-stop on hard errors.
+four classified transport failures while retaining partial content in one
+temporary OCI directory, forcing recursive checks on each attempt, and
+2/4/8/16-second backoff. They require exhaustion after five attempts and an
+immediate stop on hard errors.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child
