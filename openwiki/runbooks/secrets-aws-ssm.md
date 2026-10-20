@@ -30,10 +30,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+generated: { by: "codex", at: "2026-10-20T02:36:08.776Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T02:36:08.776Z
 ---
 
 # AWS SSM Secret References
@@ -66,10 +66,10 @@ desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
-reintroduction of the exact-scope grant. The hourly CronJob is now declared
-unsuspended in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
-finished all eight eligible repositories with no reported errors. The legacy
-GitHub Action remains the only writer. Full App-policy parity, fault recovery,
+reintroduction of the exact-scope grant. The CronJob is now declared
+unsuspended on a two-hour UTC schedule in full dry-run mode. Its earlier 19:00
+and 20:00 UTC Jobs each finished all eight eligible repositories with no
+reported errors. The legacy GitHub Action remains the only writer. Full App-policy parity, fault recovery,
 the old-writer workflow deletion, guarded Actions-key retirement, and cluster
 writer activation remain separate gates.
 

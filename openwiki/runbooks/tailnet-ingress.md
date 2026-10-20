@@ -91,7 +91,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T22:48:59.937Z
+    at: 2026-10-20T02:36:08.776Z
 ---
 
 # Tailnet And App Ingress
