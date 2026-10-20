@@ -165,7 +165,7 @@ test('temporarily exposes only package-cache hit markers during full dry run', a
   );
   const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
   assert.match(cronjob, /^  suspend: false$/m);
-  assert.match(cronjob, /^  schedule: "0 \*\/2 \* \* \*"$/m);
+  assert.match(cronjob, /^  schedule: "0 \* \* \* \*"$/m);
   assert.match(cronjob, /^  concurrencyPolicy: Forbid$/m);
 });
 

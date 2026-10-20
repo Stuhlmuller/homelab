@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:38830b38540d89f40332eeba5a842b9245bd3aa97141e03720d340a6ec7f8612",
+  "pageVersion": "sha256:52f534e2c6b1be0b59e7d1efae56cff45bedf9af2dad1f904de1aea6592211bf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:f6420353a267eae46a5e907d835cc23277fd2be1028c339c48a9b516e1b13092"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -764,7 +764,7 @@
     },
     {
       "id": "claim_823a08a8670e4b57b50e4cf8ce0507c7",
-      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures built for hourly starts, including missed and incomplete cycles, suspension, resume, and a missing CronJob. The current CronJob schedules every two hours while the rules and fixture still assume hourly starts and a 56-minute completion threshold, so these checks no longer verify the declared cadence and can falsely alert between healthy runs; live acceptance remains open.",
+      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures for missed starts, incomplete cycles, late prior success, suspension and resume just before an hour boundary, and a missing CronJob. Its first post-resume slot alerts after the 15-minute start grace; the completion alert's 56-minute threshold exceeds the 15-minute start allowance plus 40-minute Job runtime. These checks do not establish live credential, cache, or scheduled-Job acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
@@ -772,7 +772,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:f6420353a267eae46a5e907d835cc23277fd2be1028c339c48a9b516e1b13092"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -794,7 +798,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:0e5d1bee57bfdd2222d092ca0758ad049d29cb6881a2dfe41b7e1c66f0a04294"
+          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
         }
       ]
     },
@@ -1191,6 +1195,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T03:38:09.386Z"
+    "at": "2026-10-20T03:45:43.875Z"
   }
 }
