@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5c69d5c2b0219924e803b4e88bc2bff93a800e6f160a81ea2020147942493e94",
+  "pageVersion": "sha256:111310bf6eeaca17e4ab0413046071187f2ab5df56f660577e0c66ae1523d585",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -212,7 +212,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
-          "version": "repo-file-v1:sha256:293c9d1c13d141a32f60f38bf989f55860d8f390d07495e593a0ed9ef98b8992"
+          "version": "repo-file-v1:sha256:28ec5179a6dfe3926daac5afc06e1e10b52e77d5bc132fe4d9787219d2da05d1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -241,6 +241,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T09:40:00.529Z"
+    "at": "2026-10-20T10:04:14.843Z"
   }
 }
