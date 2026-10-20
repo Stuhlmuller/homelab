@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2548b47850f116833ab598bcd8824d86ddfd0236a781fff1f915b166dabc5dce",
+  "pageVersion": "sha256:e2da07c81fb828363efff9124e88931ea0269bc67c8f5e872feb84d1e8041ab4",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
+          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
+          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
+          "version": "repo-file-v1:sha256:0bf46528f1a356bb9bb9cf0821e5c249c7347f373f13d9e449b716d212f0cd50"
         }
       ]
     },
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
+          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
         }
       ]
     },
@@ -1122,7 +1122,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f4698e79ec134b939318abcebc6c597b28314f73bdebe134546622f1070105a7"
+          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
         }
       ]
     },
@@ -1261,10 +1261,42 @@
           "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
         }
       ]
+    },
+    {
+      "id": "claim_0b33768a0f274977805e09ebac06c342",
+      "statement": "The protected PR plan fails when AzureAD stack or shared root sources or plan inputs change and the plan environment lacks client/tenant selectors or a complete GitHub OIDC session; unrelated changes may skip AzureAD.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
+          "version": "repo-lines-v1:sha256:493feb0893ed1fab5d88d3a8cfa4d5c01c53a1c4e4e35398ab5919bd943d8baf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxYjIyMTNiMTc1NmVhMjViMjhkNDI0NmZmMWM1YTM2MGU4N2Y0NmEzYjJjN2JlYzllYjNmNmIxODE2Mjc2ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MWViYTc5NjRlNDFkMGFiMzQzNzcyNTNjNmVjM2Q1MThkOTQ4MWU2ZTI0NmU2MmU0MjVhMDgwMjgyNzdjYmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5NDNlOGFjZGYwNjQyZTY0Njc0NTUyYTI5MGVlZTNhZmUzY2Q0NDRjZmRmYjkxNmQ0Y2MxMTE0OWQ0YjJjYzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjZWUzOGE2NTQyM2UwMWM2N2M3YjRlMzgwMGI5OTVmNDk5YmE2YjIyMjI4OGQzMGQ0MGM1ZTk0ZjBlZjNiZWIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan.sh#L12-L31",
+          "version": "repo-lines-v1:sha256:29d25e2376d40782c1f77899e36efcae73513dccc5da85428389d3e3e3705d7d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllNGJlYjgyMDI5ZjRhMmIwOGFkMGQ3YjRlOGY4OWE4OTk3Y2U5MDhhOGE2MmE4MzExYzg2NDY2Mjg1YTE1ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjMTVmMWFjOWExZmUzZDBjYzFjYWJiZjdjYzBmODcwMTA4MWM0OTMwMzJjNjhmM2NiYjhhNWM1MGQ1YTcxN2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwYzFhNWFiMjQzNTNkZmNjZTg0MmUzOGNmOGQ4NDMxZTg3Mjc0ZDA3NDU0ZDg0NTAzMjhlMmY3ODE0YzVlMTQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan.sh#L190-L215",
+          "version": "repo-lines-v1:sha256:1ab75ac1ca361cc8dfa009f3e3c8997a10227b64c4154e601b97ef017cee9fc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNjlhOGI3MTllZTdiMTJkNTQwZjlhZGE1MjY4MzQ5MmUxMjc1MjNiMWQxNGFlY2U0ZTBmNWMxNGI2MGRiMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0OTNkMGI4NTYwOTczM2NlM2ZjYjQxODc3YmRkMTJjOTE5NDhhM2YzNDI5YzgyNzE1NjMzMjlhYjAxZDJjNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZjVhNmIwYTA1M2JiZWQ5MjMzZDQ2MTQ1ZTg2ZjRkNzE4MGRmMTc2M2ZkNDkwMjNiOTY5Y2M1ODA1MmY1MWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_060d81286ce645c59c9887edfa6874eb",
+      "statement": "The PR static job fails before deciding to skip the live Terragrunt plan if it cannot read the base diff, and an offline fixture exercises that failure.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml#L36-L62",
+          "version": "repo-lines-v1:sha256:2ea61499ed62c7617a441c8d107d7654a1b28b0406c7b78adaacae28709d0f40:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxYzg5YmYyOWQ5ZTVkZDAyYjcwOTJjNWEzZjg1N2RkZGNjNmNjZmQwMzAzMDdkZWU5N2U1N2NkODk1YmQyMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmNTU5NzljZTczMDIwMzNlNmIyZmQ3ZDg4ZjUzN2EzYjhlMDkxZWEzMDVjODExZmZhMTI3NGJmNTc2NGVhNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0NDU4ZTU1M2M2MGU0M2QyZDk5MzQ4NmRjY2MzZmQ5Y2M0ZWNlYzAxOTg4MmUyOTE0MDI5Y2UxODc2NzU2NjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyOWZlNjExMjIzM2M1MTFmOTEzOThkZDhmMDdlZDJiMjI4NmEwNjUyOTBhYmE0NWNhMGI1OTliZjcxZjFlZTIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py",
+          "version": "repo-file-v1:sha256:2a9e5922387211a72f2caff4226ea5b1580890de82a92dc44baa4fff12bbd29e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:19:15.114Z"
+    "at": "2026-10-20T05:34:43.418Z"
   }
 }

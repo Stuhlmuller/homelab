@@ -22,6 +22,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -216,6 +218,10 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c65516e351b2fe2cbdfc5a79
     resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-60b00db0363e7f9e27d7fa7f
+    resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
@@ -260,10 +266,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
+generated: { by: "codex", at: "2026-10-20T05:34:43.418Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:19:15.114Z
+    at: 2026-10-20T05:34:43.418Z
 ---
 
 # Validation Gates
@@ -764,7 +770,9 @@ The pull-request `Terragrunt Gate` is an always-present aggregate. Its
 unprivileged static job runs for every PR and owns live-scope detection. Only a
 trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
-skipped. The aggregate fails unless static checks succeed and the applicable
+skipped. An unreadable base diff fails the static job before it can emit a
+successful skip decision; the offline fixture exercises this failure. The
+aggregate fails unless static checks succeed and the applicable
 live plan or same-repository skip-note job has the expected result. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
@@ -1401,6 +1409,13 @@ runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
 then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
 details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
+
+The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
+stack or shared root sources, or plan inputs, change. Missing client and tenant
+selectors or an incomplete GitHub OIDC session fail the plan; only unrelated
+changes may skip AzureAD. Restore the environment secrets through the
+[Entra provider runbook](../../docs/entra-terraform-provider.md), then rerun
+the PR plan and verify the protected gate before merging.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,

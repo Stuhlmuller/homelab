@@ -46,14 +46,18 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-60b00db0363e7f9e27d7fa7f
+    resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T04:22:56.208Z" }
+generated: { by: "codex", at: "2026-10-20T05:34:43.418Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:59:53.605Z
+    at: 2026-10-20T05:34:43.418Z
 ---
 
 # CI/CD
@@ -76,6 +80,14 @@ The separate Octelium Private Kubernetes Apply dispatch verifies the selected
 immediately before each of two catalog writes; a failed lookup or newer commit
 stops the next write. The second write must report no changes. These source
 guards have not been exercised by a live dispatch in this update.
+
+An AzureAD stack, shared root, or plan-input change requires
+`AZUREAD_CLIENT_ID` and `AZUREAD_TENANT_ID` in `homelab-plan` plus a complete
+GitHub OIDC session. Missing inputs fail `Terragrunt Plan`. Restore the plan
+identity through the [Entra provider runbook](../../docs/entra-terraform-provider.md),
+rerun the protected PR plan, and verify `Terragrunt Gate` before merging.
+If the static job cannot read the PR base diff, it fails before deciding to
+skip the live plan.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
