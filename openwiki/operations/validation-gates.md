@@ -70,6 +70,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-b26876230e53fd853d7bcbea
+    resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
@@ -310,10 +312,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T16:13:57.200Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:35:56.635Z
+    at: 2026-10-20T16:13:57.200Z
 ---
 
 # Validation Gates
@@ -1674,14 +1676,17 @@ The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
-archived roots, including six links to nonempty Pod-overlay directories whose
-image-layer or writable origin is unproven. Classify those targets privately
-and retain or rebuild required data. A rehearsal also needs a separate writable
-UID 1000 local-state copy, an isolated NAS copy, and a declared network boundary
-that blocks Discord, heartbeat, and job deliveries. Flannel does not enforce
-the declared NetworkPolicies, so a deny policy alone cannot isolate the old
-image. Require the verified offsite archive receipt before the rehearsal; keep
-production writers stopped and original claims read-only.
+archived roots. Six `/app` links resolve to five nonempty directories in the
+pinned image baseline without an `/app` volume. The former gateway had a
+writable root, so its original overlay contents remain unclassified; compare
+them with retained evidence before claiming compatible recovery. Three
+dangling external targets also need an explicit disposition. A rehearsal needs
+the verified offsite archive receipt, separate writable UID 1000 local-state
+and isolated NAS copies, and an enforced offline network boundary that blocks
+Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
+NetworkPolicies, so a deny policy alone cannot isolate the old image. Keep
+production writers stopped and original claims read-only; no isolated
+old-image boot has run.
 The 2026-10-20 13:07–13:15 UTC post-shutdown read-only recheck still rejects
 T022: the best worker, `zimaboard-1`, has about 3,398 MiB unreserved against
 Enterprise's initial 4,096 MiB steady reservation, 6,308 MiB in use, and
