@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb3791b6231639e6bd39c49e1a5397bcea8ec542cec02bbbe60939a1a7ad7f49",
+  "pageVersion": "sha256:6f2ac285e6cc4c16068aae1d7bc9b0a612a41f7bc6197e652cfd48f40dcda1b0",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1016,7 +1016,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-quiesce-test.py",
-          "version": "repo-file-v1:sha256:d00b6a250af18b72e22d7f7a9e30311175c85ab264b97ea8f03d7722afbd141f"
+          "version": "repo-file-v1:sha256:695bee7ef3e241913bc08a5f161d5cebdccb2f7762236ac6890b11f12f9ae69c"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-startup-test.py",
@@ -1467,6 +1467,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T09:17:33.110Z"
+    "at": "2026-10-20T09:40:00.529Z"
   }
 }
