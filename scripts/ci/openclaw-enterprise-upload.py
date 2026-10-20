@@ -11,6 +11,16 @@ from pathlib import Path
 
 
 PART_SIZE = 64 * 1024 * 1024
+
+
+class RangeReadError(ValueError):
+    pass
+
+
+class DigestMismatchError(ValueError):
+    pass
+
+
 RANGE_READ = '''import os, stat, sys
 path, offset, count, expected_size = sys.argv[1:]
 fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
@@ -51,7 +61,7 @@ def source_range(pod, path, offset, count, expected_size):
             continue
         if result.returncode == 0 and len(result.stdout) == count:
             return result.stdout
-    raise ValueError('archive range read failed')
+    raise RangeReadError('archive range read failed')
 
 
 def main():
@@ -91,7 +101,7 @@ def main():
                 parts.append({'ETag': etag, 'PartNumber': len(parts) + 1})
                 total += count
             if digest.hexdigest() != args.expected_sha256:
-                raise ValueError('archive ranges differ from verified source')
+                raise DigestMismatchError('archive ranges differ from verified source')
             manifest = Path(directory) / 'parts.json'
             manifest.write_text(json.dumps({'Parts': parts}))
             aws('complete-multipart-upload', '--bucket', args.bucket, '--key', args.key,
@@ -107,4 +117,15 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except RangeReadError:
+        raise SystemExit(10) from None
+    except subprocess.CalledProcessError as error:
+        raise SystemExit({
+            'create-multipart-upload': 11,
+            'upload-part': 12,
+            'complete-multipart-upload': 13,
+        }.get(error.cmd[2], 1)) from None
+    except DigestMismatchError:
+        raise SystemExit(14) from None

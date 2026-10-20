@@ -48,6 +48,9 @@ a distinct `publish-archive` stage is required after its private result appears.
 Publication streams bounded multipart parts and checks the complete byte count
 and SHA256 before S3 completion. Its run SHA/ID is the offsite archive reference
 for `verify`; the original archive worker SHA/ID remains the source reference.
+On failure, the protected job exposes only a fixed category: `publication-source-read`,
+`publication-s3-create`, `publication-s3-part`, `publication-s3-complete`, or
+`publication-digest`. None is an offsite restore receipt.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain
