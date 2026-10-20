@@ -160,10 +160,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:08:27.886Z" }
+generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:59:53.605Z
+    at: 2026-10-20T05:19:15.114Z
 ---
 
 # Harbor Private OCI Registry
@@ -876,6 +876,9 @@ The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
+The [post-shutdown capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
+also leaves isolated canary placement blocked; a mirror receipt cannot clear
+that independent gate.
 The dormant Enterprise foundation is unregistered and deploys neither image.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the
