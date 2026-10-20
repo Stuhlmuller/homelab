@@ -631,6 +631,8 @@ aws() {
       [[ "$TEST_FAIL" != publication-archive-head ]] || return 7
       if [[ "$TEST_FAIL" == publication-archive-metadata ]]; then
         printf '{"ContentLength":9,"ServerSideEncryption":"aws:kms","VersionId":"archive-v1"}\\n'
+      elif [[ "$TEST_FAIL" == publication-archive-version-none ]]; then
+        printf '{"ContentLength":10,"ServerSideEncryption":"aws:kms","VersionId":"None"}\\n'
       else
         printf '{"ContentLength":10,"ServerSideEncryption":"aws:kms","VersionId":"archive-v1"}\\n'
       fi
@@ -657,7 +659,7 @@ restore_version() {
             private = Path(directory)
             (private / 'receipt.json').write_text('{}')
             phase = private / 'phase'
-            for failed in (*categories, 'none'):
+            for failed in (*categories, 'publication-archive-version-none', 'none'):
                 result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
                                         env={**os.environ, 'TEST_WORK': directory,
                                              'TEST_PHASE': str(phase), 'TEST_FAIL': failed},
@@ -665,8 +667,9 @@ restore_version() {
                                         check=False)
                 self.assertEqual(result.returncode == 0, failed == 'none',
                                  (failed, result.stderr))
-                self.assertEqual(phase.read_text().strip(), failed if failed != 'none'
-                                 else categories[-1])
+                self.assertEqual(phase.read_text().strip(),
+                                 'publication-archive-metadata' if failed == 'publication-archive-version-none'
+                                 else failed if failed != 'none' else categories[-1])
 
     def test_s3_lookup_reports_only_fixed_error_category(self):
         shell = '''set -euo pipefail

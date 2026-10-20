@@ -55,7 +55,7 @@ Exact-main [publication retry `39466313228`](https://github.com/Stuhlmuller/home
 passed the precredential main guard and completed the bounded multipart uploader,
 then failed at 2026-10-20 20:34:59 UTC with the fixed public category
 `publication-version`. That old category covers archive HEAD/metadata, receipt
-upload/HEAD and initial restore setup, so the exact failed substep is unknown.
+upload/HEAD and restoration of both objects, so the exact failed substep is unknown.
 No final offsite restore receipt was published and independent `verify` was not
 dispatched. The original retained archive remains authoritative; T013 is open.
 

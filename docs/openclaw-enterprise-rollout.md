@@ -82,7 +82,7 @@ retry and independent offsite restore pass.
 Exact-main [run `39466313228`](https://github.com/Stuhlmuller/homelab/actions/runs/39466313228)
 completed the bounded multipart uploader, then failed in the former broad
 `publication-version` category at 2026-10-20 20:34:59 UTC. That category cannot
-distinguish object metadata, receipt upload/version, or initial restore setup.
+distinguish object metadata, receipt upload/version, or archive and receipt restore.
 The uploaded object is not an accepted archive: no final versioned, independently
 restored receipt exists. Keep the retained local source and failed-run S3 objects;
 the next protected publication must use a fresh exact-main run and unique prefix.
