@@ -110,7 +110,11 @@ cannot resize PVCs. If the backing share is full, suspend `cronjob.yaml`
 through a reviewed PR, restore share capacity through a declared path, and
 verify the next scheduled Job after resuming. If no declared NAS capacity path
 exists, add one before changing live state. Increasing the PVC request will
-not restore writes.
+not restore writes. No verified QNAP `/homelab` capacity-restoration operation
+is declared yet. A bounded, isolated tmpfs `ENOSPC` drill can test failure
+visibility and later normal PVC use, but cannot prove recovery from an actual
+full NAS export. T024/T042 and writer cutover remain blocked on a declared
+capacity path and direct recovery evidence.
 
 Renovate 44.167.4 treats missing or malformed package entries as misses and
 skips malformed repository cache files; a later run can rebuild both from
