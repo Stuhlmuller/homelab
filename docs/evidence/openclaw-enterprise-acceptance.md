@@ -21,7 +21,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [earlier attempts `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916), [`39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077); [detached attempt `39181763037`](https://github.com/Stuhlmuller/homelab/actions/runs/39181763037); [merged repair #1401](https://github.com/Stuhlmuller/homelab/pull/1401); [main `2f94bec3`, retry `39204434898`](https://github.com/Stuhlmuller/homelab/actions/runs/39204434898); [checksum repair #1416](https://github.com/Stuhlmuller/homelab/pull/1416); [archive launcher `39207560733`](https://github.com/Stuhlmuller/homelab/actions/runs/39207560733); [archive launcher `39261391546`](https://github.com/Stuhlmuller/homelab/actions/runs/39261391546); [archive launcher `39299971435`](https://github.com/Stuhlmuller/homelab/actions/runs/39299971435); [publication retry `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090); [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [publication retry `39466313228`](https://github.com/Stuhlmuller/homelab/actions/runs/39466313228) | — | Pending. `39204434898` failed before worker creation because the workflow's pinned helper checksum was stale; #1416 updated that guard. Launcher `39207560733` passed, but its detached worker was OOM-killed during local `verify_bundle` under the reader's 512 MiB limit. The later detached worker finished the second archive pass, then failed during local restore with `OperationalError`, without an OOM or result marker; the specific SQLite operation was not logged. Those failed workers produced no private result; the later source archive has a private result but no final offsite restore receipt. The `39299971435` detached writer completed its bundle, then failed independent member indexing with `SQLITE_IOERR_GETTEMPPATH` under the reader's read-only root; its result is absent. Six unpublished partial directories remain on the archive claim. The proposed reader mount gives SQLite writable private `/tmp` scratch; another exact-main protected run and offsite restore are required after rollout. Keep original sources and partial scratch intact. |
 | Legacy compatible recovery rehearsal | [read-only image and mount review on `90f7338`, 2026-10-20](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c) | — | Pending. Six external `/app` symlinks resolve to five nonempty directories in the pinned image baseline, but the former gateway's writable overlay may have changed them and has not been compared with retained evidence. Three dangling external targets also remain unclassified. The offsite archive receipt, separate writable local/NAS copies, enforced offline network boundary, and isolated old-image boot are absent. Original claims remain retained and mounted read-only by the reader. |
-| Capacity and isolated canary | Read-only node/top/Talos disk snapshots through 2026-10-20 13:15 UTC; 24-hour Pod memory peaks at 01:47 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
+| Capacity and isolated canary | Read-only node/top/kubelet filesystem snapshots through 2026-10-20 21:00 UTC; 24-hour Pod memory peaks at 01:47 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -300,6 +300,28 @@ the 2,304 MiB database-plus-gateway minimum. Every worker still runs unrelated
 non-DaemonSet Pods, so a `NoSchedule` taint would not isolate a canary.
 These point-in-time readings do not prove peak or rolling-update fit. T022,
 storage placement and canary admission remain blocked.
+
+At about 2026-10-20 21:00 UTC, a fresh read-only node, Pod and kubelet
+filesystem check still found all four nodes Ready and untainted. Unreserved
+memory by request was about 1,801 MiB on `acer`, 5 MiB on `zimaboard-0`,
+3,397 MiB on `zimaboard-1`, and 230 MiB on `zimaboard-2`. Kubelet root
+filesystem free space was 382.7, 5.03, 9.08 and 8.65 GiB, respectively.
+No worker has the free space for one new 10 GiB local claim, let alone the
+distinct 10 GiB database, 10 GiB agent and 1 GiB bootstrap claims in T035.
+`acer` has disk space but remains below the 2,304 MiB database-plus-gateway
+request before API, worker or headroom. `zimaboard-1` still runs 44 Pods,
+including the retained reader and unrelated stateful workloads;
+`zimaboard-2` runs unrelated apps and system Pods. No custom canary taint
+tolerations are declared. A `NoSchedule` taint would not isolate already
+running Pods and could strand replacements after restart. T022, T027 and
+T035 remain blocked; no node was tainted or workload relocated.
+
+The committed Crossplane catalog declares both controller replicas at zero in
+[`IaC/platform-crossplane/stack.hcl`](../../IaC/platform-crossplane/stack.hcl),
+but the live Argo Application lacked those Helm parameters and two controller
+Pods each still requested 256 MiB. Reconciliation through the protected
+source path is a separate drift follow-up that may release 512 MiB of requests;
+it does not supply a tainted canary or prove transient placement fit.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
