@@ -64,6 +64,38 @@ not reposted. Keep activation false and preserve the journal for rollback.
 Removing this logical Namespace needs a reviewed repository-owned cleanup path;
 do not delete the physical tenant Namespace.
 
+### Durable reconciliation journal
+
+The reconciler cannot run safely from an ephemeral Actions runner. Its
+`privateJournal.mountPath` is `/private/openclaw-enterprise/journal.json`, and
+`ProtectedJournal` requires a process-owned `0700` parent, a `0600` file,
+exclusive locking, and fsynced replacement. A lost runner disk would lose the
+IDs and pending intent needed to distinguish a retry from a second create.
+The chart's bootstrap claim holds the upstream service key and initial password;
+it is writable by upstream initialization and must not hold this operator
+journal.
+
+The planned protected execution path is a one-shot, serialized operator Job in
+`openclaw-system` with a separate retained local journal PVC mounted writable
+only to that Job. Mount the bootstrap files read-only at
+`/private/openclaw-enterprise/bootstrap`. The pinned operator image must carry
+the reviewed script, config, `kubectl`, and an exact-source checkout for its
+`--expected-sha` guard. Scope its service account to the exact startup Secret
+and the controller and tenant objects the readback uses; the startup Secret
+read includes its contents and cannot be treated as metadata-only access.
+The Job must use a kubeconfig whose API endpoint is
+`https://kubernetes-api-ci.stinkyboi.com`, matching the script's context check. The protected
+workflow will pin the image digest, source SHA, PVC identity, and fixed Job
+manifest, then wait for a sanitized result without logging credentials or
+journal contents.
+
+This Job and its workflow stage are not declared yet. T035 must first admit a
+fourth retained local claim with safe UID and `0700` ownership, alongside the
+three application claims. The operator image identity, source pairing, private
+credential, archive, and isolated network-policy receipts are also pending.
+Until those gates pass, the CLI remains a source-validated candidate; no
+reconcile, stop, or verify stage may be exposed as an executable cutover step.
+
 At the pinned upstream revision, `native-admin` requires an authenticated
 human session with exact Agent `administer`. Service keys cannot inspect its
 origin. T048 records the returned `data.origin` during browser acceptance;
