@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1e53482eb1c20f4610e120d1db5021ab2b97e641a6e68cb8e5dca39042ae6521",
+  "pageVersion": "sha256:a2c6967fa131db5aa29b1cff5c097d5320f39e5591635d2d8e5275df9ada6ad2",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -105,7 +105,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L443-L454",
+          "resource": "repo://docs/harbor-image-mirroring.md#L449-L460",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -138,7 +138,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -454,7 +454,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -500,7 +500,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -514,7 +514,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -550,7 +550,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -622,7 +622,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+          "version": "repo-file-v1:sha256:0f2f55e5fdd5d6f026b48c5cc35ba613968789e95a166d9ffcd582ff85eb0528"
         },
         {
           "resource": "repo://.github/workflows/lint.yml",
@@ -648,7 +648,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/config/harbor-dns-images.json",
@@ -710,7 +710,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -732,7 +732,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:15990cfee7c5f5b386edd80ad6e89aa70aa0b7af57734d5f62bcf70d82fc42b8"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         }
       ]
     },
@@ -833,10 +833,28 @@
           "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         }
       ]
+    },
+    {
+      "id": "claim_423a0672c7c94d51a15d7bb1bcfee4ce",
+      "statement": "The trusted native receipt provenance workflow verifies only an event PR head that remains open against main. On main pushes, it rechecks only open heads whose native Chainguard receipt entries differ between exact base and head; unreadable state or an absent receipts map stays in verification, while unchanged heads retain their prior status.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml#L41-L67",
+          "version": "repo-lines-v1:sha256:3e870e80800d70738439117e2b06345e6caefecd7fef8b94d4b51bb1ee65bcdc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiZjE1OGUwNzAyMzc1MmIxNzBkZmNlNmQ3OGFhYWM0MmIzYTM2OWUwYzdmOTUwNWViMWVhZTI2Njk4MTQxZjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmNTU5NzljZTczMDIwMzNlNmIyZmQ3ZDg4ZjUzN2EzYjhlMDkxZWEzMDVjODExZmZhMTI3NGJmNTc2NGVhNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM3YWYxNDlkZTI5M2I1ZDFiMWZjMzY1ODE5Nzg1MjIxZmM1MjM0MTA4Mzk4NzMwNjRiYThlOGJiZGFmYzBmNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEyOGQxZDllOGRiZjM0ZTJmNjBmNGZiZGIzZjE3MTY5YmMyZDljOWE5YTk1NGVjZjMwOTdiZTZhNGQwNTFiYTkifQ"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L56-L61",
+          "version": "repo-lines-v1:sha256:79255a5b2fe6529d0a6045d5178247c22b2aa5190c2dc612dd08245c40e9e940:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiN2YwNzU4OWM1OGY3MmU1MTQ0ODFkY2JjYzU3Y2VjM2FmZjA3ZDg1ZDBiMjkyYWJiZWJhOWI3Mzg3YjdmYTUyNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMmUzMmY1ZmY3MWYwZWJiYTFiOWIzZmNlMTA0NzUxMDUyOTYwNTk4NGIxMWFmZmUxYWQ4MzkwMjk0Y2RiMmExOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTY0ODVlNWJlMmYzOTg0OTRlMDQ1MTlmZWI0NTJjZWRjMTg5MzQwY2JlYWM3NjUzNWMzNDlkMGJmMzdlOWFjNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTc2NzFhZWVmZDlkNWUyY2ViYTI3Y2E5NWQ5NmY4ODg0MmMyMTliYjM1YjNkZmJjNGRkZTcyZGE2NWIyYjgzMyJ9"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py#L367-L383",
+          "version": "repo-lines-v1:sha256:8add3df46008119eae6af9b8f626d2489a32813911d60e20de1885de475143eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjYjYxYTdkYzZhYTI3NTI2YTNkODhlNjNkMDE2MzNiMjc0N2E1MjJmZTcyYTQ2NWRjZmNjM2Q5MzU3NmIwMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0ZDAwNDczZDg2YmE3ZDAwNDc0ZTBjM2NhZTQ1MDQ3MDFjN2NiOThhMzExNDU2Y2Y5MGQxODY3N2M0NTI3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjZDVkMzVkM2FmYWVmOWYwODY1MWM2ZDgxOWM4ZDExYzZjNWE1OTgyYzAyNTFjMThlYzc4ODE3MzlmMDQwOTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhmMGM1ZDQxNmVjMWNiMzA1ODgzZTFlYzlhZjY1MzkwYmEwZmU2YTQzMzQ2NTVhZTRhYzc2NDczMjVjNDkwMjIifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:20:01.051Z"
+    "at": "2026-10-20T06:38:44.829Z"
   }
 }

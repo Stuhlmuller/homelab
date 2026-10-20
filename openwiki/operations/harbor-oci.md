@@ -130,6 +130,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-6044cd3de00b52da78c6cf44
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-d88444044033fa951eb38e67
@@ -160,10 +162,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
+generated: { by: "codex", at: "2026-10-20T06:38:44.829Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:20:01.051Z
+    at: 2026-10-20T06:38:44.829Z
 ---
 
 # Harbor Private OCI Registry
@@ -344,7 +346,12 @@ indexes into local OCI layouts, then compares their root bytes and required
 platform descriptors. Exact child scan queries request Harbor's vulnerability
 report type before accepting complete zero-count scans. Pull-request lint lacks
 commit-status write permission; the trusted base provenance workflow owns its
-receipt status. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
+receipt status. It checks the event PR head only after confirming that head is
+still in the open `main` PR list, then rechecks on `main` pushes only when exact
+base/head native receipt entries differ. Unreadable state or a missing receipt
+map is included and fails closed. Unrelated open PR heads keep
+their earlier status, avoiding repeated writes to GitHub's per-head/context
+status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
