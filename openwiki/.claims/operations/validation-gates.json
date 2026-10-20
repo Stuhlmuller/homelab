@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e2da07c81fb828363efff9124e88931ea0269bc67c8f5e872feb84d1e8041ab4",
+  "pageVersion": "sha256:461b71d31f5cdd69384efd69b68e3be74df58ee2e6dd87b841d8222798eca751",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:7aeee5e876af69fe4343c8dff163f85648afe42fabd4a9a843595967e3e31acc"
+          "version": "repo-file-v1:sha256:a2b03932686ac12d9cadcf1f4126bc88e05bc24dc7aafd93328249dcf22e1155"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -888,11 +888,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:aacc3aaabef52fdfd0b0d0c3d3308aa65cb75a284f735c5733dc4b72ec9b7167"
+          "version": "repo-file-v1:sha256:5849e1575bf8976951932889e7712ee35d54f94d75f7904c0feaf5623b87de62"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971"
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -1122,7 +1122,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -1293,10 +1293,28 @@
           "version": "repo-file-v1:sha256:2a9e5922387211a72f2caff4226ea5b1580890de82a92dc44baa4fff12bbd29e"
         }
       ]
+    },
+    {
+      "id": "claim_872687e2eb77442a92cd40e27a3f1ef0",
+      "statement": "The protected owned-cleanup stage validates both current-SHA placement and firewall-ownership receipts before writing cleanup-attempt or invoking the firewall helper: each exact key must have an untruncated single latest version without delete markers, KMS encryption, a 1-byte to 1-MiB object length, and a matching SHA-256 checksum on the version-pinned download. These source checks do not activate live cleanup.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
+          "version": "repo-file-v1:sha256:ab7ad95771d6aa8f8cab9bde9db8ffd668f7ef9ddc42ca266cda869f20f2e1e8"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:34:43.418Z"
+    "at": "2026-10-20T05:58:28.951Z"
   }
 }
