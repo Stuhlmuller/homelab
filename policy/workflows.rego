@@ -164,6 +164,12 @@ deny contains msg if {
 }
 
 deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
+	not approved_openclaw_enterprise_operation
+	msg := "OpenClaw Enterprise stages require exact dispatch, current-main guard, serialized permission scope, and blocked helper hash"
+}
+
+deny contains msg if {
 	object.get(input, "name", "") == "OpenClaw Enterprise Startup Candidate"
 	not approved_openclaw_startup
 	msg := "OpenClaw Enterprise startup requires exact-main protected create, fixed source hash, and private output"
@@ -179,6 +185,7 @@ approved_openclaw_startup if {
 	input.concurrency == {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false}
 	count(input.jobs) == 2
 	static := input.jobs["static-policy"]
+	static["runs-on"] == "ubuntu-24.04"
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
 	static.steps[0].name == "Verify Dispatch Commit"
@@ -342,25 +349,22 @@ approved_openclaw_operations if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 5
+	dispatch.inputs.expected_sha.required == true
 	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
 	dispatch.inputs.legacy_stage.default == "none"
-	dispatch.inputs.enterprise_stage.options == ["none", "full-sync"]
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
-	count(input.jobs) == 3
-	static := input.jobs["static-policy"]
-	static.permissions == {"contents": "read"}
-	static.steps[0].env.LEGACY_STAGE == "${{ inputs.legacy_stage }}"
-	static.steps[0].env.ENTERPRISE_STAGE == "${{ inputs.enterprise_stage }}"
-	contains(static.steps[0].run, "inventory/none|publish-inventory/none|archive/none|publish-archive/none|verify/none|none/full-sync)")
+	count(input.jobs) == 4
 	approved_openclaw_legacy_operation
-	approved_openclaw_enterprise_sync
+	approved_openclaw_enterprise_operation
 }
 
 approved_openclaw_legacy_operation if {
 	job := input.jobs.legacy
+	job["runs-on"] == "ubuntu-24.04"
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
-	job.concurrency.group == "openclaw-enterprise-operations-production"
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job["timeout-minutes"] == 360
 	job.permissions == {"contents": "read", "id-token": "write"}
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
@@ -375,23 +379,109 @@ approved_openclaw_legacy_operation if {
 	contains(step.run, concat("", [`sha256sum --check --status <<<'a387eb51665bde09dd14c3db190c31a37f11922bb4e3512956d3c0dee9feec54  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
-approved_openclaw_enterprise_sync if {
-	job := input.jobs["enterprise-sync"]
+
+approved_openclaw_enterprise_operation if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(dispatch.inputs) == 5
+	dispatch.inputs.expected_sha.required == true
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.default == "none"
+	input.permissions == {}
+	count(input.jobs) == 4
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}"}
+	trim(static.steps[0].run, "\n") == openclaw_dispatch_guard
+	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
+	job := input.jobs.enterprise
+	job["runs-on"] == "ubuntu-24.04"
+	job["timeout-minutes"] == 60
 	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'"
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.environment.name == "homelab-production"
-	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false}
 	job.permissions == {"contents": "read"}
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'full-sync'"
 	count(job.steps) == 4
-	job.steps[0].name == "Verify Current Main Commit Before Credentials"
-	contains(job.steps[0].run, `test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)`)
-	job.steps[3].name == "Run Full Sync"
-	job.steps[3].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
-	contains(job.steps[3].run, "bash scripts/ci/install-kubeconfig.sh\n")
-	contains(job.steps[3].run, "sha256sum --check --status <<<'0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc  scripts/ci/openclaw-enterprise-full-sync.sh'\n")
-	contains(job.steps[3].run, "bash scripts/ci/openclaw-enterprise-full-sync.sh\n")
-	contains(job.steps[3].run, "private cluster diagnostics withheld")
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Recheck Current Main Commit Before Enterprise Stage", "Run Fixed Enterprise Stage"]
+	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
+	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	job.steps[1].with["persist-credentials"] == false
+	job.steps[2].env == job.steps[0].env
+	trim(job.steps[2].run, "\n") == platform_maintenance_main_check
+	job.steps[3].env == {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	trim(job.steps[3].run, "\n") == openclaw_enterprise_blocked_run
+	binding := input.jobs.binding
+	binding["runs-on"] == "ubuntu-24.04"
+	binding.needs == ["static-policy"]
+	binding.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'"
+	binding.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
+	binding.environment.name == "homelab-production"
+	binding.permissions == {"contents": "read"}
+	binding["timeout-minutes"] == 30
+	count(binding.steps) == 5
+	[binding.steps[0].name, binding.steps[1].name, binding.steps[2].name, binding.steps[3].name, binding.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Binding", "Bind Reviewed Installation"]
+	binding.steps[0].env == job.steps[0].env
+	trim(binding.steps[0].run, "\n") == platform_maintenance_main_check
+	binding.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	binding.steps[1].with["persist-credentials"] == false
+	binding.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	binding.steps[2].with.enable_kvm == false
+	binding.steps[3].env == job.steps[0].env
+	trim(binding.steps[3].run, "\n") == platform_maintenance_main_check
+	binding.steps[4].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(binding.steps[4].run, "\n") == openclaw_enterprise_binding_run
 }
+
+openclaw_dispatch_guard := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
+esac
+if [[ "$ENTERPRISE_STAGE" != none ]]; then
+  test -z "$BASELINE_REF"
+  test -z "$ARCHIVE_REF"
+fi`
+
+openclaw_enterprise_blocked_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! {
+  sha256sum --check --status <<<'53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972  scripts/ci/openclaw-enterprise-stage.sh' &&
+  bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
+} >"$private_log" 2>&1; then
+  echo '::error::Enterprise stage blocked; private diagnostics withheld.'
+  exit 1
+fi
+echo 'Enterprise stage passed; private receipts withheld.'`
+
+openclaw_enterprise_binding_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+chmod 600 "$private_log"
+trap 'rm -f "$private_log"' EXIT
+if ! {
+  ulimit -f 1024 &&
+  sha256sum --check --status <<<'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996  scripts/openclaw-enterprise-bind-installation.py' &&
+  test "$(jq -r '.bootstrap.serviceKeyFile // empty' scripts/config/openclaw-enterprise.json)" = /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+  test -f /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+  test -s /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+  test "$(stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json)" = "$(id -u):600" &&
+  test -n "$OCTELIUM_AUTH_TOKEN" &&
+  timeout 10m nix develop --command bash <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+python3 -I scripts/openclaw-enterprise-bind-installation.py --expected-sha "$EXPECTED_SHA" --credential-file /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json
+EOF
+} >"$private_log" 2>&1; then
+  echo '::error::Enterprise Installation binding blocked; private diagnostics withheld.'
+  exit 1
+fi
+echo 'Enterprise Installation binding verified; private receipts withheld.'`
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
 	job_name == "mirror"
@@ -734,6 +824,10 @@ private_live_output(run) if {
 # command and sole artifact are reviewed together below.
 private_live_output(run) if {
 	trim(run, "\n") == native_receipt_private_run
+}
+
+private_live_output(run) if {
+	trim(run, "\n") == openclaw_enterprise_binding_run
 }
 
 native_receipt_private_run := `set -euo pipefail

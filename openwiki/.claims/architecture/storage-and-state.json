@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:df33ae7ec72e4e7a35aaa559e652e5fc7a08fbc79dacc34839c09b98891d511e",
+  "pageVersion": "sha256:efeb024a0358d075f0744a7a294c835b8a6648934888b034a0cbb93dda1e9d56",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
+          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
         }
       ]
     },
@@ -169,18 +169,26 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise local storage and an isolated canary unadmitted: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady reservation and 9.74 GB root-filesystem space free, all workers have less than 10.74 GB for a 10 GiB local claim under the existing /var/lib pattern, and acer has only 1,802 MiB unreserved versus the 2,304 MiB database-plus-gateway minimum.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L267-L293",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L268-L294",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
     },
     {
       "id": "claim_142fce561c734aaca7703660665c09fd",
-      "statement": "Inactive Enterprise reconciliation requires a durable private journal to retain pending API intent and resource IDs; a fourth local PVC and serialized operator Job are proposed but undeclared, so an ephemeral runner cannot safely execute live reconciliation.",
+      "statement": "Inactive Enterprise reconciliation requires a durable private journal for pending API intent and resource IDs. The proposed local PVC and serialized operator Job are undeclared; reserved protected runtime operations stages fail before mutation because the hosted runner has no durable shared journal mount or lock.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:fa58d3dbaadd14e2c775294150b89e8b5ed5c895ce5a0b10f9625933ebb89448"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:24c63099d5e2b83c2a6b1d8201c81fd27a13376f1bf42f47f16e11f22fde4f44"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:6ed322e2a9ce8a556ab35d6279e2254e89cc9a455cb296bb0edfde718a3f31f2"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -209,6 +217,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:18:26.448Z"
+    "at": "2026-10-20T19:36:50.176Z"
   }
 }

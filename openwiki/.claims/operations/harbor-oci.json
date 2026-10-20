@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c6266c8c209fa43d960abfac799d01ed8ad4db33b027c0d2f03d96e33e4ae9cc",
+  "pageVersion": "sha256:bef9a3901163ae2d6cf9c9fcf8ffc6c18cbbd26ec1d002a0aa0fd482b03905b0",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
+          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
+          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
+          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
         }
       ]
     },
@@ -830,7 +830,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:92a63ddbf1dbb00b32ce0c4fb21e4befb3b893ad9d0627e3d683b05bebe1acb3"
+          "version": "repo-file-v1:sha256:89efa66c61b78c0289db4804a21c31e09423ab35725369c80c1c84f8126735f5"
         }
       ]
     },
@@ -873,6 +873,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:55:49.056Z"
+    "at": "2026-10-20T20:00:04.184Z"
   }
 }

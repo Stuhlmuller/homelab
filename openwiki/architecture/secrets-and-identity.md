@@ -10,6 +10,8 @@ sources:
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -68,6 +70,8 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -124,10 +128,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:55:49.056Z
+    at: 2026-10-20T20:00:04.184Z
 ---
 
 # Secrets And Identity
@@ -321,9 +325,12 @@ Secret has no installation ID. The source-only
 [`bind-installation.py`](../../scripts/openclaw-enterprise-bind-installation.py)
 attests both Ready controller Pods and the returned `GET /installation` ID,
 then patches only the Secret annotation with UID/resource-version guards and
-readback. No protected post-bootstrap invocation or live binding has occurred;
-activation remains blocked. SSM-backed model, database, auth, and gateway
-credentials remain separate from these startup bytes.
+readback. A fixed [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
+rechecks exact current `main` and pins the reviewed binder, but the hosted runner
+has no declared delivery for the owner-controlled 0600 bootstrap service-key file.
+No binding run or live readback has occurred; activation remains blocked.
+SSM-backed model, database, auth, and gateway credentials remain separate from
+these startup bytes.
 
 ## Identity Notes
 

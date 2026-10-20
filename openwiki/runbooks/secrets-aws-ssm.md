@@ -6,6 +6,8 @@ tags: ["runbook", "secrets", "aws"]
 sources:
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -22,6 +24,8 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -34,10 +38,10 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:18:26.448Z
+    at: 2026-10-20T19:36:50.176Z
 ---
 
 # AWS SSM Secret References
@@ -108,7 +112,10 @@ bind and attest that metadata after bootstrap before reconciliation can run.
 The [binder source](../../scripts/openclaw-enterprise-bind-installation.py)
 reads a private bootstrap-key file, verifies `GET /installation` and both Ready
 Pods, and patches only the Secret annotation with a guarded readback. Its
-protected post-bootstrap workflow is not yet wired; no live binding is proven.
+[protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
+rechecks exact current `main` and pins this source, but the hosted runner has
+no declared delivery of the owner-controlled 0600 bootstrap-key file. No live
+binding is proven.
 
 ## Harbor native receipt prerequisite
 

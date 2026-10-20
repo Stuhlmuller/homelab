@@ -42,6 +42,8 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -62,8 +64,8 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-  - id: openwiki-source-8483d28614308625b1073872
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-8564baaf10e1673a998e5188
@@ -84,10 +86,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T19:28:35.536Z" }
+generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:28:35.536Z
+    at: 2026-10-20T20:00:04.184Z
 ---
 
 # CI/CD
@@ -174,14 +176,16 @@ the post-bootstrap installation-ID annotation and live Pod binding remain
 separate proof work.
 
 The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-keeps the legacy retention stages behind `legacy_stage` and adds
-`enterprise_stage=full-sync`. Select exactly one stage. The protected full sync
-checks that the dispatched SHA is still current `main` before credentials and
-before each Argo write. It requires healthy Envoy Gateway and manually
-controlled Foundation and Enterprise Applications, then syncs foundation before
-Enterprise at explicit repository and chart revisions. Source tests pass; this
-stage has not run on the cluster. Reconciliation, stop, restore and acceptance
-remain separate gates.
+keeps legacy retention behind `legacy_stage` and reserves fixed
+`bind-installation`, `full-sync`, `reconcile`, `stop`, `verification`, `restore`
+and `acceptance` Enterprise selections. Select exactly one stage. Each protected
+job rechecks exact current `main` and shares a non-canceling production queue.
+The binding lane pins the reviewed binder and requires an owner-controlled 0600
+bootstrap service-key file; no hosted-runner delivery is declared. The other
+stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh)
+that exits before mutation because the runner has no durable shared private
+journal and lock. The separately tested full-sync helper is not dispatched by
+this workflow. No Enterprise operation has run or passed live acceptance.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added
