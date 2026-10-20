@@ -5,6 +5,7 @@ import os
 import json
 import hashlib
 import re
+import runpy
 import subprocess
 import tempfile
 import unittest
@@ -24,11 +25,33 @@ ROLE = ROOT / 'IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/mai
 
 
 class Operations(unittest.TestCase):
+    def test_bounded_reader_refuses_changed_size_and_symlink(self):
+        reader = runpy.run_path(str(UPLOAD))['RANGE_READ']
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'archive'
+            source.write_bytes(b'abcdefghij')
+            command = ['python3', '-c', reader, str(source), '3', '4', '10']
+            result = subprocess.run(command, capture_output=True, timeout=5, check=False)
+            self.assertEqual((result.returncode, result.stdout), (0, b'defg'))
+            for changed_size, symlink in ((True, False), (False, True)):
+                path = source
+                if symlink:
+                    path = Path(directory) / 'alias'
+                    path.symlink_to(source)
+                result = subprocess.run(['python3', '-c', reader, str(path), '3', '4',
+                                         '11' if changed_size else '10'],
+                                        capture_output=True, timeout=5, check=False)
+                self.assertNotEqual(result.returncode, 0)
+
     def test_archive_upload_completes_only_after_full_size_and_digest(self):
         payload = b'verified archive bytes'
         with tempfile.TemporaryDirectory() as directory:
             fake_aws = Path(directory) / 'aws'
+            fake_kubectl = Path(directory) / 'kubectl'
             log = Path(directory) / 'aws.jsonl'
+            kube_log = Path(directory) / 'kubectl.log'
+            source = Path(directory) / 'source'
+            truncated_once = Path(directory) / 'truncated-once'
             fake_aws.write_text('''#!/usr/bin/env python3
 import json, os, pathlib, sys
 args = sys.argv[1:]
@@ -47,26 +70,60 @@ elif operation == 'complete-multipart-upload':
     assert json.loads(manifest.read_text())['Parts'] == [
         {'ETag': '"test-etag"', 'PartNumber': 1}]
     print('{}')
+elif operation == 'abort-multipart-upload':
+    print('{}')
 else:
     raise SystemExit(2)
 ''')
             fake_aws.chmod(0o755)
+            fake_kubectl.write_text('''#!/usr/bin/env python3
+import os, pathlib, sys
+args = sys.argv[1:]
+assert args[:7] == ['-n', 'ai', 'exec', 'openclaw-retirement-reader-test', '-c', 'reader', '--']
+assert args[7:10] == ['python3', '-c', args[9]]
+assert args[10] == '/archive/private/legacy-' + 'a' * 64 + '/legacy.tar.gz'
+offset, count, expected_size = map(int, args[11:14])
+source = pathlib.Path(os.environ['FAKE_SOURCE']).read_bytes()
+with pathlib.Path(os.environ['FAKE_KUBECTL_LOG']).open('a') as output:
+    output.write(f'{offset}:{count}\\n')
+if len(source) != expected_size:
+    raise SystemExit(2)
+chunk = source[offset:offset + count]
+marker = pathlib.Path(os.environ['FAKE_TRUNCATE_ONCE'])
+if marker.exists():
+    marker.unlink()
+    chunk = chunk[:8]
+sys.stdout.buffer.write(chunk)
+''')
+            fake_kubectl.chmod(0o755)
             digest = hashlib.sha256(payload).hexdigest()
             env = {**os.environ, 'PATH': directory + os.pathsep + os.environ['PATH'],
-                   'FAKE_AWS_LOG': str(log)}
-            for body, size, expected_digest, succeeds in (
-                    (payload[:8], len(payload), digest, False),
-                    (payload, len(payload), '0' * 64, False),
-                    (payload + b'extra', len(payload), digest, False),
-                    (payload, len(payload), digest, True)):
+                   'FAKE_AWS_LOG': str(log), 'FAKE_SOURCE': str(source),
+                   'FAKE_KUBECTL_LOG': str(kube_log),
+                   'FAKE_TRUNCATE_ONCE': str(truncated_once)}
+            for body, size, expected_digest, flaky, succeeds in (
+                    (payload[:8], len(payload), digest, False, False),
+                    (payload, len(payload), '0' * 64, False, False),
+                    (payload + b'extra', len(payload), digest, False, False),
+                    (payload, len(payload), digest, False, True),
+                    (payload, len(payload), digest, True, True)):
                 log.unlink(missing_ok=True)
+                kube_log.unlink(missing_ok=True)
+                source.write_bytes(body)
+                if flaky:
+                    truncated_once.touch()
                 result = subprocess.run(['python3', '-I', str(UPLOAD), 'bucket', 'key',
-                                         str(size), expected_digest], input=body,
+                                         str(size), expected_digest,
+                                         'openclaw-retirement-reader-test',
+                                         '/archive/private/legacy-' + 'a' * 64 + '/legacy.tar.gz'],
                                         cwd=ROOT, env=env, capture_output=True,
                                         timeout=10, check=False)
                 self.assertEqual(result.returncode == 0, succeeds, result.stderr)
                 operations = [json.loads(line)['operation'] for line in log.read_text().splitlines()]
                 self.assertEqual('complete-multipart-upload' in operations, succeeds)
+                self.assertEqual('abort-multipart-upload' in operations, not succeeds)
+                self.assertEqual(len(kube_log.read_text().splitlines()),
+                                 2 if flaky else 3 if len(body) != size else 1)
 
     def test_legacy_session_outlives_the_bounded_job(self):
         workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise-sync:\n', 1)[0]
@@ -301,7 +358,7 @@ false
                                     env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
-            self.assertFalse(phase.exists())
+            self.assertEqual(phase.read_text(), 'preflight\n')
 
     def test_s3_lookup_reports_only_fixed_error_category(self):
         shell = '''set -euo pipefail
