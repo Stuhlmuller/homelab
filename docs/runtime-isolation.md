@@ -164,6 +164,16 @@ still has unreviewed generated policies and broad egress findings. The
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
+The three Cordium Genesis policies have a [read-only expected-spec fixture](../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+for `cordium/ws-main`, `octelium/cordium-nocturne`, and
+`octelium/cordium-rscserver`. Their complete specs match the live read-only
+recheck and the constructors in pinned [Cordium v0.12.7](https://github.com/octelium/cordium/tree/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis).
+Pass this fixture as an additional `--render` input when auditing Cordium and
+Octelium; it is not applied by Kustomize. `ws-main` still allows every port to
+public IPv4/IPv6 ranges after private-range exclusions, so its strict broad
+egress finding and canary traffic review remain open. The other 14 generated
+policies also need source binding before enforcement.
+
 The source policies now limit cloudflared's private egress to the two routed
 Istio gateways and Octelium ingress dataplane, Harbor metrics ingress to the
 Prometheus Pod, and Harbor/Mastodon gateway ingress to the Istio gateway Pod.
