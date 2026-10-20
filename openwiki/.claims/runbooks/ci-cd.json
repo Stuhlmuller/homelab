@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:911d371a6f0914cd62d2c137ab9aeac205260069922070a6b442b271038f669f",
+  "pageVersion": "sha256:ae53fd581ea4640bca67699aa976dba9e64cade6eb38c202824dc2be3ffedb72",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9e06a2b5b4986cb01eaa7b11a1e5b157db17d28db26e01f573686bc125b68e89"
+          "version": "repo-file-v1:sha256:1ba5f95dadf79ef7714464ca1e82f14e6ec873bc45d3571a60559c38605c1f20"
         }
       ]
     },
@@ -191,7 +191,7 @@
           "version": "repo-lines-v1:sha256:ba9c47bd7b588eb40c7987e173bc49ac2dcdca77c3803cccc1acfa34f34716bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQ4ZDE0OGI4ZWU3NzBlMDQ2NDA5NTE3NGEwM2E1NmFiZmM4NTZmYTdhYjg0NWQxNDY1YzY0NzcyMjc0NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NGIyODhiMjk5NTc2ODQxMTc2YmM4ZTgxNDdjYmJhYjM1NTgwZmI2OGM1MjFkOTkxM2Y5ZDQ3ZmJiZWI2YjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmZGZjMTAwZmVkNTgxMjc2ZjBjMDQ5ZWEyMDkyMmIzZjBiZDNhZjRkODQwYWM2Mzc5NDFjZDFkYjE4NmI5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjc0N2E1MTcxZGQwOGMwMzc5YzdiZWEzZGYwYjIzZWM1NjRhZGQ4OTY3MTk4MDcyY2E1ZjYyZjFkNWFlMWUifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L558-L652",
+          "resource": "repo://policy/workflows.rego#L562-L656",
           "version": "repo-lines-v1:sha256:878ce88de52696eedf20590376360bcdc352b1972f6cae4ecd77db91d9d5ef66:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
         },
         {
@@ -202,19 +202,23 @@
     },
     {
       "id": "claim_4b9b5fcced3c4153a2e256588f44b2aa",
-      "statement": "The Enterprise operations workflow retains legacy stages and reserves fixed binding, full-sync, reconcile, stop, verification, restore and acceptance selections under exact-current-main guards and a shared protected non-canceling queue. Binding needs an owner-controlled 0600 key with no hosted-runner delivery; the other stages exit before mutation without a durable shared private journal and lock. The standalone full-sync helper is not dispatched and no Enterprise operation has run.",
+      "statement": "The Enterprise operations workflow retains legacy stages and offers fixed binding, full-sync, reconcile, stop, verification, restore and acceptance selections under exact-current-main guards and a shared protected non-canceling queue. Binding needs an owner-controlled 0600 key without hosted delivery. The guarded full-sync helper is invoked but the committed unselected phase blocks sync; remaining runtime stages fail before mutation without a durable shared private journal and lock. No Enterprise operation has run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
+          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
         },
         {
-          "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
+          "resource": "repo://docs/openclaw-enterprise-rollout.md#L27-L45",
+          "version": "repo-lines-v1:sha256:e2928e13b371945d72192c19f3558cb42f52d6ea6aea877fc8df0945da845e75:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxYTc4YjdiYzQ5MWYxMjNlMzhkMjFjODg5MjJjYjA3MWFhZWZhYzEwMzU2MjEzYTRkMGRlMGFjZWE2ZjNlNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0N2QwZDIyYzk5MTA2NTBhNGMwZWYzNzg4MzU4NDQxNWY3NGRkZDY4ZTQyZjM0MjQwZTEyM2IwOWMxYmE4OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1ODc5YzcwZjk0MmJjMDAxODljNGJhMWRjNWU5YzM5NTY5OGJiZWU3YmEwMmYxN2YzNjUyYjgxZjBkMTQwZGQifQ"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+          "version": "repo-file-v1:sha256:5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:dbeede68eb84c8b8b0db415d6fa98a927d4f08a404152c57fad972700a1a6115"
         }
       ]
     },
@@ -262,7 +266,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -283,7 +287,7 @@
           "version": "repo-lines-v1:sha256:8262c5e3f51c69b969d5d15b29da28dd2bb9a0a4f013485dd0a2dd09bfa47f7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZWFlNDk2Yjc4ZmQ0OTU1ZGFiNThmNmFjMTJiNDcxMDg3ZWZmY2FkYjhjNGE1ZDc1OWE5YjczZDdjMWVhN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMzIwMjgwODNjNDdhNmQ5ZmE0YTY0NzFjZGFmMjY1OGJjNzA1ZTlkNTg2ZTY1MTZjNTdhNThmNjFhYmU2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlODA3MGYyNThkMzFhMjUxNmZjZDQzYWZlZjVmZjUyZDhlZDI3ZmJiMTY1MjBmZDc4ZjJlYmRmYjg3MGY1MWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjYmI2YjFiNzJkNzNmMDdkYzlmMTNlMTU0Y2JmMzk2MDI3ZWM4ZTA5NzhhZTRmZjgwMmZmYmQwOGRhNWM1NDMifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L540-L554",
+          "resource": "repo://policy/workflows.rego#L544-L558",
           "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
         },
         {
@@ -302,11 +306,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:6ad71b99f4e83bf723e59e278bab770b034920f1f9986d7c92dd67820577bdb4"
+          "version": "repo-file-v1:sha256:1626752213e0cce616262358c059b27a33b670867810aeade51a68da852bd2d1"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:05f3e566bd619c835da25ecce45b1296f02ee7e82feaf723c9fd15fbcfb20877"
+          "version": "repo-file-v1:sha256:7bd191f1c112b7f476a1c74f371031a786a050a41067060f60f70c1377e9a70b"
         }
       ]
     },
@@ -349,6 +353,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:46:33.950Z"
+    "at": "2026-10-20T22:37:00.141Z"
   }
 }

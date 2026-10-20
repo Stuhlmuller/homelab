@@ -42,16 +42,16 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-  - id: openwiki-source-2eea896f325c470e4979019b
-    resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
+generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:15:11.040Z
+    at: 2026-10-20T22:37:00.141Z
 ---
 
 # Storage And State
@@ -333,10 +333,11 @@ The inactive reconciler needs a private durable journal at
 IDs across retries. A fourth retained local PVC and serialized operator Job
 are proposed, separate from the writable bootstrap claim; neither is declared
 or admitted. The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-reserves `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
-`acceptance`, but its [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh)
-exits before mutation because the hosted runner has no durable shared journal
-mount or lock. An ephemeral CI runner cannot safely execute live reconciliation.
+now wires `full-sync` to the guarded helper; the committed `unselected`
+installation phase blocks it before cluster access. Its `reconcile`, `stop`,
+`verification`, `restore` and `acceptance` stages still exit before mutation
+because the hosted runner has no durable shared journal mount or lock. An
+ephemeral CI runner cannot safely execute live reconciliation.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

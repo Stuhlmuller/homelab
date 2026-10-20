@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6ec76e9444cef31b4cf19c3244505be7e9d73749c1f8bb933eafa1553f7767e4",
+  "pageVersion": "sha256:e39b84c318d2643a27598d8de710bcf3ff4237c54b0534cce6205d5ee6933d2f",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
+          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
         }
       ]
     },
@@ -124,7 +124,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:4865783fe5547e4b8c6202ca3af20318398814ff2eda30215e51f3dc80822a82"
+          "version": "repo-file-v1:sha256:e92e7aec5ae5a2a8f193c2b0fc9454a65896ad6de46f990fd5d49532275ac312"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
@@ -176,23 +176,23 @@
     },
     {
       "id": "claim_142fce561c734aaca7703660665c09fd",
-      "statement": "Inactive Enterprise reconciliation requires a durable private journal for pending API intent and resource IDs. The proposed local PVC and serialized operator Job are undeclared; reserved protected runtime operations stages fail before mutation because the hosted runner has no durable shared journal mount or lock.",
+      "statement": "Inactive Enterprise reconciliation needs a durable private journal for pending API intent and resource IDs. A separate retained PVC and serialized operator Job remain undeclared; the protected full-sync lane is wired but blocked by the unselected installation phase, while the remaining runtime stages fail before mutation without a durable shared journal.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
+          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
         },
         {
-          "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
+          "resource": "repo://docs/openclaw-enterprise-rollout.md#L37-L44",
+          "version": "repo-lines-v1:sha256:ccbf5f777fe981c1bc102088fb6fa6bfde7fa5b79341d14575822f2586c3c2fb:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI3YTYzMTY0YjBjZjRiNmYyMTBkMDRmMTBjNDJmMDc0YWZmZjg4MzMxMDA5ZjhjNmM5ZDA4YTI5NDk2MjY2NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTQyOGYzMDY5ZGM1Y2JhMWZiZjU5NDEzYmIyNTYwZWJlMTE5MjY1ZGNjNTlmNTVjMmU4NWVjNzY2ODI4Y2Y3NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNlMjYxNjg2YzZlMGFjNzc0YjQ3MDJiMDA3YmE3ZTU3NDVkMGMwODM3MzY1NjIzMTgxOGUzZDgxYmMwNzU2ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTM0MzcxYzQ1YzNjOWViNDI4NzlmMjVlZDc0NjRkN2M1Mzk4MDI1YmRjNDYxYmVhMDMyZDllYzc5YjA1NjVhMyJ9"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+          "version": "repo-file-v1:sha256:5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:654fc64e37fcdd91de89c6c4f7b295aeb5f775706622466fea5172eeb00828c5"
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:dbeede68eb84c8b8b0db415d6fa98a927d4f08a404152c57fad972700a1a6115"
         }
       ]
     },
@@ -217,6 +217,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:15:11.040Z"
+    "at": "2026-10-20T22:37:00.141Z"
   }
 }

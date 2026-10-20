@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:40c767e85be3aa3519aee360872e17adc77bd974a5107a6cc5bdde2d73b2608f",
+  "pageVersion": "sha256:7c68e76877da9cf4e141124f829f6015940947b87bfd3115910f6e72baae7cd6",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
+          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
+          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
+          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -422,7 +422,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
+          "version": "repo-file-v1:sha256:d534ebbaa128c39782ccdf4d0daf6fee7c9ac2601028118b71bd25099ad7fe32"
         }
       ]
     },
@@ -440,7 +440,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:4865783fe5547e4b8c6202ca3af20318398814ff2eda30215e51f3dc80822a82"
+          "version": "repo-file-v1:sha256:e92e7aec5ae5a2a8f193c2b0fc9454a65896ad6de46f990fd5d49532275ac312"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:edb7fc22ce6109beb4d6d2b141779f14394d4fb413b2fb3d2a08ec952824bef8"
+          "version": "repo-file-v1:sha256:d534ebbaa128c39782ccdf4d0daf6fee7c9ac2601028118b71bd25099ad7fe32"
         }
       ]
     },
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:919e623be34da0640dd452f246524aae9e1a9abe137b2457ef8ee567f0acd274"
+          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9e06a2b5b4986cb01eaa7b11a1e5b157db17d28db26e01f573686bc125b68e89"
+          "version": "repo-file-v1:sha256:1ba5f95dadf79ef7714464ca1e82f14e6ec873bc45d3571a60559c38605c1f20"
         }
       ]
     },
@@ -590,19 +590,23 @@
     },
     {
       "id": "claim_177aaa90270b469cb95319ead02bf1a7",
-      "statement": "The protected Enterprise operations workflow reserves fixed runtime stages, including full-sync, but its pinned helper exits before mutation until a durable shared private journal and lock are declared. The separate full-sync helper retains offline tests for source and dependency ordering but the workflow does not dispatch it.",
+      "statement": "The protected Enterprise operations workflow invokes the pinned full-sync helper, but the committed unselected installation phase blocks Kubernetes sync. Reconcile, stop, verification, restore and acceptance stages still fail before mutation without a durable shared private journal and lock; offline fixtures check source and dependency ordering.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
+          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
-          "version": "repo-file-v1:sha256:437afc0f6e72426e608641d022e4c115da32b568d8fc173a729d7ba00202aab0"
+          "version": "repo-file-v1:sha256:f64f37749ef776a5c5c192d1de602a674a3554eff7621e1ad0de606eab5be73d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
+          "version": "repo-file-v1:sha256:5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:dbeede68eb84c8b8b0db415d6fa98a927d4f08a404152c57fad972700a1a6115"
         }
       ]
     },
@@ -612,7 +616,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:3a053c02b905f87dfcc381671da4a4362b1ccaacc06a953f3aafce2afa93c892"
+          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -656,7 +660,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
+          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -664,7 +668,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -678,17 +682,17 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:98825ac524abb024ffed9dfef4a4414638ecc3d4932b3252f7aa0a530a8568a2"
+          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:228d289ed48bc189fc974b8dabc045a8d02516257dac0ed8589c72cd09e325bd"
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:42:24.095Z"
+    "at": "2026-10-20T22:37:00.141Z"
   }
 }

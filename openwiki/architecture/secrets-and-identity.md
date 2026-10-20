@@ -48,8 +48,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
-  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -131,7 +129,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:46:33.950Z
+    at: 2026-10-20T22:37:00.141Z
 ---
 
 # Secrets And Identity

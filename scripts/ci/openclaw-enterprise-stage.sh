@@ -21,7 +21,14 @@ jq -e '
   .privateArchives.enterprise.mountPath == "/private/openclaw-enterprise/new-archive"
 ' scripts/config/openclaw-enterprise.json >/dev/null
 
-# A GitHub runner has no shared journal mount. Starting a mutating CLI here
-# could lose pending API intents on interruption before its next run.
+if [[ "$stage" == full-sync ]]; then
+  [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${GH_REPO:-}" == Stuhlmuller/homelab &&
+     -n "${GH_TOKEN:-}" ]] || exit 2
+  bash scripts/ci/install-kubeconfig.sh
+  bash scripts/ci/openclaw-enterprise-full-sync.sh
+  exit
+fi
+
+# Reconcile and recovery need a shared journal across retries.
 echo "Enterprise ${stage} blocked: durable private journal runner is not declared" >&2
 exit 1

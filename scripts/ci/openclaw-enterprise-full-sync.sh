@@ -24,9 +24,11 @@ jq -e '
   .spec.sources == [{"repoURL":"https://github.com/Stuhlmuller/homelab.git",
                      "path":"clusters/homelab/apps/openclaw-enterprise-foundation",
                      "targetRevision":"main"}] and
-  .spec.syncPolicy.automated.enabled == false and
-  .spec.syncPolicy.automated.prune == false and
-  .spec.syncPolicy.automated.selfHeal == false and
+  .spec.syncPolicy == {
+    "automated": {"allowEmpty": false, "enabled": false, "prune": false, "selfHeal": false},
+    "syncOptions": ["CreateNamespace=false", "ServerSideApply=true"],
+    "retry": {"limit": 0, "backoff": {"duration": "30s", "factor": 2, "maxDuration": "2m"}}
+  } and
   .operation == null
 ' <<<"$foundation" >/dev/null
 
@@ -46,9 +48,11 @@ jq -e '
     {"repoURL":"https://github.com/Stuhlmuller/homelab.git",
      "path":"clusters/homelab/apps/openclaw-enterprise","targetRevision":"main"}
   ] and
-  .spec.syncPolicy.automated.enabled == false and
-  .spec.syncPolicy.automated.prune == false and
-  .spec.syncPolicy.automated.selfHeal == false and
+  .spec.syncPolicy == {
+    "automated": {"allowEmpty": false, "enabled": false, "prune": false, "selfHeal": false},
+    "syncOptions": ["CreateNamespace=false", "ServerSideApply=true"],
+    "retry": {"limit": 0, "backoff": {"duration": "30s", "factor": 2, "maxDuration": "2m"}}
+  } and
   .operation == null
 ' <<<"$enterprise" >/dev/null
 

@@ -176,7 +176,7 @@ jobs:
     needs: [static-policy]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 150
     concurrency:
       group: openclaw-enterprise-operations-production
       cancel-in-progress: false
@@ -204,6 +204,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Recheck Current Main Commit Before Enterprise Stage
         env:
           ACTUAL_REF: ${{ github.ref }}
@@ -221,13 +227,18 @@ jobs:
         env:
           RUN_STAGE: ${{ inputs.enterprise_stage }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          umask 077
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
           if ! {
-            sha256sum --check --status <<<'53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972  scripts/ci/openclaw-enterprise-stage.sh' &&
-            bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
+            sha256sum --check --status <<<'5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c  scripts/ci/openclaw-enterprise-stage.sh' &&
+            sha256sum --check --status <<<'e1345d5fae7bd6f7261cb439fbc8cdab3d9eb0854aa44a2fff000b32ed4ad111  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+            timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
           } >"$private_log" 2>&1; then
             echo '::error::Enterprise stage blocked; private diagnostics withheld.'
             exit 1

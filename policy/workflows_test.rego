@@ -314,9 +314,11 @@ test_rejects_changed_openclaw_enterprise_operation if {
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"runs-on": "self-hosted"})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"concurrency": {"group": "other"}})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "single"}})})}),
-		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], object.union(steps[2], {"run": "true"}), steps[3]]})})}),
-		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": replace(openclaw_enterprise_blocked_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
-		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": replace(openclaw_enterprise_blocked_run, "stage.sh' &&", "stage.sh'")})]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], object.union(steps[2], {"uses": "attacker/install@0000000000000000000000000000000000000000"}), steps[3], steps[4]]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": "true"}), steps[4]]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"env": object.union(steps[4].env, {"EXFIL": "${{ secrets.GITHUB_TOKEN }}"})})]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_stage_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_stage_run, "stage.sh' &&", "stage.sh'")})]})})}),
 	] {
 		violations := deny with input as changed
 		some msg in violations
@@ -403,7 +405,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		},
 	"enterprise": {
 		"runs-on": "ubuntu-24.04",
-		"timeout-minutes": 60,
+		"timeout-minutes": 150,
 		"needs": ["static-policy"],
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'",
 		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
@@ -412,8 +414,9 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"steps": [
 			{"name": "Verify Current Main Commit Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
 			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"persist-credentials": false}},
+			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
 			{"name": "Recheck Current Main Commit Before Enterprise Stage", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
-			{"name": "Run Fixed Enterprise Stage", "env": {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": openclaw_enterprise_blocked_run},
+			{"name": "Run Fixed Enterprise Stage", "env": {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_enterprise_stage_run},
 		],
 	},
 	"binding": {

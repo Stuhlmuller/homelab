@@ -396,22 +396,24 @@ approved_openclaw_enterprise_operation if {
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.enterprise
 	job["runs-on"] == "ubuntu-24.04"
-	job["timeout-minutes"] == 60
+	job["timeout-minutes"] == 150
 	job.needs == ["static-policy"]
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'"
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.environment.name == "homelab-production"
 	job.permissions == {"contents": "read"}
-	count(job.steps) == 4
-	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Recheck Current Main Commit Before Enterprise Stage", "Run Fixed Enterprise Stage"]
+	count(job.steps) == 5
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Enterprise Stage", "Run Fixed Enterprise Stage"]
 	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
 	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
 	job.steps[1].with["persist-credentials"] == false
-	job.steps[2].env == job.steps[0].env
-	trim(job.steps[2].run, "\n") == platform_maintenance_main_check
-	job.steps[3].env == {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
-	trim(job.steps[3].run, "\n") == openclaw_enterprise_blocked_run
+	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	job.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	job.steps[3].env == job.steps[0].env
+	trim(job.steps[3].run, "\n") == platform_maintenance_main_check
+	job.steps[4].env == {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[4].run, "\n") == openclaw_enterprise_stage_run
 	binding := input.jobs.binding
 	binding["runs-on"] == "ubuntu-24.04"
 	binding.needs == ["static-policy"]
@@ -446,12 +448,14 @@ if [[ "$ENTERPRISE_STAGE" != none ]]; then
   test -z "$ARCHIVE_REF"
 fi`
 
-openclaw_enterprise_blocked_run := `set -euo pipefail
+openclaw_enterprise_stage_run := `set -euo pipefail
+umask 077
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972  scripts/ci/openclaw-enterprise-stage.sh' &&
-  bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
+  sha256sum --check --status <<<'5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'e1345d5fae7bd6f7261cb439fbc8cdab3d9eb0854aa44a2fff000b32ed4ad111  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+  timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise stage blocked; private diagnostics withheld.'
   exit 1

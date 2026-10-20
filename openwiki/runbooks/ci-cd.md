@@ -80,6 +80,8 @@ sources:
     resource: repo://scripts/ci/terragrunt-plan-stage-test.py
   - id: openwiki-source-60b00db0363e7f9e27d7fa7f
     resource: repo://scripts/ci/terragrunt-plan.sh
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -90,10 +92,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
+generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:46:33.950Z
+    at: 2026-10-20T22:37:00.141Z
 ---
 
 # CI/CD
@@ -186,10 +188,13 @@ and `acceptance` Enterprise selections. Select exactly one stage. Each protected
 job rechecks exact current `main` and shares a non-canceling production queue.
 The binding lane pins the reviewed binder and requires an owner-controlled 0600
 bootstrap service-key file; no hosted-runner delivery is declared. The other
-stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh)
-that exits before mutation because the runner has no durable shared private
-journal and lock. The separately tested full-sync helper is not dispatched by
-this workflow. No Enterprise operation has run or passed live acceptance.
+stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh).
+Its `full-sync` branch invokes the pinned
+[helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), but the committed
+`unselected` installation phase blocks sync before Kubernetes access.
+`reconcile`, `stop`, `verification`, `restore` and `acceptance` still exit
+before mutation because the runner has no durable shared private journal and
+lock. No Enterprise operation has run or passed live acceptance.
 
 For legacy `publish-archive`, the workflow now reports fixed public
 post-upload phases for archive metadata, receipt publication and both restore

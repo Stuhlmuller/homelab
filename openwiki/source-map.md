@@ -102,10 +102,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T20:48:40.649Z" }
+generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:42:24.095Z
+    at: 2026-10-20T22:37:00.141Z
 ---
 
 # Source Map
@@ -168,8 +168,8 @@ desired state.
 | `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
-| `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding and reserved fail-closed Enterprise operations](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
-| `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Offline-tested full-sync helper](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no protected workflow invokes it until durable journal delivery is declared |
+| `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding and phase-gated full-sync; journal-blocked runtime stages](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper and offline dependency-order fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
 | `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |

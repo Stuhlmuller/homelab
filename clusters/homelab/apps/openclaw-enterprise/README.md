@@ -163,7 +163,8 @@ installed Argo hook failure matrix remain live gates before registration.
 
 The protected [operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
 also offers `enterprise_stage=full-sync` after registration and an approved
-`installationPhase`. Dispatch with `expected_sha=<CURRENT_MAIN_SHA>` and leave
+`installationPhase`. The current `unselected` phase blocks it before any sync.
+Dispatch with `expected_sha=<CURRENT_MAIN_SHA>` and leave
 `legacy_stage=none`. It verifies both Application sources, checks the platform
 Envoy Gateway, then runs complete foundation and Enterprise Argo syncs at that
 exact commit. It never selects resources, skips hooks, prunes, or forces apply.
