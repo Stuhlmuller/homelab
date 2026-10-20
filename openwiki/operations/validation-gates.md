@@ -68,6 +68,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
@@ -300,10 +302,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
+generated: { by: "codex", at: "2026-10-20T14:16:14.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:40:02.561Z
+    at: 2026-10-20T14:16:14.853Z
 ---
 
 # Validation Gates
@@ -1663,6 +1665,15 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
+T014 compatible legacy recovery remains open: nine NAS symlinks leave the
+archived roots, including six links to nonempty Pod-overlay directories whose
+image-layer or writable origin is unproven. Classify those targets privately
+and retain or rebuild required data. A rehearsal also needs a separate writable
+UID 1000 local-state copy, an isolated NAS copy, and a declared network boundary
+that blocks Discord, heartbeat, and job deliveries. Flannel does not enforce
+the declared NetworkPolicies, so a deny policy alone cannot isolate the old
+image. Require the verified offsite archive receipt before the rehearsal; keep
+production writers stopped and original claims read-only.
 The 2026-10-20 07:22 UTC read-only recheck still rejects T022: the best
 worker has about 3,398 MiB unreserved by requests, below Enterprise's initial
 4,096 MiB steady reservation before startup and system headroom. It was using

@@ -38,10 +38,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
+generated: { by: "codex", at: "2026-10-20T14:16:14.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:40:02.561Z
+    at: 2026-10-20T14:16:14.853Z
 ---
 
 # Storage And State
@@ -282,6 +282,14 @@ but not node-disk loss; there is no automatic node failover and recovery can los
 writes since the last backup. Native caches are reconstructed on disaster restore.
 The post-shutdown inventory passed, but a complete independent archive/restore
 and any new Enterprise recovery set remain unverified; keep all retained claims.
+The legacy archive retains NAS symlink targets but not data outside its roots;
+nine links leave those roots, and six reach nonempty Pod-overlay directories
+whose image-layer or writable origin is unproven. T014 needs a private
+classification of those targets, a separate writable UID 1000 copy of the
+local state layout and an isolated NAS copy before an old-image boot. Its
+network boundary must prevent external deliveries; Flannel does not enforce
+the declared NetworkPolicies, so the proposed deny policy alone cannot qualify
+the rehearsal. The offsite archive receipt is also still required.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a

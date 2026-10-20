@@ -133,6 +133,27 @@ assistant checksum, PVs and secrets. Verify gateway readiness, a real turn and
 the scheduled-job state before declaring recovery. Never import the legacy
 archive into Enterprise.
 
+### T014 isolated legacy boot gate
+
+A read-only stopped-source review found 37 NAS symlinks. Nine absolute targets
+leave both archived roots: six resolve to five nonempty directories on the
+reader Pod's overlay filesystem, and three are dangling. The archive preserves
+their link targets, not the external directory contents. Their image-layer
+versus writable-overlay origin is unproven. Classify each dependency privately;
+prove needed files are recreated by the pinned old image or retain and verify
+them separately, and record an explicit disposition for dangling links.
+
+Archive verification and the retained original PVCs do not pass T014. The
+reader restores into NAS scratch and does not start the old image. A rehearsal
+needs a separate writable UID 1000 copy of the local parent/state/agent mount
+layout, an isolated NAS copy, and a declared network boundary that prevents
+Discord, heartbeat and job deliveries. Keep the original claims read-only and
+the production Deployment and CronJob stopped. Flannel currently does not
+enforce the declared NetworkPolicies, and no isolated canary is admitted; a
+deny policy on a new Pod is therefore insufficient. Add and validate an
+isolated old-image boot path before claiming compatible recovery, and require
+the verified offsite archive receipt before running it.
+
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Configuration and workspace remain on the `openclaw` NAS PVC.
