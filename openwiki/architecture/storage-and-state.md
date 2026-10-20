@@ -32,14 +32,16 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T08:11:01.425Z" }
+generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:11:01.425Z
+    at: 2026-10-20T08:26:45.252Z
 ---
 
 # Storage And State
@@ -306,6 +308,12 @@ requires `occ-bootstrap-admin-password` to be Bound to
 before chart initialization. The required retained local classes, bound claims,
 live PostgreSQL and restore proof are still absent; the candidate does not
 adopt legacy OpenClaw state.
+The source-only reconciler needs a private durable journal at
+`/private/openclaw-enterprise/journal.json` to preserve pending API intent and
+resource IDs across retries. A proposed fourth retained local PVC would belong
+only to a serialized operator Job, separate from the bootstrap claim that
+upstream initialization can write. Neither that PVC nor the Job is declared or
+admitted yet; an ephemeral CI runner cannot safely execute reconciliation.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

@@ -51,14 +51,55 @@ against `GET /installation` and verify both Ready Pods' exact startup binding
 before reconciliation. The CLI's read-only `check` gathers that proof; the
 annotation binder is pending. With its protected credential file, exact main
 SHA and journal, `reconcile` can create/adopt the logical `claw` Namespace in
-the prepared `openclaw-agents` namespace, then exits blocked while Agent work
-remains unfinished. A failed `reconcile` may therefore have changed Enterprise
-and Kubernetes state. Inspect the journaled Namespace ID, exact API GET and
-owned Kubernetes Namespace/NetworkPolicies before retrying with the same
-journal; unknown creates are not reposted. Keep activation false and preserve
-the journal for rollback. Removing this logical Namespace needs a reviewed
-repository-owned cleanup path; do not delete the physical tenant Namespace.
-Tenant `verify` remains read-only and blocked.
+the prepared `openclaw-agents` namespace, one native Agent Configuration, and
+one stopped Embedded Agent. The Configuration uses native model reference
+`openai/openrouter/free` so OCE selects its supported `openai` Harness provider;
+the OpenRouter wire model remains `openrouter/free`. The dedicated model key is
+still absent, so the agent has no `harnessAuth` binding and cannot be deployed.
+`verify` checks the journaled identities, complete Configuration values,
+generation and stopped Agent without sending inference. A failed `reconcile`
+may have changed Enterprise and Kubernetes state. Inspect the journal and exact
+API objects before retrying; unknown creates are recovered from owned reads,
+not reposted. Keep activation false and preserve the journal for rollback.
+Removing this logical Namespace needs a reviewed repository-owned cleanup path;
+do not delete the physical tenant Namespace.
+
+### Durable reconciliation journal
+
+The reconciler cannot run safely from an ephemeral Actions runner. Its
+`privateJournal.mountPath` is `/private/openclaw-enterprise/journal.json`, and
+`ProtectedJournal` requires a process-owned `0700` parent, a `0600` file,
+exclusive locking, and fsynced replacement. A lost runner disk would lose the
+IDs and pending intent needed to distinguish a retry from a second create.
+The chart's bootstrap claim holds the upstream service key and initial password;
+it is writable by upstream initialization and must not hold this operator
+journal.
+
+The planned protected execution path is a one-shot, serialized operator Job in
+`openclaw-system` with a separate retained local journal PVC mounted writable
+only to that Job. Mount the bootstrap files read-only at
+`/private/openclaw-enterprise/bootstrap`. The pinned operator image must carry
+the reviewed script, config, `kubectl`, and an exact-source checkout for its
+`--expected-sha` guard. Scope its service account to the exact startup Secret
+and the controller and tenant objects the readback uses; the startup Secret
+read includes its contents and cannot be treated as metadata-only access.
+The Job must use a kubeconfig whose API endpoint is
+`https://kubernetes-api-ci.stinkyboi.com`, matching the script's context check. The protected
+workflow will pin the image digest, source SHA, PVC identity, and fixed Job
+manifest, then wait for a sanitized result without logging credentials or
+journal contents.
+
+This Job and its workflow stage are not declared yet. T035 must first admit a
+fourth retained local claim with safe UID and `0700` ownership, alongside the
+three application claims. The operator image identity, source pairing, private
+credential, archive, and isolated network-policy receipts are also pending.
+Until those gates pass, the CLI remains a source-validated candidate; no
+reconcile, stop, or verify stage may be exposed as an executable cutover step.
+
+At the pinned upstream revision, `native-admin` requires an authenticated
+human session with exact Agent `administer`. Service keys cannot inspect its
+origin. T048 records the returned `data.origin` during browser acceptance;
+the service-key reconciler cannot supply that receipt.
 The chart's Kubernetes policy also needs nonempty reviewed `database.cidrs` and
 `cluster.cidrs`; this candidate has explicit destinations, but Service DNAT
 behavior still needs the isolated canary qualification.

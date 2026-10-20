@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:35159b572eecb045224eb8c73ca1f0046e792447fc2fc2bf8302eca4af3ba150",
+  "pageVersion": "sha256:d15f5dae4dadd120cf6c99b122ed2050506abb3e0ec9adde4451b7900e13ccd9",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -924,23 +924,27 @@
     },
     {
       "id": "claim_33f43b085f014e02aa20fe8f103119dd",
-      "statement": "Enterprise reconciler fixtures run in static and offline validation. `check` attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded `reconcile` may journal and POST/adopt the prepared logical Namespace, then blocks before Agent creation, while `verify` remains read-only and blocked.",
+      "statement": "Enterprise reconciler fixtures run in static and offline validation. check attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded reconcile journals pending intent before creating or adopting the logical Namespace, Configuration and one stopped unauthenticated Agent; verify reads exact journal, API and tenant state without inference. No protected reconcile stage is executable until a retained operator journal PVC and serialized Job are declared.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L68-L99",
+          "version": "repo-lines-v1:sha256:d8386e73803d8e3797bec02edbf32ca9420cd357f2ecf256df7c888953b28366:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllOWE4MDdjNWYxNDYyOThkYjYwNmRiNzcyNDI3Nzk4OTk4MDkxNTMxZWYzZWE4MzRiOWYxZjA4MjU0MDkwYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjZjg4Y2MwMGM2ZGRkODBlMDE3MGVkZGUyYzRiNzBkNWUwZDY3OWNjMzJjYzkwNWQyZTRiMDU2YWZlM2JlYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmYmU4NmZjMmM2YTIxMmJmMTI4NmEyMzRjNDlmYTAzNGZjMTkxZjU4NTAzNGUzMGUyMmZlZDhjNTgyMGZkMWIifQ"
+        },
         {
           "resource": "repo://scripts/ci/offline-checks.sh#L62-L67",
           "version": "repo-lines-v1:sha256:4708ad92af0c4026a38532a319907dfbaace12b2ff79cbc9ff55ecd81f3f695a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjY3OTFkZjZiNDRhOTM3YzA3MTFmMzkyZjhkMDZhYWIzODExNzA0ZWYyYjRhNjU0NDhkYmExNzJjYjQzMjc4YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE1M2RjMzBiNjdhYzRmYjY0NjkyOTRiMWYzNTRkOTUxODRjOTVkYWIzZTQzYjE4NDBmOGZlYzE2YmU3ZWM4ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDJhYTYxMjA3Y2QxMzRmYWFjMDE2ZmFiNTIzM2JkNGJmOGNmZjEzNDA3NTk5YTcwNDQxYjdhZGFjOTgxMGNlNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGZhZTIyNjdkMTUxMjcwN2VmMWMxYzI3ZWZhOTI1N2FmNTYzOWMwYWU0ZDIyY2I2MjJjOWNmZTUxMzQ3NGExMSJ9"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L358-L378",
-          "version": "repo-lines-v1:sha256:892d67ca775ae4b9a7a1ee3deceb5416020557e62ea454898db8765d5a35926f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3NmJkMTUxZWEyZWMwMjE2ZWZmNTk0MTMxYzNmNDczZTdhMTgyNTdkZGIwNDJiNmU5M2EwZDNlNmNjMjJmYTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwNzYyN2UzYzlmYTgxOWRkOTczMWNhMjExZTY4OGMwYzk3MzIzMjBlYmIwYjY1ZWY3N2VhYjc0NmMzYjZjNTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjOWY4NTYyYzZhZDkxOTE2ZWIzYTgxYzg4NzEyZTQ4MTMwY2YzZmYwNTIzZGEzMWQ5M2E3NmM3N2U2ZWQ5ODMifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L929-L1145",
+          "version": "repo-lines-v1:sha256:73b97d1050e290edd2d47c85d0ff0608d401add86979dac1aef4ff915a8bfabe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjE3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxYTg0MmE0ZDdiMWM2MWE5ODRkNWRhOTNmODRlNWRjNjYzN2M2MzU1ZGNkNDA2MDljNTRiZGQwZjUxYTdmMmIyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5OGYyZGI5ZDQ0MDIzYWI3MjZiOTk0ZjUzMTEyYjgwMTU2OWJiOGJhNGQxMThhZjhhODA3NTEzNjVlNjU5MDJkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1ZDgzNTA2NjVhYmUzNjM3NDQ0NmY2Y2RlMDMwMDQ4OWVkM2IzZmQ3Njk3MjE4YTEzYTU0YTJmMzJjY2FiYTc1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4NjA3MDhiNjZhM2UwNzk1N2VmNGU0YjEyNDY0MTU0MWRmY2E0ZmE3MWUyZjhkYTdmNzRiOGFmZjM0ZTM0ZjIxIn0"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh#L17-L25",
           "version": "repo-lines-v1:sha256:66e8f91ba1141ce16e2eda5afcad6d6f59603342359a633eccf56dd1617be14b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlMzc2OTk4NDUzMzMzMGZjYmUzMzhiMDVkOGYyMTM0MDQ5YjIyZmMyZTY3NzJkNGFmNjliZGRhMzFhZmRkZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFmMjk3N2Y0MDNlYmU3MTgxYzRhMTE2ZTk2ZGViMDc5YWZkNGViMmJiNjA1ZTcyNjE2NmYzZjg5YzU2MzFlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTEwNjgyODdjMDE2ZDA5OWQ0YmU3MGFhMzhmMTRmNzc5YTU3MmQ0OWFkZGIxN2I2OTU0ZWVlYjYwMzlkZWQxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOThhYWU0ZjI2NTVkZjQyNTNhNjVmNGRkZjEwMmIzNzA2NDQ5OTJiNjI1ZDY0ZjY1YTE4MTYzMWVlY2ExZTJhMSJ9"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L377-L487",
-          "version": "repo-lines-v1:sha256:140885206e07416a86b1dfa43f78de68c0083abbc37111e9824a4474bffb9b96:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2MjQ1OTcxZjVlYTA2ZjRiNGZkNTE4ZTA0YjFlNzllOTkyMzcxZDJjOGQwMzY0MTRkZGU3NGY0NzRjMDQ4ZTc5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0ODRmODBhNGE4YmUxZWQ0Yzc1ZDQ1NzZkNjEzYmNmOTY3MTVkMjFlNDZiZDk1OTUwOWFkOGY4NTc2MGM4YmE0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMWQ3ZWY5OWFhZTExMDBiZDQ2MjBmNTdhMGQ1ZDRiZTE4NTcyMTA1NGZlY2ZmNWFhZDRjZWY1OTBmMTc1Mzg0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhZTg1NGJhZjcwNjU1MmI3MDY2YjhkNDdlY2QxNjFmMjc5MTRkM2FhZDJkMzRkMTRlZTUwZmUzOTIzZTcyZjdjIn0"
+          "resource": "repo://scripts/openclaw-enterprise.py#L412-L487",
+          "version": "repo-lines-v1:sha256:9c0da015f67270e8a81d6eb459279dd23224bf3b93df7924bcf1b56c1148cc1f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmYjNlZmM1ZjgyMzhjN2JiZDcxNDY3MTI2MjdmY2ZjYWYzNjEyMzZlMTFhOGRhZTdlNmZmZjcwMjYzMTlkM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxYjJjZWMwZGJlNjhkM2ZlMTYzMmMxYzBjMDMzNDQ0NTc5NDkxNjA5OTkxMmIzMThkOTk0MGI3NWNkMmI4ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiNGY5OGRlMTY0YjBjYTg3ODk2MTJkM2I0ZDk4M2UzNDVhYmI2YWQ2MmIyYmNjZjc5ZDA1OTljMzRhNmRjNjQifQ"
         }
       ]
     },
@@ -949,11 +953,11 @@
       "statement": "Enterprise attestation compares nonempty resource versions for an immutable Installation Secret and each Deployment, ReplicaSet and Pod across two read-only snapshots, rejecting workload races with unchanged UIDs.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L116-L379",
-          "version": "repo-lines-v1:sha256:40878b490e33b3543c3e21407025ab97ca334beb62a598b0b2e8ca1942649b62:eyJzZWxlY3RlZExpbmVDb3VudCI6MjY0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwNDA5YjQ3MWYzNDcyZDk0NmYxNDAwNzA4MTFiZDY1MmEyOWVjZDcwZWVjNjE4YWQzZTI5Y2Q2ZWJkMTJkZDdmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhNDRlN2JjNWIwYjczZjY4ZDc3OWM4ZDZiNTBlOGJlYzE4ZTZlNTY3YmMwNzlmMTc1OTg0ZGJkZmZkOTM2NTY4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlNGQzOTg3NmVlY2JmMmI5NDU3NmFlNmQ3YzFkMWMxMmU5Nzc3Yzg2ZTYxYmUyZWEyZmJmMDQxZWE0ZTJjNDlkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzZWZmMjQ2YTVjOGVjNmE3ZDQ4NDFlNDljMGU2NTdiNzlkMjQ0ODI4ODVhYjI2OTg1NDEyYmU0ZGE0ZmEyNGExIn0"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L194-L457",
+          "version": "repo-lines-v1:sha256:505f7a0028b97a8223cae37f3a6529bdaf5004bd942e2eb95c5dac3f39f04c2a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjY0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwNDA5YjQ3MWYzNDcyZDk0NmYxNDAwNzA4MTFiZDY1MmEyOWVjZDcwZWVjNjE4YWQzZTI5Y2Q2ZWJkMTJkZDdmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhNDRlN2JjNWIwYjczZjY4ZDc3OWM4ZDZiNTBlOGJlYzE4ZTZlNTY3YmMwNzlmMTc1OTg0ZGJkZmZkOTM2NTY4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlNGQzOTg3NmVlY2JmMmI5NDU3NmFlNmQ3YzFkMWMxMmU5Nzc3Yzg2ZTYxYmUyZWEyZmJmMDQxZWE0ZTJjNDlkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzZWZmMjQ2YTVjOGVjNmE3ZDQ4NDFlNDljMGU2NTdiNzlkMjQ0ODI4ODVhYjI2OTg1NDEyYmU0ZGE0ZmEyNGExIn0"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L535-L726",
+          "resource": "repo://scripts/openclaw-enterprise.py#L805-L996",
           "version": "repo-lines-v1:sha256:7a53fff255d55c344b3c5c1149318e5ccd1ca16b2a20a37b03fc1332bf09fed0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZWViMmE1ZjEzMWZkNzA1ZWJkMjlkY2E1Y2E3Mjg3NDU2NjIzMzA5ZWU2Nzc0ZDgyM2I3NWNjNDc1MGQ4M2QyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZThjMmQ4ZGY2YzQzNDc1MGMxMmQ0YjgyNWU2ODJhYTVhZTE3YzYwNzg1OTFlNWEwZGM0YzQ1NmRlOWM4NDM4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2MGY5YmE0OGE1ODQ3ZTA2OWZkMTM1Yzc3OWE3OWIxM2Q4ZGQ0ZTdkMjU4MWNlNWI3ZGRhOTVjNTRhNjZlNTEyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwODAwZGEzMjZkNGI2NTA0OGY5ZTJkMTIzZTk3OTk3YTllY2Q2MmEyMmIxMTFmMzlhNDY3Yjg1NzNkMzQ4ZTJmIn0"
         }
       ]
@@ -963,8 +967,8 @@
       "statement": "Enterprise API access pins the bootstrap key destination to the exact console origin, and activation validation accepts only the approved OpenRouter transport/model fields and dedicated model-key reference; offline fixtures reject altered inputs.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L379-L404",
-          "version": "repo-lines-v1:sha256:822851324f224259902a60a1f363237c14df32fa909aec58185d5f620838a5b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0NGU3YmM1YjBiNzNmNjhkNzc5YzhkNmI1MGU4YmVjMThlNmU1NjdiYzA3OWYxNzU5ODRkYmRmZmQ5MzY1NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiNDNmN2I1ZGM5NTExNzkxZGMyOWZlYmFkMThiM2Y2OTM4NTE3NGFkZDRhMGRjZDE2NzBmYTNhNDExMTc1NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3ODk1NWNlNDMyM2VjY2NiZmFlMzk4N2VjMmI0YTgyZGVjYTUxNjI0ZTc5YTRlMmJiYTg2NGZkYjAwNjk4ZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5MTE3YzYwY2E2ZmUzODk0ZTUzZjlmMDBkNmZiMjJkYzU3Y2M0MTUxMGUyODBkNzQ3MzhlOWY3YTI5ODAwZjgifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L457-L482",
+          "version": "repo-lines-v1:sha256:b83c7e6c999000228d067db0d75e7db62d02e5e27290f1a07952bd4a19d81e4d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0NGU3YmM1YjBiNzNmNjhkNzc5YzhkNmI1MGU4YmVjMThlNmU1NjdiYzA3OWYxNzU5ODRkYmRmZmQ5MzY1NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiNDNmN2I1ZGM5NTExNzkxZGMyOWZlYmFkMThiM2Y2OTM4NTE3NGFkZDRhMGRjZDE2NzBmYTNhNDExMTc1NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3ODk1NWNlNDMyM2VjY2NiZmFlMzk4N2VjMmI0YTgyZGVjYTUxNjI0ZTc5YTRlMmJiYTg2NGZkYjAwNjk4ZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5MTE3YzYwY2E2ZmUzODk0ZTUzZjlmMDBkNmZiMjJkYzU3Y2M0MTUxMGUyODBkNzQ3MzhlOWY3YTI5ODAwZjgifQ"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py#L156-L203",
@@ -975,8 +979,8 @@
           "version": "repo-lines-v1:sha256:1a3e027a6d913bdb8144a576761fc42759667b07796c89341e21eb893ee68cf4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMWJjYTg3Y2M3MDAyODBjMjg5NWVjMWMyZjhhYzMxMDkwM2QwZTBhNDk4MzhlNjQ4ZmFkMWNlOGNiNjM3NjdhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTQ5Njc1ODlhZjkyYWI0MzUzMWI3NWQ4ODYzMzQyMDk4NzE1MDJlYzBmZDNhNTViYzRjMzA0YTg3NzYxMTQ4MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTU3NjlhYTcwNTUwZmI2MDI3YjE1OTg5NDI5MjY4MTgyM2Y0OWU2ZmMzNWQzOGJkZDFhMTA2ODJmM2I2Yjk5OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjIwNmEzNWU4YTlhMTNhMGVjYzViNDk0Y2E5MTE3MjYxODViOGYyMGFmNjQzNGY2MjFiMDdjMzJjZWIzMDgzOCJ9"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L490-L524",
-          "version": "repo-lines-v1:sha256:2e51f5e235079fd5f9729db944b64fc052bded7cfd4693e5548c30f924c5b35d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxZmQyNGY3NTlmYWM0OTQ4ZTZlN2ZlNmEyNWY0NGU1ZTgzZDJmNWQ1NGQyMGVkOWRlNzI0N2MzM2UxMjkwZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMGFhYmJlMzExZjlhMGU2NDhjMDgwMDUxZDNjMGJmYjQ4ZmY4M2QxMGU0NDJlYTZkMzNjOTllZDQ0ZWI5ODgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTk3YzUzNTZiOWQ2Y2JhYzlmNWRmMzRkMDM5YjY3NDBmMWMwOTI2YzEyZmRiYjk1YWI5NjU1ZjZiN2NlMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjcyODMwMTBhZmVlMDBhYzc3MDgyZGIxYjUwNmQyNjVlNjVlM2JiNzc4MjA5ZmZjOTczZWZlNmQwODExNDBlMzMifQ"
+          "resource": "repo://scripts/openclaw-enterprise.py#L590-L789",
+          "version": "repo-lines-v1:sha256:ad55b50c62a0d70cabba536dc874cb9272862f8ac5e64ba70493de0bf03a1468:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3M2YwYTNkNjgwM2ZiYTUzYjgwMmJkZDYwZjBkMjhkZTIyODRiZWI3ZTgzMTgyYzljODE2NGY4YmEzMjdiNjc4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJlYWY4NTliZmRmYTA5NjY4YTE2OWVhNTgwYmUyMGJhY2MzMzJiODU5M2U0ZmNiN2JjNzM0MDM4YmI1NDA0NGY3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmYjU5N2M1MzU2YjlkNmNiYWM5ZjVkZjM0ZDAzOWI2NzQwZjFjMDkyNmMxMmZkYmI5NWFiOTY1NWY2YjdjZTIyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MjgzMDEwYWZlZTAwYWM3NzA4MmRiMWI1MDZkMjY1ZTY1ZTNiYjc3ODIwOWZmYzk3M2VmZTZkMDgxMTQwZTMzIn0"
         }
       ]
     },
@@ -1043,16 +1047,16 @@
       "statement": "A Namespace reconciliation retry recovers an uncertain create only from a unique exact API candidate; ready acceptance requires exact API and owned Kubernetes readback with the three pinned base NetworkPolicies. A blocked run may already have changed state, and removal requires a reviewed logical-Namespace cleanup path.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L63",
-          "version": "repo-lines-v1:sha256:1e60373e0cfc346c0ee90c187cd116e78a502be9f98edd6435db38003ee55898:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4YTliNTA2MDBlZmRmNzM1OGUwMzVkMDJiMWZjM2MxYWZjM2QwYzc4NmVhMGFhYmI2NzYyNDdkMTRlYzdmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2ZDkzMmVjOWMxNjYyOTE2NDEzODUxNTU5ZTEyZWE1NmU1NjM4YTBkYjBmMzdjYzE5NjQ5NzFiNWUxNmZjNzMifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L104",
+          "version": "repo-lines-v1:sha256:543badeb77b7bbbb2a4942c07a81eb3c7e1919ad0fed17416a84a6040d340d0f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4YTliNTA2MDBlZmRmNzM1OGUwMzVkMDJiMWZjM2MxYWZjM2QwYzc4NmVhMGFhYmI2NzYyNDdkMTRlYzdmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2ZDkzMmVjOWMxNjYyOTE2NDEzODUxNTU5ZTEyZWE1NmU1NjM4YTBkYjBmMzdjYzE5NjQ5NzFiNWUxNmZjNzMifQ"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py#L248-L317",
           "version": "repo-lines-v1:sha256:ba39425e6465869d1eb847f78e2eaee3666307bcb1b5ee82b1552a176253daf7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTczMTVhYTY2OTQ2OGNmOTY5NzhiNjhkNWVlNDk0YTZhN2M5YTRmNDk0ODQ2YjgyOTExMGQwNmVmMjdhZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwZjFjY2E0MDc4YjgyNzBmZDYxOWUyYjRlODFlNzhhYzIwNTVkYTEwZjYxYzU0ZmJkYjJhNTBkMmIxYzAwNTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFmNmE3ZWM3N2U5ZTZiOGU1ZTMxNzlmMTg4YzFlMDg2Y2M1ZTNjYTQyMWYzNzI2OWZkOTRjNjQzNmYzOTExMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzYWQ3NThmZTUxNjRlZTc4MmU2MTUyMWE4OGU2OTJkYWNkMzAzYTRiYWJhYjZmMTQxM2JkYTcxMDQ4ZDY5MzQifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L430-L487",
-          "version": "repo-lines-v1:sha256:8ec5089fe6ec8a456525967788ef2854e0e375a975511b824193c75b23a02090:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzNjVlZjgyN2Q1Yzk3ZWM1ZmZhN2U5ZTU5ZDYwNjczNDJkYjRhN2QwNTc5OThlNjk2MDY3ZGY5NGVhMmYzNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4NGY4MGE0YThiZTFlZDRjNzVkNDU3NmQ2MTNiY2Y5NjcxNWQyMWU0NmJkOTU5NTA5YWQ4Zjg1NzYwYzhiYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4NmZmMDA3MWY5M2UwMzZkMjUyMzQxZTg2OWNhODNhYTM5ZWFkYzA4NjEyNzY3NmQwMWZjY2ZiYWYzODg5OGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlODU0YmFmNzA2NTUyYjcwNjZiOGQ0N2VjZDE2MWYyNzkxNGQzYWFkMmQzNGQxNGVlNTBmZTM5MjNlNzJmN2MifQ"
+          "resource": "repo://scripts/openclaw-enterprise.py#L499-L753",
+          "version": "repo-lines-v1:sha256:b53dc57ddd3d0e71fac2687fb3c3c3d5ba2fa920bcf59013f0a34550127f237a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxMDcyNzJmMDRkZjkwM2Y3MDE0ZTAzZjBmMTk5ZDYzZDUxZmRlYzk5YjJkNzRiMThlODkyNDEwOTliNDk4YjQ1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDAyZWI5MjhjNTE1NGNkYjFmYzc4ODU3ODkyNjkxMTYyODRjZjg2OGJjNjA2MmNlNjRmYmQyMjZiZGY1MDgxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzODZmZjAwNzFmOTNlMDM2ZDI1MjM0MWU4NjljYTgzYWEzOWVhZGMwODYxMjc2NzZkMDFmY2NmYmFmMzg4OThhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhZTg1NGJhZjcwNjU1MmI3MDY2YjhkNDdlY2QxNjFmMjc5MTRkM2FhZDJkMzRkMTRlZTUwZmUzOTIzZTcyZjdjIn0"
         }
       ]
     },
@@ -1421,6 +1425,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T08:11:01.425Z"
+    "at": "2026-10-20T08:26:45.252Z"
   }
 }

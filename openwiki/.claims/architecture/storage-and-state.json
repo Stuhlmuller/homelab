@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a0f70afdfdfcaeb7d182fdbc210ee8045927967181a3f8d48f8d24976ac8ec9f",
+  "pageVersion": "sha256:109830d938c79b219af2ad162eaf39f0d34f4c853470854ca45bdf2f5ebab393",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -112,7 +112,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:99716bff5813af62cc993856d5e7c9f36defe4316bb0bc4ca93ffe5692f633c1"
+          "version": "repo-file-v1:sha256:0abb1a5ff7a5ec1ae26765e995ee21cdc727168a7f4d2064a00fdaa9e88d6802"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
@@ -165,10 +165,24 @@
           "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
+    },
+    {
+      "id": "claim_ad9a703e5c9e4ccebaeac665b176c6ea",
+      "statement": "The source-only Enterprise reconciler requires a durable private journal for pending API intent and resource IDs; a fourth retained local PVC and serialized operator Job are proposed, separate from the writable bootstrap claim, but neither is declared or admitted for live reconciliation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L68-L99",
+          "version": "repo-lines-v1:sha256:d8386e73803d8e3797bec02edbf32ca9420cd357f2ecf256df7c888953b28366:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllOWE4MDdjNWYxNDYyOThkYjYwNmRiNzcyNDI3Nzk4OTk4MDkxNTMxZWYzZWE4MzRiOWYxZjA4MjU0MDkwYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjZjg4Y2MwMGM2ZGRkODBlMDE3MGVkZGUyYzRiNzBkNWUwZDY3OWNjMzJjYzkwNWQyZTRiMDU2YWZlM2JlYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmYmU4NmZjMmM2YTIxMmJmMTI4NmEyMzRjNDlmYTAzNGZjMTkxZjU4NTAzNGUzMGUyMmZlZDhjNTgyMGZkMWIifQ"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L1126-L1250",
+          "version": "repo-lines-v1:sha256:ffe002fb3dc386047028a7ecf967cc43d2e309d27485be8db5738c74d884dc6d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTI1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NWI3MzRmZDk5MjBhMWYwYTNjNWE5YTczZTY4Njk2NjQyN2E1ZmQ3OGMxMmQ0MmNmODEwOGIzNmViM2M2ZTc2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0N2YxYjMyZWM5Yjg0YWRmYmFiYWU4OGY2MTI5Y2Q0OTY1YTNiOTU0ZmVkNzdkMWRhNDE1MmE2OWFiNGFiN2FhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlMzViOWFkNWVjYmZmM2UxNzViNDAxYjdhMjI4ZjE0N2Q3Njg5MmQ1MTQ1YmJhNTY0NWQxN2UxNzc0OGYzM2Q3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIxYjIxMjE3YTQ4YzZmMDFjOWE4ZDk0NmFjMzUzNDczYjI3OGNjMzJhOTA2NWYzNzQ0ZmE5MWU1MWVkM2E2ZTI2In0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T08:11:01.425Z"
+    "at": "2026-10-20T08:26:45.252Z"
   }
 }

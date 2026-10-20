@@ -24,6 +24,8 @@ Kubernetes driver does not accept `openrouter` as a Harness provider. Use its
 supported `openai` transport with `baseUrl: https://openrouter.ai/api/v1`,
 `api: openai-completions`, and model ID `openrouter/free`. OCE's model reference
 is `openai/openrouter/free`; the wire request to OpenRouter uses `openrouter/free`.
+The first slash selects OCE's provider; raw `openrouter/free` would select the
+unsupported `openrouter` provider. Test this mapping before writing a Configuration.
 Do not copy the example model or reuse old app credentials. The dedicated
 OpenRouter key must be registered as an Agent `harnessAuth` OCC Secret; direct
 Configuration secret binding or an ExternalSecret model mount is unsupported.
@@ -70,11 +72,13 @@ around `GET /installation` and applies the attestation. With a protected
 credential file, exact main SHA and durable journal, `reconcile` can POST the
 logical `claw` Namespace with `existingNamespace: openclaw-agents` after exact
 Namespace, Pod Security, NetworkPolicy and RBAC preflight. It verifies the
-ready API object and Kubernetes ownership before journaling its ID. The command
-then exits blocked because Agent reconciliation is unfinished; that failure
-does **not** imply that no mutation occurred. `verify` remains read-only and
-blocked. The post-bootstrap annotation binder and later credential/deployment
-flows remain pending.
+ready API object and Kubernetes ownership before journaling its ID. With
+`activationEnabled: false`, it creates or adopts one owned Agent Configuration
+and one stopped Embedded Agent. `verify` reads their exact IDs, generation,
+values, and stopped state without deploying or sending inference. A failed
+`reconcile` can have made partial changes; preserve the journal for recovery.
+The post-bootstrap annotation binder and later credential/deployment flows
+remain pending.
 
 After a blocked `reconcile`, inspect the protected journal's `namespaceId`,
 `GET /namespaces/:id`, and the owned `openclaw-agents` Namespace/NetworkPolicies
@@ -99,7 +103,7 @@ Use these actual upstream operations:
 | Runtime transport | `POST /namespaces/:ns/agents/:agent/runtime-credentials`; track its resulting state |
 | Deploy | `occ agent deploy ID`; persist returned revision; inspect exact deployment and revision list before retry |
 | Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state and runtime termination |
-| Native UI | `GET /namespaces/:ns/agents/:agent/native-admin`; use returned `data.origin` |
+| Native UI | `GET /namespaces/:ns/agents/:agent/native-admin` requires a human session with exact Agent `administer`; service keys cannot inspect it. T048 records returned `data.origin` through authenticated human-session acceptance, outside the service-key reconciler. |
 | IAM | Exact role/grant tuples; agent ServicePrincipal gets `operate` on its own model Secret, never installation administration |
 
 The repository reconciler runs serially and stores server IDs/generations in a
