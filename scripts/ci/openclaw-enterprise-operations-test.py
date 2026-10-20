@@ -62,10 +62,16 @@ with log.open('a') as output:
                              'size': pathlib.Path(args[args.index('--body') + 1]).stat().st_size
                              if '--body' in args else None}) + '\\n')
 if operation == 'create-multipart-upload':
+    if operation == os.environ.get('FAKE_AWS_FAIL'):
+        raise SystemExit(7)
     print(json.dumps({'UploadId': 'test-upload'}))
 elif operation == 'upload-part':
+    if operation == os.environ.get('FAKE_AWS_FAIL'):
+        raise SystemExit(7)
     print(json.dumps({'ETag': '"test-etag"'}))
 elif operation == 'complete-multipart-upload':
+    if operation == os.environ.get('FAKE_AWS_FAIL'):
+        raise SystemExit(7)
     manifest = pathlib.Path(args[args.index('--multipart-upload') + 1][7:])
     assert json.loads(manifest.read_text())['Parts'] == [
         {'ETag': '"test-etag"', 'PartNumber': 1}]
@@ -101,12 +107,15 @@ sys.stdout.buffer.write(chunk)
                    'FAKE_AWS_LOG': str(log), 'FAKE_SOURCE': str(source),
                    'FAKE_KUBECTL_LOG': str(kube_log),
                    'FAKE_TRUNCATE_ONCE': str(truncated_once)}
-            for body, size, expected_digest, flaky, succeeds in (
-                    (payload[:8], len(payload), digest, False, False),
-                    (payload, len(payload), '0' * 64, False, False),
-                    (payload + b'extra', len(payload), digest, False, False),
-                    (payload, len(payload), digest, False, True),
-                    (payload, len(payload), digest, True, True)):
+            for body, size, expected_digest, flaky, aws_fail, code in (
+                    (payload[:8], len(payload), digest, False, '', 10),
+                    (payload, len(payload), '0' * 64, False, '', 14),
+                    (payload + b'extra', len(payload), digest, False, '', 10),
+                    (payload, len(payload), digest, False, '', 0),
+                    (payload, len(payload), digest, True, '', 0),
+                    (payload, len(payload), digest, False, 'create-multipart-upload', 11),
+                    (payload, len(payload), digest, False, 'upload-part', 12),
+                    (payload, len(payload), digest, False, 'complete-multipart-upload', 13)):
                 log.unlink(missing_ok=True)
                 kube_log.unlink(missing_ok=True)
                 source.write_bytes(body)
@@ -116,14 +125,14 @@ sys.stdout.buffer.write(chunk)
                                          str(size), expected_digest,
                                          'openclaw-retirement-reader-test',
                                          '/archive/private/legacy-' + 'a' * 64 + '/legacy.tar.gz'],
-                                        cwd=ROOT, env=env, capture_output=True,
+                                        cwd=ROOT, env={**env, 'FAKE_AWS_FAIL': aws_fail}, capture_output=True,
                                         timeout=10, check=False)
-                self.assertEqual(result.returncode == 0, succeeds, result.stderr)
+                self.assertEqual(result.returncode, code, result.stderr)
                 operations = [json.loads(line)['operation'] for line in log.read_text().splitlines()]
-                self.assertEqual('complete-multipart-upload' in operations, succeeds)
-                self.assertEqual('abort-multipart-upload' in operations, not succeeds)
-                self.assertEqual(len(kube_log.read_text().splitlines()),
-                                 2 if flaky else 3 if len(body) != size else 1)
+                self.assertEqual('complete-multipart-upload' in operations, code in (0, 13))
+                self.assertEqual('abort-multipart-upload' in operations, code not in (0, 11))
+                self.assertEqual(len(kube_log.read_text().splitlines()) if kube_log.exists() else 0,
+                                 0 if code == 11 else 2 if flaky else 3 if len(body) != size else 1)
 
     def test_legacy_session_outlives_the_bounded_job(self):
         workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise-sync:\n', 1)[0]
@@ -329,12 +338,17 @@ restore_version key version-1 "$2"
             self.assertIn('preflight|baseline|publication|publication-lookup|'
                           'publication-lookup-denied|publication-lookup-failed|'
                           'publication-lookup-response|publication-upload|'
+                          'publication-source-read|publication-s3-create|publication-s3-part|'
+                          'publication-s3-complete|publication-digest|'
                           'publication-version|verification', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key"', script)
             self.assertIn('phase=publication-upload\n      aws s3api put-object', script)
+            for code, stage in ((10, 'source-read'), (11, 's3-create'), (12, 's3-part'),
+                                (13, 's3-complete'), (14, 'digest')):
+                self.assertIn(f'{code}) phase=publication-{stage} ;;', script)
             self.assertIn('phase=publication-version\n    version=', script)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
             shell = '''set -euo pipefail

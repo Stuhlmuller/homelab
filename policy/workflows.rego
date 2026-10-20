@@ -327,7 +327,7 @@ approved_openclaw_legacy_operation if {
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'8a696a1575726c74fad26c2a046586109f232ec2daa9dafa79b2c4d9bcf07e52  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'c43e8c4a035723008cf1d63b374599802b5cb5f39f6c37609e15af04487f157c  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'a387eb51665bde09dd14c3db190c31a37f11922bb4e3512956d3c0dee9feec54  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'0de4a421d652a90c1236d9528b26438260d537326c2a2fd10c5f98813a015c26  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 approved_openclaw_enterprise_sync if {
@@ -797,7 +797,7 @@ private_live_tail(tail) if {
 	lines == [
 		"then",
 		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
-		`case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)`,
+		`case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|verification)`,
 		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
 		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
 		"esac",

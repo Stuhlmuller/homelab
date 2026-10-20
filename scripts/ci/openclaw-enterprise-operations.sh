@@ -291,9 +291,20 @@ case "$stage" in
     archive_size="$("${reader[@]}" stat -c %s "${receipt%/*}/legacy.tar.gz")"
     [[ "$archive_size" =~ ^[1-9][0-9]*$ ]] || exit 1
     phase=publication-upload
-    python3 -I scripts/ci/openclaw-enterprise-upload.py "$bucket" "$prefix/legacy.tar.gz" \
+    if python3 -I scripts/ci/openclaw-enterprise-upload.py "$bucket" "$prefix/legacy.tar.gz" \
       "$archive_size" "$(jq -er .sha256 "$work/receipt.json")" \
-      "$pod" "${receipt%/*}/legacy.tar.gz"
+      "$pod" "${receipt%/*}/legacy.tar.gz"; then
+      :
+    else
+      case "$?" in
+        10) phase=publication-source-read ;;
+        11) phase=publication-s3-create ;;
+        12) phase=publication-s3-part ;;
+        13) phase=publication-s3-complete ;;
+        14) phase=publication-digest ;;
+      esac
+      exit 1
+    fi
     phase=publication-version
     aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
       --output json >"$work/archive-head.json"
