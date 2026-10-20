@@ -98,8 +98,9 @@ After the `owned-cleanup` receipt is verified and the fixture namespace is
 absent, dispatch protected `canary-release` on the same current `main` SHA with
 `cleanup_run_id` set to the verified cleanup run. Keep the cleanup DaemonSet
 present until release: the stage rechecks that its node-local firewall has no
-owned objects, removes the selector label, waits for its Pod to be deleted,
-then removes the dedicated taint. If Pod deletion stalls, the taint remains
+owned objects, removes the selector label, waits for every cleanup DaemonSet Pod
+across the cluster to be deleted, then removes the dedicated taint. If Pod
+deletion stalls, the taint remains
 and recovery requires direct review. It checks Node UID, boot ID, and
 `resourceVersion` before each patch and retains private attempt, interrupted,
 and final receipts. A newer `main` requires a

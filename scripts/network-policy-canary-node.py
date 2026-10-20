@@ -153,8 +153,7 @@ def wait_for_cleanup_pod_deletion(config, placement, pod_name, timeout_seconds=1
         node, labeled, tainted = node_state(config, placement)
         if labeled or not tainted:
             raise ValueError("canary Node lost its release isolation state")
-        listing = CLEANUP["kubernetes_json"]("get", "pods", "-A", "--field-selector",
-                                             f"spec.nodeName={config['canary']['node']}",
+        listing = CLEANUP["kubernetes_json"]("-n", "kube-system", "get", "pods",
                                              "--chunk-size=0")
         if not isinstance(listing, dict) or not isinstance(listing.get("items"), list):
             raise ValueError("cleanup Pod inventory is incomplete")
@@ -164,10 +163,11 @@ def wait_for_cleanup_pod_deletion(config, placement, pod_name, timeout_seconds=1
                 raise ValueError("cleanup Pod inventory has an invalid entry")
             metadata = pod["metadata"]
             owners = metadata.get("ownerReferences", [])
-            if not isinstance(owners, list):
+            labels = metadata.get("labels", {})
+            if not isinstance(owners, list) or not isinstance(labels, dict):
                 raise ValueError("cleanup Pod ownership is invalid")
-            if metadata.get("namespace") == "kube-system" and (
-                    metadata.get("name") == pod_name or
+            if (metadata.get("name") == pod_name or
+                    labels.get("app.kubernetes.io/name") == CLEANUP["CLEANUP"] or
                     any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
                         owner.get("name") == CLEANUP["CLEANUP"] for owner in owners)):
                 cleanup_pods.append(pod)

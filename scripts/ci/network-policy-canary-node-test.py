@@ -182,12 +182,13 @@ class CanaryNodeTests(unittest.TestCase):
         def kube_json(*args):
             if args[:2] == ("get", "node"):
                 return copy.deepcopy(state)
+            if (action == "release" and args[:4] == ("-n", "kube-system", "get", "pods")
+                    and "--chunk-size=0" in args):
+                events.append("cleanup-inventory")
+                current_pods = (next(cleanup_inventory) if cleanup_inventory is not None
+                                else cleanup_pods() if callable(cleanup_pods) else cleanup_pods)
+                return {"items": copy.deepcopy(current_pods)}
             if args[:2] == ("get", "pods"):
-                if action == "release":
-                    events.append("cleanup-inventory")
-                    current_pods = (next(cleanup_inventory) if cleanup_inventory is not None
-                                    else cleanup_pods() if callable(cleanup_pods) else cleanup_pods)
-                    return {"items": copy.deepcopy(current_pods)}
                 events.append("inventory")
                 current_pods = pods() if callable(pods) else pods
                 return {"items": copy.deepcopy([system_pod()] if current_pods is None
@@ -273,6 +274,19 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
         self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory"])
+        self.assertEqual([record["status"] for record in self.last_records],
+                         ["started", "interrupted"])
+
+    def test_release_retains_taint_for_cleanup_pod_on_another_node(self):
+        state = node(admitted=True)
+        replacement = cleanup_pod()
+        replacement["metadata"]["name"] = "cleanup-pod-2"
+        replacement["spec"]["nodeName"] = "zimaboard-2"
+        with patch.object(SUT["time"], "monotonic", side_effect=[0, 121]):
+            with self.assertRaisesRegex(ValueError, "cleanup Pod remains"):
+                self.run_action("release", state, cleanup_pods=lambda: [replacement])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
         self.assertEqual([record["status"] for record in self.last_records],
                          ["started", "interrupted"])
 
