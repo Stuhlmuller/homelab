@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: occ-operations-journal
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: occ-operations-journal-probe
+  namespace: openclaw-system
+spec:
+  suspend: true
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: occ-operations-journal-probe
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: probe
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          command: [python3, -I, -B, /opt/journal-probe/journal-probe.py]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: journal
+              mountPath: /private
+            - name: probe-script
+              mountPath: /opt/journal-probe
+              readOnly: true
+      volumes:
+        - name: journal
+          persistentVolumeClaim:
+            claimName: occ-operations-journal
+        - name: probe-script
+          configMap:
+            name: occ-operations-journal-probe
+            defaultMode: 0444
