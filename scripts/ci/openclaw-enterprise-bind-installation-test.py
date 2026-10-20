@@ -179,13 +179,15 @@ class InstallationBinding(unittest.TestCase):
             self.run_binding(post=foreign)
 
     def test_main_must_remain_exact_immediately_before_patch(self):
+        api = API("ins_one", "ins_one")
         with patch.object(binder.startup, "reviewed_main",
                           side_effect=[None, binder.startup.Blocked("main advanced")]), \
              patch.object(binder.startup, "kube") as patch_secret:
             with self.assertRaises(binder.startup.Blocked):
-                binder.bind("a" * 40, self.config, API("ins_one"),
+                binder.bind("a" * 40, self.config, api,
                             Kubernetes(self.snapshots()))
             patch_secret.assert_not_called()
+        self.assertEqual(api.calls, ["/installation"] * 2)
 
     def test_changed_identity_before_patch_keeps_secret_unbound(self):
         with patch.object(binder.startup, "kube") as patch_secret:

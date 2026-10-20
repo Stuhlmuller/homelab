@@ -102,11 +102,12 @@ def bind(expected_sha, config, api, kube):
     metadata = secret["metadata"]
     was_bound = metadata["annotations"].get(ANNOTATION) == identity
 
-    # A second exact-main check closes the long read-only proof window.
-    startup.reviewed_main(expected_sha)
     if not was_bound:
         if _identity(api.get("/installation")) != identity:
             raise oce.Blocked("Enterprise Installation identity changed before binding")
+    # Keep the exact-main check adjacent to the only write.
+    startup.reviewed_main(expected_sha)
+    if not was_bound:
         operations = [
             {"op": "test", "path": "/metadata/uid", "value": metadata["uid"]},
             {"op": "test", "path": "/metadata/resourceVersion",
