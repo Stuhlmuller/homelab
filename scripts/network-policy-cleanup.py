@@ -485,7 +485,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
                           ".github/workflows/platform-maintenance.yml", "policy/workflows.rego",
                           "policy/workflows_test.rego",
                           "IaC/root.hcl", "IaC/terragrunt.stack.hcl",
-                          "IaC/stack-defaults.hcl",
+                          "IaC/stack-defaults.hcl", "IaC/application-backup-storage.hcl",
                           "clusters/homelab/argocd/self-management/appproject.yaml"}
                  for path in changed):
             raise ValueError("policy cleanup source changed after qualification")

@@ -190,6 +190,12 @@ class FirewallCleanupTests(unittest.TestCase):
                 commit("change protected static gate")
                 with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
                     transition(qualify_sha, git("rev-parse", "HEAD"))
+                git("reset", "--hard", "HEAD~1")
+                backup_storage = root / "IaC/application-backup-storage.hcl"
+                backup_storage.write_text('inputs = { bucket = "unreviewed-receipts" }\n')
+                commit("change private receipt bucket")
+                with self.assertRaisesRegex(ValueError, "policy cleanup source changed"):
+                    transition(qualify_sha, git("rev-parse", "HEAD"))
 
     def test_unadmitted_config_refuses_before_any_cluster_command(self):
         with patch.dict(SUT["PLATFORM"], {
