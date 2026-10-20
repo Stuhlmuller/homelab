@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:af0cdffd3da68ea73e7c48c5b90dba5ab7fceb255e967289de02f46cf23e17a1",
+  "pageVersion": "sha256:fd62bdd9bfc7dbc02f1d36dd2ec8dc22f9d58568a6d89b6547cab8082136d3c4",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:7aeee5e876af69fe4343c8dff163f85648afe42fabd4a9a843595967e3e31acc"
+          "version": "repo-file-v1:sha256:a2b03932686ac12d9cadcf1f4126bc88e05bc24dc7aafd93328249dcf22e1155"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -710,7 +710,7 @@
     },
     {
       "id": "claim_d241cdf1ec014386b9b591f2d4b4f425",
-      "statement": "The repository's local validation entry point is `nix run .#validate`; it generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
+      "statement": "The repository's local validation entry point is `nix run .#validate`; its flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
       "evidence": [
         {
           "resource": "repo://README.md",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -888,11 +888,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:aacc3aaabef52fdfd0b0d0c3d3308aa65cb75a284f735c5733dc4b72ec9b7167"
+          "version": "repo-file-v1:sha256:5849e1575bf8976951932889e7712ee35d54f94d75f7904c0feaf5623b87de62"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971"
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -906,7 +906,7 @@
     },
     {
       "id": "claim_0cdab53ba21a4cc28472291e3459e80f",
-      "statement": "Static validation renders the dormant Enterprise foundation and checks restricted namespaces, tenant RoleBindings, exact SSM projections, TLS PostgreSQL and retained claim shape, bootstrap readiness, backup role, excluded restore fixture, ingress denial, and disabled activation; these fixtures do not prove live readiness or recovery.",
+      "statement": "The dormant Enterprise foundation is rendered in static validation for restricted namespaces, tenant RoleBindings, exact OnChange SSM projections, PostgreSQL certificate shape, ingress denial and disabled activation. A separate PostgreSQL fixture checks role isolation, interrupted bootstrap, complete backup input and isolated restore, but neither gate proves live readiness or restore.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -1126,7 +1126,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -1297,10 +1297,28 @@
           "version": "repo-file-v1:sha256:2a9e5922387211a72f2caff4226ea5b1580890de82a92dc44baa4fff12bbd29e"
         }
       ]
+    },
+    {
+      "id": "claim_872687e2eb77442a92cd40e27a3f1ef0",
+      "statement": "The protected owned-cleanup stage validates both current-SHA placement and firewall-ownership receipts before writing cleanup-attempt or invoking the firewall helper: each exact key must have an untruncated single latest version without delete markers, KMS encryption, a 1-byte to 1-MiB object length, and a matching SHA-256 checksum on the version-pinned download. These source checks do not activate live cleanup.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
+          "version": "repo-file-v1:sha256:ab7ad95771d6aa8f8cab9bde9db8ffd668f7ef9ddc42ca266cda869f20f2e1e8"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:58:23.168Z"
+    "at": "2026-10-20T06:15:08.991Z"
   }
 }

@@ -66,8 +66,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
-  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -160,10 +158,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T05:58:23.168Z" }
+generated: { by: "codex", at: "2026-10-20T06:15:08.991Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:23.168Z
+    at: 2026-10-20T06:15:08.991Z
 ---
 
 # Workload Inventory
@@ -375,10 +373,10 @@ agent has been deployed. The unregistered
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It also declares a PostgreSQL 18 StatefulSet with a retained
-10Gi local claim template and marker-gated bootstrap readiness. It has no
-registered or running database, bound storage, route, or Installation
-workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+certificate. A PostgreSQL 18.6 StatefulSet, retained 10Gi local claim template,
+role bootstrap, and isolated restore candidate are declared but unregistered;
+no Enterprise database or claim is running or bound. A separate dormant
+[stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
 placeholder administrator email, missing placement labels, and unfinished
@@ -388,12 +386,6 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
-The stopped legacy archive reader now mounts its owner-only private volume at
-`/tmp` so SQLite can build temporary indexes during independent restore while
-the source volumes remain read-only. This repairs a failed scratch-path attempt;
-the full archive and offsite restore are still unverified. See the
-[retirement reader](../../clusters/homelab/apps/openclaw/retirement-reader.yaml)
-and [archive runbook](../../clusters/homelab/apps/openclaw/README.md).
 The [2026-10-20 read-only capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
 still blocks placement: the best worker has 3,909.5 MiB unreserved versus the
 initial 4,096 MiB Enterprise steady request, before transient and host

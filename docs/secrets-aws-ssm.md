@@ -147,7 +147,7 @@ settings, activation, and rollback. This preparation is not live-secret proof.
 
 The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
 none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
-SSM unit generates the five internal values below in encrypted state and grants
+SSM unit generates the six internal values below in encrypted state and grants
 their exact parameter names to the External Secrets reader. The model key is a
 placeholder until `openclaw-enterprise-model-credential.yml` in the protected
 `homelab-production` environment writes an owner-supplied OpenRouter API key.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a1e301002da0110382ee66dc9247ab87e02eb60bc24c52297b9416172ad1d886",
+  "pageVersion": "sha256:648c28662026e50836f981f65ae139bf676805b4e49da77c370ce014648a690c",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -388,7 +388,7 @@
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted namespaces and tenant RoleBindings, eight retained SSM projections, system ingress denial, PostgreSQL certificates and a PostgreSQL 18 StatefulSet with retained 10Gi local claim template; it has no registered or running database, bound storage, route or Installation workload.",
+      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted system and tenant namespaces, scoped tenant RoleBindings, eight retained exact SSM projections, ingress denial, PostgreSQL 18.6 with TLS, roles and a 10Gi retained local claim template. No Enterprise database, claim or Installation workload is running or bound from this source alone.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -401,10 +401,6 @@
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
           "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
@@ -480,7 +476,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1701b12cce84130f77dc81c55b8514d7e4f9d9f473a75b5e783de9618e19bd4f"
+          "version": "repo-file-v1:sha256:b5c2767f7f842b49724f38cecd5d594e04317ae2a5a547b521f74e8d39cd63f4"
         }
       ]
     },
@@ -551,6 +547,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:58:23.168Z"
+    "at": "2026-10-20T06:15:08.991Z"
   }
 }

@@ -118,10 +118,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T05:58:23.168Z" }
+generated: { by: "codex", at: "2026-10-20T06:15:08.991Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:23.168Z
+    at: 2026-10-20T06:15:08.991Z
 ---
 
 # Secrets And Identity
@@ -294,8 +294,7 @@ The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-en
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
 The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
 project only exact `/homelab/openclaw-enterprise/` parameters and retain target
-Secrets on deletion. The eighth projects a dedicated PostgreSQL backup
-password. The model key remains a placeholder until the protected
+Secrets on deletion. The model key remains a placeholder until the protected
 workflow supplies a distinct OpenRouter key. These declarations do not prove
 materialization or authorize activation.
 
@@ -303,14 +302,9 @@ materialization or authorize activation.
 from generated app and migrator passwords. Both URLs name the private
 `occ-postgres` Service and require `sslmode=verify-full` with the retained
 `occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
-and backup passwords have separate targets. cert-manager declares that CA
-and a server certificate for the Service DNS name. The dormant PostgreSQL
-StatefulSet snapshots the projected TLS pair before its image entrypoint
-starts PostgreSQL; renewal fails readiness and liveness until a restart loads
-the new pair. It bootstraps separate admin, migrator, app, and read-only backup
-roles. Password rotation needs a declared `ALTER ROLE` path; advancing an
-ExternalSecret alone does not rerun bootstrap SQL. The foundation is
-unregistered; scheduled backup, chart consumers, and live TLS verification
+password is a separate target. cert-manager declares that CA and a server
+certificate for the Service DNS name. PostgreSQL is staged in source; its
+installation, chart consumers, scheduled backup, and live TLS verification
 remain pending.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
@@ -698,7 +692,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
 - Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
-  contract. OpenTofu generates five internal values; the model key stays a
+  contract. OpenTofu generates six internal values; the model key stays a
   placeholder until the owner supplies a distinct OpenRouter inference key to
   the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
   It verifies the key and writes only the new SSM path. The selected

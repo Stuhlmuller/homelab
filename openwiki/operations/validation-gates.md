@@ -188,6 +188,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-b5946e8eb5b294e910c57270
+    resource: repo://scripts/ci/platform-maintenance-stage-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
@@ -268,10 +270,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T05:58:23.168Z" }
+generated: { by: "codex", at: "2026-10-20T06:15:08.991Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:23.168Z
+    at: 2026-10-20T06:15:08.991Z
 ---
 
 # Validation Gates
@@ -1624,17 +1626,30 @@ activation flag and canary node remain unset. Current-SHA recovery receipts,
 full-catalog publication, five-tag Harbor lock and an isolated canary remain
 live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
+
+Before `owned-cleanup` can touch the firewall, the protected stage reads both
+`placement.json` and `firewall-ownership.json` from the private
+`openclaw-enterprise/platform/receipts/<source-sha>/` prefix. Each key must
+have an untruncated listing with exactly one latest S3 version and no delete
+markers; a version-pinned metadata read must show KMS encryption, a 1-byte to
+1-MiB object, and a SHA-256 checksum matching the version-pinned download. A
+missing, duplicated, deleted, oversized, unencrypted, or mismatched receipt
+stops the stage before the `cleanup-attempt` marker or firewall helper. Inspect
+private version history and receipt contents, then obtain fresh independent
+placement and firewall ownership review under a new exact-current-`main`
+source SHA; do not rewrite ambiguous history or infer cleanup ran. These are
+source checks; cleanup stays disabled until its separate live prerequisites are
+met. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
 to `static-checks.sh`. It renders the Kustomization and checks restricted
 namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
 RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
-private server SAN, PostgreSQL TLS and retained claim shape, pre-entrypoint
-TLS snapshot and renewal probe failure, backup role, bootstrap-completion
-readiness, excluded restore Job isolation, and `activationEnabled: false`.
-The PostgreSQL 18 fixture checks TLS, role separation, backup publication,
-isolated restore, and interrupted bootstrap without establishing live recovery.
-The separate
+private server SAN, and `activationEnabled: false`. The same static gate runs a
+separate PostgreSQL fixture for role isolation, first-run readiness, the
+complete backup set, and the excluded restore drill. These tests do not bind
+the local claim or prove a live database restore. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
 fixtures exercise reconciliation and workload attestation. Config validation
