@@ -50,8 +50,12 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-d8ec08e5345adbfbeea3f592
+    resource: repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml
   - id: openwiki-source-21ece176c767ab637348d713
     resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
+  - id: openwiki-source-699113cfd35bf2732550bb50
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -108,10 +112,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
+generated: { by: "codex", at: "2026-10-20T01:07:54.935Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:02:18.363Z
+    at: 2026-10-20T01:07:54.935Z
 ---
 
 # Secrets And Identity
@@ -257,7 +261,7 @@ cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
 writer cutover has not occurred.
 
-The staged [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) reuses the projected App files to request a read-scoped installation token. Its 15-minute CronJob is suspended and has no Kubernetes API token. The inventory, report, and PR-proof Jobs are also suspended and omitted from Kustomize; none is active acceptance evidence. The App private key remains write-capable even when a Job requests only read token grants.
+The staged [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) and the inventory, report, and PR-proof Jobs mount a separate `renovate-acceptance` Secret, never the writer App key. Two dedicated SSM placeholders and a separate ExternalSecret declare this boundary, but the ExternalSecret remains outside Kustomize until a read-only App is provisioned through the protected fixed-target workflow. The App registration and Stuhlmuller installation must have only read grants, and token minting rejects either with a write grant. The 15-minute observer and one-shot Jobs remain suspended, with no Kubernetes API token; none is active acceptance evidence.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

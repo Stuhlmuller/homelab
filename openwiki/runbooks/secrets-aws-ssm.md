@@ -6,6 +6,8 @@ tags: ["runbook", "secrets", "aws"]
 sources:
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-04232f1715046d6fe18d15ff
+    resource: repo://.github/workflows/renovate-acceptance-credentials.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -16,8 +18,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-21ece176c767ab637348d713
-    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
+  - id: openwiki-source-d8ec08e5345adbfbeea3f592
+    resource: repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -34,10 +36,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
+generated: { by: "codex", at: "2026-10-20T01:07:54.935Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:02:18.363Z
+    at: 2026-10-20T01:07:54.935Z
 ---
 
 # AWS SSM Secret References
@@ -77,7 +79,7 @@ GitHub Action remains the only writer. Full App-policy parity, fault recovery,
 the old-writer workflow deletion, guarded Actions-key retirement, and cluster
 writer activation remain separate gates.
 
-The staged [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) reuses these projected App files to request `contents:read` and `metadata:read`; it adds no SSM parameter. The observer stays suspended. The separate inventory, report, and PR-proof Jobs are also suspended and omitted from Kustomize. Their private inputs and evidence paths need review before the acceptance window starts.
+The staged [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) and its inventory, report, and PR-proof Jobs use a separate read-only GitHub App key. Two new `/homelab/renovate/acceptance/github-app/` SecureString placeholders and a separate ExternalSecret declare the projection; it stays outside Kustomize until owner provisioning. The protected [acceptance credential workflow](../../.github/workflows/renovate-acceptance-credentials.yml) validates an owner-supplied App issuer and PEM, all-repositories installation, and read-only grants before writing only those slots. The owner can provision a dedicated App or expand an existing read-only Argo CD App. The observer remains suspended; private inventory and outcome receipts still need reviewed input and evidence paths before the acceptance window starts.
 
 ## OpenClaw Enterprise model key
 

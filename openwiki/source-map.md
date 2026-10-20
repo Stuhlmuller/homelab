@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
+  - id: openwiki-source-04232f1715046d6fe18d15ff
+    resource: repo://.github/workflows/renovate-acceptance-credentials.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-efd15335758af38c6e6af9ab
@@ -30,6 +32,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-d8ec08e5345adbfbeea3f592
+    resource: repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml
   - id: openwiki-source-db3b61e5caa8db8ce3f82f60
     resource: repo://clusters/homelab/apps/renovate/acceptance-inventory.js
   - id: openwiki-source-699113cfd35bf2732550bb50
@@ -76,6 +80,8 @@ sources:
     resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-10d72e533d66a241085bbede
+    resource: repo://scripts/renovate-acceptance-credentials.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -84,10 +90,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T22:55:02.087Z" }
+generated: { by: "codex", at: "2026-10-20T01:07:54.935Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:02:18.363Z
+    at: 2026-10-20T01:07:54.935Z
 ---
 
 # Source Map
@@ -160,8 +166,12 @@ Renovate acceptance source: the
 [upstream observer and aggregate report](../clusters/homelab/apps/renovate/acceptance-observer.js),
 [dry-run report producer](../clusters/homelab/apps/renovate/acceptance-report-runner.js),
 and [version-bound PR proof](../clusters/homelab/apps/renovate/acceptance-pr-proof.js).
+The separate read-only App contract is declared in the
+[staged ExternalSecret](../clusters/homelab/apps/renovate/acceptance-externalsecret.yaml)
+and [protected fixed-target intake](../.github/workflows/renovate-acceptance-credentials.yml).
 Their focused tests are wired through [static checks](../scripts/ci/static-checks.sh).
-The observer is suspended; the one-shot Jobs are omitted from Kustomize. See
+The observer is suspended; the one-shot Jobs and acceptance ExternalSecret are
+omitted from Kustomize. See
 [acceptance gates](operations/validation-gates.md#renovate-acceptance-evidence).
 
 Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),

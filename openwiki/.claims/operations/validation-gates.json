@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3b19647713bbad40db5f736a047779bb5ddfef6fc5cd9c92dc04de3dbb6d1876",
+  "pageVersion": "sha256:77eba5d084195a4e3e2828c14b2dfcc2a77bff27b075e98747e835fb90c9631b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:6f7fa76864f54ee7268deb9e1efb087a6cc59b70371c55b5a89005524beb97bc"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:6f7fa76864f54ee7268deb9e1efb087a6cc59b70371c55b5a89005524beb97bc"
         }
       ]
     },
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:724e67ba832b96a8246d79bd8a43605823cfaafa9e24c03108c2be506eecaa54"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:6f7fa76864f54ee7268deb9e1efb087a6cc59b70371c55b5a89005524beb97bc"
         }
       ]
     },
@@ -1030,7 +1030,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:6f7fa76864f54ee7268deb9e1efb087a6cc59b70371c55b5a89005524beb97bc"
         }
       ]
     },
@@ -1186,7 +1186,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml",
-          "version": "repo-file-v1:sha256:337c9c7f9020afcd5c40f11835cc4f76e6808e441609792d7e1a3cd798d54c8d"
+          "version": "repo-file-v1:sha256:009f8fc19730b8b55ae191a423f130d150b36e5743f33c0a31554ed1916484bc"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
@@ -1194,7 +1194,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:6f7fa76864f54ee7268deb9e1efb087a6cc59b70371c55b5a89005524beb97bc"
         }
       ]
     },
@@ -1204,17 +1204,39 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:724e67ba832b96a8246d79bd8a43605823cfaafa9e24c03108c2be506eecaa54"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer.js",
-          "version": "repo-file-v1:sha256:2cf53537da3c7db8885b6f41c85a7eee8a5cb85a60318026aabb32ca65344092"
+          "version": "repo-file-v1:sha256:af5bb268a7ba3069254c09ca48fcefc650c2c3a2674a0732f0a5a08218fdecc0"
+        }
+      ]
+    },
+    {
+      "id": "claim_adee97c1454c4ac3a17ecbc6641f0824",
+      "statement": "The acceptance credential-intake and observer tests reject App or installation write grants before token minting; all four acceptance Jobs reference the separate Secret and its ExternalSecret remains omitted from Kustomize, so no provisioned credential or live acceptance is established.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml",
+          "version": "repo-file-v1:sha256:972ef75794e0d2261d605758337b61de79189a4a6c24cb4afe9e78a6edb8d382"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
+          "version": "repo-file-v1:sha256:fc3a8f0133dde1f6b1c1aa29a830e3f717e1e568d541e818cf0b2aa9fd68c89d"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-acceptance-credentials-test.py",
+          "version": "repo-file-v1:sha256:9e260e8ba5fe3840661648429564be59e832aef08dbf513935905c7122df8ed4"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-acceptance-observer-test.js",
+          "version": "repo-file-v1:sha256:004f20ed955d175ff97294d4e9563480779f990a46b95e84ff638a502dfa43ce"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:02:18.363Z"
+    "at": "2026-10-20T01:07:54.935Z"
   }
 }

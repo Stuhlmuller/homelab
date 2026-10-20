@@ -454,33 +454,67 @@ test('observer requests only read-scoped GitHub App permissions', async () => {
   const originalRead = fs.readFileSync;
   const originalFetch = global.fetch;
   const calls = [];
+  let appPermissions = { contents: 'read', metadata: 'read', pull_requests: 'read' };
+  let installationPermissions = { ...appPermissions };
   fs.readFileSync = (file, ...args) => file.endsWith('/issuer-id') ? '123' :
     file.endsWith('/private-key') ? privateKey : originalRead(file, ...args);
   global.fetch = async (url, options) => {
     calls.push({ url, options });
     return {
       ok: true,
-      json: async () => url.endsWith('/installation') ?
-        { id: 42, account: { login: 'Stuhlmuller' }, repository_selection: 'all' } :
-        { token: 'ghs_readonly', expires_at: new Date(Date.now() + 3600_000).toISOString(),
-          permissions: JSON.parse(calls.at(-1).options.body).permissions },
+      json: async () => url.endsWith('/app') ? { permissions: appPermissions } :
+        url.endsWith('/installation') ?
+          { id: 42, account: { login: 'Stuhlmuller' }, repository_selection: 'all',
+            permissions: installationPermissions } :
+          { token: 'ghs_readonly', expires_at: new Date(Date.now() + 3600_000).toISOString(),
+            permissions: JSON.parse(calls.at(-1).options.body).permissions },
     };
   };
   try {
     assert.equal(await observer.readToken(), 'ghs_readonly');
     assert.equal(calls[0].options.method, 'GET');
-    assert.equal(calls[1].options.method, 'POST');
-    assert.equal(calls[1].url.endsWith('/access_tokens'), true);
-    assert.deepEqual(JSON.parse(calls[1].options.body).permissions,
+    assert.equal(calls[0].url.endsWith('/app'), true);
+    assert.equal(calls[1].options.method, 'GET');
+    assert.equal(calls[2].options.method, 'POST');
+    assert.equal(calls[2].url.endsWith('/access_tokens'), true);
+    assert.deepEqual(JSON.parse(calls[2].options.body).permissions,
       { contents: 'read', metadata: 'read' });
     const expanded = { contents: 'read', metadata: 'read', pull_requests: 'read' };
     assert.equal(await observer.readToken(expanded), 'ghs_readonly');
-    assert.deepEqual(JSON.parse(calls[3].options.body).permissions, expanded);
+    assert.deepEqual(JSON.parse(calls[5].options.body).permissions, expanded);
     await assert.rejects(observer.readToken({ contents: 'write' }), /read-token-permissions/);
+    appPermissions = { ...appPermissions, checks: 'write' };
+    const beforeAppReject = calls.length;
+    await assert.rejects(observer.readToken(), /app-not-readonly/);
+    assert.equal(calls.length, beforeAppReject + 1);
+    appPermissions = { contents: 'read', metadata: 'read' };
+    installationPermissions = { ...appPermissions, workflows: 'write' };
+    const beforeInstallationReject = calls.length;
+    await assert.rejects(observer.readToken(), /installation-not-readonly/);
+    assert.equal(calls.length, beforeInstallationReject + 2);
   } finally {
     fs.readFileSync = originalRead;
     global.fetch = originalFetch;
   }
+});
+
+test('acceptance Jobs mount only the staged read-only App Secret', () => {
+  const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
+  const acceptance = ['acceptance-observer-cronjob.yaml', 'acceptance-inventory-job.yaml',
+    'acceptance-report-job.yaml', 'acceptance-pr-proof-job.yaml'];
+  for (const name of acceptance) {
+    const manifest = fs.readFileSync(path.join(root, name), 'utf8');
+    assert.match(manifest, /secretName: renovate-acceptance/);
+    assert.doesNotMatch(manifest, /secretName: renovate\s*$/m);
+  }
+  const writer = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
+  const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
+  const externalSecret = fs.readFileSync(path.join(root, 'acceptance-externalsecret.yaml'), 'utf8');
+  assert.match(writer, /secretName: renovate\s*$/m);
+  assert.doesNotMatch(kustomization, /- acceptance-externalsecret\.yaml/);
+  assert.match(externalSecret, /name: renovate-acceptance/);
+  assert.match(externalSecret, /\/homelab\/renovate\/acceptance\/github-app\/issuer-id/);
+  assert.match(externalSecret, /\/homelab\/renovate\/acceptance\/github-app\/private-key/);
 });
 
 test('pinned Renovate image package path resolves without its shell wrapper', () => {

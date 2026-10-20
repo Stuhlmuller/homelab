@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a8aa76bf2d8caddec0016ddd4d25a1d3171fdfe9b6729de95df47b98f6a8c1ca",
+  "pageVersion": "sha256:efa77acac9a07c68ec0e141db806c7fd227d7a3cb4dd84694dff50e8c9159185",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -296,7 +296,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:724e67ba832b96a8246d79bd8a43605823cfaafa9e24c03108c2be506eecaa54"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -520,11 +520,15 @@
     },
     {
       "id": "claim_8e589752dc34420d814aa2299237328a",
-      "statement": "Renovate acceptance source stages a suspended 15-minute observer and separate 2 Gi private ledger, while inventory, report, and PR-proof Jobs remain suspended and omitted from Kustomize; seven-day acceptance evidence remains pending.",
+      "statement": "Renovate acceptance source stages a suspended 15-minute observer, a separate unprovisioned read-only App Secret, and a private 2 Gi ledger; inventory, report, and PR-proof Jobs and the acceptance ExternalSecret stay omitted from Kustomize while seven-day evidence remains pending.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:724e67ba832b96a8246d79bd8a43605823cfaafa9e24c03108c2be506eecaa54"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-externalsecret.yaml",
+          "version": "repo-file-v1:sha256:972ef75794e0d2261d605758337b61de79189a4a6c24cb4afe9e78a6edb8d382"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml",
@@ -532,7 +536,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml",
-          "version": "repo-file-v1:sha256:337c9c7f9020afcd5c40f11835cc4f76e6808e441609792d7e1a3cd798d54c8d"
+          "version": "repo-file-v1:sha256:009f8fc19730b8b55ae191a423f130d150b36e5743f33c0a31554ed1916484bc"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
@@ -543,6 +547,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:02:18.363Z"
+    "at": "2026-10-20T01:07:54.935Z"
   }
 }
