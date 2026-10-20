@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|qualify|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|canary-admit|canary-release|qualify|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -16,7 +16,9 @@ esac
 
 config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
-if [[ "$stage" != inspect ]]; then
+if [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
+  jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
+elif [[ "$stage" != inspect ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
 
@@ -116,6 +118,32 @@ case "$stage" in
     python3 -I scripts/platform-maintenance.py inspect --config "$config" \
       --talosconfig "$work/talosconfig" --output "$work/inspect.json"
     retain_result "$work/inspect.json" inspect
+    ;;
+  canary-admit|canary-release)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
+    bash scripts/ci/install-kubeconfig.sh
+    install -m 0700 -d "$work/receipts"
+    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
+      "$work/receipts/placement.json"
+    if [[ "$stage" == canary-release ]]; then
+      [[ "${CLEANUP_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
+      load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${CLEANUP_RUN_ID}/cleanup.json" \
+        "$work/receipts/cleanup.json"
+    fi
+    jq -n --arg stage "$stage" --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      '{format: 1, stage: $stage, status: "attempted", verified: false,
+        sourceSha: $sourceSha, runId: $runId}' >"$work/canary-attempt.json"
+    chmod 600 "$work/canary-attempt.json"
+    retain_result "$work/canary-attempt.json" "${stage}-attempt"
+    if ! python3 -I scripts/network-policy-canary-node.py "${stage#canary-}" \
+      --config "$config" --expected-sha "$GITHUB_SHA" \
+      --receipt-dir "$work/receipts" --output "$work/canary.json"; then
+      if [[ -f "$work/canary.json" && ! -L "$work/canary.json" ]]; then
+        retain_result "$work/canary.json" "${stage}-interrupted"
+      fi
+      exit 1
+    fi
+    retain_result "$work/canary.json" "$stage"
     ;;
   qualify)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1

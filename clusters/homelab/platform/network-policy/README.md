@@ -18,6 +18,30 @@ exact CoreDNS TCP/UDP 53 grant. Registration
 alone creates no namespace, Pods, or policy. The `homelab` AppProject admits
 the fixture namespace as an explicit destination.
 
+The protected `canary-admit` stage changes only the reviewed Node's dedicated
+`NoSchedule` taint, then its selector label. It remains blocked while
+`scripts/config/platform-maintenance.json` has `canary.node: null`. A later
+reviewed placement must name one worker and place a single KMS-encrypted,
+versioned `placement.json` under
+`openclaw-enterprise/platform/receipts/<current-main-sha>/`. The receipt must
+have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
+`canaryNode`, `nodeUid`, `bootID`, a timestamp younger than six hours,
+`measured: true`, the configured `isolatedTaint`, and
+`firewallBaselineEmpty: true` from an independently reviewed pre-enable
+snapshot. It must also list every permitted system DaemonSet Pod under
+`systemDaemonSetPods` as exact `{namespace, name, uid}` identities; an empty
+list is valid only when the node has no assigned Pods. Only `kube-system`
+(including Flannel and Multus) and `istio-system` (only the `ztunnel`
+DaemonSet) are eligible. The guard checks namespace, DaemonSet controller
+ownership, and exact reviewed Pod UID; it cannot identify arbitrary
+`kube-system` applications, so review each listed identity. The stage rejects
+existing enforcer/cleanup DaemonSets and fixture namespace, adds the dedicated
+taint, then checks the live assigned Pod list before adding the selector label.
+It checks the Pod list again after labeling. Each Node patch tests
+`resourceVersion` and UID and touches only the owned taint or label. A
+taint-only interrupted attempt can retry with a fresh matching placement
+receipt; a labeled Node needs direct review before another admission attempt.
+
 After a tainted node passes capacity admission and the fixture image is mirrored,
 merge a reviewed change that lists `fixtures.yaml` in `canary/kustomization.yaml`
 and sets `IaC/platform-network-policy-canary/stack.hcl` automated
@@ -69,3 +93,12 @@ identity and that exact snapshot before deleting
 the pinned controller's filter chains and ipsets. It refuses unknown prefixes,
 foreign references, snapshot drift, and active tenants; never run
 kube-router's all-controller cleanup against this Flannel/kube-proxy cluster.
+After the `owned-cleanup` receipt is verified and the fixture namespace is
+absent, dispatch protected `canary-release` on the same current `main` SHA with
+`cleanup_run_id` set to the verified cleanup run. Keep the cleanup DaemonSet
+present until release: the stage rechecks that its node-local firewall has no
+owned objects, then removes the selector label before the dedicated taint.
+It checks Node UID, boot ID, and `resourceVersion` before each patch and retains
+private attempt, interrupted, and final receipts. A newer `main` requires a
+fresh source-bound placement and cleanup receipt; no stage infers clearance
+from a missing DaemonSet.

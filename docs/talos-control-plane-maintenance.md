@@ -415,7 +415,14 @@ alongside the client-based Talos tunnel. `qualify` invokes only the first
 canary traffic probe; no repository-owned GitOps path applies and removes its
 fixture yet. T019/T027 qualification stays blocked until that path and an
 admitted canary exist. Any probe receipt leaves lifecycle qualification
-unresolved. `owned-cleanup`
+unresolved.
+The dormant `canary-admit` stage requires a fresh, reviewed placement and empty
+pre-enable firewall baseline receipt. Its guarded Node JSON Patches add the
+dedicated taint before the selector label. After verified `owned-cleanup`,
+`canary-release` requires that run's receipt, empty fixture namespace, absent
+enforcer, and empty owned firewall before removing the label and then taint.
+Both stages retain private attempt and completion receipts and stay blocked
+while `canary.node` is null. `owned-cleanup`
 requires a verified, source-bound `placement.json` with an empty pre-enable
 firewall baseline and a separate `firewall-ownership.json` binding a reviewed
 full IPv4/IPv6/ipset snapshot hash to the same node UID and boot ID. Both stay

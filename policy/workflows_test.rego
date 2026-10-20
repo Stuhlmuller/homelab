@@ -80,7 +80,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9",
+		"ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -94,7 +94,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 platform_maintenance_fixture := {
 	"name": "Platform Maintenance",
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
-	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}}}},
+	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}, "cleanup_run_id": {"required": false, "type": "string"}}}},
 	"jobs": {
 		"static-policy": {"permissions": {"contents": "read"}},
 		"maintenance": {
@@ -111,6 +111,7 @@ platform_maintenance_fixture := {
 				{"name": "Configure AWS Credentials"},
 				{"name": "Run Reviewed Platform Stage", "env": {
 					"RUN_STAGE": "${{ inputs.stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+					"CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}",
 					"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
 					"OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}",
 					"OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}",
