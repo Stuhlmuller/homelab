@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c59ab635c6017f5e697d722ab38c36c06341e0ef5891013e028b27189b392044",
+  "pageVersion": "sha256:a0aa38480b1bb150bf154af7b9c3090fb9dcb063d84ff0dcb5458754525a1e2d",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -256,7 +256,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:6832e2d2c4c737e030671566849d0be5c0d6002dfe409cb3ca835d7f8a0a6fb0"
+          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -264,7 +264,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
+          "version": "repo-file-v1:sha256:8aad14f94f1dcbb5f0ab5a27bb743a45cf87f618be59eb4d851a4a6e64dbecbd"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -293,6 +293,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T21:15:11.040Z"
+    "at": "2026-10-20T21:33:04.461Z"
   }
 }

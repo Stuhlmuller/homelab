@@ -52,10 +52,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T21:33:04.461Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:15:11.040Z
+    at: 2026-10-20T21:33:04.461Z
 ---
 
 # Runtime Isolation
@@ -161,7 +161,12 @@ cleanup Pods, and fixture traffic are absent, then adds the dedicated
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
 the taint. After a qualifying traffic probe, exact reviewed GitOps commits
-prune the fixtures and then the enforcer. Apply the fixture prune and verify
+prune the fixtures and then the enforcer. Unrelated commits may land before,
+between, or after these two dedicated commits. The protected stage walks full
+first-parent history from the qualify SHA and rejects intervening policy
+source changes. The static gate accepts only five exact policy/canary source
+phases; private receipts and live checks still gate protected operations.
+Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent
 before ownership capture. The owner reviews the private full firewall snapshot
 and freshly approves its digest before `owned-cleanup` can delete those
@@ -176,7 +181,7 @@ Inventory checks and firewall deletion are not atomic: a taint-tolerating Pod
 could arrive during deletion. Live activation remains blocked until isolated
 placement rules that out or a reviewed repository-owned isolation path exists.
 `canary-release` verifies the cleanup, ownership and original placement
-receipts, the exact two-commit transition to current `main`, absent fixture
+receipts, the exact two dedicated commits in current `main` history, absent fixture
 namespace and workloads, and an empty owned firewall. It removes the label
 first and waits for cleanup DaemonSet Pods to disappear cluster-wide, then
 rechecks the node Pod inventory before removing the taint. A survivor or

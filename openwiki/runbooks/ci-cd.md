@@ -90,10 +90,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T21:15:11.040Z" }
+generated: { by: "codex", at: "2026-10-20T21:33:04.461Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T21:15:11.040Z
+    at: 2026-10-20T21:33:04.461Z
 ---
 
 # CI/CD
@@ -228,7 +228,8 @@ adds the dedicated isolation taint before the selector label. It checks the
 cluster-wide label selector before mutation, immediately before labeling, and
 after the patch. A preflight conflict blocks mutation; a later conflict
 retains the taint and removes this Node's label. After the exact qualify →
-fixture-prune → firewall-prune commits, `ownership-capture` requires the live
+fixture-prune → firewall-prune commits, with unrelated merges allowed only when
+protected policy source stays invariant, `ownership-capture` requires the live
 fixture namespace and all fixture workloads to be absent and stores a
 versioned private snapshot. `ownership-approve` requires the owner actor and
 an exact reviewed digest before it writes an immutable capture-run-specific
