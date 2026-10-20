@@ -33,6 +33,7 @@ python3 -I scripts/ci/platform-maintenance-credentials-test.py
 python3 -I scripts/ci/network-policy-canary-node-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/network-policy-qualification-test.py
+python3 -I scripts/ci/network-policy-ownership-test.py
 python3 -I scripts/ci/network-policy-cleanup-test.py
 python3 -I scripts/ci/envoy-gateway-prerequisite-test.py
 

@@ -6,6 +6,7 @@ import copy
 import json
 import os
 import runpy
+import subprocess
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -15,14 +16,15 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 SUT = runpy.run_path(str(ROOT / "scripts/network-policy-canary-node.py"))
 SHA = "a" * 40
+EVIDENCE_SHA = "b" * 40
 CANARY = SUT["CANARY"]
 TAINT = SUT["TAINT"]
 CONFIG = {"canary": {"node": "zimaboard-1",
                      "taint": f"{CANARY}=true:NoSchedule"}}
 
 
-def placement():
-    return {"format": 1, "verified": True, "sourceSha": SHA,
+def placement(source_sha=SHA):
+    return {"format": 1, "verified": True, "sourceSha": source_sha,
             "node": "zimaboard-1", "canaryNode": "zimaboard-1", "nodeUid": "uid",
             "bootID": "boot", "measured": True, "isolatedTaint": CONFIG["canary"]["taint"],
             "firewallBaselineEmpty": True,
@@ -34,8 +36,16 @@ def placement():
 def cleanup():
     return {"format": 1, "stage": "owned-firewall-cleanup", "status": "verified",
             "verified": True, "sourceSha": SHA, "node": "zimaboard-1",
-            "nodeUid": "uid", "bootID": "boot", "afterSha256": "b" * 64,
+            "nodeUid": "uid", "bootID": "boot", "captureRunId": "456",
+            "beforeSha256": "c" * 64, "afterSha256": "b" * 64,
             "completedAt": "2026-10-19T00:00:00Z"}
+
+
+def ownership():
+    return {"format": 1, "verified": True, "sourceSha": SHA,
+            "evidenceSourceSha": EVIDENCE_SHA, "captureRunId": "456",
+            "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
+            "snapshotSha256": "c" * 64, "reviewedAt": "2026-10-19T00:00:00Z"}
 
 
 def node(admitted=False):
@@ -110,8 +120,123 @@ class CanaryNodeTests(unittest.TestCase):
                 receipt = placement() | change
                 with self.assertRaises(ValueError):
                     SUT["validate_placement"](receipt, CONFIG, SHA, True)
-        with self.assertRaisesRegex(ValueError, "cleanup receipt"):
-            SUT["validate_cleanup"](cleanup() | {"verified": False}, placement(), SHA)
+        with patch.dict(SUT["CLEANUP"], {
+                "require_firewall_removal_transition": lambda *_: None}):
+            with self.assertRaisesRegex(ValueError, "cleanup receipt"):
+                SUT["validate_cleanup"](cleanup() | {"verified": False}, ownership(),
+                                        placement(EVIDENCE_SHA), CONFIG, SHA)
+            for changed in ({"captureRunId": "789"}, {"beforeSha256": "d" * 64}):
+                with self.subTest(changed=changed), self.assertRaisesRegex(
+                        ValueError, "cleanup receipt"):
+                    SUT["validate_cleanup"](cleanup() | changed, ownership(),
+                                            placement(EVIDENCE_SHA), CONFIG, SHA)
+            for changed in ({"verified": False}, {"sourceSha": "d" * 40},
+                            {"nodeUid": "replaced"}, {"snapshotSha256": "d" * 64}):
+                with self.subTest(changed=changed), self.assertRaises(ValueError):
+                    SUT["validate_cleanup"](cleanup(), ownership() | changed,
+                                            placement(EVIDENCE_SHA), CONFIG, SHA)
+
+    def test_release_refuses_stale_main_before_private_receipt_or_cluster_access(self):
+        with patch.dict(SUT["PLATFORM"], {
+                "validate_config": lambda _: CONFIG,
+                "protected_context": lambda _: None,
+                "private_directory": lambda _: self.fail("receipt read before main check")}), \
+                patch.dict(SUT["execute"].__globals__, {
+                    "require_current_main": lambda _: (_ for _ in ()).throw(
+                        ValueError("source is not exact current main"))}):
+            with self.assertRaisesRegex(ValueError, "exact current main"):
+                SUT["execute"](argparse.Namespace(
+                    action="release", config=ROOT / "scripts/config/platform-maintenance.json",
+                    expected_sha=SHA, receipt_dir=Path("/unused"), output=Path("/unused")))
+
+    def test_release_accepts_only_exact_qualify_fixture_firewall_chain(self):
+        manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
+        application = "IaC/platform-network-policy/stack.hcl"
+        canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
+        canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in (manifest, application, canary_manifest, canary_application):
+                target = root / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes((ROOT / name).read_bytes())
+
+            def git(*args):
+                return subprocess.run(["git", *args], cwd=root, check=True,
+                                      capture_output=True, text=True).stdout.strip()
+
+            def commit(message):
+                git("add", "-A")
+                git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", message)
+                return git("rev-parse", "HEAD")
+
+            git("init", "-q")
+            (root / canary_manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources:\n  - fixtures.yaml\n")
+            source = (root / canary_application).read_text()
+            (root / canary_application).write_text(source.replace(
+                "        enabled = false\n        prune   = false\n",
+                "        enabled = true\n        prune   = true\n"))
+            qualify_sha = commit("qualified canary")
+            (root / canary_manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources: []\n")
+            source = (root / canary_application).read_text()
+            (root / canary_application).write_text(source.replace(
+                "        enabled = true\n        prune   = true\n",
+                "        enabled    = true\n        prune      = true\n"
+                "        allowEmpty = true\n"))
+            commit("pruned fixtures")
+            (root / manifest).write_text(
+                "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                "resources: []\n")
+            source = (root / application).read_text()
+            (root / application).write_text(source.replace(
+                "        enabled = false\n        prune   = false\n",
+                "        enabled    = true\n        prune      = true\n"
+                "        allowEmpty = true\n"))
+            removal_sha = commit("pruned firewall")
+            evidence = placement(qualify_sha)
+            verified_ownership = ownership() | {"sourceSha": removal_sha,
+                                                "evidenceSourceSha": qualify_sha}
+            verified_cleanup = cleanup() | {"sourceSha": removal_sha}
+            transition = SUT["CLEANUP"]["require_firewall_removal_transition"]
+            with patch.dict(transition.__globals__, {"ROOT": root}):
+                SUT["validate_cleanup"](verified_cleanup, verified_ownership,
+                                        evidence, CONFIG, removal_sha)
+                git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                    "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-qm", "unrelated")
+                stale_sha = git("rev-parse", "HEAD")
+                with self.assertRaisesRegex(ValueError, "two direct commits"):
+                    SUT["validate_cleanup"](verified_cleanup | {"sourceSha": stale_sha},
+                                            verified_ownership | {"sourceSha": stale_sha},
+                                            evidence, CONFIG, stale_sha)
+                git("reset", "--hard", qualify_sha)
+                (root / canary_manifest).write_text(
+                    "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                    "resources: []\n")
+                source = (root / canary_application).read_text()
+                (root / canary_application).write_text(source.replace(
+                    "        enabled = true\n        prune   = true\n",
+                    "        enabled    = true\n        prune      = true\n"
+                    "        allowEmpty = true\n"))
+                (root / "unrelated.txt").write_text("source drift\n")
+                commit("fixture prune with source drift")
+                (root / manifest).write_text(
+                    "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                    "resources: []\n")
+                source = (root / application).read_text()
+                (root / application).write_text(source.replace(
+                    "        enabled = false\n        prune   = false\n",
+                    "        enabled    = true\n        prune      = true\n"
+                    "        allowEmpty = true\n"))
+                drift_sha = commit("firewall prune after source drift")
+                with self.assertRaisesRegex(ValueError, "fixture removal differs"):
+                    SUT["validate_cleanup"](verified_cleanup | {"sourceSha": drift_sha},
+                                            verified_ownership | {"sourceSha": drift_sha},
+                                            evidence, CONFIG, drift_sha)
 
     def test_replaced_or_unready_node_is_rejected(self):
         for field, value in (("uid", "replacement"), ("bootID", "replacement"),
@@ -226,9 +351,12 @@ class CanaryNodeTests(unittest.TestCase):
                     "protected_context": lambda _: None,
                     "private_directory": lambda path: path,
                     "private_output": lambda path: path,
-                    "read_private_json": lambda path: placement() if path.name ==
-                    "placement.json" else cleanup()}), patch.dict(SUT["CLEANUP"], {
+                    "read_private_json": lambda path: (placement(EVIDENCE_SHA if action ==
+                    "release" else SHA) if path.name == "placement.json" else
+                    ownership() if path.name == "firewall-ownership.json" else cleanup())}), \
+                    patch.dict(SUT["CLEANUP"], {
                     "kubernetes_json": kube_json, "command": command,
+                    "require_firewall_removal_transition": lambda *_: None,
                     "inspect_cluster": lambda *_: ("cleanup-pod", "pod-uid"),
                     "snapshot": lambda *_: {"backend": "nft"},
                     "cleanup_plan": lambda *_: ([("iptables-nft", "-D", "owned")] if

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9ed348f512edbe028ea1550c340d39881333181e6dba53823005c92718d75bda",
+  "pageVersion": "sha256:a3fbca9d6e024b1ee7867013f9098b0837a3f4cd7261d545289c4c05aef6b908",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -84,11 +84,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:6c73c07da5f0ee5ddab32b25ccbe4a1b9ccebb3c69f4f655a23f9fa1a201c36a"
+          "version": "repo-file-v1:sha256:2e8571c0f26772bc4cc3ce050813342c87933bd8e64c147d328a20cff2a031bf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         }
       ]
     },
@@ -190,17 +190,17 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:6c73c07da5f0ee5ddab32b25ccbe4a1b9ccebb3c69f4f655a23f9fa1a201c36a"
+          "version": "repo-file-v1:sha256:2e8571c0f26772bc4cc3ce050813342c87933bd8e64c147d328a20cff2a031bf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:16:14.853Z"
+    "at": "2026-10-20T14:46:55.569Z"
   }
 }

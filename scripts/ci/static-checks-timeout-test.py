@@ -43,6 +43,7 @@ class Timeout(unittest.TestCase):
                          "network-policy-canary-node-test.py",
                          "network-policy-enforcement-test.py",
                          "network-policy-qualification-test.py",
+                         "network-policy-ownership-test.py",
                          "network-policy-cleanup-test.py",
                          "envoy-gateway-prerequisite-test.py",
                          "envoy-gateway-registration-test.py",

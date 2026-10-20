@@ -411,10 +411,10 @@ Octelium policy disables this access without changing the owner route.
 `platform-maintenance.yml` accepts only fixed stage names and the exact
 current `main` SHA and rechecks it immediately before AWS credentials. Inspect
 uses the separate clientless Kubernetes token and kubeconfig for its API reads
-alongside the client-based Talos tunnel. `qualify` invokes only the first
-canary traffic probe; no repository-owned GitOps path applies and removes its
-fixture yet. T019/T027 qualification stays blocked until that path and an
-admitted canary exist. Any probe receipt leaves lifecycle qualification
+alongside the client-based Talos tunnel. The canary fixtures are applied and
+removed through the reviewed Argo CD path; `qualify` only runs the first
+traffic probe. T019/T027 qualification still needs an admitted isolated canary
+and live lifecycle proof. Any probe receipt leaves lifecycle qualification
 unresolved.
 The dormant `canary-admit` stage requires a fresh, reviewed placement and empty
 pre-enable firewall baseline receipt. Its guarded Node JSON Patches add the
@@ -424,23 +424,41 @@ After verified `owned-cleanup`,
 `canary-release` requires that run's receipt, empty fixture namespace, absent
 enforcer, and empty owned firewall before removing the label, waiting for all
 cleanup DaemonSet Pods to be deleted, and removing the taint. A stalled deletion
-leaves the node tainted for direct recovery review.
+leaves the node tainted for direct recovery review. Release follows the
+cleanup receipt to its immutable ownership receipt and original placement at
+the qualify SHA, and verifies the exact qualify, fixture-prune, firewall-prune
+commit chain against current `main` before touching the Node.
 Both stages retain private attempt and completion receipts and stay blocked
-while `canary.node` is null. `owned-cleanup`
-requires a verified, source-bound `placement.json` with an empty pre-enable
-firewall baseline and a separate `firewall-ownership.json` binding a reviewed
-full IPv4/IPv6/ipset snapshot hash to the same node UID and boot ID. Both stay
-in the KMS-encrypted, versioned application-backup bucket under
-`openclaw-enterprise/platform/receipts/<source-sha>/`. The separately reviewed
+while `canary.node` is null. `owned-cleanup` reads the original verified
+`placement.json` under `receipts/<evidence-sha>/` and the immutable approved
+`firewall-ownership/<capture-run-id>.json` under `receipts/<source-sha>/`.
+The placement proves an empty pre-enable firewall baseline; the ownership
+receipt binds a reviewed full IPv4/IPv6/ipset snapshot hash to the same node
+UID and boot ID. Both stay in the KMS-encrypted, versioned application-backup
+bucket under `openclaw-enterprise/platform/`. The separately reviewed
 cleanup DaemonSet must be synced through Argo; the enforcer DaemonSet must be
 absent and Enterprise tenants quiesced. A changed snapshot refuses deletion,
 including foreign rules or ipsets added after review. An interrupted cleanup
 receipt is uploaded privately and requires a fresh ownership review before
 retry. The stage retains a versioned `cleanup-attempt.json` before invoking
 the firewall helper, so an unavailable final receipt still leaves a private
-attempt marker. No repository-owned process attests the ownership receipt yet;
-keep cleanup disabled until that review path exists. Do not infer completion
-from a partially deleted chain set.
+attempt marker. `ownership-capture` now retains the full private firewall
+snapshot after a successful traffic probe on the qualify main SHA, followed by
+exact fixture-prune and enforcer-prune commits, with the enforcer gone and the
+cleanup Pod Ready. Pre-enable placement and probe receipts stay bound to the
+qualify SHA. Keep the empty canary Application automated until owned cleanup
+and release checks complete.
+The repository owner checks that versioned capture
+outside public logs, then freshly dispatches `ownership-approve` with its run
+ID and exact snapshot SHA-256. The protected job rechecks placement,
+qualification, live identity,
+the full firewall snapshot, owner actor ID `57728706`, first run attempt, and
+current `main` before writing an immutable receipt keyed by capture run ID.
+`owned-cleanup` requires that exact ID; partial deletion requires a fresh
+capture and approval of the remaining snapshot before retry. This attests
+ownership, not the still-pending canary
+lifecycle scenarios. Do not infer completion from a partially deleted chain
+set.
 The protected upgrade branch now connects through the same authenticated Talos
 tunnel, strictly validates both private role configs with the committed
 image-only patches, and invokes the ordered Talos or Kubernetes upgrade API.

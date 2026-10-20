@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|canary-admit|canary-release|qualify|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -123,12 +123,21 @@ case "$stage" in
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
     bash scripts/ci/install-kubeconfig.sh
     install -m 0700 -d "$work/receipts"
-    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
-      "$work/receipts/placement.json"
     if [[ "$stage" == canary-release ]]; then
-      [[ "${CLEANUP_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
+      [[ "${CLEANUP_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
       load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${CLEANUP_RUN_ID}/cleanup.json" \
         "$work/receipts/cleanup.json"
+      capture_run_id="$(jq -er '.captureRunId | select(type == "string" and test("^[1-9][0-9]*$"))' \
+        "$work/receipts/cleanup.json")"
+      load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership/${capture_run_id}.json" \
+        "$work/receipts/firewall-ownership.json"
+      evidence_source_sha="$(jq -er '.evidenceSourceSha | select(type == "string" and test("^[0-9a-f]{40}$"))' \
+        "$work/receipts/firewall-ownership.json")"
+      load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json" \
+        "$work/receipts/placement.json"
+    else
+      load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
+        "$work/receipts/placement.json"
     fi
     jq -n --arg stage "$stage" --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
       '{format: 1, stage: $stage, status: "attempted", verified: false,
@@ -151,23 +160,43 @@ case "$stage" in
     python3 scripts/network-policy-qualification.py --config "$config" --output "$work/qualification.json"
     retain_result "$work/qualification.json" qualification
     ;;
+  ownership-capture|ownership-approve)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
+    bash scripts/ci/install-kubeconfig.sh
+    if [[ "$stage" == ownership-capture ]]; then
+      python3 -I scripts/network-policy-ownership.py capture --config "$config" \
+        --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+        --evidence-source-sha "${EVIDENCE_SOURCE_SHA:-}" \
+        --qualification-run-id "${QUALIFICATION_RUN_ID:-}"
+    else
+      python3 -I scripts/network-policy-ownership.py approve --config "$config" \
+        --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+        --capture-run-id "${CAPTURE_RUN_ID:-}" \
+        --reviewed-snapshot-sha256 "${REVIEWED_SNAPSHOT_SHA256:-}"
+    fi
+    ;;
   owned-cleanup)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
     bash scripts/ci/install-kubeconfig.sh
     install -m 0700 -d "$work/receipts"
-    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
-      "$work/receipts/placement.json"
-    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership.json" \
+    [[ "${CAPTURE_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 1
+    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership/${CAPTURE_RUN_ID}.json" \
       "$work/receipts/firewall-ownership.json"
+    evidence_source_sha="$(jq -er '.evidenceSourceSha | select(type == "string" and test("^[0-9a-f]{40}$"))' \
+      "$work/receipts/firewall-ownership.json")"
+    load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json" \
+      "$work/receipts/placement.json"
     # A versioned private attempt must exist before any firewall operation.
     # If the final upload fails, this marker still requires direct review.
     jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      --arg captureRunId "$CAPTURE_RUN_ID" \
       '{format: 1, stage: "owned-firewall-cleanup", status: "attempted", verified: false,
-        sourceSha: $sourceSha, runId: $runId}' >"$work/cleanup-attempt.json"
+        sourceSha: $sourceSha, runId: $runId, captureRunId: $captureRunId}' >"$work/cleanup-attempt.json"
     chmod 600 "$work/cleanup-attempt.json"
     retain_result "$work/cleanup-attempt.json" cleanup-attempt
     if ! python3 scripts/network-policy-cleanup.py --config "$config" \
-      --expected-sha "$GITHUB_SHA" --receipt-dir "$work/receipts" \
+      --expected-sha "$GITHUB_SHA" --capture-run-id "$CAPTURE_RUN_ID" \
+      --receipt-dir "$work/receipts" \
       --output "$work/cleanup.json"; then
       if [[ -f "$work/cleanup.json" && ! -L "$work/cleanup.json" ]]; then
         retain_result "$work/cleanup.json" cleanup-interrupted

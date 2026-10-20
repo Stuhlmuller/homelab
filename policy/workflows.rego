@@ -229,7 +229,7 @@ deny contains msg if {
 
 approved_platform_maintenance if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	static := input.jobs["static-policy"]
@@ -243,16 +243,20 @@ approved_platform_maintenance if {
 	count(job.steps) == 6
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
 	verify := job.steps[0]
-	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
-	trim(verify.run, "\n") == platform_maintenance_main_check
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == platform_maintenance_owner_main_check
 	recheck := job.steps[3]
-	recheck.env == verify.env
+	recheck.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(recheck.run, "\n") == platform_maintenance_main_check
 	some run in job.steps
 	run.name == "Run Reviewed Platform Stage"
 	run.env.RUN_STAGE == "${{ inputs.stage }}"
 	run.env.CLEANUP_RUN_ID == "${{ inputs.cleanup_run_id }}"
 	run.env.EXPECTED_SHA == "${{ inputs.expected_sha }}"
+	run.env.QUALIFICATION_RUN_ID == "${{ inputs.qualification_run_id }}"
+	run.env.EVIDENCE_SOURCE_SHA == "${{ inputs.evidence_source_sha }}"
+	run.env.CAPTURE_RUN_ID == "${{ inputs.capture_run_id }}"
+	run.env.REVIEWED_SNAPSHOT_SHA256 == "${{ inputs.reviewed_snapshot_sha256 }}"
 	run.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	run.env.OCE_OCTELIUM_CLIENT_AUTH_TOKEN == "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}"
 	run.env.OCE_TALOSCONFIG_B64 == "${{ secrets.OCE_TALOSCONFIG_B64 }}"
@@ -264,6 +268,15 @@ test "$ACTUAL_REF" = refs/heads/main
 test "$ACTUAL_SHA" = "$EXPECTED_SHA"
 test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
 
+platform_maintenance_owner_main_check := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+if [ "$RUN_STAGE" = ownership-approve ]; then
+  test "$GITHUB_ACTOR_ID" = 57728706
+  test "$GITHUB_RUN_ATTEMPT" = 1
+fi
+test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
 platform_maintenance_private_run := `set -euo pipefail
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
@@ -271,7 +284,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then

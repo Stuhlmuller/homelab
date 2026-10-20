@@ -76,11 +76,25 @@ test_rejects_missing_or_stale_main_recheck if {
 	}
 }
 
+test_rejects_missing_owner_attestation if {
+	steps := platform_maintenance_fixture.jobs.maintenance.steps
+	changed := object.union(steps[0], {"run": replace(
+		platform_maintenance_owner_main_check,
+		`test "$GITHUB_ACTOR_ID" = 57728706`, "true",
+	)})
+	candidate_steps := [changed, steps[1], steps[2], steps[3], steps[4], steps[5]]
+	candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
+	candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform maintenance requires exact protected stages")
+}
+
 test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2",
+		"6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -94,7 +108,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 platform_maintenance_fixture := {
 	"name": "Platform Maintenance",
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
-	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}, "cleanup_run_id": {"required": false, "type": "string"}}}},
+	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}, "cleanup_run_id": {"required": false, "type": "string"}}}},
 	"jobs": {
 		"static-policy": {"permissions": {"contents": "read"}},
 		"maintenance": {
@@ -104,7 +118,7 @@ platform_maintenance_fixture := {
 			"permissions": {"contents": "read", "id-token": "write"},
 			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
 			"steps": [
-				{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+				{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_owner_main_check_env, "run": platform_maintenance_owner_main_check},
 				{"name": "Check Out Repository"},
 				{"name": "Install Nix"},
 				{"name": "Recheck Current Main Commit Before AWS Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
@@ -112,6 +126,10 @@ platform_maintenance_fixture := {
 				{"name": "Run Reviewed Platform Stage", "env": {
 					"RUN_STAGE": "${{ inputs.stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}",
 					"CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}",
+					"QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}",
+						"EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}",
+					"CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}",
+					"REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}",
 					"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
 					"OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}",
 					"OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}",
@@ -122,6 +140,7 @@ platform_maintenance_fixture := {
 }
 
 platform_maintenance_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+platform_maintenance_owner_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 
 test_allows_exact_openclaw_legacy_operation if {
 	candidate := workflow_with_openclaw_legacy_operation(

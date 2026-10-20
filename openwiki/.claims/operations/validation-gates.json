@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5735437886f16992b724e0770e8a50d4c5bdb4f3351bf834917404e61e4b0f4d",
+  "pageVersion": "sha256:859f4a51f8946dc7028060aac86ef4728032607b81ab936abeabadb251d223f5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:2d2404ad64e38e672d3bd7f59d81860d4c3748301b020790c525f7b844cb22f8"
+          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
         }
       ]
     },
@@ -560,7 +560,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:1d4a4d7c21a7f57646b3f9befa210d11baedc2c2f19456e103f6a60dcec1de3b"
+          "version": "repo-file-v1:sha256:c13bfe73f968ce5180d2e953dd298b94757f4d985e97854176a6be63d75dd253"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py#L136-L252",
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:e65f4ba06537a040acaad4fa091ea69021cb621ab3770eae487530f3bc2bae2a"
+          "version": "repo-file-v1:sha256:bdaa97df70732a8ae164977b608389c81d55814ce3cd8998d8d18b7d9eb37249"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:2d2404ad64e38e672d3bd7f59d81860d4c3748301b020790c525f7b844cb22f8"
+          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         }
       ]
     },
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -888,11 +888,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:d9f09d68a0d66a63f749c3e8d2d8ccd58bc01548adb312c69440859f392d829a"
+          "version": "repo-file-v1:sha256:6832e2d2c4c737e030671566849d0be5c0d6002dfe409cb3ca835d7f8a0a6fb0"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2"
+          "version": "repo-file-v1:sha256:6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -918,7 +918,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         }
       ]
     },
@@ -940,7 +940,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -1038,7 +1038,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         }
       ]
     },
@@ -1126,11 +1126,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:2d2404ad64e38e672d3bd7f59d81860d4c3748301b020790c525f7b844cb22f8"
+          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
         }
       ]
     },
@@ -1266,7 +1266,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         }
       ]
     },
@@ -1304,19 +1304,19 @@
     },
     {
       "id": "claim_872687e2eb77442a92cd40e27a3f1ef0",
-      "statement": "The protected owned-cleanup stage validates both current-SHA placement and firewall-ownership receipts before writing cleanup-attempt or invoking the firewall helper: each exact key must have an untruncated single latest version without delete markers, KMS encryption, a 1-byte to 1-MiB object length, and a matching SHA-256 checksum on the version-pinned download. These source checks do not activate live cleanup.",
+      "statement": "The protected owned-cleanup stage loads the approved immutable firewall-ownership receipt under the current source SHA and follows its evidenceSourceSha to the original placement receipt under the evidence SHA. Each exact key requires an untruncated single latest version without delete markers, KMS encryption, a 1-byte to 1-MiB object length, and a matching SHA-256 checksum on the version-pinned download before cleanup-attempt or firewall access; live cleanup remains disabled.",
       "evidence": [
         {
+          "resource": "repo://docs/talos-control-plane-maintenance.md",
+          "version": "repo-file-v1:sha256:2c936d7a3be95f2b5d7348da6f9ebbb2226052690a0f8412d69dc3906e3dfc9f"
+        },
+        {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
-          "version": "repo-file-v1:sha256:084ac1690fdb9e22b86c2d7fdfc0dba38e2f6fb6d3d370a66f347fa8068f8aa1"
+          "version": "repo-file-v1:sha256:6358cb1709bcc6a4f879b9d340eb20a982e18b4e6a74b9b32c41b803a3006ae6"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2"
-        },
-        {
-          "resource": "repo://scripts/config/platform-maintenance.json",
-          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+          "version": "repo-file-v1:sha256:6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312"
         }
       ]
     },
@@ -1366,11 +1366,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:e5ed3742d6a5d30874be41c3e8354874a2b19e5c8959bf04ff07759c24bf4d38"
+          "version": "repo-file-v1:sha256:a978da1db8024e74e7ce03372875615fa0563cea08fa3338b523f788c1403705"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:e65f4ba06537a040acaad4fa091ea69021cb621ab3770eae487530f3bc2bae2a"
+          "version": "repo-file-v1:sha256:bdaa97df70732a8ae164977b608389c81d55814ce3cd8998d8d18b7d9eb37249"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -1409,7 +1409,7 @@
       "statement": "Canary admission requires a complete cluster-wide selector inventory with no labeled Node before mutation and immediately before labeling; after the patch it verifies only the configured Node and rolls back its own label on conflict while retaining the isolation taint.",
       "evidence": [
         {
-          "resource": "repo://scripts/network-policy-canary-node.py#L219-L285",
+          "resource": "repo://scripts/network-policy-canary-node.py#L239-L305",
           "version": "repo-lines-v1:sha256:bea282bac1365438081ac206b8baa723dfebd2fb5853230465d9323af5bfcfee:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMDYyMjI3MzU2ZWQ0ZjMwYWNlM2UzMWUyMTA4ZDRjMmI1YzY1M2U5ZjFhNWNlMzgwYWFiMDc3YjE3YmQwZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZTVkZDJlMDRiNjU5MWZiZTBiYjY2NzIzYzA4YjQxMjIxYzFjODQxMzUxOGNmNzg3ZTIwYmIyZWMyYzdhMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2NDllMDliYjBiNTdlNWI5M2NjYzY3NzNlMzU5ZDc0YjliZWJmOWUzMGRlNjRhZTVjYTBmMmI2ZTk1OGJlMTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwOWYxZWY2N2Q4MDJhMWQzZjk1MGUxYTUxYTc0NTE1NmUzNWJmYWUwMzhkYjE5MzIwMTQxMTg0YWU5ZDRjNmQifQ"
         },
         {
@@ -1423,11 +1423,11 @@
       "statement": "Canary release removes the selector label, waits for every cleanup DaemonSet Pod to disappear across the cluster, and removes the isolation taint only afterward; a surviving Pod or timeout keeps the taint.",
       "evidence": [
         {
-          "resource": "repo://scripts/network-policy-canary-node.py#L171-L199",
+          "resource": "repo://scripts/network-policy-canary-node.py#L189-L217",
           "version": "repo-lines-v1:sha256:87e9ef7c483287e2c58e663f6e8d7ac587d1c205351e35364d814fcc584ee75d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4YmE1YWYyY2IxYzg2OWFjOTM4ZjgwZWU3ZmE5YmQ2YmFlMDU0NTUzZWIyYWQzYWViOTYxODY1ZmQ3ODc5NWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkODYzMTc2NTQ4ZjhkYThhOTY4ZmNkNmEzN2JhNDgxYTFjNGUxOWY2NmExZGQ0NTI3YjkwOWM1OWNlMTQwMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlYWI0ZDM4NjNlMWNmNGU4YjNiYjJiZWQxOWVkYTg3NDlhYzg0MDk2ZTQ3MWQ2YzU3YzVkODY5NzQzYzBmYTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhZTZhNDNiODQwYmE2ZDAwN2IwNGEyZjVmM2M5Njg2NTFiZDNiNzZmZmRlNTM3NWYzNTU1YjJmNmE2MzhiZmIifQ"
         },
         {
-          "resource": "repo://scripts/network-policy-canary-node.py#L257-L270",
+          "resource": "repo://scripts/network-policy-canary-node.py#L277-L290",
           "version": "repo-lines-v1:sha256:8f71d5a0467450c37394d9a376d6b2671e6ca9c98ca65e3292cfa10316149efe:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5N2I0N2JiODFjZTkzY2JhNjdhZmMwODY5OGE4MGNmYTA5M2E4NjY3ZTljOWY5NjUzMzc4MThkNjU3OGQxODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MzY1YWIwZmY0ZjUwZGQ1OWQwYTA1ODdjNjE3Y2YwZDRmMjY2ZTQzNjgyMzdjNDg1Zjk0ZTQzZmI2ZTMzYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ1NzBmNzM1ZTk5MTBjZjc1ZTEyOWMzOTc0MmExNGJlNWRjNWUyY2QwYTQ2NzNiNzUwNGU2YjM3NzdlM2I2ZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5MjU3MTMyZDA5MDE2NTlkZmJhMTM5M2Y3YThiYmZmNzMzZjY3MGUzOWMxMzIxMGRjZDkxNWMwZjc5N2Q3ZWYifQ"
         }
       ]
@@ -1446,7 +1446,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         }
       ]
     },
@@ -1478,7 +1478,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:39e57b95571152b46ada95bb14773bede5f6ff8da434cd6d1b973d530c73f735"
+          "version": "repo-file-v1:sha256:e746adffa38dfb4092b3ed1b61216e398ccc6814babc727dfabaaefa5b2f382c"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -1492,17 +1492,35 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:6c73c07da5f0ee5ddab32b25ccbe4a1b9ccebb3c69f4f655a23f9fa1a201c36a"
+          "version": "repo-file-v1:sha256:2e8571c0f26772bc4cc3ce050813342c87933bd8e64c147d328a20cff2a031bf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+        }
+      ]
+    },
+    {
+      "id": "claim_1b7c3b1eb6334f829ee3b5b0561e9123",
+      "statement": "Ownership capture, approval and cleanup share an inspection guard that refuses a live network-policy-canary Namespace or any remaining fixture workload before inspecting or changing the node firewall.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/network-policy-cleanup-test.py",
+          "version": "repo-file-v1:sha256:12cb504a8ba47af4226d779e291ed2bb7d4c02d18c8ccfe0357d72fa69e46905"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:aa1a13b1da2b640fbdcd918ae2cef8d3f66bea36f4e0671cbdd9e167f378df4d"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:16:14.853Z"
+    "at": "2026-10-20T14:46:55.569Z"
   }
 }
