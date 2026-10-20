@@ -180,6 +180,16 @@ Pass that fixture as another `--render` input; it is not a deployed owner.
 `octelium/svc-upstream` still allows all ports to public IPv4/IPv6 ranges,
 so source binding does not qualify its traffic.
 
+The pinned [Cordium constructor](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254-L345)
+and [non-dev Genesis write](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L64-L71),
+plus [Octelium's constructor and unconditional install](https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237-L325),
+expose no public-egress setting: each constructs the all-port public rule in
+code. An additive NetworkPolicy cannot revoke an existing allow. A reviewed
+upstream change or fork must rebuild and pin both generators, refresh the
+expected-spec fixtures from their actual renders, and qualify required
+destinations and private-range denial on the isolated canary before strict
+enforcement.
+
 The ten Octelium Enterprise Genesis policies have a separate [v0.22.0
 expected-spec fixture](../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
 derived from the pinned [constructors](https://github.com/octelium/octelium-ee/tree/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components).

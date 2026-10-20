@@ -170,10 +170,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T08:38:19.458Z" }
+generated: { by: "codex", at: "2026-10-20T09:03:07.300Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T09:03:07.300Z
 ---
 
 # Workload Inventory
@@ -386,9 +386,10 @@ binds four more at pinned `v0.35.0`. The
 binds the remaining ten. All 17 complete generated policy specs are source-bound.
 These fixtures are read-only inventory inputs, not deployed
 policies or verified generator-binary renders. `ws-main` and Octelium
-`svc-upstream` retain public IPv4/IPv6 all-port egress; additive NetworkPolicies
-cannot narrow it. Review the generator-owned correction and isolated-canary
-traffic before enforcement.
+`svc-upstream` hardcode public IPv4/IPv6 all-port egress without a configuration
+input; additive NetworkPolicies cannot narrow those rules. Patch the generators
+upstream or build reviewed forks, publish and pin corrected images, then verify
+actual renders and isolated-canary traffic before enforcement.
 
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, database or

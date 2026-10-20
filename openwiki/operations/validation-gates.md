@@ -294,10 +294,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T08:38:19.458Z" }
+generated: { by: "codex", at: "2026-10-20T09:03:07.300Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T08:38:19.458Z
+    at: 2026-10-20T09:03:07.300Z
 ---
 
 # Validation Gates
@@ -633,9 +633,11 @@ binds the remaining ten policies. Inventory tests compare all 17 complete
 expected specs. This is source review, not a pinned generator-binary render
 or live traffic result.
 The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
-IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
-generator needs a reviewed correction and an isolated canary must qualify
-required traffic before enforcement. See the
+IPv6 on all ports without a public-egress input. Additive NetworkPolicies
+cannot narrow those rules. Patch the owning generators upstream or build
+reviewed forks, publish and pin corrected images, refresh fixtures from actual
+generator renders, then qualify required destinations and private-range denial
+on an isolated canary before enforcement. See the
 [policy review](../../docs/evidence/openclaw-enterprise-policy-review.json).
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)

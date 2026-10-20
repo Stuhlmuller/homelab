@@ -1390,7 +1390,7 @@
   ],
   "requiredCorrections": [
     "All 17 Cordium, Octelium and Octelium Enterprise generated policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has a source-owned replacement. Recheck complete live specs after any generator upgrade and qualify real ingress, egress, and lifecycle behavior on the isolated canary before enforcement.",
-    "For cordium/ws-main and octelium/svc-upstream, determine the pinned generator's supported public-egress configuration and prove required destinations and private-range denial on the canary; neither all-port 0/0 rule is approved by owner binding alone.",
+    "Pinned Cordium v0.12.7 ws-main and Octelium v0.35.0 svc-upstream constructors hardcode all-port public IPv4/IPv6 egress without an egress input; Cordium creates its policy in non-dev Genesis and Octelium InstallCommon always creates its policy. Patch the owning generators upstream or build reviewed forks, publish and pin corrected images, refresh expected-spec fixtures from actual generator renders, then prove required destinations and private-range denial on an isolated canary. Additive NetworkPolicies cannot narrow either current rule.",
     "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
     "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
     "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
