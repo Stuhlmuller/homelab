@@ -40,6 +40,10 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
   - id: openwiki-source-6044cd3de00b52da78c6cf44
@@ -54,6 +58,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
   - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
     resource: repo://scripts/ci/terragrunt-plan-stage-test.py
   - id: openwiki-source-60b00db0363e7f9e27d7fa7f
@@ -62,10 +70,10 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T06:54:44.714Z" }
+generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T06:54:44.714Z
+    at: 2026-10-20T07:28:14.127Z
 ---
 
 # CI/CD
@@ -77,6 +85,12 @@ to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
+
+The production apply rejects a dispatch whose SHA is no longer current `main`.
+It rechecks `main` before each live import or apply. Terragrunt's root hook
+repeats the check for each unit in a multi-unit apply, and the Argo CD
+bootstrap hook checks before each self-management manifest write. A failed
+lookup stops the write. These source guards await a live apply run.
 
 The Octelium catalog stages a separate `homelab-ci-plan` User and a
 read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither

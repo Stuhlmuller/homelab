@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:273a97696c9906743fa8e80309c956586650f49c7b5f03f74e19ec46488a326e",
+  "pageVersion": "sha256:2a80273577b93a177d86ce9c98f5b2645e3d95bd97c62d92421399b269d7a84c",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
+          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
+          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -123,7 +123,7 @@
       "statement": "The fixed private Octelium catalog helper rechecks the GitHub main commit before each of its two writes, fails closed on a missing or advanced main SHA, and requires the second write to report no changes. Offline tests prove both stale-SHA stop points and lookup failure; live dispatch remains unverified.",
       "evidence": [
         {
-          "resource": "repo://docs/ci-cd.md#L48-L53",
+          "resource": "repo://docs/ci-cd.md#L50-L55",
           "version": "repo-lines-v1:sha256:c9c204f058273d04a04350bccdc64d6e83488a2e77b5988ad62f96f0f1cd9a78:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODFiNDc3MjdiYzk0NmNlZmFkNzVhMDg0Y2Y0ZjA0OThiMmJjZGE2MjE3NjJiZTBhYjJmN2M4YWUzYTVmODNkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGYyY2Y5YzQ4NDI2YzhjNTU0ODljYWY1M2Q0YzBhYzg1YjBmYzI2MThiZDRjMDE0ZDM4ZDM5YjU2NmYxMzA5ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGI3YjcyNDUwYWJhMjg2ZjE4NWNhOTI3MDk2MTgyMGZiNzFlMzNiYmQwNTEyZGVmYTdjOTc3ODdkNTNlYTU2NSJ9"
         },
         {
@@ -156,7 +156,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
+          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
@@ -209,18 +209,40 @@
           "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
         },
         {
-          "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ce30f322f25a2e6f227b0f1c6079a4414722da5314b782a3c00a2f97283776b9"
-        },
-        {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
           "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
+        }
+      ]
+    },
+    {
+      "id": "claim_87ee8600b2334d66941a8cef2e053563",
+      "statement": "The protected production apply rejects a stale main dispatch and rechecks current main before direct writes, each Terragrunt apply unit, and each bootstrap self-management manifest; unavailable main also blocks the write.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/root.hcl#L41-L46",
+          "version": "repo-lines-v1:sha256:1be7d5f63b35894393624ea6dfad0fd1c183e1ffc54ae3d2614a0b4997ef7d7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmI4YjM0NWU1MjQyNzZhZTFlMjdkNzVkMjYyY2RkZDkyMDNkZTY0MzM4YjllMWFlNGE5NGQ2MTAyODBkMTJjNSJ9"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L53-L69",
+          "version": "repo-lines-v1:sha256:f55e5e9832c0f18fa6d6c37d9260e374db92575ee477f7f8645ce0a545b5230e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMmJkMTk3MjA2NWYzNzZlYTkxOWIxNzdhNzQzMzM1ZmY1ZTZkZDQ0ODlmZjM2OTNiYTY4MWRiOTRlNWY0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YmQ4ODE2NDY4NjJjOWFiY2NjNTMxYmNlMjQyYjMzN2IxNWVhZGVmNjliZDA5MGE4ODM4MWFkZDQ5NjA1N2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOTk5MDMwN2QyNGRhY2Y5Yjc5OTEzZWI3YmJjNTZlY2IzOTFiOTdiMjg1ZGNiODgxZjFiNzFhY2I1ZGVhZTQifQ"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md#L31-L47",
+          "version": "repo-lines-v1:sha256:1e634336299c6827444ac6346abcce50fc15eb1a2f509a2f9cba7000602e7583:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MTMzMTBjMzZmMjkyNTczZTE3OTM5MmNjZTQ2ODgyOTQ4MjYyMTg0M2NkYjY4NGE4OTcxZDY1YzAyZDgwZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjMjIzM2QyYmI5MjAzNzUyNTJkYzEyOTliNGIyNjljMmI3MWQ0MTZhYWVjMTYxNGU1ZmNhNzM4MGZkMDE0ZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MzE1MWUzNWM1YmQ4NDA3YmUxZjQxYWJlZjczNjYwODQwM2NmMjQ0YmJlY2NhNWY0ZjIyNjhjYjJmN2FlMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkNmI1OTljNzYxOTNjMzY0YWQ5MzJmNzM3YTQ2YmE2ZDM0MzY3YTE0YjkwYjY5YTExMTMwMDBmNjk3YTk3OTUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L36-L38",
+          "version": "repo-lines-v1:sha256:8714ab914a4dbcbf6385e70a359a275459e451b3061965a462657a53ed5419e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTFjZmZkYjBiZThiODJhMWRlNjFiZTg4YmNmNjA0OTM4M2UxZmJjYjk4NTQ4NDllNGUwMzAzMjc1ZjMxZWRiNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGMyZGQzNjEzMDA3NzVmNzdjZGU0ZTQ3NWI0YzUzMmE1YjM4YzI1NjU2MDFkNWIxYTRjZTY5NDhjMDQ4NjBhMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzM3Mjg2YjM5NjlhNjliZmNhMzg0MjRlNGUwZTMzODQzNWIxYWZhYjJmZGM0ZjIwODQxN2QyYTBmNjEzMzVkNSJ9"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-current-main.sh#L4-L22",
+          "version": "repo-lines-v1:sha256:91b4f9f45840e62745f0e55757df7c294c3510d202ed64cd949e65f074ff357c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3OTNkMTg0NTU1MmIzYTEzN2U5Yzc4OTdkYzc4YjE1ZGU0NzQzZjNmMTUzODlkYWVhMzE1OTE3MWEwYmRkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmODE3ZTVlNWZkNzRjMWFmMWQ1MDBjNjFhZjhiNDM1ZTE5ZTU2MjNlMDdhYzljMTBjZjZhYTgyODgzYmE5NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:54:44.714Z"
+    "at": "2026-10-20T07:28:14.127Z"
   }
 }
