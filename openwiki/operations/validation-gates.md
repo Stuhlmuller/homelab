@@ -598,6 +598,18 @@ between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
 
+The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds the complete source shapes of `cordium/ws-main`,
+`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` to pinned
+`v0.12.7` constructors. Inventory tests compare these three full specs; 14
+other Cordium/Octelium generated policies still lack bound fixtures. This is
+source review, not a pinned generator-binary render or live traffic result.
+The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
+IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
+generator needs a reviewed correction and an isolated canary must qualify
+required traffic before enforcement. See the
+[policy review](../../docs/evidence/openclaw-enterprise-policy-review.json).
+
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind
 [enforcement check](../../scripts/ci/network-policy-enforcement-check.py) on

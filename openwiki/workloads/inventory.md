@@ -370,6 +370,15 @@ same complete spec as both the former rule and source manifest. Octelium and
 Prometheus traffic checks, broad-source review, and the enforcement canary
 remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
 
+The [Cordium Genesis expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds complete source-reviewed shapes for `cordium/ws-main`,
+`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` at pinned
+`v0.12.7`. Fourteen generated Cordium/Octelium policies still lack fixtures.
+This fixture is read-only inventory input, not a deployed policy or a verified
+generator-binary render. `ws-main` and Octelium `svc-upstream` retain public
+IPv4/IPv6 all-port egress; additive NetworkPolicies cannot narrow it. Review
+the generator-owned correction and isolated-canary traffic before enforcement.
+
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, or
 agent has been deployed. The unregistered
