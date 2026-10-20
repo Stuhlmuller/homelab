@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:111310bf6eeaca17e4ab0413046071187f2ab5df56f660577e0c66ae1523d585",
+  "pageVersion": "sha256:7e4056f56d594abfbc6bc70bd503c60684e891a7a6b766256ee79ce627eb19b8",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -138,11 +138,15 @@
     },
     {
       "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
-      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, TLS, PostgreSQL and network-policy declarations. The Python helper owns exact-origin/model validation and guarded, journaled logical Namespace, Configuration and stopped-Agent reconciliation; separate foundation, PostgreSQL and reconciler fixtures run in CI, with no protected live reconcile stage.",
+      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, TLS, PostgreSQL and network-policy declarations. The Python helper owns guarded journaled inactive reconciliation plus source-only active and stop paths; foundation, PostgreSQL, inactive and active fixtures run in CI, while activation stays disabled and no protected live reconcile stage exists.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
           "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
+          "version": "repo-file-v1:sha256:0273e318c03f94f26807630fd2ba2c032a5e8ff67b556e5e8ca4730b65017ae3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -154,11 +158,15 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
-          "version": "repo-file-v1:sha256:32ba3e1ad43a47b571119ec3e0763edeb95e073dd05b643ed033b9a214fa83b7"
+          "version": "repo-file-v1:sha256:94b5897a18e67e4bab88d7ff39ec77ac147aac761d8232b275bd1ff05d7f484e"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:5acded19050abc00e555f632f5fc2d52510fb0468b635825609c169214562871"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:b53f8722d5b3e9eddbfb52b29a9734a8f631cf55c335a3f4a85cfe690ff51e1f"
+          "version": "repo-file-v1:sha256:08c6a099b8a84d67179ce3e684275ebad0043209ccd83d5c13482a509a5a0ab9"
         }
       ]
     },
@@ -194,7 +202,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
+          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
@@ -226,7 +234,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:d3c96101e33d362575e7abb34b652096a17f8bb5a0f25ccdf26ee22617cfdf1f"
+          "version": "repo-file-v1:sha256:6218b7311158dd34671a6617d6284363225104cb41e5a6369a524556a713d898"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -241,6 +249,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T10:04:14.843Z"
+    "at": "2026-10-20T10:40:02.561Z"
   }
 }

@@ -36,11 +36,11 @@ the Application is registered.
 
 The candidate intentionally cannot run yet. `operator@oce.example.invalid`
 is an administrator placeholder rejected by preflight. No node has the
-`oce-role` placement labels, and the dedicated PostgreSQL Service, local
-storage classes/bootstrap claim, credential and capacity gates are unfinished.
-The proposed PostgreSQL Service address `10.96.0.51` is reserved in source but
-must be declared by T036 and qualified under the real Talos network policy
-before registration. The bounded trusted-proxy CIDRs are the four observed
+`oce-role` placement labels, and the local storage classes/bootstrap claim,
+credential and capacity gates are unfinished. The foundation now declares the
+dedicated PostgreSQL Service at `10.96.0.51`, but it is not registered or
+deployed; qualify its reachability under the real Talos network policy before
+registration. The bounded trusted-proxy CIDRs are the four observed
 node PodCIDRs; chart API ingress additionally selects the exact Octelium
 console Service and Traefik Pods. Verify proxy header rewriting and the actual
 Envoy-to-agent source addresses before private route cutover.
@@ -68,6 +68,22 @@ API objects before retrying; unknown creates are recovered from owned reads,
 not reposted. Keep activation false and preserve the journal for rollback.
 Removing this logical Namespace needs a reviewed repository-owned cleanup path;
 do not delete the physical tenant Namespace.
+
+The source-only active path remains gated by the committed
+`activationEnabled: false` and the absent dedicated OpenRouter key. A later
+protected workflow must supply a 0600 file inside a 0700 private directory:
+`{"parameter":"/homelab/openclaw-enterprise/model-api-key","version":1,"key":"<private>"}`.
+The version is the SSM parameter version; `key` is never journaled or printed.
+The CLI accepts this file through `--model-credential-file` only when the exact
+reviewed `main` config enables activation. It then creates one OCC model Secret,
+grants only this Agent principal `operate` on that Secret, binds `harnessAuth`,
+provisions transport credentials and admits one revision. `verify` only reads
+those identities, integration-free Agent/revision settings, and deployment
+status. `stop` requires that journaled revision,
+uses OCE's Agent stop API, and waits for a cleared active revision and no
+runtime Pods. Uncertain creates and
+deploys are read back before retry; a changed key version blocks pending a
+reviewed rotation path. These checks are offline fixtures, not live acceptance.
 
 ## Durable reconciliation journal
 
@@ -128,15 +144,3 @@ The chart comparison asserts exactly one repeated resource identity, the
 `oce-private-gateway` EnvoyProxy, and exact equality after adding only its
 mirrored Envoy image. Actual Argo `RepeatedResourceWarning` count and the
 installed Argo hook failure matrix remain live gates before registration.
-
-The protected [operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
-also offers `enterprise_stage=full-sync` after registration and an approved
-`installationPhase`. Dispatch with `expected_sha=<CURRENT_MAIN_SHA>` and leave
-`legacy_stage=none`. It verifies both Application sources, checks the platform
-Envoy Gateway, then runs complete foundation and Enterprise Argo syncs at that
-exact commit. It never selects resources, skips hooks, prunes, or forces apply.
-The foundation must be healthy before Enterprise runs; a failed or interrupted
-sync leaves the quiesce gate in charge of writer safety. Re-dispatch against
-current `main` after inspecting failed hook and Application state. The separate
-Enterprise reconcile, stop, restore, and acceptance stages remain unavailable
-until a declared durable private journal and recovery operator exist.

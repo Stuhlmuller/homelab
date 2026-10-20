@@ -190,6 +190,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-d070446e78bc2444fe729dec
+    resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
@@ -262,6 +264,8 @@ sources:
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -296,10 +300,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
+generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T10:04:14.843Z
+    at: 2026-10-20T10:40:02.561Z
 ---
 
 # Validation Gates
@@ -1745,6 +1749,15 @@ network-policy enforcement, hooks, routes, Namespace adoption or restore.
 The local `--expected-sha` guard is not an exact-remote-main check. A protected
 live stage also requires a retained operator journal PVC, pinned Job image and
 private credential path; none is declared yet.
+The source-only active path is exercised by
+[`openclaw-enterprise-active-test.py`](../../scripts/ci/openclaw-enterprise-active-test.py)
+in static and offline checks. Its fixtures cover the model-key file boundary,
+exact Agent-only Secret grant, Configuration and runtime credential readback,
+deployment response loss and repeat, verification without inference, and
+stopping the journaled revision without deleting retained state. The committed
+`activationEnabled: false` and absent dedicated OpenRouter key block the active
+path. These are offline state-machine checks, not live activation or recovery
+acceptance; durable operator storage and protected execution remain pending.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main

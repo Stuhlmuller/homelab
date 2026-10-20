@@ -152,6 +152,8 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-d070446e78bc2444fe729dec
+    resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-8483d28614308625b1073872
@@ -172,10 +174,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
+generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T09:40:00.529Z
+    at: 2026-10-20T10:40:02.561Z
 ---
 
 # Workload Inventory
@@ -413,6 +415,10 @@ The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
 Embedded Agent; no live Agent or durable operator Job exists. A protected
 stage still needs a retained journal PVC, pinned Job and exact-main guard.
+Its active and stop paths have offline fixtures for model-key isolation,
+exact Agent grants, runtime credential/deployment readback, and idempotent
+stop. Committed `activationEnabled: false` and the missing dedicated OpenRouter
+key still block activation; these fixtures are not live acceptance.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
 exists in source; no protected post-bootstrap invocation or live Secret binding
 has occurred.
