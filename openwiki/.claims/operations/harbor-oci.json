@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d48398fe159ea9705449782475ac76a1bae4cf2d0349c47becd69228174e8dc3",
+  "pageVersion": "sha256:03ee3382a3dc9e6dc10eb3c994eddbd3cf5b0d4c619fc84933dbf0bd74834f3f",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -823,10 +823,24 @@
           "version": "repo-file-v1:sha256:f9e7339105652f389ec6a48604bc29bf0a20ab1c7c1e7828fd6252c9ea515fbb"
         }
       ]
+    },
+    {
+      "id": "claim_0ffee1533aee440dbd1ca57ac4b2cc2f",
+      "statement": "The suspended OpenClaw Enterprise journal probe declares a digest-pinned Harbor Python mirror; no in-cluster pull or probe run is established by the source.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

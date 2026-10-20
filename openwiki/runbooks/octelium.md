@@ -4,6 +4,8 @@ title: "Octelium"
 description: "Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence."
 tags: ["runbook", "octelium", "access"]
 sources:
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -22,10 +24,10 @@ sources:
     resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Octelium
@@ -85,6 +87,8 @@ Tailscale-only Traefik listener directly to the OCE API. OCE enforces the
 authenticated session and exact Agent permission before reaching private
 Envoy. See [private ingress](tailnet-ingress.md) and the
 [Enterprise rollout](../../docs/openclaw-enterprise-rollout.md).
+The new suspended operations-journal probe adds no live access; protected
+full-sync and reconciliation remain blocked on shared journal qualification.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 public WEB Service fallbacks on `acer` without Multus. Its generated Service UIDs must be

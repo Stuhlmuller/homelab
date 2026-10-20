@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:da5a31af419422d699a1adf89b8d06aea54ef2f6940d38dc0b9abbddc05e92bf",
+  "pageVersion": "sha256:7cd2ee196ca58572c14659bdbdd1503cd630bc6d06bd62efa8d233e10a42156d",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -400,11 +400,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
-          "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
+          "version": "repo-file-v1:sha256:db3d4ec9ba54a54fe833ed456ece6ea0e09afd4b0060f50da9f10e1f9f8d4846"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml",
@@ -426,7 +426,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         }
       ]
     },
@@ -524,17 +524,35 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
           "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
         }
       ]
+    },
+    {
+      "id": "claim_5db8dd3da9fd4d9b850fd6cf7886d416",
+      "statement": "The declared but unapplied Enterprise foundation now includes a retained 1Gi RWX operations-journal claim and suspended credential-free probe, while cross-node locking, policy traffic, and encrypted recovery remain unproven.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e4f1b8b9c82335b853df005a8b697a4a8ffff2cb0ce27664bfc2c47618f3a86c",
+  "pageVersion": "sha256:d31d8b129c53b4bf9809de44399f397e7b4ff67483c1e0eab9753a607a008e12",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -62,17 +62,31 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise-access.py",
           "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
         }
       ]
+    },
+    {
+      "id": "claim_f1d0e195b949488384d4e76b452f413b",
+      "statement": "The suspended Enterprise operations-journal probe does not activate Octelium access; protected full-sync and reconciliation still require shared journal qualification.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

@@ -12,6 +12,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -22,6 +24,8 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -32,10 +36,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:12:45.818Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # AWS SSM Secret References
@@ -95,6 +99,9 @@ and backup passwords remain in separate Secrets. Rotation needs a committed
 `generated-secret-revision` advance and consumer verification. The manifests
 have a declared but unapplied Argo Application, so source alone proves no SSM
 value, projected Secret, issued certificate, or running database.
+The separate retained operations-journal claim and suspended mount probe
+contain no credentials. A protected runner still lacks a declared private
+bootstrap service-key delivery path; source checks cannot unblock binding.
 
 The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
 contains non-secret startup configuration. It is separate from those distinct SSM

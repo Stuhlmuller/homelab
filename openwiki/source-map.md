@@ -26,6 +26,10 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
+  - id: openwiki-source-210a2715161ddaf1f95651aa
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-probe.py
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -60,6 +64,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-504261fbc9a8d2ccdbe34e76
+    resource: repo://scripts/ci/openclaw-enterprise-journal-delivery-test.py
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -80,10 +86,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-20T01:34:40.058Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Source Map
@@ -142,8 +148,9 @@ desired state.
 | `clusters/homelab/apps/README.md` | [Application Notes](workloads/application-notes.md) |
 | `clusters/homelab/apps/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Declared but unapplied workload and PostgreSQL boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary), [retained state](architecture/storage-and-state.md) |
+| `clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml`, `journal-probe.py`, and `scripts/ci/openclaw-enterprise-journal-delivery-test.py` | [Dormant retained journal mount and local qualification](architecture/storage-and-state.md), [remaining live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
-| `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml` | [Disabled-auto-sync registration and scoped project](runbooks/argocd-app-onboarding.md) |
+| `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml` | [Disabled-auto-sync registration and scoped project with journal PVC admission](runbooks/argocd-app-onboarding.md) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, `scripts/ci/openclaw-enterprise-operations-test.py`, and `policy/workflows.rego` | [Protected Installation binding and fail-closed Enterprise stages](runbooks/ci-cd.md), [operation gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |

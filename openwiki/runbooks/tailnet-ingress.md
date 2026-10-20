@@ -24,6 +24,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-df94d6406e64c190589692a0
     resource: repo://clusters/homelab/apps/openclaw/networkpolicy.yaml
   - id: openwiki-source-fa98853a4d8b97699eb08972
@@ -88,10 +90,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Tailnet And App Ingress
@@ -142,6 +144,8 @@ this private listener; OCE checks the session and Agent permission. The old
 final cutover. The certificate explicitly includes the console name and the
 `*.agents.oce.stinkyboi.com` wildcard; `*.stinkyboi.com` cannot cover the
 two-label console name. These declarations do not establish live access.
+The new suspended journal-mount probe does not advance this cutover; protected
+Enterprise stages remain blocked on shared-journal and private key delivery.
 The current single-stack IPv4 Service publishes only `100.99.16.74`; its peer's
 IPv6 address has no matching application forwarding rule. The separate resolver
 uses the Traefik Service's published IPv4 for approved A answers and returns

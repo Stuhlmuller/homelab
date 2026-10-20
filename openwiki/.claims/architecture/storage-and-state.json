@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:184a1cb27d5775938865655f7c08d471e3ca8a6de53c1a965a7e8bcb9e245da1",
+  "pageVersion": "sha256:0fed37e57049df5d8379fe0da9381df17a1178e06819f91f08e0c64388e7c61b",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
@@ -149,10 +149,28 @@
           "version": "repo-lines-v1:sha256:32e54d6467875b2e5571d6a4e687f5459c41018d385260e81d7b4dea7ab19fdd:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDZhNWExNDlmNTAxMzI2OTQwMTY1ODViYTg3OTFhNGU4YWRjYTg0OTM5OGU2NWUzODRmMjE4YjFlMDI2YjEyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTY4MWQxMzk4NmExNjIwYWQ1OGFjMTZiMjQ1YmE4YmYyNDMwN2FjYzc4OWRjMWE5ZDBjOTFiNzFlZmFmMWZkZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_5ee7308fa9114ed7a8079ae9172ed4dd",
+      "statement": "The unapplied Enterprise foundation declares a retained 1Gi nfs-default RWX operations-journal claim and suspended local mount probe; cross-node NFS locking and independent encrypted off-node backup/restore remain unproven activation gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

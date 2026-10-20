@@ -64,6 +64,8 @@ sources:
     resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-79a5080e527bf9a6d04fc9fe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-d27624f754153b714543d8c4
@@ -162,10 +164,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:12:45.818Z" }
+generated: { by: "codex", at: "2026-10-20T01:43:56.313Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:34:40.058Z
+    at: 2026-10-20T01:43:56.313Z
 ---
 
 # Harbor Private OCI Registry
@@ -877,6 +879,8 @@ protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
 The dormant Enterprise foundation has a declared but unapplied Argo registration and deploys neither image.
+Its new suspended journal-mount probe references a digest-pinned Harbor Python
+mirror; the declaration is no evidence of an in-cluster pull or live probe run.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the
 stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. Its local

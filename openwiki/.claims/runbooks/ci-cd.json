@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:568d23d5e44b334fc1a6d73fd4e9edb2648533cdc419eb0707a1d0bd794e1dd4",
+  "pageVersion": "sha256:fcabb0bad97c761bbd52f642d9b51756577bf01aa018db5c8d290b4daccd9298",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -128,17 +128,35 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:4ebef9b89a099824832b931a85ce18ab1d1e2baaf591dd45c0831e6668f37516"
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
           "version": "repo-file-v1:sha256:53b55ea55030dfcf5ba23c855bdcdc7fbd87080c07fa1b2fdfd5d06d4ed7c972"
         }
       ]
+    },
+    {
+      "id": "claim_aa922d0db36a4fdfa3650ac1a7b8d343",
+      "statement": "The dormant Enterprise foundation declares a retained journal claim and suspended credential-free probe, but CI's local checks do not provide hosted-runner mount, cross-node lock, or recovery evidence.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:8e0d5c591755488993ce8ad0e1fca05cfa348668f73a4b7a5f4f85d6fe44c6c6"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-delivery-test.py",
+          "version": "repo-file-v1:sha256:b2d71c63430d3131ba2f9b9233136cc2900db177d92d979c71482a13a99dc71e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8da6ebaae1aa304bdb7f841b08212bf73380f11e6c0e5a05bbcdf7192c649907",
+  "pageVersion": "sha256:d888d2b7b38588f651b6fc1709956b21e9bad444bf092f875cb03607a8d8eb29",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -146,7 +146,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:f131889def8609c1876906c4d92920257ecaac830871a37fbdc43c58027d91e9"
+          "version": "repo-file-v1:sha256:ddae519e16ad1570be0db0760a31d38599885dd8178320d125ddc276733c3057"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -216,17 +216,39 @@
         },
         {
           "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
-          "version": "repo-file-v1:sha256:207beafeb472afa0248153c28eba7b6f0ad55b6e5231df3de26ae2d996399d0b"
+          "version": "repo-file-v1:sha256:90312daa3e9e4603114fd66dcdfb147fb99f5f6a9412584eb36f36df8b3f551a"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
-          "version": "repo-file-v1:sha256:67c41d289779f72fb596ae9a9eb16c590b672b2e1b9eb2c3f0a78dfa6125d186"
+          "version": "repo-file-v1:sha256:59b21d59de64720fdaf3cadaff12453193fd8c6677a7614945009d6193983336"
+        }
+      ]
+    },
+    {
+      "id": "claim_04e26eb8d0864339a4100f89413a7459",
+      "statement": "The Enterprise foundation journal-delivery manifest and probe plus the CI fixture own a dormant retained journal mount contract and local qualification; the AppProject permits its namespaced PVC without enabling automatic sync.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-delivery.yaml",
+          "version": "repo-file-v1:sha256:a3b38ba3da0a8da74ba9e94ea53e9965c69959def189d68f894751ffb820c40d"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/journal-probe.py",
+          "version": "repo-file-v1:sha256:db69c4d74f8327e893d587cfccb2a76b57c5a902752be9ca56b33332e8c2f3af"
+        },
+        {
+          "resource": "repo://clusters/homelab/argocd/self-management/openclaw-enterprise-appproject.yaml",
+          "version": "repo-file-v1:sha256:90312daa3e9e4603114fd66dcdfb147fb99f5f6a9412584eb36f36df8b3f551a"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-delivery-test.py",
+          "version": "repo-file-v1:sha256:b2d71c63430d3131ba2f9b9233136cc2900db177d92d979c71482a13a99dc71e"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:34:40.058Z"
+    "at": "2026-10-20T01:43:56.313Z"
   }
 }
