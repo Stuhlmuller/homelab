@@ -1,7 +1,7 @@
 {
   "acceptedEnterpriseBoundary": "Stock OCE public TCP/443 rule with private-range exclusions is a documented exception; it must still produce a strict broad-egress finding.",
   "capturedAt": "2026-10-19T02:30:39.199767+00:00",
-  "snapshotStatus": "Historical baseline: findingCounts, generatedOwnerAudit managers and decisions, ingressAudit, live counts, and policies describe capturedAt only. The later Kiali replacement is recorded in generatedOwnerAudit.pinnedSourceReview.currentLiveRecheck; capture a fresh full inventory before enforcement.",
+  "snapshotStatus": "Historical baseline: findingCounts, generatedOwnerAudit managers and decisions, ingressAudit, live counts, and policies describe capturedAt only. Later Kiali replacement plus Cordium, Octelium and Octelium Enterprise source binding are recorded separately; capture a fresh full inventory before enforcement.",
   "findingCounts": {
     "pod-requires-separate-review": 178,
     "unisolated-pod": 196,
@@ -163,6 +163,83 @@
         "readOnlyObservation": "The Ready Kiali Pod is ambient redirected; its Service targets TCP 20001/9090 and the live Istio ALLOW policy matches the repository principals.",
         "stillUnverified": "No canary has proven which Pod identities kube-router sees for gateway, Traefik, Prometheus and Octelium traffic through ambient and Service translation."
       }
+    },
+    "cordiumSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "pinnedTag": "v0.12.7",
+      "pinnedCommit": "e12b0b16d5fe94716e414fca7cfdc10b21014f2c",
+      "imageDigest": "sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401",
+      "fixture": "clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+      "fixtureSha256": "2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0",
+      "sourceRefs": {
+        "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
+        "octelium/cordium-nocturne": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/nocturne.go#L152",
+        "octelium/cordium-rscserver": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/rscserver.go#L131"
+      },
+      "completeSpecSha256": {
+        "cordium/ws-main": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+        "octelium/cordium-nocturne": "fb32c2ee1ea55c51743b1d4ffcfedb234c99d003929322ea507e9391351314bf",
+        "octelium/cordium-rscserver": "4ce6a7059f9b58a3f3ac6b35c97cb5312da100a9d1aec176a459b40c2e429543"
+      },
+      "method": "Compared the pinned upstream constructors and common labels with a sanitized fixture containing complete NetworkPolicy specs; read-only live specs match the prior hashes. The fixture is inventory input, not a deployed policy.",
+      "status": "source shape bound for 3 of 17 remaining generated policies at this checkpoint; all-port public egress and traffic are unqualified"
+    },
+    "octeliumSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "declaredVersion": "0.35.0",
+      "pinnedTag": "v0.35.0",
+      "pinnedCommit": "5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce",
+      "fixture": "clusters/homelab/apps/octelium/generated-networkpolicies.json",
+      "fixtureSha256": "21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7",
+      "sourceRefs": {
+        "octelium/octelium-ingress": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/ingress.go#L334",
+        "octelium/octelium-nocturne": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/nocturne.go#L147",
+        "octelium/octelium-octovigil": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/octovigil.go#L98",
+        "octelium/svc-upstream": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237"
+      },
+      "completeSpecSha256": {
+        "octelium/octelium-ingress": "98604d834f9b0c583f65f14c8f70195df706044658b21d302f33dc62caae2199",
+        "octelium/octelium-nocturne": "5cd2281cdd4996d94b456d65a2f4b244e63bf1a37ed47d0c005ba15d1a3e5a35",
+        "octelium/octelium-octovigil": "ab5b0dcb621fc89813ce9dd2833ebf14a8ab0187635140269f486714cfb5ccf1",
+        "octelium/svc-upstream": "09c86331a6a384a28f6ed34e5b185c3706efdf18395bd8ef82b44c374a69c4b9"
+      },
+      "method": "Compared pinned upstream v0.35.0 constructors and common labels with a sanitized complete-spec fixture; fresh read-only live specs match the historical hashes. No generator binary was executed. The fixture is inventory input, not a deployed policy.",
+      "status": "source shape bound for four more policies; ten Octelium Enterprise Genesis policies and broad svc-upstream egress remain unqualified"
+    },
+    "octeliumEnterpriseSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "declaredVersion": "0.22.0",
+      "pinnedTag": "v0.22.0",
+      "pinnedCommit": "0e9368283420e17847879a58dc7f354b656ef3c3",
+      "imageDigest": "sha256:f8978d6373bd11a0bb5c6f5c5c57375e110bc1ab2842056f55a3153c77428e92",
+      "fixture": "clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+      "fixtureSha256": "c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2",
+      "sourceRefs": {
+        "octelium/octeliumee-cloudman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/cloudman.go#L65",
+        "octelium/octeliumee-clusterman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/clusterman.go#L79",
+        "octelium/octeliumee-collector": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/collector.go#L115",
+        "octelium/octeliumee-logstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/logstore.go#L117",
+        "octelium/octeliumee-metricstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/metricstore.go#L114",
+        "octelium/octeliumee-nocturne": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/nocturne.go#L124",
+        "octelium/octeliumee-policyportal": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/policyportal.go#L99",
+        "octelium/octeliumee-rscserver": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscserver.go#L124",
+        "octelium/octeliumee-rscstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscstore.go#L114",
+        "octelium/octeliumee-secretman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/secretman.go#L129"
+      },
+      "completeSpecSha256": {
+        "octelium/octeliumee-cloudman": "7a9127b12c5c7155ca871fa98aa74de1b272346159a48c2614f78a1447633682",
+        "octelium/octeliumee-clusterman": "a251d82d27afcea7cd9b31b6e902bda8e97b55bd07d08ead1735c0d17b07898a",
+        "octelium/octeliumee-collector": "57ceee250c68b372992449f16e3728990f7e2ff84152bb9c6418692110f21ebe",
+        "octelium/octeliumee-logstore": "7e61872de5b3b3ee0c56f80a62eb3c3d7bebca70d9a23b0160f11247fc2afce7",
+        "octelium/octeliumee-metricstore": "0a5fe48dcf9783d60743677e3069368e95a764a7062e64bbfa33f51a327a43c6",
+        "octelium/octeliumee-nocturne": "154789ab1e91f093086522732abeb3fc37542226cb74b739027340d28bcaacd3",
+        "octelium/octeliumee-policyportal": "2d3bbf55384ff4b02153571274801b746810d976666fc82fda73a9334cdb0634",
+        "octelium/octeliumee-rscserver": "81f5b4d700b25faf90890d79befd526eed375694b6084de6374c1e9f0948a7fa",
+        "octelium/octeliumee-rscstore": "962321945d3a49408e4049978c78969b498f1727dc566fbad386b6d29dfa8c98",
+        "octelium/octeliumee-secretman": "149ba1bcf503716e2076c16d5092a989093d00e4f15df594a22ca01f151615a1"
+      },
+      "method": "Independently derived complete NetworkPolicy specs from pinned v0.22.0 Enterprise Genesis constructors and common labels; each matched a fresh read-only live spec and the historical raw spec hash. The generator binary was not executed and this fixture is inventory input, not a deployed policy.",
+      "status": "source shape bound for all ten Octelium Enterprise Genesis policies; ingress identity and canary traffic remain unqualified"
     }
   },
   "ingressAudit": {
@@ -1312,7 +1389,7 @@
     }
   ],
   "requiredCorrections": [
-    "Render or otherwise source-bind the 17 remaining Cordium and Octelium generated policies to their pinned owners; the former Kiali operator policy has an equivalent source-owned replacement. Compare complete live ingress and egress specs before enforcement.",
+    "All 17 Cordium, Octelium and Octelium Enterprise generated policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has a source-owned replacement. Recheck complete live specs after any generator upgrade and qualify real ingress, egress, and lifecycle behavior on the isolated canary before enforcement.",
     "For cordium/ws-main and octelium/svc-upstream, determine the pinned generator's supported public-egress configuration and prove required destinations and private-range denial on the canary; neither all-port 0/0 rule is approved by owner binding alone.",
     "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
     "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",

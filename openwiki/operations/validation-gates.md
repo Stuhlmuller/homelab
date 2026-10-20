@@ -16,10 +16,16 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-70a103e770a716ccc6d4024b
+    resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -40,6 +46,8 @@ sources:
     resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -52,6 +60,10 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-06c51d450592da5906a7761d
+    resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
+  - id: openwiki-source-f8f5d3b6cb788d6762c27993
+    resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -92,6 +104,10 @@ sources:
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -106,8 +122,12 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
@@ -158,6 +178,12 @@ sources:
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-94b1fdad9ed1c1d7d6286c4a
+    resource: repo://scripts/ci/octelium-plan-policy-test.py
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -168,12 +194,20 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-6514a0140b512caa7259f135
+    resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-86a40ee4669b4b7843917e87
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-b5946e8eb5b294e910c57270
+    resource: repo://scripts/ci/platform-maintenance-stage-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
@@ -206,6 +240,14 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c65516e351b2fe2cbdfc5a79
     resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-60b00db0363e7f9e27d7fa7f
+    resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
@@ -244,14 +286,16 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T01:14:14.135Z" }
+generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:14:14.135Z
+    at: 2026-10-20T08:26:45.252Z
 ---
 
 # Validation Gates
@@ -578,6 +622,20 @@ between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
 
+The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds three complete policy shapes to pinned `v0.12.7` constructors. The
+[Octelium fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+adds four Genesis policies from pinned `v0.35.0` constructors. The
+[Octelium Enterprise fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+binds the remaining ten policies. Inventory tests compare all 17 complete
+expected specs. This is source review, not a pinned generator-binary render
+or live traffic result.
+The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
+IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
+generator needs a reviewed correction and an isolated canary must qualify
+required traffic before enforcement. See the
+[policy review](../../docs/evidence/openclaw-enterprise-policy-review.json).
+
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind
 [enforcement check](../../scripts/ci/network-policy-enforcement-check.py) on
@@ -668,6 +726,10 @@ the protected tag's administration permission without changing resources.
 
 ## Entra owner conversion and Octelium identity checks
 
+The staged `homelab-ci-plan` policy has offline fixtures for reads, dry-run
+writes, live-write denial, and subresource denial. These source checks do not
+prove live Octelium enforcement or issue a plan credential.
+
 Offline validation runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
 native APIs to retain the immutable owner `oid` and disabled email fallback.
 The historical mail-only Graph PATCH is retired: the owner-mail Terraform unit
@@ -748,7 +810,9 @@ The pull-request `Terragrunt Gate` is an always-present aggregate. Its
 unprivileged static job runs for every PR and owns live-scope detection. Only a
 trusted same-repository PR whose diff contains a declared live input may enter
 the `homelab-plan` environment; forks and other changes must leave the live job
-skipped. The aggregate fails unless static checks succeed and the applicable
+skipped. An unreadable base diff fails the static job before it can emit a
+successful skip decision; the offline fixture exercises this failure. The
+aggregate fails unless static checks succeed and the applicable
 live plan or same-repository skip-note job has the expected result. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
 That assertion pins the normalized live-scope and aggregate-gate bodies by
@@ -1016,16 +1080,24 @@ secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
 Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
+During production apply, the script rechecks current `main` immediately before
+each import, untaint, direct Kubernetes write, and apply. The root Terragrunt
+`before_hook` also checks before each unit's `apply` in a multi-unit run; the
+bootstrap `after_hook` checks before each self-management manifest write. The
+checks fail closed when `main` advances or cannot be read. These source guards
+have not been exercised by a live apply in this update.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. Main-only diagnostics use the same production environment.
 
 The focused Octelium private Kubernetes workflow has the same exact-`main`,
 current-head, production-branch, serialized-run, private-log, static, and
-Conftest gates. Its fixed helper extracts exactly
-`Policy/homelab-private-kubernetes-access` and
-`Service/kubernetes-api.homelab`, never prunes, and requires a second apply to
-report no changes. The lifecycle helper installs cleanup before creating its
-30-minute, one-authentication Credential, binds its watch to the unique run it
+Conftest gates. Its fixed helper selects exactly three private Kubernetes/Talos
+Policies and three Services, and never prunes. It checks current `main` before
+each of the two catalog writes, stopping the next write if lookup fails or
+`main` advances. The second apply must report no changes; offline fixtures
+cover both stale-SHA points and lookup failure. The lifecycle helper installs
+cleanup before creating its 30-minute, one-authentication Credential, binds its
+watch to the unique run it
 dispatches, and verifies Credential, Session, and GitHub-secret revocation on
 exit. See `docs/ci-cd.md`.
 
@@ -1384,6 +1456,13 @@ then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
 details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
 
+The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
+stack or shared root sources, or plan inputs, change. Missing client and tenant
+selectors or an incomplete GitHub OIDC session fail the plan; only unrelated
+changes may skip AzureAD. Restore the environment secrets through the
+[Entra provider runbook](../../docs/entra-terraform-provider.md), then rerun
+the PR plan and verify the protected gate before merging.
+
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
 `IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching
@@ -1574,6 +1653,13 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
+The 2026-10-20 07:22 UTC read-only recheck still rejects T022: the best
+worker has about 3,398 MiB unreserved by requests, below Enterprise's initial
+4,096 MiB steady reservation before startup and system headroom. It was using
+6,447 MiB of memory, had 45 co-resident Pods, and had 9.71 GB root-filesystem
+space free, below the proposed 10 GiB local claim. A new `NoSchedule` taint
+would not isolate those existing Pods. Storage placement and actual
+network-policy lifecycle traffic are separate unpassed gates.
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
 Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and
@@ -1583,12 +1669,32 @@ activation flag and canary node remain unset. Current-SHA recovery receipts,
 full-catalog publication, five-tag Harbor lock and an isolated canary remain
 live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
+
+Before `owned-cleanup` can touch the firewall, the protected stage reads both
+`placement.json` and `firewall-ownership.json` from the private
+`openclaw-enterprise/platform/receipts/<source-sha>/` prefix. Each key must
+have an untruncated listing with exactly one latest S3 version and no delete
+markers; a version-pinned metadata read must show KMS encryption, a 1-byte to
+1-MiB object, and a SHA-256 checksum matching the version-pinned download. A
+missing, duplicated, deleted, oversized, unencrypted, or mismatched receipt
+stops the stage before the `cleanup-attempt` marker or firewall helper. Inspect
+private version history and receipt contents, then obtain fresh independent
+placement and firewall ownership review under a new exact-current-`main`
+source SHA; do not rewrite ambiguous history or infer cleanup ran. These are
+source checks; cleanup stays disabled until its separate live prerequisites are
+met. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
 to `static-checks.sh`. It renders the Kustomization and checks restricted
 namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
 RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
-private server SAN, and `activationEnabled: false`. The separate
+private server SAN, and `activationEnabled: false`. The static wrapper also
+runs `openclaw-enterprise-postgres-test.py` against PostgreSQL 18. It executes a
+SHA-pinned stock migration as `occ_migrator`, checks `occ_app` can use the
+migration-created auth table but cannot create a table or read an ungranted
+table, then checks TLS, separated roles, logical dump, and isolated restore.
+This is a local fixture, not a live database or recovery receipt. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
 fixtures exercise reconciliation and workload attestation. Config validation
@@ -1599,33 +1705,41 @@ requested, it requires the exact `openai` transport, OpenRouter base URL,
 fixtures reject changed, missing, and extra model fields. The stable
 receipt compares nonempty resource versions for the immutable Secret,
 Deployments, ReplicaSets, and Pods across two read-only snapshots. The
-read-only `check` uses those snapshots to prove the selected Drivers. With a
-file-backed service key and protected journal, `reconcile` can create or adopt
-the logical `claw` Namespace, one native Configuration, and one stopped,
-unauthenticated Embedded Agent in the prepared `openclaw-agents` namespace.
-It checks the external namespace, restricted PSA, exact tenant RBAC and policy
-ownership before the first POST. Each create records pending intent first;
-unknown responses remain fenced until unique exact API and owned Kubernetes
-readback proves the object. A definitive 401/403 clears intent before a fresh
-read; any object appearing after rejection remains foreign on retry. The
-Namespace needs exactly the three pinned base NetworkPolicies, the Configuration
-its owned ConfigMap, and the Agent its exact identity, principal, and inactive
-state. Fresh collection reads reject duplicate logical Namespace and Agent
-names before journaling success. `verify` remains read-only and accepts only a
-complete journal with unique identities, owned Configuration ConfigMap, and
-stopped Agent readback; it sends no inference request. Agent activation remains
-blocked. A blocked run may already have changed Enterprise and Kubernetes
-state: inspect the journal, exact API objects, namespace and policies before
-retrying. Rollback needs a reviewed cleanup path for the logical Namespace;
-retain the physical tenant Namespace. These local tests do not prove live
-Secret readiness, certificate issuance, PostgreSQL TLS, network-policy
-enforcement, hooks, routes, Namespace adoption or restore.
+read-only `check` uses those snapshots to prove the selected Drivers; `verify`
+also remains read-only and checks exact journal, API, and tenant state without
+inference. With a file-backed service key and protected journal, the source-only
+`reconcile` path can POST the logical `claw` Namespace for the prepared
+`openclaw-agents` namespace. It checks the external namespace, restricted PSA,
+exact tenant RBAC and policy ownership before the first POST, records pending
+intent first, and recovers an uncertain response only through unique API
+readback. A ready result needs exact API and owned Kubernetes readback,
+including exactly the three pinned base NetworkPolicies. It can then create
+or adopt one owned Configuration and one stopped, unauthenticated Embedded Agent,
+journaling pending intent before each POST and refusing unknown outcomes.
+Activation and runtime deployment remain disabled. A blocked run may already have
+changed Enterprise and Kubernetes state: inspect the journal, exact API object,
+namespace and policies before retrying. Rollback needs a reviewed cleanup path
+for the logical Namespace; retain the physical tenant Namespace. An ephemeral
+runner cannot execute the protected reconcile stage safely: a serialized
+operator Job, separate retained journal PVC, pinned image and admitted placement
+are still undeclared. These local
+tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
+network-policy enforcement, hooks, routes, Namespace adoption or restore.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
 Secret creation/readback and bounded hook behavior; Checkov uses an exact
-three-finding baseline for public Secret-name strings. These offline checks do
+four-finding baseline: three public Secret-name strings in the dormant chart
+and one generated `octeliumee-secretman` policy name paired with its reviewed
+spec hash. The static gate rejects any wider baseline. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
+The protected Enterprise operations workflow exposes one fixed `full-sync`
+stage. Its source test and workflow policy require an exact current-`main` SHA,
+manual Argo Applications with the reviewed repository sources, healthy Envoy
+Gateway, and a pinned upstream chart revision. The executor checks each gate
+again before syncing the foundation and then Enterprise with explicit source
+revisions. Fixture and policy success do not prove a live sync, journaled
+reconciliation, rollback, or runtime acceptance.
 The staged private-access check runs
 [`openclaw-enterprise-access-test.py`](../../scripts/ci/openclaw-enterprise-access-test.py)
 in the static gate. It validates the scoped Octelium catalog and exact-main
@@ -1993,21 +2107,30 @@ dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
 17:00 datasource mutex timeout. The 19:00 and 20:00 scheduled Jobs each
 finished all eight eligible repositories with no reported errors and one
 exact public canary datasource-key cache hit on distinct Pods using the same
-bound PVC. These restricted-log observations show same-key reuse across two
-Pods, but do not close [T022](../../specs/004-run-renovate-in-cluster/tasks.md):
-at this draft revision, its task record still lacks a durable receipt for
-those Pod UIDs and acceptance of the `v0.0.2` refresh. They also do not prove
-general cache freshness, eligible Harbor discovery, full
-owner/App policy parity, or write safety.
+bound PVC. After the protected `v0.0.2` release, the 21:00 scheduled dry run
+hit that key, refreshed its record, and selected the new public canary branch
+proposal. The [aggregate receipt](../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md)
+closes [T022](../../specs/004-run-renovate-in-cluster/tasks.md). This does not
+prove general cache freshness, eligible Harbor discovery, full owner/App
+policy parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
-retirement are complete. The protected companion canary published `v0.0.2`
-at 20:20 UTC; normal scheduled refresh, live cache-failure and missed-cycle
-drills, dry-run parity, writer cutover, and the separate seven-day acceptance
-window remain open gates.
+retirement are complete. Retained 17:00 logs attribute three Docker lookup
+errors to one repository; that Job exited 1, its failed-Job and incomplete-cycle
+alerts fired, and the 18:00 Job recovered. The protected missed-slot drill
+created no 03:00 Job; `RenovateHourlyCycleMissing` fired at 03:20:47 UTC.
+Recovery restored the hourly schedule at 03:35:11 UTC. The rule was inactive
+by 04:00:38 UTC, and the 04:00 Job succeeded at 04:20:23 UTC with eight
+repository starts and finishes, one exact public canary cache hit, and zero
+errors. Correlate restricted `ERROR`/`FATAL` repository tags with final
+summaries; a `done`/`exitCode 0` processing summary alone does not prove
+lookup success. These results close [T045](../../specs/004-run-renovate-in-cluster/tasks.md)
+without claiming a separate per-repository Prometheus alert. Live cache-fault
+recovery, a declared QNAP capacity-restoration path, full parity, writer
+cutover, and seven-day acceptance remain open.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
@@ -2026,9 +2149,10 @@ generic destination errors still fail closed. Alias lookup fixtures also require
 one transient read to recover and an authorization failure to stop without a
 retry. These fixtures do not establish that the protected full-catalog
 publication succeeded. OCI-index pull fixtures also require recovery after
-four classified transport failures with fresh directories and
-2/4/8/16-second backoff, exhaustion after five attempts, and immediate
-stop on hard errors.
+four classified transport failures while retaining partial content in one
+temporary OCI directory, forcing recursive checks on each attempt, and
+2/4/8/16-second backoff. They require exhaustion after five attempts and an
+immediate stop on hard errors.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child

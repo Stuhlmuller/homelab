@@ -18,14 +18,16 @@ sources:
     resource: repo://docs/octelium.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-94b1fdad9ed1c1d7d6286c4a
+    resource: repo://scripts/ci/octelium-plan-policy-test.py
   - id: openwiki-source-e293d5daa2ad090397b8923e
     resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-20T04:22:56.208Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T22:48:59.937Z
+    at: 2026-10-20T07:27:46.454Z
 ---
 
 # Octelium
@@ -41,6 +43,12 @@ bootstrap, Enterprise adoption, and Entra OIDC stay on their repository-owned
 scripts and manifests. The catalog
 also owns the core human session ceiling; apply its `ClusterConfig` include
 separately before the normal catalog apply.
+
+The catalog stages `homelab-ci-plan`, a separate workload User with a Policy
+allowing Kubernetes reads and dry-run writes while denying subresources and
+live writes. The policy is attached to `kubernetes-api-ci` in source only;
+merging this change does not apply the catalog or issue a plan token. Offline
+fixtures check the declared rules, not live enforcement.
 
 Bootstrap and upgrade require the dataplane label on `zimaboard-0`, the
 control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.

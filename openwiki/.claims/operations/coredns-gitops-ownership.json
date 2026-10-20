@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:17989d5bb64f98b1f8bbaa6228b6830e546ca1773867083408174baf0fd5865a",
+  "pageVersion": "sha256:53a3422f1f66fe999c64e55ec1200f88f36fd4bb305f7e8cfe280b045db28dbb",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -56,7 +56,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh#L474-L516",
@@ -67,6 +67,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T23:13:39.081Z"
+    "at": "2026-10-20T07:27:46.454Z"
   }
 }

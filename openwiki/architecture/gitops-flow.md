@@ -10,22 +10,30 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
   - id: openwiki-source-5edf712b7916c34ad7d2c410
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
   - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T15:59:51.049Z
+    at: 2026-10-20T07:28:14.127Z
 ---
 
 # GitOps Flow
@@ -51,6 +59,12 @@ resource cannot hold an Application operation forever and block later reviewed
 revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
+
+The protected production apply checks the current `main` commit before each
+state write. The root Terragrunt `before_hook` repeats the check for every unit
+in a multi-unit apply; the bootstrap `after_hook` checks before each Argo CD
+self-management manifest write. A later unit stops if `main` advances while the
+workflow runs. These source guards await a live apply run.
 
 `IaC/operator` is the deliberate exception to workflow-driven apply. It owns
 bootstrap permissions that the GitHub OIDC role must never change for itself;

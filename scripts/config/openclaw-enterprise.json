@@ -56,6 +56,7 @@
     "postgresAdmin": "/homelab/openclaw-enterprise/postgres-admin-password",
     "postgresMigrator": "/homelab/openclaw-enterprise/postgres-migrator-password",
     "postgresApp": "/homelab/openclaw-enterprise/postgres-app-password",
+    "postgresBackup": "/homelab/openclaw-enterprise/postgres-backup-password",
     "sessionAuth": "/homelab/openclaw-enterprise/session-auth-secret"
   },
   "model": {

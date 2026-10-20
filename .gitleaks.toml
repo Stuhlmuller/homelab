@@ -23,3 +23,11 @@ regexes = [
   '''(?m)^\ golang\.org/x/oauth2\ v0\.36\.0\ h1:peZ/1z27fi9hUOFCAZaHyrpWG5lwe0RJEEEeH0ThlIs=$''',
   '''^\ k8s\.io/api\ v0\.37\.0\ h1:Z//Vj9N7RA/yS2sDmxyeo7h\+RR4zbUrd2vrd3Z0TbB4=$''',
 ]
+
+[[allowlists]]
+description = "Public Octelium Enterprise secretman NetworkPolicy name"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''docs/evidence/openclaw-enterprise-policy-review\.json''', '''scripts/ci/network-policy-inventory-test\.py''']
+regexTarget = "line"
+regexes = ['''(?m)^\s*"(?:secretman|octelium/octeliumee-secretman)": "149ba1bcf503716e2076c16d5092a989093d00e4f15df594a22ca01f151615a1",?$''']

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:94944cdea635950be26b7645759943a61b13c5a4c1e6ca13fa3d3e4dbe192ca9",
+  "pageVersion": "sha256:d15f5dae4dadd120cf6c99b122ed2050506abb3e0ec9adde4451b7900e13ccd9",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
         }
       ]
     },
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -84,7 +84,7 @@
         },
         {
           "resource": "repo://policy/kubernetes.rego",
-          "version": "repo-file-v1:sha256:f7056c6e479acbf327f3fe7b6539a9af0e186e97f26b73559b94c0c50771f421"
+          "version": "repo-file-v1:sha256:52495908ccf3f649d07f422618175174da3170381c24c654745a4f3edc3b2717"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:45b778b5bdd765e8b0564b4fc1469bb086f8a4578d9d20910b8b4aa0bf1f3b10"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
         }
       ]
     },
@@ -402,11 +402,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:c9a954633ea274ad9a3a3b02c3d106a239ba93547e030d527e1592850ebed7c3"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -574,7 +574,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -582,7 +582,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -596,7 +596,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -678,15 +678,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:0235b83c7cb0758a3b6cb1c96178a37ec829cd5a94215f565b98020c375586dd"
+          "version": "repo-file-v1:sha256:281ea64a84eff2ca270deec607cd3eefd52fb660919cc9a2f99a469886cdd0a2"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:e3c9de143a6fced87a8fd926f61ccf7b26197a163092bf9f149d0b81634657d7"
+          "version": "repo-file-v1:sha256:59e576517b8ef7fc485a0cad9c83d18d452d018c57cf2291aac7d9ba9604a963"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -699,12 +699,12 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L944-L1009",
-          "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L313-L409",
-          "version": "repo-lines-v1:sha256:5c0907f1fe131f4f72c971861ecad030beb84467dfd985fea3fe6306f918f5ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         }
       ]
     },
@@ -717,8 +717,8 @@
           "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
         },
         {
-          "resource": "repo://flake.nix#L66-L86",
-          "version": "repo-lines-v1:sha256:4eb70c55e9738d7b618e3580e049910b3ec8c1ff4af6e895983ad4946529049d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZTFhNzRkNzU0ZTg3N2MwYzQ3NDAwOGQ5YTc1YWI4NWY0Mjc3MmJlNmIwNzdhNzE3YmZmMTg5NzkwZDYyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyOTQwYThiOGM0ZDFhNWY1NTY5YmNjOWFkOGZmYWFjODkxNTZjZTE2MWM3YTBlNTY2NWRhNDIyYzVkMjY4MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMmQxOTQ0NWM5M2I3Y2I2YWFmZTI1NWU3MDVhYjgwMmFlMTNjM2NmNTFkNzAwMzQ4NTI2ZTNhZjliOWY4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0NDk2MzRiYmY0MDgyMmVlY2NhYTQzYmE0M2QyNGM1YzU0ZmMwMWFlNjYyOTdhNTVlNDI2YWFmOTIxZWQ4YmUifQ"
+          "resource": "repo://flake.nix#L69-L88",
+          "version": "repo-lines-v1:sha256:c33ceed0c9d6c077ed17f180004125715d874e338bc787ca7303c7dec4451527:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlZWEyNzA1MDE5NGM2NmQ3ODVjNmMwMjgyMjhhMmEyZWI4ODVhZDdlMzA5MzY4YmFkODZjOTRmZGQ5ZjMwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0ZmZkYzdhN2M3Mzg5OWE2NWUyMDY2NjE1ODQ3OGY0ZjQ1OTFiN2I5OGNiMjY5NWIyZjc3N2M2MTBlOGUzNDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNiNWZmNzYzMDYwYTQ3MDgxMzQ5NTM0ZjE5MmY3YjBmMzczY2NlODkwNWNkMDQzZmNlNGIyNGFjZTExYWU5ZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkMTcyYmYxZWI3ODE0ZTFmOTE2YWUwYzQyMTQ5MzZmNWJmNzcwOTViYjUyMGMwYzMzN2U5NTJjMGM5YmRmMzEifQ"
         }
       ]
     },
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
         }
       ]
     },
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:45b778b5bdd765e8b0564b4fc1469bb086f8a4578d9d20910b8b4aa0bf1f3b10"
         }
       ]
     },
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "version": "repo-file-v1:sha256:211f3230bc0844e4402db5453d2bc4b6df4c874a44b53bdcfdacb243d8e1b7e0"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -848,11 +848,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:f9e7339105652f389ec6a48604bc29bf0a20ab1c7c1e7828fd6252c9ea515fbb"
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -874,11 +874,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
         }
       ]
     },
@@ -888,11 +888,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:aacc3aaabef52fdfd0b0d0c3d3308aa65cb75a284f735c5733dc4b72ec9b7167"
+          "version": "repo-file-v1:sha256:5849e1575bf8976951932889e7712ee35d54f94d75f7904c0feaf5623b87de62"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
-          "version": "repo-file-v1:sha256:75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971"
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -910,37 +910,41 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
+          "version": "repo-file-v1:sha256:e5e87e3670071504d1439ff1d66d13feab4fe352b090994aaf6ad593aafe9355"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
-          "version": "repo-file-v1:sha256:b2a3c458be7cd2c9b9a5bc9a1786b679c8c4574705fc3cb66277b133e14cbbdf"
+          "version": "repo-file-v1:sha256:3f88e76aaeb610adbf4676aa87fcc20636d5d480fab2a1c183ec43ee2e549395"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:45b778b5bdd765e8b0564b4fc1469bb086f8a4578d9d20910b8b4aa0bf1f3b10"
         }
       ]
     },
     {
       "id": "claim_33f43b085f014e02aa20fe8f103119dd",
-      "statement": "Enterprise reconciler fixtures run in static and offline validation. Check attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded reconcile may journal and create or adopt one logical Namespace, one native Configuration, and one stopped unauthenticated Embedded Agent, while activation remains blocked. Verify reads a complete journal and exact inactive object identities without inference.",
+      "statement": "Enterprise reconciler fixtures run in static and offline validation. check attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded reconcile journals pending intent before creating or adopting the logical Namespace, Configuration and one stopped unauthenticated Agent; verify reads exact journal, API and tenant state without inference. No protected reconcile stage is executable until a retained operator journal PVC and serialized Job are declared.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L68-L99",
+          "version": "repo-lines-v1:sha256:d8386e73803d8e3797bec02edbf32ca9420cd357f2ecf256df7c888953b28366:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllOWE4MDdjNWYxNDYyOThkYjYwNmRiNzcyNDI3Nzk4OTk4MDkxNTMxZWYzZWE4MzRiOWYxZjA4MjU0MDkwYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjZjg4Y2MwMGM2ZGRkODBlMDE3MGVkZGUyYzRiNzBkNWUwZDY3OWNjMzJjYzkwNWQyZTRiMDU2YWZlM2JlYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmYmU4NmZjMmM2YTIxMmJmMTI4NmEyMzRjNDlmYTAzNGZjMTkxZjU4NTAzNGUzMGUyMmZlZDhjNTgyMGZkMWIifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
-          "version": "repo-file-v1:sha256:32ba3e1ad43a47b571119ec3e0763edeb95e073dd05b643ed033b9a214fa83b7"
+          "resource": "repo://scripts/ci/offline-checks.sh#L62-L67",
+          "version": "repo-lines-v1:sha256:4708ad92af0c4026a38532a319907dfbaace12b2ff79cbc9ff55ecd81f3f695a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjY3OTFkZjZiNDRhOTM3YzA3MTFmMzkyZjhkMDZhYWIzODExNzA0ZWYyYjRhNjU0NDhkYmExNzJjYjQzMjc4YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE1M2RjMzBiNjdhYzRmYjY0NjkyOTRiMWYzNTRkOTUxODRjOTVkYWIzZTQzYjE4NDBmOGZlYzE2YmU3ZWM4ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDJhYTYxMjA3Y2QxMzRmYWFjMDE2ZmFiNTIzM2JkNGJmOGNmZjEzNDA3NTk5YTcwNDQxYjdhZGFjOTgxMGNlNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGZhZTIyNjdkMTUxMjcwN2VmMWMxYzI3ZWZhOTI1N2FmNTYzOWMwYWU0ZDIyY2I2MjJjOWNmZTUxMzQ3NGExMSJ9"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L929-L1145",
+          "version": "repo-lines-v1:sha256:73b97d1050e290edd2d47c85d0ff0608d401add86979dac1aef4ff915a8bfabe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjE3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxYTg0MmE0ZDdiMWM2MWE5ODRkNWRhOTNmODRlNWRjNjYzN2M2MzU1ZGNkNDA2MDljNTRiZGQwZjUxYTdmMmIyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5OGYyZGI5ZDQ0MDIzYWI3MjZiOTk0ZjUzMTEyYjgwMTU2OWJiOGJhNGQxMThhZjhhODA3NTEzNjVlNjU5MDJkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1ZDgzNTA2NjVhYmUzNjM3NDQ0NmY2Y2RlMDMwMDQ4OWVkM2IzZmQ3Njk3MjE4YTEzYTU0YTJmMzJjY2FiYTc1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4NjA3MDhiNjZhM2UwNzk1N2VmNGU0YjEyNDY0MTU0MWRmY2E0ZmE3MWUyZjhkYTdmNzRiOGFmZjM0ZTM0ZjIxIn0"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:b53f8722d5b3e9eddbfb52b29a9734a8f631cf55c335a3f4a85cfe690ff51e1f"
+          "resource": "repo://scripts/ci/static-checks.sh#L17-L25",
+          "version": "repo-lines-v1:sha256:66e8f91ba1141ce16e2eda5afcad6d6f59603342359a633eccf56dd1617be14b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlMzc2OTk4NDUzMzMzMGZjYmUzMzhiMDVkOGYyMTM0MDQ5YjIyZmMyZTY3NzJkNGFmNjliZGRhMzFhZmRkZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFmMjk3N2Y0MDNlYmU3MTgxYzRhMTE2ZTk2ZGViMDc5YWZkNGViMmJiNjA1ZTcyNjE2NmYzZjg5YzU2MzFlZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTEwNjgyODdjMDE2ZDA5OWQ0YmU3MGFhMzhmMTRmNzc5YTU3MmQ0OWFkZGIxN2I2OTU0ZWVlYjYwMzlkZWQxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOThhYWU0ZjI2NTVkZjQyNTNhNjVmNGRkZjEwMmIzNzA2NDQ5OTJiNjI1ZDY0ZjY1YTE4MTYzMWVlY2ExZTJhMSJ9"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L412-L487",
+          "version": "repo-lines-v1:sha256:9c0da015f67270e8a81d6eb459279dd23224bf3b93df7924bcf1b56c1148cc1f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmYjNlZmM1ZjgyMzhjN2JiZDcxNDY3MTI2MjdmY2ZjYWYzNjEyMzZlMTFhOGRhZTdlNmZmZjcwMjYzMTlkM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxYjJjZWMwZGJlNjhkM2ZlMTYzMmMxYzBjMDMzNDQ0NTc5NDkxNjA5OTkxMmIzMThkOTk0MGI3NWNkMmI4ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiNGY5OGRlMTY0YjBjYTg3ODk2MTJkM2I0ZDk4M2UzNDVhYmI2YWQ2MmIyYmNjZjc5ZDA1OTljMzRhNmRjNjQifQ"
         }
       ]
     },
@@ -1012,7 +1016,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-quiesce-test.py",
-          "version": "repo-file-v1:sha256:a2da4b24607829dae226e226a834cf6551ab043ed8092727f18c28cc4567c1d0"
+          "version": "repo-file-v1:sha256:d00b6a250af18b72e22d7f7a9e30311175c85ab264b97ea8f03d7722afbd141f"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-startup-test.py",
@@ -1022,33 +1026,37 @@
     },
     {
       "id": "claim_fe340c58d87d4c2ab2a69685510ad336",
-      "statement": "Checkov secrets scanning uses an exact three-finding baseline for non-secret Kubernetes Secret-name strings in the dormant Enterprise chart source.",
+      "statement": "Checkov secrets scanning uses an exact four-finding baseline for three non-secret public Kubernetes Secret-name strings in dormant Enterprise chart source and one generated octeliumee-secretman NetworkPolicy name paired with its reviewed spec hash; the static gate rejects a wider baseline.",
       "evidence": [
         {
           "resource": "repo://.checkov.baseline",
-          "version": "repo-file-v1:sha256:a7511317c8c003ff5551dc2fec086bf101166b8c05bd4ba8c7340f80490209b1"
+          "version": "repo-file-v1:sha256:c6fd9318585b481a17ef1f5257daaafd7a4b2521497413c2efcc39a18aa52de7"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:45b778b5bdd765e8b0564b4fc1469bb086f8a4578d9d20910b8b4aa0bf1f3b10"
         }
       ]
     },
     {
       "id": "claim_0b51f7e3b1f84ea2ab15ddfa1579c04f",
-      "statement": "Namespace, Configuration, and Agent reconciliation retries recover uncertain creates only from unique exact API and owned Kubernetes candidates; definitive rejected creates clear pending intent only after fresh absence, and later objects remain foreign. A ready inactive tenant requires the three pinned base NetworkPolicies, owned Configuration ConfigMap, and stopped Agent identity. A blocked run may have changed state; removal needs a reviewed logical-Namespace cleanup path.",
+      "statement": "A Namespace reconciliation retry recovers an uncertain create only from a unique exact API candidate; ready acceptance requires exact API and owned Kubernetes readback with the three pinned base NetworkPolicies. A blocked run may already have changed state, and removal requires a reviewed logical-Namespace cleanup path.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:25e5f26293b5bc2c470d80a85b763f10445265e838f3251da6f45368cca2a0c5"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L48-L104",
+          "version": "repo-lines-v1:sha256:543badeb77b7bbbb2a4942c07a81eb3c7e1919ad0fed17416a84a6040d340d0f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4YTliNTA2MDBlZmRmNzM1OGUwMzVkMDJiMWZjM2MxYWZjM2QwYzc4NmVhMGFhYmI2NzYyNDdkMTRlYzdmOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2ZDkzMmVjOWMxNjYyOTE2NDEzODUxNTU5ZTEyZWE1NmU1NjM4YTBkYjBmMzdjYzE5NjQ5NzFiNWUxNmZjNzMifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
-          "version": "repo-file-v1:sha256:32ba3e1ad43a47b571119ec3e0763edeb95e073dd05b643ed033b9a214fa83b7"
+          "resource": "repo://scripts/openclaw-enterprise.py#L248-L317",
+          "version": "repo-lines-v1:sha256:ba39425e6465869d1eb847f78e2eaee3666307bcb1b5ee82b1552a176253daf7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlOTczMTVhYTY2OTQ2OGNmOTY5NzhiNjhkNWVlNDk0YTZhN2M5YTRmNDk0ODQ2YjgyOTExMGQwNmVmMjdhZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwZjFjY2E0MDc4YjgyNzBmZDYxOWUyYjRlODFlNzhhYzIwNTVkYTEwZjYxYzU0ZmJkYjJhNTBkMmIxYzAwNTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFmNmE3ZWM3N2U5ZTZiOGU1ZTMxNzlmMTg4YzFlMDg2Y2M1ZTNjYTQyMWYzNzI2OWZkOTRjNjQzNmYzOTExMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzYWQ3NThmZTUxNjRlZTc4MmU2MTUyMWE4OGU2OTJkYWNkMzAzYTRiYWJhYjZmMTQxM2JkYTcxMDQ4ZDY5MzQifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:b53f8722d5b3e9eddbfb52b29a9734a8f631cf55c335a3f4a85cfe690ff51e1f"
+          "resource": "repo://scripts/openclaw-enterprise.py#L499-L753",
+          "version": "repo-lines-v1:sha256:b53dc57ddd3d0e71fac2687fb3c3c3d5ba2fa920bcf59013f0a34550127f237a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxMDcyNzJmMDRkZjkwM2Y3MDE0ZTAzZjBmMTk5ZDYzZDUxZmRlYzk5YjJkNzRiMThlODkyNDEwOTliNDk4YjQ1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDAyZWI5MjhjNTE1NGNkYjFmYzc4ODU3ODkyNjkxMTYyODRjZjg2OGJjNjA2MmNlNjRmYmQyMjZiZGY1MDgxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzODZmZjAwNzFmOTNlMDM2ZDI1MjM0MWU4NjljYTgzYWEzOWVhZGMwODYxMjc2NzZkMDFmY2NmYmFmMzg4OThhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhZTg1NGJhZjcwNjU1MmI3MDY2YjhkNDdlY2QxNjFmMjc5MTRkM2FhZDJkMzRkMTRlZTUwZmUzOTIzZTcyZjdjIn0"
         }
       ]
     },
@@ -1058,7 +1066,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
         }
       ]
     },
@@ -1096,7 +1104,7 @@
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
-          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
+          "version": "repo-lines-v1:sha256:c726f7abd6bb5ec09630891ca84cfaf777794c31c1fdc69458645993e760bdb6:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
@@ -1118,11 +1126,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
         }
       ]
     },
@@ -1135,7 +1143,7 @@
           "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L159-L247",
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L231-L319",
           "version": "repo-lines-v1:sha256:2c2e93861c3fdba4894a9e725ba19fc1560e0ba33cdf9467674691304847f681:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjN2U1NDg5YzUwNWQ2MmI3NGUwYzRhZWFlNzY3NDllZGM3OTljNWYyNTEyMTRjYmQ3MGZhNzMwNGYzYjk1YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZDYzNmIxMTdjNjBmNTBmMTI2ZDVlMDA4MmY4MDNjMDQxNWZiMWM0OTYwMjE5NmM5Mzc3YTRiMDNlZGNmZDUifQ"
         },
         {
@@ -1158,7 +1166,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1166,23 +1174,257 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3773f7c38414ba9a5371cf1ae64cc41",
+      "statement": "The protected private Octelium catalog job supplies a read-scoped GitHub token to its fixed helper, which selects exactly three Policies and three Services and rechecks the current main SHA immediately before each of two catalog writes. Missing or advanced main stops the next write, and offline fixtures cover both stale-SHA points and lookup failure; these source checks do not prove a live dispatch.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/octelium-private-kubernetes-apply.yml#L110-L123",
+          "version": "repo-lines-v1:sha256:da59c60e33837de63d99639cd1825abfab5619b390ef67d813575f08bd32ab1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3MTgzYWNlYjQ3OGJhNTFhY2VhNWI1MTg4NGI5ZGY1MzY1OTllNmUyNzI5NTY3YjY4ZTc3NThiYzY1N2JmNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1NzcyOTYzMzZhNmU4NjQ2MWM1MTllNTM0OTU3YmQ0OTA1ZDk0OTU2ZTQyNGU5N2Q3OGJiOGZjNTQzOTdjYjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlNWNiOTliN2JhODA5ZjBiNjVlZTNhMTFlMWI0ZDI0ZWNjN2VlMGY0NzVlMWQ0ODA0MjgxMmI5YzRjNTVkODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlMzNmZTEzMjExZGUxNDNmYmIwMjk5MDQ5YzM4ZTVlMzEwMDRlMjRmZDg4NGU1MmE1OTA4Mjc2OTVlMTI0YzUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py#L75-L112",
+          "version": "repo-lines-v1:sha256:81d7f409438f574e8bdf72982b9d624fe3ade4698e149ad231b296939d3ca87e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4NjczZmYzYmFjZGUyZGZhMjY3M2NhNTczYTVkZjZjMjAwZWMyODdhZmEwNzk3ZjU4YTMzNGQ2ZjUwZjUwNjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkODBiNTU4ODVhNjk4N2Y0ZGI3ZGEwZjMxNzZlMDNiMzA0YjI0NzZlNzVkMTVkNmEzMGUyMDM3NTFhMWNlZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwODI3OWJiYWIxMDRjMTc0M2E5MDAwNWE2MWY1MzA2YzNmZDMxZjUyZGE3ZjZkY2FmMjZmOTE5ZDljZmVhYjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L35-L49",
+          "version": "repo-lines-v1:sha256:5c123935f5cd5373d59890a0f66df8e8b6abcfa9c80e6d6760a3114b5d98903c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZWJjYjhiOGRiNTlhZjM0MWYxMmQ3MjBkYmVmOTA5MWViNDdhZmRjYTI0YTRkMjRjZjZhMzJlODBhZGQ1ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDI0NDU4MmI2ZmIwM2QyM2I4NDE1YWJlY2QzNDZiMGM5ZjQ2NmI2Zjc1MmIwNjgxODljZTdlOWEyZGMzNTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlZDA1ZTYwNTBmNDAzNjMzNjFmZGQ0YTdiNTJlM2Y2MGYwZWE1Mjg3ODFlMDM3YjZhZmIyMTRkMjZhZTA3NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4M2Q4MWU2OTFlMTBkNzA1Y2YzOTIxYjc4MzVlZGRlMGQ2MTk2NzlmY2ZhYTM5YTU5ZTkxMzdkNGM0OTc3NTIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L85-L107",
+          "version": "repo-lines-v1:sha256:9cc750928a802ea05c3402da96a0fab68a4acce4da6da8c8798e29e91dfd8943:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExY2ZmZGIwYmU4YjgyYTFkZTYxYmU4OGJjZjYwNDkzODNlMWZiY2I5ODU0ODQ5ZTRlMDMwMzI3NWYzMWVkYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3M2VlMTcxM2QxNTFhYmFmYjA5YWIyZDgzYmQ5NjcxYTUyZWNkODJkNjUxOTVlY2IxYTAwYmFmOWQ4M2U0NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOWI0MDllMmQ5MWM4N2Y4NGY2MWI2NDVjMmFhZTMxYTJkNmY1NDc1M2Y0ZTY3MTkwNDYxMWRmNDEzOWYwNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_a54d750b2e7e4fae9832f7b40921adf5",
-      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures with fresh directories and bounded backoff, report exhaustion after five, and stop on hard failures.",
+      "statement": "Offline Harbor publication fixtures require an OCI-index authenticated pull to recover after four classified transport failures in one temporary OCI directory while retaining partial content, forcing recursive checks of nested data, and using bounded backoff. They report exhaustion after five attempts and stop on hard failures.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cea83d259497aede9e320da83070e3342192d7ca83841c3d90f5cee47890c1e0"
+          "version": "repo-file-v1:sha256:90004f24ac56c8cdf3937eabd05b541ca054153a06595d29ce184406ea1a2a32"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8"
+        }
+      ]
+    },
+    {
+      "id": "claim_83d895695cfd4b1d88c869cb2ee7094d",
+      "statement": "The staged homelab-ci-plan Octelium workload policy permits Kubernetes read verbs and dry-run writes while denying live writes and subresources; offline fixtures exercise these declared rules, but source checks do not establish live enforcement or issue a plan credential.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
+          "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:0f4d1d2e4685c444f1e770df9029e85c7912788f9169632198fe2e9f8f6d8970"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d36208235a1487b89c5a0b553a914c9",
+      "statement": "The 19:00 and 20:00 scheduled Renovate dry runs hit the same public canary datasource key on distinct Pods; after protected v0.0.2 publication, the 21:00 scheduled run refreshed that record and selected one new canary branch proposal, completing T022.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
+          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
+          "version": "repo-lines-v1:sha256:688e58fa7162abea026b2d4980cce4c2fb37392ab18f699405cc731f2cb4d6ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDVkOGY2M2E0YmQ0YTI4ZjNkYmRkYzU3ODBmOTAyZTg0NjIyOTEzY2Q3ZGM2ZjZmNDEzYWRjNzk4ZjFiODQ1OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e6f34f211f6a444a8320b50a4ef75dcf",
+      "statement": "Retained 17:00 logs identified one repository's lookup errors and the Job/alerts failed visibly; the protected 03:00 missed-slot drill fired RenovateHourlyCycleMissing at 03:20:47, and the restored 04:00 scheduled Job succeeded with alert clearance, completing T045.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L19-L25",
+          "version": "repo-lines-v1:sha256:2315591deb2784921550b063e3ffb743fc67c8c7b106b9bc276820a0f8622985:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE5OGI2Mjg2MTEzOTg0NjA2OTk3MjQ5ZjEzMmNhNTI1NTk0ZWJiZTY4Y2NjNWI1MTA2OTJmYmQ3NjdlNzNhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQzNDllMjBjZDYyZTk3NjQ1MGZlMDhlMDhmODM4NWY5YjZlOWY4MmJjODVhMDQ4ODA4MmU0YWJkNWIzNzMyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMyY2EwNWI5NDgzODA5YmI4ODNlNGVmYTEyYmM3YzM4NDE1NDE5OThhZDI2NjZkMDNmYzRmNzg0MzgxMmVmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTgxMmZlOTk1ODY1ZmU4NTNmZDMxYzJjMWM1ZDNjZTQ4YTdmNTBiY2M1ZmU3ODMyZTVlNDRkYjJhYmVmZmM3NCJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
+          "version": "repo-lines-v1:sha256:06114a754a7662215d2c7c8d6f10990b4c72e9fad5ded30a6155cc8b62abc75c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2IyMjg0NTM0MzBiNWE4YzlhODFlYmM5OWE4NjZiMWExNmM3MWIyMGUxMjczOGQ2Y2Y1YmI2MjY0MWFlN2Y0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3YjgxYTQ2Zjc2YzRmYjFiNTU4ZjdkNjEyOTAwYTVjZjBlYTkyMzZkMTI4NTFiZjYwZGExZmM2YWZjMjBkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE0NmU3MTQwY2Q5ODVhMjQ1OWNkMGU3MGI1MTY3Njc5YTM1Y2VlNjY1YTBjYTMyODIyY2FkNGI2N2FkYjkyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmNlNTIxNDIxOTQ4ZTQ2MDk4N2UzYzMwNjMyYzMyMzE2ZGMzODJhNjg0OWQwNGQwZGVlNjQ1OWE4MjE0OTc0MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_87c97855b2c14abfb6f222c3d710b7a7",
+      "statement": "The 2026-10-20 07:22 UTC read-only recheck leaves T022 blocked: the best worker has about 3,398 MiB unreserved against 4,096 MiB initial Enterprise steady need, 6,447 MiB actual use, 45 co-resident Pods, and 9.71 GB root-filesystem space free; a NoSchedule taint cannot isolate those Pods.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b33768a0f274977805e09ebac06c342",
+      "statement": "The protected PR plan fails when AzureAD stack or shared root sources or plan inputs change and the plan environment lacks client/tenant selectors or a complete GitHub OIDC session; unrelated changes may skip AzureAD.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
+          "version": "repo-lines-v1:sha256:493feb0893ed1fab5d88d3a8cfa4d5c01c53a1c4e4e35398ab5919bd943d8baf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxYjIyMTNiMTc1NmVhMjViMjhkNDI0NmZmMWM1YTM2MGU4N2Y0NmEzYjJjN2JlYzllYjNmNmIxODE2Mjc2ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MWViYTc5NjRlNDFkMGFiMzQzNzcyNTNjNmVjM2Q1MThkOTQ4MWU2ZTI0NmU2MmU0MjVhMDgwMjgyNzdjYmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5NDNlOGFjZGYwNjQyZTY0Njc0NTUyYTI5MGVlZTNhZmUzY2Q0NDRjZmRmYjkxNmQ0Y2MxMTE0OWQ0YjJjYzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjZWUzOGE2NTQyM2UwMWM2N2M3YjRlMzgwMGI5OTVmNDk5YmE2YjIyMjI4OGQzMGQ0MGM1ZTk0ZjBlZjNiZWIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan.sh#L12-L31",
+          "version": "repo-lines-v1:sha256:29d25e2376d40782c1f77899e36efcae73513dccc5da85428389d3e3e3705d7d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllNGJlYjgyMDI5ZjRhMmIwOGFkMGQ3YjRlOGY4OWE4OTk3Y2U5MDhhOGE2MmE4MzExYzg2NDY2Mjg1YTE1ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjMTVmMWFjOWExZmUzZDBjYzFjYWJiZjdjYzBmODcwMTA4MWM0OTMwMzJjNjhmM2NiYjhhNWM1MGQ1YTcxN2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwYzFhNWFiMjQzNTNkZmNjZTg0MmUzOGNmOGQ4NDMxZTg3Mjc0ZDA3NDU0ZDg0NTAzMjhlMmY3ODE0YzVlMTQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan.sh#L190-L215",
+          "version": "repo-lines-v1:sha256:1ab75ac1ca361cc8dfa009f3e3c8997a10227b64c4154e601b97ef017cee9fc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNjlhOGI3MTllZTdiMTJkNTQwZjlhZGE1MjY4MzQ5MmUxMjc1MjNiMWQxNGFlY2U0ZTBmNWMxNGI2MGRiMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0OTNkMGI4NTYwOTczM2NlM2ZjYjQxODc3YmRkMTJjOTE5NDhhM2YzNDI5YzgyNzE1NjMzMjlhYjAxZDJjNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZjVhNmIwYTA1M2JiZWQ5MjMzZDQ2MTQ1ZTg2ZjRkNzE4MGRmMTc2M2ZkNDkwMjNiOTY5Y2M1ODA1MmY1MWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_060d81286ce645c59c9887edfa6874eb",
+      "statement": "The PR static job fails before deciding to skip the live Terragrunt plan if it cannot read the base diff, and an offline fixture exercises that failure.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml#L36-L62",
+          "version": "repo-lines-v1:sha256:2ea61499ed62c7617a441c8d107d7654a1b28b0406c7b78adaacae28709d0f40:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxYzg5YmYyOWQ5ZTVkZDAyYjcwOTJjNWEzZjg1N2RkZGNjNmNjZmQwMzAzMDdkZWU5N2U1N2NkODk1YmQyMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmNTU5NzljZTczMDIwMzNlNmIyZmQ3ZDg4ZjUzN2EzYjhlMDkxZWEzMDVjODExZmZhMTI3NGJmNTc2NGVhNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0NDU4ZTU1M2M2MGU0M2QyZDk5MzQ4NmRjY2MzZmQ5Y2M0ZWNlYzAxOTg4MmUyOTE0MDI5Y2UxODc2NzU2NjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyOWZlNjExMjIzM2M1MTFmOTEzOThkZDhmMDdlZDJiMjI4NmEwNjUyOTBhYmE0NWNhMGI1OTliZjcxZjFlZTIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py",
+          "version": "repo-file-v1:sha256:2a9e5922387211a72f2caff4226ea5b1580890de82a92dc44baa4fff12bbd29e"
+        }
+      ]
+    },
+    {
+      "id": "claim_872687e2eb77442a92cd40e27a3f1ef0",
+      "statement": "The protected owned-cleanup stage validates both current-SHA placement and firewall-ownership receipts before writing cleanup-attempt or invoking the firewall helper: each exact key must have an untruncated single latest version without delete markers, KMS encryption, a 1-byte to 1-MiB object length, and a matching SHA-256 checksum on the version-pinned download. These source checks do not activate live cleanup.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
+          "version": "repo-file-v1:sha256:ab7ad95771d6aa8f8cab9bde9db8ffd668f7ef9ddc42ca266cda869f20f2e1e8"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
+    },
+    {
+      "id": "claim_d2bb7c4027b140ae90c7db26e4b9c3c5",
+      "statement": "Read-only fixtures bind complete expected NetworkPolicy specs for three pinned Cordium v0.12.7, four pinned Octelium v0.35.0 Genesis, and ten pinned Octelium Enterprise policies; all 17 are source-bound, but pinned generator-binary rendering and live enforcement remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py",
+          "version": "repo-file-v1:sha256:076ff816d9675b24388616b56f04c435b6a1dfc97966070d0af9df0549c6a049"
+        }
+      ]
+    },
+    {
+      "id": "claim_401e6ef8883345159579fb1c697cace1",
+      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors admit public IPv4 and IPv6 on all ports, which additive NetworkPolicies cannot narrow; generator-owned correction and isolated canary traffic qualification remain required before enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
+        }
+      ]
+    },
+    {
+      "id": "claim_b4cf432304c94fb58505df85e2ef6be0",
+      "statement": "The protected Enterprise operations workflow has a fixed full-sync stage that rechecks the current main SHA, manually controlled source identities, healthy Envoy Gateway, and pinned upstream chart before complete foundation and Enterprise Argo syncs; offline policy and fixture checks do not prove a live sync.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:59e576517b8ef7fc485a0cad9c83d18d452d018c57cf2291aac7d9ba9604a963"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
+          "version": "repo-file-v1:sha256:293c9d1c13d141a32f60f38bf989f55860d8f390d07495e593a0ed9ef98b8992"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
+        }
+      ]
+    },
+    {
+      "id": "claim_6533bba82b1b423081412f23a709b100",
+      "statement": "Production Terragrunt apply rechecks current main before direct imports, untaints, Kubernetes writes, and applies; the root before_hook checks each multi-unit apply and the bootstrap after_hook checks before each self-management manifest write, failing closed on stale or unreadable main.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/root.hcl#L41-L46",
+          "version": "repo-lines-v1:sha256:1be7d5f63b35894393624ea6dfad0fd1c183e1ffc54ae3d2614a0b4997ef7d7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmI4YjM0NWU1MjQyNzZhZTFlMjdkNzVkMjYyY2RkZDkyMDNkZTY0MzM4YjllMWFlNGE5NGQ2MTAyODBkMTJjNSJ9"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L53-L69",
+          "version": "repo-lines-v1:sha256:f55e5e9832c0f18fa6d6c37d9260e374db92575ee477f7f8645ce0a545b5230e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMmJkMTk3MjA2NWYzNzZlYTkxOWIxNzdhNzQzMzM1ZmY1ZTZkZDQ0ODlmZjM2OTNiYTY4MWRiOTRlNWY0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YmQ4ODE2NDY4NjJjOWFiY2NjNTMxYmNlMjQyYjMzN2IxNWVhZGVmNjliZDA5MGE4ODM4MWFkZDQ5NjA1N2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOTk5MDMwN2QyNGRhY2Y5Yjc5OTEzZWI3YmJjNTZlY2IzOTFiOTdiMjg1ZGNiODgxZjFiNzFhY2I1ZGVhZTQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L198-L222",
+          "version": "repo-lines-v1:sha256:ccdce2aad38554c029fe09303c77320d79b6f6c5d930c8431d8ae14af58724a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmMTU3MzA1NzJlYjM3OWY2MzMxZTJjZDI4YTdjYmQxNDg5N2NiYjE4MWFkYmI1MTQzMmU0Yzg0NDc2ZmIwMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxY2Q2NjI1M2I3N2ZmM2NjNjc2MzczY2E4MTdhNTVmZjllMmI3NWQwZGU4YWFhMzlmOGJlMTZiNGMwM2VhMjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZWUyNjhmYmM0MzhmYTQ1ZDVjZGY0NTVlMDM4YWM4MmE5MmZiZDUxNzUxMmFlNDQ1ZWQ2MTc5Y2VlZDkwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYWZiZjM1NWQxOGZlMzlhYzNkY2RmNzY1ZmUyNTY4NmQ2YjIyYzE3MDNjNDA0Y2ZlZjMyY2ZiYjE5MmU5YTkifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-current-main.sh#L4-L22",
+          "version": "repo-lines-v1:sha256:91b4f9f45840e62745f0e55757df7c294c3510d202ed64cd949e65f074ff357c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3OTNkMTg0NTU1MmIzYTEzN2U5Yzc4OTdkYzc4YjE1ZGU0NzQzZjNmMTUzODlkYWVhMzE1OTE3MWEwYmRkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmODE3ZTVlNWZkNzRjMWFmMWQ1MDBjNjFhZjhiNDM1ZTE5ZTU2MjNlMDdhYzljMTBjZjZhYTgyODgzYmE5NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_772a1dbbace947b185efef4c62ad1d5f",
+      "statement": "The static wrapper runs a PostgreSQL 18 fixture for the dormant Enterprise foundation: a SHA-pinned stock migration runs as occ_migrator, occ_app can use its auth table but cannot create a table or read an ungranted table, and TLS, separated roles, dump, and isolated restore are checked without live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py#L128-L146",
+          "version": "repo-lines-v1:sha256:09987ce2bcc600a65fa4f6bbadf7bb6923b8ede75d741fb8c6a1530b8365a655:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NGY0ZTg5MWM0OGIyODc3MTQwNDEyYzc0NWE4N2U4NzdjODJhZjRmMDFmYjk2Y2NiMDAzNjQzZjAzNjM3MzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyNzQ2OWNiYTQxNzYyNDhiNGE5NWI3MWMzMTA1Mjk0NDIyODM0Y2FhNzkxNTNlZWUyMGFmYjdkOWRlNGM4MmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU2NmVlZDI1MTBiMTE5MjFlYTg5OWJlZWNhOWMxNmZjMjdmZjc4OGRmZjY5YmYwNWQzMWUxOGI0MTQzMWEyMjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg0MDU5MGEyNjVmNmJhMWZkZGRjNzgxMjg4Y2U2YjZlNDM3ZTM3NjEzNjE0NWJmMzU4MDMwYTA3ZWRhMDFkYjgifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py#L326-L359",
+          "version": "repo-lines-v1:sha256:d6caae043d4d61f3361f53f61fb1683be4dfad79bdbd9ed671a35d1df301f81d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0ZDc2OWJiMDM5YmMzNTA1Mzg3OWYxYWRjMDZhNGRjZmM5NDU4YzM4ODMzMDFhNTUwNWFjZDFkMTU3ZDQ4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkNzAyYjkwMjRkMzc1OTZiNTEzODhkOWIwNzY1Zjg3YTA5OTkxMzgwN2M4ZGRmNDM1NzQ1MDk3NWViM2YwYTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkZjhmNzU5NTBmNTkzNzA3N2UxNmFhYzdjMDc4Yjk3NTNkZDI0YTczY2NiM2M1YWI3YzU0YzdlZDVjYzQ5NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjMzBhZjg2NzE5NDBiNDFiNThjOTA5YWJmMzZjYTY4ZWNhMzFhZWI2NDU4YjE5YmIyZWIyM2MyN2EyMTYyZGYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L18-L24",
+          "version": "repo-lines-v1:sha256:a3ee548532f07f0d6c298efeb5ba4159ed245943bbf389696cd93ddde1af4450:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzViZTUzZWE1ZTQ3MTZkM2Q3ODY2M2FjYzVkZjE4ZmNkYjZiODIwYWFkOGEzMTg2OTBiOTcwYjM5YmZhMmE1YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzcwMzUwODc0MTU4ZjFiMjI1M2IxYjMzODEzMTE1MTdhMGU1NjUxYmY1ODNmYzA1NDM4YWY3YWU1MDk4NTM2MyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjc5ZTUzNWY5YmRmYjgxMWZiZmRjNThmZmViMmFkMjk1YzQzYTdiNjc2NDYzYWIzODFhNGJkNzg1ZGVmNTgyYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNThmMjAzNTZmYTExN2NmMjk1MWExNjA5OGYzNmQwNTNiMWRiYzVjYWNlMGZiNzM1MWE0Mjg3NjA0YmU0MWI3ZSJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:14:14.135Z"
+    "at": "2026-10-20T08:26:45.252Z"
   }
 }

@@ -688,7 +688,10 @@ echo "::group::Octelium catalog security contracts"
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-ci-plan")] as $plan_users |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-plan-access")] as $plan_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api-ci")] as $kube_api_ci |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
     [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
@@ -699,6 +702,15 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($plan_users | length) == 1 and
+    $plan_users[0].spec.type == "WORKLOAD" and
+    $plan_users[0].spec.session.clientlessDuration == {"days": 30} and
+    $plan_users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($kube_api_ci | length) == 1 and
+    $kube_api_ci[0].spec.authorization.policies == [
+      "homelab-ci-kubernetes-api-access",
+      "homelab-ci-kubernetes-api-plan-access"
+    ] and
     ($nofx | length) == 1 and
     $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
@@ -750,7 +762,47 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
         {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
         {"match": "ctx.service.spec.mode == \"KUBERNETES\""}
       ]}}
-    }]
+    }] and
+    ($plan_policies | length) == 1 and
+    $plan_policies[0].spec.rules == [
+      {
+        "name": "deny-non-dry-run-writes",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"]"},
+          {"match": "!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != \"All\""}
+        ]}}
+      },
+      {
+        "name": "deny-subresources",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "has(ctx.request.kubernetes.subresource)"}
+        ]}}
+      },
+      {
+        "name": "read-or-dry-run",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+          {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "!has(ctx.request.kubernetes.subresource)"},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.http.method in [\"GET\", \"HEAD\"] && ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"},
+            {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"] && ctx.request.kubernetes.http.queryParams.dryRun == \"All\""}
+          ]}}
+        ]}}
+      }
+    ]
   ' >/dev/null
 echo "::endgroup::"
 
@@ -833,7 +885,7 @@ gate_body_sha256="$(
     sha256sum |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "9479ae825c1cb4bc27377c47c14d0c5e4ff18d3ebb74ce5cf504bb500091fee4" ]] || {
+[[ "$scope_body_sha256" == "572582f40953e32c851ef3535ccd80f141a4df6d936ab34f34ed71fd6d52a5b4" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -929,6 +981,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-images.yml:publish' \
     '.github/workflows/openclaw-enterprise-model-credential.yml:credential' \
     '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-operations.yml:enterprise-sync' \
     '.github/workflows/openclaw-enterprise-operations.yml:legacy' \
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-startup.yml:startup' \
@@ -989,26 +1042,26 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml afc563a9b98babe06f77a5c26a85c98dd27333f107c35e58e18ddccb87899cf4
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml 53d2b15f3d23944b2f6322c14ec1f216ef1cc9d743156450e702facc7098de91
+.github/workflows/harbor-mirror.yml 71dae48a3e82eb47591f9df7bd9d56ce837a56e307f88e0f7707336e61cbd776
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml ff4bf59a9a70afb0723cc0c5dd3f60a8d64a4b031efc03169847e7c12616d49d
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml a2f9195795f78e66450fd9c74fb8bdae3bba594809f5cf19cb5f3586d71e78ed
+.github/workflows/openclaw-enterprise-operations.yml 810d453a08279909d0dc18fa4e70a2618e5635ee61288b29281f7fcd406ac094
 .github/workflows/openclaw-enterprise-startup.yml fa532be5d92086f46d805cfbe10bd1230076ecc42827f483a79a1f1d23e76e5c
-.github/workflows/platform-maintenance.yml 28718f0008dd166c6cada1c6fb88fd1fbbb854acdef796ed636590b4a2089edd
+.github/workflows/platform-maintenance.yml ce493d70c105d12b535332acf42ced109a4df157c9f2ef216d27487ec2755378
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
-.github/workflows/octelium-private-kubernetes-apply.yml 5bccd9e772bb094397f69697a4153c754513e3c0dbb392c231b2f57dc748e5e1
+.github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
-.github/workflows/terragrunt-plan.yml e75bb8269572b5da2e9b923670b15a6c209dc6206c01a5f9e57799bb9af26022
+.github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
 EOF
 echo "::endgroup::"
 
@@ -1120,6 +1173,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("base_sha=\"$(git rev-parse HEAD)\"") and
       contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
       contains("jq -r '\''.[].head.sha'\''") and
+      contains("$GITHUB_EVENT_NAME") and
+      contains("grep -Fxq -- \"$event_head\" \"$all_heads_file\" || exit 1") and
+      contains("native-receipts-unchanged") and
       contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
       contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
       contains("repos/${GITHUB_REPOSITORY}/commits/main") and
@@ -1145,7 +1201,7 @@ while read -r source expected_hash; do
     exit 1
   }
 done <<'EOF'
-scripts/ci/harbor-native-chainguard-receipt-import.py c7a8b65baa2ae4a7a6f5afbd0b9b25a1e3f2638bdc5f8241e42590eef96e69d2
+scripts/ci/harbor-native-chainguard-receipt-import.py a2ac20c35e1b57d9238bb8ab76a4f154a20e0a98b17cb248fd0935ac241a2b22
 scripts/ci/harbor-native-chainguard-receipt.py 7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
@@ -1313,6 +1369,7 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
       contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
     ($catalog_steps | length) == 1 and
     $catalog_steps[0].env == {
+      "GH_TOKEN": "${{ github.token }}",
       "OCTELIUM_CATALOG_AUTH_TOKEN": "${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}"
     } and
     ($catalog_steps[0].run |
@@ -1330,7 +1387,7 @@ bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "f91c07dbf100ff0ea84837c4968f632939696eaccbe235a3380cacfcebb11a50" ]] || {
+  "84a474308c9086265b8c5769d9bad552f2d14ef84f821456ca5a6281459fa24c" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }

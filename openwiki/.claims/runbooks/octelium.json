@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:209b881cc4c751fe7498c417c04edb14376f28237d294fe3c4a7220d0bd2b290",
+  "pageVersion": "sha256:cda16a1deb88a8f18b77c48d52ddff4ef72b5c9a14643b4b0bf3d94115872acd",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
           "resource": "repo://docs/octelium.md",
@@ -58,21 +58,35 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise-access.py",
           "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
         }
       ]
+    },
+    {
+      "id": "claim_cb4a3cbde1f84a20b7611bdf9760ebe3",
+      "statement": "The source Octelium catalog stages a distinct homelab-ci-plan workload User and Policy on kubernetes-api-ci that allows reads and dry-run writes while denying live writes and subresources; merging source does not apply the catalog or issue a plan token, and offline fixtures only test declared rules.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
+          "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T22:48:59.937Z"
+    "at": "2026-10-20T07:27:46.454Z"
   }
 }

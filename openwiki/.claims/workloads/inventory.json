@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5623141203fbc8fc9e274074bce46670bdaa098ed86ad9c6701b992e2c766444",
+  "pageVersion": "sha256:c2cdadb7277730db860462692860515fedf397889985083f7d92081e80ce5e8f",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -267,8 +267,8 @@
           "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L6-L59",
-          "version": "repo-lines-v1:sha256:a0cf845c9739c1d0d0ae1708602bec8def146d8fb3a571fcd4b81d0a6e7d24c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
+          "resource": "repo://docs/harbor-image-mirroring.md#L6-L65",
+          "version": "repo-lines-v1:sha256:65cbd1e0e84e88a995173b618b06ad474b1f1468ae3a0595380abec441b6ed8e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
         }
       ]
     },
@@ -292,11 +292,15 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while eligible Harbor transport and version discovery, full dry-run parity, fault recovery, and reviewed cutover remain open.",
+      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor alias to a registry-only Traefik listener. Protected App-key transfer and temporary writer-grant retirement are complete; the legacy GitHub Action remains the writer while eligible Harbor discovery, T024/T042 cache-fault and NAS-capacity recovery, full dry-run parity, and reviewed cutover remain open.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
+          "version": "repo-lines-v1:sha256:35b66f1c4e3dde01914dfeb0e0d1d0001d0c496a44e6b8998520828c0948a587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUxMzZhZTZiYTZmZmE2ZDJmMTY5OTc1ZTFiNmVjMTI0ZmQ0NTBjZTZjYTkwZGI4NjgwMzAyMWZiMGE4NWVjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L42-L117",
+          "version": "repo-lines-v1:sha256:9e28f9139d0e66a416326d1eca79e62db3588416d18568433e6d048431055089:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTRkNTU3NTJjMDliMzQwMDAyN2EzZjQyNTEwMjAyNmI5MzJhYWMzNjk2ZjQwZWJjODkzZDM4YWVmYzNiYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMWNjMWUyYWE5ZjA3ZDlkMGIwYTllODg0OWI1ZTM3NTQwZTU5NGEwYTZkZDVhOTk2OGNhZjk2MTg5Y2E1YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -311,16 +315,8 @@
           "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
-          "version": "repo-lines-v1:sha256:c79c28a4dd7e7e10bc2ede27c0daebb097152f1ca5a90586893e7cc429a8d0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMwYjYxY2IxOTg5MDlmMzU5OWZkMmU1YWEwMjJhYjVlN2M2MDhiZGFjMTk3OTdlNmVmMTFmYTI4N2Q3MjllMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjc3MTczNzQ5ZDMxODdjMmRmOGQyODhlNDg3NWFlYWVlZmY1YzRiNWY2N2JlOGQ3ZGUzZDhkNWMwZTUxNWMyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU3NmIxODJlY2I1Y2JkYzI1ZWQ4YzI4NjlkMDU2ZTY3YTU2OWYyZTI1NTA2MWFjZjQyZDBkOGE0ZDFjNTI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
-          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
-          "version": "repo-lines-v1:sha256:c9d6c2f54666e24e71341487098fd7c416852d126832707f8a184a09f6ec544e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlZTAzNmE1YWY2MDcxZWJhMzM4YTg4YjA2NDUzYTFmYzE2NzVmMjU2MjQxYjYwMmQ3NDA3MjQzNjRhYjAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MjU3NmY4MWIyNmRiMmE0ZjAwOTQ3NzM3YmIyNTIxYWRiNmViOTM1YmFkMzcyMGQwMGU4ZTU1OWVkNjRiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY5ODZmOTdiOWIwYzY3MTczZGU2ZWI1YmMwZDllZTJhMDc5MjgwOTZmOWVlMzA5NDk0OGUyMzBiNWUyYmE2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJjODBhMjk5ZjU0NDJkMDYyNmFiZjg3OWQ1N2NkMDE4ZjRhMGU3ODJmNTNjNzM1ZjMyYTZmMDhkMWY5NjJmNyJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L78",
+          "version": "repo-lines-v1:sha256:b87211f2f028492ff8c514a060962cebcb7043c98044f1e093e31abd89a2bccb:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
         }
       ]
     },
@@ -334,11 +330,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:8f2b12a2cba37d431e85edaa2cae0f816e8f1b366ec8ea67e8dc45886fbe9e56"
+          "version": "repo-file-v1:sha256:5acded19050abc00e555f632f5fc2d52510fb0468b635825609c169214562871"
         }
       ]
     },
@@ -364,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         }
       ]
     },
@@ -382,41 +378,41 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f11e59ce46b55fd14a41aa6ea7bdf3c3d625e61ea0e6f309405074584addc334"
+          "version": "repo-file-v1:sha256:2711f41583b26578ea561778c9e97c5ff99aafc7925dd303ca09dd9e4c83079e"
         }
       ]
     },
     {
       "id": "claim_765bd39c40034b66970cbee16651277f",
-      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted control-plane and tenant namespaces, tenant RoleBindings, exact retained SSM projections, system ingress denial and PostgreSQL certificates, but no running database, storage, route or Installation workload.",
+      "statement": "OpenClaw Enterprise's unregistered foundation declares restricted namespaces, tenant RoleBindings, eight retained OnChange SSM projections, system ingress denial, PostgreSQL certificates, and a dormant TLS-only PostgreSQL 18.6 StatefulSet with four separated roles and a 10 Gi local claim template; no Enterprise database, PVC, route, or Installation workload is live.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L8-L41",
+          "version": "repo-lines-v1:sha256:5fc1f06a44d9c1294ffa770bc8d0a873cfa58be82429adbcbf6a583281ff98fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzMzYzYjgxNjllOGQxZjJlNDYwYTAzN2ExN2VjNjE5Njk4YjE0OGY2YzAzNDg0ZTMxZjZhMDczMjk4M2RlMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkM2Q4YzQzOGE3NDc1M2E5ZTIyMjUyOWRlMTQwMDdkZGYyNzg0ZDY1ZDZjMjExZjExNjY3ZWYxZjE5NGMzMjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyMzcxYmI4N2MwNGEwNThlYjU5MDg2ZmQ2OWMxOGMxMGRkZTljYjU0ZTdhMTg3OWJlMGZhMjdiNzFlNmYwMjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmZDNiYTcxYmE5NzZiMDAyYzc3YWYzMjZkMzhhNmZlNWExMTg5ZDIzMWVhNWNlYjJiODZiOTNjYTczNWJlZjUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml#L1-L142",
-          "version": "repo-lines-v1:sha256:2f47ce2f94290cdbc7ba3a162ec900294f37a1783a77505beba6be9dc5695e2f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlY2E5YWY0YzA1NWUyYmYxOWM2NGFjZjIzMmVkM2QxMzg3Njc2NmNjYzk5YjQ0MzM3OTdmNzljZDYzYWJhMWU2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJlYTY1ZTI4ZDAzMDY4ZGU5M2RjNjFiYWZmNWM3YWM1ZjUxMWNlOGExZWZkODY3YzQzNTMxNmM2NmYzYjI0MGMyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
+          "version": "repo-file-v1:sha256:13e2049fdb039f9b24df9c7d1c9aff6f9005fdf09adf981e95a8dfe1f88a4370"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml",
-          "version": "repo-file-v1:sha256:cdc8578bea1b004134ae7841f8a2520e413e8e18699499704c62b30369d3c3ba"
+          "version": "repo-file-v1:sha256:527a863a7050772d22b9d3f6ae1788884418997653bd2e1e2e581befa8a95190"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml#L1-L74",
-          "version": "repo-lines-v1:sha256:3c29eabbfed512e21ad464a2b2fba989b8ded8e845f93a576aa133e761e17bf4:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2YjE1YmM5ZDkzNDY5ZjBjZTliM2Q4NGViM2FjMGM1OTYyZWVlNmFjOWIzMTg2NWZhOWZlMzE4OGUyMGU4YzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml",
+          "version": "repo-file-v1:sha256:3c29eabbfed512e21ad464a2b2fba989b8ded8e845f93a576aa133e761e17bf4"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:f68ddf093904b0aa8bdb7beb3c59acd25bc7df9a8cc5452e70bd7ea6d237c48e"
+          "version": "repo-file-v1:sha256:611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
-          "version": "repo-file-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml#L35-L219",
+          "version": "repo-lines-v1:sha256:1bd680797880eb4aab45be437890a7f6561728dd42223b9b0b42454a96d406a2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTg1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMjkyMjY1ZjZjMDcxNmM2YTgxNDNkNTZiOThmYTdhM2VkODQxYjg3ODQ4ZTQ4MzhkODgwMmQ1ZmM2MGEyYjFlIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjAwMzVlYThkYTY5ZGFlYjczNGNmODY5NGY1Mjc0OTk1MjhjYmViNzIzY2E3MjkxZjRmYjc2NDgzYjgwNDYyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YzEzYzFiOWQ2MWE0NzU3N2JiZmYyNGI0N2UwYjA1OTQwMGI4MWRiOWE1NDE1MTBjYjk4Zjg0N2QzMTRiMjhhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -430,11 +426,11 @@
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
         }
       ]
     },
@@ -444,7 +440,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:25e5f26293b5bc2c470d80a85b763f10445265e838f3251da6f45368cca2a0c5"
+          "version": "repo-file-v1:sha256:0abb1a5ff7a5ec1ae26765e995ee21cdc727168a7f4d2064a00fdaa9e88d6802"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -452,7 +448,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
+          "version": "repo-file-v1:sha256:d287314c9ce02f390bf0c5dd41636edaf431e1a5eff88393d9c2208fb1a83a0f"
         }
       ]
     },
@@ -470,7 +466,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         }
       ]
     },
@@ -480,15 +476,15 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
         }
       ]
     },
@@ -510,7 +506,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -519,26 +515,118 @@
       ]
     },
     {
-      "id": "claim_d24b15a9522f49f1ba4ab1d0c18f8234",
-      "statement": "The source-only OpenClaw Enterprise reconciler can create or adopt one logical Namespace, native Configuration, and stopped Embedded Agent after exact identity and ownership proof; it has not run against a live Enterprise installation and does not activate the Agent.",
+      "id": "claim_08b85c651e184aabab1073f5789205d3",
+      "statement": "Renovate T022 is complete: scheduled 19:00 and 20:00 Pods hit the same public canary cache key, and after protected v0.0.2 publication the 21:00 scheduled run refreshed the record and selected a new canary branch proposal.",
       "evidence": [
         {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
+          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
+          "version": "repo-lines-v1:sha256:688e58fa7162abea026b2d4980cce4c2fb37392ab18f699405cc731f2cb4d6ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDVkOGY2M2E0YmQ0YTI4ZjNkYmRkYzU3ODBmOTAyZTg0NjIyOTEzY2Q3ZGM2ZjZmNDEzYWRjNzk4ZjFiODQ1OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8b5c600e23284fbc994c8765a7e95b60",
+      "statement": "Renovate T045 is complete: retained 17:00 repository-tagged lookup failures and alerts recovered in the 18:00 Job; the 03:00 missed-slot drill fired RenovateHourlyCycleMissing, and the restored 04:00 scheduled Job succeeded after alert clearance.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L19-L25",
+          "version": "repo-lines-v1:sha256:2315591deb2784921550b063e3ffb743fc67c8c7b106b9bc276820a0f8622985:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE5OGI2Mjg2MTEzOTg0NjA2OTk3MjQ5ZjEzMmNhNTI1NTk0ZWJiZTY4Y2NjNWI1MTA2OTJmYmQ3NjdlNzNhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQzNDllMjBjZDYyZTk3NjQ1MGZlMDhlMDhmODM4NWY5YjZlOWY4MmJjODVhMDQ4ODA4MmU0YWJkNWIzNzMyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMyY2EwNWI5NDgzODA5YmI4ODNlNGVmYTEyYmM3YzM4NDE1NDE5OThhZDI2NjZkMDNmYzRmNzg0MzgxMmVmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTgxMmZlOTk1ODY1ZmU4NTNmZDMxYzJjMWM1ZDNjZTQ4YTdmNTBiY2M1ZmU3ODMyZTVlNDRkYjJhYmVmZmM3NCJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
+          "version": "repo-lines-v1:sha256:06114a754a7662215d2c7c8d6f10990b4c72e9fad5ded30a6155cc8b62abc75c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2IyMjg0NTM0MzBiNWE4YzlhODFlYmM5OWE4NjZiMWExNmM3MWIyMGUxMjczOGQ2Y2Y1YmI2MjY0MWFlN2Y0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3YjgxYTQ2Zjc2YzRmYjFiNTU4ZjdkNjEyOTAwYTVjZjBlYTkyMzZkMTI4NTFiZjYwZGExZmM2YWZjMjBkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE0NmU3MTQwY2Q5ODVhMjQ1OWNkMGU3MGI1MTY3Njc5YTM1Y2VlNjY1YTBjYTMyODIyY2FkNGI2N2FkYjkyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmNlNTIxNDIxOTQ4ZTQ2MDk4N2UzYzMwNjMyYzMyMzE2ZGMzODJhNjg0OWQwNGQwZGVlNjQ1OWE4MjE0OTc0MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a5f8cba223b046b2baacb669a1513c02",
+      "statement": "The 2026-10-20 07:22 UTC read-only capacity recheck finds about 3,398 MiB unreserved on the best worker against a 4,096 MiB initial Enterprise steady request, and 9.71 GB root-filesystem space free against a proposed 10 GiB local claim; 45 co-resident Pods prevent a new NoSchedule taint from providing isolation.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+        }
+      ]
+    },
+    {
+      "id": "claim_9baa40f2bf824b43b0a9aca5b14e7d94",
+      "statement": "Read-only expected-spec fixtures source-bind three Cordium policies at pinned v0.12.7, four Octelium Genesis policies at pinned v0.35.0, and ten Octelium Enterprise generated policies; all 17 complete specs are bound, while pinned generator-binary renders and live enforcement remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        }
+      ]
+    },
+    {
+      "id": "claim_c80db162aa5f411599688eea41b7b37d",
+      "statement": "Cordium ws-main and Octelium svc-upstream retain public IPv4/IPv6 all-port egress that additive NetworkPolicies cannot narrow; generator-owned correction and isolated canary qualification remain required.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
+        }
+      ]
+    },
+    {
+      "id": "claim_177aaa90270b469cb95319ead02bf1a7",
+      "statement": "The Enterprise full-sync stage is source-tested but cannot run until both Applications are registered and the reviewed installation phase is selected; it would sync foundation before Enterprise at explicit revisions.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:f93b07a2c4502c2fd0a6473e4a74e4ac58196c16c1d04413ea8ecad741aff0c6"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:25e5f26293b5bc2c470d80a85b763f10445265e838f3251da6f45368cca2a0c5"
+          "version": "repo-file-v1:sha256:0abb1a5ff7a5ec1ae26765e995ee21cdc727168a7f4d2064a00fdaa9e88d6802"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
-          "version": "repo-file-v1:sha256:32ba3e1ad43a47b571119ec3e0763edeb95e073dd05b643ed033b9a214fa83b7"
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc"
+        }
+      ]
+    },
+    {
+      "id": "claim_d658d5fc2de944a7abb691c0b707c7b9",
+      "statement": "Enterprise reconciliation remains source-only: its fixtures create or adopt a stopped unauthenticated Agent after exact tenant and journal checks, but no protected live stage exists until a separate retained journal PVC, serialized operator Job, pinned image, and placement are admitted.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L68-L99",
+          "version": "repo-lines-v1:sha256:d8386e73803d8e3797bec02edbf32ca9420cd357f2ecf256df7c888953b28366:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllOWE4MDdjNWYxNDYyOThkYjYwNmRiNzcyNDI3Nzk4OTk4MDkxNTMxZWYzZWE4MzRiOWYxZjA4MjU0MDkwYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjZjg4Y2MwMGM2ZGRkODBlMDE3MGVkZGUyYzRiNzBkNWUwZDY3OWNjMzJjYzkwNWQyZTRiMDU2YWZlM2JlYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmYmU4NmZjMmM2YTIxMmJmMTI4NmEyMzRjNDlmYTAzNGZjMTkxZjU4NTAzNGUzMGUyMmZlZDhjNTgyMGZkMWIifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:b53f8722d5b3e9eddbfb52b29a9734a8f631cf55c335a3f4a85cfe690ff51e1f"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L929-L1145",
+          "version": "repo-lines-v1:sha256:73b97d1050e290edd2d47c85d0ff0608d401add86979dac1aef4ff915a8bfabe:eyJzZWxlY3RlZExpbmVDb3VudCI6MjE3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxYTg0MmE0ZDdiMWM2MWE5ODRkNWRhOTNmODRlNWRjNjYzN2M2MzU1ZGNkNDA2MDljNTRiZGQwZjUxYTdmMmIyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5OGYyZGI5ZDQ0MDIzYWI3MjZiOTk0ZjUzMTEyYjgwMTU2OWJiOGJhNGQxMThhZjhhODA3NTEzNjVlNjU5MDJkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1ZDgzNTA2NjVhYmUzNjM3NDQ0NmY2Y2RlMDMwMDQ4OWVkM2IzZmQ3Njk3MjE4YTEzYTU0YTJmMzJjY2FiYTc1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4NjA3MDhiNjZhM2UwNzk1N2VmNGU0YjEyNDY0MTU0MWRmY2E0ZmE3MWUyZjhkYTdmNzRiOGFmZjM0ZTM0ZjIxIn0"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L412-L487",
+          "version": "repo-lines-v1:sha256:9c0da015f67270e8a81d6eb459279dd23224bf3b93df7924bcf1b56c1148cc1f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmYjNlZmM1ZjgyMzhjN2JiZDcxNDY3MTI2MjdmY2ZjYWYzNjEyMzZlMTFhOGRhZTdlNmZmZjcwMjYzMTlkM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxYjJjZWMwZGJlNjhkM2ZlMTYzMmMxYzBjMDMzNDQ0NTc5NDkxNjA5OTkxMmIzMThkOTk0MGI3NWNkMmI4ZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiNGY5OGRlMTY0YjBjYTg3ODk2MTJkM2I0ZDk4M2UzNDVhYmI2YWQ2MmIyYmNjZjc5ZDA1OTljMzRhNmRjNjQifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T01:14:14.135Z"
+    "at": "2026-10-20T08:26:45.252Z"
   }
 }

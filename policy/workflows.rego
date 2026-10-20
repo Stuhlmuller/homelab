@@ -159,8 +159,8 @@ deny contains msg if {
 
 deny contains msg if {
 	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
-	not approved_openclaw_legacy_operation
-	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
+	not approved_openclaw_operations
+	msg := "OpenClaw Enterprise operations require exact protected stages, permissions, and script hashes"
 }
 
 deny contains msg if {
@@ -268,7 +268,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -277,15 +277,30 @@ then
 fi
 echo "Platform stage completed; private receipts withheld."`
 
-approved_openclaw_legacy_operation if {
+approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	count(dispatch.inputs) == 5
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	dispatch.inputs.legacy_stage.default == "none"
+	dispatch.inputs.enterprise_stage.options == ["none", "full-sync"]
+	dispatch.inputs.enterprise_stage.default == "none"
+	count(input.jobs) == 3
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	static.steps[0].env.LEGACY_STAGE == "${{ inputs.legacy_stage }}"
+	static.steps[0].env.ENTERPRISE_STAGE == "${{ inputs.enterprise_stage }}"
+	contains(static.steps[0].run, "inventory/none|publish-inventory/none|archive/none|publish-archive/none|verify/none|none/full-sync)")
+	approved_openclaw_legacy_operation
+	approved_openclaw_enterprise_sync
+}
+
+approved_openclaw_legacy_operation if {
 	job := input.jobs.legacy
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
 	job.concurrency.group == "openclaw-enterprise-operations-production"
 	job.permissions == {"contents": "read", "id-token": "write"}
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
 	some step in job.steps
 	step.name == "Run Legacy Stage"
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
@@ -293,6 +308,24 @@ approved_openclaw_legacy_operation if {
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
 	contains(step.run, concat("", [`sha256sum --check --status <<<'e812cd9a3361753f7eec82396c5e94dfc1cae96f682c8c7714e3fd2dc2c210fa  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+}
+
+approved_openclaw_enterprise_sync if {
+	job := input.jobs["enterprise-sync"]
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false}
+	job.permissions == {"contents": "read"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'full-sync'"
+	count(job.steps) == 4
+	job.steps[0].name == "Verify Current Main Commit Before Credentials"
+	contains(job.steps[0].run, `test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)`)
+	job.steps[3].name == "Run Full Sync"
+	job.steps[3].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	contains(job.steps[3].run, "bash scripts/ci/install-kubeconfig.sh\n")
+	contains(job.steps[3].run, "sha256sum --check --status <<<'0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc  scripts/ci/openclaw-enterprise-full-sync.sh'\n")
+	contains(job.steps[3].run, "bash scripts/ci/openclaw-enterprise-full-sync.sh\n")
+	contains(job.steps[3].run, "private cluster diagnostics withheld")
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
@@ -388,11 +421,29 @@ base_sha="$(git rev-parse HEAD)"
 [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
 token_file="$(mktemp)"
 pulls_file="$(mktemp)"
+all_heads_file="$(mktemp)"
 heads_file="$(mktemp)"
-trap 'rm -f "$token_file" "$pulls_file" "$heads_file"' EXIT
+trap 'rm -f "$token_file" "$pulls_file" "$all_heads_file" "$heads_file"' EXIT
 printf '%s' "$GH_TOKEN" >"$token_file"
 gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
-jq -r '.[].head.sha' "$pulls_file" >"$heads_file"
+jq -r '.[].head.sha' "$pulls_file" >"$all_heads_file"
+if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
+  event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+  [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
+  grep -Fxq -- "$event_head" "$all_heads_file" || exit 1
+  printf '%s\n' "$event_head" >"$heads_file"
+else
+  [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
+  while IFS= read -r head_sha; do
+    [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+    # Any unreadable or changed native state still needs verification.
+    if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py native-receipts-unchanged \
+      --base-sha "$base_sha" --head-sha "$head_sha" --token-file "$token_file"; then
+      continue
+    fi
+    printf '%s\n' "$head_sha" >>"$heads_file"
+  done <"$all_heads_file"
+fi
 pending_failed=0
 while IFS= read -r head_sha; do
   [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
@@ -703,7 +754,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'f9e7339105652f389ec6a48604bc29bf0a20ab1c7c1e7828fd6252c9ea515fbb  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

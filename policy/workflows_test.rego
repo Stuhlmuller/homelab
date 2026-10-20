@@ -80,7 +80,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971",
+		"342ec1d24b07708d21258100e5c1bcdc53631f49ebedbe70018ef28169aabdb9",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -176,19 +176,68 @@ bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 
 workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"name": "OpenClaw Enterprise Operations",
-	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]}}}},
-	"jobs": {"legacy": {
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"true": {"workflow_dispatch": {"inputs": {
+		"expected_sha": {}, "baseline_ref": {}, "archive_ref": {},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"], "default": "none"},
+		"enterprise_stage": {"options": ["none", "full-sync"], "default": "none"},
+	}}},
+	"jobs": {
+		"static-policy": {"permissions": {"contents": "read"}, "steps": [{
+			"env": {"LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}"},
+			"run": "inventory/none|publish-inventory/none|archive/none|publish-archive/none|verify/none|none/full-sync)",
+		}]},
+		"legacy": {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
 		"concurrency": {"group": "openclaw-enterprise-operations-production"},
 		"permissions": permissions,
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
 		"steps": [{
 			"name": "Run Legacy Stage",
 			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,
 		}],
-	}},
+		},
+		"enterprise-sync": {
+			"needs": ["static-policy"],
+			"environment": {"name": "homelab-production"},
+			"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false},
+			"permissions": {"contents": "read"},
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'full-sync'",
+			"steps": [
+				{"name": "Verify Current Main Commit Before Credentials", "run": `test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)`},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Run Full Sync", "env": {
+					"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}",
+					"GH_TOKEN": "${{ github.token }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
+				}, "run": `private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+sha256sum --check --status <<<'0894515ebb637fe56a6a90b6eb65c3cf8ac11845b371dd3d3f2daba4400747bc  scripts/ci/openclaw-enterprise-full-sync.sh'
+bash scripts/ci/openclaw-enterprise-full-sync.sh
+EOF
+then
+echo "::error::Enterprise full sync blocked; private cluster diagnostics withheld."
+exit 1
+fi
+echo "Enterprise full sync completed; private cluster details withheld."`},
+			],
+		},
+	},
+}
+
+test_rejects_changed_openclaw_enterprise_sync if {
+	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	changed := object.union(candidate.jobs["enterprise-sync"], {"permissions": {"contents": "write"}})
+	mutated := object.union(candidate, {"jobs": object.union(candidate.jobs, {"enterprise-sync": changed})})
+	violations := deny with input as mutated
+	some msg in violations
+	contains(msg, "exact protected stages")
 }
 
 test_rejects_mutable_docker_action_image if {
@@ -700,7 +749,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "f9e7339105652f389ec6a48604bc29bf0a20ab1c7c1e7828fd6252c9ea515fbb", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "46a8c601e193c6f8018f08fdc46b397cac10bd51dbc32c441e7e59ec2df5e4a8", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),

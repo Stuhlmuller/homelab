@@ -53,6 +53,12 @@ digest-pinned private reference such as
 `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 The image gate requires that reference in the declared target of a migrated
 consumer, with the exact receipt-backed digest.
+The trusted workflow checks the event PR when its head changes. On each `main`
+push, it rechecks only open PR heads whose native receipt entries differ from
+the exact `main` state; unreadable state or a missing receipt map is rechecked
+and fails closed. Unchanged heads keep their prior status. This bounds repeated
+status writes for unrelated long-lived PRs while preserving base-revision
+checks for receipt imports.
 Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.
@@ -126,9 +132,10 @@ from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
 Authenticated OCI-index pulls retry classified transport failures up to five
-times, with 2/4/8/16-second delays and a fresh directory per attempt. Auth,
-missing-content, and digest failures still stop immediately; the complete pull
-and root digest checks remain mandatory.
+times, with 2/4/8/16-second delays. They retain completed content in one
+temporary OCI directory and force a recursive check of nested manifests and
+blobs on each attempt. Auth, missing-content, and digest failures still stop
+immediately; the complete pull and root digest checks remain mandatory.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
 digest, the mirror uses `regctl` for that exact copy error. It also retries an
 OCI index with `regctl` when Harbor reports that the exact root artifact is

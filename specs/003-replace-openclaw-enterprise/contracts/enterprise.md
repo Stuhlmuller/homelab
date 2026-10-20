@@ -210,6 +210,7 @@ Sources: [CRD values](https://github.com/envoyproxy/gateway/blob/v1.9.2/charts/g
 | PostgreSQL admin password | Database administration/bootstrap only |
 | `occ_migrator` password | Migration Job only; owns required schemas, no superuser/role creation |
 | `occ_app` password | API/worker; no CREATE privilege or migrator inheritance |
+| `occ_backup` password | Isolated logical backup only; read-all and RLS bypass, no writes or role creation |
 | Session auth secret | OCE auth components; stable and included in recovery |
 | Private gateway key and CA | Exact control-plane/private-routing consumers |
 | Bootstrap admin password/service key | Private bootstrap output and authorized reconciliation only; never agent-mounted |

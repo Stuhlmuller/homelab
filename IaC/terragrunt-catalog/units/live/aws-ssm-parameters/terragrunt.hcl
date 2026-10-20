@@ -592,6 +592,13 @@ inputs = {
         special = false
       }
     }
+    "/homelab/openclaw-enterprise/postgres-backup-password" = {
+      description = "OpenClaw Enterprise read-only PostgreSQL backup password; role bootstrap and backup job only."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/openclaw-enterprise/session-auth-secret" = {
       description = "Stable OpenClaw Enterprise session signing secret; retain with database recovery material."
       generated = {

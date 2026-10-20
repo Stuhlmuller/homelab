@@ -36,8 +36,10 @@ This repository uses GitHub Actions for the review and rollout path:
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
   main-only `homelab-production` environment, then
-  verifies `main` again before referencing
-  environment credentials or running live commands. Full applies run the Argo
+  verifies `main` again before referencing environment credentials and before
+  each state import or apply. The root Terragrunt `before_hook` repeats the
+  check for every unit in a multi-unit apply. Bootstrap's `after_hook` checks
+  before each Argo CD self-management manifest write. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
   They compare against the latest successful historical push apply or full
@@ -47,8 +49,9 @@ This repository uses GitHub Actions for the review and rollout path:
   `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
-  production branch gates, never prunes, and proves a second apply has no
-  live diff.
+  production branch gates, rechecks current `main` immediately before both
+  catalog writes, never prunes, and proves a second apply has no live diff.
+  An unresolved or advanced `main` stops the next write.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -84,8 +87,9 @@ Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache
 Static jobs verify cache signatures or build on a miss; live plans and cluster
 checks remain fresh.
 
-- Workflows use `pull_request` and `push`; they do not use
-  `pull_request_target`.
+- Workflows use `pull_request` and `push`, except the exact trusted-base native
+  Chainguard receipt provenance workflow. Its pinned `pull_request_target`
+  path reads PR state as bounded API data and owns only its receipt status.
 - The lint workflow is a lightweight changed-file gate that preserves the
   required `Lint` status context without replacing the repository's stricter
   static and Terragrunt gates. It runs the upstream Super-Linter action with
@@ -721,6 +725,16 @@ not configured, production apply skips
 that phase only if the unapplied range did not change the AzureAD stack or its
 shared root configuration. Every root source change requires the credentials
 so identity drift is not silently ignored.
+
+For pull requests, a changed AzureAD stack or shared root, or changed plan
+inputs (`flake.nix`, `flake.lock`, `policy/terraform.rego`,
+`scripts/ci/terragrunt-filter-base.sh`, or `scripts/ci/terragrunt-plan.sh`),
+requires the `homelab-plan` environment's `AZUREAD_CLIENT_ID` and
+`AZUREAD_TENANT_ID` secrets plus a complete GitHub OIDC session. The
+`Terragrunt Plan` job fails if these are unavailable or the diff cannot be
+determined; it skips AzureAD only for unrelated changes. Restore the plan
+identity using the [Entra provider runbook](entra-terraform-provider.md),
+rerun the PR check, and verify its protected plan succeeds before merging.
 
 The `Entra OIDC Verify` dispatch takes an exact current-main SHA and runs
 refresh-enabled no-change plans for all four Entra units under both protected

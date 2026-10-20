@@ -130,6 +130,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-6044cd3de00b52da78c6cf44
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-d88444044033fa951eb38e67
@@ -160,10 +162,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T22:21:44.110Z" }
+generated: { by: "codex", at: "2026-10-20T06:38:44.829Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:14:14.135Z
+    at: 2026-10-20T08:26:45.252Z
 ---
 
 # Harbor Private OCI Registry
@@ -344,7 +346,12 @@ indexes into local OCI layouts, then compares their root bytes and required
 platform descriptors. Exact child scan queries request Harbor's vulnerability
 report type before accepting complete zero-count scans. Pull-request lint lacks
 commit-status write permission; the trusted base provenance workflow owns its
-receipt status. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
+receipt status. It checks the event PR head only after confirming that head is
+still in the open `main` PR list, then rechecks on `main` pushes only when exact
+base/head native receipt entries differ. Unreadable state or a missing receipt
+map is included and fails closed. Unrelated open PR heads keep
+their earlier status, avoiding repeated writes to GitHub's per-head/context
+status limit. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -843,10 +850,12 @@ up to three times. An expected missing-alias response proceeds to copy; an
 authentication error or other hard lookup failure stops publication. A retry
 does not replace the final digest, alias, and authenticated pull checks.
 For an OCI index, the final authenticated Harbor pull retries classified
-transport failures up to five times with fresh local directories and 2, 4,
-8, then 16 seconds of backoff. Authentication, content, and other hard
-errors stop immediately; the pulled index must still match the original
-digest. Full-catalog acceptance remains pending a protected receipt.
+transport failures up to five times with one temporary OCI directory and 2,
+4, 8, then 16 seconds of backoff. `regctl --force-recursive` rechecks nested
+manifests and blobs while retaining completed content across attempts.
+Authentication, content, and other hard errors stop immediately; the pulled
+index must still match the original digest. Full-catalog acceptance remains
+pending a protected receipt.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
@@ -874,6 +883,9 @@ The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
+The [post-shutdown capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
+also leaves isolated canary placement blocked; a mirror receipt cannot clear
+that independent gate.
 The dormant Enterprise foundation is unregistered and deploys neither image.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the

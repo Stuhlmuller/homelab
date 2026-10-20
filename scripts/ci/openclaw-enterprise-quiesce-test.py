@@ -33,9 +33,10 @@ def pod(component, phase="Running", owner=True):
 
 
 class FakeAPI:
-    def __init__(self, present=("api", "worker"), conflict=None):
+    def __init__(self, present=("api", "worker"), conflict=None, scale_version="1"):
         self.deployments = {component: deployment(component) for component in present}
         self.conflict = conflict
+        self.scale_version = scale_version
         self.updates = []
 
     def __call__(self, path, method="GET", body=None, missing=False):
@@ -44,8 +45,10 @@ class FakeAPI:
                              if MODULE.deployment_name(component) in path)
             current = self.deployments[component]
             if method == "GET":
-                return {"metadata": {"uid": current["metadata"]["uid"], "resourceVersion": "1"},
-                        "spec": {"replicas": current["spec"]["replicas"]}}
+                metadata = {"uid": current["metadata"]["uid"]}
+                if self.scale_version is not None:
+                    metadata["resourceVersion"] = self.scale_version
+                return {"metadata": metadata, "spec": {"replicas": current["spec"]["replicas"]}}
             if self.conflict == component:
                 raise RuntimeError("scale resourceVersion conflict")
             current["spec"]["replicas"] = body["spec"]["replicas"]
@@ -101,6 +104,15 @@ class QuiesceContract(unittest.TestCase):
             MODULE.main()
         self.assertEqual(fake.updates, ["api"])
         self.assertEqual(fake.deployments["worker"]["spec"]["replicas"], 1)
+
+    def test_missing_scale_resource_version_blocks_before_writes(self):
+        for version in (None, "", "0"):
+            with self.subTest(version=version):
+                fake = FakeAPI(scale_version=version)
+                MODULE.api, MODULE.pods = fake, lambda: []
+                with self.assertRaisesRegex(RuntimeError, "resourceVersion"):
+                    MODULE.main()
+                self.assertEqual(fake.updates, [])
 
     def test_retry_after_partial_scale_finishes_fence(self):
         fake = FakeAPI(conflict="worker")

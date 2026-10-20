@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fa62de4dea4c35287384ae9784ed58fce01546ba42c3177e58a17302a1351e47",
+  "pageVersion": "sha256:b858e96ae55b57163392e345266259d5f75dbdabda5e124f7f46423a8d957b0c",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,11 +8,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:089c2e395615ab3ac94b42e42d52c55100fe0974e57b7e83cb73640c35ec7900"
+          "version": "repo-file-v1:sha256:88ed02eab2a3fef6e7d2796b4867b7340d481d7d20f1ea85864fad1ba4b72463"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -29,15 +29,15 @@
       "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, admitted tainted node, and exact fixture commands, arguments, container security contexts, identities, and policy before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L40-L54",
-          "version": "repo-lines-v1:sha256:c30f3c64d8a4ed0b2b9409d6c201a8bda5c3f948b6d3b17a2c3b56dc51fdc045:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L41-L57",
+          "version": "repo-lines-v1:sha256:e096727a973080c1a15653f753c5d2ea4d1d40e831260cb9878c4e20157009d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml#L20-L210",
           "version": "repo-lines-v1:sha256:1e6f33fb6e1aa167d543c2768b0b74ef1d02c48bae2628a76c4926b766c79d53:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzYWQyMDFmYjJkNjc0MzZjMTAxNDZkYTZiMGIzYjJlZTQ3YTNlNDFkMDZiZTIyMzcyOGI1NWIwOGY4Y2I2MjcwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzOTg2ZDRmMmI2MWQwOTJjNzJiZmU1MGU4YTJlYWI4NTFlZDE3MzlkOWY5YjA1OTMxOGQ2MjIwMjY4ZGIyYTNiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4ZmVmZTA1OGY4NzMwOWMyNjU3NzRmMzAwYTdhYTg0MGJhYTU0MWJhZjM2Y2Q5YjgwODQwNjgzNzY2MzhlZTU3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NTkyMjIxYWFlMzQxZDA4NTEwYjk1NWY2YWFhN2JkM2M0YTFkOTAxZDk2N2IxODRlZjJjOThjMTFkZTQzYTVmIn0"
         },
         {
-          "resource": "repo://scripts/network-policy-qualification.py#L196-L279",
+          "resource": "repo://scripts/network-policy-qualification.py#L250-L333",
           "version": "repo-lines-v1:sha256:8bf6e3138a0862486c94c3f796c654d61751b4dd7ddd4c7cb6dbb5549dcfba4e:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMWZjZTA2YTk1NDM1OTAxZjk2M2M3Zjc5MjEyN2U0OWJkNzEwYTYzNDljYTAyZTBmZjQ2OThkNzcwZTIzMDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NzNkNmJmOTJhY2I2ZTE4ZmExMjI4YjkwMzYyYTM3ZGVhZDYwYzExZmY3NGE1Mjk1OGZlNGFhNjI1ZGNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3MDcyNzcyZmNlODQ3MWMzN2RkMjg0M2UzMjczMTI5MzdmZjI3MmI4NTJhNDZlZDZiMDEzODA5YzkzZDZlNmIifQ"
         }
       ]
@@ -56,7 +56,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         }
       ]
     },
@@ -66,15 +66,15 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e9736f676cd0a850bc639d67c6dc13ada5ee13df95b6859ae50d7a750aad4287"
+          "version": "repo-file-v1:sha256:5ffbc6bb8f667a13e54c5e814cb77ba83b5e019cb5470f500abcf72ca0b9df1b"
         }
       ]
     },
@@ -136,7 +136,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         }
       ]
     },
@@ -146,17 +146,99 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
-          "version": "repo-file-v1:sha256:66f3541bee43fa3c9b50ea8efed997434251407b2d462893abb7d36c6a5698eb"
+          "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
+        }
+      ]
+    },
+    {
+      "id": "claim_1fe3e5cebba240eab41ab9f354d44e96",
+      "statement": "The protected canary qualifier probes Kubernetes Service DNS through the reviewed kube-dns Service over TCP and UDP 53, rejects malformed replies or an A record differing from the live Kubernetes Service IP, and records both DNS outcomes; lifecycle and real-workload qualification remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L41-L54",
+          "version": "repo-lines-v1:sha256:766abf4d327a432962220174dcdd72e60cd9d30d353405e3d132e5519547108f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMmE3MmNjMDRkNmQ5YmJhYjcyYWZlZjVhMmVlNjU5MTAzM2U1ZmQ5ZmQwYTkyYjZiNzUyOGNlNDFhNGNhYTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwYjBkNzQyNDI0ODkwMzE0YWYwY2QyODQxODJjYmM0YTY1NDY0MWYyZDQwMDY4ZDM2ZTQzMzU5NjU4ODY3ZTUifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L350-L379",
+          "version": "repo-lines-v1:sha256:29d4532aa2efba2b48821feb99f3b2ccd15ec04bd7c7d38dffd4133799877439:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjYTAxOWQ2YWJjZjgxMmViMzg3ZGM3YjQwYjcwODY2Y2Y5NTRlZTVlMDU4YTNhNzk2ODc5MTQzY2VkNDc3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwZTRmYjRkNDIzZWMzZTYwYTFkMDNkYjA4OGU1N2U4YjM1MjIxZDkxMzg0OTM2YTg4ZmQ5Mzg5NzllZDlkOTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmNTE2OTIzNDcwZGE2Mjc3MjUwZWNjNDM1N2VjYjU5MGY0MDFhYTI1OTE2NTg4YWQzODM5YWUxOWEzOTJhZWMifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L79-L123",
+          "version": "repo-lines-v1:sha256:03244aed459ffeca0a1f53160d5fbc8e9405f1774ff3ae2b7a525f9f2e1e4530:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlODk0MmRiZTc0YTJlMjAzN2YzZGNiMDYyZTQ5MGJjZWIyZmY5MDQ4YzIzYzhmNWM2MTkxNWJmNTgxOTg3NDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3OGJlMDk2MTkyZDJiZGU2NTY2Zjc4NzY2OTg0MTA0Yzg4ZDg0ZjI0NjA0ODVhYTVmN2FlZTZmYjgxYWViNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmYjVjZTk1ZTZjYmQwOWU3YTIxMWNkMjg1MmQxYWUzODM1MTk0ZDE3YmZjZTFkZTI2MmRmMzVkYzNhZjU0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2NDM0MDA0ZDBjYzM1YjgxMzg1OTdkNjhjNGQ2YzdlN2VkNmZhYmI2ODI3YmZhMGU4MjRhZjIyY2UzZjUxNWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a1d2283e1ef44106934ed5c6f36fe09a",
+      "statement": "A 2026-10-20 read-only NetworkPolicy inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned. All 49 Argo-owned complete specs matched repository renders; this source convergence does not qualify live enforcement or canary traffic.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py",
+          "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
+        }
+      ]
+    },
+    {
+      "id": "claim_528a83aaf3c54142a8498741549c428f",
+      "statement": "On 2026-10-20 at 07:22 UTC, the best existing worker had about 3,398 MiB unreserved against a 4,096 MiB initial Enterprise reservation, 6,447 MiB actual memory use, 45 co-resident Pods and 9.71 GB root-filesystem space free against a proposed 10 GiB local claim; a NoSchedule taint alone cannot qualify an isolated canary.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+        }
+      ]
+    },
+    {
+      "id": "claim_5e504f3f5d474952842ef66e70778779",
+      "statement": "Three pinned Cordium v0.12.7, four pinned Octelium v0.35.0 Genesis, and ten pinned Octelium Enterprise generated NetworkPolicy complete expected-spec fixtures are source-bound; all 17 are reviewed, while pinned generator-binary renders remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
+        }
+      ]
+    },
+    {
+      "id": "claim_1ff9fd9e6769482b8f537a5cae85c758",
+      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors admit public IPv4 and IPv6 egress on all ports; additive NetworkPolicies cannot narrow those allows, so generator correction and an isolated canary are prerequisites for enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:9c6f32b368f2eaea2ccbb854d5c796caf30a5b201c8edeb6f56b07bb83170be2"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:56c5f16675191c3f5c64afec8657d97c5d9ca12254c1c1b29944fadbf095fadb"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T07:27:46.454Z"
   }
 }

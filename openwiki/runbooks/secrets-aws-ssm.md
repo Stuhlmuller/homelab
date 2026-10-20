@@ -30,10 +30,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+generated: { by: "codex", at: "2026-10-20T07:15:02.535Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:14:14.135Z
+    at: 2026-10-20T08:26:45.252Z
 ---
 
 # AWS SSM Secret References
@@ -66,10 +66,10 @@ desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
-reintroduction of the exact-scope grant. The hourly CronJob is now declared
-unsuspended in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
-finished all eight eligible repositories with no reported errors. The legacy
-GitHub Action remains the only writer. Full App-policy parity, fault recovery,
+reintroduction of the exact-scope grant. The CronJob is now declared
+unsuspended on an hourly UTC schedule in full dry-run mode. Its earlier 19:00
+and 20:00 UTC Jobs each finished all eight eligible repositories with no
+reported errors. The legacy GitHub Action remains the only writer. Full App-policy parity, fault recovery,
 the old-writer workflow deletion, guarded Actions-key retirement, and cluster
 writer activation remain separate gates.
 
@@ -85,17 +85,17 @@ real key is transferred, projected, and tested. See the
 [canonical secret contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
 
 The dormant [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
-declares seven retained `OnChange` ExternalSecret targets across
+declares eight retained `OnChange` ExternalSecret targets across
 `openclaw-system` and `openclaw-agents`. `occ-database` templates separate
 application and migration URLs from generated passwords; both require
 PostgreSQL `verify-full` TLS against the declared retained root CA. The admin
-password remains in its own Secret. Rotation needs a committed
+and backup passwords remain in separate Secrets. Rotation needs a committed
 `generated-secret-revision` advance and consumer verification. The manifests
 are not registered with Argo, so source alone proves no SSM value, projected
 Secret, issued certificate, or running database.
 
 The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
-contains non-secret startup configuration. It is separate from those seven SSM
+contains non-secret startup configuration. It is separate from those eight SSM
 credentials. The protected startup workflow copies its exact bytes into a
 versioned immutable Kubernetes Secret because the stock chart mounts that
 Secret at startup. Initial creation precedes the installation ID; T041 must

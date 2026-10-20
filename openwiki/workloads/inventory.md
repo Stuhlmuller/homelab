@@ -8,10 +8,14 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-89de10646bdbebfd3e1ed075
     resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-812216982d0b6a887bf09651
@@ -58,10 +62,14 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/workloads.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-06c51d450592da5906a7761d
+    resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-f8f5d3b6cb788d6762c27993
+    resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
@@ -70,8 +78,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
   - id: openwiki-source-855f2c27f3fa7ed6f006f4be
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
@@ -150,6 +158,8 @@ sources:
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -162,12 +172,14 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T01:14:14.135Z" }
+generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:14:14.135Z
+    at: 2026-10-20T08:26:45.252Z
 ---
 
 # Workload Inventory
@@ -359,7 +371,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Legacy gateway and backup writer stopped by GitOps; node-local SQLite, NAS workspace, snapshots, and four PVC/PV identities retained. Post-shutdown inventory passed; independent archive/restore pending. No Discord or LiteLLM state moves to Enterprise. | platform-storage, external-secrets (retained recovery only) |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
-| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache), dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; 19:00 and 20:00 scans each covered eight eligible repos and showed one same-key public canary cache hit on separate Pods; protected `v0.0.2` release awaits normal refresh; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), fault drills, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
+| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache), dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; [T022](../../specs/004-run-renovate-in-cluster/tasks.md) records 19:00/20:00 same-key hits and the 21:00 `v0.0.2` refresh; [T045](../../specs/004-run-renovate-in-cluster/tasks.md) records the 17:00 failure, 03:00 missed-slot alert, and successful 04:00 recovery; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), T024/T042 cache-fault/NAS-capacity recovery, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
 Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
@@ -372,27 +384,53 @@ same complete spec as both the former rule and source manifest. Octelium and
 Prometheus traffic checks, broad-source review, and the enforcement canary
 remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
 
+The [Cordium Genesis expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds three complete source-reviewed policy shapes at pinned `v0.12.7`. The
+[Octelium Genesis expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+binds four more at pinned `v0.35.0`. The
+[Octelium Enterprise expected-spec fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+binds the remaining ten. All 17 complete generated policy specs are source-bound.
+These fixtures are read-only inventory inputs, not deployed
+policies or verified generator-binary renders. `ws-main` and Octelium
+`svc-upstream` retain public IPv4/IPv6 all-port egress; additive NetworkPolicies
+cannot narrow it. Review the generator-owned correction and isolated-canary
+traffic before enforcement.
+
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, or
 agent has been deployed. The unregistered
 [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
-scoped tenant RoleBindings, seven retained `OnChange` secret projections,
+scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It declares no running PostgreSQL, local volumes, or Installation
-workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+certificate. It also declares a dormant TLS-only PostgreSQL 18.6 StatefulSet,
+four separated roles, and a 10 Gi local claim template; the required local
+volume is not bound and no Enterprise database or Installation workload runs.
+An incomplete first bootstrap leaves PostgreSQL unready and its claim retained;
+the stopped-writer backup capture, encrypted off-node target, and isolated
+restore proof remain open. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,
 local Helm values and lifecycle hooks. It has no Argo registration, and its
 placeholder administrator email, missing placement labels, and unfinished
-database/storage gates prevent activation. The source-only reconciler can
-create or adopt a logical Namespace, native Configuration, and stopped Agent
-after exact identity and ownership proof; it has not run against Enterprise.
+database/storage gates prevent activation. A protected full-sync stage is
+source-tested, but cannot run until registration and the reviewed installation
+phase; it would sync Foundation before Enterprise at explicit revisions.
+The reconciler's source tests can create or adopt only a stopped, unauthenticated
+Agent after exact tenant and journal checks. Its protected live stage is absent:
+a separate retained journal PVC, serialized operator Job, pinned image, and
+placement are still pending. No Enterprise API reconciliation has run.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
+The [2026-10-20 07:22 UTC read-only capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+still blocks placement: the best worker has about 3,398 MiB unreserved versus
+the initial 4,096 MiB Enterprise steady request, before transient and host
+headroom, and 9.71 GB root-filesystem space free against a proposed 10 GiB
+local claim. Its 45 co-resident Pods prevent an added `NoSchedule` taint from
+providing isolation.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

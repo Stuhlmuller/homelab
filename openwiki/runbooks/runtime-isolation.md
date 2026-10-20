@@ -4,6 +4,8 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-3f6d0b26d6634f9dca554267
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
@@ -14,10 +16,14 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/namespace.yaml
   - id: openwiki-source-a953c7d60cd7a8fdea7b14bd
     resource: repo://clusters/homelab/apps/mastodon/networkpolicy.yaml
+  - id: openwiki-source-06c51d450592da5906a7761d
+    resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-f8f5d3b6cb788d6762c27993
+    resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
@@ -38,10 +44,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
+generated: { by: "codex", at: "2026-10-20T07:27:46.454Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T07:27:46.454Z
 ---
 
 # Runtime Isolation
@@ -99,7 +105,12 @@ limited capacity, system DaemonSets, and a live backup workload.
 Before activation, finish image publication and policy owner/render review, then
 admit an isolated tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
-stateful workloads. Compare private read-only Pod/NetworkPolicy snapshots and
+stateful workloads. The [2026-10-20 07:22 UTC capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+found about 3,398 MiB unreserved on the best worker against an initial
+4,096 MiB Enterprise reservation, 6,447 MiB actual memory use, 45 co-resident
+Pods and only 9.71 GB root-filesystem space free against a proposed 10 GiB
+local claim. A `NoSchedule` taint would leave those Pods in place;
+it is not an isolation proof. Compare private read-only Pod/NetworkPolicy snapshots and
 all rendered policies with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
 generated policies fail the inventory. Obtain exact generator renders and a
@@ -107,8 +118,22 @@ fresh read-only snapshot before the canary. The [source-owner ledger](../../docs
 pins source locations for the original 18 generated policies; 17 still match
 their earlier full-spec hashes after Kiali's handoff. Cordium `ws-main` and
 Octelium `svc-upstream` retain broad public egress findings, and generator
-renders and real traffic remain unqualified. Qualify
-allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
+renders and real traffic remain unqualified. A 2026-10-20 read-only cluster
+inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned.
+All 49 Argo-owned specs matched their rendered repository sources; this is
+source convergence, not traffic or enforcement qualification.
+The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds three complete policy shapes to pinned `v0.12.7` constructors. The
+[Octelium expected-spec fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+binds four Genesis policies to pinned `v0.35.0` constructors. The
+[Enterprise fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+binds the remaining ten. All 17 complete expected specs are now source-bound;
+pinned generator-binary renders remain unverified. The pinned `ws-main` and `svc-upstream` constructors
+admit all ports to public IPv4 and IPv6; additive NetworkPolicies cannot narrow
+those allows. Correct the generators and qualify required traffic on an isolated
+canary before any enforcement.
+
+Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
 IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before
 expanding to another node. Stock Enterprise's public TCP/443 requirement
@@ -124,7 +149,12 @@ checks the live firewall-only DaemonSet image, flags, host mount and RBAC, then
 checks the admitted tainted node, three fixed fixture Pods and their policy.
 It rejects changed fixture commands, arguments, and container security contexts
 before probing, so a modified server cannot make blocked traffic appear denied.
-Its TCP/UDP allow-and-deny probe writes a private receipt that explicitly lists
+Its TCP/UDP allow-and-deny probes also resolve the Kubernetes Service name
+through the reviewed `kube-dns` Service over both TCP and UDP 53. Each DNS reply
+must contain a complete A record matching the live `default/kubernetes` Service
+IP, and each probe requires an explicit remote outcome marker. Transport failure
+or a malformed or wrong DNS answer cannot count
+as a deny or DNS success. Both DNS results enter a private receipt that lists
 the lifecycle scenarios still unverified. The qualifier does not create the
 fixture or attest node reboot, enforcer recovery, or real workload traffic;
 those remain live gates before enforcement expands.

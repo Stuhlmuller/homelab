@@ -24,28 +24,56 @@ sources:
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
+  - id: openwiki-source-6044cd3de00b52da78c6cf44
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-60b00db0363e7f9e27d7fa7f
+    resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-20T07:28:14.127Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T22:21:44.110Z
+    at: 2026-10-20T07:52:46.535Z
 ---
 
 # CI/CD
@@ -58,13 +86,43 @@ exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
 
+The production apply rejects a dispatch whose SHA is no longer current `main`.
+It rechecks `main` before each live import or apply. Terragrunt's root hook
+repeats the check for each unit in a multi-unit apply, and the Argo CD
+bootstrap hook checks before each self-management manifest write. A failed
+lookup stops the write. These source guards await a live apply run.
+
+The Octelium catalog stages a separate `homelab-ci-plan` User and a
+read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
+applies the catalog nor issues a plan token; the PR plan still reads its
+environment secret.
+
+The separate Octelium Private Kubernetes Apply dispatch verifies the selected
+`main` commit before the protected job. Its fixed helper rechecks current `main`
+immediately before each of two catalog writes; a failed lookup or newer commit
+stops the next write. The second write must report no changes. These source
+guards have not been exercised by a live dispatch in this update.
+
+An AzureAD stack, shared root, or plan-input change requires
+`AZUREAD_CLIENT_ID` and `AZUREAD_TENANT_ID` in `homelab-plan` plus a complete
+GitHub OIDC session. Missing inputs fail `Terragrunt Plan`. Restore the plan
+identity through the [Entra provider runbook](../../docs/entra-terraform-provider.md),
+rerun the protected PR plan, and verify `Terragrunt Gate` before merging.
+If the static job cannot read the PR base diff, it fails before deciding to
+skip the live plan.
+
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
 
 The pull-request `Lint` job reports its own conclusion without commit-status
 write permission. The static gate rejects that permission in any PR workflow;
 the trusted-base native Chainguard receipt workflow alone sets its provenance
-status after checking the current main and PR head.
+status after checking the current main and PR head. Its tightly pinned
+`pull_request_target` exception checks only the event PR head after confirming
+it remains in the open `main` PR list. On `main` pushes it compares exact
+base/head native receipt entries and rechecks changed entries; unreadable state
+or an absent receipts map also requires verification. Unrelated heads keep
+their prior status.
 Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
@@ -94,6 +152,16 @@ the versioned immutable Installation Secret from reviewed repository bytes.
 The create-only path does not register the dormant Application or run an Agent;
 the post-bootstrap installation-ID annotation and live Pod binding remain
 separate proof work.
+
+The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+keeps the legacy retention stages behind `legacy_stage` and adds
+`enterprise_stage=full-sync`. Select exactly one stage. The protected full sync
+checks that the dispatched SHA is still current `main` before credentials and
+before each Argo write. It requires healthy Envoy Gateway and manually
+controlled Foundation and Enterprise Applications, then syncs foundation before
+Enterprise at explicit repository and chart revisions. Source tests pass; this
+stage has not run on the cluster. Reconciliation, stop, restore and acceptance
+remain separate gates.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
 accepts fixed inspect, canary and upgrade stages only from the exact current

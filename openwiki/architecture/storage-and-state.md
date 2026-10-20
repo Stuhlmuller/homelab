@@ -4,8 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
-  - id: openwiki-source-489371bb6baef577dc131a87
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-4aa900d84e01409d13d834a6
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-20275bab1ec480742e28a50f
@@ -32,12 +32,16 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T21:32:39.892Z" }
+generated: { by: "codex", at: "2026-10-20T08:26:45.252Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T01:14:14.135Z
+    at: 2026-10-20T08:26:45.252Z
 ---
 
 # Storage And State
@@ -280,19 +284,36 @@ The post-shutdown inventory passed, but a complete independent archive/restore
 and any new Enterprise recovery set remain unverified; keep all retained claims.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
-declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
-nonrotating private key. Preserve that Secret with any eventual database
-recovery set. The foundation is not registered with Argo; node placement,
-distinct storage, PostgreSQL roles, database and agent backups, and isolated
-restore remain pending. No new Enterprise PVC or live database exists from
-this source alone.
+declares a retained, nonrotating `occ-postgres-root` CA and a PostgreSQL 18.6
+StatefulSet with TLS 1.3, distinct administrator, migrator, application, and
+backup roles, and a 10 Gi local claim template. The application role receives
+per-object grants from stock migrations; the backup role has read-only dump
+access. Readiness requires the final bootstrap marker: if first-run SQL stops
+after `PG_VERSION` is written, the retained claim remains unready with no
+automatic replay. Preserve the CA private key, database, credentials, and
+completed agent snapshot as one recovery set. The backup wrapper refuses an
+incomplete set or duplicate publication; its encrypted off-node target and
+writer-fenced capture are still pending. The isolated restore candidate is
+excluded from the Kustomization. The foundation remains unregistered, with no
+new Enterprise PVC or live database. The 2026-10-20 07:22 UTC capacity recheck found about
+3,398 MiB of unreserved memory on the best worker, below the 4,096 MiB
+initial Enterprise reservation before transient and host headroom. That worker
+also had only 9.71 GB of root-filesystem space free, below the proposed 10 GiB
+local claim. This does not admit local storage or an isolated canary; see the
+[acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
-before chart initialization. The required retained local classes, claims,
-dedicated PostgreSQL and restore proof are still absent; the candidate does not
+before chart initialization. The required retained local classes, bound claims,
+live PostgreSQL and restore proof are still absent; the candidate does not
 adopt legacy OpenClaw state.
+The source-only reconciler needs a private durable journal at
+`/private/openclaw-enterprise/journal.json` to preserve pending API intent and
+resource IDs across retries. A proposed fourth retained local PVC would belong
+only to a serialized operator Job, separate from the bootstrap claim that
+upstream initialization can write. Neither that PVC nor the Job is declared or
+admitted yet; an ephemeral CI runner cannot safely execute reconciliation.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`
@@ -562,20 +583,25 @@ not prune the PVC. Before requesting a GitHub token, each run flushes a small
 write to the claim so a full or unwritable cache fails visibly. The `20Gi`
 request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
 PVCs or enforce their requested size. A full export needs restored NAS capacity
-through a declared path; increasing the PVC request cannot restore writes. For
-corruption, suspend the CronJob, clear only cache contents with a reviewed
-temporary GitOps Job, then let the next run rebuild them. See [the workload
+through a declared path; increasing the PVC request cannot restore writes.
+No verified QNAP `/homelab` capacity-restoration operation is declared. An
+isolated tmpfs `ENOSPC` drill can test failure visibility and later normal
+PVC use, but cannot prove recovery from a full NAS export. T024/T042 and
+writer cutover remain blocked on a declared capacity path and direct recovery
+evidence. For corruption, suspend the CronJob, clear only cache contents with
+a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the
 19:00 and 20:00 UTC scheduled Pods showed one exact public canary
 datasource-key hit each, on distinct Pod UIDs using the same PVC. These
-observations do not close [T022](../../specs/004-run-renovate-in-cluster/tasks.md):
-at this draft revision, its task record still lacks a durable receipt for
-those Pod UIDs and acceptance of the `v0.0.2` refresh. The protected release
-was published at 20:20 UTC. A live cache-failure cycle and next-slot recovery
-also remain open.
+observations are recorded in the durable
+[T022 receipt](../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md).
+After the protected `v0.0.2` release at 20:20 UTC, the 21:00 scheduled dry run
+hit the same key, refreshed its record, and selected the new public canary
+branch proposal. T022 is complete. A live cache-failure cycle and next-slot
+recovery remain open.
 
 ## Staged independent application recovery (HOME-2)
 
