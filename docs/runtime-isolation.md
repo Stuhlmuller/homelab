@@ -167,6 +167,17 @@ still has unqualified source-bound generated policies and broad egress findings.
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
+The staged `zimaboard-2` evacuation places Multica frontend on `acer`, Harbor's
+vulnerability exporter on `zimaboard-1`, and the two Cloudflared replicas on
+separate `acer` and `zimaboard-1` nodes. Cloudflared updates one replica at a
+time so its strict node separation cannot block later rollouts. Verify both
+replacements are Ready before further changes. Langfuse PostgreSQL remains on
+`zimaboard-2`. Moving its `Recreate` Deployment interrupts database access,
+and an independent backup and restore drill is still missing. The protected
+`canary-admit` stage owns the eventual taint and label after a fresh receipt
+proves only reviewed system DaemonSet Pods remain. This staging does not
+activate the firewall.
+
 The three Cordium Genesis policies have a [read-only expected-spec fixture](../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 for `cordium/ws-main`, `octelium/cordium-nocturne`, and
 `octelium/cordium-rscserver`. Their complete specs match the live read-only
