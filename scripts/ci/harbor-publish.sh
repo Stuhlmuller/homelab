@@ -492,15 +492,15 @@ if [[ "$mode" == mirror ]]; then
       fi
       if "$oci_index_copy"; then
         sleep "$((1 << attempt))"
-        # A dropped Kubernetes stream can leave the long-lived forward unusable.
-        # Recheck TLS and the registry challenge before reusing partial OCI data.
-        mirror_category="transport-failed"
-        stop_private_forward
-        start_private_forward
-        mirror_category="command-failed"
       else
         sleep "$attempt"
       fi
+      # A dropped Kubernetes stream can leave the long-lived forward unusable.
+      # Recheck TLS and the registry challenge before every authenticated retry.
+      mirror_category="transport-failed"
+      stop_private_forward
+      start_private_forward
+      mirror_category="command-failed"
     done
     if "$oci_index_copy"; then
       mirror_phase="pull-verify"
