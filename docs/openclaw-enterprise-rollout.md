@@ -68,14 +68,24 @@ a distinct `publish-archive` stage is required after its private result appears.
 Publication streams bounded multipart parts and checks the complete byte count
 and SHA256 before S3 completion. Its run SHA/ID is the offsite archive reference
 for `verify`; the original archive worker SHA/ID remains the source reference.
-On failure, the protected job exposes only a fixed category: `publication-source-read`,
-`publication-s3-create`, `publication-s3-part`, `publication-s3-complete`, or
-`publication-digest`. None is an offsite restore receipt.
+On failure, the protected job exposes only a fixed category. Upload categories
+separate source reads, S3 multipart calls and digest mismatch. After upload,
+`publication-archive-head` and `publication-archive-metadata` check the completed
+object; `publication-receipt-upload` and `publication-receipt-head` check the
+receipt object; `publication-restore-*` identifies which offsite restore step
+failed. Private error details stay withheld. None is an offsite restore receipt.
 Exact-main [run `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090)
 passed credentials but failed `publication-source-read` with 64 MiB Kubernetes
 exec ranges. The uploader now assembles each 64 MiB S3 part from at most 8 MiB
 exec slices. No offsite receipt exists; T013 remains pending until a protected
 retry and independent offsite restore pass.
+Exact-main [run `39466313228`](https://github.com/Stuhlmuller/homelab/actions/runs/39466313228)
+completed the bounded multipart uploader, then failed in the former broad
+`publication-version` category at 2026-10-20 20:34:59 UTC. That category cannot
+distinguish object metadata, receipt upload/version, or initial restore setup.
+The uploaded object is not an accepted archive: no final versioned, independently
+restored receipt exists. Keep the retained local source and failed-run S3 objects;
+the next protected publication must use a fresh exact-main run and unique prefix.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain
