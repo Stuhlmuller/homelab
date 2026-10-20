@@ -45,6 +45,9 @@ pending stack changes. Verify the bucket and an upload/download restore before s
 writer. The separate application-backup service remains inactive. The archive
 worker runs detached because the prior long Kubernetes exec stream disconnected;
 a distinct `publish-archive` stage is required after its private result appears.
+Publication streams bounded multipart parts and checks the complete byte count
+and SHA256 before S3 completion. Its run SHA/ID is the offsite archive reference
+for `verify`; the original archive worker SHA/ID remains the source reference.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain

@@ -17,12 +17,57 @@ from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
+UPLOAD = ROOT / 'scripts/ci/openclaw-enterprise-upload.py'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 ROLE = ROOT / 'IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf'
 
 
 class Operations(unittest.TestCase):
+    def test_archive_upload_completes_only_after_full_size_and_digest(self):
+        payload = b'verified archive bytes'
+        with tempfile.TemporaryDirectory() as directory:
+            fake_aws = Path(directory) / 'aws'
+            log = Path(directory) / 'aws.jsonl'
+            fake_aws.write_text('''#!/usr/bin/env python3
+import json, os, pathlib, sys
+args = sys.argv[1:]
+operation = args[1]
+log = pathlib.Path(os.environ['FAKE_AWS_LOG'])
+with log.open('a') as output:
+    output.write(json.dumps({'operation': operation,
+                             'size': pathlib.Path(args[args.index('--body') + 1]).stat().st_size
+                             if '--body' in args else None}) + '\\n')
+if operation == 'create-multipart-upload':
+    print(json.dumps({'UploadId': 'test-upload'}))
+elif operation == 'upload-part':
+    print(json.dumps({'ETag': '"test-etag"'}))
+elif operation == 'complete-multipart-upload':
+    manifest = pathlib.Path(args[args.index('--multipart-upload') + 1][7:])
+    assert json.loads(manifest.read_text())['Parts'] == [
+        {'ETag': '"test-etag"', 'PartNumber': 1}]
+    print('{}')
+else:
+    raise SystemExit(2)
+''')
+            fake_aws.chmod(0o755)
+            digest = hashlib.sha256(payload).hexdigest()
+            env = {**os.environ, 'PATH': directory + os.pathsep + os.environ['PATH'],
+                   'FAKE_AWS_LOG': str(log)}
+            for body, size, expected_digest, succeeds in (
+                    (payload[:8], len(payload), digest, False),
+                    (payload, len(payload), '0' * 64, False),
+                    (payload + b'extra', len(payload), digest, False),
+                    (payload, len(payload), digest, True)):
+                log.unlink(missing_ok=True)
+                result = subprocess.run(['python3', '-I', str(UPLOAD), 'bucket', 'key',
+                                         str(size), expected_digest], input=body,
+                                        cwd=ROOT, env=env, capture_output=True,
+                                        timeout=10, check=False)
+                self.assertEqual(result.returncode == 0, succeeds, result.stderr)
+                operations = [json.loads(line)['operation'] for line in log.read_text().splitlines()]
+                self.assertEqual('complete-multipart-upload' in operations, succeeds)
+
     def test_legacy_session_outlives_the_bounded_job(self):
         workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise-sync:\n', 1)[0]
         role = ROLE.read_text()
@@ -40,6 +85,11 @@ class Operations(unittest.TestCase):
             WORKFLOW.read_text(),
         )
         self.assertEqual(pins, [hashlib.sha256(SCRIPT.read_bytes()).hexdigest()])
+        upload_pins = re.findall(
+            r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-upload\.py'",
+            WORKFLOW.read_text(),
+        )
+        self.assertEqual(upload_pins, [hashlib.sha256(UPLOAD.read_bytes()).hexdigest()])
 
     def test_inventory_worker_finishes_without_exec_stream_and_records_failure_privately(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -303,6 +353,10 @@ printf '%s\\n' "$phase"
         self.assertIn('observed="/private/legacy/baseline-${archive_id}.json"', script)
         self.assertIn('nohup flock -n /private/legacy/archive.lock', script)
         self.assertIn('archive_id="${ARCHIVE_REF##*/}"', script)
+        self.assertIn('prefix="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}"', script)
+        self.assertIn('python3 -I scripts/ci/openclaw-enterprise-upload.py', script)
+        self.assertIn('(.publicationSha + "/" + .publicationRunId) == $ref', script)
+        self.assertNotIn('--expected-size 80000000000', script)
         self.assertIn('validate_baseline "$work/observed.json" "$work/status.json"', script)
         self.assertIn('verify_restored_archive "$restore/receipt.json"', script)
         self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)

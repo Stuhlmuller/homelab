@@ -36,7 +36,7 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=verify \
-  -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
+  -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
 ```
 
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
@@ -77,11 +77,19 @@ and start a new protected run only after the
 cause is fixed. Do not treat a successful start as an archive receipt. Inspect
 the private result and worker log before dispatching `publish-archive` with the
 archive stage's SHA/run ID; the old source stays stopped and read-only while it
-runs. Publication checks the completed receipt against the observed inventory,
-copies the bundle to versioned S3, downloads it to scratch, and verifies a full
+runs. Publication uses its own current-main SHA/run ID as a fresh immutable S3
+prefix, so a failed attempt cannot overwrite an earlier completed or partial
+object. The source archive SHA/run ID stays recorded in `final.json`. Publication
+checks the completed receipt against the observed inventory, streams the bundle
+in bounded S3 parts, and completes the object only after its byte count matches
+the reader's file size and its SHA256 matches the source receipt. An interrupted
+stream leaves an incomplete multipart upload for bucket lifecycle cleanup.
+Publication then downloads the versioned object to scratch and verifies a full
 isolated extract in a detached worker before writing the private `final.json`
 receipt. It rechecks zero writers and original volume identities immediately
-before publication. Verify selects its original S3
+before publication. Pass the successful **publication** SHA/run ID to `verify`;
+it checks that identity in `final.json` before restoring the recorded versions.
+Verify selects its original S3
 version even after later versions or delete markers, then restores the archive
 and receipt versions it recorded. A green inventory alone does not authorize
 shutdown; the old Deployment and backup CronJob must first reach their reviewed

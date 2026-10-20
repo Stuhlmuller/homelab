@@ -314,7 +314,7 @@ approved_openclaw_legacy_operation if {
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'e812cd9a3361753f7eec82396c5e94dfc1cae96f682c8c7714e3fd2dc2c210fa  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'e862270be5a398bdf5845b0d5cfa4e652428912f5a34224452c86367764fa9ab  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'edf278f9496e01a6f3e768f40710eed7e2cceb484fadf15af118c97984340905  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 approved_openclaw_enterprise_sync if {
