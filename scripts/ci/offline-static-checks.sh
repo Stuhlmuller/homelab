@@ -688,7 +688,10 @@ echo "::group::Octelium catalog security contracts"
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-ci-plan")] as $plan_users |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-plan-access")] as $plan_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api-ci")] as $kube_api_ci |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
     [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
@@ -699,6 +702,15 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($plan_users | length) == 1 and
+    $plan_users[0].spec.type == "WORKLOAD" and
+    $plan_users[0].spec.session.clientlessDuration == {"days": 30} and
+    $plan_users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($kube_api_ci | length) == 1 and
+    $kube_api_ci[0].spec.authorization.policies == [
+      "homelab-ci-kubernetes-api-access",
+      "homelab-ci-kubernetes-api-plan-access"
+    ] and
     ($nofx | length) == 1 and
     $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
@@ -750,7 +762,47 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
         {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
         {"match": "ctx.service.spec.mode == \"KUBERNETES\""}
       ]}}
-    }]
+    }] and
+    ($plan_policies | length) == 1 and
+    $plan_policies[0].spec.rules == [
+      {
+        "name": "deny-non-dry-run-writes",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"]"},
+          {"match": "!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != \"All\""}
+        ]}}
+      },
+      {
+        "name": "deny-subresources",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "has(ctx.request.kubernetes.subresource)"}
+        ]}}
+      },
+      {
+        "name": "read-or-dry-run",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+          {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "!has(ctx.request.kubernetes.subresource)"},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.http.method in [\"GET\", \"HEAD\"] && ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"},
+            {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"] && ctx.request.kubernetes.http.queryParams.dryRun == \"All\""}
+          ]}}
+        ]}}
+      }
+    ]
   ' >/dev/null
 echo "::endgroup::"
 
