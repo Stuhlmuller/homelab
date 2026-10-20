@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:327b055c7ff6710b40154028b77195d03c8316673bbba13b41e47eec603c5075",
+  "pageVersion": "sha256:c10dc20a2e73fd837300f8f93a206b709c14ac3c15a29f5a8298b36ca7302364",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -466,7 +466,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
         }
       ]
     },
@@ -476,11 +476,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
+          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -506,7 +506,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -548,13 +548,41 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4a61069854e862aecdd7ae64cf583e1b119d063b5ff0eda6a20c647a1dde162c"
+          "version": "repo-file-v1:sha256:9cbd561e80a65f03816ad418c5f2b40ae108016af2e372169c23a58614bed7f1"
+        }
+      ]
+    },
+    {
+      "id": "claim_9baa40f2bf824b43b0a9aca5b14e7d94",
+      "statement": "A read-only Cordium Genesis fixture binds complete expected specs for three policies at pinned v0.12.7, while 14 Cordium/Octelium generated policies lack such fixtures; a pinned generator-binary render and live enforcement remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+        }
+      ]
+    },
+    {
+      "id": "claim_c80db162aa5f411599688eea41b7b37d",
+      "statement": "Cordium ws-main and Octelium svc-upstream retain public IPv4/IPv6 all-port egress that additive NetworkPolicies cannot narrow; generator-owned correction and isolated canary qualification remain required.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:220b3290ca6d3ca245feee4943a7f9b0e70843456c3c5d6a8351d5989cf23c50"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:3061e02c57944c6aa175493723ff88db8f7507217cb14ebe66054c926e6bff1c"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:58:28.951Z"
+    "at": "2026-10-20T06:20:01.051Z"
   }
 }

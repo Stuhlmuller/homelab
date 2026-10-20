@@ -4,6 +4,8 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-3f6d0b26d6634f9dca554267
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
@@ -41,7 +43,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:28.951Z
+    at: 2026-10-20T06:20:01.051Z
 ---
 
 # Runtime Isolation

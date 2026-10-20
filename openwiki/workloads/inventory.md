@@ -12,6 +12,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-89de10646bdbebfd3e1ed075
     resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-812216982d0b6a887bf09651
@@ -165,7 +167,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:28.951Z
+    at: 2026-10-20T06:20:01.051Z
 ---
 
 # Workload Inventory
