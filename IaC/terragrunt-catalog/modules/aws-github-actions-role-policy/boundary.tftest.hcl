@@ -110,7 +110,7 @@ run "plan_role_can_only_read_its_state_and_backup_metadata" {
         resources = toset(["arn:aws:s3:::test-state"])
       }
       ReadHomelabStateObjects = {
-        actions   = toset(["s3:GetObject"])
+        actions = toset(["s3:GetObject"])
         resources = toset([
           "arn:aws:s3:::test-state/IaC/homelab/bootstrap/argocd/terraform.tfstate",
           "arn:aws:s3:::test-state/IaC/homelab/operator/application-backup-storage/terraform.tfstate",
@@ -156,11 +156,11 @@ run "plan_role_can_only_read_its_state_and_backup_metadata" {
     condition = [
       for statement in jsondecode(data.aws_iam_policy_document.github_actions_plan.json).Statement : statement.Condition.StringLike["s3:prefix"]
       if statement.Sid == "ListHomelabStateBucket"
-    ] == [[
-      "IaC/homelab/bootstrap/argocd/*",
-      "IaC/homelab/operator/application-backup-storage/*",
-      "IaC/homelab/live/argocd-apps/*",
-      "IaC/homelab/live/azuread-applications/*",
+      ] == [[
+        "IaC/homelab/bootstrap/argocd/*",
+        "IaC/homelab/operator/application-backup-storage/*",
+        "IaC/homelab/live/argocd-apps/*",
+        "IaC/homelab/live/azuread-applications/*",
     ]]
     error_message = "The plan role must not list state outside PR-planned units."
   }
