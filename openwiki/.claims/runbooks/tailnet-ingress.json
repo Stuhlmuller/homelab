@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4503cf5a7d081c0d3e724d4e00d09084c76694b7de824cad05fb59a05ef0004c",
+  "pageVersion": "sha256:6bc9f8c4077a468e601612445fc56ebeded531d8d544e3168a5c71acb592fcbd",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -338,7 +338,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:b929a55e97e47fb0a467e16cf05a4777c2c2fed67c805e0fdd50391df9b25a74"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
@@ -423,6 +423,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T06:15:53.373Z"
+    "at": "2026-10-20T06:19:14.853Z"
   }
 }
