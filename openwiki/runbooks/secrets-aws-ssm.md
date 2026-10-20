@@ -16,10 +16,14 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
@@ -30,10 +34,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:02:18.363Z
 ---
 
 # AWS SSM Secret References
@@ -72,6 +76,8 @@ finished all eight eligible repositories with no reported errors. The legacy
 GitHub Action remains the only writer. Full App-policy parity, fault recovery,
 the old-writer workflow deletion, guarded Actions-key retirement, and cluster
 writer activation remain separate gates.
+
+The staged [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) reuses these projected App files to request `contents:read` and `metadata:read`; it adds no SSM parameter. The observer stays suspended. The separate inventory, report, and PR-proof Jobs are also suspended and omitted from Kustomize. Their private inputs and evidence paths need review before the acceptance window starts.
 
 ## OpenClaw Enterprise model key
 

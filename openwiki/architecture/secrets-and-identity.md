@@ -50,10 +50,14 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
@@ -104,10 +108,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+generated: { by: "codex", at: "2026-10-20T01:02:18.363Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T00:21:26.732Z
+    at: 2026-10-20T01:02:18.363Z
 ---
 
 # Secrets And Identity
@@ -252,6 +256,8 @@ require a separate reviewed GitOps change. Rollback first suspends and drains
 cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
 writer cutover has not occurred.
+
+The staged [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer) reuses the projected App files to request a read-scoped installation token. Its 15-minute CronJob is suspended and has no Kubernetes API token. The inventory, report, and PR-proof Jobs are also suspended and omitted from Kustomize; none is active acceptance evidence. The App private key remains write-capable even when a Job requests only read token grants.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

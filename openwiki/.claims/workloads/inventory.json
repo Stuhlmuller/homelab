@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:21124e9a9002b56c995f025e40cca8f1b37d686bdd8c75e7e451583b489de2ef",
+  "pageVersion": "sha256:a8aa76bf2d8caddec0016ddd4d25a1d3171fdfe9b6729de95df47b98f6a8c1ca",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -296,7 +296,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -517,10 +517,32 @@
           "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
         }
       ]
+    },
+    {
+      "id": "claim_8e589752dc34420d814aa2299237328a",
+      "statement": "Renovate acceptance source stages a suspended 15-minute observer and separate 2 Gi private ledger, while inventory, report, and PR-proof Jobs remain suspended and omitted from Kustomize; seven-day acceptance evidence remains pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml",
+          "version": "repo-file-v1:sha256:1c2e6039204e9d8cc13fb2e753383093b8d0a37e13396947c74ecd32812ed285"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml",
+          "version": "repo-file-v1:sha256:337c9c7f9020afcd5c40f11835cc4f76e6808e441609792d7e1a3cd798d54c8d"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml",
+          "version": "repo-file-v1:sha256:fc3a8f0133dde1f6b1c1aa29a830e3f717e1e568d541e818cf0b2aa9fd68c89d"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T00:21:26.732Z"
+    "at": "2026-10-20T01:02:18.363Z"
   }
 }
