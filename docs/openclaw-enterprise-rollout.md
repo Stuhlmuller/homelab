@@ -45,8 +45,13 @@ pending stack changes. Verify the bucket and an upload/download restore before s
 writer. The separate application-backup service remains inactive. The archive
 worker runs detached because the prior long Kubernetes exec stream disconnected;
 a distinct `publish-archive` stage is required after its private result appears.
-The fixed inventory/archive/verify dispatches and compatible old-service
-recovery order are in the [OpenClaw runbook](../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
+The reader mounts its private scratch volume at `/tmp` because SQLite may need
+writable temporary files while independently indexing the archive on a
+read-only-root container. A failed detached archive is not a receipt: retain
+its partial bundle for diagnosis, verify the reader rollout, and retry the
+protected archive stage on a fresh exact `main` SHA. Publish only the new
+verified result. The fixed inventory/archive/verify dispatches and compatible
+old-service recovery order are in the [OpenClaw runbook](../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
 
 ## Fixed stages and stop gates
 
