@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0d25f7db71c24bf99965a32eacc20057ce42ddd2cdb53c868cf97d5d09cbf8ca",
+  "pageVersion": "sha256:e5c7e9becdb9f46ee86b923debc357e8e84b103f6c3e43fb2930b8d84a73e413",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -94,7 +94,7 @@
     },
     {
       "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
-      "statement": "The unregistered Enterprise foundation declares a retained nonrotating PostgreSQL CA, a TLS 1.3 PostgreSQL 18.6 StatefulSet with separate roles and 10Gi local claim template, a complete-set backup script, and an excluded isolated restore candidate. It does not create a live PVC, database, off-node backup or restore proof; placement and recovery remain pending.",
+      "statement": "The unregistered Enterprise foundation declares a retained PostgreSQL CA, TLS 1.3 PostgreSQL 18.6 StatefulSet, separate roles, and a retained 10Gi local claim template. Backup and isolated restore fixtures are source-only; node placement, off-node backup, and live restore remain pending.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -177,6 +177,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T05:36:50.120Z"
+    "at": "2026-10-20T05:58:23.168Z"
   }
 }

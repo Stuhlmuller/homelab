@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e59416128d1c8e671af6a79fea3e7da1c21f2ca639f838143202caaccbee32e7",
+  "pageVersion": "sha256:895169f8afa7f706243f9e8216a17b020ee7958ed9c34babf10b64f0b5973623",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -138,7 +138,7 @@
     },
     {
       "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
-      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, PostgreSQL TLS and network-policy declarations. The Python helper owns exact-origin and model validation plus guarded logical-Namespace reconciliation; separate foundation, PostgreSQL 18, and reconciler fixtures run in CI.",
+      "statement": "The unregistered Enterprise foundation owns dormant namespace, ExternalSecret, PostgreSQL TLS, database, backup and network-policy declarations. The Python helper owns exact-origin and model validation plus guarded logical-Namespace reconciliation; foundation, PostgreSQL and reconciler fixtures run in CI.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -151,6 +151,10 @@
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
           "version": "repo-file-v1:sha256:f726b8be2628220111b2130f42e070e6ea39a80166e70d4ae12bde728f9c2cef"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
+          "version": "repo-file-v1:sha256:4142f2ed1227501de2ee1da34d66a5f03807b09c98f5319c82d7f05c014494e8"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
@@ -201,6 +205,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:41:27.681Z"
+    "at": "2026-10-20T05:58:23.168Z"
   }
 }

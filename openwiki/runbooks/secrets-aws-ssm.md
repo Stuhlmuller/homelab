@@ -14,8 +14,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
-  - id: openwiki-source-1db925f14b292cd7f97ea0cf
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/installation.yaml
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -30,10 +30,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T05:13:36.094Z" }
+generated: { by: "codex", at: "2026-10-20T05:58:23.168Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:13:36.094Z
+    at: 2026-10-20T05:58:23.168Z
 ---
 
 # AWS SSM Secret References
