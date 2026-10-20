@@ -224,6 +224,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-719a8f57b80adfae662090ca
+    resource: repo://scripts/ci/platform-maintenance-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
@@ -312,10 +314,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T16:13:57.200Z" }
+generated: { by: "codex", at: "2026-10-20T16:40:47.303Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T16:13:57.200Z
+    at: 2026-10-20T16:40:47.303Z
 ---
 
 # Validation Gates
@@ -1707,6 +1709,14 @@ flag and canary node remain unset. Current-SHA recovery receipts,
 full-catalog publication, five-tag Harbor lock and an isolated canary remain
 live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
+The Kubernetes stage also reads live Istiod, CNI, ztunnel and both injected
+gateway workloads before the command and after stage verification. It rejects
+missing or degraded rollouts, including Deployments with old terminating
+replicas that keep total replicas above desired, and any image reference without the reviewed
+Istio 1.30.6 digest, including matching mutable tags in gateway Pods. T025
+must align the chart image hub and digest-bearing templates/injection with the
+reviewed catalog. Source fixtures pass; no live Istio or Kubernetes upgrade
+was performed.
 
 Before `owned-cleanup` can touch the firewall, the protected stage reads the
 approved `firewall-ownership/<capture-run-id>.json` under the private

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:74a71efef72bc5447e3e0b39f423a28fbf1d17b7a0c790e6634e8e165f340030",
+  "pageVersion": "sha256:74c8bbba8cb3feddaeb9310fd7effe8eec7b2ee58a069ded364bc634c6658e1a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1308,7 +1308,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:577e436570e9d9a31f4f1dfc98e525bc725c393fae4111af2f4c2e9b1b541bf7"
+          "version": "repo-file-v1:sha256:69ae6d56bf5748c8b9be2d2dc8210ec4fbe25b8c0e2d335cc8cedd97fb980460"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
@@ -1529,10 +1529,28 @@
           "version": "repo-file-v1:sha256:d6225644c4ed273346432267ec9e2530d6081a1738dec844470437989855e0d7"
         }
       ]
+    },
+    {
+      "id": "claim_136dbba50d1849ee8104b6d3dd502193",
+      "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 images and fully observed, ready rollouts, including Deployment total replicas equal to desired so old terminating replicas block the stage. Matching mutable tags are rejected. T025 must align chart image hubs and digest-bearing injection with the reviewed catalog; no live upgrade has run.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L513-L523",
+          "version": "repo-lines-v1:sha256:c0efebfee821fe4bcab60130408ae29e2ccf316a04c164afd4061c81a024c032:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L980-L1056",
+          "version": "repo-lines-v1:sha256:56419eab0b78e81440eb7bbedfa3fc019c080861fba24d8eb315baa73c30ecab:eyJzZWxlY3RlZExpbmVDb3VudCI6NzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzN2UwZTIxYzU3YjdjMTIwMzk3NGRlODEwMmUxNmE1OWNmYjJjMjU4YjFlOTllZWJlMzJkOTE4YzFjNWE5YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzNTE1ZWUyN2I2ZmQ1MTFiMDc3Yzg2MTA5ZGNjMzMyOGVkOTRmZDllYzRjZTI2YmRiYzc4MTUyNjc1ZDRiNTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0YWEyZTZjNTVhYjlhY2EyZDdmNjA1MmY3ZjAzZmQwYTk5NjFjMWM0ZWMwZmIzMDIyNDI3Y2FkNjMwYjYwOTQifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L604-L690",
+          "version": "repo-lines-v1:sha256:8cc5336353484b1d656edb54cb7024e17fbedcda9e95cb6624249c62a4ad4b1b:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5YjZkNDc1NDhjZDI4NzcwYjIyZDkwMzU2OWRkZDM1MmEzNzM0Njc5OTUxNWU5ZGRiZjcyYmYwYTI0ZTRlYzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxNjQ1OGE5Yjc2MmY5MmFhNGQzNGE1OWI5NDk0YmM1MGIwMTE4N2M3MDlmMzZiZDUyYTM5YzlkZGQ1NDVjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlYTJlOGNlYzJkODc0ZGEzYWY2MDhlN2ZiZjljNzU5ZTgxZWZkNTYwODYyNjU4NjBkOGE1YzQ0MWI3ZTBhMzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzNGRhOGM3MDMzMjQ3OTcwMGFkMGM1OTU2ODQzYTRhZjg2NGEzYzQyYzhjYTIxNWI2ZDhhNzJkZDlmMjA2ZDkifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T16:13:57.200Z"
+    "at": "2026-10-20T16:40:47.303Z"
   }
 }

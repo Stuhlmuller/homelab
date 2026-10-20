@@ -604,6 +604,83 @@ def verify_kubernetes_mirror_routes(config, talosconfig):
                 raise ValueError("Talos node lacks the reviewed no-fallback Harbor mirror")
 
 
+def verify_live_istio_target(config):
+    """Refuse a Kubernetes hop if the preceding Istio rollout has drifted."""
+    target = config["istioStages"][-1]["images"]
+    expected = {
+        ("Deployment", "istiod"): "pilot",
+        ("Deployment", "istio-ingressgateway"): "proxyv2",
+        ("Deployment", "octelium-api-ingressgateway"): "proxyv2",
+        ("DaemonSet", "istio-cni-node"): "install-cni",
+        ("DaemonSet", "ztunnel"): "ztunnel",
+    }
+    result = subprocess.run(
+        ["kubectl", "-n", "istio-system", "get", "deployments,daemonsets", "-o", "json"],
+        capture_output=True, text=True, timeout=60, check=True)
+    items = json.loads(result.stdout).get("items")
+    if not isinstance(items, list):
+        raise ValueError("live Istio workload inventory is unavailable")
+    found = set()
+    gateways = {}
+    for item in items:
+        identity = (item.get("kind"), item.get("metadata", {}).get("name"))
+        if identity not in expected:
+            continue
+        if identity in found:
+            raise ValueError("live Istio workload identity is ambiguous")
+        found.add(identity)
+        image = target[expected[identity]]
+        images = [container.get("image") for container in
+                  item.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])]
+        if identity[1] in ("istio-ingressgateway", "octelium-api-ingressgateway"):
+            if images != ["auto"]:
+                raise ValueError("live Istio gateway template is not injected")
+        elif images != [image]:
+            raise ValueError("live Istio image differs from the reviewed target")
+        metadata, spec, status = item["metadata"], item["spec"], item.get("status", {})
+        if (not isinstance(metadata.get("generation"), int) or
+                status.get("observedGeneration") != metadata["generation"]):
+            raise ValueError("live Istio rollout is not observed")
+        if identity[0] == "Deployment":
+            desired = spec.get("replicas", 1)
+            fields = ("replicas", "updatedReplicas", "readyReplicas", "availableReplicas")
+        else:
+            desired = len(NODES)
+            if (status.get("desiredNumberScheduled") != desired or
+                    status.get("numberMisscheduled") != 0):
+                raise ValueError("live Istio DaemonSet placement is incomplete")
+            fields = ("updatedNumberScheduled", "numberReady", "numberAvailable")
+        if (not isinstance(desired, int) or desired < 1 or
+                any(status.get(field) != desired for field in fields)):
+            raise ValueError("live Istio workload is not fully ready")
+        if identity[1] in ("istio-ingressgateway", "octelium-api-ingressgateway"):
+            selector = spec.get("selector", {}).get("matchLabels")
+            if not isinstance(selector, dict) or not selector:
+                raise ValueError("live Istio gateway selector is missing")
+            gateways[identity[1]] = (selector, desired)
+    if found != set(expected):
+        raise ValueError("reviewed Istio workload is missing")
+    pods = subprocess.run(
+        ["kubectl", "-n", "istio-system", "get", "pods", "-o", "json"],
+        capture_output=True, text=True, timeout=60, check=True)
+    items = json.loads(pods.stdout).get("items")
+    if not isinstance(items, list):
+        raise ValueError("live Istio gateway Pods are unavailable")
+    for gateway, (selector, desired) in gateways.items():
+        matching = [pod for pod in items if all(
+            pod.get("metadata", {}).get("labels", {}).get(key) == value
+            for key, value in selector.items())]
+        image = target["proxyv2"]
+        if len(matching) < desired or any(
+                pod.get("metadata", {}).get("deletionTimestamp") or
+                [container.get("image") for container in
+                 pod.get("spec", {}).get("containers", [])] != [image] or
+                not any(condition.get("type") == "Ready" and condition.get("status") == "True"
+                        for condition in pod.get("status", {}).get("conditions", []))
+                for pod in matching):
+            raise ValueError(f"live Istio gateway Pods are not at the reviewed target: {gateway}")
+
+
 def verify_installer_mirror_route(machine, image):
     registry = image.split("/", 1)[0]
     if registry not in ("ghcr.io", "factory.talos.dev"):
@@ -833,6 +910,7 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
                     for node in NODES)):
             raise ValueError("existing Kubernetes receipt does not match live target")
         cluster_health(config, talosconfig)
+        verify_live_istio_target(config)
         return complete
     if (current_version != target["from"] or
             any(observed["nodes"][node]["talos"] != config["talosStages"][-1]["to"] or
@@ -840,6 +918,7 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
                 not observed["nodes"][node]["ready"] for node in NODES)):
         raise ValueError("Kubernetes upgrade baseline is not uniformly ready")
     cluster_health(config, talosconfig)
+    verify_live_istio_target(config)
     verify_kubernetes_mirror_routes(config, talosconfig)
     verify_kubernetes_mirror_tags(config)
     if current_main_sha() != source_sha:
@@ -861,6 +940,7 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
                 not observed["nodes"][node]["ready"] for node in NODES)):
         raise ValueError("Kubernetes upgrade did not reach every reviewed target")
     cluster_health(config, talosconfig)
+    verify_live_istio_target(config)
     if current_main_sha() != source_sha:
         raise ValueError("main advanced before Kubernetes stage verification")
     for node in NODES:

@@ -510,6 +510,17 @@ boot ID, and health still match. Istio completion receipts for the three
 reviewed stages must also be published once under
 `openclaw-enterprise/platform/stages/istio-<version>/verified.json` before the
 Kubernetes stage; T025 owns their production.
+Immediately before the Kubernetes command, the helper also reads the live
+`istiod`, CNI, ztunnel, and both gateway workloads. The first three template
+images and the gateways' injected Pod images must match the reviewed Istio
+1.30.6 pins. Their Deployment/DaemonSet rollouts must be fully observed and
+ready on all scheduled nodes. Deployment total replicas must equal desired,
+including during termination of old replicas. It repeats this read-only check after the
+upgrade; an old or degraded mesh stops the stage.
+Istio 1.30.6 charts currently default to `registry.istio.io/release`, while
+the reviewed catalog pins `docker.io/istio`; T025 must align the chart image
+hub and set digest-bearing images in the workload templates and injected
+gateway Pods before this gate can pass. Matching mutable tags are rejected.
 
 Talos v1.14.4 appends `:v<target>` to the five `upgrade-k8s` image bases for
 [control-plane images](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L175)

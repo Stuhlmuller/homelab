@@ -32,10 +32,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-20T15:35:56.635Z" }
+generated: { by: "codex", at: "2026-10-20T16:40:47.303Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T15:35:56.635Z
+    at: 2026-10-20T16:40:47.303Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -195,6 +195,13 @@ recovery receipt producer, isolated canary, and Istio completions remain open
 gates; `activationEnabled` is still false. No live node or control-plane
 upgrade is accepted from this source alone. The canonical runbook gives the
 direct-LAN commands and stop conditions.
+The Kubernetes stage also checks live Istiod, CNI, ztunnel and both injected
+gateway workloads immediately before the command and after verification. It
+requires the reviewed Istio 1.30.6 digest in every relevant image reference,
+fully observed and ready rollouts, complete DaemonSet placement, and total
+Deployment replicas equal to desired so old terminating replicas block the stage. Matching
+mutable tags fail the gate. T025 must align chart image hubs and digest-bearing
+injection with the reviewed catalog before this stage can run.
 
 The same protected lane stages `canary-admit` and `canary-release` separately
 from upgrades. Admission requires reviewed placement and adds the isolation
