@@ -12,6 +12,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-89de10646bdbebfd3e1ed075
     resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-812216982d0b6a887bf09651
@@ -165,7 +167,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:28.951Z
+    at: 2026-10-20T06:20:01.051Z
 ---
 
 # Workload Inventory
@@ -369,6 +371,15 @@ found the operator policy absent and `kiali-server-ingress` present with the
 same complete spec as both the former rule and source manifest. Octelium and
 Prometheus traffic checks, broad-source review, and the enforcement canary
 remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
+
+The [Cordium Genesis expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds complete source-reviewed shapes for `cordium/ws-main`,
+`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` at pinned
+`v0.12.7`. Fourteen generated Cordium/Octelium policies still lack fixtures.
+This fixture is read-only inventory input, not a deployed policy or a verified
+generator-binary render. `ws-main` and Octelium `svc-upstream` retain public
+IPv4/IPv6 all-port egress; additive NetworkPolicies cannot narrow it. Review
+the generator-owned correction and isolated-canary traffic before enforcement.
 
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, or

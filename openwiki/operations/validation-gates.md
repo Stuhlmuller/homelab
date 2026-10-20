@@ -44,6 +44,8 @@ sources:
     resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -96,6 +98,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -271,7 +275,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T05:58:28.951Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:28.951Z
+    at: 2026-10-20T06:20:01.051Z
 ---
 
 # Validation Gates
@@ -597,6 +601,18 @@ Drift labels consider both live and rendered policy types, so a transition
 between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
+
+The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds the complete source shapes of `cordium/ws-main`,
+`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` to pinned
+`v0.12.7` constructors. Inventory tests compare these three full specs; 14
+other Cordium/Octelium generated policies still lack bound fixtures. This is
+source review, not a pinned generator-binary render or live traffic result.
+The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
+IPv6 on all ports. Additive NetworkPolicies cannot narrow those rules; the
+generator needs a reviewed correction and an isolated canary must qualify
+required traffic before enforcement. See the
+[policy review](../../docs/evidence/openclaw-enterprise-policy-review.json).
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind

@@ -4,6 +4,8 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-d9e93037542f56be8db8a431
+    resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-3f6d0b26d6634f9dca554267
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
@@ -41,7 +43,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T05:19:15.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T05:58:28.951Z
+    at: 2026-10-20T06:20:01.051Z
 ---
 
 # Runtime Isolation
@@ -114,8 +116,18 @@ Octelium `svc-upstream` retain broad public egress findings, and generator
 renders and real traffic remain unqualified. A 2026-10-20 read-only cluster
 inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned.
 All 49 Argo-owned specs matched their rendered repository sources; this is
-source convergence, not traffic or enforcement qualification. Qualify
-allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
+source convergence, not traffic or enforcement qualification.
+The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+binds complete source-reviewed shapes for `cordium/ws-main`,
+`octelium/cordium-nocturne`, and `octelium/cordium-rscserver` to pinned
+`v0.12.7` constructors. Fourteen generated policies still lack source-bound
+fixtures, and a pinned generator-binary render remains unverified. The pinned
+`ws-main` and `svc-upstream` constructors admit all ports to public IPv4 and
+IPv6; additive NetworkPolicies cannot narrow those allows. Correct the
+generators and qualify required traffic on an isolated canary before any
+enforcement.
+
+Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
 IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before
 expanding to another node. Stock Enterprise's public TCP/443 requirement
