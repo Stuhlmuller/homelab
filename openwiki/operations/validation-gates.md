@@ -18,6 +18,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-70a103e770a716ccc6d4024b
     resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
@@ -325,7 +327,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:36:50.176Z
+    at: 2026-10-20T20:00:04.184Z
 ---
 
 # Validation Gates

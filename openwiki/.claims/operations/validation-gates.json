@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b3db7274b2a6623f9af4ba45101630c6b2a136261b7231e9ca216d9e2f024fb1",
+  "pageVersion": "sha256:292f70195fcea6beadbaa063bbf68bf86cfd2828124cd49f1ab54b3aea50717c",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3c0a5e0c40074253d0f7cad31bd1a563e3a94e2c2c06fd295838380f4897d015"
+          "version": "repo-file-v1:sha256:84186bc2833ea79d54fc719695d3e5ccaefa7e3c6cde0e09ea52de2d99bf14ce"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:dcff7088bedcc7c18ba87192ef2b9e5ab9eab1d2fe0096c493357a5efa1f641c"
+          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -582,7 +582,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -596,7 +596,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:dcff7088bedcc7c18ba87192ef2b9e5ab9eab1d2fe0096c493357a5efa1f641c"
+          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -678,15 +678,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:7d5c34035d0cbfea9246671ebf20981bb8e8533fefb544ee1ba5a12f458842f9"
+          "version": "repo-file-v1:sha256:9fc7e5542c6da8960df35c2127d8cb002a200bd65d6ff18d6f5c7100eb4b586a"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:acbcfc1c4a1ce9cb9c8e1cbeae78e0b8c82e5fe9ea39a8edab663efe7cc8a02b"
+          "version": "repo-file-v1:sha256:603d5072a098ea2f5186835f8ba4422b96ff8e0fd5fdde86c4bc539a5969ed9a"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -700,11 +700,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:2e4dd5938549de94225fbcd6cd19fcb7878541adc0a0eaccabb0fea7ba1d142a"
+          "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
         }
       ]
     },
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3c0a5e0c40074253d0f7cad31bd1a563e3a94e2c2c06fd295838380f4897d015"
+          "version": "repo-file-v1:sha256:84186bc2833ea79d54fc719695d3e5ccaefa7e3c6cde0e09ea52de2d99bf14ce"
         }
       ]
     },
@@ -848,11 +848,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:2e4dd5938549de94225fbcd6cd19fcb7878541adc0a0eaccabb0fea7ba1d142a"
+          "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -1066,7 +1066,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         }
       ]
     },
@@ -1130,7 +1130,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3c0a5e0c40074253d0f7cad31bd1a563e3a94e2c2c06fd295838380f4897d015"
+          "version": "repo-file-v1:sha256:84186bc2833ea79d54fc719695d3e5ccaefa7e3c6cde0e09ea52de2d99bf14ce"
         }
       ]
     },
@@ -1206,11 +1206,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:8be1f29ee6edbc7342218dfd69be9908763680fa8234ea15b90507a312191e57"
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:2e4dd5938549de94225fbcd6cd19fcb7878541adc0a0eaccabb0fea7ba1d142a"
+          "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
         }
       ]
     },
@@ -1370,7 +1370,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:acbcfc1c4a1ce9cb9c8e1cbeae78e0b8c82e5fe9ea39a8edab663efe7cc8a02b"
+          "version": "repo-file-v1:sha256:603d5072a098ea2f5186835f8ba4422b96ff8e0fd5fdde86c4bc539a5969ed9a"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -1580,11 +1580,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:acbcfc1c4a1ce9cb9c8e1cbeae78e0b8c82e5fe9ea39a8edab663efe7cc8a02b"
+          "version": "repo-file-v1:sha256:603d5072a098ea2f5186835f8ba4422b96ff8e0fd5fdde86c4bc539a5969ed9a"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:e1bb85286999001d6e02b35648208b9cc9303b8bb1e70cf8bca601d327535fd0"
+          "version": "repo-file-v1:sha256:02a9a6ceed6aadc2f9e6e6718c7041fb57767f782382bd85bbe4ed5261900d48"
         }
       ]
     },
@@ -1609,10 +1609,28 @@
           "version": "repo-file-v1:sha256:8d5b854d54c68bda74075e25c901a4fd054ac7a2a7c8a07b3963a3ea3553f609"
         }
       ]
+    },
+    {
+      "id": "claim_d365dcb718794899bc3c854951af921f",
+      "statement": "Harbor publisher fixtures require fixed Enterprise preflight, per-image pull, signing, and cleanup failure phases while withholding private output; passing offline fixtures does not replace a successful protected three-image publication receipt.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
+          "version": "repo-file-v1:sha256:db4f60f46e874db33303b9e3a6459fdd3042d944b17655576a3954709bffd5ed"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:8593100954356a19c93034ab812d7a0da5310eeb19ac9c1d06ba4a678e13e1c0"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:36:50.176Z"
+    "at": "2026-10-20T20:00:04.184Z"
   }
 }

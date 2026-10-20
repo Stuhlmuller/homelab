@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e0ae1e7848aad65b552f99749a3e0f2f27a5ce0865286f741c6fd37f509f24e4",
+  "pageVersion": "sha256:5f1511235bc53fe92878e52aac6c8941d92e1406c2fe4f9bc116daec0405783b",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3c0a5e0c40074253d0f7cad31bd1a563e3a94e2c2c06fd295838380f4897d015"
+          "version": "repo-file-v1:sha256:84186bc2833ea79d54fc719695d3e5ccaefa7e3c6cde0e09ea52de2d99bf14ce"
         }
       ]
     },
@@ -302,17 +302,35 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:acbcfc1c4a1ce9cb9c8e1cbeae78e0b8c82e5fe9ea39a8edab663efe7cc8a02b"
+          "version": "repo-file-v1:sha256:603d5072a098ea2f5186835f8ba4422b96ff8e0fd5fdde86c4bc539a5969ed9a"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:e1bb85286999001d6e02b35648208b9cc9303b8bb1e70cf8bca601d327535fd0"
+          "version": "repo-file-v1:sha256:02a9a6ceed6aadc2f9e6e6718c7041fb57767f782382bd85bbe4ed5261900d48"
+        }
+      ]
+    },
+    {
+      "id": "claim_35cb8a5abd254928acb6408cf1b2eb8e",
+      "statement": "The protected OpenClaw Enterprise image workflow publishes stock controller, runtime, and CLI only from exact current main; on failure the publisher writes a fixed phase to the job summary while private registry logs remain encrypted, and no accepted image receipt is produced.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
+          "version": "repo-file-v1:sha256:db4f60f46e874db33303b9e3a6459fdd3042d944b17655576a3954709bffd5ed"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:36:50.176Z"
+    "at": "2026-10-20T20:00:04.184Z"
   }
 }
