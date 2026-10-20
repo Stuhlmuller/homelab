@@ -254,14 +254,16 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T04:22:56.208Z" }
+generated: { by: "codex", at: "2026-10-20T04:40:29.048Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T04:22:56.208Z
+    at: 2026-10-20T04:40:29.048Z
 ---
 
 # Validation Gates
@@ -2002,21 +2004,30 @@ dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
 17:00 datasource mutex timeout. The 19:00 and 20:00 scheduled Jobs each
 finished all eight eligible repositories with no reported errors and one
 exact public canary datasource-key cache hit on distinct Pods using the same
-bound PVC. These restricted-log observations show same-key reuse across two
-Pods, but do not close [T022](../../specs/004-run-renovate-in-cluster/tasks.md):
-at this draft revision, its task record still lacks a durable receipt for
-those Pod UIDs and acceptance of the `v0.0.2` refresh. They also do not prove
-general cache freshness, eligible Harbor discovery, full
-owner/App policy parity, or write safety.
+bound PVC. After the protected `v0.0.2` release, the 21:00 scheduled dry run
+hit that key, refreshed its record, and selected the new public canary branch
+proposal. The [aggregate receipt](../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md)
+closes [T022](../../specs/004-run-renovate-in-cluster/tasks.md). This does not
+prove general cache freshness, eligible Harbor discovery, full owner/App
+policy parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
-retirement are complete. The protected companion canary published `v0.0.2`
-at 20:20 UTC; normal scheduled refresh, live cache-failure and missed-cycle
-drills, dry-run parity, writer cutover, and the separate seven-day acceptance
-window remain open gates.
+retirement are complete. Retained 17:00 logs attribute three Docker lookup
+errors to one repository; that Job exited 1, its failed-Job and incomplete-cycle
+alerts fired, and the 18:00 Job recovered. The protected missed-slot drill
+created no 03:00 Job; `RenovateHourlyCycleMissing` fired at 03:20:47 UTC.
+Recovery restored the hourly schedule at 03:35:11 UTC. The rule was inactive
+by 04:00:38 UTC, and the 04:00 Job succeeded at 04:20:23 UTC with eight
+repository starts and finishes, one exact public canary cache hit, and zero
+errors. Correlate restricted `ERROR`/`FATAL` repository tags with final
+summaries; a `done`/`exitCode 0` processing summary alone does not prove
+lookup success. These results close [T045](../../specs/004-run-renovate-in-cluster/tasks.md)
+without claiming a separate per-repository Prometheus alert. Live cache-fault
+recovery, a declared QNAP capacity-restoration path, full parity, writer
+cutover, and seven-day acceptance remain open.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

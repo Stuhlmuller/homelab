@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d29d50e6399848248d538b946a737a327d7f0432018501e78336267fbf2194c6",
+  "pageVersion": "sha256:ce745615a92e21c3282366002c2ecf1e50ef4e48e3778a0b57cb4ced7aba027b",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,11 +292,15 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while eligible Harbor transport and version discovery, full dry-run parity, fault recovery, and reviewed cutover remain open.",
+      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor alias to a registry-only Traefik listener. Protected App-key transfer and temporary writer-grant retirement are complete; the legacy GitHub Action remains the writer while eligible Harbor discovery, T024/T042 cache-fault and NAS-capacity recovery, full dry-run parity, and reviewed cutover remain open.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
+          "version": "repo-lines-v1:sha256:35b66f1c4e3dde01914dfeb0e0d1d0001d0c496a44e6b8998520828c0948a587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUxMzZhZTZiYTZmZmE2ZDJmMTY5OTc1ZTFiNmVjMTI0ZmQ0NTBjZTZjYTkwZGI4NjgwMzAyMWZiMGE4NWVjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L42-L117",
+          "version": "repo-lines-v1:sha256:9e28f9139d0e66a416326d1eca79e62db3588416d18568433e6d048431055089:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTRkNTU3NTJjMDliMzQwMDAyN2EzZjQyNTEwMjAyNmI5MzJhYWMzNjk2ZjQwZWJjODkzZDM4YWVmYzNiYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMWNjMWUyYWE5ZjA3ZDlkMGIwYTllODg0OWI1ZTM3NTQwZTU5NGEwYTZkZDVhOTk2OGNhZjk2MTg5Y2E1YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -311,16 +315,8 @@
           "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
-          "version": "repo-lines-v1:sha256:c79c28a4dd7e7e10bc2ede27c0daebb097152f1ca5a90586893e7cc429a8d0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMwYjYxY2IxOTg5MDlmMzU5OWZkMmU1YWEwMjJhYjVlN2M2MDhiZGFjMTk3OTdlNmVmMTFmYTI4N2Q3MjllMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjc3MTczNzQ5ZDMxODdjMmRmOGQyODhlNDg3NWFlYWVlZmY1YzRiNWY2N2JlOGQ3ZGUzZDhkNWMwZTUxNWMyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU3NmIxODJlY2I1Y2JkYzI1ZWQ4YzI4NjlkMDU2ZTY3YTU2OWYyZTI1NTA2MWFjZjQyZDBkOGE0ZDFjNTI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
-          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
-          "version": "repo-lines-v1:sha256:c9d6c2f54666e24e71341487098fd7c416852d126832707f8a184a09f6ec544e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlZTAzNmE1YWY2MDcxZWJhMzM4YTg4YjA2NDUzYTFmYzE2NzVmMjU2MjQxYjYwMmQ3NDA3MjQzNjRhYjAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MjU3NmY4MWIyNmRiMmE0ZjAwOTQ3NzM3YmIyNTIxYWRiNmViOTM1YmFkMzcyMGQwMGU4ZTU1OWVkNjRiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY5ODZmOTdiOWIwYzY3MTczZGU2ZWI1YmMwZDllZTJhMDc5MjgwOTZmOWVlMzA5NDk0OGUyMzBiNWUyYmE2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJjODBhMjk5ZjU0NDJkMDYyNmFiZjg3OWQ1N2NkMDE4ZjRhMGU3ODJmNTNjNzM1ZjMyYTZmMDhkMWY5NjJmNyJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L78",
+          "version": "repo-lines-v1:sha256:b87211f2f028492ff8c514a060962cebcb7043c98044f1e093e31abd89a2bccb:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
         }
       ]
     },
@@ -517,10 +513,38 @@
           "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
         }
       ]
+    },
+    {
+      "id": "claim_08b85c651e184aabab1073f5789205d3",
+      "statement": "Renovate T022 is complete: scheduled 19:00 and 20:00 Pods hit the same public canary cache key, and after protected v0.0.2 publication the 21:00 scheduled run refreshed the record and selected a new canary branch proposal.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
+          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
+          "version": "repo-lines-v1:sha256:688e58fa7162abea026b2d4980cce4c2fb37392ab18f699405cc731f2cb4d6ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDVkOGY2M2E0YmQ0YTI4ZjNkYmRkYzU3ODBmOTAyZTg0NjIyOTEzY2Q3ZGM2ZjZmNDEzYWRjNzk4ZjFiODQ1OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8b5c600e23284fbc994c8765a7e95b60",
+      "statement": "Renovate T045 is complete: retained 17:00 repository-tagged lookup failures and alerts recovered in the 18:00 Job; the 03:00 missed-slot drill fired RenovateHourlyCycleMissing, and the restored 04:00 scheduled Job succeeded after alert clearance.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L19-L25",
+          "version": "repo-lines-v1:sha256:2315591deb2784921550b063e3ffb743fc67c8c7b106b9bc276820a0f8622985:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE5OGI2Mjg2MTEzOTg0NjA2OTk3MjQ5ZjEzMmNhNTI1NTk0ZWJiZTY4Y2NjNWI1MTA2OTJmYmQ3NjdlNzNhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQzNDllMjBjZDYyZTk3NjQ1MGZlMDhlMDhmODM4NWY5YjZlOWY4MmJjODVhMDQ4ODA4MmU0YWJkNWIzNzMyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMyY2EwNWI5NDgzODA5YmI4ODNlNGVmYTEyYmM3YzM4NDE1NDE5OThhZDI2NjZkMDNmYzRmNzg0MzgxMmVmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTgxMmZlOTk1ODY1ZmU4NTNmZDMxYzJjMWM1ZDNjZTQ4YTdmNTBiY2M1ZmU3ODMyZTVlNDRkYjJhYmVmZmM3NCJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
+          "version": "repo-lines-v1:sha256:06114a754a7662215d2c7c8d6f10990b4c72e9fad5ded30a6155cc8b62abc75c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2IyMjg0NTM0MzBiNWE4YzlhODFlYmM5OWE4NjZiMWExNmM3MWIyMGUxMjczOGQ2Y2Y1YmI2MjY0MWFlN2Y0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3YjgxYTQ2Zjc2YzRmYjFiNTU4ZjdkNjEyOTAwYTVjZjBlYTkyMzZkMTI4NTFiZjYwZGExZmM2YWZjMjBkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE0NmU3MTQwY2Q5ODVhMjQ1OWNkMGU3MGI1MTY3Njc5YTM1Y2VlNjY1YTBjYTMyODIyY2FkNGI2N2FkYjkyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmNlNTIxNDIxOTQ4ZTQ2MDk4N2UzYzMwNjMyYzMyMzE2ZGMzODJhNjg0OWQwNGQwZGVlNjQ1OWE4MjE0OTc0MSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T04:22:56.208Z"
+    "at": "2026-10-20T04:40:29.048Z"
   }
 }
