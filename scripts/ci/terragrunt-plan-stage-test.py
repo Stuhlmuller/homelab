@@ -145,6 +145,30 @@ class PrivatePlanStageTest(unittest.TestCase):
                 if expected_code:
                     self.assertIn("AzureAD credentials are required", result.stderr)
 
+    def test_scope_diff_failure_cannot_skip_live_plan(self):
+        workflow = WORKFLOW.read_text()
+        scope = textwrap.dedent(workflow.split(
+            "      - name: Detect Live Terragrunt Plan Scope\n", 1)[1]
+            .split("\n      - name: Install Nix\n", 1)[0]
+            .split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            (root / "README.md").write_text("fixture\n")
+            subprocess.run(["git", "add", "README.md"], cwd=root, check=True)
+            subprocess.run(["git", "-c", "user.name=Fixture",
+                            "-c", "user.email=fixture@example.invalid",
+                            "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"],
+                           cwd=root, check=True)
+            output = root / "github-output"
+            result = subprocess.run(["bash", "-euo", "pipefail", "-c", scope],
+                                    cwd=root, capture_output=True, text=True,
+                                    env={**os.environ, "BASE_REF": "main",
+                                         "GITHUB_OUTPUT": str(output)}, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
+            self.assertFalse(output.exists())
+
     def test_workflow_tail_executes_only_the_verified_helper(self):
         # Execute the actual failure tail; no Nix, credentials, or live commands.
         workflow = WORKFLOW.read_text()
