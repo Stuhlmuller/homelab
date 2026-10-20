@@ -174,10 +174,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
+generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:10:13.266Z
 ---
 
 # Workload Inventory
@@ -428,12 +428,14 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
-The [2026-10-20 07:22 UTC read-only capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
 still blocks placement: the best worker has about 3,398 MiB unreserved versus
 the initial 4,096 MiB Enterprise steady request, before transient and host
-headroom, and 9.71 GB root-filesystem space free against a proposed 10 GiB
-local claim. Its 45 co-resident Pods prevent an added `NoSchedule` taint from
-providing isolation.
+headroom, and 9.74 GB root-filesystem space free. Every worker's `/var` uses
+eMMC and has less than 10.74 GB for a new 10 GiB local claim under the existing
+`/var/lib` pattern; `acer` lacks the 2,304 MiB database-plus-gateway minimum.
+Unrelated Pods remain on each worker, so an added `NoSchedule` taint would not
+provide isolation.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

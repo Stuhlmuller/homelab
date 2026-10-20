@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:de2b681b9882ac8ae2f9b7aa131fcf8f245abba0cceccf6065ecdbf84b9a8f83",
+  "pageVersion": "sha256:69dbf76e341961c1bd56b240dd24cb6c837f4ef1df0c76137da9636d8be17fba",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -464,7 +464,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -532,11 +532,11 @@
     },
     {
       "id": "claim_a5f8cba223b046b2baacb669a1513c02",
-      "statement": "The 2026-10-20 07:22 UTC read-only capacity recheck finds about 3,398 MiB unreserved on the best worker against a 4,096 MiB initial Enterprise steady request, and 9.71 GB root-filesystem space free against a proposed 10 GiB local claim; 45 co-resident Pods prevent a new NoSchedule taint from providing isolation.",
+      "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L239-L265",
+          "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
     },
@@ -637,6 +637,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:46:55.569Z"
+    "at": "2026-10-20T15:10:13.266Z"
   }
 }

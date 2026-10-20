@@ -48,10 +48,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T08:35:40.829Z" }
+generated: { by: "codex", at: "2026-10-20T15:10:13.266Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:46:55.569Z
+    at: 2026-10-20T15:10:13.266Z
 ---
 
 # Runtime Isolation
@@ -109,11 +109,14 @@ limited capacity, system DaemonSets, and a live backup workload.
 Before activation, finish image publication and policy owner/render review, then
 admit an isolated tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
-stateful workloads. The [2026-10-20 07:22 UTC capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+stateful workloads. The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
 found about 3,398 MiB unreserved on the best worker against an initial
-4,096 MiB Enterprise reservation, 6,447 MiB actual memory use, 45 co-resident
-Pods and only 9.71 GB root-filesystem space free against a proposed 10 GiB
-local claim. A `NoSchedule` taint would leave those Pods in place;
+4,096 MiB Enterprise reservation, 6,308 MiB actual memory use, and 9.74 GB
+root-filesystem space free. Every worker's `/var` uses eMMC and has less than
+10.74 GB for a new 10 GiB local claim under the existing `/var/lib` pattern;
+`acer` has only 1,802 MiB unreserved against the 2,304 MiB database and gateway
+minimum. Unrelated Pods remain on every worker. A `NoSchedule` taint would
+leave those Pods in place;
 it is not an isolation proof. Compare private read-only Pod/NetworkPolicy snapshots and
 all rendered policies with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only

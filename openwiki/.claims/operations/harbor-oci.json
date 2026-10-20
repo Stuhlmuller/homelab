@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9b3891249fe0a5fc48af87b38a01017a39742ec485c9e3a3df606d0b237e36c2",
+  "pageVersion": "sha256:55e0d5369e072dab1f34ddaa3a03224829a4e0e76aa1242603571d81f7ef24d7",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -728,7 +728,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -746,7 +746,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         }
       ]
     },
@@ -830,7 +830,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
+          "version": "repo-file-v1:sha256:160b609fcb06bb7ff325ab5bd147765170f37af448e7e4ee0511960cfdd63a07"
         }
       ]
     },
@@ -855,6 +855,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:46:55.569Z"
+    "at": "2026-10-20T15:10:13.266Z"
   }
 }
