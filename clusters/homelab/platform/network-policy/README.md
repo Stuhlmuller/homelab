@@ -60,12 +60,14 @@ stales the dispatch requires a retry against current `main`.
 To remove the fixtures, first merge a reviewed change restoring `resources: []`
 while leaving automatic sync and pruning enabled and setting `allowEmpty = true`.
 Run the same protected targeted Terragrunt Apply and verify Argo CD reports
-Synced with no tracked resources and `network-policy-canary` is absent. Only
-then merge a final change disabling automatic sync and pruning and resetting
-`allowEmpty = false`. Do not remove the node taint or firewall while any fixture
-remains. This GitOps sequence uses Argo CD ownership; `qualify` never creates
-or removes Kubernetes resources. T019/T027 still require an admitted isolated
-canary and live lifecycle evidence.
+Synced with no tracked resources and `network-policy-canary` is absent. Keep
+that empty Application automated through firewall removal and owned cleanup.
+After cleanup is verified and release checks pass, merge a separate change
+disabling automatic sync and pruning and resetting `allowEmpty = false`. Do
+not remove the node taint or firewall while any fixture remains. This GitOps
+sequence uses Argo CD ownership; `qualify` never creates or removes Kubernetes
+resources. T019/T027 still require an admitted isolated canary and live
+lifecycle evidence.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC. It probes the
@@ -88,10 +90,54 @@ source through Argo CD. The protected `owned-cleanup` stage requires a private
 `placement.json` proving that the node had no kube-router firewall objects
 before enforcement, plus a separately reviewed `firewall-ownership.json`
 pinning the full current firewall snapshot to the same node UID and boot ID.
-That ownership receipt must contain `format: 1`, `verified: true`, the exact
-`sourceSha`, `node`, `nodeUid`, `bootID`, `snapshotSha256`, and `reviewedAt`.
-No repository workflow produces or approves it yet; keep cleanup blocked until
-the ownership review and private receipt path are implemented.
+The protected Platform Maintenance workflow has separate `ownership-capture`
+and `ownership-approve` stages. After a successful `qualify` run, merge exactly
+two reviewed GitOps commits without intervening commits. The first
+removes the canary fixtures from `canary/kustomization.yaml` and enables
+`allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
+verify the fixture Pods are gone. The second changes only `kustomization.yaml`
+here from the enforcer DaemonSet to `resources: []` and
+`IaC/platform-network-policy/stack.hcl` from disabled sync to automated sync
+with pruning and `allowEmpty`. Apply it and verify the enforcer is gone.
+Each commit may also include native updates to the affected OpenWiki pages,
+Claims, and run metadata; no other source changes are accepted.
+Quiesce tenants and sync the cleanup Pod. Dispatch `ownership-capture` on the
+new exact current `main` with the qualify SHA as `evidence_source_sha` and
+the qualify run ID. It verifies both exact commit transitions and reads the
+pre-removal placement and traffic receipts,
+checks the cleanup Pod and owned-rule plan without deleting anything, then
+stores the full IPv4/IPv6/ipset snapshot privately under
+`openclaw-enterprise/platform/<source-sha>/<capture-run-id>/firewall-capture.json`.
+The capture is write-once, KMS-encrypted, checksummed, and version-pinned.
+Capture, approval, and cleanup each reject a live fixture namespace or workload,
+even after the fixture-prune commit merges.
+
+The repository owner reviews that private snapshot against the expected
+kube-router filter chains, top-level jumps, and ipsets, plus the captured node
+UID, boot ID, and qualify receipt. Do not paste the snapshot into a PR or
+workflow log. The owner dispatches `ownership-approve` with the capture run ID
+and the canonical snapshot's SHA-256 (`snapshotSha256` in the reviewed capture).
+The protected job rechecks the private evidence, exact GitOps transition,
+current node identity, cleanup Pod, full live snapshot, and exact current
+`main` before writing the immutable
+`firewall-ownership/<capture-run-id>.json` receipt. Dispatch `owned-cleanup`
+with that capture run ID. A mismatch, deleted or duplicate S3 version, or later
+rule change blocks cleanup. If deletion stops partway, review a new capture of
+the remaining rules, approve its new run ID, and retry cleanup with that ID.
+An empty remaining snapshot still needs fresh approval so cleanup can record a
+verified no-op receipt. Never reuse the old snapshot approval. Removing an
+approved receipt is not a rollback path; leave cleanup blocked and investigate
+privately. Approval requires a fresh dispatch by GitHub actor ID `57728706`
+(`rstuhlmuller`);
+reruns and other actors cannot attest ownership. The production environment's
+branch policy does not supply a second reviewer.
+
+Each ownership receipt contains `format: 1`, `verified: true`, the exact
+`sourceSha`, `evidenceSourceSha`, `captureRunId`, `node`, `nodeUid`, `bootID`,
+`snapshotSha256`, and `reviewedAt`.
+Approval attests snapshot ownership only. The `qualify` traffic receipt still
+lists unverified lifecycle scenarios; it does not authorize enforcement
+expansion or replace live worker qualification.
 The helper runs only in the protected exact-main workflow and checks live node
 identity and that exact snapshot before deleting
 the pinned controller's filter chains and ipsets. It refuses unknown prefixes,
@@ -99,13 +145,16 @@ foreign references, snapshot drift, and active tenants; never run
 kube-router's all-controller cleanup against this Flannel/kube-proxy cluster.
 After the `owned-cleanup` receipt is verified and the fixture namespace is
 absent, dispatch protected `canary-release` on the same current `main` SHA with
-`cleanup_run_id` set to the verified cleanup run. Keep the cleanup DaemonSet
-present until release: the stage rechecks that its node-local firewall has no
+`cleanup_run_id` set to the verified cleanup run. Release reads that immutable
+cleanup receipt, its reviewed ownership receipt, and the original placement
+at the qualify SHA. It accepts that placement only when the two exact GitOps
+prune commits still lead to the current `main` SHA and the cleanup snapshot,
+capture run, and node identity all match. Keep the cleanup DaemonSet present
+until release: the stage rechecks that its node-local firewall has no
 owned objects, removes the selector label, waits for every cleanup DaemonSet Pod
 across the cluster to be deleted, then removes the dedicated taint. If Pod
 deletion stalls, the taint remains
 and recovery requires direct review. It checks Node UID, boot ID, and
 `resourceVersion` before each patch and retains private attempt, interrupted,
-and final receipts. A newer `main` requires a
-fresh source-bound placement and cleanup receipt; no stage infers clearance
-from a missing DaemonSet.
+and final receipts. A newer `main` blocks this release path until a separately
+reviewed recovery change; no stage infers clearance from a missing DaemonSet.

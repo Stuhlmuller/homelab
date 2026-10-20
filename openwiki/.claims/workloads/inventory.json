@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ce4cbccfbf1a95500e8fe8644669f1035ef61b811655088c11c6e0ce6fab945d",
+  "pageVersion": "sha256:de2b681b9882ac8ae2f9b7aa131fcf8f245abba0cceccf6065ecdbf84b9a8f83",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -326,11 +326,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:6c73c07da5f0ee5ddab32b25ccbe4a1b9ccebb3c69f4f655a23f9fa1a201c36a"
+          "version": "repo-file-v1:sha256:2e8571c0f26772bc4cc3ce050813342c87933bd8e64c147d328a20cff2a031bf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -464,7 +464,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -472,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:2d2404ad64e38e672d3bd7f59d81860d4c3748301b020790c525f7b844cb22f8"
+          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
         }
       ]
     },
@@ -536,7 +536,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8d53e3b7f81cbd97b557a8ad4a6852e2e314a1c8a84ee06e3831cda91af7ab12"
+          "version": "repo-file-v1:sha256:0eabfb94f3496ae04ebe20922a0921deef3f0979bb685d88522a893bfb9ae371"
         }
       ]
     },
@@ -582,7 +582,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:e5ed3742d6a5d30874be41c3e8354874a2b19e5c8959bf04ff07759c24bf4d38"
+          "version": "repo-file-v1:sha256:a978da1db8024e74e7ce03372875615fa0563cea08fa3338b523f788c1403705"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
@@ -637,6 +637,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T14:16:14.853Z"
+    "at": "2026-10-20T14:46:55.569Z"
   }
 }

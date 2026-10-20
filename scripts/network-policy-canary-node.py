@@ -155,11 +155,29 @@ def verify_live_pods(config, placement):
         raise ValueError("canary Node Pod inventory differs from reviewed placement")
 
 
-def validate_cleanup(cleanup, placement, source_sha):
+def validate_cleanup(cleanup, ownership, placement, config, source_sha):
+    if (not isinstance(ownership, dict) or ownership.get("format") != 1 or
+            ownership.get("verified") is not True or
+            ownership.get("sourceSha") != source_sha or
+            not isinstance(ownership.get("evidenceSourceSha"), str) or
+            not PLATFORM["SHA"].fullmatch(ownership["evidenceSourceSha"]) or
+            ownership.get("node") != config["canary"]["node"] or
+            ownership.get("nodeUid") != placement["nodeUid"] or
+            ownership.get("bootID") != placement["bootID"] or
+            not isinstance(ownership.get("captureRunId"), str) or
+            not re.fullmatch(r"[1-9][0-9]*", ownership["captureRunId"]) or
+            not re.fullmatch(r"[0-9a-f]{64}", str(ownership.get("snapshotSha256", ""))) or
+            not isinstance(ownership.get("reviewedAt"), str) or
+            not ownership["reviewedAt"]):
+        raise ValueError("reviewed firewall ownership receipt is required for release")
+    validate_placement(placement, config, ownership["evidenceSourceSha"], False)
+    CLEANUP["require_firewall_removal_transition"](ownership["evidenceSourceSha"], source_sha)
     if (not isinstance(cleanup, dict) or cleanup.get("format") != 1 or
             cleanup.get("stage") != "owned-firewall-cleanup" or
             cleanup.get("status") != "verified" or cleanup.get("verified") is not True or
             cleanup.get("sourceSha") != source_sha or
+            cleanup.get("captureRunId") != ownership["captureRunId"] or
+            cleanup.get("beforeSha256") != ownership["snapshotSha256"] or
             cleanup.get("node") != placement["node"] or
             cleanup.get("nodeUid") != placement["nodeUid"] or
             cleanup.get("bootID") != placement["bootID"] or
@@ -209,10 +227,12 @@ def execute(args):
     require_current_main(args.expected_sha)
     directory = PLATFORM["private_directory"](args.receipt_dir)
     placement = PLATFORM["read_private_json"](directory / "placement.json")
-    validate_placement(placement, config, args.expected_sha, args.action == "admit")
     if args.action == "release":
         validate_cleanup(PLATFORM["read_private_json"](directory / "cleanup.json"),
-                         placement, args.expected_sha)
+                         PLATFORM["read_private_json"](directory / "firewall-ownership.json"),
+                         placement, config, args.expected_sha)
+    else:
+        validate_placement(placement, config, args.expected_sha, True)
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         raise ValueError("canary output already exists")

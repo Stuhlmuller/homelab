@@ -9,12 +9,28 @@ on:
         required: true
         type: string
       stage:
-        description: Fixed inspection, canary, or upgrade stage
+        description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, canary-admit, canary-release, qualify, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, canary-admit, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
       cleanup_run_id:
         description: Verified owned-cleanup run ID, required only for canary-release
+        required: false
+        type: string
+      qualification_run_id:
+        description: Successful qualify run ID for ownership-capture
+        required: false
+        type: string
+      evidence_source_sha:
+        description: Exact qualify main SHA before fixture and firewall removal
+        required: false
+        type: string
+      capture_run_id:
+        description: Private capture run ID for ownership-approve
+        required: false
+        type: string
+      reviewed_snapshot_sha256:
+        description: SHA-256 of the privately reviewed full firewall snapshot
         required: false
         type: string
 
@@ -35,9 +51,14 @@ jobs:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          RUN_STAGE: ${{ inputs.stage }}
         run: |
           test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          if [ "$RUN_STAGE" = ownership-approve ]; then
+            test "$GITHUB_ACTOR_ID" = 57728706
+            test "$GITHUB_RUN_ATTEMPT" = 1
+          fi
 
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
@@ -80,17 +101,23 @@ jobs:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          RUN_STAGE: ${{ inputs.stage }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          if [ "$RUN_STAGE" = ownership-approve ]; then
+            test "$GITHUB_ACTOR_ID" = 57728706
+            test "$GITHUB_RUN_ATTEMPT" = 1
+          fi
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
+          fetch-depth: 3
           persist-credentials: false
 
       - name: Install Nix
@@ -126,6 +153,10 @@ jobs:
           RUN_STAGE: ${{ inputs.stage }}
           CLEANUP_RUN_ID: ${{ inputs.cleanup_run_id }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          QUALIFICATION_RUN_ID: ${{ inputs.qualification_run_id }}
+          EVIDENCE_SOURCE_SHA: ${{ inputs.evidence_source_sha }}
+          CAPTURE_RUN_ID: ${{ inputs.capture_run_id }}
+          REVIEWED_SNAPSHOT_SHA256: ${{ inputs.reviewed_snapshot_sha256 }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           OCE_OCTELIUM_CLIENT_AUTH_TOKEN: ${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}
           OCE_TALOSCONFIG_B64: ${{ secrets.OCE_TALOSCONFIG_B64 }}
@@ -140,7 +171,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'ace91a675b5bbdbeaa245ebb705824b8d227f9ab57cbb10646277f7d81a627a2  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then

@@ -51,7 +51,9 @@ class PlatformStageTests(unittest.TestCase):
         self.assertFalse(external)
 
     def test_disabled_config_blocks_all_mutating_stages(self):
-        for stage in ("canary-admit", "canary-release", "qualify", "owned-cleanup", "talos-1.11.6",
+        for stage in ("canary-admit", "canary-release", "qualify",
+                      "ownership-capture", "ownership-approve", "owned-cleanup",
+                      "talos-1.11.6",
                       "talos-1.12.12", "talos-1.13.11", "talos-1.14.4",
                       "kubernetes-1.35.9"):
             with self.subTest(stage=stage):
@@ -128,7 +130,7 @@ class PlatformStageTests(unittest.TestCase):
 
     def load_cleanup_receipt(self, versions=None, markers=None, body=b"reviewed receipt",
                              content_length=..., truncated=False):
-        key = f"openclaw-enterprise/platform/receipts/{SHA}/firewall-ownership.json"
+        key = f"openclaw-enterprise/platform/receipts/{SHA}/firewall-ownership/8.json"
         version = "reviewed-version"
         versions = versions if versions is not None else [
             {"Key": key, "VersionId": version, "IsLatest": True}]
@@ -187,7 +189,7 @@ aws() {
         self.assertEqual(content, b"reviewed receipt")
         self.assertEqual(trace, ["head", "get"])
 
-        key = f"openclaw-enterprise/platform/receipts/{SHA}/firewall-ownership.json"
+        key = f"openclaw-enterprise/platform/receipts/{SHA}/firewall-ownership/8.json"
         for versions, markers in (
                 ([{"Key": key, "VersionId": "reviewed-version", "IsLatest": True},
                   {"Key": key, "VersionId": "older-version", "IsLatest": False}], []),
@@ -215,15 +217,49 @@ aws() {
                 self.assertEqual(trace, ["head"])
 
     def test_cleanup_loads_both_receipts_before_firewall_helper(self):
-        source = STAGE.read_text()
+        source = STAGE.read_text().split('  owned-cleanup)\n', 1)[1]
         helper = source.index('python3 scripts/network-policy-cleanup.py')
-        for name in ("placement", "firewall-ownership"):
-            self.assertLess(source.index(f'load_receipt "openclaw-enterprise/platform/receipts/${{GITHUB_SHA}}/{name}.json"'), helper)
+        ownership = source.index('load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership/${CAPTURE_RUN_ID}.json"')
+        placement = source.index('load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json"')
+        self.assertLess(ownership, placement)
+        self.assertLess(placement, helper)
+        self.assertIn('[[ "${CAPTURE_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]]', source)
+        self.assertIn('--capture-run-id "$CAPTURE_RUN_ID"', source)
+
+    def test_canary_release_loads_current_cleanup_then_ownership_then_prior_placement(self):
+        source = STAGE.read_text().split('  canary-admit|canary-release)\n', 1)[1].split(
+            '  qualify)\n', 1)[0]
+        cleanup = source.index('load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${CLEANUP_RUN_ID}/cleanup.json"')
+        ownership = source.index('load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership/${capture_run_id}.json"')
+        placement = source.index('load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json"')
+        helper = source.index('python3 -I scripts/network-policy-canary-node.py')
+        self.assertLess(cleanup, ownership)
+        self.assertLess(ownership, placement)
+        self.assertLess(placement, helper)
 
     def test_canary_retains_attempt_before_mutating_node(self):
         source = STAGE.read_text()
         self.assertLess(source.index('retain_result "$work/canary-attempt.json"'),
                         source.index('python3 -I scripts/network-policy-canary-node.py'))
+
+    def test_ownership_stages_only_dispatch_protected_source(self):
+        source = STAGE.read_text()
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        self.assertIn('python3 -I scripts/network-policy-ownership.py capture', source)
+        self.assertIn('python3 -I scripts/network-policy-ownership.py approve', source)
+        for value in ("qualification_run_id", "evidence_source_sha", "capture_run_id",
+                      "reviewed_snapshot_sha256"):
+            self.assertIn(value + ":", workflow)
+        self.assertIn('--evidence-source-sha "${EVIDENCE_SOURCE_SHA:-}"', source)
+        self.assertIn("environment:\n      name: homelab-production", workflow)
+        self.assertIn("--reviewed-snapshot-sha256", source)
+        self.assertEqual(workflow.count('test "$GITHUB_ACTOR_ID" = 57728706'), 2)
+        self.assertEqual(workflow.count('test "$GITHUB_RUN_ATTEMPT" = 1'), 2)
+        self.assertLess(workflow.index('test "$GITHUB_ACTOR_ID" = 57728706'),
+                        workflow.index("Configure AWS Credentials"))
+        maintenance_checkout = workflow.split("  maintenance:\n", 1)[1].split(
+            "      - name: Check Out Repository\n", 1)[1].split("      - name: Install Nix\n", 1)[0]
+        self.assertIn("fetch-depth: 3", maintenance_checkout)
 
 
 if __name__ == "__main__":

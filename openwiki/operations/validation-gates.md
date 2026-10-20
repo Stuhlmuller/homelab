@@ -122,6 +122,8 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -168,6 +170,8 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
     resource: repo://scripts/ci/n8n-ai-migration-check.py
+  - id: openwiki-source-6fc8139a15619bb0b0107205
+    resource: repo://scripts/ci/network-policy-cleanup-test.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-28fa6202184199322ab68bca
@@ -272,8 +276,12 @@ sources:
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
@@ -302,10 +310,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T14:16:14.853Z" }
+generated: { by: "codex", at: "2026-10-20T14:46:55.569Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T14:16:14.853Z
+    at: 2026-10-20T14:46:55.569Z
 ---
 
 # Validation Gates
@@ -1691,9 +1699,11 @@ full-catalog publication, five-tag Harbor lock and an isolated canary remain
 live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 
-Before `owned-cleanup` can touch the firewall, the protected stage reads both
-`placement.json` and `firewall-ownership.json` from the private
-`openclaw-enterprise/platform/receipts/<source-sha>/` prefix. Each key must
+Before `owned-cleanup` can touch the firewall, the protected stage reads the
+approved `firewall-ownership/<capture-run-id>.json` under the private
+`openclaw-enterprise/platform/receipts/<source-sha>/` prefix, then follows its
+`evidenceSourceSha` to the original `receipts/<evidence-sha>/placement.json`.
+Each exact key must
 have an untruncated listing with exactly one latest S3 version and no delete
 markers; a version-pinned metadata read must show KMS encryption, a 1-byte to
 1-MiB object, and a SHA-256 checksum matching the version-pinned download. A
@@ -1703,7 +1713,9 @@ private version history and receipt contents, then obtain fresh independent
 placement and firewall ownership review under a new exact-current-`main`
 source SHA; do not rewrite ambiguous history or infer cleanup ran. These are
 source checks; cleanup stays disabled until its separate live prerequisites are
-met. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+met. Ownership capture, approval and cleanup also refuse a live
+`network-policy-canary` Namespace or any remaining fixture workload before
+they read the firewall. See the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
 The staged protected `canary-admit` path remains dormant while `canary.node` is
 unset. With a fresh placement receipt, it verifies the exact Node UID and boot

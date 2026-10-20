@@ -23,6 +23,7 @@ IMAGE = ("harbor.stinkyboi.com/mirror/docker.io/cloudnativelabs/kube-router:"
          "64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a"
          "@sha256:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a")
 CANARY = "homelab.stinkyboi.com/network-policy-canary"
+FIXTURE_NAMESPACE = "network-policy-canary"
 CLEANUP = "kube-router-network-policy-cleanup"
 ENFORCER = "kube-router-network-policy"
 ROOT_CHAINS = {"INPUT": "KUBE-ROUTER-INPUT", "FORWARD": "KUBE-ROUTER-FORWARD",
@@ -91,8 +92,16 @@ def inspect_cluster(config, placement):
             not any(item.get("key") == CANARY and item.get("value") == "true" and
                     item.get("effect") == "NoSchedule" for item in node["spec"].get("taints", []))):
         raise ValueError("canary node identity, taint, or readiness changed")
+    fixture_namespace = command("kubectl", "--request-timeout=20s", "get",
+                                "namespace", FIXTURE_NAMESPACE, "--ignore-not-found",
+                                "-o", "json")
+    if fixture_namespace.strip():
+        raise ValueError("canary fixture namespace still exists")
     workloads = kubernetes_json("get", "pods,deployments,statefulsets,replicasets,"
                                 "daemonsets,jobs,cronjobs", "-A")
+    if any(item.get("metadata", {}).get("namespace") == FIXTURE_NAMESPACE
+           for item in workloads.get("items", [])):
+        raise ValueError("canary fixture workload still exists")
     ensure_quiesced(workloads.get("items", []))
     enforcer = command("kubectl", "--request-timeout=20s", "-n", "kube-system",
                        "get", "daemonset", ENFORCER, "--ignore-not-found", "-o", "json")
@@ -346,9 +355,66 @@ def require_current_main(source_sha):
         raise ValueError("cleanup source is not exact current main")
 
 
+def require_firewall_removal_transition(evidence_sha, source_sha):
+    """Accept pre-removal evidence only across the two reviewed GitOps prunes."""
+    if (not isinstance(evidence_sha, str) or not PLATFORM["SHA"].fullmatch(evidence_sha) or
+            evidence_sha == source_sha):
+        raise ValueError("firewall evidence is not from the reviewed pre-removal commit")
+    fixture_sha = command("git", "-C", str(ROOT), "show", "-s", "--format=%P", source_sha).strip()
+    if (not PLATFORM["SHA"].fullmatch(fixture_sha) or
+            command("git", "-C", str(ROOT), "show", "-s", "--format=%P", fixture_sha).strip()
+            != evidence_sha):
+        raise ValueError("firewall evidence is not two direct commits before removal")
+    canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
+    canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+    # Native OpenWiki may update only these non-runtime pages and their provenance.
+    wiki_paths = {
+        "openwiki/.last-update.json",
+        "openwiki/.page-manifest.json",
+        "openwiki/workloads/inventory.md",
+        "openwiki/.claims/workloads/inventory.json",
+        "openwiki/operations/harbor-oci.md",
+        "openwiki/.claims/operations/harbor-oci.json",
+        "openwiki/runbooks/argocd-app-onboarding.md",
+        "openwiki/.claims/runbooks/argocd-app-onboarding.json",
+        "openwiki/runbooks/runtime-isolation.md",
+        "openwiki/.claims/runbooks/runtime-isolation.json",
+    }
+    fixture_changed = set(command("git", "-C", str(ROOT), "diff", "--name-only",
+                                  evidence_sha, fixture_sha).splitlines())
+    old_canary_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml\n"
+    empty_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n"
+    old_canary_application = command("git", "-C", str(ROOT), "show", f"{evidence_sha}:{canary_application}")
+    new_canary_application = command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{canary_application}")
+    old_canary_sync = "        enabled = true\n        prune   = true\n"
+    new_sync = "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"
+    if (fixture_changed - wiki_paths != {canary_manifest, canary_application} or
+            command("git", "-C", str(ROOT), "show", f"{evidence_sha}:{canary_manifest}") != old_canary_manifest or
+            command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{canary_manifest}") != empty_manifest or
+            old_canary_application.count(old_canary_sync) != 1 or
+            new_canary_application != old_canary_application.replace(old_canary_sync, new_sync)):
+        raise ValueError("fixture removal differs from the reviewed GitOps transition")
+    manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
+    application = "IaC/platform-network-policy/stack.hcl"
+    changed = set(command("git", "-C", str(ROOT), "diff", "--name-only",
+                          fixture_sha, source_sha).splitlines())
+    old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
+    old_application = command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{application}")
+    new_application = command("git", "-C", str(ROOT), "show", f"{source_sha}:{application}")
+    old_sync = "        enabled = false\n        prune   = false\n"
+    if (changed - wiki_paths != {manifest, application} or
+            command("git", "-C", str(ROOT), "show", f"{fixture_sha}:{manifest}") != old_manifest or
+            command("git", "-C", str(ROOT), "show", f"{source_sha}:{manifest}") != empty_manifest or
+            old_application.count(old_sync) != 1 or
+            new_application != old_application.replace(old_sync, new_sync)):
+        raise ValueError("firewall removal differs from the reviewed GitOps transition")
+
+
 def execute(args):
     if args.config.resolve() != CONFIG or not PLATFORM["SHA"].fullmatch(args.expected_sha):
         raise ValueError("cleanup requires committed input and an exact source SHA")
+    if not re.fullmatch(r"[1-9][0-9]*", args.capture_run_id):
+        raise ValueError("cleanup requires an exact reviewed capture run ID")
     config = PLATFORM["validate_config"](json.loads(args.config.read_text()))
     node_name = config["canary"]["node"]
     if node_name is None:
@@ -356,9 +422,14 @@ def execute(args):
     PLATFORM["protected_context"](args.expected_sha)
     require_current_main(args.expected_sha)
     directory = PLATFORM["private_directory"](args.receipt_dir)
+    ownership = PLATFORM["read_private_json"](directory / "firewall-ownership.json")
+    if ownership.get("captureRunId") != args.capture_run_id:
+        raise ValueError("cleanup ownership receipt differs from selected capture")
+    evidence_sha = ownership.get("evidenceSourceSha")
+    require_firewall_removal_transition(evidence_sha, args.expected_sha)
     placement = PLATFORM["read_private_json"](directory / "placement.json")
     if (placement.get("format") != 1 or placement.get("verified") is not True or
-            placement.get("sourceSha") != args.expected_sha or
+            placement.get("sourceSha") != evidence_sha or
             placement.get("node") != node_name or
             placement.get("firewallBaselineEmpty") is not True or
             not placement.get("nodeUid") or not placement.get("bootID")):
@@ -380,10 +451,10 @@ def execute(args):
         if plan:
             raise ValueError("verified cleanup receipt conflicts with live firewall")
         return previous
-    ownership = PLATFORM["read_private_json"](directory / "firewall-ownership.json")
     require_ownership(ownership, placement, state, args.expected_sha, node_name)
     record = {"format": 1, "stage": "owned-firewall-cleanup", "status": "started",
               "verified": False, "sourceSha": args.expected_sha, "node": node_name,
+              "captureRunId": args.capture_run_id,
               "nodeUid": placement["nodeUid"], "bootID": placement["bootID"],
               "cleanupPodUid": pod_uid, "backend": state["backend"],
               "beforeSha256": snapshot_sha256(state),
@@ -420,6 +491,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=CONFIG)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--capture-run-id", required=True)
     parser.add_argument("--receipt-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
