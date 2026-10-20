@@ -36,6 +36,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-quiesce-test.py",
                          "openclaw-enterprise-bind-installation-test.py",
                          "openclaw-enterprise-test.py",
+                         "openclaw-enterprise-active-test.py",
                          "platform-maintenance-test.py",
                          "platform-maintenance-stage-test.py",
                          "platform-maintenance-credentials-test.py",

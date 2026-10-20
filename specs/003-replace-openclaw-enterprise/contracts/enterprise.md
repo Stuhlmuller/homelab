@@ -81,8 +81,14 @@ values, and stopped state without deploying or sending inference. A failed
 annotation write as a source-only protected entrypoint. It requires exact-main
 review, a private bootstrap key, two stable Ready-Pod proofs around the first
 Installation API read, UID/resource-version JSON Patch tests, and a second
-Installation API read with exact Secret readback. A protected workflow has not
-yet been wired to invoke it; later credential/deployment flows remain pending.
+Installation API read with exact Secret readback. Its protected invocation and
+the credential/deployment workflow remain pending.
+The source-only active reconciler is gated by committed
+`activationEnabled: false`; its tested API path does not register or deploy an
+agent until a later reviewed config and exact-main workflow enable it.
+Before any active write, the full Agent read must show no plugins, approvers,
+repository access or bindings, or credential sources. Verify the same absence
+in the admitted revision snapshot; an unreadable saved-settings variant blocks.
 
 After a blocked `reconcile`, inspect the protected journal's `namespaceId`,
 `GET /namespaces/:id`, and the owned `openclaw-agents` Namespace/NetworkPolicies
@@ -101,11 +107,11 @@ Use these actual upstream operations:
 | --- | --- |
 | Installation | `GET /installation` for identity/capabilities only; selected Driver comparison requires separate reviewed proof before mutation |
 | Namespace | `GET/POST /namespaces`; create `name: claw`, `existingNamespace: openclaw-agents` only after prepared namespace/RBAC are ready |
-| Secrets | Namespace Secret collection GET/POST, exact PATCH; values supplied privately, never echoed |
+| Secrets | Namespace Secret collection GET/POST; values supplied from an SSM-versioned 0600 private file, never echoed; changed versions block until reviewed rotation |
 | Configuration | Namespace Configuration POST and exact GET/PATCH; updates use `expectedGeneration`, replacing the complete desired `values` |
-| Agent | Agent collection/exact GET and `occ agent create --file`; bind only one logical Claw |
+| Agent | Agent collection/exact GET, POST create and PATCH `harnessAuth`; bind only one logical Claw |
 | Runtime transport | `POST /namespaces/:ns/agents/:agent/runtime-credentials`; track its resulting state |
-| Deploy | `occ agent deploy ID`; persist returned revision; inspect exact deployment and revision list before retry |
+| Deploy | `POST /namespaces/:ns/agents/:agent/deploy`; persist returned revision; paginate revision history and inspect exact deployment before retry |
 | Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state and runtime termination |
 | Native UI | `GET /namespaces/:ns/agents/:agent/native-admin` requires a human session with exact Agent `administer`; service keys cannot inspect it. T048 records returned `data.origin` through authenticated human-session acceptance, outside the service-key reconciler. |
 | IAM | Exact role/grant tuples; agent ServicePrincipal gets `operate` on its own model Secret, never installation administration |
@@ -117,6 +123,20 @@ creation. Recover the ID from exact owned ConfigMap/audit metadata and confirm i
 through API GET before journal adoption. Ambiguous or foreign candidates fail.
 After a lost deploy response, inspect matching revisions before deploying again.
 Do not use the Dedicated-only provisioning endpoint for Embedded.
+
+The protected model-credential file is JSON with exactly `parameter`, `version`
+and `key`: parameter must equal
+`/homelab/openclaw-enterprise/model-api-key`, version is the positive SSM
+parameter version, and key differs from the bootstrap service key. The
+reconciler checks the file and parent modes, never stores a key or key digest
+in its journal, and rejects a changed version until a separate rotation path
+is reviewed. An uncertain Secret create is recovered only by a unique
+journaled name, collection read and exact metadata; an uncertain deploy is
+recovered only from complete paginated revision history and exact revision
+readback. Neither response triggers a blind duplicate POST. Stop is a
+separate exact-main command for a journaled revision; an Agent with no
+journaled revision cannot prove an untracked runtime absent. A 202 is pending
+work, not termination proof.
 
 Test duplicate names, foreign ownership, changed input on retry, lost responses,
 worker restart, generation conflicts, permission revocation and partial grants.
@@ -214,7 +234,6 @@ Sources: [CRD values](https://github.com/envoyproxy/gateway/blob/v1.9.2/charts/g
 | PostgreSQL admin password | Database administration/bootstrap only |
 | `occ_migrator` password | Migration Job only; owns required schemas, no superuser/role creation |
 | `occ_app` password | API/worker; no CREATE privilege or migrator inheritance |
-| `occ_backup` password | Isolated logical backup only; read-all and RLS bypass, no writes or role creation |
 | Session auth secret | OCE auth components; stable and included in recovery |
 | Private gateway key and CA | Exact control-plane/private-routing consumers |
 | Bootstrap admin password/service key | Private bootstrap output and authorized reconciliation only; never agent-mounted |

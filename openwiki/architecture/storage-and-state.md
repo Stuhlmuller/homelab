@@ -14,8 +14,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-500c19e4044fe1088cd60c0d
-    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-52536621afbfff1f8abeed59
@@ -40,10 +38,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T09:17:33.110Z" }
+generated: { by: "codex", at: "2026-10-20T10:40:02.561Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T09:40:00.529Z
+    at: 2026-10-20T10:40:02.561Z
 ---
 
 # Storage And State
@@ -302,9 +300,10 @@ The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-ente
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
 `openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
-before chart initialization. The required retained local classes, claims,
-dedicated PostgreSQL and restore proof are still absent; the candidate does not
-adopt legacy OpenClaw state.
+before chart initialization. The foundation declares the dedicated PostgreSQL
+Service and 10Gi claim template, but is not registered or deployed. The local
+classes, bootstrap and agent claims, live database and restore proof remain
+pending; the candidate does not adopt legacy OpenClaw state.
 The inactive reconciler needs a private durable journal at
 `/private/openclaw-enterprise/journal.json` for pending API intent and resource
 IDs across retries. A fourth retained local PVC and serialized operator Job

@@ -133,6 +133,149 @@ class TenantAPI:
         return copy.deepcopy(item)
 
 
+class ActiveTenantAPI(TenantAPI):
+    """Pinned metadata shapes; model material is never returned by OCC reads."""
+
+    def __init__(self):
+        super().__init__()
+        self.secrets = {}
+        self.roles = {}
+        self.bindings = {}
+        self.transport_configured = False
+        self.revisions = {}
+        self.deployments = {}
+        self.runtime_pods = []
+
+    def get(self, path):
+        self.calls.append(("GET", path))
+        if path == "/namespaces/ns_one/secrets":
+            return [{key: copy.deepcopy(item[key]) for key in ("id", "name", "namespaceId", "ref")}
+                    for item in self.secrets.values()]
+        if path.startswith("/namespaces/ns_one/secrets/"):
+            item = copy.deepcopy(self.secrets[path.rsplit("/", 1)[-1]])
+            consumers = {"agents": [], "configurations": [], "credentialSources": [],
+                         "provisioningRequests": [], "truncated": False, "unreadable": 0}
+            for agent in self.agents.values():
+                if (agent.get("harnessAuth") or {}).get("source", {}).get("id") == item["id"]:
+                    consumers["agents"].append(agent["id"])
+            item["consumers"] = consumers
+            return item
+        if path == "/namespaces/ns_one/iam/roles":
+            return copy.deepcopy(list(self.roles.values()))
+        if path.startswith("/namespaces/ns_one/iam/roles/"):
+            return copy.deepcopy(self.roles[path.rsplit("/", 1)[-1]])
+        if path == "/namespaces/ns_one/iam/access-bindings":
+            return copy.deepcopy(list(self.bindings.values()))
+        if path.startswith("/namespaces/ns_one/iam/access-bindings/"):
+            return copy.deepcopy(self.bindings[path.rsplit("/", 1)[-1]])
+        if path == "/namespaces/ns_one/agents/agt_one/runtime-credentials":
+            return {"transportConfigured": self.transport_configured}
+        if path.startswith("/namespaces/ns_one/agents/agt_one/revisions/"):
+            return copy.deepcopy(self.revisions[path.rsplit("/", 1)[-1]])
+        if path.startswith("/namespaces/ns_one/agents/agt_one/deployments/"):
+            parts = path.split("/")
+            revision_id = parts[6]
+            if len(parts) == 8 and parts[-1] == "runtime":
+                return {"revisionId": revision_id, "observedAt": "2026-10-19T00:00:00.000Z",
+                        "pods": copy.deepcopy(self.runtime_pods)}
+            return copy.deepcopy(self.deployments[revision_id])
+        return super().get(path)
+
+    def post(self, path, body):
+        if path == "/namespaces/ns_one/secrets":
+            self.calls.append(("POST", path, {"name": body["name"], "value": "[redacted]"}))
+            item = {"id": "sec_one", "name": body["name"], "namespaceId": "ns_one",
+                    "ref": {"kind": "secret", "namespaceId": "ns_one", "id": "sec_one"}}
+            self.secrets[item["id"]] = item
+            if self.lose == "secret":
+                self.lose = None
+                raise OCE.Blocked("lost Secret response")
+            return copy.deepcopy(item)
+        if path == "/namespaces/ns_one/iam/roles":
+            self.calls.append(("POST", path, copy.deepcopy(body)))
+            item = {"id": "role_one", "name": body["name"],
+                    "namespaceId": "ns_one", "permissions": copy.deepcopy(body["permissions"])}
+            self.roles[item["id"]] = item
+            if self.lose == "role":
+                self.lose = None
+                raise OCE.Blocked("lost Role response")
+            return copy.deepcopy(item)
+        if path == "/namespaces/ns_one/iam/access-bindings":
+            self.calls.append(("POST", path, copy.deepcopy(body)))
+            item = {"id": "binding_one", "namespaceId": "ns_one", **body}
+            self.bindings[item["id"]] = item
+            if self.lose == "binding":
+                self.lose = None
+                raise OCE.Blocked("lost Binding response")
+            return copy.deepcopy(item)
+        return super().post(path, body)
+
+    def patch(self, path, body):
+        self.calls.append(("PATCH", path, copy.deepcopy(body)))
+        if path != "/namespaces/ns_one/agents/agt_one":
+            raise AssertionError("unexpected PATCH")
+        self.agents["agt_one"]["harnessAuth"] = copy.deepcopy(body["harnessAuth"])
+        if self.lose == "agent-bind":
+            self.lose = None
+            raise OCE.Blocked("lost Agent binding response")
+        return copy.deepcopy(self.agents["agt_one"])
+
+    def post_ok(self, path, body):
+        self.calls.append(("POST-200", path, copy.deepcopy(body)))
+        if path != "/namespaces/ns_one/agents/agt_one/runtime-credentials":
+            raise AssertionError("unexpected POST 200")
+        self.transport_configured = True
+        if self.lose == "runtime-credentials":
+            self.lose = None
+            raise OCE.Blocked("lost runtime credential response")
+        return {"transportConfigured": True}
+
+    def post_accepted(self, path, body=None):
+        self.calls.append(("POST-202", path, copy.deepcopy(body)))
+        if path == "/namespaces/ns_one/agents/agt_one/deploy":
+            agent = self.agents["agt_one"]
+            # Pinned OCC admits platform logging when Kubernetes Compute owns
+            # the runtime and the Installation omits a logging override.
+            admitted = copy.deepcopy(self.configurations["cfg_one"]["values"])
+            admitted["logging"] = {"level": "info", "consoleLevel": "info",
+                                   "consoleStyle": "json"}
+            admitted["diagnostics"] = {"otel": {"logs": False}}
+            item = {"id": "rev_one", "namespaceId": "ns_one", "agentId": "agt_one",
+                    "configurationId": "cfg_one", "configurationGeneration": 1,
+                    "configurationKind": "agent", "backendId": None,
+                    "configuration": admitted,
+                    "harnessAuth": copy.deepcopy(agent["harnessAuth"]),
+                    "harness": {"id": "openclaw", "mode": "embedded", "version": "1"}}
+            self.revisions[item["id"]] = item
+            self.deployments[item["id"]] = {"deploymentId": item["id"],
+                                            "namespaceId": "ns_one", "agentId": "agt_one",
+                                            "status": "succeeded"}
+            agent["desiredRuntimeState"] = "running"
+            agent["activeRevisionId"] = item["id"]
+            self.runtime_pods = [{"name": "agent-one"}]
+            if self.lose == "deploy":
+                self.lose = None
+                raise OCE.Blocked("lost deploy response")
+            return copy.deepcopy(item)
+        if path == "/namespaces/ns_one/agents/agt_one/stop":
+            agent = self.agents["agt_one"]
+            agent["desiredRuntimeState"] = "stopped"
+            agent["activeRevisionId"] = None
+            self.runtime_pods = []
+            if self.lose == "stop":
+                self.lose = None
+                raise OCE.Blocked("lost stop response")
+            return copy.deepcopy(agent)
+        raise AssertionError("unexpected POST 202")
+
+    def revisions_page(self, path, cursor=None):
+        self.calls.append(("GET-PAGE", path, cursor))
+        if path != "/namespaces/ns_one/agents/agt_one/revisions":
+            raise AssertionError("unexpected revision page")
+        return {"data": copy.deepcopy(list(self.revisions.values())),
+                "meta": {"nextCursor": None}}
+
+
 class TenantKubernetes:
     def __init__(self, api):
         self.api = api

@@ -2,8 +2,8 @@
 """Fail-closed OpenClaw Enterprise reconciliation entrypoint.
 
 Read-only checks attest the reviewed startup file and current controller Pods.
-Reconciliation creates only reviewed Namespace, Configuration and stopped Agent
-state while activation is disabled.
+The committed activation switch is disabled. A later protected workflow can
+reconcile the supported credential, grant, deployment and stop lifecycle.
 """
 
 import argparse
@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets as secure_random
 import stat
 import subprocess
 import sys
@@ -39,7 +40,8 @@ HEX64 = re.compile(r"^[0-9a-f]{64}$")
 JOURNAL_FIELDS = frozenset({
     "installationId", "namespaceId", "secretId", "configurationId",
     "configurationGeneration", "agentId", "servicePrincipalId", "roleId",
-    "bindingId", "revisionId", "desiredHash", "pending",
+    "bindingId", "revisionId", "desiredHash", "pending", "secretName",
+    "roleName", "modelKeyVersion",
 })
 ID_PREFIXES = {
     "installationId": "ins_", "namespaceId": "ns_", "secretId": "sec_",
@@ -174,12 +176,35 @@ class API:
         return self._request("GET", path, None, 200)
 
     def post(self, path, body):
+        if not isinstance(body, dict):
+            raise Blocked("Enterprise API mutation body is invalid")
         return self._request("POST", path, body, 201)
 
-    def _request(self, method, path, body, expected_status):
-        if not path.startswith("/") or "?" in path or "#" in path:
+    def post_ok(self, path, body):
+        return self._request("POST", path, body, 200)
+
+    def post_accepted(self, path, body=None):
+        return self._request("POST", path, body, 202)
+
+    def patch(self, path, body):
+        return self._request("PATCH", path, body, 200)
+
+    def revisions_page(self, path, cursor=None):
+        _require(cursor is None or isinstance(cursor, str) and
+                 re.fullmatch(r"v1\.[1-9][0-9]{0,14}", cursor),
+                 "Enterprise revision cursor is invalid")
+        suffix = "?limit=100" + ("&cursor=" + cursor if cursor else "")
+        return self._request("GET", path + suffix, None, 200, envelope=True,
+                             allow_revision_query=True)
+
+    def _request(self, method, path, body, expected_status, envelope=False,
+                 allow_revision_query=False):
+        if (not path.startswith("/") or "#" in path or
+                ("?" in path and not allow_revision_query)):
             raise Blocked("Enterprise API path is not exact")
-        if method == "POST" and not isinstance(body, dict):
+        if method in ("POST", "PATCH") and body is not None and not isinstance(body, dict):
+            raise Blocked("Enterprise API mutation body is invalid")
+        if method == "PATCH" and body is None:
             raise Blocked("Enterprise API mutation body is invalid")
         headers = {"x-api-key": self.key}
         encoded = None
@@ -200,7 +225,7 @@ class API:
             raise Blocked("Enterprise API request failed or returned invalid JSON") from None
         if not isinstance(payload, dict) or "data" not in payload:
             raise Blocked("Enterprise API response has no data envelope")
-        return payload["data"]
+        return payload if envelope else payload["data"]
 
 
 class Kubernetes:
@@ -414,12 +439,17 @@ def check(config, api, kube):
     return prove_driver_identity(config, api, kube)
 
 
-def reconcile(config, api, kube, expected_sha):
+def reconcile(config, api, kube, expected_sha, model_credential=None):
     _validate_config(config)
-    _require(config["activationEnabled"] is False,
-             "Enterprise activation awaits the dedicated model credential and protected workflow")
     if not SHA.fullmatch(expected_sha):
         raise Blocked("Expected repository SHA is invalid")
+    if config["activationEnabled"]:
+        _require(isinstance(model_credential, dict) and
+                 set(model_credential) == {"version", "key"} and
+                 type(model_credential["version"]) is int and
+                 isinstance(model_credential["key"], str) and model_credential["key"],
+                 "active Enterprise reconciliation requires a protected model credential")
+        return reconcile_active(config, api, kube, model_credential)
     installation = prove_driver_identity(config, api, kube)
     source_sha = config["source"]["revision"]
     identity_sha = _identity_hash(config)
@@ -443,8 +473,8 @@ def reconcile(config, api, kube, expected_sha):
 
 def verify(config, api, kube):
     # Verification is a read, never an inference probe or implicit deployment.
-    _require(config["activationEnabled"] is False,
-             "active Enterprise verification awaits protected credential and deployment flow")
+    if config["activationEnabled"]:
+        return verify_active(config, api, kube)
     installation = check(config, api, kube)
     journal_path = config["privateJournal"]["mountPath"]
     state, raw = read_journal(journal_path, config["source"]["revision"], _identity_hash(config))
@@ -522,6 +552,19 @@ def desired_configuration(config):
             "models": [{"id": model["id"], "name": model["id"]}],
         }}},
     }
+
+
+def admitted_revision_configuration(config):
+    """Pinned OCC admission for this profile's Kubernetes Compute revision.
+
+    The reviewed Installation omits logging, so upstream defaults its level to
+    info. Kubernetes Compute does not own runtime logging; no Sandbox is selected.
+    Keep saved Configuration values untouched and compare the revision exactly.
+    """
+    values = desired_configuration(config)
+    return {**values,
+            "logging": {"level": "info", "consoleLevel": "info", "consoleStyle": "json"},
+            "diagnostics": {"otel": {"logs": False}}}
 
 
 def reconcile_namespace(config, api, journal, kube):
@@ -678,6 +721,15 @@ def _assert_agent(item, config, namespace_id, configuration_id, agent_id):
              isinstance(item.get("servicePrincipalId"), str) and
              bool(item["servicePrincipalId"]),
              "Enterprise Agent readback changed")
+    # A metadata-only read omits these saved settings; absence is safe only on
+    # the complete Agent variant with a readable harnessAuth field.
+    _require("configurationReadError" not in item and "harnessAuth" in item and
+             item.get("plugins") in (None, {}) and
+             item.get("pluginApprovers") in (None, []) and
+             item.get("repositoryBindings") in (None, []) and
+             item.get("repositoryAccess") is None and
+             item.get("credentialSources") in (None, []),
+             "Enterprise Agent has foreign integrations or unreadable settings")
 
 
 def reconcile_agent(config, api, journal, namespace_id, configuration_id):
@@ -751,6 +803,659 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
              exact.get("activeRevisionId") is None and exact.get("harnessAuth") is None,
              "journaled Agent is not inactive")
     return exact
+
+
+def _safe_segment(value, label):
+    _require(isinstance(value, str) and
+             re.fullmatch(r"[A-Za-z0-9_-]{1,200}", value),
+             f"Enterprise {label} is not a safe API ID")
+    return value
+
+
+def _assert_model_secret(item, namespace_id, secret_id, name, agent_id):
+    expected_ref = {"kind": "secret", "namespaceId": namespace_id, "id": secret_id}
+    consumers = item.get("consumers") if isinstance(item, dict) else None
+    _require(isinstance(item, dict) and item.get("id") == secret_id and
+             item.get("namespaceId") == namespace_id and item.get("name") == name and
+             item.get("ref") == expected_ref and isinstance(consumers, dict) and
+             consumers.get("configurations") == [] and
+             consumers.get("credentialSources") == [] and
+             consumers.get("provisioningRequests") == [] and
+             consumers.get("truncated") is False and consumers.get("unreadable") == 0 and
+             isinstance(consumers.get("agents"), list) and
+             set(consumers["agents"]) <= {agent_id},
+             "Enterprise model Secret ownership or consumers changed")
+
+
+def _unique_model_secret(api, path, secret_id, name):
+    visible = api.get(path)
+    _require(isinstance(visible, list) and
+             len([item for item in visible if isinstance(item, dict) and
+                  item.get("name") == name]) == 1 and
+             any(isinstance(item, dict) and item.get("id") == secret_id and
+                 item.get("name") == name for item in visible),
+             "Enterprise model Secret list is ambiguous")
+
+
+def reconcile_model_secret(config, api, journal, credential):
+    """Create one high-entropy named OCC Secret; never journal its value."""
+    state = dict(journal.state)
+    namespace_id = state["namespaceId"]
+    agent_id = state["agentId"]
+    path = f"/namespaces/{namespace_id}/secrets"
+    _require(state.get("modelKeyVersion", credential["version"]) == credential["version"],
+             "model key version changed; use a reviewed rotation")
+    secret_id = state.get("secretId")
+    if secret_id is None:
+        pending = state.get("pending")
+        _require(pending is None or pending.get("operation") == "secret-create",
+                 "another Enterprise operation is pending")
+        visible = api.get(path)
+        _require(isinstance(visible, list) and
+                 all(isinstance(item, dict) and isinstance(item.get("id"), str)
+                     for item in visible), "Enterprise Secret list is invalid")
+        name = state.get("secretName") or "oce-claw-openrouter-" + secure_random.token_hex(16)
+        _require(re.fullmatch(r"oce-claw-openrouter-[0-9a-f]{32}", name),
+                 "journaled model Secret name is invalid")
+        if pending:
+            baseline = set(pending["baselineSecretIds"])
+            _require(baseline <= {item["id"] for item in visible},
+                     "Enterprise Secret baseline changed")
+            new = [item for item in visible if item["id"] not in baseline]
+            _require(len(new) == 1 and new[0].get("name") == name,
+                     "unknown model Secret create outcome; do not retry")
+            secret_id = new[0]["id"]
+        else:
+            _require(not any(item.get("name") == name for item in visible),
+                     "unjournaled Enterprise model Secret may be foreign")
+            state["secretName"] = name
+            state["modelKeyVersion"] = credential["version"]
+            state["pending"] = {"operation": "secret-create",
+                                "baselineSecretIds": [item["id"] for item in visible]}
+            journal.save(state)
+            try:
+                created = api.post(path, {"name": name, "value": credential["key"]})
+            except DefinitiveRejection:
+                after = api.get(path)
+                _require(isinstance(after, list) and
+                         {item.get("id") for item in after if isinstance(item, dict)} ==
+                         set(state["pending"]["baselineSecretIds"]) and
+                         len(after) == len(state["pending"]["baselineSecretIds"]),
+                         "model Secret create outcome changed after rejection")
+                state.pop("pending")
+                state.pop("secretName")
+                state.pop("modelKeyVersion")
+                journal.save(state)
+                raise
+            _require(isinstance(created, dict) and created.get("name") == name,
+                     "Enterprise model Secret create response is invalid")
+            secret_id = created.get("id")
+        secret_id = _safe_segment(secret_id, "model Secret")
+        exact = api.get(path + "/" + secret_id)
+        _assert_model_secret(exact, namespace_id, secret_id, name, agent_id)
+        _unique_model_secret(api, path, secret_id, name)
+        state["secretId"] = secret_id
+        state.pop("pending", None)
+        journal.save(state)
+        return exact
+    _require(state.get("pending", {}).get("operation") != "secret-create",
+             "journaled model Secret has pending creation")
+    secret_id = _safe_segment(secret_id, "model Secret")
+    exact = api.get(path + "/" + secret_id)
+    _assert_model_secret(exact, namespace_id, secret_id, state.get("secretName"), agent_id)
+    _unique_model_secret(api, path, secret_id, state.get("secretName"))
+    return exact
+
+
+def _assert_model_role(item, namespace_id, role_id, name):
+    _require(isinstance(item, dict) and item.get("id") == role_id and
+             item.get("namespaceId") == namespace_id and item.get("name") == name and
+             item.get("permissions") == [{"action": "operate", "resourceKind": "secret"}],
+             "Enterprise model Secret Role changed")
+
+
+def _assert_model_binding(item, namespace_id, binding_id, principal_id, role_id, secret_id):
+    _require(isinstance(item, dict) and item.get("id") == binding_id and
+             item.get("namespaceId") == namespace_id and
+             item.get("subjectKind") == "identity" and
+             item.get("subjectId") == principal_id and
+             item.get("roleId") == role_id and
+             item.get("resourceKind") == "secret" and
+             item.get("resourceId") == secret_id,
+             "Enterprise model Secret AccessBinding changed")
+
+
+def reconcile_model_grant(api, journal):
+    """Journal the sole exact Secret-operate Role and Agent-principal binding."""
+    state = dict(journal.state)
+    namespace_id = state["namespaceId"]
+    role_path = f"/namespaces/{namespace_id}/iam/roles"
+    binding_path = f"/namespaces/{namespace_id}/iam/access-bindings"
+    permission = [{"action": "operate", "resourceKind": "secret"}]
+    roles = api.get(role_path)
+    _require(isinstance(roles, list) and
+             all(isinstance(item, dict) and isinstance(item.get("id"), str)
+                 for item in roles),
+             "Enterprise IAM Role list is invalid")
+    role_id = state.get("roleId")
+    if role_id is None:
+        pending = state.get("pending")
+        _require(pending is None or pending.get("operation") == "role-create",
+                 "another Enterprise operation is pending")
+        name = state.get("roleName") or "oce-claw-secret-" + secure_random.token_hex(16)
+        _require(re.fullmatch(r"oce-claw-secret-[0-9a-f]{32}", name),
+                 "journaled model Role name is invalid")
+        if pending:
+            baseline = set(pending["baselineRoleIds"])
+            _require(baseline <= {item["id"] for item in roles},
+                     "Enterprise Role baseline changed")
+            new = [item for item in roles if item.get("id") not in baseline]
+            _require(len(new) == 1 and new[0].get("name") == name,
+                     "unknown model Role create outcome; do not retry")
+            role_id = new[0]["id"]
+        else:
+            _require(not any(item.get("permissions") == permission for item in roles),
+                     "unjournaled exact model Role may be foreign")
+            state["roleName"] = name
+            state["pending"] = {"operation": "role-create",
+                                "baselineRoleIds": [item["id"] for item in roles]}
+            journal.save(state)
+            try:
+                created = api.post(role_path, {"name": name, "permissions": permission})
+            except DefinitiveRejection:
+                after = api.get(role_path)
+                _require(isinstance(after, list) and
+                         len(after) == len(state["pending"]["baselineRoleIds"]) and
+                         {item.get("id") for item in after if isinstance(item, dict)} ==
+                         set(state["pending"]["baselineRoleIds"]),
+                         "model Role create outcome changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
+            _require(isinstance(created, dict) and created.get("name") == name,
+                     "Enterprise model Role create response is invalid")
+            role_id = created.get("id")
+        role_id = _safe_segment(role_id, "model Role")
+        exact = api.get(role_path + "/" + role_id)
+        _assert_model_role(exact, namespace_id, role_id, name)
+        state["roleId"] = role_id
+        state.pop("pending", None)
+        journal.save(state)
+    else:
+        _require(state.get("pending", {}).get("operation") != "role-create",
+                 "journaled model Role has pending creation")
+        role_id = _safe_segment(role_id, "model Role")
+        exact = api.get(role_path + "/" + role_id)
+        _assert_model_role(exact, namespace_id, role_id, state.get("roleName"))
+    roles = api.get(role_path)
+    _require(isinstance(roles, list) and all(isinstance(item, dict) for item in roles),
+             "Enterprise IAM Role list is invalid")
+    _require(len([item for item in roles if item.get("permissions") == permission]) == 1,
+             "ambiguous exact model Role")
+
+    state = dict(journal.state)
+    bindings = api.get(binding_path)
+    _require(isinstance(bindings, list) and
+             all(isinstance(item, dict) and isinstance(item.get("id"), str)
+                 for item in bindings),
+             "Enterprise IAM AccessBinding list is invalid")
+    principal_id = state["servicePrincipalId"]
+    secret_id = state["secretId"]
+    binding_id = state.get("bindingId")
+    if binding_id is None:
+        pending = state.get("pending")
+        _require(pending is None or pending.get("operation") == "binding-create",
+                 "another Enterprise operation is pending")
+        if pending:
+            baseline = set(pending["baselineBindingIds"])
+            _require(baseline <= {item["id"] for item in bindings},
+                     "Enterprise AccessBinding baseline changed")
+            new = [item for item in bindings if item.get("id") not in baseline]
+            _require(len(new) == 1, "unknown model AccessBinding create outcome; do not retry")
+            binding_id = new[0]["id"]
+        else:
+            _require(not any(item.get("subjectKind") == "identity" and
+                             item.get("subjectId") == principal_id for item in bindings),
+                     "unjournaled Agent grant may be foreign")
+            state["pending"] = {"operation": "binding-create",
+                                "baselineBindingIds": [item["id"] for item in bindings]}
+            journal.save(state)
+            try:
+                created = api.post(binding_path, {
+                    "subjectKind": "identity", "subjectId": principal_id,
+                    "roleId": role_id, "resourceKind": "secret", "resourceId": secret_id})
+            except DefinitiveRejection:
+                after = api.get(binding_path)
+                _require(isinstance(after, list) and
+                         len(after) == len(state["pending"]["baselineBindingIds"]) and
+                         {item.get("id") for item in after if isinstance(item, dict)} ==
+                         set(state["pending"]["baselineBindingIds"]),
+                         "model AccessBinding create outcome changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
+            _require(isinstance(created, dict), "Enterprise AccessBinding create response is invalid")
+            binding_id = created.get("id")
+        binding_id = _safe_segment(binding_id, "model AccessBinding")
+        exact = api.get(binding_path + "/" + binding_id)
+        _assert_model_binding(exact, namespace_id, binding_id, principal_id, role_id, secret_id)
+        state["bindingId"] = binding_id
+        state.pop("pending", None)
+        journal.save(state)
+    else:
+        _require(state.get("pending", {}).get("operation") != "binding-create",
+                 "journaled model AccessBinding has pending creation")
+        binding_id = _safe_segment(binding_id, "model AccessBinding")
+        exact = api.get(binding_path + "/" + binding_id)
+        _assert_model_binding(exact, namespace_id, binding_id, principal_id, role_id, secret_id)
+    roles = api.get(role_path)
+    bindings = api.get(binding_path)
+    _require(isinstance(roles, list) and isinstance(bindings, list) and
+             all(isinstance(item, dict) for item in roles + bindings),
+             "Enterprise IAM grant lists are invalid")
+    exact_model_grant(roles, bindings, namespace_id, principal_id, secret_id)
+    return role_id, binding_id
+
+
+def _model_auth(namespace_id, secret_id):
+    return {"method": "api_key", "source": {
+        "kind": "secret", "namespaceId": namespace_id, "id": secret_id}}
+
+
+def bind_model_secret(config, api, journal):
+    state = dict(journal.state)
+    namespace_id, agent_id = state["namespaceId"], state["agentId"]
+    path = f"/namespaces/{namespace_id}/agents/{agent_id}"
+    desired = _model_auth(namespace_id, state["secretId"])
+    agent = api.get(path)
+    _assert_agent(agent, config, namespace_id, state["configurationId"], agent_id)
+    _require(agent.get("servicePrincipalId") == state["servicePrincipalId"],
+             "Enterprise Agent principal changed")
+    if agent.get("harnessAuth") == desired:
+        if state.get("pending") == {"operation": "agent-bind"}:
+            state.pop("pending")
+            journal.save(state)
+        return agent
+    _require(agent.get("harnessAuth") is None and state.get("revisionId") is None and
+             agent.get("activeRevisionId") is None and
+             agent.get("desiredRuntimeState") == "stopped",
+             "Enterprise Agent has a foreign or active model binding")
+    _require(state.get("pending") in (None, {"operation": "agent-bind"}),
+             "another Enterprise operation is pending")
+    state["pending"] = {"operation": "agent-bind"}
+    journal.save(state)
+    try:
+        patched = api.patch(path, {"configurationId": state["configurationId"],
+                                   "harnessAuth": desired})
+    except DefinitiveRejection:
+        after = api.get(path)
+        _assert_agent(after, config, namespace_id, state["configurationId"], agent_id)
+        _require(after.get("servicePrincipalId") == state["servicePrincipalId"] and
+                 after.get("harnessAuth") is None and
+                 after.get("desiredRuntimeState") == "stopped" and
+                 after.get("activeRevisionId") is None,
+                 "Agent binding outcome changed after rejection")
+        state.pop("pending")
+        journal.save(state)
+        raise
+    _require(isinstance(patched, dict) and patched.get("id") == agent_id,
+             "Enterprise Agent binding response changed")
+    exact = api.get(path)
+    _assert_agent(exact, config, namespace_id, state["configurationId"], agent_id)
+    _require(exact.get("servicePrincipalId") == state["servicePrincipalId"] and
+             exact.get("desiredRuntimeState") == "stopped" and
+             exact.get("activeRevisionId") is None and
+             exact.get("harnessAuth") == desired,
+             "Enterprise Agent model binding did not persist")
+    state.pop("pending")
+    journal.save(state)
+    return exact
+
+
+def ensure_runtime_credentials(api, journal):
+    """Upstream reuses a complete owned transport group on repeated POST."""
+    state = dict(journal.state)
+    path = f"/namespaces/{state['namespaceId']}/agents/{state['agentId']}/runtime-credentials"
+    status = api.get(path)
+    _require(isinstance(status, dict) and type(status.get("transportConfigured")) is bool,
+             "Enterprise runtime credential status is invalid")
+    if status["transportConfigured"]:
+        if state.get("pending") == {"operation": "runtime-credentials"}:
+            state.pop("pending")
+            journal.save(state)
+        return
+    _require(state.get("revisionId") is None and
+             state.get("pending") in (None, {"operation": "runtime-credentials"}),
+             "Enterprise runtime credential outcome is unresolved")
+    state["pending"] = {"operation": "runtime-credentials"}
+    journal.save(state)
+    try:
+        created = api.post_ok(path, {})
+    except DefinitiveRejection:
+        # The pinned Kubernetes driver rereads both credential groups and only
+        # creates missing groups, so even a partial group is safe to retry.
+        _require(api.get(path) == {"transportConfigured": False},
+                 "runtime credential outcome changed after rejection")
+        state.pop("pending")
+        journal.save(state)
+        raise
+    _require(isinstance(created, dict) and created.get("transportConfigured") is True and
+             api.get(path) == {"transportConfigured": True},
+             "Enterprise runtime credentials were not confirmed")
+    state.pop("pending")
+    journal.save(state)
+
+
+def list_agent_revisions(api, namespace_id, agent_id):
+    """Read all revision pages; incomplete history cannot prove a deploy baseline."""
+    path = f"/namespaces/{namespace_id}/agents/{agent_id}/revisions"
+    items, seen_ids, seen_cursors = [], set(), set()
+    cursor = None
+    for _ in range(100):
+        page = api.revisions_page(path, cursor)
+        _require(isinstance(page, dict) and isinstance(page.get("data"), list) and
+                 isinstance(page.get("meta"), dict),
+                 "Enterprise revision page is invalid")
+        for item in page["data"]:
+            _require(isinstance(item, dict) and
+                     _valid_resource_id(item.get("id"), "rev_") and
+                     item.get("agentId") == agent_id and
+                     item.get("namespaceId") == namespace_id and
+                     item["id"] not in seen_ids,
+                     "Enterprise revision history changed")
+            seen_ids.add(item["id"])
+            items.append(item)
+        next_cursor = page["meta"].get("nextCursor")
+        if next_cursor is None:
+            return items
+        _require(isinstance(next_cursor, str) and
+                 re.fullmatch(r"v1\.[1-9][0-9]{0,14}", next_cursor) and
+                 next_cursor not in seen_cursors,
+                 "Enterprise revision pagination is invalid")
+        seen_cursors.add(next_cursor)
+        cursor = next_cursor
+    raise Blocked("Enterprise revision history exceeds bounded read")
+
+
+def _assert_active_revision(item, config, state):
+    _require(isinstance(item, dict) and isinstance(item.get("harness"), dict) and
+             "configurationReadError" not in item and
+             item.get("id") == state.get("revisionId") and
+             item.get("namespaceId") == state["namespaceId"] and
+             item.get("agentId") == state["agentId"] and
+             item.get("configurationId") == state["configurationId"] and
+             item.get("configurationGeneration") == state["configurationGeneration"] and
+             item.get("configurationKind") == "agent" and
+             item.get("backendId") is None and
+             item.get("configuration") == admitted_revision_configuration(config) and
+             item.get("harnessAuth") == _model_auth(state["namespaceId"], state["secretId"]) and
+             item.get("harness", {}).get("id") == "openclaw" and
+             item.get("harness", {}).get("mode") == "embedded" and
+             item.get("secretBindings") in (None, {}) and
+             item.get("plugins") is None and
+             item.get("pluginApprovers") in (None, []) and
+             item.get("repositoryCredentials") is None and
+             item.get("credentialSources") in (None, []),
+             "Enterprise active revision changed")
+
+
+def reconcile_deployment(config, api, journal):
+    state = dict(journal.state)
+    namespace_id, agent_id = state["namespaceId"], state["agentId"]
+    path = f"/namespaces/{namespace_id}/agents/{agent_id}"
+    revisions = list_agent_revisions(api, namespace_id, agent_id)
+    revision_id = state.get("revisionId")
+    if revision_id is None:
+        pending = state.get("pending")
+        _require(pending is None or pending.get("operation") == "deploy",
+                 "another Enterprise operation is pending")
+        if pending:
+            revision_id = recover_revision(
+                revisions, set(pending["baselineRevisionIds"]), agent_id,
+                state["configurationId"], state["configurationGeneration"])
+        else:
+            _require(not revisions, "unjournaled Enterprise revision may be foreign")
+            draft = api.get(path)
+            _assert_agent(draft, config, namespace_id, state["configurationId"], agent_id)
+            _require(draft.get("servicePrincipalId") == state["servicePrincipalId"] and
+                     draft.get("harnessAuth") == _model_auth(namespace_id, state["secretId"]) and
+                     draft.get("desiredRuntimeState") == "stopped" and
+                     draft.get("activeRevisionId") is None,
+                     "Enterprise deploy draft changed")
+            state["pending"] = {"operation": "deploy", "baselineRevisionIds": []}
+            journal.save(state)
+            try:
+                created = api.post_accepted(path + "/deploy")
+            except DefinitiveRejection:
+                _require(list_agent_revisions(api, namespace_id, agent_id) == [],
+                         "deploy outcome changed after rejection")
+                after = api.get(path)
+                _assert_agent(after, config, namespace_id, state["configurationId"], agent_id)
+                _require(after.get("servicePrincipalId") == state["servicePrincipalId"] and
+                         after.get("desiredRuntimeState") == "stopped" and
+                         after.get("activeRevisionId") is None,
+                         "deploy Agent state changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
+            _require(isinstance(created, dict) and
+                     created.get("agentId") == agent_id and
+                     created.get("namespaceId") == namespace_id and
+                     created.get("configurationId") == state["configurationId"] and
+                     created.get("configurationGeneration") == state["configurationGeneration"],
+                     "Enterprise deploy response changed")
+            revision_id = created.get("id")
+        _require(_valid_resource_id(revision_id, "rev_"),
+                 "Enterprise revision ID is invalid")
+        state["revisionId"] = revision_id
+        exact = api.get(path + "/revisions/" + revision_id)
+        _assert_active_revision(exact, config, state)
+        state.pop("pending")
+        journal.save(state)
+    else:
+        _require(state.get("pending") is None, "journaled revision has pending operation")
+        _require(len([item for item in revisions if item.get("id") == revision_id]) == 1 and
+                 len(revisions) == 1, "Enterprise revision history changed")
+        exact = api.get(path + "/revisions/" + revision_id)
+        _assert_active_revision(exact, config, state)
+    deployment = api.get(path + "/deployments/" + revision_id)
+    _require(isinstance(deployment, dict) and
+             deployment.get("deploymentId") == revision_id and
+             deployment.get("namespaceId") == namespace_id and
+             deployment.get("agentId") == agent_id,
+             "Enterprise deployment readback changed")
+    if deployment.get("status") in ("queued", "running"):
+        raise Blocked("Enterprise deployment is in progress")
+    _require(deployment.get("status") == "succeeded", "Enterprise deployment failed or is unknown")
+    agent = api.get(path)
+    _require(isinstance(agent, dict) and agent.get("desiredRuntimeState") == "running" and
+             agent.get("activeRevisionId") == revision_id,
+             "Enterprise Agent is not running the recorded revision")
+    return revision_id
+
+
+def _read_registered(config, api, kube, state):
+    """Re-read the inactive tenant identities before any active mutation."""
+    namespace_id = state.get("namespaceId")
+    configuration_id = state.get("configurationId")
+    agent_id = state.get("agentId")
+    _require(_valid_resource_id(namespace_id, "ns_") and
+             _valid_resource_id(configuration_id, "cfg_") and
+             _valid_resource_id(agent_id, "agt_") and
+             isinstance(state.get("servicePrincipalId"), str) and
+             state.get("configurationGeneration") is not None,
+             "Enterprise inactive tenant must be reconciled first")
+    kube.tenant_prepared(namespace_id, require_claimed=True)
+    namespace = api.get("/namespaces/" + namespace_id)
+    _require(isinstance(namespace, dict) and namespace.get("id") == namespace_id and
+             namespace.get("name") == config["namespace"]["logicalName"] and
+             namespace.get("existingNamespace") == config["namespace"]["existingNamespace"] and
+             namespace.get("status") == "ready", "Enterprise Namespace readback changed")
+    configuration = api.get(f"/namespaces/{namespace_id}/configurations/{configuration_id}")
+    _assert_configuration(configuration, namespace_id, configuration_id,
+                          desired_configuration(config), state["configurationGeneration"])
+    candidates = kube.configuration_candidates(namespace_id)
+    _require(len(candidates) == 1, "Configuration ConfigMap set is ambiguous")
+    recover_configuration(candidates, configuration, "openclaw-agents")
+    agents = api.get(f"/namespaces/{namespace_id}/agents")
+    discover_exact(agents, config["agent"]["name"], agent_id,
+                   {"configurationId": configuration_id})
+    agent = api.get(f"/namespaces/{namespace_id}/agents/{agent_id}")
+    _assert_agent(agent, config, namespace_id, configuration_id, agent_id)
+    _require(agent.get("servicePrincipalId") == state["servicePrincipalId"],
+             "Enterprise Agent principal changed")
+    return agent
+
+
+def reconcile_active(config, api, kube, model_credential):
+    """Source-only active path; committed desired state keeps this gate disabled."""
+    installation = prove_driver_identity(config, api, kube)
+    with ProtectedJournal(config["privateJournal"]["mountPath"],
+                          config["source"]["revision"], _identity_hash(config)) as journal:
+        state = dict(journal.state)
+        _require(state.get("installationId") == installation["installationId"],
+                 "journaled Installation identity changed")
+        _read_registered(config, api, kube, state)
+        reconcile_model_secret(config, api, journal, model_credential)
+        reconcile_model_grant(api, journal)
+        bind_model_secret(config, api, journal)
+        ensure_runtime_credentials(api, journal)
+        revision_id = reconcile_deployment(config, api, journal)
+        state = dict(journal.state)
+    return {"namespaceId": state["namespaceId"],
+            "configurationId": state["configurationId"], "agentId": state["agentId"],
+            "revisionId": revision_id, "desiredRuntimeState": "running"}
+
+
+def verify_active(config, api, kube):
+    installation = check(config, api, kube)
+    path = config["privateJournal"]["mountPath"]
+    state, raw = read_journal(path, config["source"]["revision"], _identity_hash(config))
+    _require(state.get("installationId") == installation["installationId"] and
+             state.get("pending") is None and
+             type(state.get("modelKeyVersion")) is int,
+             "Enterprise active journal is incomplete")
+    agent = _read_registered(config, api, kube, state)
+    namespace_id, agent_id, secret_id = state["namespaceId"], state["agentId"], state.get("secretId")
+    _safe_segment(secret_id, "model Secret")
+    secret = api.get(f"/namespaces/{namespace_id}/secrets/{secret_id}")
+    _assert_model_secret(secret, namespace_id, secret_id, state.get("secretName"), agent_id)
+    _unique_model_secret(api, f"/namespaces/{namespace_id}/secrets", secret_id,
+                         state.get("secretName"))
+    role_id = _safe_segment(state.get("roleId"), "model Role")
+    binding_id = _safe_segment(state.get("bindingId"), "model AccessBinding")
+    role_path = f"/namespaces/{namespace_id}/iam/roles"
+    binding_path = f"/namespaces/{namespace_id}/iam/access-bindings"
+    roles = api.get(role_path)
+    bindings = api.get(binding_path)
+    _require(isinstance(roles, list) and isinstance(bindings, list) and
+             all(isinstance(item, dict) for item in roles + bindings),
+             "Enterprise IAM grant lists are invalid")
+    _assert_model_role(api.get(role_path + "/" + role_id), namespace_id, role_id,
+                       state.get("roleName"))
+    _assert_model_binding(api.get(binding_path + "/" + binding_id), namespace_id,
+                          binding_id, state["servicePrincipalId"], role_id, secret_id)
+    exact_model_grant(roles, bindings, namespace_id, state["servicePrincipalId"], secret_id)
+    _require(agent.get("harnessAuth") == _model_auth(namespace_id, secret_id),
+             "Enterprise Agent model binding changed")
+    status = api.get(f"/namespaces/{namespace_id}/agents/{agent_id}/runtime-credentials")
+    _require(status == {"transportConfigured": True},
+             "Enterprise runtime credentials are not configured")
+    revision_id = state.get("revisionId")
+    _require(_valid_resource_id(revision_id, "rev_"), "Enterprise active revision is missing")
+    base = f"/namespaces/{namespace_id}/agents/{agent_id}"
+    revisions = list_agent_revisions(api, namespace_id, agent_id)
+    _require(len(revisions) == 1 and revisions[0].get("id") == revision_id,
+             "Enterprise revision history changed")
+    _assert_active_revision(api.get(base + "/revisions/" + revision_id), config, state)
+    deployment = api.get(base + "/deployments/" + revision_id)
+    _require(isinstance(deployment, dict) and deployment.get("deploymentId") == revision_id and
+             deployment.get("namespaceId") == namespace_id and
+             deployment.get("agentId") == agent_id and
+             deployment.get("status") == "succeeded",
+             "Enterprise deployment is not complete")
+    if agent.get("desiredRuntimeState") == "running":
+        _require(agent.get("activeRevisionId") == revision_id,
+                 "Enterprise active revision changed")
+    else:
+        _require(agent.get("desiredRuntimeState") == "stopped" and
+                 agent.get("activeRevisionId") is None,
+                 "Enterprise stopped revision changed")
+        _assert_stopped_runtime(api, base, revision_id)
+    after, second_raw = read_journal(path, config["source"]["revision"], _identity_hash(config))
+    _require(raw == second_raw and state == after,
+             "Enterprise journal changed during verification")
+    return {"namespaceId": namespace_id, "agentId": agent_id,
+            "revisionId": revision_id,
+            "desiredRuntimeState": agent["desiredRuntimeState"]}
+
+
+def _assert_stopped_runtime(api, base, revision_id):
+    runtime = api.get(base + "/deployments/" + revision_id + "/runtime")
+    _require(isinstance(runtime, dict) and runtime.get("revisionId") == revision_id and
+             isinstance(runtime.get("observedAt"), str) and
+             runtime.get("pods") == [],
+             "Enterprise stopped runtime still has Pods or cannot be proved")
+
+
+def stop_agent(config, api, kube, expected_sha):
+    """Request native stop once, then wait for exact revision termination."""
+    _validate_config(config)
+    _require(isinstance(expected_sha, str) and SHA.fullmatch(expected_sha),
+             "Expected repository SHA is invalid")
+    installation = prove_driver_identity(config, api, kube)
+    with ProtectedJournal(config["privateJournal"]["mountPath"],
+                          config["source"]["revision"], _identity_hash(config)) as journal:
+        state = dict(journal.state)
+        _require(state.get("installationId") == installation["installationId"],
+                 "journaled Installation identity changed")
+        agent = _read_registered(config, api, kube, state)
+        pending = state.get("pending")
+        _require(pending is None or pending == {"operation": "stop"},
+                 "another Enterprise operation is pending")
+        revision_id = state.get("revisionId")
+        base = f"/namespaces/{state['namespaceId']}/agents/{state['agentId']}"
+        if revision_id is None:
+            raise Blocked("stop requires a journaled revision; inactive Agent state is unproven")
+        _require(_valid_resource_id(revision_id, "rev_"),
+                 "Enterprise revision ID is invalid")
+        if pending is None and not (agent.get("desiredRuntimeState") == "stopped" and
+                                    agent.get("activeRevisionId") is None):
+            _require(agent.get("desiredRuntimeState") == "running" and
+                     agent.get("activeRevisionId") in (None, revision_id),
+                     "Enterprise Agent active revision changed")
+            state["pending"] = {"operation": "stop"}
+            journal.save(state)
+            try:
+                accepted = api.post_accepted(base + "/stop")
+            except DefinitiveRejection:
+                after = api.get(base)
+                _assert_agent(after, config, state["namespaceId"],
+                              state["configurationId"], state["agentId"])
+                _require(after.get("servicePrincipalId") == state["servicePrincipalId"] and
+                         after.get("desiredRuntimeState") == agent.get("desiredRuntimeState") and
+                         after.get("activeRevisionId") == agent.get("activeRevisionId"),
+                         "stop outcome changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
+            _require(isinstance(accepted, dict) and accepted.get("id") == state["agentId"] and
+                     accepted.get("desiredRuntimeState") == "stopped",
+                     "Enterprise stop response changed")
+        agent = api.get(base)
+        _assert_agent(agent, config, state["namespaceId"], state["configurationId"],
+                      state["agentId"])
+        _require(agent.get("servicePrincipalId") == state["servicePrincipalId"] and
+                 agent.get("desiredRuntimeState") == "stopped",
+                 "Enterprise stop outcome is unknown")
+        _require(agent.get("activeRevisionId") is None,
+                 "Enterprise stop is still in progress")
+        _assert_stopped_runtime(api, base, revision_id)
+        if state.get("pending") is not None:
+            state.pop("pending")
+            journal.save(state)
+        return {"agentId": state["agentId"], "revisionId": revision_id,
+                "desiredRuntimeState": "stopped"}
 
 
 def _validate_config(config):
@@ -1190,9 +1895,9 @@ class ProtectedJournal:
         for field, value in state.items():
             if field == "pending":
                 continue
-            if field == "configurationGeneration":
+            if field in ("configurationGeneration", "modelKeyVersion"):
                 if type(value) is not int or not 1 <= value <= 9007199254740991:
-                    raise Blocked("Journal Configuration generation is invalid")
+                    raise Blocked("Journal generation or credential version is invalid")
             elif field == "desiredHash":
                 if not isinstance(value, str) or not HEX64.fullmatch(value):
                     raise Blocked("Journal desired hash is invalid")
@@ -1205,9 +1910,14 @@ class ProtectedJournal:
         if pending is not None:
             if (not isinstance(pending, dict) or
                     set(pending) - {"operation", "baselineRevisionIds",
-                                    "baselineConfigmapUids", "baselineAgentIds"} or
+                                    "baselineConfigmapUids", "baselineAgentIds",
+                                    "baselineSecretIds", "baselineRoleIds",
+                                    "baselineBindingIds"} or
                     pending.get("operation") not in ("namespace-create", "configuration-create",
-                                                     "agent-create", "deploy") or
+                                                     "agent-create", "secret-create",
+                                                     "role-create", "binding-create",
+                                                     "agent-bind", "runtime-credentials",
+                                                     "deploy", "stop") or
                     not isinstance(pending.get("baselineRevisionIds", []), list) or
                     any(not isinstance(item, str) or not item.startswith("rev_") or
                         not re.fullmatch(r"[A-Za-z0-9._~:@/-]{1,200}", item)
@@ -1216,7 +1926,9 @@ class ProtectedJournal:
                         any(not isinstance(item, str) or not re.fullmatch(
                             r"[A-Za-z0-9._~:@/-]{1,200}", item)
                             for item in pending.get(key, []))
-                        for key in ("baselineConfigmapUids", "baselineAgentIds"))):
+                        for key in ("baselineConfigmapUids", "baselineAgentIds",
+                                    "baselineSecretIds", "baselineRoleIds",
+                                    "baselineBindingIds"))):
                 raise Blocked("Journal pending operation is invalid")
 
     def save(self, state):
@@ -1284,29 +1996,83 @@ def _read_key(path):
     return key
 
 
+def _read_model_credential(path, expected_parameter):
+    """Read an SSM-versioned provider key without exposing its value or digest."""
+    candidate = Path(path)
+    if not candidate.is_absolute() or candidate.parent.resolve() != candidate.parent:
+        raise Blocked("Enterprise model credential path is not private")
+    parent = candidate.parent
+    if not parent.is_dir() or parent.stat().st_uid != os.getuid() or stat.S_IMODE(
+            parent.stat().st_mode) != 0o700:
+        raise Blocked("Enterprise model credential parent is not private")
+    ProtectedJournal._check_file(candidate)
+    if not candidate.is_file() or candidate.stat().st_size > 70000:
+        raise Blocked("Enterprise model credential file is missing or oversized")
+    try:
+        document = json.loads(candidate.read_text())
+    except (OSError, UnicodeError, ValueError):
+        raise Blocked("Enterprise model credential file is invalid") from None
+    _require(isinstance(document, dict) and set(document) == {"parameter", "version", "key"} and
+             document["parameter"] == expected_parameter and
+             type(document["version"]) is int and 1 <= document["version"] <= 9007199254740991 and
+             isinstance(document["key"], str) and document["key"] == document["key"].strip() and
+             bool(document["key"]) and not any(char in document["key"]
+                                                for char in ("\x00", "\r", "\n")) and
+             len(document["key"].encode("utf-8")) <= 65536,
+             "Enterprise model credential contract is invalid")
+    return {"version": document["version"], "key": document["key"]}
+
+
+def _require_reviewed_mutation_config(path, expected_sha):
+    """A caller cannot flip the inactive switch with a local config override."""
+    canonical = ROOT / "scripts/config/openclaw-enterprise.json"
+    _require(Path(path).resolve() == canonical.resolve(),
+             "Enterprise mutation config path is not repository-owned")
+    try:
+        committed = subprocess.check_output(
+            ["git", "show", expected_sha + ":scripts/config/openclaw-enterprise.json"],
+            cwd=ROOT)
+    except (OSError, subprocess.CalledProcessError):
+        raise Blocked("Enterprise reviewed mutation config is unavailable") from None
+    _require(canonical.read_bytes() == committed,
+             "Enterprise mutation config differs from exact reviewed commit")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("check", "reconcile", "verify"))
+    parser.add_argument("command", choices=("check", "reconcile", "verify", "stop"))
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--expected-sha")
     parser.add_argument("--credential-file", type=Path)
+    parser.add_argument("--model-credential-file", type=Path)
     args = parser.parse_args(argv)
     try:
         config = json.loads(args.config.read_text())
         _validate_config(config)
-        if args.command == "reconcile":
+        if args.command in ("reconcile", "stop"):
             if args.expected_sha is None or args.credential_file is None:
-                raise Blocked("reconcile requires expected SHA and mounted credential file")
+                raise Blocked("mutation requires expected SHA and mounted credential file")
             actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
             if actual != args.expected_sha:
-                raise Blocked("reconcile source SHA is not exact")
+                raise Blocked("Enterprise mutation source SHA is not exact")
+            _require_reviewed_mutation_config(args.config, actual)
             key_path = args.credential_file
         else:
             key_path = Path(config["bootstrap"]["serviceKeyFile"])
         api = API(config["privateOrigins"]["console"], _read_key(key_path))
         kube = Kubernetes()
         if args.command == "reconcile":
-            reconcile(config, api, kube, args.expected_sha)
+            model_credential = None
+            if config["activationEnabled"]:
+                if args.model_credential_file is None:
+                    raise Blocked("active reconciliation requires model credential file")
+                model_credential = _read_model_credential(
+                    args.model_credential_file, config["secrets"]["modelApiKey"])
+                _require(model_credential["key"] != api.key,
+                         "model key must be distinct from bootstrap service key")
+            reconcile(config, api, kube, args.expected_sha, model_credential)
+        elif args.command == "stop":
+            stop_agent(config, api, kube, args.expected_sha)
         elif args.command == "verify":
             verify(config, api, kube)
         else:
