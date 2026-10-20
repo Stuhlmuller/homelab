@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c0b651ce45ae1126188294aff9ae5903a160bbf754b57f205ef75b16ab361780",
+  "pageVersion": "sha256:d1fd016e0b4880c8cf678504d0838d24bb886d9dbcf9d139c7c079dc6e5c8c3f",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:1e00505a9c8a1a576452d0cfc8a36d3293acb8d421b61e88dcf5a061bd5cb14d"
+          "version": "repo-file-v1:sha256:8cffded16ca548fd2d987c6a0026be0245df7a443b0183d7a25fea7e1b36ddce"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a0f0e514f04fcb43770e977dbe0f7b9dc23b7225f75da95d61c871db1ac789ed"
+          "version": "repo-file-v1:sha256:889043351a19997299bc137c0446afe65682606dc38d26face296089ae488d04"
         }
       ]
     },
@@ -191,7 +191,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found the best worker with about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise reservation, 6,308 MiB actual use and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent a NoSchedule taint from isolating a canary.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L240-L266",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L246-L272",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -279,6 +279,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T16:13:57.200Z"
+    "at": "2026-10-20T17:28:41.182Z"
   }
 }

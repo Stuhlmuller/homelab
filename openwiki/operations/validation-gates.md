@@ -314,10 +314,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T16:40:47.303Z" }
+generated: { by: "codex", at: "2026-10-20T17:08:07.139Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T16:40:47.303Z
+    at: 2026-10-20T17:28:41.182Z
 ---
 
 # Validation Gates
@@ -1711,8 +1711,8 @@ live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 The Kubernetes stage also reads live Istiod, CNI, ztunnel and both injected
 gateway workloads before the command and after stage verification. It rejects
-missing or degraded rollouts, including Deployments with old terminating
-replicas that keep total replicas above desired, and any image reference without the reviewed
+missing, deleting, or degraded controllers, including Deployments with old
+terminating replicas that keep total replicas above desired, and any image reference without the reviewed
 Istio 1.30.6 digest, including matching mutable tags in gateway Pods. T025
 must align the chart image hub and digest-bearing templates/injection with the
 reviewed catalog. Source fixtures pass; no live Istio or Kubernetes upgrade
