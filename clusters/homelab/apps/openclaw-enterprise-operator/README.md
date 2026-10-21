@@ -22,10 +22,12 @@ DNS, that API endpoint, and Traefik's private console listener; Traefik has a
 matching ingress rule for this Job label. Prove the actual DNS answer, TLS
 certificate, CNI policy behavior, and no sidecar before enabling. A Job needs
 a signed, fully pulled Harbor operator image from a prior reviewed homelab
-source commit with `python3`, `kubectl`, `yq`, and Git. The dispatcher requires
-its embedded reconciler, Installation, and values bytes to match current
-`main`, then projects current config with a SHA receipt through an immutable
-ConfigMap. This lets a later commit pin the image digest. The chart's
+source commit with `python3`, `kubectl`, and `yq`. The protected
+`openclaw-enterprise-images.yml` workflow builds it from a clean exact `main`
+checkout, embeds the source SHA, then signs and completely pulls it. The
+dispatcher requires its embedded reconciler, Installation, and values bytes to
+match current `main`, then projects current config with a SHA receipt through an immutable
+ConfigMap. This lets a later commit pin the verified image digest. The chart's
 bootstrap key must be readable as a
 UID-10001-owned `0600` regular file; no root init container or CI artifact
 should copy it. The current upstream bootstrap UID/mode is not yet proved.

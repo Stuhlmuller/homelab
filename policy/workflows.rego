@@ -889,7 +889,7 @@ then
   echo "::error::Enterprise image publication failed; private transport and registry output withheld."
   exit 1
 fi
-echo "Pinned Enterprise controller/runtime/CLI images published, signed, and fully pulled; private output withheld."`
+echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."`
 
 harbor_mirror_private_run := `set -euo pipefail
 umask 077
@@ -935,7 +935,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'203a68f5c7bfd76b2a9330cae0f5ba3f9f18e992e65d5c1e26e5446ad558df03  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

@@ -34,8 +34,8 @@ if [[ "$mode" == publish-openclaw-enterprise ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
   mode=publish
-  publish_names=(homelab-oce-controller homelab-oce-runtime homelab-oce-cli)
-  publish_outputs=(controller runtime cli)
+  publish_names=(homelab-oce-controller homelab-oce-runtime homelab-oce-cli homelab-oce-operator)
+  publish_outputs=(controller runtime cli operator)
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then

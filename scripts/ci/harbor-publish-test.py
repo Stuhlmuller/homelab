@@ -145,7 +145,8 @@ class HarborPublicationGates(unittest.TestCase):
         if cordium:
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
         if enterprise:
-            names = ["homelab-oce-controller", "homelab-oce-runtime", "homelab-oce-cli"]
+            names = ["homelab-oce-controller", "homelab-oce-runtime", "homelab-oce-cli",
+                     "homelab-oce-operator"]
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main"
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
@@ -1627,12 +1628,13 @@ class HarborPublicationGates(unittest.TestCase):
         output = (self.root / "outputs").read_text()
         for name, key in (("homelab-oce-controller", "controller"),
                           ("homelab-oce-runtime", "runtime"),
-                          ("homelab-oce-cli", "cli")):
+                          ("homelab-oce-cli", "cli"),
+                          ("homelab-oce-operator", "operator")):
             self.assertIn(f"{key}=harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@", output)
-        self.assertEqual(len(self.calls_for("cosign")), 3)
+        self.assertEqual(len(self.calls_for("cosign")), 4)
         pulls = [args for args in self.calls_for("skopeo")
                  if args[0] == "copy" and args[-1].startswith("dir:")]
-        self.assertEqual(len(pulls), 3)
+        self.assertEqual(len(pulls), 4)
         self.assert_cleaned()
 
     def test_enterprise_failure_reports_only_fixed_public_phase(self):
