@@ -17,7 +17,7 @@ SHA = re.compile(r"[0-9a-f]{40}\Z")
 UID = re.compile(r"[0-9a-f-]{36}\Z")
 IMAGE = re.compile(r"harbor\.stinkyboi\.com/homelab/homelab-oce-operator@sha256:[0-9a-f]{64}\Z")
 NODE = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\Z")
-JOB_NAME = re.compile(r"oce-journal-(reconcile|stop|verification)-[1-9][0-9]{0,19}\Z")
+JOB_NAME = re.compile(r"oce-journal-(reconcile|stop|verification)-[1-9][0-9]{0,19}-[1-9][0-9]{0,4}\Z")
 
 
 class Blocked(RuntimeError):
@@ -201,10 +201,11 @@ def prove_claims(operator):
             "operator bootstrap volume identity or placement changed")
 
 
-def build_job(stage, expected, run_id, operator, projection):
-    require(stage in STAGES and re.fullmatch(r"[1-9][0-9]{0,19}", run_id),
-            "operator stage or run ID is invalid")
-    name = f"oce-journal-{stage}-{run_id}"
+def build_job(stage, expected, run_id, operator, projection, attempt="1"):
+    require(stage in STAGES and re.fullmatch(r"[1-9][0-9]{0,19}", run_id) and
+            re.fullmatch(r"[1-9][0-9]{0,4}", attempt),
+            "operator stage, run ID or attempt is invalid")
+    name = f"oce-journal-{stage}-{run_id}-{attempt}"
     require(len(name) <= 63, "operator Job name is too long")
     labels = {"app.kubernetes.io/name": "oce-journal-operator",
               "homelab.stuhlmuller.dev/source-sha": expected,
@@ -380,7 +381,7 @@ def main(argv=None, environ=None):
         exact_main(expected, environ)
         prove_or_create_projection(projection)
         job = build_job(stage, expected, environ.get("GITHUB_RUN_ID", ""),
-                        operator, projection)
+                        operator, projection, environ.get("GITHUB_RUN_ATTEMPT", ""))
         exact_main(expected, environ)
         dispatch(job)
     except (Blocked, OSError, ValueError, KeyError, TypeError):

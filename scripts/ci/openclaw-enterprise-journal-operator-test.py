@@ -226,12 +226,28 @@ class JournalOperator(unittest.TestCase):
             "homelab.stuhlmuller.dev/source-sha"] = "b" * 40
         self.assertFalse(runner.job_identity(changed, job))
 
+    def test_rerun_attempt_creates_fresh_verification_job(self):
+        config = ready_operator()
+        first = runner.build_job("verification", SHA, "12345", config["journalOperator"],
+                                 projection(config), "1")
+        second = runner.build_job("verification", SHA, "12345", config["journalOperator"],
+                                  projection(config), "2")
+        self.assertNotEqual(first["metadata"]["name"], second["metadata"]["name"])
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [complete_job(first)]}, complete_job(second)]), \
+                mock.patch.object(runner, "command", return_value="") as command:
+            runner.dispatch(second)
+            self.assertIn("create", command.call_args_list[0].args[0])
+        with self.assertRaisesRegex(runner.Blocked, "attempt"):
+            runner.build_job("verification", SHA, "12345", config["journalOperator"],
+                             projection(config), "0")
+
     def test_missing_prior_job_label_cannot_hide_a_running_job(self):
         config = ready_operator()
         job = runner.build_job("reconcile", SHA, "12345", config["journalOperator"],
                                projection(config))
         prior = copy.deepcopy(job)
-        prior["metadata"]["name"] = "oce-journal-reconcile-999"
+        prior["metadata"]["name"] = "oce-journal-reconcile-999-1"
         del prior["metadata"]["labels"]["app.kubernetes.io/name"]
         with mock.patch.object(runner, "kubectl_json", return_value={"items": [prior]}) as read, \
                 mock.patch.object(runner, "command") as write:
@@ -273,7 +289,7 @@ class JournalOperator(unittest.TestCase):
         job = runner.build_job("reconcile", SHA, "12345", config["journalOperator"],
                                projection(config))
         other = copy.deepcopy(job)
-        other["metadata"]["name"] = "oce-journal-reconcile-999"
+        other["metadata"]["name"] = "oce-journal-reconcile-999-1"
         with mock.patch.object(runner, "kubectl_json", return_value={"items": [other]}):
             with self.assertRaisesRegex(runner.Blocked, "still running or uncertain"):
                 runner.dispatch(job)
