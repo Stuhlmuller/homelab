@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:38f86d8353610a1457e7fb92de4af0a77958fd2d709eb23e592de631c5e92f6a",
+  "pageVersion": "sha256:87f91ee65a52ce5582c916475c8ad33b529972d376bc155f7388762040331fd9",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:71f2bd52b786fc64437f34148b8e51b49e349d542a2d84c3697911c6c25ffa11"
+          "version": "repo-file-v1:sha256:1308cae562b348a69ea81f095a42fd8efcda6c137a54507f3f5e1e13c441dfe6"
         }
       ]
     },
@@ -209,8 +209,8 @@
           "version": "repo-lines-v1:sha256:ee8813e66f3d5083b036ef35af6dd3f7fd4e1d33c08a575f4966bebe67c952b2:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkODM0NjZmMDIwNTZjMDMyMWZkM2MzZTM5MzllOGRjYTg3YmY0MjczOTlhY2ZjYWZjYjM4NjI2MjAxZmFjOGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjZmM2YWYxNzhlNTVjNjZhODhhMGY5NDg0OGMwNzNmYWYyYjMwZDc0OWRmNGRkNzlmOWNhZDA4YzVhMmFkMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNzgwOWM5MjEwNmI3ZTI1NmM1ZGU0YTZlZWZjNmZmYWU5NDU4NjBmN2MwMDhjOThmYTU5NWJlYzlmY2Y3MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzZGQwZjE5YTJmYjhlZmU1ZmM5NDc4YzQyNzNhMTYxNDMwYmYxMTIwZDdjNjRiZWY4ZmZkZDlkOGE5ZDA1Y2EifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L48",
-          "version": "repo-lines-v1:sha256:c93b51fe3420897a86d6cb3eca5a7d4f49053fc75c8ed09999896464b32ee787:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L50",
+          "version": "repo-lines-v1:sha256:2638f9d3e109a6a0db69003e1d3d2c9d7be1a7d0d12ced4c86c83f491b67b928:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L200-L389",
@@ -314,29 +314,33 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:d89eeb7b3209aee9ad2b0ca32dcffb6514667d72160b46142416f9585c2c978a"
+          "version": "repo-file-v1:sha256:9d56e8194f9ffa922930a32d65d65bd44c6a6be38da8f1140b347b01cf402807"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:b47f3d8c7d59e4a3e8f93da36a3f96dac8754dac56608520fff8b85c91ae7cb8"
+          "version": "repo-file-v1:sha256:e05cd962de24bb830f05d08a9dafa0f35f532292bbaab6158ca02459a214451e"
         }
       ]
     },
     {
       "id": "claim_35cb8a5abd254928acb6408cf1b2eb8e",
-      "statement": "The protected OpenClaw Enterprise image workflow publishes stock controller, runtime, and CLI only from exact current main; on failure the publisher writes a fixed phase to the job summary while private registry logs remain encrypted, and no accepted image receipt is produced.",
+      "statement": "The protected OpenClaw Enterprise image workflow builds stock controller, runtime, and CLI plus the source-bound journal operator only from exact current main, runs non-root operator smoke checks before credentials, then signs and fully pulls all four images; on failure it writes a fixed phase to the job summary while private registry logs remain encrypted and no accepted image receipt is produced.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
-          "version": "repo-file-v1:sha256:db4f60f46e874db33303b9e3a6459fdd3042d944b17655576a3954709bffd5ed"
+          "version": "repo-file-v1:sha256:aee7852efe9ed4dffe8e46a58da4a5d459b77f0bad25c537d2352bb70b908647"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
+          "resource": "repo://builds/openclaw-enterprise/build-operator.sh#L1-L40",
+          "version": "repo-lines-v1:sha256:04aacb11d36253ab18136abf91480e7fca28c41495a707f27fb55aa8720a180b:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmZDIwYjhiOGNmOTk5OTg1ODY4MDg0OWU4Y2QyM2FmOWNiODVhMDU5YmYwYTI1MTIwYTVmYjI5M2Y1N2FkOTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L84-L100",
+          "version": "repo-lines-v1:sha256:ac427a321a23a78279440a848b49c49a910d3251e6ab3f543183ed8df4f351c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:a0439110676000e3879c936a2265b5d36680a200bd988a7635773b541a3b3b89"
+          "version": "repo-file-v1:sha256:203a68f5c7bfd76b2a9330cae0f5ba3f9f18e992e65d5c1e26e5446ad558df03"
         }
       ]
     },
@@ -361,6 +365,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-21T00:09:16.180Z"
+    "at": "2026-10-21T00:34:35.293Z"
   }
 }

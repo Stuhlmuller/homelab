@@ -22,8 +22,10 @@ digests, workflow run, stage, time and pass/fail only in the sanitized
 ambiguous receipt is a failed gate, not permission to retry a mutation blindly.
 The pinned `cmd/occ` Linux amd64 binary is built with Go 1.27.1 and a reviewed
 SHA-256, then packaged with the controller/runtime images through the protected
-Enterprise image workflow. Record the signed CLI image digest from that
-workflow's verified pull before replacing the null `source.cli.artifactDigest`.
+Enterprise image workflow. The same workflow builds, signs and fully pulls the
+repository-owned journal operator image from an exact clean `main` commit; its
+embedded source SHA must match the dispatcher declaration. Record the verified
+CLI and operator image digests before replacing their null declarations.
 
 The [operations workflow](../.github/workflows/openclaw-enterprise-operations.yml)
 has a fixed `bind-installation` lane. It rechecks current `main` after checkout,

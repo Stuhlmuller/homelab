@@ -84,11 +84,16 @@ back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
 The protected `openclaw-enterprise-images.yml` workflow builds the stock
 controller, runtime, and CLI from the checksum-verified Enterprise source
-revision in `builds/openclaw-enterprise/source.json`. It verifies revision
-labels before using Harbor credentials, then publishes, signs and completely
-pulls all three images in the private `homelab` project. Dispatch it only with
-the current `main` SHA; use its immutable digest receipts for the Enterprise
-chart and CLI. On failure, the job summary reports one fixed publisher phase;
+revision in `builds/openclaw-enterprise/source.json`. It also builds the
+repository-owned journal operator from the exact clean `main` checkout, with
+its source SHA embedded in the image. It verifies revision labels and the
+operator's non-root offline startup before using Harbor credentials, then
+publishes, signs and completely pulls all four images in the private `homelab`
+project. Dispatch it only with the current `main` SHA; use its immutable digest
+receipts for the Enterprise chart, CLI and later operator activation. The
+operator remains disabled until placement, journal PV, bootstrap file ownership
+and network-policy proofs pass. On failure, the job summary reports one fixed
+publisher phase;
 private transport and registry output remains encrypted, and no successful
 digest receipt is issued. A source revision change requires a new reviewed
 archive hash.

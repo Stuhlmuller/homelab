@@ -22,6 +22,10 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-cd4f78e3208dc4d64a31699a
+    resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-bb7ca8a5177e874fa05bda90
+    resource: repo://builds/openclaw-enterprise/operator.Dockerfile
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -78,6 +82,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-67b7023614bb46ffd2f06e85
     resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
+  - id: openwiki-source-0f5131d44d4433656e1f24db
+    resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -110,10 +116,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-21T00:34:35.293Z
 ---
 
 # Source Map
@@ -179,6 +185,7 @@ desired state.
 | `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding, phase-gated full-sync, and disabled-by-default operator dispatch](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound one-shot Job dispatcher and failure/restart fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
+| `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); signed Harbor digest and activation remain pending |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper and offline dependency-order fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |

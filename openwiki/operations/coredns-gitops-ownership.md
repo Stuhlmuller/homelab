@@ -21,7 +21,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T18:25:19.174Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-21T00:34:35.293Z
 ---
 
 # CoreDNS GitOps Ownership

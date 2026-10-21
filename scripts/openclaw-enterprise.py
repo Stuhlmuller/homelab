@@ -2320,6 +2320,14 @@ def _require_reviewed_mutation_config(path, expected_sha):
              "Enterprise mutation config differs from exact reviewed commit")
 
 
+def _require_operator_image_source(source_sha):
+    try:
+        actual = (ROOT / "operator-source.sha").read_text().strip()
+    except OSError:
+        raise Blocked("Enterprise operator image source is unavailable") from None
+    _require(actual == source_sha, "Enterprise operator image source changed")
+
+
 def _require_projected_operator_config(path, expected_sha, source_sha, config_sha):
     """Check the current-main config projected by the protected Job dispatcher.
 
@@ -2331,12 +2339,7 @@ def _require_projected_operator_config(path, expected_sha, source_sha, config_sh
              HEX64.fullmatch(config_sha), "Enterprise operator source identity is invalid")
     _require(Path(path) == Path("/etc/oce-operator-config/openclaw-enterprise.json"),
              "Enterprise operator config path changed")
-    try:
-        actual = subprocess.check_output(["git", "rev-parse", "HEAD"],
-                                         cwd=ROOT, text=True).strip()
-    except (OSError, subprocess.CalledProcessError):
-        raise Blocked("Enterprise operator source checkout is unavailable") from None
-    _require(actual == source_sha, "Enterprise operator image source changed")
+    _require_operator_image_source(source_sha)
     _require(hashlib.sha256(Path(path).read_bytes()).hexdigest() == config_sha,
              "Enterprise projected config digest changed")
     try:

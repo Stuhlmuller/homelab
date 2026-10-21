@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:28f017ed5c2a83f7d1042fd797492dfc13bd5537fb35e1f2be61759f6bdcc855",
+  "pageVersion": "sha256:89d79402737411c35fbb742ed50bb1dfdda3d3fef6bf4a71db1fafa99a78c7be",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:68b4162090096d3c222b84ad352b6dcd4f4f1c42b5b2ab077b2a29a341140ae4"
+          "version": "repo-file-v1:sha256:01d64f573f091ee065ad6edbbd5e2f7a47cf585859fdf535013c8efc84bc73b9"
         }
       ]
     },
@@ -422,7 +422,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d534ebbaa128c39782ccdf4d0daf6fee7c9ac2601028118b71bd25099ad7fe32"
+          "version": "repo-file-v1:sha256:55d0b1e60e74d00928b656576dcbba10cbcd280f39914daaeb7bbdcd16cc4eca"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d534ebbaa128c39782ccdf4d0daf6fee7c9ac2601028118b71bd25099ad7fe32"
+          "version": "repo-file-v1:sha256:55d0b1e60e74d00928b656576dcbba10cbcd280f39914daaeb7bbdcd16cc4eca"
         }
       ]
     },
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:71f2bd52b786fc64437f34148b8e51b49e349d542a2d84c3697911c6c25ffa11"
+          "version": "repo-file-v1:sha256:1308cae562b348a69ea81f095a42fd8efcda6c137a54507f3f5e1e13c441dfe6"
         }
       ]
     },
@@ -630,31 +630,31 @@
     },
     {
       "id": "claim_d1d962b833b04ae7a4921efec5f8d8dd",
-      "statement": "The source-only Enterprise reconciler journals one logical Namespace, Configuration and stopped Embedded Agent; its offline-tested active path guards a native-origin generation-2 update and second revision while preserving uncertain stop intent. A one-shot operator Job path is staged but no Job or Agent is live; activation is disabled, the distinct OpenRouter key is absent, and PV placement, paired image and bootstrap file proof remain pending.",
+      "statement": "The source-only Enterprise reconciler journals one logical Namespace, Configuration and stopped Embedded Agent; its offline-tested active path guards a native-origin generation-2 update and second revision while preserving uncertain stop intent. A one-shot operator Job path and clean-source operator image recipe are staged but no Job or Agent is live; activation is disabled, the distinct OpenRouter key is absent, and PV placement, signed operator digest and bootstrap file proof remain pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L48",
-          "version": "repo-lines-v1:sha256:c93b51fe3420897a86d6cb3eca5a7d4f49053fc75c8ed09999896464b32ee787:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml#L1-L115",
+          "version": "repo-lines-v1:sha256:aee7852efe9ed4dffe8e46a58da4a5d459b77f0bad25c537d2352bb70b908647:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNTBjYzc2Zjg2MGU4MGI0ZDRiYWVlY2MxODVmNGMzMGI0NjU1NTZjNjc0MjYwZjE2MDRmYWE0Mzk4NjhhOWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyZTdhMDFmYmYxMzdhZDUyOGJhOTI0OTUzYmJiNzRkOGNhMjMzZDhhZDQ3ZjI3ZmM2ZGY1ZjJkMTZjYzI2M2IyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md#L49-L140",
-          "version": "repo-lines-v1:sha256:52f9e2ee0dcf3279dfe2b9b78dd8f5b5dbcd3de9a0cb5b57265da9b8769f781a:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzNjU3N2QzMTkzNzU2YmZjOTQxMTYwOTVlMGY1NDE4NzYzMGY4YzA2OTkzY2RlMGVlMTQ4M2ZiYmNhYTIzZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYTE5Njc5MjhkNGIzNjAwNjE0MDg3ZTcwNTU3YWE4OTczNmY1NzYyOWZiOGRjZDdlYzYyNzNjZDgxNTkxZTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OTkwYTY1NjdkMDMyZjI5Y2Q4NjVhOGY5OWRlNjI0YTljODIzYmE5Y2YwN2I5MGY4ZDRmNmYwN2I2MmUwOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwNDA2YmI3MzkyZjMyZmUzYTA0MjMxMTZkNDExMTRiYmQ4MWExN2VkZDI4ZWZkZGU1YTRlNDRlNzdhOGMwNTUifQ"
+          "resource": "repo://builds/openclaw-enterprise/build-operator.sh#L1-L40",
+          "version": "repo-lines-v1:sha256:04aacb11d36253ab18136abf91480e7fca28c41495a707f27fb55aa8720a180b:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmZDIwYjhiOGNmOTk5OTg1ODY4MDg0OWU4Y2QyM2FmOWNiODVhMDU5YmYwYTI1MTIwYTVmYjI5M2Y1N2FkOTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L48",
+          "version": "repo-lines-v1:sha256:967a6eac2bb4b356a2a9f9e40df64e609446545ad621a71afcc909c2bcc7cd7c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiOWRkZWFlM2NjYWJjNGI0MjUzYjU3ZDU5ZjA4ZWM4ZDJjZWJlYTk2OTk4NjkyNGE4ZDVkNzRlZDBjNDdlMzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1ZGVhN2NjZDAxNjkwNGU3NzQ5MzU2ZTNiMzI0NGQzYzU1NDliZDA2MGMzNjMzMzljZTI1Y2Q4YmI3MzgyMDUifQ"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py#L49-L270",
           "version": "repo-lines-v1:sha256:80a0af7a33c97ece99cbd589ee0c5b39cc72643c9c80c28f0e29b2175d293db1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZWUyNzA2YTYwZjgxYzM0ZmMzYWRlMWUxM2IxMDMxM2JkMjIzODk1MTA5YzI0YzMyMmUwNDNhNmM0MDgwZGFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjFlYTVhZDlhNGZhNTEzNjYzMDAzNzJjMzVmZDA4ODM2YzU4MzhlNzk2ZGZmZTFkOGE1NGJjYzc0NGFlY2YyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NDJiMzVjMDE0YzQ2ZWQyNmZiYjMyZjAzYTQ0MjEzNjc1YzdkMDc0M2ZlNTQ5M2MwNDBlYWM4MjFiMTZjZGY2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmZGZhODdhYWJjYzk3YmJlMmIxZmE2OTc3ODI1ODM1MTJkOWMxN2YwMGFlODFiNTBhZmI4ZjRmMGVlZjg4Yzg0In0"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L64-L151",
-          "version": "repo-lines-v1:sha256:21e990322aeaa8ce461a55e2502ca083520279233ab5778f179b886eee54b92f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMGZlYzI0ZmQ4YzlhNTgzOGU1MzUwMWJkYzcyZjA3ZTQ2MWViNGMwYjgyOTM5YjJlNjhhYTBjNmY1MzNmOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NzA0ZTBjZDk3YzZhYWI1NjhlYzAxMjdiMzFhM2U4MTY4ZjhkYTRhZTYxZGI0NWY1ODk5MWRlMDg2NGRjZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkMjllNzBkYTc4ZTRlMTYzNDdiYzgzN2I2ZmU0NGEzYzA4MGUzZjMxMDUwNTQwOWM5YTIzYmVjNGIwMzY3MDIifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py#L1-L118",
+          "version": "repo-lines-v1:sha256:270e3ac9fae4e2838699c447dbf74e024229d22141ce2578871bc3cc1b5e6b85:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkNjgyY2JkYjRjOGIwNzUxOGJmNDg2YzU4OTkwZmMzOTE3ODNhYTIwYTkxNmJmYjI3YWQyMTFlYjFkNWMzNjQyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZTkzZDg5MzkwNmVlYWYyY2FkY2M2NTU4NTk3YmQ5MzMwZTJlYjY5ZGZiNjBhOWM4MTc1MjE4NTI3ZTcyNjgxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json#L38-L90",
           "version": "repo-lines-v1:sha256:e9536c7de674d0e22c7fc86c66082016601e6f500de46ec475d365176562aa01:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3ZDYwNmY5OTU0ZmNmYmQxYTliNGFlY2Y1MWY5ZGQwMTJiMjQyYzk4YjhmMTA4ZWZhZWJjNzJhMDEyNmE5ZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNlMjBlOGQ2ZTAyZTJhNjhlN2JlNmRjN2JiNDcxOTY5MmI4MDJiYjZiY2Q4YzViYjgyYjI2MTc5YzA1N2E3NjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5OGFjOWZlY2RlNzI5OTc5Y2QxMDNiYTBmZDhiZjRjZmJlMTJhOGY3ODBhYTlmNjU2YjM4YmRhNzJhODIwMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YTUxOTU1NTEzYzQyOTcyZjlkZmNlMTZiY2U1ZjExYTU0NWQ2NTMzYWQ2MDY5YmZhMWE4MTg3YWM5MTU5ZWQifQ"
-        },
-        {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1480-L1625",
-          "version": "repo-lines-v1:sha256:237fa6d319f2210be8769907108e2c04ad99eaf96622000d5c5ba649ea2e057f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjJkNGNhOTgyNTE5OGE5ZGVjNDdkNTAwY2ZhYWM5MjgyZmNlY2IyMWFkMjliNTUzOTQ4YjRlMTNlMWY4NDcwIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YjAwMmEwMmJiMjcxMjVlZjEyMmVjMGNiZWFkZjU1ZTljYjFhMmExNDNhNzFiOWRiOWUxYTQyNjI4N2I4NWQ0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMzMzYzZlNGE1OTBkMjMyNzUzOWZhMGM3NDEyNDg5ZmQ3ZGVkNzU4OGQxNzIxMzg2ZmRkYzYyMzVkYWVkNTUzIn0"
         }
       ]
     },
@@ -719,6 +719,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-21T00:09:16.180Z"
+    "at": "2026-10-21T00:34:35.293Z"
   }
 }

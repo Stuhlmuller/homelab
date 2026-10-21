@@ -8,10 +8,14 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-cd4f78e3208dc4d64a31699a
+    resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
   - id: openwiki-source-d9e93037542f56be8db8a431
@@ -172,8 +176,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
-  - id: openwiki-source-91161c3887f6aa107b3c0d6b
-    resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
+  - id: openwiki-source-0f5131d44d4433656e1f24db
+    resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -192,16 +196,14 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
-  - id: openwiki-source-2eea896f325c470e4979019b
-    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-21T00:34:35.293Z
 ---
 
 # Workload Inventory
@@ -445,12 +447,15 @@ declares a separate retained 1Gi local claim, scoped proof RBAC, and private
 network intent. It is not registered in active GitOps and has no static PV or
 admitted node. `reconcile`, `stop`, and `verification` have an exact-main
 one-shot Job dispatcher but the committed disabled operator gate stops before
-Job creation; `restore` and `acceptance` remain separately blocked.
+Job creation; `restore` and `acceptance` remain separately blocked. A
+clean-source [operator image recipe](../../builds/openclaw-enterprise/build-operator.sh)
+and offline fixture are staged; the protected four-image publisher has not yet
+produced an accepted signed operator digest.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
 Embedded Agent; no live Agent or operator Job exists. Its staged dispatcher
-still needs a bound journal PV, placed node, source-paired image, and private
-bootstrap file proof before activation.
+still needs a bound journal PV, placed node, signed source-paired operator
+image digest, and private bootstrap file proof before activation.
 Its active and stop paths have offline fixtures for model-key isolation,
 exact Agent grants, runtime credential/deployment readback, and idempotent
 stop. With a reviewed native origin, the source-only path guards the
