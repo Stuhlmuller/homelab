@@ -36,6 +36,8 @@ sources:
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-cd4f78e3208dc4d64a31699a
+    resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-d2d8ff2161af78b658d004f0
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -94,10 +96,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-21T00:34:35.293Z
 ---
 
 # CI/CD
@@ -164,10 +166,13 @@ five minutes; dispatch its `verify` operation from `main` for a deliberate
 journal check. Required pull-request checks retain their existing producers.
 
 The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
-builds and publishes the stock controller, runtime, and CLI from exact current
-`main`. A failed run reports only a fixed publication phase in its job summary;
-private transport and registry output remains encrypted. A failure produces no
-accepted image receipt. Retry from current `main` after resolving that phase.
+builds the stock controller, runtime, and CLI plus the source-bound journal
+operator from exact current `main`. The operator build and non-root smoke checks
+run before registry credentials; publication signs and completely pulls all
+four images. No signed operator digest has been accepted yet. A failed run
+reports only a fixed publication phase in its job summary; private transport
+and registry output remains encrypted. A failure produces no accepted image
+receipt. Retry from current `main` after resolving that phase.
 
 The separate [OpenClaw Enterprise model-credential workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
 accepts only an exact current-`main` dispatch into `homelab-production`. Its

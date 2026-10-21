@@ -164,10 +164,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-21T00:34:35.293Z
 ---
 
 # Harbor Private OCI Registry
@@ -885,9 +885,13 @@ The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
-The protected three-image controller/runtime/CLI publisher now reports one fixed
-failure phase, including preflight and cleanup, in the job summary. Its private
-transport output stays withheld, and a failed run supplies no acceptance receipt.
+The source-declared four-image publisher now builds the repository-owned journal
+operator from an exact clean `main` checkout before registry credentials, then
+signs and completely pulls the controller, runtime, CLI and operator images.
+The new operator image has no publication receipt yet. The protected workflow
+reports one fixed failure phase, including preflight and cleanup, in its job
+summary; private transport output stays withheld, and a failed run supplies no
+acceptance receipt.
 The [post-shutdown capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
 also leaves isolated canary placement blocked; a mirror receipt cannot clear
 that independent gate.

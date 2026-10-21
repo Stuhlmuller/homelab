@@ -48,6 +48,8 @@ sources:
     resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-cd4f78e3208dc4d64a31699a
+    resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -220,12 +222,12 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
-  - id: openwiki-source-fc079e0e542f990a412aa90f
-    resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-0f5131d44d4433656e1f24db
+    resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-6514a0140b512caa7259f135
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
@@ -334,10 +336,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-21T00:34:35.293Z
 ---
 
 # Validation Gates
@@ -1874,8 +1876,12 @@ The local `--expected-sha` guard is not an exact-remote-main check. The staged
 adds an exact-main one-shot Job dispatcher, retained journal PVC declaration,
 scoped proof RBAC and private-network intent. The static gate runs its
 [failure and restart fixtures](../../scripts/ci/openclaw-enterprise-journal-operator-test.py).
-No static PV, admitted node, paired operator image or proved bootstrap-key
-ownership exists, so `journalOperator.enabled: false` blocks live dispatch.
+The source-built operator image recipe and its offline fixture now check a
+clean exact-source build context, embedded SHA, non-root read-only startup, and
+fixed `kubectl`/`yq` tools before registry credentials. The protected Enterprise
+publisher is declared to sign and fully pull this fourth image. No signed
+operator digest, static PV, admitted node or proved bootstrap-key ownership
+exists, so `journalOperator.enabled: false` blocks live dispatch.
 The source-only active path is exercised by
 [`openclaw-enterprise-active-test.py`](../../scripts/ci/openclaw-enterprise-active-test.py)
 in static and offline checks. Its fixtures cover the model-key file boundary,
@@ -2350,7 +2356,7 @@ immediate stop on hard errors.
 
 Enterprise image publisher fixtures also check fixed preflight, authenticated
 pull, signing and cleanup failure-phase labels without exposing private output.
-These local checks do not replace a successful protected three-image receipt.
+These local checks do not replace a successful protected four-image receipt.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child
