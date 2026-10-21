@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e39b84c318d2643a27598d8de710bcf3ff4237c54b0534cce6205d5ee6933d2f",
+  "pageVersion": "sha256:bd047f653194dad893ea6d8b66e385889a300e728adf324e37ff83abf9da4f17",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -124,7 +124,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e92e7aec5ae5a2a8f193c2b0fc9454a65896ad6de46f990fd5d49532275ac312"
+          "version": "repo-file-v1:sha256:9fe06521075af1d34d28e57edf85cccc61ddad17aaa822b53947504e1f6dd4e5"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
@@ -176,23 +176,23 @@
     },
     {
       "id": "claim_142fce561c734aaca7703660665c09fd",
-      "statement": "Inactive Enterprise reconciliation needs a durable private journal for pending API intent and resource IDs. A separate retained PVC and serialized operator Job remain undeclared; the protected full-sync lane is wired but blocked by the unselected installation phase, while the remaining runtime stages fail before mutation without a durable shared journal.",
+      "statement": "Enterprise reconciliation still needs a durable private journal. The unregistered operator bundle now declares a retained 1Gi local journal PVC and StorageClass but no static PV or admitted placement; exact-main reconcile, stop, and verification Job dispatch is gated off, full-sync is blocked by the unselected installation phase, and restore and acceptance remain separately blocked.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:e9556b41f8b7d957b252b2a9d8df163eedb3a0ab67675d94873e8d748077b579"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L17",
+          "version": "repo-lines-v1:sha256:bd805e65dcd4448ec563a1c9ca53c813a0eee28e6a03e2e7f03ab781318463c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZmViM2U4NGY3MDU2YzYzNDA5NTllZjRjYzliMzQ3ZDA2N2VjZjI4ZGZlZWRkMWE3YjY4MGJiZjk5MTJiNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4NWEzZjFiMDk3MjA2Y2M4YzJlY2UxNmYxYzIwOTM0MjlhNzJmN2M1OWZiNDYyMjk1Y2QwNTExZmE4MWE0MjYifQ"
         },
         {
-          "resource": "repo://docs/openclaw-enterprise-rollout.md#L37-L44",
-          "version": "repo-lines-v1:sha256:ccbf5f777fe981c1bc102088fb6fa6bfde7fa5b79341d14575822f2586c3c2fb:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI3YTYzMTY0YjBjZjRiNmYyMTBkMDRmMTBjNDJmMDc0YWZmZjg4MzMxMDA5ZjhjNmM5ZDA4YTI5NDk2MjY2NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTQyOGYzMDY5ZGM1Y2JhMWZiZjU5NDEzYmIyNTYwZWJlMTE5MjY1ZGNjNTlmNTVjMmU4NWVjNzY2ODI4Y2Y3NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNlMjYxNjg2YzZlMGFjNzc0YjQ3MDJiMDA3YmE3ZTU3NDVkMGMwODM3MzY1NjIzMTgxOGUzZDgxYmMwNzU2ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTM0MzcxYzQ1YzNjOWViNDI4NzlmMjVlZDc0NjRkN2M1Mzk4MDI1YmRjNDYxYmVhMDMyZDllYzc5YjA1NjVhMyJ9"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
+          "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:5d12db0cce57e8c8fb18234f7db509580281495b3ae662bbae0452867752a64c"
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L23-L46",
+          "version": "repo-lines-v1:sha256:2bb2a90e863f614bdd8d2d0bdee1d2ec3fa93f44fe07c525755362e84fcf53f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzMGM2ZWEyMmNjYTBjNDJiZmM3MTMyYjA5YWQ5NTdkMGE1MmI0M2YxNjAyZWQ2MzY2OTcyMzFmMTZiMDFjMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:dbeede68eb84c8b8b0db415d6fa98a927d4f08a404152c57fad972700a1a6115"
+          "version": "repo-file-v1:sha256:319f5490d934727591975c4e57d0168d81d297028728cf6dc00cd82faa086a2f"
         }
       ]
     },
@@ -217,6 +217,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T22:37:00.141Z"
+    "at": "2026-10-21T00:09:16.180Z"
   }
 }

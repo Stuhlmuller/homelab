@@ -48,6 +48,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-0937bc5dca6b0bf79ccdb46a
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -92,6 +96,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
     resource: repo://scripts/ci/platform-maintenance-credentials-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -126,10 +132,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
+generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:37:00.141Z
+    at: 2026-10-21T00:09:16.180Z
 ---
 
 # Secrets And Identity
@@ -329,6 +335,15 @@ has no declared delivery for the owner-controlled 0600 bootstrap service-key fil
 No binding run or live readback has occurred; activation remains blocked.
 SSM-backed model, database, auth, and gateway credentials remain separate from
 these startup bytes.
+
+The staged [journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+has a dedicated ServiceAccount with automatic token mounting disabled. Its
+one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
+read-only RBAC can GET only the exact reviewed Installation Secret and selected
+workload proofs. Reconcile and stop require the chart's bootstrap service key
+as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
+is not registered in Argo CD, that file ownership is unproved, and the operator
+gate remains disabled; these permissions are source intent, not live access.
 
 ## Identity Notes
 

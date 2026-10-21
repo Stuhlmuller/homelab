@@ -36,6 +36,8 @@ sources:
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -44,8 +46,6 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
-  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
-    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -66,6 +66,8 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -92,10 +94,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
+generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:37:00.141Z
+    at: 2026-10-21T00:09:16.180Z
 ---
 
 # CI/CD
@@ -192,9 +194,17 @@ stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh).
 Its `full-sync` branch invokes the pinned
 [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), but the committed
 `unselected` installation phase blocks sync before Kubernetes access.
-`reconcile`, `stop`, `verification`, `restore` and `acceptance` still exit
-before mutation because the runner has no durable shared private journal and
-lock. No Enterprise operation has run or passed live acceptance.
+`reconcile`, `stop`, and `verification` now call the pinned
+[one-shot Job dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py)
+only after `journalOperator.enabled` is true. It rechecks current `main`,
+source and configuration identity, retained journal and bootstrap claim/PV
+identity, and prior Job state before a fresh Job per workflow attempt. The
+[operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+declares a local journal claim and scoped proof permissions but is absent from
+active GitOps; the disabled gate stops before Job creation. The hosted runner
+does not mount the private journal. `restore` and `acceptance` still exit before
+mutation pending separate recovery and owner-session proof. No Enterprise
+stage has passed live acceptance.
 
 For legacy `publish-archive`, the workflow now reports fixed public
 post-upload phases for archive metadata, receipt publication and both restore
