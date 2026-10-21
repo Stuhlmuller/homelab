@@ -238,7 +238,7 @@ jobs:
           trap 'rm -f "$private_log"' EXIT
           if ! {
             sha256sum --check --status <<<'9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c  scripts/ci/openclaw-enterprise-stage.sh' &&
-            sha256sum --check --status <<<'b3af9083b4b3e414ef3ada7219a21ba36b1fb86c64bb2e10a9765c524d22c063  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+            sha256sum --check --status <<<'6bdd356907a800d9ee5c0a4b9de040aca8b513931be7acbd9f8dfe397c5560b4  scripts/ci/openclaw-enterprise-journal-operator.py' &&
             sha256sum --check --status <<<'e1345d5fae7bd6f7261cb439fbc8cdab3d9eb0854aa44a2fff000b32ed4ad111  scripts/ci/openclaw-enterprise-full-sync.sh' &&
             timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
           } >"$private_log" 2>&1; then

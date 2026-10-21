@@ -268,7 +268,7 @@ def build_job(stage, expected, run_id, operator, projection, attempt="1"):
                                  "name": "oce-journal-operator-kubeconfig", "defaultMode": 292}},
                              {"name": "config", "configMap": {
                                  "name": projection["metadata"]["name"], "defaultMode": 292}},
-                             {"name": "api", "projected": {"sources": [
+                             {"name": "api", "projected": {"defaultMode": 420, "sources": [
                                  {"serviceAccountToken": {"path": "token",
                                                           "expirationSeconds": 3600}},
                                  {"configMap": {"name": "kube-root-ca.crt", "items": [

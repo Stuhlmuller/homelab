@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -204,11 +204,16 @@ class JournalOperator(unittest.TestCase):
         job = runner.build_job("verification", SHA, "12345", config["journalOperator"],
                                projection(config))
         complete = complete_job(job)
+        self.assertEqual(complete["spec"]["template"]["spec"]["volumes"][4]
+                         ["projected"]["defaultMode"], 420)
         with mock.patch.object(runner, "kubectl_json", side_effect=[
                 {"items": [complete]}, complete]) as read, mock.patch.object(runner, "command") as write:
             runner.dispatch(job)
             self.assertEqual(read.call_count, 2)
             write.assert_not_called()
+        changed = complete_job(job)
+        changed["spec"]["template"]["spec"]["volumes"][4]["projected"]["defaultMode"] = 511
+        self.assertFalse(runner.job_identity(changed, job))
         changed = complete_job(job)
         changed["spec"]["template"]["spec"]["containers"][0]["command"] = ["true"]
         with mock.patch.object(runner, "kubectl_json", return_value={"items": [changed]}):
@@ -310,8 +315,10 @@ class JournalOperator(unittest.TestCase):
         self.assertIn("journal.yaml", (operator / "kustomization.yaml").read_text())
         self.assertIn("reclaimPolicy: Retain", (operator / "journal.yaml").read_text())
         self.assertIn("Prune=false", (operator / "journal.yaml").read_text())
-        self.assertIn("occ-installation-startup-980de11bbc688a33741a19c9093f613",
-                      (operator / "rbac.yaml").read_text())
+        secret_name = next(line.split(":", 1)[1].strip() for line in
+                           (ROOT / "clusters/homelab/apps/openclaw-enterprise/values.yaml")
+                           .read_text().splitlines() if line.startswith("  secretName:"))
+        self.assertIn(f"resourceNames: [{secret_name}]", (operator / "rbac.yaml").read_text())
         self.assertNotIn("openclaw-enterprise-operator",
                          (ROOT / "clusters/homelab/apps/openclaw-enterprise/kustomization.yaml")
                          .read_text())

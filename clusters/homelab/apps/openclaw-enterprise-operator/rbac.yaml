@@ -14,7 +14,7 @@ rules:
   # This GET exposes the Secret body. Keep the reviewed Installation digest exact.
   - apiGroups: [""]
     resources: [secrets]
-    resourceNames: [occ-installation-startup-980de11bbc688a33741a19c9093f613]
+    resourceNames: [occ-installation-startup-980de11bbc688a33741a19c9093f613e]
     verbs: [get]
   - apiGroups: [apps]
     resources: [deployments]
