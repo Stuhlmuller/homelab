@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a31c5d629e5fddf11631accd52a18035dd2f009b4041ca5f2ea80ad8d99aba39",
+  "pageVersion": "sha256:2ea0f2aa98543167386d49e5cdef6d752dbce39cfe2e9b835e06a51e40ebf267",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
+          "version": "repo-file-v1:sha256:f72a7cc4abffe677a2395d88775f7c04ea58cbc19cef0b27ab203f9bd6323bca"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -756,7 +756,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e92e7aec5ae5a2a8f193c2b0fc9454a65896ad6de46f990fd5d49532275ac312"
+          "version": "repo-file-v1:sha256:9fe06521075af1d34d28e57edf85cccc61ddad17aaa822b53947504e1f6dd4e5"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
@@ -873,6 +873,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T22:27:13.661Z"
+    "at": "2026-10-21T00:09:16.180Z"
   }
 }

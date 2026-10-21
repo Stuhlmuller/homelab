@@ -68,6 +68,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
@@ -218,8 +220,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
-  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-fc079e0e542f990a412aa90f
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-6514a0140b512caa7259f135
@@ -330,10 +334,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
+generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:37:00.141Z
+    at: 2026-10-21T00:09:16.180Z
 ---
 
 # Validation Gates
@@ -1865,9 +1869,13 @@ namespace and policies before retrying. Rollback needs a reviewed cleanup path
 for the logical Namespace; retain the physical tenant Namespace. These local
 tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
 network-policy enforcement, hooks, routes, Namespace adoption or restore.
-The local `--expected-sha` guard is not an exact-remote-main check. A protected
-live stage also requires a retained operator journal PVC, pinned Job image and
-private credential path; none is declared yet.
+The local `--expected-sha` guard is not an exact-remote-main check. The staged
+[journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+adds an exact-main one-shot Job dispatcher, retained journal PVC declaration,
+scoped proof RBAC and private-network intent. The static gate runs its
+[failure and restart fixtures](../../scripts/ci/openclaw-enterprise-journal-operator-test.py).
+No static PV, admitted node, paired operator image or proved bootstrap-key
+ownership exists, so `journalOperator.enabled: false` blocks live dispatch.
 The source-only active path is exercised by
 [`openclaw-enterprise-active-test.py`](../../scripts/ci/openclaw-enterprise-active-test.py)
 in static and offline checks. Its fixtures cover the model-key file boundary,
@@ -1882,7 +1890,8 @@ reposting. Read-only verification checks both revisions and the selected
 deployment. The committed
 `activationEnabled: false` and absent dedicated OpenRouter key block the active
 path. These are offline state-machine checks, not live activation or recovery
-acceptance; durable operator storage and protected execution remain pending.
+acceptance; the staged operator storage and protected execution remain
+unadmitted.
 The static-gate [recovery fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
 checks unknown stop intent, interrupted runtime reads and retention of the
 separate legacy archive after a new-Agent stop failure. This is source-only
@@ -1910,8 +1919,13 @@ live binding exists. The six runtime selections invoke the
 branch calls the pinned [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh),
 which checks source, approved installation phase, and Application state before
 sync; the committed `unselected` phase blocks it before cluster access.
-`reconcile`, `stop`, `verification`, `restore`, and `acceptance` still exit
-before mutation because no durable shared private journal and lock are mounted.
+`reconcile`, `stop`, and `verification` now enter the pinned dispatcher only if
+its reviewed gate is enabled; the committed disabled gate stops before a Job
+write. The dispatcher checks current `main`, source parity, retained claim and
+PV identity, and prior Job state before creating a fresh one-shot Job per
+workflow attempt. It keeps the journal and lock inside the future in-cluster
+Job, never on the hosted runner. `restore` and `acceptance` still exit before
+mutation pending separate recovery and human-session contracts.
 Offline dependency-order fixtures and policy checks do not prove a live sync,
 reconciliation, rollback, or runtime acceptance.
 The static gate also runs

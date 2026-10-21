@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3d1745186b764ee127da4877a512b266a7c7e2a39fd54480fd11fbe451e174ce",
+  "pageVersion": "sha256:c5f21d4c8375ac82353a5e81523ad4eb7a4cd2532dec9b0083c783aabf987e05",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -29,7 +29,7 @@
           "version": "repo-lines-v1:sha256:ffbd629e8db260be7ab274828548d5d06fb4c41d93329f738f3767e4c4685e0e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGRhOWNmYjQyMDVjMTEwN2M0MGQ0ZWJjNDlkNmYxM2VkZjNkMTQ2YmQ4OTM1YzcxMWNjODc3NDYyMjczZDMzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWQwZWRmZTdlZmNhZDE5NDUyZjI1NDEzYjViNmIyZmE3ZjA2NWZjOTBjMzNiYjMxNDJlYjcxNTQ5ZjM1NDI4NiJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L42-L52",
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L51-L61",
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
@@ -48,13 +48,13 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1ba5f95dadf79ef7714464ca1e82f14e6ec873bc45d3571a60559c38605c1f20"
+          "version": "repo-file-v1:sha256:71f2bd52b786fc64437f34148b8e51b49e349d542a2d84c3697911c6c25ffa11"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T22:37:00.141Z"
+    "at": "2026-10-21T00:09:16.180Z"
   }
 }

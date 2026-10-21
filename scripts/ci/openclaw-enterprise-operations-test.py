@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 UPLOAD = ROOT / 'scripts/ci/openclaw-enterprise-upload.py'
 ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
+JOURNAL_OPERATOR = ROOT / 'scripts/ci/openclaw-enterprise-journal-operator.py'
 BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
 BINDER_SHA256 = 'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
@@ -199,6 +200,8 @@ sys.stdout.buffer.write(chunk)
         script = ENTERPRISE_SCRIPT.read_text()
         digest = hashlib.sha256(ENTERPRISE_SCRIPT.read_bytes()).hexdigest()
         self.assertIn(f"{digest}  scripts/ci/openclaw-enterprise-stage.sh", workflow)
+        operator_digest = hashlib.sha256(JOURNAL_OPERATOR.read_bytes()).hexdigest()
+        self.assertIn(f"{operator_digest}  scripts/ci/openclaw-enterprise-journal-operator.py", workflow)
         sync_digest = hashlib.sha256((ROOT / 'scripts/ci/openclaw-enterprise-full-sync.sh').read_bytes()).hexdigest()
         self.assertIn(f"{sync_digest}  scripts/ci/openclaw-enterprise-full-sync.sh", workflow)
         self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop, verification, '
@@ -212,9 +215,12 @@ sys.stdout.buffer.write(chunk)
                       "inputs.enterprise_stage != 'bind-installation'",
                       workflow)
         self.assertIn('private diagnostics withheld', workflow)
+        enterprise_checkout = workflow.split('\n  enterprise:\n', 1)[1].split('\n  binding:\n', 1)[0]
+        self.assertIn('fetch-depth: 0', enterprise_checkout)
+        self.assertIn('journalOperator.enabled == true', script)
+        self.assertIn('openclaw-enterprise-journal-operator.py "$stage"', script)
         self.assertIn('durable private journal runner is not declared', script)
         self.assertIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', script)
-        self.assertNotIn('openclaw-enterprise.py', script)
 
         stage_run = textwrap.dedent(workflow.split('\n  enterprise:\n', 1)[1]
                                     .split('\n  binding:\n', 1)[0]
@@ -300,7 +306,10 @@ sys.stdout.buffer.write(chunk)
                 result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,
                                         env=run_env, capture_output=True, text=True, timeout=5)
                 self.assertEqual(result.returncode, 1, result.stderr)
-                self.assertIn('durable private journal runner is not declared', result.stderr)
+                reason = ('operator remains disabled pending placement and credential proofs'
+                          if stage in ('reconcile', 'stop', 'verification') else
+                          'durable private journal runner is not declared')
+                self.assertIn(reason, result.stderr)
         for stage in ('', 'inventory', 'unknown', '../restore'):
             with self.subTest(stage=stage):
                 result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,

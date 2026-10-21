@@ -601,8 +601,8 @@ class EnterpriseReconciliation(unittest.TestCase):
             self.assertEqual(OCE.check(self.config, api, kube)["installationId"], "ins_one")
             with self.assertRaisesRegex(OCE.Blocked, "journal is missing"):
                 OCE.verify(self.config, api, kube)
-        self.assertEqual(api.calls, [("GET", "/installation")] * 2)
-        self.assertEqual(kube.calls, [digest] * 4)
+        self.assertEqual(api.calls, [("GET", "/installation")])
+        self.assertEqual(kube.calls, [digest] * 2)
         self.assertFalse((self.private / "journal.json").exists())
 
         unbound = copy.deepcopy(snapshot)

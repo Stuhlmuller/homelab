@@ -28,6 +28,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 ROOT = Path(__file__).resolve().parents[1]
 CONSOLE_ORIGIN = "https://console.oce.stinkyboi.com"
 KUBE_SERVER = "https://kubernetes-api-ci.stinkyboi.com"
+IN_CLUSTER_KUBE_SERVER = "https://10.1.0.199:6443"
 INSTALLATION_APP = ROOT / "clusters/homelab/apps/openclaw-enterprise"
 APPROVED_MODEL = {
     "provider": "openai",
@@ -233,6 +234,27 @@ class Kubernetes:
     """Read exact installed controller objects without printing Secret data."""
 
     @staticmethod
+    def _trusted_context(context):
+        clusters = context.get("clusters") if isinstance(context, dict) else None
+        _require(isinstance(clusters, list) and len(clusters) == 1 and
+                 isinstance(clusters[0], dict) and
+                 isinstance(clusters[0].get("cluster"), dict),
+                 "Kubernetes proof context changed")
+        cluster = clusters[0]["cluster"]
+        server = cluster.get("server")
+        _require(server in (KUBE_SERVER, IN_CLUSTER_KUBE_SERVER) and
+                 not cluster.get("insecure-skip-tls-verify"),
+                 "Kubernetes proof context changed")
+        if server == IN_CLUSTER_KUBE_SERVER:
+            users = context.get("users")
+            _require(cluster.get("certificate-authority") ==
+                     "/var/run/oce-operator-api/ca.crt" and
+                     isinstance(users, list) and len(users) == 1 and
+                     users[0].get("user") == {
+                         "tokenFile": "/var/run/oce-operator-api/token"},
+                     "Kubernetes in-cluster proof credentials changed")
+
+    @staticmethod
     def _json(*args):
         try:
             result = subprocess.run(["kubectl", "--request-timeout=15s", *args],
@@ -248,12 +270,7 @@ class Kubernetes:
 
     def snapshot(self, digest):
         context = self._json("config", "view", "--minify", "-o=json")
-        _require(isinstance(context, dict) and isinstance(context.get("clusters"), list) and
-                 len(context["clusters"]) == 1 and
-                 isinstance(context["clusters"][0], dict) and
-                 isinstance(context["clusters"][0].get("cluster"), dict) and
-                 context["clusters"][0].get("cluster", {}).get("server") == KUBE_SERVER,
-                 "Kubernetes proof context changed")
+        self._trusted_context(context)
         namespace = "openclaw-system"
         labels = "app.kubernetes.io/name=openclaw-enterprise,app.kubernetes.io/instance=oce"
         secret_name = "occ-installation-startup-" + digest[:32]
@@ -274,12 +291,7 @@ class Kubernetes:
     def tenant_prepared(self, namespace_id=None, require_claimed=False):
         """Read upstream adoption prerequisites before any Namespace POST/recovery."""
         context = self._json("config", "view", "--minify", "-o=json")
-        _require(isinstance(context, dict) and isinstance(context.get("clusters"), list) and
-                 len(context["clusters"]) == 1 and
-                 isinstance(context["clusters"][0], dict) and
-                 isinstance(context["clusters"][0].get("cluster"), dict) and
-                 context["clusters"][0].get("cluster", {}).get("server") == KUBE_SERVER,
-                 "Kubernetes proof context changed")
+        self._trusted_context(context)
         namespace = self._json("get", "namespace", "openclaw-agents", "-o=json")
         _require(isinstance(namespace, dict), "prepared tenant Namespace is invalid")
         metadata = namespace.get("metadata", {})
@@ -482,6 +494,14 @@ def reconcile(config, api, kube, expected_sha, model_credential=None):
 
 
 def verify(config, api, kube):
+    # The same durable lock serializes readback with an interrupted mutation Job.
+    with ProtectedJournal(config["privateJournal"]["mountPath"],
+                          config["source"]["revision"], _identity_hash(config),
+                          create_lock=False):
+        return _verify_locked(config, api, kube)
+
+
+def _verify_locked(config, api, kube):
     # Verification is a read, never an inference probe or implicit deployment.
     _validate_config(config)
     if config["activationEnabled"]:
@@ -2086,10 +2106,11 @@ def exact_model_grant(roles, bindings, namespace_id, principal_id, secret_id):
 class ProtectedJournal:
     """Serialized, source-bound, credential-free state on a private durable mount."""
 
-    def __init__(self, path, source_sha, config_sha):
+    def __init__(self, path, source_sha, config_sha, *, create_lock=True):
         self.path = Path(path)
         self.source_sha = source_sha
         self.config_sha = config_sha
+        self.create_lock = create_lock
         self.lock_fd = None
         self.state = {}
 
@@ -2104,7 +2125,13 @@ class ProtectedJournal:
             raise Blocked("Journal parent owner or mode is unsafe")
         lock_path = self.path.with_name(self.path.name + ".lock")
         self._check_file(lock_path)
-        self.lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        if not self.create_lock:
+            _require(self.path.is_file(), "Enterprise journal is missing")
+            _require(lock_path.is_file(), "Journal lock is missing")
+        flags = os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+        if self.create_lock:
+            flags |= os.O_CREAT
+        self.lock_fd = os.open(lock_path, flags, 0o600)
         try:
             fcntl.flock(self.lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             self._check_file(self.path)
@@ -2293,24 +2320,69 @@ def _require_reviewed_mutation_config(path, expected_sha):
              "Enterprise mutation config differs from exact reviewed commit")
 
 
+def _require_projected_operator_config(path, expected_sha, source_sha, config_sha):
+    """Check the current-main config projected by the protected Job dispatcher.
+
+    The immutable ConfigMap is created from the exact main checkout. The image
+    contains an earlier reviewed source commit, so its Git history cannot
+    contain the later commit that pins the image digest.
+    """
+    _require(SHA.fullmatch(expected_sha) and SHA.fullmatch(source_sha) and
+             HEX64.fullmatch(config_sha), "Enterprise operator source identity is invalid")
+    _require(Path(path) == Path("/etc/oce-operator-config/openclaw-enterprise.json"),
+             "Enterprise operator config path changed")
+    try:
+        actual = subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                         cwd=ROOT, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        raise Blocked("Enterprise operator source checkout is unavailable") from None
+    _require(actual == source_sha, "Enterprise operator image source changed")
+    _require(hashlib.sha256(Path(path).read_bytes()).hexdigest() == config_sha,
+             "Enterprise projected config digest changed")
+    try:
+        receipt = json.loads(Path(path).with_name("receipt.json").read_text())
+    except (OSError, ValueError):
+        raise Blocked("Enterprise projected source receipt is unavailable") from None
+    _require(receipt == {"expectedSha": expected_sha, "imageSourceSha": source_sha,
+                         "configSha256": config_sha},
+             "Enterprise projected source receipt changed")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("check", "reconcile", "verify", "stop"))
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--expected-sha")
+    parser.add_argument("--operator-source-sha")
+    parser.add_argument("--reviewed-config-sha256")
     parser.add_argument("--credential-file", type=Path)
     parser.add_argument("--model-credential-file", type=Path)
     args = parser.parse_args(argv)
     try:
         config = json.loads(args.config.read_text())
         _validate_config(config)
+        operator_mode = (args.operator_source_sha is not None or
+                         args.reviewed_config_sha256 is not None)
+        if operator_mode:
+            _require(args.expected_sha is not None and
+                     args.operator_source_sha is not None and
+                     args.reviewed_config_sha256 is not None,
+                     "Enterprise operator source receipt is incomplete")
+            _require_projected_operator_config(args.config, args.expected_sha,
+                                               args.operator_source_sha,
+                                               args.reviewed_config_sha256)
+            _require(config.get("journalOperator", {}).get("imageSourceSha") ==
+                     args.operator_source_sha,
+                     "Enterprise operator source declaration changed")
         if args.command in ("reconcile", "stop"):
             if args.expected_sha is None or args.credential_file is None:
                 raise Blocked("mutation requires expected SHA and mounted credential file")
-            actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-            if actual != args.expected_sha:
-                raise Blocked("Enterprise mutation source SHA is not exact")
-            _require_reviewed_mutation_config(args.config, actual)
+            if not operator_mode:
+                actual = subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+                if actual != args.expected_sha:
+                    raise Blocked("Enterprise mutation source SHA is not exact")
+                _require_reviewed_mutation_config(args.config, actual)
             key_path = args.credential_file
         else:
             key_path = Path(config["bootstrap"]["serviceKeyFile"])

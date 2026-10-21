@@ -76,6 +76,14 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-4b551d11e16fb851a8676ce2
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml
+  - id: openwiki-source-95b2d1c1392bd0daaa43df0e
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/networkpolicy.yaml
+  - id: openwiki-source-0937bc5dca6b0bf79ccdb46a
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
@@ -162,8 +170,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
-  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-fc079e0e542f990a412aa90f
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -190,10 +198,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-20T22:27:13.661Z" }
+generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:37:00.141Z
+    at: 2026-10-21T00:09:16.180Z
 ---
 
 # Workload Inventory
@@ -432,12 +440,17 @@ database/storage gates prevent activation. The
 offers fixed `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
 `acceptance` stages. Its pinned stage helper calls the full-sync helper, but the
 committed `unselected` installation phase blocks sync before Kubernetes access.
-The remaining runtime stages still exit before mutation until a durable shared
-private journal and lock are declared.
+The staged [journal operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+declares a separate retained 1Gi local claim, scoped proof RBAC, and private
+network intent. It is not registered in active GitOps and has no static PV or
+admitted node. `reconcile`, `stop`, and `verification` have an exact-main
+one-shot Job dispatcher but the committed disabled operator gate stops before
+Job creation; `restore` and `acceptance` remain separately blocked.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
-Embedded Agent; no live Agent or durable operator Job exists. A protected
-stage still needs a retained journal PVC, pinned Job and exact-main guard.
+Embedded Agent; no live Agent or operator Job exists. Its staged dispatcher
+still needs a bound journal PV, placed node, source-paired image, and private
+bootstrap file proof before activation.
 Its active and stop paths have offline fixtures for model-key isolation,
 exact Agent grants, runtime credential/deployment readback, and idempotent
 stop. With a reviewed native origin, the source-only path guards the

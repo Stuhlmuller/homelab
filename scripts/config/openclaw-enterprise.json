@@ -74,6 +74,21 @@
     "mode": "0600",
     "lockRequired": true
   },
+  "journalOperator": {
+    "enabled": false,
+    "namespace": "openclaw-system",
+    "serviceAccount": "oce-journal-operator",
+    "journalClaim": "occ-operator-journal",
+    "journalClaimUid": null,
+    "journalVolumeUid": null,
+    "journalPath": null,
+    "bootstrapClaim": "occ-bootstrap-admin-password",
+    "bootstrapClaimUid": null,
+    "node": null,
+    "runAsUser": 10001,
+    "image": null,
+    "imageSourceSha": null
+  },
   "privateArchives": {
     "legacy": {
       "mountPath": "/private/openclaw-enterprise/legacy-archive",
