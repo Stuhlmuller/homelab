@@ -170,10 +170,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-23T19:42:13.337Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-23T19:50:28.371Z
 ---
 
 # Harbor Private OCI Registry
@@ -480,7 +480,12 @@ only this image, not the full-catalog Talos gate or the other Prometheus stack
 images. Destination-copy failures with private Skopeo `writing blob` or
 `writing manifest` diagnostics now emit fixed `blob-upload-failed` or
 `manifest-upload-failed` categories; unknown failures remain `command-failed`
-and do not trigger another copy client or an automatic write retry.
+and do not trigger another copy client or an automatic write retry. A staged
+local-source Skopeo upload retries a classified bare transport drop at most
+twice against the same digest tag after restarting the private Harbor forward.
+HTTP, auth, missing-content, storage, and digest errors do not retry; the exact
+destination digest and fresh complete authenticated pull still gate a receipt.
+Direct-upstream index copies and alias writes remain fail-closed.
 
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):

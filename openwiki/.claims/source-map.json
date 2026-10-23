@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:99f059066e6e132939d15bdcbcb3da83c6ad9358c23cf143069a08a9553e4200",
+  "pageVersion": "sha256:374c3ffa889955cc9c78e439bf888d27cd9a08de5699b51adb4211d7e32ef28a",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
+          "version": "repo-file-v1:sha256:afebea695864356b0eb63ecc6455d1c7d4b8b5311ab9598342e06be425571d9c"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -371,6 +371,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T18:25:34.713Z"
+    "at": "2026-10-23T19:42:13.337Z"
   }
 }
