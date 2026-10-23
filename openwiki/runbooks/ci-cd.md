@@ -68,6 +68,10 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
@@ -96,10 +100,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T06:31:00.176Z" }
+generated: { by: "codex", at: "2026-10-23T07:28:36.279Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T06:39:57.483Z
+    at: 2026-10-23T07:28:36.279Z
 ---
 
 # CI/CD
@@ -197,7 +201,9 @@ The binding lane pins the reviewed binder and requires an owner-controlled 0600
 bootstrap service-key file; no hosted-runner delivery is declared. The other
 stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh).
 Its `full-sync` branch invokes the pinned
-[helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), but the committed
+[helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), which rechecks current
+`main` after the final Argo sync and health readback; a forced-race fixture
+requires a blocked result when `main` advances during sync. The committed
 `unselected` installation phase blocks sync before Kubernetes access.
 `reconcile`, `stop`, and `verification` now call the pinned
 [one-shot Job dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py)
