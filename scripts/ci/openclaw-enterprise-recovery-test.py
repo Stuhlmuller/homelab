@@ -124,6 +124,63 @@ class RecoveryBoundaries(unittest.TestCase):
         self.assertEqual(self.stop()["revisionId"], revision)
         self.assertNotIn("pending", self.journal())
 
+    def test_native_stop_precedes_both_runtime_termination_proofs(self):
+        self.active()
+        events = []
+        original_post = self.api.post_accepted
+        original_get = self.api.get
+        original_absent = self.kube.tenant_pods_absent
+
+        def post(path, body=None):
+            if path.endswith("/stop"):
+                events.append("native-stop")
+            return original_post(path, body)
+
+        def get(path):
+            if path.endswith("/runtime"):
+                events.append("runtime-empty")
+            return original_get(path)
+
+        def tenant_pods_absent():
+            events.append("tenant-pods-empty")
+            return original_absent()
+
+        with patch.object(self.api, "post_accepted", side_effect=post), \
+             patch.object(self.api, "get", side_effect=get), \
+             patch.object(self.kube, "tenant_pods_absent", side_effect=tenant_pods_absent):
+            self.assertEqual(self.stop()["desiredRuntimeState"], "stopped")
+        self.assertEqual(events, ["native-stop", "runtime-empty", "tenant-pods-empty"])
+        self.assertNotIn("pending", self.journal())
+
+    def test_orphan_tenant_pod_keeps_stop_pending_without_reposting(self):
+        self.active()
+        self.kube.tenant_pods = [{"name": "orphan-agent", "phase": "Unknown"}]
+        before = copy.deepcopy(self.api.revisions)
+        with self.assertRaisesRegex(OCE.Blocked, "tenant still has Pods"):
+            self.stop()
+        self.assertEqual(self.journal()["pending"], {"operation": "stop"})
+        self.assertEqual(self.api.revisions, before)
+        self.assertEqual(self.api.agents["agt_one"]["desiredRuntimeState"], "stopped")
+        self.assertEqual(len([call for call in self.api.calls if call[1].endswith("/stop")]), 1)
+        with self.assertRaisesRegex(OCE.Blocked, "tenant still has Pods"):
+            self.stop()
+        self.assertEqual(len([call for call in self.api.calls if call[1].endswith("/stop")]), 1)
+        self.kube.tenant_pods = []
+        self.assertEqual(self.stop()["desiredRuntimeState"], "stopped")
+        self.assertNotIn("pending", self.journal())
+
+    def test_restore_stage_remains_blocked_before_recovery_orchestration(self):
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                                       text=True).strip()
+        result = subprocess.run(
+            ["bash", str(ROOT / "scripts/ci/openclaw-enterprise-stage.sh"), "restore"],
+            cwd=ROOT, env={**os.environ, "GITHUB_ACTIONS": "true",
+                           "GITHUB_SHA": head, "EXPECTED_SHA": head},
+            capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("restore blocked: durable private journal runner is not declared",
+                      result.stderr)
+
     def test_legacy_archive_remains_recoverable_after_new_stop_failure(self):
         fixture = LEGACY.Retirement(
             "test_full_local_and_nas_archive_restores_checkpoint_and_databases")
