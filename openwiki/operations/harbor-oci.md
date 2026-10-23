@@ -164,10 +164,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
+generated: { by: "codex", at: "2026-10-23T04:59:34.413Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-23T04:59:34.413Z
 ---
 
 # Harbor Private OCI Registry
@@ -848,14 +848,17 @@ Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
 `regctl` for the fresh complete authenticated pull. Other copy errors stop
 publication, and every selected artifact still needs digest and alias checks.
 Before copying an alias, the publisher retries a transient Harbor alias lookup
-up to three times. An expected missing-alias response proceeds to copy; an
+up to three times, including HTTP 5xx responses. An expected missing-alias
+response proceeds to copy; an
 authentication error or other hard lookup failure stops publication. A retry
 does not replace the final digest, alias, and authenticated pull checks.
 For an OCI index, the final authenticated Harbor pull retries classified
-transport failures up to five times with one temporary OCI directory and 2,
+transport and Harbor HTTP 5xx failures up to five times with one temporary OCI
+directory and 2,
 4, 8, then 16 seconds of backoff. `regctl --force-recursive` rechecks nested
 manifests and blobs while retaining completed content across attempts.
-Authentication, content, and other hard errors stop immediately; the pulled
+HTTP 4xx, authentication, content, and digest errors stop immediately; exhausted
+HTTP 5xx reads retain the public `server-error` category. The pulled
 index must still match the original digest. Full-catalog acceptance remains
 pending a protected receipt.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks

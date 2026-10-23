@@ -139,14 +139,16 @@ digest-tag hashes stop publication. Source-tag aliases are copied
 from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
-Authenticated OCI-index pulls retry classified transport failures up to five
-times, with 2/4/8/16-second delays. Before each transport retry, the
+Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
+read failures up to five times, with 2/4/8/16-second delays. Other authenticated
+reads have at most three attempts. Before each retry, the
 publisher replaces its Kubernetes port-forward and requires a fresh TLS/401
 registry challenge. Failed forward readiness is retried at most twice, stopping
 the failed process between attempts. It retains completed content in one
 temporary OCI directory and forces a recursive check of nested manifests and
 blobs on each attempt.
-Auth, missing-content, and digest failures still stop immediately; the complete
+HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
+exhausted HTTP 5xx reads keep the public `server-error` category. The complete
 pull and root digest checks remain mandatory.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
 digest, the mirror uses `regctl` for that exact copy error. It also retries an

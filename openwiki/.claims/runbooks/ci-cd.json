@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:87f91ee65a52ce5582c916475c8ad33b529972d376bc155f7388762040331fd9",
+  "pageVersion": "sha256:921f91f0376ac30be1b60da3280386b2fdf424ea2e0d3398ae87ece42414ba57",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1308cae562b348a69ea81f095a42fd8efcda6c137a54507f3f5e1e13c441dfe6"
+          "version": "repo-file-v1:sha256:cabec329d7d29d98973cce68fd1b763dbd93c6e6a7f237ff63ae62664e797bac"
         }
       ]
     },
@@ -314,11 +314,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:9d56e8194f9ffa922930a32d65d65bd44c6a6be38da8f1140b347b01cf402807"
+          "version": "repo-file-v1:sha256:4e51a2c0a3ad78435ff5045a771f896a897e16d8860df5342826b30593966ac2"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:e05cd962de24bb830f05d08a9dafa0f35f532292bbaab6158ca02459a214451e"
+          "version": "repo-file-v1:sha256:25263638d7445b6d173656a7734b46783e5b5684b0df4ff5c5c3e33187193068"
         }
       ]
     },
@@ -340,7 +340,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:203a68f5c7bfd76b2a9330cae0f5ba3f9f18e992e65d5c1e26e5446ad558df03"
+          "version": "repo-file-v1:sha256:b9118eec66de8aa22c7b033850b0697c1fe6ae97c39e0314ff820f44aa27a9b1"
         }
       ]
     },
@@ -365,6 +365,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-21T00:34:35.293Z"
+    "at": "2026-10-23T05:15:07.566Z"
   }
 }

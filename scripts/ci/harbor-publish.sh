@@ -320,9 +320,14 @@ if [[ "$mode" == mirror ]]; then
   # Only anonymous upstream reads may populate this public project. Publish real
   # artifacts, not proxy-cache entries that remain dependent on upstream state.
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
-  mirror_retryable_transport() {
-    grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error" &&
-      ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status|status code' "$scratch/mirror-error"
+  mirror_retryable_server_error() {
+    grep -Eiq 'HTTP status(:| code:?)?[[:space:]]*5[0-9]{2}|status code:?[[:space:]]*5[0-9]{2}|50[234] (Bad Gateway|Service Unavailable|Gateway Timeout)' "$scratch/mirror-error"
+  }
+  mirror_retryable_read_error() {
+    ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status(:| code:?)?[[:space:]]*4[0-9]{2}|status code:?[[:space:]]*4[0-9]{2}' "$scratch/mirror-error" &&
+      { mirror_retryable_server_error ||
+        { ! grep -Eiq 'HTTP status|status code' "$scratch/mirror-error" &&
+          grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; }; }
   }
   while IFS= read -r source; do
     oci_index_copy=false
@@ -418,7 +423,7 @@ if [[ "$mode" == mirror ]]; then
             grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
           break
         fi
-        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
           exit "$lookup_status"
         fi
         sleep "$attempt"
@@ -455,7 +460,7 @@ if [[ "$mode" == mirror ]]; then
         else
           read_status=$?
         fi
-        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
           exit "$read_status"
         fi
         sleep "$attempt"
@@ -498,12 +503,12 @@ if [[ "$mode" == mirror ]]; then
         pull_directory=""
       fi
       if [[ "$attempt" == "${#pull_attempts[@]}" ]]; then
-        if "$oci_index_copy" && mirror_retryable_transport; then
+        if "$oci_index_copy" && mirror_retryable_read_error && ! mirror_retryable_server_error; then
           mirror_category="transport-retries-exhausted"
         fi
         exit "$read_status"
       fi
-      if ! mirror_retryable_transport; then
+      if ! mirror_retryable_read_error; then
         exit "$read_status"
       fi
       if "$oci_index_copy"; then
