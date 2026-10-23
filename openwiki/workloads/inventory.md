@@ -154,6 +154,8 @@ sources:
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
     resource: repo://IaC/openclaw-enterprise/stack.hcl
+  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
+    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-00c8a32293c8aaa55d3daba4
     resource: repo://IaC/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-73d9c28ed7b9740028ceb5c2
@@ -200,10 +202,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
+generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:15:07.566Z
+    at: 2026-10-23T05:40:17.927Z
 ---
 
 # Workload Inventory
@@ -482,6 +484,13 @@ eMMC and has less than 10.74 GB for a new 10 GiB local claim under the existing
 `/var/lib` pattern; `acer` lacks the 2,304 MiB database-plus-gateway minimum.
 Unrelated Pods remain on each worker, so an added `NoSchedule` taint would not
 provide isolation.
+The 2026-10-23 read-only recheck still finds only `acer` with disk for a new
+10 GiB local claim, but it is 503 MiB below the 2,304 MiB minimum request.
+The best worker has 9.00 GiB filesystem free, and clearing its 38
+non-DaemonSet Pods would need about 3,342 MiB against 2,036 MiB unreserved
+elsewhere. Crossplane's two live 256 MiB controllers conflict with the
+source-declared zero replicas; reconciling them cannot create an isolated
+canary or transient margin. T022 and T035 remain blocked.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

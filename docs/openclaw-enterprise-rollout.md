@@ -79,6 +79,12 @@ separate source reads, S3 multipart calls and digest mismatch. After upload,
 object; `publication-receipt-upload` and `publication-receipt-head` check the
 receipt object; `publication-restore-*` identifies which offsite restore step
 failed. Private error details stay withheld. None is an offsite restore receipt.
+Before upload, `baseline-s3-read` identifies the offsite baseline fetch,
+`baseline-mounted-compare` checks its retained mounted copy, and
+`baseline-source-status` checks stopped-source identity. The detached result,
+observed inventory and receipt, destination absence, and source size have
+separate `publication-*` categories. These labels identify the failing
+operation without publishing private paths, content or credentials.
 Exact-main [run `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090)
 passed credentials but failed `publication-source-read` with 64 MiB Kubernetes
 exec ranges. The uploader now assembles each 64 MiB S3 part from at most 8 MiB
@@ -91,6 +97,13 @@ distinguish object metadata, receipt upload/version, or archive and receipt rest
 The uploaded object is not an accepted archive: no final versioned, independently
 restored receipt exists. Keep the retained local source and failed-run S3 objects;
 the next protected publication must use a fresh exact-main run and unique prefix.
+[Archive launcher `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+succeeded, but its detached worker result is not attested by launcher success.
+[Publication retry `39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
+passed protected inputs and credentials, then failed in the former broad
+`baseline` category before upload. The exact failed operation is unknown; the
+new pre-upload categories are source-only until a fresh protected retry.
+Independent `verify` remains undispatched and T013 remains open.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain
@@ -147,6 +160,14 @@ taint tolerations and less than 10 GiB free for one new local claim. Freeing
 services, and the measured margin does not cover peaks or rolling overlap.
 Do not declare PV nodes or apply a canary taint until the placement,
 transient-load and service-continuity review passes.
+The [2026-10-23 read-only recheck](evidence/openclaw-enterprise-acceptance.md)
+still finds only `acer` with space for a 10 GiB claim; it is 503 MiB short of
+the 2,304 MiB database-plus-gateway request. The best worker has 9.00 GiB
+filesystem free and its 38 non-DaemonSet Pods request about 3,342 MiB, more
+than the other nodes' combined 2,036 MiB unreserved. Source declares both
+Crossplane controllers at zero replicas, but two live 256 MiB Pods remain on
+`acer`; reconciling that drift would still leave just 9 MiB after the minimum
+request and no isolated canary. Rebalancing alone does not admit T022 or T035.
 
 Stop at the first failed stage. Do not force-delete a writer, downgrade
 Kubernetes automatically, disable network policy, reuse a legacy key, switch to

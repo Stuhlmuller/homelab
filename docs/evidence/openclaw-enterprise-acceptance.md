@@ -59,6 +59,19 @@ upload/HEAD and restoration of both objects, so the exact failed substep is unkn
 No final offsite restore receipt was published and independent `verify` was not
 dispatched. The original retained archive remains authoritative; T013 is open.
 
+[Archive stage `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+completed successfully at 2026-10-21 02:58 UTC, which confirms the protected
+launcher, not its detached worker result or offsite restore. The later
+[exact-main `publish-archive` run `39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
+passed static, current-main and credential gates but failed at 2026-10-22
+00:47 UTC with the fixed public category `baseline`, before archive upload.
+That broad category does not identify whether baseline retrieval, mounted
+comparison, stopped-source status, detached result, private receipt validation,
+destination absence or source size failed. The reviewed helper now assigns
+fixed public pre-upload subphases for a future retry, with private diagnostics
+still withheld. No publication or independent `verify` receipt exists; T013
+remains open, and retained source claims and partial archives stay intact.
+
 T038 originally assigned `private-access.yaml` to the Enterprise foundation.
 [PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420) moved the
 fixed Services to the Octelium catalog and the opaque Agent-host route,
@@ -316,12 +329,34 @@ tolerations are declared. A `NoSchedule` taint would not isolate already
 running Pods and could strand replacements after restart. T022, T027 and
 T035 remain blocked; no node was tainted or workload relocated.
 
-The committed Crossplane catalog declares both controller replicas at zero in
-[`IaC/platform-crossplane/stack.hcl`](../../IaC/platform-crossplane/stack.hcl),
-but the live Argo Application lacked those Helm parameters and two controller
-Pods each still requested 256 MiB. Reconciliation through the protected
-source path is a separate drift follow-up that may release 512 MiB of requests;
-it does not supply a tainted canary or prove transient placement fit.
+At 2026-10-23 05:12 UTC on `main` `d75110b`, read-only node allocation,
+running-Pod requests, `kubectl top nodes`, and kubelet `/stats/summary` still
+found no taints or safe existing-node placement:
+
+| Node | Memory requested / allocatable | Actual memory used | Running Pods | Node filesystem free |
+| --- | ---: | ---: | ---: | ---: |
+| `acer` | 13,459 / 15,261 MiB | 10,675 MiB | 76 | 383.20 GiB |
+| `zimaboard-0` | 7,276 / 7,282 MiB | 6,201 MiB | 81 | 5.02 GiB |
+| `zimaboard-1` | 3,884 / 7,282 MiB | 6,053 MiB | 44 | 9.00 GiB |
+| `zimaboard-2` | 1,078 / 1,308 MiB | 939 MiB | 9 | 8.65 GiB |
+
+Only `acer` has filesystem space for even one of T035's 10 GiB local claims;
+its roughly 1,801 MiB unreserved memory is 503 MiB below the 2,304 MiB
+database-plus-gateway request before transient or system margin. `zimaboard-1`
+has 3,397 MiB free by requests but less than 10 GiB disk free. Clearing it
+for an isolated canary would need to relocate 38 non-DaemonSet Pods requesting
+about 3,342 MiB; the other three nodes together have only about 2,036 MiB
+unreserved, before node-bound claims and rollout overlap. `zimaboard-2` has
+only 1,308 MiB allocatable total. Rebalancing the declared running workloads
+cannot establish both storage and an isolated tainted canary.
+
+The [Crossplane source](../../IaC/platform-crossplane/stack.hcl) declares
+both controller replicas at zero, but the live Argo Application lacks those
+Helm parameters and two live Pods on `acer` still request 256 MiB each.
+Reconciliation through the protected declared path might reclaim 512 MiB,
+leaving only about 9 MiB after the 2,304 MiB minimum. This separate drift
+follow-up would not isolate a canary or prove transient fit; no workload was
+moved or scaled.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during

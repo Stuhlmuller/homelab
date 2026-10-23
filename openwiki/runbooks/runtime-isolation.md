@@ -36,6 +36,8 @@ sources:
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
+  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
+    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -52,10 +54,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
+generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:15:07.566Z
+    at: 2026-10-23T05:40:17.927Z
 ---
 
 # Runtime Isolation
@@ -121,8 +123,15 @@ root-filesystem space free. Every worker's `/var` uses eMMC and has less than
 `acer` has only 1,802 MiB unreserved against the 2,304 MiB database and gateway
 minimum. Unrelated Pods remain on every worker. A `NoSchedule` taint would
 leave those Pods in place;
-it is not an isolation proof. Compare private read-only Pod/NetworkPolicy snapshots and
-all rendered policies with `scripts/network-policy-inventory.py`. Its review
+it is not an isolation proof.
+The 2026-10-23 recheck still finds `acer` 503 MiB short of the minimum request
+despite enough local disk, while the best worker has only 9.00 GiB filesystem
+free. Relocating its 38 non-DaemonSet Pods needs about 3,342 MiB against
+2,036 MiB combined free on the other nodes. Crossplane's separate 512 MiB
+source/live replica drift does not create an isolated canary. Enforcement
+remains disabled.
+Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
+with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
 generated policies fail the inventory. Obtain exact generator renders and a
 fresh read-only snapshot before the canary. The [source-owner ledger](../../docs/evidence/openclaw-enterprise-policy-review.json)
