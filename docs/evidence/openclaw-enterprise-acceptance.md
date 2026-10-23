@@ -1,6 +1,6 @@
 # OpenClaw Enterprise Acceptance Ledger
 
-Status: **legacy stopped; archive and replacement rollout pending**.
+Status: **legacy stopped; archive published; replacement pending**.
 Platform prerequisites have only offline source validation. No live upgrade,
 firewall enforcement, Envoy route or isolated canary is active; measured nodes
 do not admit an isolated canary without evicting unrelated stateful workloads.
@@ -13,15 +13,15 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | --- | --- | --- | --- |
 | Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
 | Stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Signed and fully pulled by protected workflow |
-| Full platform image catalog and transitive render | [main `919056f`, full mirror `39694217983`](https://github.com/Stuhlmuller/homelab/actions/runs/39694217983); [earlier `39487376667`](https://github.com/Stuhlmuller/homelab/actions/runs/39487376667) | — | Pending. Static validation and exact-main precredential guards passed. The earlier run stopped at item 180/214 with public `upstream-download` / `rate-limited`; the fresh run stopped at item 179/214 with public `authenticated-pull` / `server-error`. No complete publication or authenticated pull receipt exists. Retry on exact current main after the Harbor HTTP 5xx read-retry repair merges. |
+| Full platform image catalog and transitive render | [main `73fbf4c`, full mirror `39906968373`](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373); [earlier `39694217983`](https://github.com/Stuhlmuller/homelab/actions/runs/39694217983) | — | Pending. The current full-catalog publication is running after the bounded Harbor HTTP 5xx read-retry repair. The prior attempt stopped at item 179/214 with public `authenticated-pull` / `server-error`; no complete 214-image authenticated receipt exists yet. |
 | LiteLLM Linux amd64 child publication | [main `0183db1c`, protected mirror run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031); `ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8` | — | Passed exact-current-main guard, source digest check, and complete authenticated Harbor pull. This one-image scope does not pass the full-catalog T004 gate. |
-| Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. Archive write/restore pending. |
+| Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. The publication run below restored the uploaded archive; separate verification is pending. |
 | Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354); [main `6de59d7c`, protected recovery `39142331296`](https://github.com/Stuhlmuller/homelab/actions/runs/39142331296) | `e8663e8451f7d76acfdd91904b7a9373a738ef5de44195ac4127ff862389307b` | Passed: the private success marker and both retained baseline copies match this digest; protected publication verified current source identities, one KMS-encrypted S3 version, and a versioned download matching the baseline. Old writers were active at this pre-shutdown gate; the next row records their shutdown. |
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
-| Full independent legacy archive/restore | [earlier attempts `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916), [`39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077); [detached attempt `39181763037`](https://github.com/Stuhlmuller/homelab/actions/runs/39181763037); [merged repair #1401](https://github.com/Stuhlmuller/homelab/pull/1401); [main `2f94bec3`, retry `39204434898`](https://github.com/Stuhlmuller/homelab/actions/runs/39204434898); [checksum repair #1416](https://github.com/Stuhlmuller/homelab/pull/1416); [archive launcher `39207560733`](https://github.com/Stuhlmuller/homelab/actions/runs/39207560733); [archive launcher `39261391546`](https://github.com/Stuhlmuller/homelab/actions/runs/39261391546); [archive launcher `39299971435`](https://github.com/Stuhlmuller/homelab/actions/runs/39299971435); [publication retry `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090); [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [publication retry `39466313228`](https://github.com/Stuhlmuller/homelab/actions/runs/39466313228) | — | Pending. `39204434898` failed before worker creation because the workflow's pinned helper checksum was stale; #1416 updated that guard. Launcher `39207560733` passed, but its detached worker was OOM-killed during local `verify_bundle` under the reader's 512 MiB limit. The later detached worker finished the second archive pass, then failed during local restore with `OperationalError`, without an OOM or result marker; the specific SQLite operation was not logged. Those failed workers produced no private result; the later source archive has a private result but no final offsite restore receipt. The `39299971435` detached writer completed its bundle, then failed independent member indexing with `SQLITE_IOERR_GETTEMPPATH` under the reader's read-only root; its result is absent. Six unpublished partial directories remain on the archive claim. The proposed reader mount gives SQLite writable private `/tmp` scratch; another exact-main protected run and offsite restore are required after rollout. Keep original sources and partial scratch intact. |
-| Legacy compatible recovery rehearsal | [read-only image and mount review on `90f7338`, 2026-10-20](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c) | — | Pending. Six external `/app` symlinks resolve to five nonempty directories in the pinned image baseline, but the former gateway's writable overlay may have changed them and has not been compared with retained evidence. Three dangling external targets also remain unclassified. The offsite archive receipt, separate writable local/NAS copies, enforced offline network boundary, and isolated old-image boot are absent. Original claims remain retained and mounted read-only by the reader. |
-| Capacity and isolated canary | Read-only node/top/kubelet filesystem snapshots through 2026-10-20 21:00 UTC; 24-hour Pod memory peaks at 01:47 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
+| Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [main `9f64b56a`, successful publication `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Publication passed: the protected stage uploaded the versioned archive and receipt, restored both off-NAS objects, verified the restored archive, and wrote its private final receipt. Separate `verify` is running; T013 remains pending until that run passes. The local source and partial attempts remain retained. |
+| Legacy compatible recovery rehearsal | [read-only image and mount review on `90f7338`, 2026-10-20](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c) | — | Pending. Six external `/app` symlinks resolve to five nonempty directories in the pinned image baseline, but the former gateway's writable overlay may have changed them and has not been compared with retained evidence. Three dangling external targets also remain unclassified. The offsite publication succeeded, but separate archive verification, writable local/NAS copies, enforced offline network boundary, and isolated old-image boot remain pending. Original claims remain retained and mounted read-only by the reader. |
+| Capacity and isolated canary | [read-only node and filesystem checks at 2026-10-23 05:12 UTC, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539) | — | Blocked. Acer has about 1,801 MiB unreserved memory, 503 MiB below the 2,304 MiB database-plus-gateway minimum. Every Zima worker has less than 10 GiB free for one required claim; no dedicated node is available. No isolated canary or admitted Enterprise storage placement. T022, T027 and T035 remain pending. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -37,41 +37,21 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Complete new-state independent restore | Pending | — | Pending |
 | 24-hour observation and selective retirement | Pending | — | Pending |
 
-The [source-bound archive publication run `39431360417`](https://github.com/Stuhlmuller/homelab/actions/runs/39431360417)
-failed before a final offsite receipt. Two later exact-main runs
-([`39443702191`](https://github.com/Stuhlmuller/homelab/actions/runs/39443702191),
-[`39448875667`](https://github.com/Stuhlmuller/homelab/actions/runs/39448875667))
-passed credentials but failed in `publication-upload`. That public phase does
-not distinguish a source-range failure from an S3 multipart failure. The
-retained source archive remains the authority; T013 is pending.
-
-Exact-main [publication retry `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090)
-passed credentials but failed `publication-source-read` with 64 MiB Kubernetes
-exec ranges. No offsite receipt exists. The uploader now assembles each
-64 MiB S3 multipart part from at most 8 MiB exec slices; T013 remains pending
-until a protected retry and independent offsite restore pass.
-
-Exact-main [publication retry `39466313228`](https://github.com/Stuhlmuller/homelab/actions/runs/39466313228)
-passed the precredential main guard and completed the bounded multipart uploader,
-then failed at 2026-10-20 20:34:59 UTC with the fixed public category
-`publication-version`. That old category covers archive HEAD/metadata, receipt
-upload/HEAD and restoration of both objects, so the exact failed substep is unknown.
-No final offsite restore receipt was published and independent `verify` was not
-dispatched. The original retained archive remains authoritative; T013 is open.
-
-[Archive stage `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
-completed successfully at 2026-10-21 02:58 UTC, which confirms the protected
-launcher, not its detached worker result or offsite restore. The later
-[exact-main `publish-archive` run `39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
-passed static, current-main and credential gates but failed at 2026-10-22
-00:47 UTC with the fixed public category `baseline`, before archive upload.
-That broad category does not identify whether baseline retrieval, mounted
-comparison, stopped-source status, detached result, private receipt validation,
-destination absence or source size failed. The reviewed helper now assigns
-fixed public pre-upload subphases for a future retry, with private diagnostics
-still withheld. No publication or independent `verify` receipt exists; T013
-remains open, and retained source claims and partial archives stay intact.
-
+Earlier publication attempts failed during source reads or after upload; none
+produced a final offsite receipt. The [detached source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872)
+used the stopped [baseline `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373).
+[Protected `publish-archive` run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+used that source archive reference and completed at 2026-10-21 02:58 UTC. At
+its reviewed source SHA, success follows a versioned off-NAS upload, receipt
+upload, restore of both objects, archive verification and private final receipt
+write. The later [`39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
+and [`39908653791`](https://github.com/Stuhlmuller/homelab/actions/runs/39908653791)
+retries mistakenly passed the publication run as an archive-worker reference.
+The former failed in the old broad `baseline` phase; the latter failed
+specifically at `publication-archive-result` before upload. Neither invalidates
+the successful publication. Separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+is running against the publication reference; keep T013 pending until it
+completes.
 T038 originally assigned `private-access.yaml` to the Enterprise foundation.
 [PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420) moved the
 fixed Services to the Octelium catalog and the opaque Agent-host route,

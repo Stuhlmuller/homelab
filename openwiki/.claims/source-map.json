@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:448cf1e287b1b6ed6932926b52dd8b97978d8dbef9c2a661feec3f0b3e7d6255",
+  "pageVersion": "sha256:7ca0d43e4d49924983f01832a4dc41c95e719f6a82e9f4e1a7be3f9f88bbd67b",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -246,7 +246,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:1d7d4ee0468702041f6c551533b4ccdef754773a10355be45d4a7eff928c786d"
+          "version": "repo-file-v1:sha256:6ac758e712d5144f8b9ae7d617b30a41cd36fab5e5e1258f05270a72a41826e7"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -345,6 +345,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T05:40:17.927Z"
+    "at": "2026-10-23T06:31:00.176Z"
   }
 }

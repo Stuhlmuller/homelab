@@ -88,22 +88,24 @@ operation without publishing private paths, content or credentials.
 Exact-main [run `39459571090`](https://github.com/Stuhlmuller/homelab/actions/runs/39459571090)
 passed credentials but failed `publication-source-read` with 64 MiB Kubernetes
 exec ranges. The uploader now assembles each 64 MiB S3 part from at most 8 MiB
-exec slices. No offsite receipt exists; T013 remains pending until a protected
-retry and independent offsite restore pass.
+exec slices. That attempt produced no offsite receipt.
 Exact-main [run `39466313228`](https://github.com/Stuhlmuller/homelab/actions/runs/39466313228)
 completed the bounded multipart uploader, then failed in the former broad
 `publication-version` category at 2026-10-20 20:34:59 UTC. That category cannot
 distinguish object metadata, receipt upload/version, or archive and receipt restore.
-The uploaded object is not an accepted archive: no final versioned, independently
-restored receipt exists. Keep the retained local source and failed-run S3 objects;
-the next protected publication must use a fresh exact-main run and unique prefix.
-[Archive launcher `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
-succeeded, but its detached worker result is not attested by launcher success.
-[Publication retry `39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
-passed protected inputs and credentials, then failed in the former broad
-`baseline` category before upload. The exact failed operation is unknown; the
-new pre-upload categories are source-only until a fresh protected retry.
-Independent `verify` remains undispatched and T013 remains open.
+That attempt did not produce a final versioned, independently restored receipt.
+Keep the retained local source and failed-run S3 objects.
+[Archive launcher `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872)
+produced the private source result. [Exact-main `publish-archive` run
+`39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+used that result and succeeded at 2026-10-21 02:58 UTC. Its reviewed source
+requires a versioned upload, offsite restore, archive verification and private
+final receipt before success. Later [runs `39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
+and [`39908653791`](https://github.com/Stuhlmuller/homelab/actions/runs/39908653791)
+used the publication run as if it were the archive worker; they failed before
+upload and do not invalidate the successful publication. Separate [verify run
+`39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+is running against the publication reference. T013 remains open until it passes.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain
