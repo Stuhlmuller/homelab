@@ -403,11 +403,13 @@ class Kubernetes:
 
     def tenant_pods_absent(self):
         # Do not filter by OCE labels: a foreign or unlabelled Pod can still write.
-        listing = self._json("-n", "openclaw-agents", "get", "pods", "-o=json")
+        # kubectl get pods -o=json synthesizes List without a resource version.
+        listing = self._json("get", "--raw", "/api/v1/namespaces/openclaw-agents/pods")
         _require(isinstance(listing, dict) and listing.get("kind") == "PodList" and
                  isinstance(listing.get("metadata"), dict) and
                  isinstance(listing["metadata"].get("resourceVersion"), str) and
                  bool(listing["metadata"]["resourceVersion"]) and
+                 listing["metadata"].get("continue") in (None, "") and
                  listing.get("items") == [],
                  "Enterprise tenant still has Pods or Pod list is uncertain")
 

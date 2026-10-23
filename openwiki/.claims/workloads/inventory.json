@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e46fb090325698ed7da5d3f6c95b57d6746c32df061ff7b5bc3ca4bb00d5f7cc",
+  "pageVersion": "sha256:a24bab747de937dc407e8585ef17fedf7c00901145a8c3e732a7c4b76cc7a9fe",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -598,7 +598,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator-test.py",
-          "version": "repo-file-v1:sha256:ed0515752aa2eb1680b26db92d680537d6e58b43bba568fa90186469c2e20fc6"
+          "version": "repo-file-v1:sha256:c65724882178876bc8a995d7a329e20d805cbe8143a324a551d65bdf5b6cd965"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L1-L46",
@@ -642,7 +642,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:1b5c343b9bce0bb5636ccaa134ad8e0201657bf34024af257bfa5d4bfc326a6c"
+          "version": "repo-file-v1:sha256:bae795a84ca35ea9d85f5b6bf610d30a0e48a0881b07d08225bad80dcd8e99b7"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -700,7 +700,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:1b5c343b9bce0bb5636ccaa134ad8e0201657bf34024af257bfa5d4bfc326a6c"
+          "version": "repo-file-v1:sha256:bae795a84ca35ea9d85f5b6bf610d30a0e48a0881b07d08225bad80dcd8e99b7"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml",
@@ -786,29 +786,29 @@
     },
     {
       "id": "claim_ffb1a8164a9440458675366709c1ee0f",
-      "statement": "Enterprise stop and stopped verification require both the runtime response and an independent unfiltered empty PodList in the dedicated openclaw-agents tenant Namespace; tenant RBAC grants pods/list and uncertain or remaining Pods block stop completion.",
+      "statement": "Enterprise stop and stopped verification require both the runtime response and an independent unfiltered raw PodList in the dedicated openclaw-agents tenant Namespace; it must have a resource version, no continuation page, and no Pods. Tenant RBAC grants pods/list, while uncertain or remaining Pods block stop completion.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml#L44-L68",
           "version": "repo-lines-v1:sha256:ab9b76cd0cd928357694e3ddb42b3954d7b93bfc091bc6167935bf7a1f10d7af:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYTZkYzQ3NWIzYmM1MzUyMmNlZTEyMDFmMmNkNGFjNWFkMzM2NTVhYWQxNTg3MWI3Mzc3OWUwYWUxODZiMmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYTZkYzQ3NWIzYmM1MzUyMmNlZTEyMDFmMmNkNGFjNWFkMzM2NTVhYWQxNTg3MWI3Mzc3OWUwYWUxODZiMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5NWMyYTQ4MTU5MjNkYTllMzgyMmIxOTU1ZmMzOGVjMDNiNmQ5NDBjYmNhMzI4NTI4MjIwNDUwZTNhZTkyMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwODI0OTFmNWMxODI1MzFmMGQ0MWYzNDYzYjBhNWNkNTUzMWJjOGI0MDgzNWQ2Njc0Y2Q0MmI1MWIwZWNlMmMifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1660-L1665",
+          "resource": "repo://scripts/openclaw-enterprise.py#L1662-L1667",
           "version": "repo-lines-v1:sha256:69ab560cd31df25783ddea75db40eb67130e57255c11fdb5c2edb7c4ad177546:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTljNzE0OTdjZmM4MmU2ZmUwZmZmZjBiMDYyMzY1ZWY0OTcxNTM4OGE2NTQ3Yjk3YTEzMDBmN2VlYTI4ZjAyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZlMWE2ZDY3MTY0OGU0N2ZlMzJkMzBmZDMwYjljNjJhNTJkMmFkN2YzOWVlY2MyYzY3ZmFlMTEyNTJlMDIxNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDQzYmQ1ZWM0NzU5MzcxNTAwMGM1Y2JjOGM5ZjAxZjRlOTAxOTg1Y2RjOGRhNzFiZmQ0OTBkNjExMWEzOTkyYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWYyZTU2MGMyMTdmMzg0ZDk5MzQxMDM5YjNiZmEyZDcyMWZiNDViN2UzN2ZlYmQ5YmUxMmNmMmI5MzhhZmFlMyJ9"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1726-L1737",
-          "version": "repo-lines-v1:sha256:43d6fc2f2c4914cdf64613650853b8322c14f0afafbee7138681bba125f505ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwOGE5NzBmMDM2OGFlZGY5ZmExNjQ5YzJkYWEyY2Q1ZWI2ODFkN2UwOTk5YzAxNmY0YzIxNjcyOTcwNGIyZTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5ZmRmODkyODhiMGExYTA2Yzg0OGFjMzk0ODNlYmExYTQ1NjYxMTdkNzAwYjJkODkzZDY0NzVjMjJiYjUzMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlMWJiNjkxMzNlYWY2ZWNhNjgxYmE2NDQzNzQ3ZjMwMDI0OTFmMjM1NjhlYmM2YTljZTY2OWZlMmI2Y2ViNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1MmNmODZhZWUxNGI4MWMwNzFkYmU1ZmFkOWM2ZTBhYzdhMGQxYjVmZDAwMTQ5NDJiZTUyM2Q3YTY4M2ZjYTIifQ"
+          "resource": "repo://scripts/openclaw-enterprise.py#L1733-L1738",
+          "version": "repo-lines-v1:sha256:2d3af5e9ec43bd863e55a3e9c53982573b270a189e24ef6c98dcfe5141977aa9:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzEzZmFhN2IwMTlkMjJhNTk0NmVkYTlkZTY2YWE3ZTc3YzA3MjBlNTA0ZDcyYWQ0M2IwYzFkMWJmNDRjMTVmZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY0YzkwNWE3ZDdhODFmNWFiZjUzZTFjMjg5YTRjZjJmZGY3MjlmNWRhMTk5ODllNWEwYzdlZjhjMzUyYmJlZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBjZjRkMWIyODdhN2EzOWU0YzUwNmYyYTUzYTJiYjQxMzlkYTJiZmZkNmQwYWUwOGQxNjI1OTJlOTVkNmViYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjc2ZDM3MWJkNjkwMWI3OGRkN2I2YTEzMDA3MDljNTc5MzA5ZjQ3MDdhMmRkMzJlNjhmNTRhYzQ5OTJjM2QwMSJ9"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L404-L412",
-          "version": "repo-lines-v1:sha256:0453a2b4aa77ce427d1dd02ff93061b6730cd53e3ecac29ccc50dbd7f823da87:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzJmM2E2Mzg1MGI3MDM2ZTRmMjZmODZlYzE3YTkzMzVlMDQzOTA3ZDY3ZWFjMzQ4MGUzZjdhZjJkMTY0NmI2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWJkZTVlNDQwMWRkNTQzNjM2NzY5YjJkY2ZjNDljNTRlZGJhMDU4YmQ2YTM2Y2EyM2IwMmVkMDgzNTJjNTA1NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2ZhY2ZkOTE0ZmIxYTg5YjIyMDQ3NTljNmYxNjhiNzQwM2RhZTdjOWZiNmYwYjU0ODBmNzMzZTRiOTVkNThjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGRkMjhlMjJiZGUzZDM1Yzc0ZGYxY2Q5ZTVkYmVmMjJmZDMzODQ4YjA0NzYzOTgyNjNhNTRkYjk3NTIxMDk2YiJ9"
+          "resource": "repo://scripts/openclaw-enterprise.py#L404-L414",
+          "version": "repo-lines-v1:sha256:cab7b9d2a7da5b3c27f03667cd373f79b0933111e17007231c9a75b556b55853:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjNhNjM4NTBiNzAzNmU0ZjI2Zjg2ZWMxN2E5MzM1ZTA0MzkwN2Q2N2VhYzM0ODBlM2Y3YWYyZDE2NDZiNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiZGU1ZTQ0MDFkZDU0MzYzNjc2OWIyZGNmYzQ5YzU0ZWRiYTA1OGJkNmEzNmNhMjNiMDJlZDA4MzUyYzUwNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNmYWNmZDkxNGZiMWE4OWIyMjA0NzU5YzZmMTY4Yjc0MDNkYWU3YzlmYjZmMGI1NDgwZjczM2U0Yjk1ZDU4Y2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZDI4ZTIyYmRlM2QzNWM3NGRmMWNkOWU1ZGJlZjIyZmQzMzg0OGIwNDc2Mzk4MjYzYTU0ZGI5NzUyMTA5NmIifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T09:00:55.441Z"
+    "at": "2026-10-23T09:13:02.540Z"
   }
 }

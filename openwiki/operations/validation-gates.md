@@ -236,6 +236,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
   - id: openwiki-source-8483d28614308625b1073872
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-fc079e0e542f990a412aa90f
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-0f5131d44d4433656e1f24db
@@ -350,10 +352,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T09:00:55.441Z" }
+generated: { by: "codex", at: "2026-10-23T09:13:02.540Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T09:00:55.441Z
+    at: 2026-10-23T09:13:02.540Z
 ---
 
 # Validation Gates
@@ -1951,8 +1953,9 @@ acceptance; the staged operator storage and protected execution remain
 unadmitted.
 The stop fixture now keeps the pending intent when the OCE API reports zero
 runtime Pods but an unlabelled Pod remains in `openclaw-agents`. Both stop and
-stopped-state verification require an unfiltered Kubernetes PodList with a
-resource version and no items. The staged operator Role grants `pods/list`
+stopped-state verification read the raw namespaced Kubernetes PodList; it
+must have a resource version, no continuation page, and no items. The staged
+operator Role grants `pods/list`
 only in that tenant Namespace; this source check still needs live proof.
 The static-gate [recovery fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
 checks unknown stop intent, interrupted runtime reads and retention of the

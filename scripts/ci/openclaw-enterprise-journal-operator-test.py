@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 import unittest.mock as mock
@@ -342,11 +343,18 @@ class JournalOperator(unittest.TestCase):
 
     def test_stopped_runtime_requires_unfiltered_empty_tenant_pod_list(self):
         empty = {"kind": "PodList", "metadata": {"resourceVersion": "42"}, "items": []}
-        with mock.patch.object(source.Kubernetes, "_json", return_value=empty) as read:
+        def raw_response(command, **_kwargs):
+            self.assertEqual(command, ["kubectl", "--request-timeout=15s", "get", "--raw",
+                                       "/api/v1/namespaces/openclaw-agents/pods"])
+            return subprocess.CompletedProcess(command, 0, json.dumps(empty), "")
+
+        with mock.patch.object(source.subprocess, "run", side_effect=raw_response) as read:
             source.Kubernetes().tenant_pods_absent()
-            read.assert_called_once_with("-n", "openclaw-agents", "get", "pods", "-o=json")
+            read.assert_called_once()
         for changed in ({**empty, "items": [{"metadata": {"name": "unlabelled-writer"}}]},
-                        {**empty, "metadata": {}}, {**empty, "items": None}):
+                        {**empty, "metadata": {}}, {**empty, "items": None},
+                        {**empty, "metadata": {"resourceVersion": "42", "continue": "next"}},
+                        {**empty, "kind": "List", "metadata": {"resourceVersion": ""}}):
             with self.subTest(changed=changed), mock.patch.object(
                     source.Kubernetes, "_json", return_value=changed):
                 with self.assertRaisesRegex(source.Blocked, "tenant still has Pods"):
