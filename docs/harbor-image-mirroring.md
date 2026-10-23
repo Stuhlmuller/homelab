@@ -92,11 +92,11 @@ publishes, signs and completely pulls all four images in the private `homelab`
 project. Dispatch it only with the current `main` SHA; use its immutable digest
 receipts for the Enterprise chart, CLI and later operator activation. The
 operator remains disabled until placement, journal PV, bootstrap file ownership
-and network-policy proofs pass. On failure, the job summary reports one fixed
-publisher phase;
-private transport and registry output remains encrypted, and no successful
-digest receipt is issued. A source revision change requires a new reviewed
-archive hash.
+and network-policy proofs pass. On failure, the job summary and public error
+annotation report one allowlisted publisher phase, or `unclassified` when the
+phase is absent or invalid. Private transport and registry output remains
+encrypted, and no successful digest receipt is issued. A source revision change
+requires a new reviewed archive hash.
 
 Talos 1.14.4 [`upgrade-k8s`](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L177)
 appends `:v1.35.9` to the five component image bases,

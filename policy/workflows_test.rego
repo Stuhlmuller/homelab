@@ -1246,6 +1246,11 @@ test_encrypted_oce_image_artifact_exception_is_exact if {
 	forged := object.union(base, {"jobs": {"publish": forged_job}})
 	forged_denials := deny with input as forged
 	count(forged_denials) > 0
+	forged_phase_run := replace(oce_image_private_run, "phase=unclassified", "cat \"$private_log\"")
+	forged_phase_job := object.union(job, {"steps": [{"run": forged_phase_run}, oce_encrypted_diagnostic_step]})
+	forged_phase := object.union(base, {"jobs": {"publish": forged_phase_job}})
+	forged_phase_denials := deny with input as forged_phase
+	count(forged_phase_denials) > 0
 }
 
 with_job_run_defaults(workflow, job_name) := candidate if {
