@@ -138,6 +138,8 @@ sources:
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
     resource: repo://IaC/openclaw-enterprise/stack.hcl
+  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
+    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -224,6 +226,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
+  - id: openwiki-source-67b7023614bb46ffd2f06e85
+    resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-0f5131d44d4433656e1f24db
@@ -336,10 +340,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T04:59:34.413Z" }
+generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:15:07.566Z
+    at: 2026-10-23T05:40:17.927Z
 ---
 
 # Validation Gates
@@ -1727,6 +1731,17 @@ The reviewed operations helper now assigns fixed public subphases to archive
 HEAD/metadata, receipt upload/HEAD, and archive/receipt restore steps while
 the workflow withholds private diagnostics.
 
+The later archive launcher `39501240221` succeeded, but launcher success does
+not attest its detached worker or offsite copy. Exact-main `publish-archive`
+run `39700564687` passed its protected gates and failed before upload in the
+former broad public `baseline` category. The precise failing operation remains
+unknown. The helper now assigns fixed public pre-upload phases for S3 baseline
+read, mounted comparison, stopped-source status, detached archive-result read,
+observed/receipt validation, destination absence, and source size. The workflow
+allows only those labels in its sanitized error; the focused fixtures require
+each failure to report its exact fixed phase. No offsite or independent verify
+receipt exists, so T013 stays open.
+
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
@@ -1757,6 +1772,15 @@ local claims, but its 1,801 MiB unreserved was below the 2,304 MiB database-
 plus-gateway request. Unrelated running Pods and absent custom canary taint
 tolerations prevent isolation by a `NoSchedule` taint. T022, T027 and T035
 remain blocked; no live taint, relocation or storage admission occurred.
+
+The 2026-10-23 read-only recheck confirms that only `acer` can hold a new
+10 GiB local claim, yet it is 503 MiB short of the 2,304 MiB minimum request.
+`zimaboard-1` has 9.00 GiB filesystem free; clearing its 38 non-DaemonSet
+Pods would need about 3,342 MiB, exceeding the other nodes' combined
+2,036 MiB unreserved. Crossplane source declares two zero-replica controllers
+but live `acer` still runs both at 256 MiB each. Their 512 MiB is a separate
+drift finding; even if reclaimed, only about 9 MiB remains after the minimum,
+with no isolated canary or transient margin. T022/T035 stay blocked.
 
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable

@@ -36,6 +36,10 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
+    resource: repo://IaC/platform-crossplane/stack.hcl
+  - id: openwiki-source-b3bdcadf54edf75020440bdd
+    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-b7865f8f7c461f149710edda
@@ -48,10 +52,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T04:59:34.413Z
+    at: 2026-10-23T05:40:17.927Z
 ---
 
 # Storage And State
@@ -292,6 +296,9 @@ but not node-disk loss; there is no automatic node failover and recovery can los
 writes since the last backup. Native caches are reconstructed on disaster restore.
 The post-shutdown inventory passed, but a complete independent archive/restore
 and any new Enterprise recovery set remain unverified; keep all retained claims.
+Protected `publish-archive` run `39700564687` failed before upload under the
+former broad public `baseline` category; the reviewed fixed subphase diagnostics
+are source-only and no offsite receipt exists.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
@@ -320,6 +327,14 @@ claim if T035 uses the existing `/var/lib` pattern. New node paths are not yet
 committed. `acer` has only 1,802 MiB unreserved, below the 2,304 MiB database
 and gateway minimum. This does not admit local storage or an isolated canary; see the
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
+The 2026-10-23 read-only recheck still finds only `acer` with room for a new
+10 GiB local claim; it has about 1,801 MiB unreserved, 503 MiB below the
+database-plus-gateway request. The best worker has 9.00 GiB filesystem free.
+Its 38 non-DaemonSet Pods request about 3,342 MiB, exceeding the other nodes'
+combined 2,036 MiB headroom, so workload rebalancing cannot clear an isolated
+canary. Crossplane source declares two zero-replica controllers, while live
+Deployments still request 256 MiB each on `acer`; reconciling that separate
+drift would leave only about 9 MiB after the minimum and no isolation.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
