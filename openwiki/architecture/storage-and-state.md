@@ -20,8 +20,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
-  - id: openwiki-source-b26876230e53fd853d7bcbea
-    resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
@@ -52,10 +50,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
+generated: { by: "codex", at: "2026-10-23T06:31:00.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:40:17.927Z
+    at: 2026-10-23T06:31:00.176Z
 ---
 
 # Storage And State
@@ -294,11 +292,14 @@ native bindings across Pod replacement. The backup CronJob is suspended;
 historical SQLite snapshots remain on the NAS. The local hostPath survives Pod replacement
 but not node-disk loss; there is no automatic node failover and recovery can lose
 writes since the last backup. Native caches are reconstructed on disaster restore.
-The post-shutdown inventory passed, but a complete independent archive/restore
-and any new Enterprise recovery set remain unverified; keep all retained claims.
-Protected `publish-archive` run `39700564687` failed before upload under the
-former broad public `baseline` category; the reviewed fixed subphase diagnostics
-are source-only and no offsite receipt exists.
+The post-shutdown inventory and protected off-NAS archive publication passed.
+[Publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+restored and verified the versioned upload before its private final receipt.
+The separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+is still running, and the new Enterprise recovery set remains unverified; keep
+all retained claims. Later `publish-archive` retries `39700564687` and
+`39908653791` used the publication ID as a source worker ID and failed before
+upload. They do not invalidate the successful publication.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
@@ -306,7 +307,7 @@ gateway had a writable root, so its overlay may have changed those targets;
 their original contents remain unclassified until compared with retained
 evidence. Three dangling external targets also remain unclassified. T014 still
 needs their disposition, a separate writable UID 1000 local-state copy, an
-isolated NAS copy, the verified offsite archive receipt and an old-image boot
+isolated NAS copy, the separate offsite verification receipt and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
 declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).

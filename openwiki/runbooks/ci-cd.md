@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
+generated: { by: "codex", at: "2026-10-23T06:31:00.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:40:17.927Z
+    at: 2026-10-23T06:31:00.176Z
 ---
 
 # CI/CD
@@ -211,21 +211,19 @@ does not mount the private journal. `restore` and `acceptance` still exit before
 mutation pending separate recovery and owner-session proof. No Enterprise
 stage has passed live acceptance.
 
-For legacy `publish-archive`, the workflow now reports fixed public
-post-upload phases for archive metadata, receipt publication and both restore
-transfers while withholding private diagnostics. Run `39466313228` completed
-the bounded upload but failed under the former broad `publication-version`
-phase. No final offsite restore receipt exists; independent `verify` was not
-dispatched. Retry only from a fresh exact-current-`main` source after review.
-The later `39501240221` archive launcher completed, but does not attest its
-detached worker. Protected `publish-archive` run `39700564687` then failed
-before upload in the former broad public `baseline` category. Its exact failed
-operation is unknown. The helper and workflow now use fixed pre-upload labels:
-`baseline-s3-read`, `baseline-mounted-compare`, `baseline-source-status`,
-`publication-archive-result`, `publication-source-validation`,
-`publication-destination-absence`, and `publication-source-size`. The labels
-contain no private diagnostics. They are source-only until a new protected
-retry; there is still no offsite or independent `verify` receipt.
+For legacy `publish-archive`, the workflow reports fixed public pre-upload and
+post-upload phases while withholding private diagnostics. Run `39466313228`
+completed bounded upload but failed under the former broad
+`publication-version` phase; that attempt produced no final receipt.
+
+Detached archive worker `39366476872` produced the private source result.
+Protected [publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+used that worker and succeeded after versioned offsite upload, restore, archive
+verification and private final receipt. Later retries `39700564687` and
+`39908653791` incorrectly used the publication run as the source worker; both
+failed before upload, with the latter reporting `publication-archive-result`.
+The separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+is running against the publication reference; T013 remains pending.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added

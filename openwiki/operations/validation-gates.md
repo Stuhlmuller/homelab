@@ -76,8 +76,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
-  - id: openwiki-source-b26876230e53fd853d7bcbea
-    resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
@@ -1721,28 +1719,24 @@ enabling registration or changing job selectors. See the
 The Enterprise model-credential workflow is protected by exact current-`main`
 source checks and validates an owner-supplied OpenRouter key before writing only
 `/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
-The stopped legacy inventory is verified, but the independent archive/restore,
-full image catalog, isolated canary, platform upgrades, and new-state restore
-remain acceptance gates. Source-only static checks do not activate the agent.
+The stopped legacy inventory and off-NAS archive publication are verified, but
+the separate archive verification, full image catalog, isolated canary, platform
+upgrades, and new-state restore remain acceptance gates. Source-only static
+checks do not activate the agent.
 
-Protected `publish-archive` run `39466313228` passed its exact-main guard
-and completed bounded multipart upload, then failed at 20:34:59 UTC in the
-former broad public `publication-version` category. No final offsite restore
-receipt exists and independent `verify` was not dispatched; T013 stays open.
-The reviewed operations helper now assigns fixed public subphases to archive
-HEAD/metadata, receipt upload/HEAD, and archive/receipt restore steps while
-the workflow withholds private diagnostics.
+Protected `publish-archive` run `39466313228` completed bounded multipart
+upload but failed in its former broad `publication-version` phase. That attempt
+produced no final receipt. The reviewed helper now reports fixed public
+post-upload and pre-upload phases while the workflow withholds private details.
 
-The later archive launcher `39501240221` succeeded, but launcher success does
-not attest its detached worker or offsite copy. Exact-main `publish-archive`
-run `39700564687` passed its protected gates and failed before upload in the
-former broad public `baseline` category. The precise failing operation remains
-unknown. The helper now assigns fixed public pre-upload phases for S3 baseline
-read, mounted comparison, stopped-source status, detached archive-result read,
-observed/receipt validation, destination absence, and source size. The workflow
-allows only those labels in its sanitized error; the focused fixtures require
-each failure to report its exact fixed phase. No offsite or independent verify
-receipt exists, so T013 stays open.
+Detached source archive `39366476872` produced the private worker result.
+Protected [publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+used that source and succeeded after versioned off-NAS upload, restore, archive
+verification and private final receipt. Later runs `39700564687` and
+`39908653791` mistakenly used that publication as a worker reference and failed
+before upload; the latter reported `publication-archive-result`. The separate
+[verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+is running against the publication reference, so T013 stays open.
 
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
@@ -1750,7 +1744,7 @@ pinned image baseline without an `/app` volume. The former gateway had a
 writable root, so its original overlay contents remain unclassified; compare
 them with retained evidence before claiming compatible recovery. Three
 dangling external targets also need an explicit disposition. A rehearsal needs
-the verified offsite archive receipt, separate writable UID 1000 local-state
+a separate offsite verification receipt, writable UID 1000 local-state
 and isolated NAS copies, and an enforced offline network boundary that blocks
 Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
 NetworkPolicies, so a deny policy alone cannot isolate the old image. Keep

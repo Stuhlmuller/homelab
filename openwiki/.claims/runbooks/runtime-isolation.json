@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:13e5a4832b4f81e2f3ab5ffef06b08463042320132e88e0c5eee5ae6e3aa16ab",
+  "pageVersion": "sha256:9ca2a44c7b0af2661a81295818c102777f38f6c40c74a4a2039609570ea3e80c",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:ebae1d812b057745cbb5d6e0fdd1b5cf921fcc7aed4193d88e90bd06c3a24fe7"
+          "version": "repo-file-v1:sha256:cfcb624607da55c80f1777ee911830bb00ff67bff22fdfc0582a76f6d7762b6b"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -191,7 +191,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found the best worker with about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise reservation, 6,308 MiB actual use and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent a NoSchedule taint from isolating a canary.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L289-L315",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L269-L295",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -285,7 +285,7 @@
           "version": "repo-file-v1:sha256:3004fb00900c73232c9a55866632aab5be70316a4ed31dfe235ada77d920ebf3"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L332-L359",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L312-L339",
           "version": "repo-lines-v1:sha256:9e952884c05472a34f2696dbd26f2efaebd2e72fba3021f80edc41ccb8ee1671:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZTNiYzg0OWQ1YjI1YjhkZmU1ZjIzMDNjNWFmNDc2M2Q4NTdlYWQzYjNjZmQwMzQxZWY0MzRjNDRiNjhjNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNTMwMzRlNmRhZmFlYjY3YzU1ZmI3MzJhODZjY2RlMmZhMTExZWRkZGM2YWU0OGNhOWRkNDlkODFlZTUwZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmZTc1NzNjZmRmMjJjYTUzY2RiZGM4ZmM3MjFhOWYyNDlhOWQxNDVmYTg2NjUzMjhkNWQwZWQ4NjkyNGU1NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -293,6 +293,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T05:40:17.927Z"
+    "at": "2026-10-23T06:31:00.176Z"
   }
 }
