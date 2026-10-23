@@ -296,9 +296,15 @@ class TenantKubernetes:
     def __init__(self, api):
         self.api = api
         self.calls = []
+        self.tenant_pods = []
 
     def tenant_prepared(self, namespace_id=None, require_claimed=False):
         self.calls.append(("tenant-prepared", namespace_id, require_claimed))
+
+    def tenant_pods_absent(self):
+        self.calls.append(("tenant-pods-absent",))
+        if self.tenant_pods:
+            raise OCE.Blocked("Enterprise tenant still has Pods")
 
     def configuration_candidates(self, namespace_id):
         self.calls.append(("configuration-candidates", namespace_id))

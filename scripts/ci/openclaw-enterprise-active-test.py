@@ -786,6 +786,19 @@ class ActiveAgentReconciliation(unittest.TestCase):
         self.api.runtime_pods = []
         self.assertEqual(self._stop()["desiredRuntimeState"], "stopped")
 
+    def test_stop_rejects_kubernetes_pod_after_api_reports_empty(self):
+        self._active()
+        self.kube.tenant_pods = [{"metadata": {"name": "unlabelled-writer"}}]
+        with self.assertRaisesRegex(OCE.Blocked, "tenant still has Pods"):
+            self._stop()
+        self.assertEqual(self._journal()["pending"], {"operation": "stop"})
+        self.assertEqual(len([call for call in self.api.calls if call[1].endswith("/stop")]), 1)
+        self.kube.tenant_pods = []
+        self.assertEqual(self._stop()["desiredRuntimeState"], "stopped")
+        self.kube.tenant_pods = [{"metadata": {"name": "foreign-runtime"}}]
+        with self.assertRaisesRegex(OCE.Blocked, "tenant still has Pods"):
+            self._verify()
+
     def test_stop_without_journaled_revision_fails_closed(self):
         with self.assertRaisesRegex(OCE.Blocked, "requires a journaled revision"):
             self._stop()

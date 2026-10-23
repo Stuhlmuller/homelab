@@ -84,7 +84,10 @@ provisions transport credentials and admits one revision. `verify` only reads
 those identities, integration-free Agent/revision settings, and deployment
 status. `stop` requires that journaled revision,
 uses OCE's Agent stop API, and waits for a cleared active revision and no
-runtime Pods. Uncertain creates and
+runtime Pods. The staged operator also lists every Pod in the dedicated
+`openclaw-agents` Namespace after the API reports zero; any Pod, including an
+unlabelled or foreign one, or an uncertain list blocks stopped verification and
+keeps a pending stop intent. Uncertain creates and
 deploys are read back before retry; a changed key version blocks pending a
 reviewed rotation path. These checks are offline fixtures, not live acceptance.
 

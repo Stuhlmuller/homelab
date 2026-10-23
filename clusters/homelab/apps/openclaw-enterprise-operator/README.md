@@ -16,10 +16,12 @@ that the reconciler rejects. Do not mount a file or subPath: journal writes
 replace a file and fsync the containing directory. Retain and back up the
 journal separately from the chart's bootstrap claim.
 
-The Job uses only GET/LIST Kubernetes proof RBAC, projected service-account
-credentials, and a pinned HTTPS API endpoint. The namespace policy permits
-DNS, that API endpoint, and Traefik's private console listener; Traefik has a
-matching ingress rule for this Job label. Prove the actual DNS answer, TLS
+The Job uses only GET/LIST Kubernetes proof RBAC, including an unfiltered
+`pods/list` in the dedicated tenant Namespace for an independent stopped-runtime
+check. An unlabelled or foreign Pod blocks the stop receipt. It uses projected
+service-account credentials and a pinned HTTPS API endpoint. The namespace
+policy permits DNS, that API endpoint, and Traefik's private console listener;
+Traefik has a matching ingress rule for this Job label. Prove the actual DNS answer, TLS
 certificate, CNI policy behavior, and no sidecar before enabling. A Job needs
 a signed, fully pulled Harbor operator image from a prior reviewed homelab
 source commit with `python3`, `kubectl`, and `yq`. The protected
