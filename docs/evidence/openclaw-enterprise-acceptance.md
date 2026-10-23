@@ -21,7 +21,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [main `9f64b56a`, successful publication `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Publication passed: the protected stage uploaded the versioned archive and receipt, restored both off-NAS objects, verified the restored archive, and wrote its private final receipt. Separate `verify` is running; T013 remains pending until that run passes. The local source and partial attempts remain retained. |
 | Legacy compatible recovery rehearsal | [read-only image and mount review on `90f7338`, 2026-10-20](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c) | — | Pending. Six external `/app` symlinks resolve to five nonempty directories in the pinned image baseline, but the former gateway's writable overlay may have changed them and has not been compared with retained evidence. Three dangling external targets also remain unclassified. The offsite publication succeeded, but separate archive verification, writable local/NAS copies, enforced offline network boundary, and isolated old-image boot remain pending. Original claims remain retained and mounted read-only by the reader. |
-| Capacity and isolated canary | [read-only node and filesystem checks at 2026-10-23 05:12 UTC, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539) | — | Blocked. Acer has about 1,801 MiB unreserved memory, 503 MiB below the 2,304 MiB database-plus-gateway minimum. Every Zima worker has less than 10 GiB free for one required claim; no dedicated node is available. No isolated canary or admitted Enterprise storage placement. T022, T027 and T035 remain pending. |
+| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-23 08:18 UTC recheck below | — | Blocked. Acer is 503 MiB short of database plus gateway, and the initial 4 GiB API/worker/database/Envoy/gateway planning reservation would be about 2,295 MiB short if co-located there; both exclude transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. No isolated tainted canary or admitted Enterprise placement. T022, T027 and T035 remain pending. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -329,6 +329,27 @@ about 3,342 MiB; the other three nodes together have only about 2,036 MiB
 unreserved, before node-bound claims and rollout overlap. `zimaboard-2` has
 only 1,308 MiB allocatable total. Rebalancing the declared running workloads
 cannot establish both storage and an isolated tainted canary.
+
+At 2026-10-23 08:18 UTC on `main` `bcc08cb`, a read-only request, kubelet
+filesystem and Pod check found `acer` still had about 1,802 MiB unreserved by
+request and 383.07 GiB filesystem free. The 503 MiB deficit above is only the
+2,304 MiB database-plus-gateway floor. The [initial planning budget](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway is 4,096 MiB; co-locating that
+planning budget on `acer` exceeds its current unreserved requests by about
+2,295 MiB of *allocatable* RAM before startup, backup, enforcement, agent
+and peak margins. The [placement inputs](../../clusters/homelab/apps/openclaw-enterprise/profile-input.json)
+pin the API/worker and gateway to `oce-role: control`, the Envoy proxy shares
+that [control placement](../../clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml),
+and the fresh agent requests another 768 MiB on `oce-role: agents`. The only
+worker with that agent request available by arithmetic, `zimaboard-1`, had
+6,430 MiB node working set against 7,282 MiB allocatable; adding 768 MiB
+would leave about 84 MiB before peaks or host margin. It also retains seven
+node-affine local PVs. `zimaboard-2` has no local PV, but its four unrelated
+Pods request 544 MiB, including single-replica `Recreate` Langfuse PostgreSQL.
+Moving all four elsewhere would leave only 428 MiB by requests after existing
+DaemonSets, the proposed 250 MiB enforcer and three 32 MiB fixtures; peak and
+service-continuity admission remain unproven. No existing node qualifies under
+T022's no-unrelated-eviction rule; no node was relabeled, tainted or moved.
 
 The [Crossplane source](../../IaC/platform-crossplane/stack.hcl) declares
 both controller replicas at zero, but the live Argo Application lacks those

@@ -26,6 +26,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
+  - id: openwiki-source-007543776318a4afbd5fc1b0
+    resource: repo://clusters/homelab/platform/network-policy/daemonset.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -36,8 +38,6 @@ sources:
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
-    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -54,10 +54,12 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
+  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
+    resource: repo://specs/003-replace-openclaw-enterprise/research.md
+generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:01:16.556Z
+    at: 2026-10-23T08:31:33.560Z
 ---
 
 # Runtime Isolation
@@ -129,7 +131,14 @@ despite enough local disk, while the best worker has only 9.00 GiB filesystem
 free. Relocating its 38 non-DaemonSet Pods needs about 3,342 MiB against
 2,036 MiB combined free on the other nodes. Crossplane's separate 512 MiB
 source/live replica drift does not create an isolated canary. Enforcement
-remains disabled.
+remains disabled. The 08:18 UTC recheck on `main` `bcc08cb` separates this
+2,304 MiB declared floor from the [initial 4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway: if co-located on `acer`, that
+budget exceeds unreserved requests by about 2,295 MiB before startup or peak
+margin. `zimaboard-2` has four unrelated Pods, including single-replica
+`Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
+requests after the enforcer and fixtures, without measured peak or continuity
+proof. T022 still has no admitted canary or storage placement.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only

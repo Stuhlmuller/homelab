@@ -94,6 +94,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
   - id: openwiki-source-d2d8ff2161af78b658d004f0
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
+  - id: openwiki-source-8918085c21c3a103803f7fbe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
@@ -162,8 +164,6 @@ sources:
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
     resource: repo://IaC/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
-    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-00c8a32293c8aaa55d3daba4
     resource: repo://IaC/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-73d9c28ed7b9740028ceb5c2
@@ -206,16 +206,18 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
+    resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T08:01:16.556Z" }
+generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:01:16.556Z
+    at: 2026-10-23T08:31:33.560Z
 ---
 
 # Workload Inventory
@@ -500,8 +502,8 @@ OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
 The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
 still blocks placement: the best worker has about 3,398 MiB unreserved versus
-the initial 4,096 MiB Enterprise steady request, before transient and host
-headroom, and 9.74 GB root-filesystem space free. Every worker's `/var` uses
+the initial 4,096 MiB Enterprise planning reservation if co-located, before
+transient and host headroom, and 9.74 GB root-filesystem space free. Every worker's `/var` uses
 eMMC and has less than 10.74 GB for a new 10 GiB local claim under the existing
 `/var/lib` pattern; `acer` lacks the 2,304 MiB database-plus-gateway minimum.
 Unrelated Pods remain on each worker, so an added `NoSchedule` taint would not
@@ -513,6 +515,18 @@ non-DaemonSet Pods would need about 3,342 MiB against 2,036 MiB unreserved
 elsewhere. Crossplane's two live 256 MiB controllers conflict with the
 source-declared zero replicas; reconciling them cannot create an isolated
 canary or transient margin. T022 and T035 remain blocked.
+The 08:18 UTC recheck on `main` `bcc08cb` found `acer` with 383.07 GiB
+filesystem free but only about 1,802 MiB unreserved RAM. The 503 MiB gap is
+only the declared database-plus-gateway floor. Co-locating the [initial
+4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway on `acer` would exceed its
+unreserved requests by about 2,295 MiB before startup, backup, agent or peak
+margin. A separate 768 MiB agent request nominally fits only `zimaboard-1`
+among workers, but its measured working set leaves about 84 MiB against
+allocatable RAM after that request. `zimaboard-2` has four unrelated Pods,
+including single-replica `Recreate` Langfuse PostgreSQL; moving them to clear a
+policy canary would disrupt service and still lacks peak proof. No existing
+node has an admitted Enterprise placement or isolated tainted canary.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
