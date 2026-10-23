@@ -216,10 +216,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T09:13:02.540Z" }
+generated: { by: "codex", at: "2026-10-23T09:40:54.147Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T09:13:02.540Z
+    at: 2026-10-23T09:40:54.147Z
 ---
 
 # Workload Inventory
@@ -526,10 +526,17 @@ filesystem free but only about 1,802 MiB unreserved RAM. The 503 MiB gap is
 only the declared database-plus-gateway floor. Co-locating the [initial
 4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
 for API, worker, database, Envoy and gateway on `acer` would exceed its
-unreserved requests by about 2,295 MiB before startup, backup, agent or peak
-margin. A separate 768 MiB agent request nominally fits only `zimaboard-1`
-among workers, but its measured working set leaves about 84 MiB against
-allocatable RAM after that request. `zimaboard-2` has four unrelated Pods,
+unreserved requests by about 2,295 MiB before startup, backup or peak margin.
+The [pinned Embedded driver](../../docs/evidence/openclaw-enterprise-acceptance.md)
+instead schedules one 1,792 MiB Gateway Pod through `oce-role: agents` with
+its own 10 GiB local state claim. The 768 MiB Harness request is for Dedicated
+mode only. At 09:32 UTC on `main` `111b58f`, every worker still had less than
+10 GiB filesystem free. Both the Gateway and database local claims therefore
+need `acer` under the proposed storage pattern, but their 2,304 MiB request
+exceeds its 1,802 MiB unreserved RAM by 502 MiB. Splitting API, worker and
+the full Envoy planning allowance to `zimaboard-1` would leave only 122 MiB
+against its observed memory margin before peaks. `zimaboard-2` has four
+unrelated Pods,
 including single-replica `Recreate` Langfuse PostgreSQL; moving them to clear a
 policy canary would disrupt service and still lacks peak proof. No existing
 node has an admitted Enterprise placement or isolated tainted canary.

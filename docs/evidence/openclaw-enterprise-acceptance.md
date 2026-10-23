@@ -336,16 +336,22 @@ request and 383.07 GiB filesystem free. The 503 MiB deficit above is only the
 2,304 MiB database-plus-gateway floor. The [initial planning budget](../../specs/003-replace-openclaw-enterprise/research.md)
 for API, worker, database, Envoy and gateway is 4,096 MiB; co-locating that
 planning budget on `acer` exceeds its current unreserved requests by about
-2,295 MiB of *allocatable* RAM before startup, backup, enforcement, agent
-and peak margins. The [placement inputs](../../clusters/homelab/apps/openclaw-enterprise/profile-input.json)
-pin the API/worker and gateway to `oce-role: control`, the Envoy proxy shares
-that [control placement](../../clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml),
-and the fresh agent requests another 768 MiB on `oce-role: agents`. The only
-worker with that agent request available by arithmetic, `zimaboard-1`, had
-6,430 MiB node working set against 7,282 MiB allocatable; adding 768 MiB
-would leave about 84 MiB before peaks or host margin. It also retains seven
-node-affine local PVs. `zimaboard-2` has no local PV, but its four unrelated
-Pods request 544 MiB, including single-replica `Recreate` Langfuse PostgreSQL.
+2,294 MiB of *allocatable* RAM before startup, backup, enforcement and peak
+margins. This co-location is a planning scenario, not a selected placement.
+The [placement inputs](../../clusters/homelab/apps/openclaw-enterprise/profile-input.json)
+pin API/worker to `oce-role: control`, and the Envoy proxy shares that
+[control placement](../../clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml).
+The [pinned upstream driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts)
+uses `runtime.nodeSelector` (`oce-role: agents`) for this Embedded Gateway;
+`gatewayNodeSelector` applies only to Dedicated Gateways. Its single Gateway
+Pod requests 1,792 MiB and mounts a distinct 10 GiB state claim. The 768 MiB
+`resources.agent` setting is for a separate Dedicated Harness, per the
+[pinned profile guide](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/installation-profiles.md), and does not
+add an Embedded Pod. `zimaboard-1` had a 6,430 MiB node working set against
+7,282 MiB allocatable and retains seven node-affine local PVs; it cannot host
+a new 10 GiB local Gateway claim. `zimaboard-2` has no local PV, but its four
+unrelated Pods request 544 MiB, including single-replica `Recreate` Langfuse
+PostgreSQL.
 Moving all four elsewhere would leave only 428 MiB by requests after existing
 DaemonSets, the proposed 250 MiB enforcer and three 32 MiB fixtures; peak and
 service-continuity admission remain unproven. No existing node qualifies under
@@ -358,6 +364,21 @@ Reconciliation through the protected declared path might reclaim 512 MiB,
 leaving only about 9 MiB after the 2,304 MiB minimum. This separate drift
 follow-up would not isolate a canary or prove transient fit; no workload was
 moved or scaled.
+
+At 2026-10-23 09:32 UTC on `main` `111b58f`, a fresh read-only check found
+`acer` at 13,459 / 15,261 MiB requested with 383.01 GiB node filesystem free.
+Every worker remained below 10 GiB free. The Embedded Gateway's local 10 GiB
+claim and PostgreSQL's local 10 GiB claim therefore both require `acer` under
+the proposed storage pattern; their 2,304 MiB combined request exceeds its
+1,802 MiB unreserved capacity by 502 MiB before peak or startup margin.
+If API, worker and the full 768 MiB Envoy planning allowance instead occupy
+`zimaboard-1`, their 1,792 MiB budget leaves only 122 MiB against that node's
+observed 1,914 MiB memory margin before peaks; `zimaboard-1` also has only
+8.98 GiB filesystem free. This hypothetical split is not an admitted
+placement. The earlier separate-768-MiB-Agent arithmetic was incorrect for
+Embedded mode and must not be used for capacity admission. `zimaboard-2` still
+hosts four unrelated Pods, including single-replica `Recreate` Langfuse
+PostgreSQL; no worker satisfies the zero-foreign-Pod canary gate.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during

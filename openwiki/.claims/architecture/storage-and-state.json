@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:204d3d1017319b482c4201bd5447cb6b208b216a97f09eb5b68e6354f9ac0a5b",
+  "pageVersion": "sha256:fb88647ae5c2071ba1bf56702d5e90b89421375a95650a6e64a5eccd9553079e",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d7fbcf04e1fcb6a9dac10b53d20d63fc1c172be55ef8ea393027eb28c6199731"
+          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
         }
       ]
     },
@@ -124,7 +124,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:9fe06521075af1d34d28e57edf85cccc61ddad17aaa822b53947504e1f6dd4e5"
+          "version": "repo-file-v1:sha256:9673c3b68757eaba263cf2fbd682fd9c9b6818e086b1388814262ecdbca0bd1b"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
@@ -206,7 +206,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d7fbcf04e1fcb6a9dac10b53d20d63fc1c172be55ef8ea393027eb28c6199731"
+          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
         }
       ]
     },
@@ -216,7 +216,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:d7fbcf04e1fcb6a9dac10b53d20d63fc1c172be55ef8ea393027eb28c6199731"
+          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -226,15 +226,15 @@
     },
     {
       "id": "claim_c980e4cfbd6347118de5f304fdaca4bf",
-      "statement": "The 2026-10-23 capacity checks leave only acer with room for the distinct local Enterprise claims. Its 503 MiB database-plus-gateway deficit is only the declared floor; co-locating the 4,096 MiB initial planning reservation would exceed unreserved requests by about 2,295 MiB before transient margins. No existing node has an admitted isolated canary, and Zima-1 agent placement lacks measured headroom.",
+      "statement": "The current Embedded OpenClaw profile creates one 1,792 MiB Gateway Pod on the agents selector with a 10 GiB local state claim; the separate 768 MiB Harness request is Dedicated-only. On the 2026-10-23 09:32 UTC read-only check, only acer had disk for the Gateway and database claims, yet its 1,802 MiB unreserved memory was 502 MiB below their 2,304 MiB floor. A 4,096 MiB co-located planning reservation and an isolated tainted canary remain unadmitted.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json#L49-L65",
-          "version": "repo-lines-v1:sha256:686972816e19b057cada9077e6981d2eb11e135e21d5c61a3c70afd66e20a5eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1NWZhY2UzN2FlNDNjNTRjMTAwZjM0OTliNjA4MzM3OWU0ZWRlZmIxYTQ4YmIxM2YzZGRmYzRkMzg1YjVmOTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2YmM0OTkwOTRjMGMzZTFjMjBiNmUxMTBhZGMxYTk4OTU5Nzg2ZjIwZWZjMDBiNTEyMjgyMmU5YjgyODE3YzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1NmY4MjdlNDE2ZjA4OTEyOGU4Njk4ODQxYjgwYzJjMDEyMjYzODA1NjcwNTFmZmVjMjA0Y2RiNDdkMTA2NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmMWMzYjE5MmU5ZWExNzVlMjNkMjFmNTI3MDIzZTdiYzU3Nzc0YzllNDg1NDZlODM5OTM1YTZlMTQ1YjUxOGUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json#L61-L66",
+          "version": "repo-lines-v1:sha256:0b45294e9d52a589b75747ddefaabee09cf7da0e8c3dd4ecbae478aa00838ef4:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGU0Y2VkYzhlMDQzYWU5MzdjMzk0NjJkYjczMDg3NTk1YTJmYmZjZDkxOTFlYjZhMmRjMzE5NThlNzdmM2ZkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODRlNTc1MDJiNmFkZDk5Zjg3NWRmMDJkYzA3MjA0MTc0MGE1OTRhZmNiNWJmMGM3OTc4NmI0MGYzZjkxN2M1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNmE5NTEzMGY0Zjc0ZTQ0NDIzNmU3NTE4MzFmMDk0MmQ1ODhiMDdlOGNmYmNlMDExODg2OWQ2MzhlNjBjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGY3MzlhMDZjMWNiYjEyNDRlMzM2M2QzOGJjZjlmYTUwY2U4NGZlZDM5OWMyMTkzYTNjN2YwOGQ1OTkxOGIyYSJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L323-L352",
-          "version": "repo-lines-v1:sha256:8450dd28fc7c3bad0fbcecdc57c8ab915c125e9e279036979f9bcf574609f3dc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwOWJjNGVlOGE1NDMzMzQ0NDBiYzUyOGZiZTRmYjYzMTk1MjM1NTNhNDI4NThjNjI3N2VlNTQwODU5Zjc3NzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjY1MzZhZGExNDZmNjBhMTQ0M2IyZmZjZmI0MDhjNDU5YmQ1ZDY2YzEzZjIwOTEwN2M2NmQzZTExMGU2NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhODljODc0OTUzNzg0OGU3YTVlMjkxZTU2Y2Y1NTZlNzFhNWI3MWU4Y2JiMmMxZmVmZDUzYjliZTMzM2I4ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2OGExMzk1NGMyOGI3YzQ5YjZlOTI4OTEwMzYwNjNkNmRlNzA1YTlkYTY0NzE5MWI2NWQ4Nzg4MTFjOWVjODAifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L333-L381",
+          "version": "repo-lines-v1:sha256:555a986bda319c70b49e5adeaa062467f3862549863a7f38c582c318d33279d6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmMmY3YmE1YzU4N2JjMWI4OWZhMDFmZDEwNDRmZGQ4Mjk4MWU1MjAwMDZjMDQxZGM5MWE3NzI0MmU3MWIxNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiNTYwYmUxYzJmOTg0ZjdkYmFhNmZiNjRiNWQ2YjJmMGMwYTVjNjBiOGViM2NlNDZiYjdjNDNmOWQ1YWQyNGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZDU2MGM5ZDEyNDYxN2YzOTg3ZjcyNTdiY2VlMjFjNmY1MjAxNWMyZDQ1ZGQ3YWIyMzU4YWJkZTM5MTZlZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/research.md#L150-L153",
@@ -263,6 +263,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T08:31:33.560Z"
+    "at": "2026-10-23T09:47:49.014Z"
   }
 }

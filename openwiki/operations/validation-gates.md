@@ -352,10 +352,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T09:13:02.540Z" }
+generated: { by: "codex", at: "2026-10-23T09:40:54.147Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T09:13:02.540Z
+    at: 2026-10-23T09:40:54.147Z
 ---
 
 # Validation Gates
@@ -1801,10 +1801,18 @@ The 08:18 UTC recheck on `main` `bcc08cb` leaves the same stop gate. The
 503 MiB deficit is only the declared database-plus-gateway floor; co-locating
 the [4,096 MiB initial planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
 for API, worker, database, Envoy and gateway on `acer` exceeds its unreserved
-requests by about 2,295 MiB before transient or peak margin. The 768 MiB agent
-request nominally fits `zimaboard-1`, but its observed working set would leave
-about 84 MiB against allocatable RAM after that request. No worker has an
-admitted isolated tainted canary, and no local Enterprise storage is admitted.
+requests by about 2,295 MiB before transient or peak margin. This is a
+co-location scenario, not selected placement. The [pinned source correction](../../docs/evidence/openclaw-enterprise-acceptance.md)
+shows that this Embedded Agent has one 1,792 MiB Gateway Pod on
+`oce-role: agents` with a 10 GiB local state claim. The 768 MiB Harness
+request applies only to Dedicated mode; it is not another Embedded Pod.
+At 09:32 UTC on `main` `111b58f`, only `acer` had disk for both 10 GiB local
+Gateway and database claims. Their 2,304 MiB combined request exceeded its
+1,802 MiB unreserved RAM by 502 MiB. A hypothetical split putting API,
+worker and the full Envoy planning allowance on `zimaboard-1` would leave
+only 122 MiB against its observed memory margin before peaks. No worker has
+an admitted isolated tainted canary, and no local Enterprise storage is
+admitted.
 
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
