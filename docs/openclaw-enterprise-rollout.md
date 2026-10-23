@@ -160,6 +160,14 @@ taint tolerations and less than 10 GiB free for one new local claim. Freeing
 services, and the measured margin does not cover peaks or rolling overlap.
 Do not declare PV nodes or apply a canary taint until the placement,
 transient-load and service-continuity review passes.
+The [2026-10-23 read-only recheck](evidence/openclaw-enterprise-acceptance.md)
+still finds only `acer` with space for a 10 GiB claim; it is 503 MiB short of
+the 2,304 MiB database-plus-gateway request. The best worker has 9.00 GiB
+filesystem free and its 38 non-DaemonSet Pods request about 3,342 MiB, more
+than the other nodes' combined 2,036 MiB unreserved. Source declares both
+Crossplane controllers at zero replicas, but two live 256 MiB Pods remain on
+`acer`; reconciling that drift would still leave just 9 MiB after the minimum
+request and no isolated canary. Rebalancing alone does not admit T022 or T035.
 
 Stop at the first failed stage. Do not force-delete a writer, downgrade
 Kubernetes automatically, disable network policy, reuse a legacy key, switch to
