@@ -13,7 +13,7 @@ on:
         required: false
         default: none
         type: choice
-        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore]
+        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore]
       enterprise_stage:
         description: Fixed Enterprise operation (binding needs a private bootstrap key; other stages need a durable journal)
         required: false
@@ -55,12 +55,16 @@ jobs:
           test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
             *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
           esac
           if [[ "$ENTERPRISE_STAGE" != none ]]; then
             test -z "$BASELINE_REF"
             test -z "$ARCHIVE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" == resume-restore ]]; then
+            test "$ARCHIVE_REF" = '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221'
+            test -z "$BASELINE_REF"
           fi
 
       - name: Check Out Repository
@@ -97,6 +101,7 @@ jobs:
     environment:
       name: homelab-production
     permissions:
+      actions: read
       contents: read
       id-token: write
     steps:
@@ -116,6 +121,7 @@ jobs:
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install Nix
@@ -123,6 +129,23 @@ jobs:
         with:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Prior Restore Run
+        env:
+          RUN_STAGE: ${{ inputs.legacy_stage }}
+          PRIOR_RUN_ID: '39988927652'
+          ARCHIVE_REF: ${{ inputs.archive_ref }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$RUN_STAGE" == resume-restore ]]; then
+            sha256sum --check --status <<<'818e1436ee6037b814b03c2975fe20de276da69855dff42bfd8accb336cd3ad2  scripts/ci/openclaw-enterprise-resume-provenance.py'
+            python3 -I scripts/ci/openclaw-enterprise-resume-provenance.py \
+              --prior-run-id "$PRIOR_RUN_ID" --archive-ref "$ARCHIVE_REF" \
+              --current-sha "$EXPECTED_SHA" \
+              --receipt "${RUNNER_TEMP}/oce-resume-provenance.json"
+          fi
 
       - name: Verify Protected Inputs
         env:
@@ -147,6 +170,7 @@ jobs:
           RUN_STAGE: ${{ inputs.legacy_stage }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
           ARCHIVE_REF: ${{ inputs.archive_ref }}
+          OPENCLAW_RESUME_PROVENANCE: ${{ runner.temp }}/oce-resume-provenance.json
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
           private_log="$(mktemp)"
@@ -155,9 +179,12 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
+          if [[ "$RUN_STAGE" == resume-restore ]]; then
+            export PRIOR_RUN_ID=39988927652
+          fi
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'e213cf57ea37b908fb8a67f178e0391f525cd198def991cbd3cbf151ee4f2eb4  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611  scripts/ci/openclaw-enterprise-operations.sh'
           sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
           sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
@@ -168,8 +195,10 @@ jobs:
               echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
             *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
             esac
+            rm -f "$OPENCLAW_RESUME_PROVENANCE"
             exit 1
           fi
+          rm -f "$OPENCLAW_RESUME_PROVENANCE"
           echo "Legacy operation completed; private receipts withheld."
 
   enterprise:
