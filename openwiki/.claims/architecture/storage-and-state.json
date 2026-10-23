@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:77e583c6bb727ccfd291aeaec3dca54c9b05f72027dbfb7b3dca5e31c2a3d766",
+  "pageVersion": "sha256:bd43bf4c967353ced7075b63a368a92b79bf30f8ab8d98cca4d8d9768fbbcb99",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
+          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -237,10 +237,28 @@
           "version": "repo-lines-v1:sha256:9e952884c05472a34f2696dbd26f2efaebd2e72fba3021f80edc41ccb8ee1671:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZTNiYzg0OWQ1YjI1YjhkZmU1ZjIzMDNjNWFmNDc2M2Q4NTdlYWQzYjNjZmQwMzQxZWY0MzRjNDRiNjhjNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNTMwMzRlNmRhZmFlYjY3YzU1ZmI3MzJhODZjY2RlMmZhMTExZWRkZGM2YWU0OGNhOWRkNDlkODFlZTUwZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmZTc1NzNjZmRmMjJjYTUzY2RiZGM4ZmM3MjFhOWYyNDlhOWQxNDVmYTg2NjUzMjhkNWQwZWQ4NjkyNGU1NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_17f851a39fcf458fa74b29afc798661f",
+      "statement": "The source-only Enterprise backup script requires exactly one recovery marker with writerStopped true and a nonempty claimUid; its offline fixture rejects missing, false, malformed, or concatenated markers, while live claim-UID proof, sustained writer fencing, scheduled encrypted off-node backup, and restore acceptance remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
+          "version": "repo-file-v1:sha256:ba13c2224b86f0b0c576773f3361bc032aa572e43790d0ae4d073cae0f994349"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
+          "version": "repo-file-v1:sha256:c055210f6bc04cea4d81537316fd9ccdb7259cdd44073a10c1c4c816f3f7357e"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
+          "version": "repo-file-v1:sha256:4fe00fb41de76956d43c884d3c90a8d736d3e457bb2816003e7cb9cdf7c6c467"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T06:39:57.483Z"
+    "at": "2026-10-23T07:08:02.138Z"
   }
 }

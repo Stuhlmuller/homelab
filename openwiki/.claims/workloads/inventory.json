@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a9125faf502ee79f5c5df68b506973056d9e7dc91f2dde9a7c19adb443055a14",
+  "pageVersion": "sha256:070a289099a7ea28a66e41355f67a286b69b4419b0358d736a8d5874fe228a80",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
+          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -729,10 +729,28 @@
           "version": "repo-lines-v1:sha256:9e952884c05472a34f2696dbd26f2efaebd2e72fba3021f80edc41ccb8ee1671:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZTNiYzg0OWQ1YjI1YjhkZmU1ZjIzMDNjNWFmNDc2M2Q4NTdlYWQzYjNjZmQwMzQxZWY0MzRjNDRiNjhjNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNTMwMzRlNmRhZmFlYjY3YzU1ZmI3MzJhODZjY2RlMmZhMTExZWRkZGM2YWU0OGNhOWRkNDlkODFlZTUwZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmZTc1NzNjZmRmMjJjYTUzY2RiZGM4ZmM3MjFhOWYyNDlhOWQxNDVmYTg2NjUzMjhkNWQwZWQ4NjkyNGU1NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_d0294ea2ad664c5d91b923725fd4fc53",
+      "statement": "The dormant Enterprise backup candidate requires exactly one stopped-writer marker with a nonempty claim UID, but there is no scheduled backup, live UID proof, or sustained writer fence.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
+          "version": "repo-file-v1:sha256:ba13c2224b86f0b0c576773f3361bc032aa572e43790d0ae4d073cae0f994349"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
+          "version": "repo-file-v1:sha256:4fe00fb41de76956d43c884d3c90a8d736d3e457bb2816003e7cb9cdf7c6c467"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T06:39:57.483Z"
+    "at": "2026-10-23T07:08:02.138Z"
   }
 }

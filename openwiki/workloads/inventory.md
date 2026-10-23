@@ -74,6 +74,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -198,14 +200,16 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-4f1f492ff2ee386585deee86
+    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T06:31:00.176Z" }
+generated: { by: "codex", at: "2026-10-23T07:08:02.138Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T06:39:57.483Z
+    at: 2026-10-23T07:08:02.138Z
 ---
 
 # Workload Inventory
@@ -431,6 +435,9 @@ declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, retained PostgreSQL CA, private server certificate,
 and a dormant PostgreSQL 18.6 StatefulSet with a 10Gi local claim template.
+Its source-only backup candidate requires exactly one stopped-writer marker
+object with a nonempty claim UID. No scheduled backup, live UID proof or writer
+fence exists yet.
 It declares no running PostgreSQL, local volumes, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,

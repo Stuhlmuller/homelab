@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -38,6 +40,8 @@ sources:
     resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-91161c3887f6aa107b3c0d6b
+    resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-b7865f8f7c461f149710edda
@@ -46,14 +50,16 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-4f1f492ff2ee386585deee86
+    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T06:31:00.176Z" }
+generated: { by: "codex", at: "2026-10-23T07:08:02.138Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T06:39:57.483Z
+    at: 2026-10-23T07:08:02.138Z
 ---
 
 # Storage And State
@@ -319,7 +325,13 @@ has not been applied. Its PostgreSQL 18.6
 StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
 restore fixtures are source-only; node placement, live role initialization,
 complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
-this source alone. The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
+this source alone. The [backup script](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
+now requires exactly one recovery marker object with `writerStopped: true` and a
+nonempty `claimUid`. The [offline fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
+rejects stopped-writer and UID failures, malformed JSON and concatenated markers.
+This file check does not prove the UID matches the live claim or hold writers
+stopped during capture; T051 still needs those controls and a scheduled,
+encrypted off-node backup with restore proof. The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
 about 3,398 MiB unreserved on the best worker, `zimaboard-1`, below the
 4,096 MiB initial Enterprise reservation before transient and host headroom.
 Its root filesystem had 9.74 GB free. Talos confirmed each worker's `/var`
