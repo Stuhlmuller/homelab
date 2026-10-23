@@ -38,6 +38,8 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
@@ -58,10 +60,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T11:55:33.894Z" }
+generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:55:33.894Z
+    at: 2026-10-23T13:22:56.341Z
 ---
 
 # Storage And State
@@ -314,11 +316,15 @@ compatible legacy boot remain unverified; keep all retained claims. Later
 upload. They do not invalidate the successful publication.
 The declared `prepare-restore` stage rechecks stopped writers, retained volume
 and root identities, and private scratch capacity before fetching the
-publication's exact versioned archive and receipt. Transfers use at most three
-attempts into run-private scratch and promote only bytes matching the expected
-size and SHA-256. Its first [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
-failed after the archive download but before the receipt transfer completed or
-the restore worker started; no verified recovery copy resulted. A successful
+publication's exact versioned archive and receipt. The source-only transfer
+repair fetches pinned S3 versions in at most 128 MiB ranges, verifies version,
+interval and length metadata, then sends at most 8 MiB SHA-256-checked slices
+to the reader. It rolls back interrupted appends and promotes only after a full
+size and SHA-256 match. The first [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
+left an incomplete, unverified archive in scratch. The [retry
+`39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker. No verified recovery copy resulted. A successful
 stage would retain a separate tree and private symlink classification report,
 but would not boot the old gateway or prove T014 compatible recovery.
 The legacy archive retains NAS symlink targets but not data outside its roots.

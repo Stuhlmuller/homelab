@@ -230,6 +230,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
@@ -358,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T11:55:33.894Z" }
+generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:55:33.894Z
+    at: 2026-10-23T13:22:56.341Z
 ---
 
 # Validation Gates
@@ -1771,16 +1773,19 @@ both SQLite databases and required historical backups. T013 is complete.
 Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) declared a
 fixed `prepare-restore` stage guarded by exact current `main`. Its first
 [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
-failed after the versioned archive reached isolated scratch but before the
-receipt transfer completed or the restore worker started; no accepted copy
-resulted. The transfer repair retries each exact S3 version at most three
-times into run-private partial scratch, compares the reader's size and SHA-256
-against the published archive digest or a separate download of the pinned
-receipt version, and atomically promotes matching bytes. The workflow exposes
+left an incomplete, unverified archive in scratch. The [retry
+`39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker, and no accepted copy resulted. The source-only
+transfer repair fetches exact S3 versions in at most 128 MiB ranges, checks
+version, interval and length metadata, then uploads at most 8 MiB SHA-256-checked
+reader slices. Interrupted appends roll back to the prior offset; full size
+and SHA-256 checks precede no-clobber promotion. The workflow exposes
 fixed archive-download, receipt-download, and restore failure phases while
-withholding private diagnostics. Source fixtures reject truncated and same-size
-corrupt streams, reader transport failures, changed source identities, unsafe
-destinations, corrupt archives/databases, and unsafe symlinks. A successful
+withholding private diagnostics. Source fixtures reject short and wrong-metadata
+ranges, same-size corruption, reader transport failures, interrupted appends,
+and destination collisions, as well as changed source identities, corrupt
+archives/databases and unsafe symlinks. A successful
 stage would retain a separate verified copy and link report; source tests do
 not prove an isolated old-image boot or complete T014.
 
