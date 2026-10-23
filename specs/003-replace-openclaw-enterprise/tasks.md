@@ -199,7 +199,7 @@ recovery sets and shared platform dependencies.
 
 ## Phase 7: Polish and Cross-Cutting Validation
 
-- [ ] T059 Update `docs/runtime-isolation.md`, `docs/image-egress-hardening.md`, `docs/secrets-aws-ssm.md`, `docs/argocd-app-onboarding.md` and `docs/talos-control-plane-maintenance.md`; refresh affected `openwiki/` pages through the repository's approved OpenWiki maintenance path using these source docs, recording ownership/version/policy changes without hand-editing generated pages.
+- [X] T059 Update `docs/runtime-isolation.md`, `docs/image-egress-hardening.md`, `docs/secrets-aws-ssm.md`, `docs/argocd-app-onboarding.md` and `docs/talos-control-plane-maintenance.md`; refresh affected `openwiki/` pages through the repository's approved OpenWiki maintenance path using these source docs, recording ownership/version/policy changes without hand-editing generated pages.
 - [ ] T060 Run the complete relevant validation set in `specs/003-replace-openclaw-enterprise/quickstart.md`, including HCL/stack generation, static/Conftest, Helm/Kustomize, lifecycle/recovery tests and secret scans; verify the documented fresh-cluster root `terragrunt apply` dependency path and distinct protected maintenance path, and resolve every remaining failure or
   explicitly unavailable live gate.
 - [ ] T061 Reconcile all FR-001–FR-012 and SC-001–SC-005 receipts in `docs/evidence/openclaw-enterprise-acceptance.md` against actual deployed source/digests; update `specs/003-replace-openclaw-enterprise/tasks.md` checkboxes only from evidence and update `plan.md`/`quickstart.md` for implemented paths, leaving unresolved gates unchecked.
