@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bbdebc6dfdc40c9c0518206484bd219a2b960de2418303bafb35eaa892cbf5fb",
+  "pageVersion": "sha256:fb90a7a0706643a8ef7a98e6e7ba9299bbdaabbabdeabb9a269476fda8be644f",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -152,7 +152,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ae0a43cb3c8cf68989016566053bcd7a73e1de6315cf9d2224662e4227154455"
+          "version": "repo-file-v1:sha256:a08a5076d9b462eaed38a556b8b741284e9524cf8be7b0bce0521d315c1c0327"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -188,7 +188,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ae0a43cb3c8cf68989016566053bcd7a73e1de6315cf9d2224662e4227154455"
+          "version": "repo-file-v1:sha256:a08a5076d9b462eaed38a556b8b741284e9524cf8be7b0bce0521d315c1c0327"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
@@ -244,7 +244,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ae0a43cb3c8cf68989016566053bcd7a73e1de6315cf9d2224662e4227154455"
+          "version": "repo-file-v1:sha256:a08a5076d9b462eaed38a556b8b741284e9524cf8be7b0bce0521d315c1c0327"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -286,11 +286,11 @@
     },
     {
       "id": "claim_9c197834750641688d586789d82b2ec4",
-      "statement": "After the Linux registry fixture, candidate CI exports the inspected image by ID and scans the complete Docker archive with lock-pinned Grype 0.112.0. The report checker accepts legacy JSON and current blob-path layouts, verifies the archive config path digest against its bytes and inspected Docker ID, then binds the Grype report raw config hash and reported image ID to that ID. It validates Linux amd64/Photon 5.0, fresh valid database/report and no exclusions/filtering/VEX, refusing available fixes while retaining unresolved counts. A sanitized identity/hash/database/severity receipt is emitted; raw metadata stays private, temporary inputs are cleaned, and collection success does not grant CVE clearance or publication.",
+      "statement": "After the Linux registry fixture, candidate CI exports the inspected image by immutable ID and scans its complete Docker archive with lock-pinned Grype 0.112.0. The checker verifies the Docker-save config path digest against its bytes; classic Docker requires that digest to equal the inspected ID, while the containerd store requires the inspected ID to match the saved OCI root descriptor and verifies the root, selected Linux amd64 manifest, and config descriptor chain. Grype raw config hash and reported image ID must equal the selected config digest. It validates Linux amd64/Photon 5.0, a fresh valid database/report, no exclusions/filtering/VEX, and no available fixes while retaining unresolved counts. The sanitized receipt is not CVE clearance or publication, and raw metadata and temporary inputs stay private.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:a08a5076d9b462eaed38a556b8b741284e9524cf8be7b0bce0521d315c1c0327"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check.py",
-          "version": "repo-file-v1:sha256:b3cb141c6069488f64562b14b8c8e47b202926c957a470d172253a812d8c57a8"
+          "version": "repo-file-v1:sha256:61a396422472569e5ae53e4388ff0cf9216a6589b1770619203bc25f30d35e89"
         }
       ]
     },
@@ -344,7 +344,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ae0a43cb3c8cf68989016566053bcd7a73e1de6315cf9d2224662e4227154455"
+          "version": "repo-file-v1:sha256:a08a5076d9b462eaed38a556b8b741284e9524cf8be7b0bce0521d315c1c0327"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -352,7 +352,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check.py",
-          "version": "repo-file-v1:sha256:b3cb141c6069488f64562b14b8c8e47b202926c957a470d172253a812d8c57a8"
+          "version": "repo-file-v1:sha256:61a396422472569e5ae53e4388ff0cf9216a6589b1770619203bc25f30d35e89"
         }
       ]
     },
@@ -880,7 +880,7 @@
     },
     {
       "id": "claim_ba29e4a44dd840789b985e81da6ac56a",
-      "statement": "Harbor core validate CI writes only a fixed audit stage or report-validation category to a separate temporary status file on private runtime audit failure; identity categories distinguish archive structure, archive config path/byte hash mismatch, a self-consistent archive versus inspected ID mismatch, report raw config, reported image ID, platform and distro without printing values. The public helper rejects malformed values as unknown, keeps the raw log/report withheld, and never turns a failed audit into clearance.",
+      "statement": "Harbor core validate CI writes only a fixed audit stage or validation category to a separate temporary status file on private runtime audit failure. Identity categories distinguish archive structure, config path/byte hash mismatch, missing inspected OCI root descriptor, invalid descriptor graph, Grype raw config, reported image ID, platform and distro without printing values. The public helper rejects malformed status as unknown, withholds the private log/report, and never turns a failed audit into clearance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -892,17 +892,17 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-audit-status.sh",
-          "version": "repo-file-v1:sha256:73e284188c2fb8286956c9d492ca9edb51953e654f48a633f2b0424c901fdc37"
+          "version": "repo-file-v1:sha256:6ef76b0dd62b635ac03d3282ee77f601c928c615744cde152fb43690b72fe798"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check.py",
-          "version": "repo-file-v1:sha256:b3cb141c6069488f64562b14b8c8e47b202926c957a470d172253a812d8c57a8"
+          "version": "repo-file-v1:sha256:61a396422472569e5ae53e4388ff0cf9216a6589b1770619203bc25f30d35e89"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T05:58:02.066Z"
+    "at": "2026-10-23T06:14:27.082Z"
   }
 }

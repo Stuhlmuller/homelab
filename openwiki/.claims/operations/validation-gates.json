@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a1a5716f79289fb5a1d0aff82cad3909ddb1cc2175c86ec3eda7abe4ec6864cb",
+  "pageVersion": "sha256:919cb991b55ade068ff0b023f0fbb56a29894b71f4308789a61d566e7c184735",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -358,7 +358,7 @@
     },
     {
       "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
-      "statement": "Offline fixtures accept legacy JSON and current blob-path Docker-save config layouts, then distinguish archive config path/byte hash mismatch from a self-consistent archive config differing from the inspected Docker ID. They reject wrong Grype raw config hash or reported image ID, platform/distro identity, invalid or stale databases, filters/exclusions, and available fixes while retaining unresolved findings; receipts omit raw metadata and set cve_clearance false. The Linux job runs unit checks then the private runtime-audit command with non-persisted checkout credentials.",
+      "statement": "Offline Harbor fixtures accept legacy JSON and current blob-path Docker-save config layouts. They distinguish archive config path/byte hash mismatch from inspected root descriptor mismatch; containerd fixtures verify an index root or direct manifest and reject wrong root, wrong selected config and corrupt root blob. They reject wrong Grype raw config hash or reported image ID, platform/distro, invalid or stale databases, filtering/exclusions and available fixes while retaining unresolved findings. Receipts omit raw metadata and deny CVE clearance. The Linux job runs unit checks and a private runtime audit after a non-persisted checkout.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -366,11 +366,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
-          "version": "repo-file-v1:sha256:d70b475321d7d52ffaa6b709f09ec5f6831ecb9840db6ac5a565a7b61a9e31f3"
+          "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check.py",
-          "version": "repo-file-v1:sha256:b3cb141c6069488f64562b14b8c8e47b202926c957a470d172253a812d8c57a8"
+          "version": "repo-file-v1:sha256:61a396422472569e5ae53e4388ff0cf9216a6589b1770619203bc25f30d35e89"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
-          "version": "repo-file-v1:sha256:d70b475321d7d52ffaa6b709f09ec5f6831ecb9840db6ac5a565a7b61a9e31f3"
+          "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -1744,7 +1744,7 @@
     },
     {
       "id": "claim_ae1eff79742f4db98b966f96952761a0",
-      "statement": "The Harbor core failure-status fixture covers a failed scan stage, fixed identity categories including archive self-hash, archive-versus-inspect ID, report config and reported image ID, a remediation category, and malformed status; validate prints only an allowlisted stage/category or unknown while retaining the full private log and failing the job.",
+      "statement": "The Harbor core failure-status fixture covers a failed scan stage, fixed identity categories including archive self-hash, inspected root descriptor, descriptor graph, Grype report config and reported image ID, a remediation category and malformed status. Validate prints only an allowlisted stage/category or unknown while retaining the full private log and failing the job.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -1752,17 +1752,17 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-audit-status.sh",
-          "version": "repo-file-v1:sha256:73e284188c2fb8286956c9d492ca9edb51953e654f48a633f2b0424c901fdc37"
+          "version": "repo-file-v1:sha256:6ef76b0dd62b635ac03d3282ee77f601c928c615744cde152fb43690b72fe798"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
-          "version": "repo-file-v1:sha256:d70b475321d7d52ffaa6b709f09ec5f6831ecb9840db6ac5a565a7b61a9e31f3"
+          "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T05:58:02.066Z"
+    "at": "2026-10-23T06:14:27.082Z"
   }
 }

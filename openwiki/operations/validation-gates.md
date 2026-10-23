@@ -342,10 +342,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T05:58:02.066Z" }
+generated: { by: "codex", at: "2026-10-23T06:14:27.082Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:58:02.066Z
+    at: 2026-10-23T06:14:27.082Z
 ---
 
 # Validation Gates
@@ -2255,14 +2255,17 @@ specific prerequisite checks; unfiltered module-level findings remain in the
 audit receipts and final-container/component scans are still required.
 The Linux job runs the checker and private runtime-audit command for the
 candidate exported by inspected image ID. Offline fixtures accept legacy
-JSON and current blob-path Docker-save config layouts, then distinguish a
-config path/byte hash mismatch from a self-consistent archive whose config
-differs from Docker's inspected ID. They also refuse a wrong Grype raw config
-hash or reported image ID, wrong platform/distro, stale or invalid databases,
-filters/exclusions, and available fixes; unresolved findings remain counted.
+JSON and current blob-path Docker-save config layouts. Classic Docker archives
+bind the inspected ID to the self-hashed config; containerd archives bind the
+inspected ID to a saved OCI root descriptor and verify the unique Linux amd64
+manifest and its selected config. Fixtures cover an index root, direct manifest,
+wrong root ID, wrong selected config and corrupted root blob. They also refuse
+wrong Grype raw config or reported image ID, platform/distro, stale or invalid
+databases, filters/exclusions, and available fixes; unresolved findings remain counted.
 A privacy case requires sanitized receipts to omit raw image metadata and
 explicitly deny CVE clearance. The [failure-status fixture](../../scripts/ci/harbor-core-scan-check-test.py)
-exercises a failed scan stage, fixed identity categories, a remediation
+exercises a failed scan stage, fixed archive hash, inspected descriptor and
+descriptor-graph categories, report identity, and remediation
 category, and malformed status input. CI prints only the allowlisted
 stage/category or `unknown` through the
 [status helper](../../scripts/ci/harbor-core-audit-status.sh); the full log

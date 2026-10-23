@@ -166,10 +166,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T05:58:02.066Z" }
+generated: { by: "codex", at: "2026-10-23T06:14:27.082Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:58:02.066Z
+    at: 2026-10-23T06:14:27.082Z
 ---
 
 # Harbor Private OCI Registry
@@ -637,9 +637,15 @@ The [full-runtime audit](../../builds/harbor-core/scan.sh) exports the
 inspected Linux candidate by image ID after registry acceptance and scans its
 complete Docker archive with lock-pinned Grype. Its [report checker](../../scripts/ci/harbor-core-scan-check.py)
 accepts legacy JSON and current blob-path Docker-save config layouts. It
-checks that the archive config path digest matches its bytes, then binds that
-digest, the Grype report's raw config hash, and its reported image ID to the
-inspected Docker ID. It also verifies platform/distro, fresh report/database
+checks that the archive config path digest matches its bytes. For Docker's
+classic image store, that config digest must equal the inspected ID. For the
+containerd image store, the inspected ID must equal the saved OCI index's
+single root descriptor; the checker verifies its blob hash, the unique Linux
+amd64 manifest's blob hash, and the selected config descriptor against the
+Docker-save config bytes. Grype's raw config hash and reported image ID must
+equal that selected config digest. This preserves the immutable export binding
+when Docker inspect reports an index or manifest digest instead of a config
+digest. It also verifies platform/distro, a fresh report/database,
 and absence of filtering, exclusions or VEX input. Available fixes fail this
 audit. Unfixed/unknown matches remain counted; successful collection does not
 mean CVE clearance or authorize publication. CI emits only an identity/report-
@@ -650,8 +656,8 @@ stage or report-validation category from a separate temporary status file.
 Malformed status becomes `unknown`; the private log and report remain withheld.
 The category narrows investigation but does not relax the audit or establish
 vulnerability clearance. Identity failures distinguish archive structure,
-archive path/byte hash mismatch, a self-consistent archive differing from the
-inspected ID, report config, reported image ID, platform and distro without
+archive path/byte hash mismatch, missing inspected root descriptor, invalid
+descriptor graph, report config, reported image ID, platform and distro without
 printing any of those values.
 
 The [full-container receipt](../../docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json)
