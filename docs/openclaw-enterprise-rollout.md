@@ -172,7 +172,13 @@ Crossplane controllers at zero replicas, but two live 256 MiB Pods remain on
 request and no isolated canary. The 503 MiB figure covers only database plus
 gateway; the initial 4,096 MiB API/worker/database/Envoy/gateway planning
 budget would exceed `acer`'s unreserved requests by about 2,295 MiB if
-co-located there, before agent, startup and peak margins. Rebalancing alone does not admit T022 or T035.
+co-located there, before startup and peak margins. The Embedded Gateway is
+the fresh Agent's only runtime Pod: it requests 1,792 MiB on `oce-role: agents`
+and needs a 10 GiB local state claim. The 768 MiB Harness request applies to
+Dedicated mode only. Splitting API/worker/Envoy to `zimaboard-1` still leaves
+`acer` 502 MiB short of the database-plus-Gateway floor and leaves only
+122 MiB observed memory margin on `zimaboard-1` before peaks. Rebalancing
+alone does not admit T022 or T035.
 
 Stop at the first failed stage. Do not force-delete a writer, downgrade
 Kubernetes automatically, disable network policy, reuse a legacy key, switch to

@@ -58,10 +58,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
+generated: { by: "codex", at: "2026-10-23T09:40:54.147Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:31:33.560Z
+    at: 2026-10-23T09:47:49.014Z
 ---
 
 # Storage And State
@@ -356,10 +356,19 @@ only the declared database-plus-gateway floor. If the [initial 4,096 MiB
 planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
 for API, worker, database, Envoy and gateway is co-located on `acer`, it
 exceeds unreserved requests by about 2,295 MiB before startup, backup,
-agent and peak margin. The 768 MiB agent request fits only `zimaboard-1` by
-worker request arithmetic, but that node's observed 6,430 MiB working set
-leaves about 84 MiB against allocatable RAM after that request. No existing
-node has an admitted Enterprise storage and isolated-canary placement.
+and peak margin. This is a planning scenario, not selected placement. The
+[pinned Embedded Gateway source](../../docs/evidence/openclaw-enterprise-acceptance.md)
+uses `oce-role: agents`, requests 1,792 MiB in one Pod, and needs its own 10 GiB
+local state claim. The configured 768 MiB Harness request applies to Dedicated
+mode only; adding it to Embedded capacity was incorrect.
+At 09:32 UTC on `main` `111b58f`, `acer` had 1,802 MiB unreserved and 383.01 GiB
+filesystem free, while every worker had less than 10 GiB free. Both the 10 GiB
+database and Gateway claims therefore need `acer` under the proposed local
+storage pattern; their 2,304 MiB request is 502 MiB above its headroom.
+Splitting API, worker and the full Envoy planning allowance to `zimaboard-1`
+would leave only 122 MiB against its observed memory margin before peaks.
+No existing node has an admitted Enterprise storage and isolated-canary
+placement.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
