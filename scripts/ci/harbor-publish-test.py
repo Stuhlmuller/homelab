@@ -1760,6 +1760,41 @@ class HarborPublicationGates(unittest.TestCase):
                 (self.root / "summary").unlink()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
+    def test_enterprise_public_phase_annotation_redacts_untrusted_summary(self):
+        workflow = (ROOT / ".github/workflows/openclaw-enterprise-images.yml").read_text()
+        phase_block = workflow.split("            phase=unclassified\n", 1)[1].split(
+            "            exit 1\n", 1)[0]
+        phase_script = "phase=unclassified\n" + textwrap.dedent(phase_block)
+        summary = self.root / "summary"
+        for contents, expected in (
+            ("Enterprise image publication failed at phase: push-controller\n",
+             "push-controller"),
+            ("verified digest receipt\nEnterprise image publication failed at phase: cleanup\n",
+             "cleanup"),
+            (f"Enterprise image publication failed at phase: {SECRET_SENTINEL}\n",
+             "unclassified"),
+            (f"Enterprise image publication failed at phase: push-controller\n"
+             f"::error::{SECRET_SENTINEL}\n", "unclassified"),
+        ):
+            with self.subTest(expected=expected):
+                summary.write_text(contents)
+                result = subprocess.run(
+                    ["bash", "-euo", "pipefail", "-c", phase_script],
+                    env={**os.environ, "GITHUB_STEP_SUMMARY": str(summary)},
+                    capture_output=True, text=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(),
+                                 "::error::Enterprise image publication failed at phase: "
+                                 f"{expected}; private transport and registry output withheld.")
+                self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr)
+        summary.unlink()
+        result = subprocess.run(
+            ["bash", "-euo", "pipefail", "-c", phase_script],
+            env={**os.environ, "GITHUB_STEP_SUMMARY": str(summary)},
+            capture_output=True, text=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("phase: unclassified;", result.stdout)
+
     def test_enterprise_preflight_and_cleanup_failures_have_fixed_phases(self):
         self.transport_mocks(enterprise=True)
         self.env["EXPECTED_SHA"] = "0" * 40

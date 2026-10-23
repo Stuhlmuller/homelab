@@ -886,7 +886,18 @@ EOF
 then
   python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
     "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
-  echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+  phase=unclassified
+  if [[ -f "$GITHUB_STEP_SUMMARY" ]]; then
+    phase_line="$(tail -n 1 "$GITHUB_STEP_SUMMARY")"
+    if [[ "$phase_line" == "Enterprise image publication failed at phase: "* ]]; then
+      candidate="${phase_line#*phase: }"
+      case "$candidate" in
+        preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator)
+          phase="$candidate" ;;
+      esac
+    fi
+  fi
+  echo "::error::Enterprise image publication failed at phase: $phase; private transport and registry output withheld."
   exit 1
 fi
 echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."`
