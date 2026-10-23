@@ -162,6 +162,8 @@ sources:
     resource: repo://scripts/ci/entra-emergency-global-admin-plan-test.py
   - id: openwiki-source-71b17b13c9c25f4d36402204
     resource: repo://scripts/ci/entra-owner-conversion-test.py
+  - id: openwiki-source-2891520885ecf43be10fd7b5
+    resource: repo://scripts/ci/harbor-core-audit-status.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -340,10 +342,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T05:40:17.927Z" }
+generated: { by: "codex", at: "2026-10-23T06:14:27.082Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T05:40:17.927Z
+    at: 2026-10-23T06:14:27.082Z
 ---
 
 # Validation Gates
@@ -2251,11 +2253,23 @@ using its key ID. A compiled-package graph guard fails if core introduces
 OpenPGP or Distribution proxy/storage/handler server packages. These are
 specific prerequisite checks; unfiltered module-level findings remain in the
 audit receipts and final-container/component scans are still required.
-The Linux job runs the checker and private runtime-audit command for the exact
-Docker-saved candidate. Offline regressions refuse wrong image/config identity,
-platform/distro, stale or invalid databases, filters/exclusions, and available
-fixes, while retaining unresolved findings unchanged. A privacy case requires
-sanitized receipts to omit raw image metadata and explicitly deny CVE clearance.
+The Linux job runs the checker and private runtime-audit command for the
+candidate exported by inspected image ID. Offline fixtures accept legacy
+JSON and current blob-path Docker-save config layouts. Classic Docker archives
+bind the inspected ID to the self-hashed config; containerd archives bind the
+inspected ID to a saved OCI root descriptor and verify the unique Linux amd64
+manifest and its selected config. Fixtures cover an index root, direct manifest,
+wrong root ID, wrong selected config and corrupted root blob. They also refuse
+wrong Grype raw config or reported image ID, platform/distro, stale or invalid
+databases, filters/exclusions, and available fixes; unresolved findings remain counted.
+A privacy case requires sanitized receipts to omit raw image metadata and
+explicitly deny CVE clearance. The [failure-status fixture](../../scripts/ci/harbor-core-scan-check-test.py)
+exercises a failed scan stage, fixed archive hash, inspected descriptor and
+descriptor-graph categories, report identity, and remediation
+category, and malformed status input. CI prints only the allowlisted
+stage/category or `unknown` through the
+[status helper](../../scripts/ci/harbor-core-audit-status.sh); the full log
+remains private and every failed audit still fails the job.
 Full registry and runtime acceptance still needs fresh Linux CI evidence.
 Core publication regression cases additionally require one fixed subject,
 dedicated workflow/current-main binding, complete private pulls before signing,

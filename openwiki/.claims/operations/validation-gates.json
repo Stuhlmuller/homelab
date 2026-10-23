@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b290d139d2dc145293defde072b21a40cf350e12f1f4e225f4b0520e3515197",
+  "pageVersion": "sha256:919cb991b55ade068ff0b023f0fbb56a29894b71f4308789a61d566e7c184735",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
+          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -358,19 +358,19 @@
     },
     {
       "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
-      "statement": "Offline regressions reject incorrect image/config/platform/distro identity, invalid or stale databases, filters/exclusions, and available fixes while retaining unresolved findings; receipts omit raw metadata and set `cve_clearance: false`. The Linux job runs the unit checks then the private runtime-audit command with non-persisted checkout credentials.",
+      "statement": "Offline Harbor fixtures accept legacy JSON and current blob-path Docker-save config layouts. They distinguish archive config path/byte hash mismatch from inspected root descriptor mismatch; containerd fixtures verify an index root or direct manifest and reject wrong root, wrong selected config and corrupt root blob. They reject wrong Grype raw config hash or reported image ID, platform/distro, invalid or stale databases, filtering/exclusions and available fixes while retaining unresolved findings. Receipts omit raw metadata and deny CVE clearance. The Linux job runs unit checks and a private runtime audit after a non-persisted checkout.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
+          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
-          "version": "repo-file-v1:sha256:39af9123dd7e174967fb8890ba97655e4996bcb035279c718c09bdf68c6b160e"
+          "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check.py",
-          "version": "repo-file-v1:sha256:5fa0403fb952fc4d2a5e8f5a62f4375630c1a5d599b48481f3d8bd027e3f3a81"
+          "version": "repo-file-v1:sha256:61a396422472569e5ae53e4388ff0cf9216a6589b1770619203bc25f30d35e89"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
-          "version": "repo-file-v1:sha256:39af9123dd7e174967fb8890ba97655e4996bcb035279c718c09bdf68c6b160e"
+          "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
+          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -1079,7 +1079,7 @@
       "statement": "The validate whitespace step diffs the pull-request base or push before SHA against HEAD, using the empty tree for a new-branch push, so changed lines are checked on a clean checkout.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/validate.yml#L70-L122",
+          "resource": "repo://.github/workflows/validate.yml#L73-L125",
           "version": "repo-lines-v1:sha256:8b671394b0ecb710ca53106952e25d06b1c9da3097ffdb8c831ac58c78291580:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4OTk5MTEwM2Y2YmE4ODhlM2RlNzY1MWM1YTMwNWM3N2U1NTQ3Njc3M2FiYTgzOTU5MWVjYzViZDBmMmFiMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhN2U2ZDkzMmUxNGRjZDk3NTQ3MWUzMWY5ZjRjZjQzYjlhZmI2ZThmMGRmOGVjMjkyZmY3NTFhNTJiYjMyMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkYWU5MmMwYWVkZWQ5NmMwNTVhOGVlMWJhNGM4YWU1NjVkM2IzYjBjYjdiOGU1MjM5ZjQ4MGE3YzhjNTAxYmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmZmRlODU2Y2QyMDA3YjBhMGE2MzkzNThkMjM5MDk3MzYwZWU3Y2I3YTkzMjkwYmU1NzE0OTBjNjNhMmIzZGQifQ"
         }
       ]
@@ -1741,10 +1741,28 @@
           "version": "repo-lines-v1:sha256:9e952884c05472a34f2696dbd26f2efaebd2e72fba3021f80edc41ccb8ee1671:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiZTNiYzg0OWQ1YjI1YjhkZmU1ZjIzMDNjNWFmNDc2M2Q4NTdlYWQzYjNjZmQwMzQxZWY0MzRjNDRiNjhjNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNTMwMzRlNmRhZmFlYjY3YzU1ZmI3MzJhODZjY2RlMmZhMTExZWRkZGM2YWU0OGNhOWRkNDlkODFlZTUwZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmZTc1NzNjZmRmMjJjYTUzY2RiZGM4ZmM3MjFhOWYyNDlhOWQxNDVmYTg2NjUzMjhkNWQwZWQ4NjkyNGU1NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_ae1eff79742f4db98b966f96952761a0",
+      "statement": "The Harbor core failure-status fixture covers a failed scan stage, fixed identity categories including archive self-hash, inspected root descriptor, descriptor graph, Grype report config and reported image ID, a remediation category and malformed status. Validate prints only an allowlisted stage/category or unknown while retaining the full private log and failing the job.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-audit-status.sh",
+          "version": "repo-file-v1:sha256:6ef76b0dd62b635ac03d3282ee77f601c928c615744cde152fb43690b72fe798"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
+          "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T05:40:17.927Z"
+    "at": "2026-10-23T06:14:27.082Z"
   }
 }
