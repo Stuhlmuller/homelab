@@ -176,6 +176,8 @@ cleanup() {
       mirror_category="server-error"
     elif grep -Eiq 'unauthorized|authentication required|access denied|denied:' "$scratch/mirror-error"; then
       mirror_category="authentication-denied"
+    elif grep -Eiq 'digest mismatch|digest invalid|hash mismatch' "$scratch/mirror-error"; then
+      mirror_category="digest-mismatch"
     elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then
       mirror_category="transport-failed"
     elif [[ "$mirror_phase" == destination-copy ]] && grep -Eiq 'writing blob:|uploading blob:' "$scratch/mirror-error"; then
@@ -339,6 +341,12 @@ if [[ "$mode" == mirror ]]; then
         { ! grep -Eiq 'HTTP status|status code' "$scratch/mirror-error" &&
           grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; }; }
   }
+  mirror_retryable_copy_transport_error() {
+    # A local staged source makes a bare transport error attributable to Harbor.
+    # Never retry an HTTP, auth, storage, missing-content, or digest failure.
+    ! grep -Eiq 'HTTP status|status code|(^|[[:space:]])[45][0-9]{2}([[:space:];]|$)|unauthorized|forbidden|denied|authentication required|toomanyrequests|too many requests|quota|no space left on device|manifest unknown|name unknown|not found|blob unknown|digest|hash' "$scratch/mirror-error" &&
+      grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"
+  }
   while IFS= read -r source; do
     oci_index_copy=false
     source_digest="${source##*@}"
@@ -369,12 +377,28 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        if skopeo copy --all --preserve-digests --src-no-creds \
-            --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-            "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
-          :
-        else
-          copy_status=$?
+        copy_status=0
+        # A partial upload is safe to replay to the same digest tag; the final
+        # digest check and fresh authenticated pull still gate the receipt.
+        for attempt in 1 2 3; do
+          if skopeo copy --all --preserve-digests --src-no-creds \
+              --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+              "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
+            copy_status=0
+            break
+          else
+            copy_status=$?
+          fi
+          if [[ "$attempt" == 3 ]] || ! mirror_retryable_copy_transport_error; then
+            break
+          fi
+          sleep "$attempt"
+          mirror_category="transport-failed"
+          stop_private_forward
+          start_private_forward
+          mirror_category="command-failed"
+        done
+        if [[ "$copy_status" -ne 0 ]]; then
           if grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" &&
               grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
             :

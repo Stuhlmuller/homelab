@@ -338,9 +338,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
    a fixed error category. Raw transport logs and credentials remain private.
    During `destination-copy`, fixed `blob-upload-failed` and
    `manifest-upload-failed` categories distinguish Skopeo's write stage when
-   its private diagnostic says so. Unknown copy errors remain
-   `command-failed`; no write is retried or handed to another client on that
-   basis. A scoped receipt never substitutes for a required full-catalog
+   its private diagnostic says so. A staged local-source Skopeo upload retries
+   at most twice after a classified transport drop, restarting the private
+   Harbor forward before each retry. It writes the same pinned digest tag and
+   still requires the destination digest check and complete authenticated pull.
+   HTTP, authentication, missing-content, storage, and digest errors stop;
+   unknown copy errors remain `command-failed` and do not trigger a retry or
+   another client. Direct-upstream index copies and alias writes do not retry.
+   A scoped receipt never substitutes for a required full-catalog
    receipt.
    Transient authenticated pull failures restart the private Harbor port-forward
    and recheck its TLS registry challenge before retrying either Docker manifests

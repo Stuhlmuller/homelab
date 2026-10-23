@@ -445,6 +445,10 @@ class HarborPublicationGates(unittest.TestCase):
                         source_directory = Path(args[-2][4:])
                         assert (source_directory / "blob").is_file()
                         assert (source_directory / "manifest.json").read_text() == FIXTURE["manifests"][args[-1].removeprefix("docker://")]
+                        fail_read("destination-copy", {
+                            "mirror-destination-once": FIXTURE["destination_error"],
+                            "mirror-destination-always": "connection reset",
+                        })
                         if FIXTURE["failure"] == "mirror-destination":
                             print(FIXTURE["destination_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
                             raise SystemExit(20)
@@ -1578,6 +1582,61 @@ class HarborPublicationGates(unittest.TestCase):
                 if failure == "upstream-digest":
                     self.assertFalse(any(a[-1].startswith("docker://") for a in copies))
                 self.assertNotIn("private-test-credential-must-never-appear", self.public_status)
+                self.assert_cleaned()
+
+    def test_destination_copy_retries_only_transient_transport(self):
+        self.transport_mocks(failure="mirror-destination-once", mirror=True,
+                             registries=("docker.io",),
+                             destination_error="dial tcp 127.0.0.1:443: connect: connection refused")
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        copies = [args for args in self.calls_for("skopeo")
+                  if args[0] == "copy" and args[-2].startswith("dir:")
+                  and args[-1].startswith("docker://harbor.stinkyboi.com/")]
+        self.assertEqual(len(copies), 2)
+        self.assertEqual(copies[0], copies[1])
+        self.assert_mirror_copy_credentials(copies)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 2)
+        self.assertEqual(len(self.calls_for("curl")), 2)
+        self.assertEqual([args[0] for args in self.calls_for("sleep")], ["1"])
+        upstream_downloads = [args for args in self.calls_for("skopeo")
+                              if args[0] == "copy" and args[-1].startswith("dir:")
+                              and not args[-2].startswith("docker://harbor.stinkyboi.com/")]
+        authenticated_pulls = [args for args in self.calls_for("skopeo")
+                               if args[0] == "copy" and args[-1].startswith("dir:")
+                               and args[-2].startswith("docker://harbor.stinkyboi.com/")]
+        self.assertEqual(len(upstream_downloads), 1)
+        self.assertEqual(len(authenticated_pulls), 1)
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
+        self.assertEqual(self.public_status, "")
+        self.assert_cleaned()
+
+        for failure, message, expected_copies in (
+            ("mirror-destination-always", "connection reset", 3),
+            ("mirror-destination", "unauthorized; connection reset", 1),
+            ("mirror-destination", "digest mismatch; connection reset", 1),
+            ("mirror-destination", "502 Bad Gateway; connection reset", 1),
+        ):
+            with self.subTest(failure=failure, message=message):
+                self.calls.unlink(missing_ok=True)
+                (self.root / "summary").unlink(missing_ok=True)
+                self.transport_mocks(failure=failure, mirror=True,
+                                     registries=("docker.io",), destination_error=message)
+                result = self.run_helper(mode="mirror")
+                self.assertNotEqual(result.returncode, 0)
+                copies = [args for args in self.calls_for("skopeo")
+                          if args[0] == "copy" and args[-2].startswith("dir:")
+                          and args[-1].startswith("docker://harbor.stinkyboi.com/")]
+                self.assertEqual(len(copies), expected_copies)
+                self.assertFalse((self.root / "summary").exists())
+                self.assertIn("phase=destination-copy\n", self.public_status)
+                self.assertNotIn(message, self.public_status)
+                if failure == "mirror-destination-always":
+                    self.assertIn("category=transport-failed\n", self.public_status)
+                    self.assertEqual([args[0] for args in self.calls_for("sleep")], ["1", "2"])
+                elif message.startswith("digest mismatch"):
+                    self.assertIn("category=digest-mismatch\n", self.public_status)
                 self.assert_cleaned()
 
     def test_destination_copy_stage_categories_are_fixed_and_fail_closed(self):
