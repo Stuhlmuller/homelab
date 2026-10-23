@@ -181,11 +181,81 @@ class ScanTests(unittest.TestCase):
                                             str(report_path), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-image-id\n")
 
+    def test_containerd_archive_binds_target_descriptor_to_selected_config(self):
+        index_type = "application/vnd.oci.image.index.v1+json"
+        manifest_type = "application/vnd.oci.image.manifest.v1+json"
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            archive_path = root / "image.tar"
+            report_path = root / "report.json"
+            diagnostic = root / "diagnostic"
+            report_path.write_text(json.dumps(self.report()))
+
+            def encoded(value):
+                return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+
+            def identity(raw):
+                return "sha256:" + hashlib.sha256(raw).hexdigest()
+
+            def write_oci(manifest_config=IMAGE, corrupt_target=False, direct_manifest=False):
+                platform_manifest = encoded({
+                    "schemaVersion": 2, "mediaType": manifest_type,
+                    "config": {"mediaType": "application/vnd.oci.image.config.v1+json",
+                               "digest": manifest_config, "size": len(CONFIG)},
+                    "layers": [],
+                })
+                manifest_id = identity(platform_manifest)
+                target = platform_manifest if direct_manifest else encoded({
+                    "schemaVersion": 2, "mediaType": index_type,
+                    "manifests": [{"mediaType": manifest_type, "digest": manifest_id,
+                                   "size": len(platform_manifest),
+                                   "platform": {"os": "linux", "architecture": "amd64"}}],
+                })
+                target_id = identity(target)
+                target_type = manifest_type if direct_manifest else index_type
+                content = {
+                    "manifest.json": encoded([{"Config": "blobs/sha256/" + IMAGE[7:]}]),
+                    "index.json": encoded({"schemaVersion": 2, "manifests": [
+                        {"mediaType": target_type, "digest": target_id, "size": len(target)}]}),
+                    "blobs/sha256/" + IMAGE[7:]: CONFIG,
+                    "blobs/sha256/" + manifest_id[7:]: platform_manifest,
+                    "blobs/sha256/" + target_id[7:]: b"bad target" if corrupt_target else target,
+                }
+                with tarfile.open(archive_path, "w") as archive:
+                    for name, data in content.items():
+                        member = tarfile.TarInfo(name)
+                        member.size = len(data)
+                        archive.addfile(member, io.BytesIO(data))
+                return target_id
+
+            for direct_manifest in (False, True):
+                target_id = write_oci(direct_manifest=direct_manifest)
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), target_id]), 0)
+
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), "sha256:" + "1" * 64]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-inspect-id\n")
+
+            target_id = write_oci(manifest_config="sha256:" + "1" * 64)
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), target_id]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-descriptor\n")
+
+            target_id = write_oci(corrupt_target=True)
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), target_id]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-descriptor\n")
+
     def test_status_printer_whitelists_diagnostics(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "diagnostic"
             for status in ("launcher", "scanner-run", "validation:identity-archive-config-hash",
-                           "validation:identity-archive-inspect-id", "validation:identity-report-config",
+                           "validation:identity-archive-inspect-id", "validation:identity-archive-descriptor",
+                           "validation:identity-report-config",
                            "validation:identity-distro", "validation:remediation"):
                 path.write_text(status + "\n")
                 result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],

@@ -11,29 +11,99 @@ import sys
 import tarfile
 
 
-def verify_archive_config(archive_path, image_id):
+INDEX_TYPES = {"application/vnd.oci.image.index.v1+json",
+               "application/vnd.docker.distribution.manifest.list.v2+json"}
+MANIFEST_TYPES = {"application/vnd.oci.image.manifest.v1+json",
+                  "application/vnd.docker.distribution.manifest.v2+json"}
+
+
+def verify_archive_config(archive_path, inspect_id):
+    assert re.fullmatch(r"sha256:[0-9a-f]{64}", inspect_id), "identity-archive-inspect-id"
+
+    def read_member(archive, name, size_limit, category):
+        try:
+            member = archive.getmember(name)
+            assert member.isfile() and 0 < member.size < size_limit, category
+            source = archive.extractfile(member)
+            assert source is not None, category
+            return source.read()
+        except (KeyError, OSError, tarfile.TarError) as error:
+            raise AssertionError(category) from error
+
+    def read_json(archive, name, size_limit, category):
+        try:
+            return json.loads(read_member(archive, name, size_limit, category))
+        except (TypeError, ValueError) as error:
+            raise AssertionError(category) from error
+
+    def read_blob(archive, descriptor):
+        category = "identity-archive-descriptor"
+        assert isinstance(descriptor, dict), category
+        digest = descriptor.get("digest")
+        assert isinstance(digest, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", digest), category
+        raw = read_member(archive, "blobs/sha256/" + digest[7:], 16 * 1024 * 1024, category)
+        assert hashlib.sha256(raw).hexdigest() == digest[7:], category
+        assert descriptor.get("size") == len(raw), category
+        return raw
+
     try:
-        with tarfile.open(archive_path, mode="r:") as archive:
-            manifest_member = archive.getmember("manifest.json")
-            assert manifest_member.isfile() and 0 < manifest_member.size < 1024 * 1024, "identity-archive-structure"
-            manifest_file = archive.extractfile(manifest_member)
-            assert manifest_file is not None, "identity-archive-structure"
-            manifest = json.load(manifest_file)
-            assert isinstance(manifest, list) and len(manifest) == 1, "identity-archive-structure"
-            config_name = manifest[0]["Config"]
-            assert isinstance(config_name, str) and re.fullmatch(
-                r"(?:[0-9a-f]{64}\.json|blobs/sha256/[0-9a-f]{64})", config_name
-            ), "identity-archive-structure"
-            config_member = archive.getmember(config_name)
-            assert config_member.isfile() and 0 < config_member.size < 16 * 1024 * 1024, "identity-archive-structure"
-            config_file = archive.extractfile(config_member)
-            assert config_file is not None, "identity-archive-structure"
-            raw_config = config_file.read()
-    except (KeyError, TypeError, ValueError, OSError, tarfile.TarError) as error:
+        archive = tarfile.open(archive_path, mode="r:")
+    except (OSError, tarfile.TarError) as error:
         raise AssertionError("identity-archive-structure") from error
-    config_digest = config_name[:-5] if config_name.endswith(".json") else config_name[len("blobs/sha256/"):]
-    assert hashlib.sha256(raw_config).hexdigest() == config_digest, "identity-archive-config-hash"
-    assert "sha256:" + config_digest == image_id, "identity-archive-inspect-id"
+    with archive:
+        manifest = read_json(archive, "manifest.json", 1024 * 1024, "identity-archive-structure")
+        assert isinstance(manifest, list) and len(manifest) == 1, "identity-archive-structure"
+        try:
+            config_name = manifest[0]["Config"]
+        except (KeyError, TypeError) as error:
+            raise AssertionError("identity-archive-structure") from error
+        assert isinstance(config_name, str) and re.fullmatch(
+            r"(?:[0-9a-f]{64}\.json|blobs/sha256/[0-9a-f]{64})", config_name
+        ), "identity-archive-structure"
+        raw_config = read_member(archive, config_name, 16 * 1024 * 1024, "identity-archive-structure")
+        config_digest = config_name[:-5] if config_name.endswith(".json") else config_name[len("blobs/sha256/"):]
+        assert hashlib.sha256(raw_config).hexdigest() == config_digest, "identity-archive-config-hash"
+        config_id = "sha256:" + config_digest
+        if config_id == inspect_id:
+            # The classic image store uses the config digest as the inspected ID.
+            return config_id
+
+        # The containerd image store uses the OCI index or manifest descriptor
+        # digest as the inspected ID. Docker save by ID keeps that descriptor
+        # in index.json; manifest.json points to the selected host platform.
+        index = read_json(archive, "index.json", 1024 * 1024, "identity-archive-inspect-id")
+        assert isinstance(index, dict) and isinstance(index.get("manifests"), list), "identity-archive-inspect-id"
+        assert len(index["manifests"]) == 1, "identity-archive-inspect-id"
+        root = index["manifests"][0]
+        assert isinstance(root, dict) and root.get("digest") == inspect_id, "identity-archive-inspect-id"
+        root_type = root.get("mediaType")
+        assert root_type in INDEX_TYPES | MANIFEST_TYPES, "identity-archive-descriptor"
+        try:
+            root_data = json.loads(read_blob(archive, root))
+        except (TypeError, ValueError) as error:
+            raise AssertionError("identity-archive-descriptor") from error
+        assert isinstance(root_data, dict), "identity-archive-descriptor"
+        if root_type in INDEX_TYPES:
+            children = root_data.get("manifests")
+            assert isinstance(children, list), "identity-archive-descriptor"
+            selected = [item for item in children if isinstance(item, dict) and
+                        isinstance(item.get("platform"), dict) and
+                        item["platform"].get("os") == "linux" and
+                        item["platform"].get("architecture") == "amd64"]
+            assert len(selected) == 1, "identity-archive-descriptor"
+            child = selected[0]
+            assert child.get("mediaType") in MANIFEST_TYPES, "identity-archive-descriptor"
+            try:
+                selected_manifest = json.loads(read_blob(archive, child))
+            except (TypeError, ValueError) as error:
+                raise AssertionError("identity-archive-descriptor") from error
+        else:
+            selected_manifest = root_data
+        assert isinstance(selected_manifest, dict), "identity-archive-descriptor"
+        descriptor = selected_manifest.get("config")
+        assert isinstance(descriptor, dict) and descriptor.get("digest") == config_id, "identity-archive-descriptor"
+        assert descriptor.get("size") == len(raw_config), "identity-archive-descriptor"
+        return config_id
 
 
 def verify(report, image_id, require_zero_matches=False):
@@ -95,13 +165,13 @@ def main(args):
         assert len(args) == 2, "schema"
         raw_report = Path(args[0]).read_bytes()
         report = json.loads(raw_report)
-        if archive_path is not None:
-            verify_archive_config(archive_path, args[1])
-        verify(report, args[1], require_zero_matches=require_zero_matches)
+        config_id = verify_archive_config(archive_path, args[1]) if archive_path is not None else args[1]
+        verify(report, config_id, require_zero_matches=require_zero_matches)
     except AssertionError as error:
         category = str(error)
         if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-archive-structure",
-                            "identity-archive-config-hash", "identity-archive-inspect-id", "identity-report-config",
+                            "identity-archive-config-hash", "identity-archive-inspect-id",
+                            "identity-archive-descriptor", "identity-report-config",
                             "identity-platform", "identity-distro", "scanner", "database", "freshness",
                             "filtering", "schema", "remediation", "clearance"}:
             category = "schema"
