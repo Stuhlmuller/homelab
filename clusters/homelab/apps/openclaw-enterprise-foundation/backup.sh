@@ -16,8 +16,8 @@ for directory in tenant/secrets agent/state; do
   test -d "$material/$directory" || exit 1
   test -n "$(find "$material/$directory" -type f -print -quit)" || exit 1
 done
-jq -e 'type == "object" and .writerStopped == true and
-  (.claimUid | type == "string" and length > 0)' "$material/recovery.json" >/dev/null 2>&1 || {
+jq -es 'length == 1 and (.[0] | type == "object" and .writerStopped == true and
+  (.claimUid | type == "string" and length > 0))' "$material/recovery.json" >/dev/null 2>&1 || {
   echo 'recovery material lacks a stopped, identified writer' >&2
   exit 1
 }

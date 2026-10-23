@@ -232,7 +232,9 @@ class RecoveryBoundaries(unittest.TestCase):
         marker = material / "recovery.json"
         for payload in ('{"claimUid":"fixture","writerStopped":false}',
                         '{"claimUid":"","writerStopped":true}',
-                        '{"claimUid":"fixture"}', '{'):
+                        '{"claimUid":"fixture"}', '{',
+                        '{"claimUid":"fixture","writerStopped":false}'
+                        '{"claimUid":"fixture","writerStopped":true}'):
             with self.subTest(payload=payload):
                 marker.write_text(payload)
                 result = subprocess.run(["sh", "-c", preflight], text=True,
