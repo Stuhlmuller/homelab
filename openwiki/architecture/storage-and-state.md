@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-489371bb6baef577dc131a87
@@ -60,10 +62,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-23T18:58:25.070Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-23T18:58:25.070Z
 ---
 
 # Storage And State
@@ -319,7 +321,10 @@ and root identities, and private scratch capacity before fetching the
 publication's exact versioned archive and receipt. The source-only transfer
 repair fetches pinned S3 versions in at most 128 MiB ranges, verifies version,
 interval and length metadata, then sends at most 8 MiB SHA-256-checked slices
-to the reader. It rolls back interrupted appends and promotes only after a full
+to the reader. A source-only throughput candidate verifies and appends each
+slice in one bounded reader exec, avoiding a second exec and NFS fsync per
+slice. It accepts a matching committed slice after an uncertain response,
+rolls back interrupted appends and promotes only after a full
 size and SHA-256 match. The first [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
 left an incomplete, unverified archive in scratch. The [retry
 `39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)

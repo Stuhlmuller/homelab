@@ -360,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-23T18:58:25.070Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-23T18:58:25.070Z
 ---
 
 # Validation Gates
@@ -1783,14 +1783,18 @@ no accepted copy resulted. Its helper did not identify whether the source range,
 reader transfer or finalization failed. The source-only
 transfer repair fetches exact S3 versions in at most 128 MiB ranges, checks
 version, interval and length metadata, then uploads at most 8 MiB SHA-256-checked
-reader slices. Interrupted appends roll back to the prior offset; full size
+reader slices. A source-only throughput candidate verifies and commits each
+slice in one reader exec, reducing exec setup and NFS fsync operations without
+raising the slice bound. Interrupted appends roll back to the prior offset;
+an uncertain acknowledgment accepts only a matching committed slice. Full size
 and SHA-256 checks precede no-clobber promotion. The workflow exposes
 fixed source-range, reader-transfer and finalization subphases for archive and
 receipt downloads while withholding private diagnostics. These identify the
 failing boundary on a future run, not the private underlying error. Source
 fixtures reject short and wrong-metadata
-ranges, same-size corruption, reader transport failures, interrupted appends,
-and destination collisions, as well as changed source identities, corrupt
+ranges, same-size corruption, reader transport failures, short/corrupt slices,
+interrupted appends, lost acknowledgments and destination collisions, as well as
+changed source identities, corrupt
 archives/databases and unsafe symlinks. A successful
 stage would retain a separate verified copy and link report; source tests do
 not prove an isolated old-image boot or complete T014.

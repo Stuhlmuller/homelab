@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5872a7613edc0afdd70816407c3961f57b4086b2047966bd3d99be63e30e83cf",
+  "pageVersion": "sha256:bb0d5a52d8ba1d564f04ac141aed095a0a967cc6e09b512a89a463e1bff9a016",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c297729f4d37e564a2ec4d07e6f10f58c37d6a8208f10fd7fe661513ed3d67ed"
+          "version": "repo-file-v1:sha256:c2be5c48748be580fdaccf851d9f30e752debee9a321bf2ec4de109432a3f5fc"
         }
       ]
     },
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:2992efa779605d9c981b493883203469f9ff3bb92fddf7057985a902eec31d5f"
+          "version": "repo-file-v1:sha256:a1ae5c5bddf01e09b6f6850fadcbd5e152694d148c39b3c5ef2c44d23ca55e52"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c297729f4d37e564a2ec4d07e6f10f58c37d6a8208f10fd7fe661513ed3d67ed"
+          "version": "repo-file-v1:sha256:c2be5c48748be580fdaccf851d9f30e752debee9a321bf2ec4de109432a3f5fc"
         }
       ]
     },
@@ -1130,7 +1130,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c297729f4d37e564a2ec4d07e6f10f58c37d6a8208f10fd7fe661513ed3d67ed"
+          "version": "repo-file-v1:sha256:c2be5c48748be580fdaccf851d9f30e752debee9a321bf2ec4de109432a3f5fc"
         }
       ]
     },
@@ -1366,7 +1366,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
+          "version": "repo-file-v1:sha256:8830acde3a3ddab857bf1d69f85727c83b4423b0f1311c299ebee4d803a30bbf"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -1438,7 +1438,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
+          "version": "repo-file-v1:sha256:8830acde3a3ddab857bf1d69f85727c83b4423b0f1311c299ebee4d803a30bbf"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -1492,7 +1492,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:efc0d5a95e4035dffade06d8e84e26b15bbfa28bba73b764c64b0a1c209f80b8"
+          "version": "repo-file-v1:sha256:8ce2391c7d7bc810b4697603ae7ce9702059ba7cb39a03e30b9bbd6c4aa82179"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -1576,11 +1576,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:2992efa779605d9c981b493883203469f9ff3bb92fddf7057985a902eec31d5f"
+          "version": "repo-file-v1:sha256:a1ae5c5bddf01e09b6f6850fadcbd5e152694d148c39b3c5ef2c44d23ca55e52"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:281cac084743c156467543e146077e18277dc9e95f47a1c60ad646fe767bde5b"
+          "version": "repo-file-v1:sha256:d5851c8f7440e5a8dd6ff63debe54b7d7363d92a7a6f9be1e5d71929039a789a"
         }
       ]
     },
@@ -1661,7 +1661,7 @@
           "version": "repo-lines-v1:sha256:7794ffeefeafaff42b81ab054effa995cdde664e2d8720514f1d5b79b3723046:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyYzdhYTY2MDllNjcxNDE2M2Y4ZGEzMjhlZjY1NzRmZjJlMTgwMTU4Mzg1OWJiMzMzZjU2OWM4MTI0Yjg0N2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYzZhOTQ3NjgwMDRmYWVjM2I2YzU1NjNiMDk0MjQ1MGQzOTc3ODA1ZmE1MTQ0ZDBlNGU0ZTcwYWY0ZDdkM2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ZDJmMjhkYTg3N2M3N2RhMDQ5YzVkMWRiYWRjYjAwNjhjODNkMDFjZmNjY2FiOWQ0MDU2M2FlNWI1ZTQ1Y2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNzM5ZmRlYWFmODY5YWNmNTk2Mzg5ZGY2NWNhNGJjMWIwN2ZiZGQ0YTA2NGRlZjk0YjI1YzJjNTgzMzA3YzcifQ"
         },
         {
-          "resource": "repo://docs/openclaw-enterprise-rollout.md#L170-L198",
+          "resource": "repo://docs/openclaw-enterprise-rollout.md#L178-L206",
           "version": "repo-lines-v1:sha256:0ae31696826956449673654d3f4c3b14425ea779f7c0da121413dda609dc4a86:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NzdmMmZjM2ZmNTkwZDgzMDgzNGVjOGNlY2U0OGVhNjE0NTBhNjBkNmIwNTc3ZTM5ZGNlMjI3OTIxNmJjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOGY2MDRlNzNmNGVlNTE3MmQzMmZjYTI5NTVkOTI0MzYwMmUzYzUwY2VhZDhjNjIyYjlhYzUxNTAxNjUzNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkNzQwMjRlYmJmNTRkOTU4MzQwMWQ2MThkZTgxZWJhYjdlY2VlZGRlN2RiZGYxZDBjYTA2NDIzZTUyNDE4ZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZmNGJlNTRmMDAxNzJmZGY1NDI0NTdiYzFkZDI4NWUyMzdlOWJhYmRhYmVlNWRjN2FiNDQxNDA1MmU4ODQ4ZDQifQ"
         }
       ]
@@ -1822,11 +1822,11 @@
     },
     {
       "id": "claim_08e22b269d634b6abc0e5a9a2e3cdda8",
-      "statement": "Protected prepare-restore runs 39942297939, 39951803625 and 39966041305 failed before receipt download and restore-worker execution, leaving no accepted recovery copy. The third run's broad archive-download phase did not distinguish source, reader or finalization errors. A source-only diagnostic repair now exposes fixed public source-range, reader-transfer and finalization subphases without private diagnostics. The exact-version range helper checks metadata, transfers 8 MiB SHA-256-verified slices with append rollback, and no-clobber promotes only a full size-and-digest match; focused fixtures cover damaged ranges, reader failures and interrupted appends. T014 still requires an isolated old-image boot.",
+      "statement": "Protected prepare-restore runs 39942297939, 39951803625 and 39966041305 failed before receipt download and restore-worker execution, leaving no accepted recovery copy. The third run's broad archive-download phase did not distinguish source, reader or finalization errors. A source-only diagnostic repair exposes fixed public source-range, reader-transfer and finalization subphases without private diagnostics. The exact-version range helper checks metadata, verifies and commits each at-most-8 MiB SHA-256 slice in one bounded reader exec with append rollback and ambiguous-response idempotence, and no-clobber promotes only a full size-and-digest match. Focused fixtures cover damaged ranges, reader failures, short/corrupt slices, interrupted appends and lost acknowledgments. T014 still requires an isolated old-image boot.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
+          "version": "repo-file-v1:sha256:8830acde3a3ddab857bf1d69f85727c83b4423b0f1311c299ebee4d803a30bbf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -1834,11 +1834,11 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
-          "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
+          "version": "repo-file-v1:sha256:b3891871b8d2861d04c5495bafc8e5fdef1f7febcceb56f3af3863536fab640e"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
-          "version": "repo-file-v1:sha256:668d339a8f4fa6124a5668daa3a2ed8bce4e0c7edc37d39ffdeab6afd9d2464d"
+          "version": "repo-file-v1:sha256:d2c6d55329c480b004f01b77391ea921ef8d4bf1dccfad9e8511cf41ac186081"
         }
       ]
     },
@@ -1891,6 +1891,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T18:25:34.713Z"
+    "at": "2026-10-23T18:58:25.070Z"
   }
 }

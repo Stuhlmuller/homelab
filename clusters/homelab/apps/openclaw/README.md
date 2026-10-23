@@ -134,8 +134,11 @@ space, and retains a verified copy at `/archive/private/rehearsal-<RUN_ID>/tree`
 Each versioned transfer fetches the pinned S3 version in at most 128 MiB ranges
 and sends it to the reader in at most 8 MiB slices. The range response must
 match the requested version, byte interval and length; each reader slice must
-match its runner SHA-256 before append. Failed appends roll back to the last
-committed offset. The reader promotes the aggregate only after its full size
+match its runner SHA-256 before append. The source-only transfer candidate
+verifies and commits each slice in one bounded reader exec, avoiding a second
+exec and NFS fsync per slice. Retried slices accept an already committed match
+or roll a partial append back to the last committed offset. The reader promotes
+the aggregate only after its full size
 and SHA-256 match; an incomplete transfer never becomes a restore input.
 The archive digest comes from the published final receipt. The receipt digest
 comes from a separate local download of the exact S3 version named in that

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1e4db87af24ee3273de80b354c63708a5053f9ff3ef07749f7c9bb08a68fd30f",
+  "pageVersion": "sha256:13cec5d68bfd0fbcba25ca3d6725c4394485d8e99f6c7f3a04c19e0373036e6f",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c297729f4d37e564a2ec4d07e6f10f58c37d6a8208f10fd7fe661513ed3d67ed"
+          "version": "repo-file-v1:sha256:c2be5c48748be580fdaccf851d9f30e752debee9a321bf2ec4de109432a3f5fc"
         }
       ]
     },
@@ -318,11 +318,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:2992efa779605d9c981b493883203469f9ff3bb92fddf7057985a902eec31d5f"
+          "version": "repo-file-v1:sha256:a1ae5c5bddf01e09b6f6850fadcbd5e152694d148c39b3c5ef2c44d23ca55e52"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:281cac084743c156467543e146077e18277dc9e95f47a1c60ad646fe767bde5b"
+          "version": "repo-file-v1:sha256:d5851c8f7440e5a8dd6ff63debe54b7d7363d92a7a6f9be1e5d71929039a789a"
         }
       ]
     },
@@ -354,7 +354,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
+          "version": "repo-file-v1:sha256:8830acde3a3ddab857bf1d69f85727c83b4423b0f1311c299ebee4d803a30bbf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -382,15 +382,15 @@
     },
     {
       "id": "claim_63e80cd457b64319a513fa3e37f3d51b",
-      "statement": "The protected prepare-restore stage requires exact current main and the successful publication reference, rechecks stopped writers and source identities, and retains a separate recovery tree only after exact-version transfer and verification. Runs 39942297939, 39951803625 and 39966041305 all failed before receipt download and restore worker, with no accepted copy; the third run's broad archive-download phase did not distinguish source, reader or finalization failure. The source-only repair exposes fixed public source-range, reader-transfer and finalization subphases while using bounded exact-version S3 ranges, 8 MiB SHA-256-verified reader slices, append rollback and no-clobber promotion after full verification. T014 compatible boot remains open.",
+      "statement": "The protected prepare-restore stage requires exact current main and the successful publication reference, rechecks stopped writers and source identities, and retains a separate recovery tree only after exact-version transfer and verification. Runs 39942297939, 39951803625 and 39966041305 failed before receipt download and restore worker, with no accepted copy. The source-only transfer uses pinned S3 ranges, at-most-8 MiB SHA-256-verified reader slices, and a single bounded reader exec per slice that preserves append rollback and ambiguous-response idempotence; full checks and no-clobber promotion precede acceptance. Fixed public source-range, reader-transfer, and finalization phases identify failure class without private diagnostics. T014 compatible boot remains open.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
+          "version": "repo-file-v1:sha256:8830acde3a3ddab857bf1d69f85727c83b4423b0f1311c299ebee4d803a30bbf"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:ba4da779d4868b6672b47452981b1ab52cf96c91dbf1efa84a1562530dffc5c9"
+          "version": "repo-file-v1:sha256:01870498abc906901491edda252c627de320d958d89cc75dd5bb5611da4b3ea1"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -398,13 +398,13 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
-          "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
+          "version": "repo-file-v1:sha256:b3891871b8d2861d04c5495bafc8e5fdef1f7febcceb56f3af3863536fab640e"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T18:25:34.713Z"
+    "at": "2026-10-23T18:58:25.070Z"
   }
 }

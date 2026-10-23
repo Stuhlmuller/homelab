@@ -567,20 +567,39 @@ if operation == 'init' and marker and not pathlib.Path(marker).exists():
     pathlib.Path(marker).touch()
     subprocess.run([sys.executable, '-c', command[2], operation, *mapped], check=True)
     sys.exit(1)
-if operation == 'upload' and os.environ.get('FAKE_UPLOAD_ALWAYS'):
-    sys.stdin.buffer.read()
-    sys.exit(1)
-marker = os.environ.get('FAKE_UPLOAD_ONCE')
-if operation == 'upload' and marker and not pathlib.Path(marker).exists():
-    pathlib.Path(marker).touch()
-    sys.stdin.buffer.read()
-    sys.exit(1)
-marker = os.environ.get('FAKE_APPEND_ONCE')
-if operation == 'commit' and marker and not pathlib.Path(marker).exists():
-    pathlib.Path(marker).touch()
-    with open(mapped[1], 'ab') as output:
-        output.write(pathlib.Path(mapped[0]).read_bytes()[:1])
-    sys.exit(1)
+if operation == 'transfer':
+    data = sys.stdin.buffer.read()
+    if os.environ.get('FAKE_TRANSFER_ALWAYS'):
+        sys.exit(1)
+    marker = os.environ.get('FAKE_TRANSFER_SHORT_ONCE')
+    if marker and not pathlib.Path(marker).exists():
+        pathlib.Path(marker).touch()
+        data = data[:-1]
+        result = subprocess.run([sys.executable, '-c', command[2], operation, *mapped],
+                                input=data, check=False)
+        sys.exit(result.returncode)
+    marker = os.environ.get('FAKE_TRANSFER_CORRUPT_ONCE')
+    if marker and not pathlib.Path(marker).exists():
+        pathlib.Path(marker).touch()
+        data = bytes([data[0] ^ 1]) + data[1:]
+        result = subprocess.run([sys.executable, '-c', command[2], operation, *mapped],
+                                input=data, check=False)
+        sys.exit(result.returncode)
+    marker = os.environ.get('FAKE_APPEND_ONCE')
+    if marker and not pathlib.Path(marker).exists():
+        pathlib.Path(marker).touch()
+        with open(mapped[0], 'ab') as output:
+            output.write(data[:1])
+        sys.exit(1)
+    marker = os.environ.get('FAKE_ACK_LOST_ONCE')
+    if marker and not pathlib.Path(marker).exists():
+        pathlib.Path(marker).touch()
+        subprocess.run([sys.executable, '-c', command[2], operation, *mapped],
+                       input=data, check=True)
+        sys.exit(1)
+    result = subprocess.run([sys.executable, '-c', command[2], operation, *mapped],
+                            input=data, check=False)
+    sys.exit(result.returncode)
 if operation == 'finish' and os.environ.get('FAKE_DESTINATION_RACE'):
     pathlib.Path(mapped[1]).write_bytes(b'foreign destination')
 os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
@@ -612,7 +631,7 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
                                              'openclaw-retirement-reader-test')
 
             restore(FAKE_SHORT_ONCE=str(root / 'short-once'),
-                    FAKE_UPLOAD_ONCE=str(root / 'upload-once'),
+                    FAKE_TRANSFER_SHORT_ONCE=str(root / 'transfer-short-once'),
                     FAKE_APPEND_ONCE=str(root / 'append-once'))
             self.assertEqual(local_destination.read_bytes(), payload)
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
@@ -620,6 +639,12 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             self.assertEqual(log.read_text().splitlines()[:2], ['bytes=0-10'] * 2)
             local_destination.unlink()
             log.unlink()
+            restore(FAKE_ACK_LOST_ONCE=str(root / 'ack-lost-once'))
+            self.assertEqual(local_destination.read_bytes(), payload)
+            local_destination.unlink()
+            restore(FAKE_TRANSFER_CORRUPT_ONCE=str(root / 'transfer-corrupt-once'))
+            self.assertEqual(local_destination.read_bytes(), payload)
+            local_destination.unlink()
             with self.assertRaises(download.SourceReadError):
                 restore(FAKE_SHORT_ALWAYS='1')
             self.assertFalse(local_destination.exists())
@@ -638,7 +663,7 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             self.assertFalse(local_destination.exists())
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
             with self.assertRaises(download.ReaderTransferError):
-                restore(FAKE_UPLOAD_ALWAYS='1')
+                restore(FAKE_TRANSFER_ALWAYS='1')
             self.assertFalse(local_destination.exists())
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
             with self.assertRaises(download.FinalizationError):
@@ -651,7 +676,7 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
             local_destination.unlink()
             for failure, code in (({'FAKE_SHORT_ALWAYS': '1'}, 10),
-                                  ({'FAKE_UPLOAD_ALWAYS': '1'}, 20),
+                                  ({'FAKE_TRANSFER_ALWAYS': '1'}, 20),
                                   ({'FAKE_DESTINATION_RACE': '1'}, 30)):
                 result = subprocess.run(
                     [sys.executable, str(DOWNLOAD),

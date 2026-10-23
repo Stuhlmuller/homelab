@@ -218,10 +218,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-23T18:58:25.070Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-23T18:58:25.070Z
 ---
 
 # Workload Inventory
@@ -437,8 +437,9 @@ the source, reader or finalization boundary was not identifiable. It has not
 established a verified NAS restore
 copy or booted the old image. T013 archive verification passed; T014 compatible
 recovery remains open, and the original claims stay retained and read-only.
-The source-only transfer repair uses bounded exact-version S3 ranges, 8 MiB
-SHA-256-checked reader slices, append rollback and full-digest promotion, with
+The source-only transfer repair uses bounded exact-version S3 ranges and one
+reader exec per at-most-8 MiB SHA-256-checked slice; it preserves append
+rollback, ambiguous-response idempotence and full-digest promotion, with
 fixed public source-range, reader-transfer and finalization subphases for each
 download. It remains source-only
 until a protected retry succeeds. Private restore diagnostics stay outside this

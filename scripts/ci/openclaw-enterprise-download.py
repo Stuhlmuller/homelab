@@ -28,7 +28,7 @@ class FinalizationError(Exception):
     pass
 
 
-REMOTE = r'''import fcntl, glob, hashlib, os, stat, sys
+REMOTE = r'''import fcntl, hashlib, os, stat, sys
 os.umask(0o077)
 op = sys.argv[1]
 
@@ -54,45 +54,21 @@ if op == 'init':
         raise ValueError('restore destination exists')
     fd = os.open(partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     os.close(fd)
-elif op == 'upload':
-    chunk, count, expected = sys.argv[2:]
-    count = int(count)
-    fd = os.open(chunk, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-    complete = False
-    try:
-        digest = hashlib.sha256()
-        received = 0
-        while received <= count:
-            part = os.read(0, min(1024 * 1024, count - received + 1))
-            if not part:
-                break
-            if received + len(part) > count:
-                raise ValueError('oversized reader slice')
-            digest.update(part)
-            while part:
-                written = os.write(fd, part)
-                part = part[written:]
-                received += written
-        if received != count or digest.hexdigest() != expected:
-            raise ValueError('reader slice differs from runner')
-        os.fsync(fd)
-        complete = True
-    finally:
-        os.close(fd)
-        if not complete:
-            os.unlink(chunk)
-elif op == 'commit':
-    chunk, partial, offset, count, expected = sys.argv[2:]
+elif op == 'transfer':
+    partial, offset, count, expected = sys.argv[2:]
     offset, count = int(offset), int(count)
-    fd = regular(chunk, os.O_RDONLY)
-    try:
-        if os.fstat(fd).st_size != count:
-            raise ValueError('reader slice length changed')
-        data = read_at(fd, 0, count)
-        if len(data) != count or hashlib.sha256(data).hexdigest() != expected:
-            raise ValueError('reader slice digest changed')
-    finally:
-        os.close(fd)
+    if not 0 < count <= 8 * 1024 * 1024 or offset < 0:
+        raise ValueError('invalid reader slice bounds')
+    data = bytearray()
+    while len(data) <= count:
+        part = os.read(0, min(1024 * 1024, count - len(data) + 1))
+        if not part:
+            break
+        data.extend(part)
+        if len(data) > count:
+            raise ValueError('oversized reader slice')
+    if len(data) != count or hashlib.sha256(data).hexdigest() != expected:
+        raise ValueError('reader slice differs from runner')
     fd = regular(partial, os.O_RDWR)
     try:
         fcntl.flock(fd, fcntl.LOCK_EX)
@@ -121,7 +97,6 @@ elif op == 'commit':
                 raise
     finally:
         os.close(fd)
-    os.unlink(chunk)
 elif op == 'finish':
     partial, destination, count, expected = sys.argv[2:]
     count = int(count)
@@ -143,16 +118,10 @@ elif op == 'finish':
         os.link(partial, destination, follow_symlinks=False)
     if os.path.lexists(partial):
         os.unlink(partial)
-elif op == 'discard':
-    chunk = sys.argv[2]
-    if os.path.lexists(chunk):
-        os.unlink(chunk)
 elif op == 'cleanup':
-    partial, chunk_prefix = sys.argv[2:]
+    partial = sys.argv[2]
     if os.path.lexists(partial):
         os.unlink(partial)
-    for chunk in glob.glob(glob.escape(chunk_prefix) + '*'):
-        os.unlink(chunk)
 else:
     raise ValueError('invalid reader operation')
 '''
@@ -199,7 +168,6 @@ def source_range(bucket, key, version, total, start, count, body):
 def restore_version(bucket, key, version, destination, total, expected, pod):
     token = uuid.uuid4().hex
     partial = destination + '.partial-' + token
-    chunk_prefix = destination + '.chunk-' + token + '-'
     complete = False
     try:
         reader(pod, 'init', destination, partial)
@@ -217,19 +185,13 @@ def restore_version(bucket, key, version, destination, total, expected, pod):
                             raise SourceReadError
                         slice_sha = hashlib.sha256(slice_bytes).hexdigest()
                         for _ in range(3):
-                            chunk = f'{chunk_prefix}{committed}-{uuid.uuid4().hex}'
                             try:
-                                reader(pod, 'upload', chunk, len(slice_bytes), slice_sha,
-                                       data=slice_bytes)
-                                reader(pod, 'commit', chunk, partial, committed,
-                                       len(slice_bytes), slice_sha)
+                                reader(pod, 'transfer', partial, committed,
+                                       len(slice_bytes), slice_sha, data=slice_bytes)
                                 break
                             except ReaderTransferError:
-                                try:
-                                    reader(pod, 'discard', chunk)
-                                except ReaderTransferError:
-                                    # Retry names are unique; failed restores clean run-owned scratch.
-                                    pass
+                                # The next attempt verifies a prior full append or rolls a partial one back.
+                                continue
                         else:
                             raise ReaderTransferError
                         committed += len(slice_bytes)
@@ -246,7 +208,7 @@ def restore_version(bucket, key, version, destination, total, expected, pod):
     finally:
         if not complete:
             try:
-                reader(pod, 'cleanup', partial, chunk_prefix)
+                reader(pod, 'cleanup', partial)
             except ReaderTransferError:
                 pass
 

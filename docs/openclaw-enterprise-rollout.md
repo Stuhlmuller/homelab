@@ -118,8 +118,16 @@ failed at that same fixed phase at 2026-10-23 16:10 UTC. It left no promoted
 archive, receipt or recovery copy. The exact S3-versus-reader failure is
 unclassified. Versioned restore uses bounded S3 ranges and 8 MiB reader
 slices, with exact metadata, slice and final archive integrity checks. The
-next protected retry reports fixed source-range, reader-transfer or finalization
-subphases without exposing private transport output.
+protected retries report fixed source-range, reader-transfer or finalization
+subphases without exposing private transport output. A source-only throughput
+candidate combines each SHA-256-verified 8 MiB reader upload and append into one
+exec, removing the second exec and separate slice fsync. It preserves the
+three-attempt bound, offset rollback, already-committed digest check after an
+uncertain response, full archive digest and no-clobber promotion. It does not
+explain any prior failure or count as a restore receipt. If a protected trial
+regresses, revert the candidate through a reviewed PR and retry from exact
+current main; keep original claims read-only and retain the verified offsite
+versions.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain

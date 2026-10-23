@@ -104,10 +104,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-23T18:58:25.070Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-23T18:58:25.070Z
 ---
 
 # CI/CD
@@ -255,8 +255,9 @@ failed in the same broad phase, before receipt download or worker start. It did
 not identify whether the source range, reader transfer or finalization failed;
 no accepted copy exists. The source-only
 repair fetches pinned S3 versions in at most 128 MiB ranges, validates version,
-interval and length, then uploads at most 8 MiB reader slices with SHA-256
-checks. Interrupted appends roll back; full size and digest checks precede
+interval and length, then transfers each at-most-8 MiB SHA-256-checked reader
+slice and commits its append in one bounded exec. Interrupted appends roll back;
+ambiguous responses remain idempotent, and full size and digest checks precede
 no-clobber promotion. Future failures report fixed source-range,
 reader-transfer or finalization subphases for either versioned download, plus
 the restore phase, without private diagnostics. A successful copy receipt would
