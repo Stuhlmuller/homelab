@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb2dff57c4cfa96d6b90daf75f81ee50c1f3e4ae0b58e62a50500e5a02e1855c",
+  "pageVersion": "sha256:baa028a4750d216046d9023b5ae0191f97e9b4413960a6eba0dd5de38fad2a5a",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -84,11 +84,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
+          "version": "repo-file-v1:sha256:ed4a2cc25c95f552d5e865fd18005da4ffa31dc0b1d3adbbc16d9e2bac24338c"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L18-L24",
-          "version": "repo-lines-v1:sha256:3c36c19e1cc807429b3487046d0f095ce8b4787a1a03bb4886760d9d9f55c246:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGNkMzY1YWYzZjQ5NTFiNjU5YjlkNDM0MGE3MGZjMzNjZDMwMzFhZDQ3NzQ0YTI5MjgyZjdkMjQ0YjBiY2I5ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTc2MjRmYTllYjkyMWFmNGZiNWJhZmNmMGQ2MzBiMGZkZWVjMWY4ZDNlZjU3NDhmYWM2ZjgxMzU5MzUyMjcxMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGJhNWQ5ZWQyMWFkNWQ2ODA3NGEyODFiMTdmMjZmN2M5OTk0YjA0ZTM4MWY4NTA2ZDk1ODY3MDgxMTNlNzhiNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDYwZGI5ZjEwYzUwNWNlZDI2N2I1ZTY0YzNkOThjOTEzYjFjNWI5ZTQxOTY4ZjM4ZmY3NmUzNmQ4MTM2YWFmNyJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
         }
       ]
     },
@@ -202,11 +202,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
+          "version": "repo-file-v1:sha256:ed4a2cc25c95f552d5e865fd18005da4ffa31dc0b1d3adbbc16d9e2bac24338c"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L22-L23",
-          "version": "repo-lines-v1:sha256:5c88683775d528bb2c4517ebeebf57edc99080ec0c0d29755972992e92d77695:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTdkNDcyM2NkODc5Zjk0N2U4N2FjOGJiMjEyNGI5NDIwYzkyMWY3YWY4YWUxYTY3ZjRjNWIzOTQ4NjU4OTUzZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTUwOGI3NGQ0NjViYmNlZTY0MmZmMDc5YWFkZTZmNzg5ZjA0MjJlNDUwNTI5NzQ2OGU4YjQ3ZDAyOWE2MmI0YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjEwNGVjMzNjNDhmYzViOTBhOWM3MTI1ZmMxYWQ1YjNhYTBlODFjN2UyMDlhYzNkNjU4NmExNGVjM2Q2ZjM3NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzJkZTljNjY0NmFiNjMxMTcwZjI2ZTU3MDk4ODMwZmRlOTYzYjRjYzBjOTRhYzUwNjJjNzgyOWY0OWVkNzAzYyJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
         }
       ]
     },
@@ -216,11 +216,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:31c7202206cafc5dc2289fa3e629c4c371446891f2df83c472c18eaf3fd5aa8c"
+          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff"
+          "version": "repo-file-v1:sha256:6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa"
         }
       ]
     },
@@ -262,25 +262,25 @@
     },
     {
       "id": "claim_91150f5538e845cd9c585b5964d0539e",
-      "statement": "The declared protected prepare-restore stage rechecks stopped writers, retained volume and root identities, and scratch capacity before restoring exact versioned archive objects into a separate private tree with a symlink report; it has not run and does not prove compatible legacy boot.",
+      "statement": "The protected prepare-restore stage rechecks stopped legacy writers and source identities, downloads exact versioned archive objects with bounded size-and-SHA-256-verified transfers into isolated scratch, and would retain a separate restore tree; its first run 39942297939 failed before the receipt transfer or restore worker completed, so no compatible legacy boot or accepted T014 copy is proven.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:ed4a2cc25c95f552d5e865fd18005da4ffa31dc0b1d3adbbc16d9e2bac24338c"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/retirement/retirement.py",
-          "version": "repo-file-v1:sha256:2caa449509ce19b517a1eed14f8b8346abaf50d02e84c3e3cafeb7a435a40411"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff"
+          "version": "repo-file-v1:sha256:6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T11:27:28.778Z"
+    "at": "2026-10-23T11:55:33.894Z"
   }
 }

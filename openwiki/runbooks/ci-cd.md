@@ -102,10 +102,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
+generated: { by: "codex", at: "2026-10-23T11:55:33.894Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:27:28.778Z
+    at: 2026-10-23T11:55:33.894Z
 ---
 
 # CI/CD
@@ -237,13 +237,19 @@ stage retrieved the exact versioned archive and receipt and restored the full
 local/NAS trees, both SQLite databases and historical backups. T013 is complete;
 compatible legacy boot remains open under T014.
 
-Draft [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) adds the fixed
+Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) added the fixed
 legacy `prepare-restore` choice to the protected operations workflow. Dispatch
 requires the exact current `main` SHA and the successful publication SHA/run ID
 as `archive_ref`. The worker rechecks stopped writers and source identities,
-fetches the recorded S3 object versions, and keeps a separate verified tree and
-private symlink report under `/archive/private/rehearsal-<RUN_ID>`. It has not
-been dispatched. A copy receipt would not boot or accept the old gateway.
+fetches the recorded S3 object versions, and would keep a separate verified tree
+and private symlink report under `/archive/private/rehearsal-<RUN_ID>`. Its first
+[protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
+failed before the receipt transfer completed or the restore worker started, so
+no accepted copy exists. The transfer repair retries only exact versions into
+run-private partial scratch and promotes them after size and SHA-256 checks;
+the workflow reports fixed archive-download, receipt-download and restore
+failure phases without private diagnostics. A successful copy receipt would
+still not boot or accept the old gateway.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added

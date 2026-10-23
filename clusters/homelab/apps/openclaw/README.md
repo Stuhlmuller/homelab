@@ -131,6 +131,14 @@ blindly extract this tar into a live filesystem.
 
 `prepare-restore` downloads the exact versioned archive, checks free scratch
 space, and retains a verified copy at `/archive/private/rehearsal-<RUN_ID>/tree`.
+Each versioned transfer retries at most three times into the current run's
+private scratch. The reader promotes a download only after its expected size
+and SHA-256 match; an incomplete transfer never becomes a restore input.
+The archive digest comes from the published final receipt. The receipt digest
+comes from a separate local download of the exact S3 version named in that
+final receipt, so same-size transport corruption also fails closed.
+The protected workflow reports fixed archive-download, receipt-download, and
+restore failure phases without exposing private transport output.
 Its private `link-classification.json` records raw targets as `contained`,
 `link-chain`, `missing-in-archive`, or `external`. Its `lexicalPath` is a hint,
 not proof that symlink components resolve there. `completed.json` records

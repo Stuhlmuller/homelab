@@ -186,6 +186,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
+  - id: openwiki-source-b3bdcadf54edf75020440bdd
+    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -216,10 +218,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T11:27:28.778Z" }
+generated: { by: "codex", at: "2026-10-23T11:55:33.894Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:27:28.778Z
+    at: 2026-10-23T11:55:33.894Z
 ---
 
 # Workload Inventory
@@ -429,7 +431,11 @@ protected `prepare-restore` stage for stopped legacy OpenClaw. Its first
 failed in the fixed public `verification` phase; it has not established a
 verified NAS restore copy or booted the old image. T013 archive verification
 passed; T014 compatible recovery remains open, and the original claims stay
-retained and read-only. Private restore diagnostics stay outside this wiki.
+retained and read-only. The transfer repair uses three bounded attempts and
+size/SHA-256 validation before promoting exact-version downloads, with fixed
+public archive, receipt and restore failure phases. It remains source-only
+until a protected retry succeeds. Private restore diagnostics stay outside this
+wiki.
 
 Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 uses a distinct name at Argo CD wave 0 before the wave-1
