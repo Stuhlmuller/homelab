@@ -146,7 +146,7 @@ downloads further distinguish `source-range` fetch/metadata failure,
 `reader-transfer` exec or write failure, and `finalize` full-digest or
 promotion failure. A category identifies the failed boundary, not the private
 underlying error; inspect private diagnostics before changing the transfer path.
-The one-off `resume-restore` stage is bound to timed-out protected run
+The one-off `resume-restore` stage is bound to the six-hour cancelled protected run
 `39988927652` and publication
 `9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. It reads the
 existing detached worker's stable completion marker and rechecks its cached

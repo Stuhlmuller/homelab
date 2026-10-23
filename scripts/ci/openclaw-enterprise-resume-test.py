@@ -27,9 +27,18 @@ def function(name):
 
 
 class ResumeProvenance(unittest.TestCase):
-    def test_prior_run_requires_one_timed_out_protected_attempt(self):
+    def test_prior_source_declares_exact_six_hour_legacy_limit(self):
+        workflow = "jobs:\n  legacy:\n    timeout-minutes: 360\n  enterprise:\n    timeout-minutes: 150\n"
+        PROVENANCE.require_legacy_timeout(workflow)
+        for source in (workflow.replace("360", "359"),
+                       workflow.replace("  legacy:", "  backup:"),
+                       workflow.replace("  enterprise:", "    timeout-minutes: 360\n  enterprise:")):
+            with self.subTest(source=source), self.assertRaises(PROVENANCE.Blocked):
+                PROVENANCE.require_legacy_timeout(source)
+
+    def test_prior_run_requires_one_terminal_cancelled_protected_attempt(self):
         run = {"id": 123, "event": "workflow_dispatch", "path": PROVENANCE.WORKFLOW,
-               "head_branch": "main", "status": "completed", "conclusion": "timed_out",
+               "head_branch": "main", "status": "completed", "conclusion": "cancelled",
                "run_attempt": 1, "head_sha": "a" * 40}
         self.assertEqual(PROVENANCE.parse_run(run, "123"), "a" * 40)
         for changed in ({"id": 124}, {"conclusion": "success"}, {"status": "in_progress"},
@@ -37,36 +46,49 @@ class ResumeProvenance(unittest.TestCase):
                         {"event": "push"}, {"head_sha": "bad"}):
             with self.subTest(changed=changed), self.assertRaises(PROVENANCE.Blocked):
                 PROVENANCE.parse_run({**run, **changed}, "123")
-        job = {"id": 456, "name": PROVENANCE.JOB, "status": "completed",
-               "conclusion": "timed_out"}
-        self.assertEqual(PROVENANCE.parse_job({"total_count": 1, "jobs": [job]}), 456)
+        job = {"id": PROVENANCE.PRIOR_JOB_ID, "name": PROVENANCE.JOB,
+               "status": "completed", "conclusion": "cancelled",
+               "started_at": PROVENANCE.PRIOR_JOB_STARTED_AT,
+               "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT}
+        self.assertEqual(PROVENANCE.parse_job({"total_count": 1, "jobs": [job]}),
+                         PROVENANCE.PRIOR_JOB_ID)
         for jobs in ({"total_count": 0, "jobs": []},
                      {"total_count": 2, "jobs": [job, job]},
                      {"total_count": 2, "jobs": [job]},
-                     {"total_count": 1, "jobs": [{**job, "conclusion": "success"}]}):
+                     {"total_count": 1, "jobs": [{**job, "conclusion": "success"}]},
+                     {"total_count": 1, "jobs": [{**job, "id": 999}]},
+                     {"total_count": 1, "jobs": [{**job, "completed_at": "2026-10-23T17:53:32Z"}]}):
             with self.subTest(jobs=jobs), self.assertRaises(PROVENANCE.Blocked):
                 PROVENANCE.parse_job(jobs)
 
     def test_protected_log_binds_exact_stage_and_publication_ref(self):
         prefix = "Protected Legacy Retention\tRun Legacy Stage\t2026-10-23T14:12:35.4394893Z   "
-        lines = [prefix + "RUN_STAGE: prepare-restore", prefix + "ARCHIVE_REF: " + REF]
+        cancel = "Protected Legacy Retention\tRun Legacy Stage\t" + PROVENANCE.PRIOR_CANCEL_LOG
+        lines = [prefix + "RUN_STAGE: prepare-restore", prefix + "ARCHIVE_REF: " + REF, cancel]
         PROVENANCE.parse_log("\n".join(lines), REF)
         for log in ("\n".join(lines + [lines[0]]),
-                    "\n".join([lines[0], prefix + "ARCHIVE_REF: " + "b" * 40 + "/123"]),
-                    "\n".join([prefix + "RUN_STAGE: verify", lines[1]]),
+                    "\n".join(lines + [cancel]),
+                    "\n".join([lines[0], prefix + "ARCHIVE_REF: " + "b" * 40 + "/123", cancel]),
+                    "\n".join([prefix + "RUN_STAGE: verify", lines[1], cancel]),
                     "\n".join(lines[:1]),
+                    "\n".join(lines[:2]),
+                    "\n".join(lines[:2] + [cancel.replace("22:53:29", "17:53:29")]),
                     "\n".join([line.replace("Run Legacy Stage", "Run Untrusted Step") for line in lines])):
             with self.subTest(log=log), self.assertRaises(PROVENANCE.Blocked):
                 PROVENANCE.parse_log(log, REF)
 
     def test_valid_provenance_writes_exclusive_private_receipt(self):
         run = {"id": 123, "event": "workflow_dispatch", "path": PROVENANCE.WORKFLOW,
-               "head_branch": "main", "status": "completed", "conclusion": "timed_out",
+               "head_branch": "main", "status": "completed", "conclusion": "cancelled",
                "run_attempt": 1, "head_sha": "a" * 40}
-        jobs = {"total_count": 1, "jobs": [{"id": 456, "name": PROVENANCE.JOB,
-                                              "status": "completed", "conclusion": "timed_out"}]}
+        jobs = {"total_count": 1, "jobs": [{"id": PROVENANCE.PRIOR_JOB_ID,
+                                              "name": PROVENANCE.JOB, "status": "completed",
+                                              "conclusion": "cancelled",
+                                              "started_at": PROVENANCE.PRIOR_JOB_STARTED_AT,
+                                              "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT}]}
         prefix = "Protected Legacy Retention\tRun Legacy Stage\t2026-10-23T14:12:35.4394893Z   "
-        log = prefix + "RUN_STAGE: prepare-restore\n" + prefix + "ARCHIVE_REF: " + REF
+        log = (prefix + "RUN_STAGE: prepare-restore\n" + prefix + "ARCHIVE_REF: " + REF +
+               "\nProtected Legacy Retention\tRun Legacy Stage\t" + PROVENANCE.PRIOR_CANCEL_LOG)
         def command(*args, **_kwargs):
             if args[:3] == ("git", "rev-parse", "HEAD"):
                 return ("b" * 40 + "\n").encode()

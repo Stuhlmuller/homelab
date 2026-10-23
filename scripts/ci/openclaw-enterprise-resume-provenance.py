@@ -2,6 +2,7 @@
 """Bind a timed-out legacy restore worker to its protected GitHub run."""
 
 import argparse
+from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,10 @@ STAGE_STEP = "Run Legacy Stage"
 PRIOR_RUN_ID = "39988927652"
 PRIOR_SOURCE_SHA = "28d2402285ed8dad373bf22a22ea82411beca9b1"
 PUBLISHED_ARCHIVE_REF = "9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221"
+PRIOR_JOB_ID = 120540474364
+PRIOR_JOB_STARTED_AT = "2026-10-23T16:52:54Z"
+PRIOR_JOB_COMPLETED_AT = "2026-10-23T22:53:32Z"
+PRIOR_CANCEL_LOG = "2026-10-23T22:53:29.0245903Z ##[error]The operation was canceled."
 UNCHANGED = (
     "scripts/config/openclaw-enterprise.json",
     "scripts/openclaw-retirement-status.py",
@@ -52,7 +57,7 @@ def parse_run(run, prior_id):
             run.get("path") == WORKFLOW and
             run.get("head_branch") == "main" and
             run.get("status") == "completed" and
-            run.get("conclusion") == "timed_out" and
+            run.get("conclusion") == "cancelled" and
             run.get("run_attempt") == 1 and
             isinstance(run.get("head_sha"), str) and
             SHA.fullmatch(run["head_sha"]))
@@ -65,24 +70,41 @@ def parse_job(jobs):
             len(jobs["jobs"]) == jobs["total_count"])
     matches = [job for job in jobs["jobs"] if job.get("name") == JOB]
     require(len(matches) == 1 and type(matches[0].get("id")) is int and
+            matches[0].get("id") == PRIOR_JOB_ID and
             matches[0].get("status") == "completed" and
-            matches[0].get("conclusion") == "timed_out")
+            matches[0].get("conclusion") == "cancelled" and
+            matches[0].get("started_at") == PRIOR_JOB_STARTED_AT and
+            matches[0].get("completed_at") == PRIOR_JOB_COMPLETED_AT)
+    started = datetime.fromisoformat(matches[0]["started_at"].replace("Z", "+00:00"))
+    completed = datetime.fromisoformat(matches[0]["completed_at"].replace("Z", "+00:00"))
+    require(timedelta(minutes=360) <= completed - started < timedelta(minutes=361))
     return matches[0]["id"]
 
 
 def parse_log(log, archive_ref):
     require(len(log) <= 8 * 1024 * 1024)
-    found = {"RUN_STAGE": [], "ARCHIVE_REF": []}
+    found = {"RUN_STAGE": [], "ARCHIVE_REF": [], "CANCEL": []}
     for line in log.splitlines():
         fields = line.split("\t", 2)
         if len(fields) != 3 or fields[:2] != [JOB, STAGE_STEP]:
             continue
-        for key in found:
+        if fields[2] == PRIOR_CANCEL_LOG:
+            found["CANCEL"].append(True)
+        for key in ("RUN_STAGE", "ARCHIVE_REF"):
             match = re.fullmatch(r"[^\t]*Z +" + key + r": ([^\s]+)", fields[2])
             if match:
                 found[key].append(match.group(1))
     require(found == {"RUN_STAGE": ["prepare-restore"],
-                      "ARCHIVE_REF": [archive_ref]})
+                      "ARCHIVE_REF": [archive_ref], "CANCEL": [True]})
+
+
+def require_legacy_timeout(source):
+    lines = source.splitlines()
+    require(lines.count("  legacy:") == 1)
+    start = lines.index("  legacy:") + 1
+    end = next((index for index in range(start, len(lines))
+                if re.fullmatch(r"  [A-Za-z0-9_-]+:", lines[index])), len(lines))
+    require(lines[start:end].count("    timeout-minutes: 360") == 1)
 
 
 def prove_source(prior_sha, current_sha):
@@ -92,6 +114,7 @@ def prove_source(prior_sha, current_sha):
         require(command("git", "show", f"{prior_sha}:{path}") ==
                 (ROOT / path).read_bytes())
     old_script = command("git", "show", f"{prior_sha}:scripts/ci/openclaw-enterprise-operations.sh").decode()
+    require_legacy_timeout(command("git", "show", f"{prior_sha}:{WORKFLOW}").decode())
     new_script = (ROOT / "scripts/ci/openclaw-enterprise-operations.sh").read_text()
     delimiter = '\n}\n\ncase "$stage" in'
     def launcher(source):
@@ -145,7 +168,7 @@ def main(argv=None):
     except (Blocked, ValueError, OSError, UnicodeError):
         print("Prior restore provenance blocked", file=sys.stderr)
         return 1
-    print("Prior timed-out restore run verified")
+    print("Prior six-hour cancelled restore job verified")
     return 0
 
 
