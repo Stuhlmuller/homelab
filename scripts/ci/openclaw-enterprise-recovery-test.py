@@ -7,6 +7,7 @@ import json
 import os
 import re
 import runpy
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -213,6 +214,36 @@ class RecoveryBoundaries(unittest.TestCase):
                 self.assertEqual(commands, [])
         tenant["status"]["phase"] = "Succeeded"
         CLEANUP["ensure_quiesced"]([tenant])
+
+    def test_backup_refuses_unstopped_or_unidentified_recovery_material(self):
+        material = Path(self.temp.name) / "material"
+        for name in ("postgres-root/tls.crt", "postgres-root/tls.key",
+                     "postgres-admin/password", "postgres-migrator/password",
+                     "postgres-app/password", "postgres-backup/password",
+                     "auth/secret", "gateway/occ", "bootstrap/output.json",
+                     "journal/journal.json", "tenant/metadata.json",
+                     "agent/identity.json", "tenant/secrets/key", "agent/state/state.db"):
+            target = material / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("fixture-secret")
+        source = (ROOT / "clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh").read_text()
+        preflight = source.split('test ! -L "$material"', 1)[0].replace(
+            "/recovery-material", str(material))
+        marker = material / "recovery.json"
+        for payload in ('{"claimUid":"fixture","writerStopped":false}',
+                        '{"claimUid":"","writerStopped":true}',
+                        '{"claimUid":"fixture"}', '{'):
+            with self.subTest(payload=payload):
+                marker.write_text(payload)
+                result = subprocess.run(["sh", "-c", preflight], text=True,
+                                        capture_output=True, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("lacks a stopped, identified writer", result.stderr)
+                self.assertNotIn("fixture-secret", result.stderr)
+        marker.write_text('{"claimUid":"fixture","writerStopped":true}')
+        result = subprocess.run(["sh", "-c", preflight], text=True,
+                                capture_output=True, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
