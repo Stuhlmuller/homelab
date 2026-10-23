@@ -56,6 +56,10 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-7768e8293039ce9a3d76e6b1
+    resource: repo://clusters/homelab/apps/istio/README.md
+  - id: openwiki-source-0f74d31324e8c8db68700f72
+    resource: repo://clusters/homelab/apps/istio/upgrade-1.28.10.json
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -132,6 +136,8 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+    resource: repo://IaC/istio/stack.hcl
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
@@ -340,10 +346,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T07:28:36.279Z" }
+generated: { by: "codex", at: "2026-10-23T08:01:16.556Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T07:28:36.279Z
+    at: 2026-10-23T08:01:16.556Z
 ---
 
 # Validation Gates
@@ -1216,6 +1222,14 @@ does not exit before the failure summary.
 Use these read-only checks after node recovery or an ambient configuration
 rollout. All must pass before closing the readiness finding; connector access
 alone is insufficient. Keep raw logs outside git.
+
+The [held 1.28.10 candidate](../../clusters/homelab/apps/istio/README.md)
+is disabled and outside Argo. The offline static gate pins all six active
+1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
+replacement chart URL and archive hashes. The active GCS chart source is due
+for retirement in December 2026. A later reviewed PR must migrate the Argo
+AppProject allowlist, active source, and chart mirror inventory even if the
+version hop remains held; this source gate is not a live upgrade receipt.
 
 Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:

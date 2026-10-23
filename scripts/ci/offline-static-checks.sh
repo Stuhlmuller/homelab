@@ -30,19 +30,50 @@ fi
 terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
   render --json --write=false --no-color \
   | jq -e '
-      any(.inputs.manifest.spec.sources[];
+      .inputs.manifest.spec as $spec |
+      $spec.syncPolicy.automated.enabled == true and
+      $spec.syncPolicy.automated.prune == true and
+      $spec.syncPolicy.automated.selfHeal == true and
+      ([ $spec.sources[] | select(has("chart")) |
+        [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
+        ["https://istio-release.storage.googleapis.com/charts", "base", "istio-base", "1.27.3"],
+        ["https://istio-release.storage.googleapis.com/charts", "istiod", "istiod", "1.27.3"],
+        ["https://istio-release.storage.googleapis.com/charts", "cni", "istio-cni", "1.27.3"],
+        ["https://istio-release.storage.googleapis.com/charts", "ztunnel", "ztunnel", "1.27.3"],
+        ["https://istio-release.storage.googleapis.com/charts", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["https://istio-release.storage.googleapis.com/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+      ]) and
+      any($spec.sources[];
         .chart == "ztunnel" and
         any(.helm.parameters[]?;
           .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
-          .value == "10-1-0-199-v1")
-        and any(.helm.parameters[]?;
+          .value == "10-1-0-199-v1") and
+        any(.helm.parameters[]?;
           .name == "updateStrategy.rollingUpdate.maxSurge" and
-          .value == "0")
-        and any(.helm.parameters[]?;
+          .value == "0") and
+        any(.helm.parameters[]?;
           .name == "updateStrategy.rollingUpdate.maxUnavailable" and
           .value == "1")
       )
     ' >/dev/null
+jq -e '
+  .schemaVersion == 1 and .activationEnabled == false and
+  .from == "1.27.3" and .to == "1.28.10" and
+  .chartRepository == "https://blob.istio.io/istio-release/charts" and
+  ([.components[] | [.chart, .releaseName]] == [
+    ["base", "istio-base"], ["istiod", "istiod"], ["cni", "istio-cni"],
+    ["ztunnel", "ztunnel"], ["gateway", "istio-ingressgateway"],
+    ["gateway", "octelium-api-ingressgateway"]
+  ]) and
+  ([.components[].archiveSha256] == [
+    "32b3d9833cf6473e8e567407855c029012b1080416ae4f9ee7bd4ce93617e132",
+    "125367e6eec08c8e7fc6e165c35ecf306dc23ea069b7953aed57fe83098004f1",
+    "7fd3133f6232c590493bb94974b2647dc287cd9a3a6acde621f6d4c7c1939295",
+    "02dc5cee6532b0ed7ebf289e4dff003518a9bda5f09ab1ff7eff8c2530d6fc49",
+    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df",
+    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df"
+  ])
+' clusters/homelab/apps/istio/upgrade-1.28.10.json >/dev/null
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1

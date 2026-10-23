@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e801ce2faa2850439d9c23c496ed01d7c3c2bd272c4eb9710758789616c4375c",
+  "pageVersion": "sha256:50e7ed64cbc86d39c5052be8fd33f11571c7d83be22e46676203ec40e27c8650",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:f547a2449575fe74fdb24cb0721fbf7be56c1571d2e4e123f56f9686fab5b6e6"
+          "version": "repo-file-v1:sha256:de249005fd54b4fe3220bcc704b12fb88f05f98f050e500ff5af05f68f1484f4"
         }
       ]
     },
@@ -747,10 +747,42 @@
           "version": "repo-file-v1:sha256:4fe00fb41de76956d43c884d3c90a8d736d3e457bb2816003e7cb9cdf7c6c467"
         }
       ]
+    },
+    {
+      "id": "claim_204e72b52f294fa5b27b973aa1c76d8d",
+      "statement": "The active Istio Application remains on 1.27.3 with automated self-heal, while the 1.28.10 chart candidate is disabled and outside the Argo source and Kustomize output.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/istio/stack.hcl#L10-L111",
+          "version": "repo-lines-v1:sha256:97bad36036fad527abdb9a6c26075bfd4a48da9336721fe01587cec21973d997:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1ZjhkMmQ5Y2RmZjJlODA4ZDMxZjI5NjhmYjRhMmY0NjEyNzlmZmUzYTFkNDgwODY1YjlhNzU0NmJjMzc0ZDIxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3MWQxYTNkNmJiNzllNTNhODg5MjBiNGJiYWM1NjE5M2NlOWY2NmVlZjFhMGJlN2VjODA5NGMyYWJhOTZlZWE1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkMzBjZGQ1ZDlkOTc2NmQyNWMzMjEyMDA0Yzc3Mzc2OGU5OTE4YjM4NjY2OTc5Mjg3NmRhZjE2MmJiOWMwMjFhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmMGY2NWI2YzM3ZjVmYzJiNGNmMzBkMGViZmM2ZjZkMTIzNzJmNGRlNGQzNmYxYTVkZWYwNzY1NjQxMGFhMDZjIn0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/istio/README.md#L1-L8",
+          "version": "repo-lines-v1:sha256:625b55ea99f2a92977654ea82aa8eebe86312e4f8fc0709e727b8ff512f333d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzhjMTNmYmQ3NDlhYmI2YmZlYTA0MzgxZTk4NTBhY2M4YTI5ZWQxOTExMjU5M2Q2Zjc0NjMxNTVkMjg5YTljNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTAxMGFiNmUyOTE2MWE3NDE1NzQ3YzQ2ZTQ5YjFkMjdlZDdiMTMxYzNhM2YxZjkyMDExYTdlYzViMjBkYWQzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTU3MDEyZjg3NjJkYjFlNGVjZjk2ZmJiOTY0MTg1NTU3ZjA1Y2FjZGRlZTNhZmYyYmZjNWExYjc4NWE1MTg1NiJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/istio/upgrade-1.28.10.json#L1-L8",
+          "version": "repo-lines-v1:sha256:e130afa80c0e69f6c82a46a637279586dcc5fe4f9c5be89849172a73f4589bc3:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjljYTg5MWJmZjdhYzFmN2NlYWFlNDBlZjA1MTA2NmJlOWVmZTQ3YjRlNDI4MWU4NmMzMTliZTJjNTVlYmNlNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmU4MmU1MzVjNjVmMjEzMWMxNmM5ZGFlZmNmY2VlNDUzNzg3NDlkYjJmNTZmYzkwOWU0M2UwYjJkMTI3MTM0NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_02404d1353f440158d86843e10019538",
+      "statement": "The Istio runbook records a December 2026 retirement risk for the active GCS chart source and requires later AppProject, active source, and chart mirror migration even if the version upgrade stays held.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/istio/stack.hcl#L10-L101",
+          "version": "repo-lines-v1:sha256:bf0e0f2e536365cddd45512fc35d3162e2ea1fad0c8da50a8a0bccc18b825562:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmOGQyZDljZGZmMmU4MDhkMzFmMjk2OGZiNGEyZjQ2MTI3OWZmZTNhMWQ0ODA4NjViOWE3NTQ2YmMzNzRkMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjYTVmZmY1ZTQ2MjIwZTJjYmRhODJhYmU4Njg2MmQxM2M1YWY5OWUxMzc3MDViMDA4MWExMzQyMWJjMjNmN2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzMGNkZDVkOWQ5NzY2ZDI1YzMyMTIwMDRjNzczNzY4ZTk5MThiMzg2NjY5NzkyODc2ZGFmMTYyYmI5YzAyMWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmNDY0MTE1YmI0NTE2ODA4ODZlYWVmNjM4Yzg2MjI4ZjUyNTMwMDlhYjAzMjhiOTEwZmRkNGExODM5MDZjM2IifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/istio/README.md#L19-L25",
+          "version": "repo-lines-v1:sha256:a8e71fc307d980847d119b38dd8225122d9ca3518dee7ecad4c0dcf7ce8ce527:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWRlYjgwMjVhNDI2ODhhYzk5OTRlZWNhZTk0NGIxMzM0ZTQ4OGYxM2VkNjViMDY1MTBlNzQ0NjNkOTA5NTdjMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmU1ODM2NmFlM2ZhODBhY2IwNWUwNWExYmVkYzQ4OWI4OTRlNTBjM2FjZjk4NTFlNDgwMzdiZDc2NGE4MDYxNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjE2ZTQ1MzM4YzU5ZjVhMWFmYjdjNmM4YzcwYWE2ZGRjNjkzNTRlNDM1MDFmOWJlMzY0MmQ5YjJjYjllYTljMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2FjYWUzZTNjNzQ4YjBkYTVhYThlYjUwZWNkMjc4ZWYyMmI4ODJhOTVmNmYyZDhiMzRkMDY3MjkwYmQxMmMwNyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T07:28:36.279Z"
+    "at": "2026-10-23T08:01:16.556Z"
   }
 }
