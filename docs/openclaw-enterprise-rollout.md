@@ -39,16 +39,18 @@ delivers that private file, so hosted dispatch fails before binding. Do not
 dispatch it until credential delivery and the dormant Installation are proven.
 The fixed `full-sync` lane can sync both Applications only after a reviewed
 `installationPhase` and source registration; the current `unselected` phase
-blocks it before cluster access. Reconcile, stop, verification, restore and
-acceptance remain reserved and fail closed. The GitHub runner has no durable
-shared mount for `privateJournal.mountPath` in
-[`openclaw-enterprise.json`](../scripts/config/openclaw-enterprise.json).
-Copying a runner-local journal after a command exits would lose a pending API
-intent if that command or runner stops mid-operation. T043 remains open until a
-declared private runner mounts the same journal and lock across retries, and the
-remaining runtime and recovery stages have tested source-owned paths.
-Read-only verification never sends inference. Native-origin and browser checks
-need the owner's OCE session and remain T048 acceptance evidence.
+blocks it before cluster access. `reconcile`, `stop`, and `verification` have a
+source-bound [in-cluster Job dispatcher](../scripts/ci/openclaw-enterprise-journal-operator.py).
+Its retained local PVC mounts the private journal directly; the reconciler
+locks and syncs that file across attempts. The hosted runner does not hold a
+journal copy. The committed
+[`journalOperator.enabled: false`](../scripts/config/openclaw-enterprise.json)
+gate blocks Job creation until placement, PV identity, signed image and private
+bootstrap credential are proved. `restore` and `acceptance` still block pending
+separate recovery and owner-session paths. T041 and T043 remain open until the
+operator path and full stage contract pass live verification. Read-only
+verification never sends inference. Native-origin and browser checks need the
+owner's OCE session and remain T048 acceptance evidence.
 
 The legacy archive and new Enterprise recovery set use separate private
 locations and access grants. Retain the old local databases, NAS workspace,
