@@ -95,6 +95,12 @@ is source-tested but remains unavailable until both Applications are registered
 and prerequisites pass. Selective sync and `ApplyOutOfSyncOnly` are outside the
 declared release path.
 
+The legacy `openclaw` Application remains registered for retained recovery,
+with its gateway at zero replicas and backup CronJob suspended. The separate
+Enterprise journal-operator bundle is source-only and has no Argo or Terragrunt
+registration; its reconciliation stages remain disabled pending placement,
+image and private bootstrap-key proof.
+
 Stateful apps auto-sync by default, but they are not considered operationally
 ready until `platform-storage` is synced, the `nfs-default` StorageClass is
 verified, and `docs/storage-nfs.md` records backup coverage.

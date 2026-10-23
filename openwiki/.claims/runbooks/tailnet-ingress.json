@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0bd040fdc026a759bd66214554efcfcfbd5650095c71a58f1dce928b1427f282",
+  "pageVersion": "sha256:dc1fae085e99d457c61a1b5c56ee66e1c5a8afabcba5036465f4f3489055a32e",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -372,7 +372,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:cfe7a9e0fff9fae72e13f07a85f2103451b448079fe9b47ee216dcd126e91a4c"
+          "version": "repo-file-v1:sha256:efc0d5a95e4035dffade06d8e84e26b15bbfa28bba73b764c64b0a1c209f80b8"
         }
       ]
     },
@@ -416,13 +416,13 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T13:22:56.341Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }

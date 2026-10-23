@@ -1,8 +1,8 @@
 # Talos Control-Plane Maintenance
 
 This runbook owns repository-backed control-plane maintenance for Talos and
-Kubernetes. It covers service-account issuer maintenance and the upgrade
-checklist for Talos and Kubernetes patch releases.
+Kubernetes. It covers service-account issuer maintenance and the declared,
+still-inactive Talos minor-version and Kubernetes upgrade ladder.
 
 Do not use this runbook to make ad hoc live changes. First express desired
 state in this repository, validate the rendered Talos machine config, then

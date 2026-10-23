@@ -227,11 +227,12 @@ writer; `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
 the fixed platform-maintenance job; and
 `OCE_OCTELIUM_CLIENT_AUTH_TOKEN` is a separate Octelium `CLIENT` credential
 for its private TCP Talos Service. Neither token nor config is a workflow
-dispatch input or an application environment variable. The declared upgrade
-contract also reserves `OCE_CONTROLPLANE_CONFIG_B64` and
-`OCE_WORKER_CONFIG_B64` for private role-specific Talos validation, but the
-upgrade workflow deliberately stops before using them until protected stage
-wiring and private recovery checks are implemented. Kubernetes API reads,
+dispatch input or an application environment variable. The fixed upgrade
+stages consume `OCE_CONTROLPLANE_CONFIG_B64` and
+`OCE_WORKER_CONFIG_B64` as private role-specific Talos configs for strict
+validation and ordered execution. Their committed activation gate is false;
+placement, recovery and publication receipts remain required before a live
+upgrade. Kubernetes API reads,
 including protected inspect, reuse the existing clientless
 `OCTELIUM_CI_AUTH_TOKEN` route, and AWS writes
 use the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling any

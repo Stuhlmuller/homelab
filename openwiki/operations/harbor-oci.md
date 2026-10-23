@@ -114,6 +114,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -168,10 +170,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T11:27:28.778Z" }
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T18:25:34.713Z
 ---
 
 # Harbor Private OCI Registry
@@ -184,6 +186,8 @@ runtime state lives in
 (Harbor `2.15.2`). Upstream component references remain digest-pinned; the
 Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
 bootstrap and registry recovery use the reviewed upstream rollback path.
+Harbor-only application pulls are a target, not a live cluster-wide result:
+full-catalog publication and consuming-reference cutover remain pending.
 
 The retained legacy `https://harbor.stinkyboi.com` path uses Cloudflare Tunnel,
 the Octelium `harbor` WEB Service, and the shared Istio gateway until private
@@ -956,6 +960,9 @@ reboot checks. Preserve DNS, API, HBONE, webhook, storage, and recovery paths an
 prove direct-IP, alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
+The pinned Cordium `ws-main` and Octelium `svc-upstream` generators still allow
+public IPv4/IPv6 traffic on every port; another NetworkPolicy cannot narrow
+those rules. Generator corrections and isolated-canary traffic remain open.
 
 The staged `harbor-only-images` ValidatingAdmissionPolicy audits Pod create and
 update, including init and ephemeral containers, across namespaces. Its binding

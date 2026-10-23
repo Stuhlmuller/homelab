@@ -34,15 +34,19 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:27:13.661Z
+    at: 2026-10-23T18:25:34.713Z
 ---
 
 # Talos Control-Plane Maintenance
 
 Canonical runbook: [`docs/talos-control-plane-maintenance.md`](../../docs/talos-control-plane-maintenance.md)
+
+The declared Talos minor-version and Kubernetes upgrade ladder is wired in
+source but inactive. Keep the historical patch audits separate from the
+unpassed placement, recovery, publication, and live upgrade gates below.
 
 The [routine etcd backup runbook](../../docs/talos-etcd-backup.md) owns
 `scripts/talos-etcd-backup.py`: authenticated snapshot download to a private

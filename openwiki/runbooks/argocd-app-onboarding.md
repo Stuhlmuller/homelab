@@ -4,6 +4,14 @@ title: "Argo CD App Onboarding"
 description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
 tags: ["runbook", "argocd", "applications"]
 sources:
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-00d374aa17b82a33b8b28024
+    resource: repo://clusters/homelab/apps/openclaw/runtime-backup.yaml
+  - id: openwiki-source-b26876230e53fd853d7bcbea
+    resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-9824f110ded8ce152ef180f9
     resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
@@ -20,16 +28,20 @@ sources:
     resource: repo://IaC/platform-network-policy-canary/stack.hcl
   - id: openwiki-source-e3e84b128839afbc47f478f7
     resource: repo://IaC/platform-network-policy/stack.hcl
+  - id: openwiki-source-25f75cdd2a576d57bb951a93
+    resource: repo://IaC/terragrunt.stack.hcl
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-1d91dece74882a3fae04c364
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-ba849f5dbd0942cee0b0087d
     resource: repo://scripts/network-policy-ownership.py
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:27:13.661Z
+    at: 2026-10-23T18:25:34.713Z
 ---
 
 # Argo CD App Onboarding
@@ -62,6 +74,11 @@ Both disable automatic sync, pruning, self-heal and retries. Run the focused
 after stack generation to inspect their rendered sources and resource allowlist.
 Registration does not prove database or secret readiness; complete sync still
 requires storage, capacity, policy and live gates.
+The legacy `openclaw` Application remains registered with a zero-replica
+gateway, suspended backup writer, and read-only recovery reader. The separate
+Enterprise journal-operator bundle has no Argo or Terragrunt registration; its
+reconciliation stages remain disabled pending placement, a signed image, and
+private bootstrap-key proof.
 
 After the traffic probe, two reviewed GitOps commits prune the fixtures and
 then the enforcer; each may include native OpenWiki metadata. Apply the

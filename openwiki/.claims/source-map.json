@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bbaccc3a471d5e33d7fc197da0cff1c2326f90a1a87abfd1bc98ceba971e2315",
+  "pageVersion": "sha256:99f059066e6e132939d15bdcbcb3da83c6ad9358c23cf143069a08a9553e4200",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -149,8 +149,8 @@
           "version": "repo-lines-v1:sha256:80a0af7a33c97ece99cbd589ee0c5b39cc72643c9c80c28f0e29b2175d293db1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZWUyNzA2YTYwZjgxYzM0ZmMzYWRlMWUxM2IxMDMxM2JkMjIzODk1MTA5YzI0YzMyMmUwNDNhNmM0MDgwZGFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjFlYTVhZDlhNGZhNTEzNjYzMDAzNzJjMzVmZDA4ODM2YzU4MzhlNzk2ZGZmZTFkOGE1NGJjYzc0NGFlY2YyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NDJiMzVjMDE0YzQ2ZWQyNmZiYjMyZjAzYTQ0MjEzNjc1YzdkMDc0M2ZlNTQ5M2MwNDBlYWM4MjFiMTZjZGY2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmZGZhODdhYWJjYzk3YmJlMmIxZmE2OTc3ODI1ODM1MTJkOWMxN2YwMGFlODFiNTBhZmI4ZjRmMGVlZjg4Yzg0In0"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L65-L209",
-          "version": "repo-lines-v1:sha256:9dfbcbf09deeef4aaa8a4511860662128996d42e1d3a7e7d48510fba1046181d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxMTBmZWMyNGZkOGM5YTU4MzhlNTM1MDFiZGM3MmYwN2U0NjFlYjRjMGI4MjkzOWIyZTY4YWEwYzZmNTMzZjk1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzNjcwNGUwY2Q5N2M2YWFiNTY4ZWMwMTI3YjMxYTNlODE2OGY4ZGE0YWU2MWRiNDVmNTg5OTFkZTA4NjRkY2U5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4ZDI5ZTcwZGE3OGU0ZTE2MzQ3YmM4MzdiNmZlNDRhM2MwODBlM2YzMTA1MDU0MDljOWEyM2JlYzRiMDM2NzAyIn0"
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L65-L219",
+          "version": "repo-lines-v1:sha256:be8bd9b9d82c317a617fe70920d35b1159d8dd60ef3d5425950ac98fee0db5f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxMTBmZWMyNGZkOGM5YTU4MzhlNTM1MDFiZGM3MmYwN2U0NjFlYjRjMGI4MjkzOWIyZTY4YWEwYzZmNTMzZjk1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzNjcwNGUwY2Q5N2M2YWFiNTY4ZWMwMTI3YjMxYTNlODE2OGY4ZGE0YWU2MWRiNDVmNTg5OTFkZTA4NjRkY2U5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4ZDI5ZTcwZGE3OGU0ZTE2MzQ3YmM4MzdiNmZlNDRhM2MwODBlM2YzMTA1MDU0MDljOWEyM2JlYzRiMDM2NzAyIn0"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -371,6 +371,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T16:21:49.039Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }
