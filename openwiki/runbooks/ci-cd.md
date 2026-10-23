@@ -70,6 +70,8 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
   - id: openwiki-source-8483d28614308625b1073872
@@ -102,10 +104,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T11:55:33.894Z" }
+generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:55:33.894Z
+    at: 2026-10-23T13:22:56.341Z
 ---
 
 # CI/CD
@@ -244,10 +246,15 @@ as `archive_ref`. The worker rechecks stopped writers and source identities,
 fetches the recorded S3 object versions, and would keep a separate verified tree
 and private symlink report under `/archive/private/rehearsal-<RUN_ID>`. Its first
 [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
-failed before the receipt transfer completed or the restore worker started, so
-no accepted copy exists. The transfer repair retries only exact versions into
-run-private partial scratch and promotes them after size and SHA-256 checks;
-the workflow reports fixed archive-download, receipt-download and restore
+left an incomplete, unverified archive in scratch. The [retry
+`39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker, so no accepted copy exists. The source-only
+repair fetches pinned S3 versions in at most 128 MiB ranges, validates version,
+interval and length, then uploads at most 8 MiB reader slices with SHA-256
+checks. Interrupted appends roll back; full size and digest checks precede
+no-clobber promotion. The workflow reports fixed archive-download,
+receipt-download and restore
 failure phases without private diagnostics. A successful copy receipt would
 still not boot or accept the old gateway.
 

@@ -4,6 +4,7 @@
 import os
 import json
 import hashlib
+import importlib.util
 import re
 import runpy
 import subprocess
@@ -12,16 +13,14 @@ import tempfile
 import unittest
 import stat
 import textwrap
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from threading import Thread
 from unittest import mock
-from urllib.parse import parse_qs, urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 UPLOAD = ROOT / 'scripts/ci/openclaw-enterprise-upload.py'
+DOWNLOAD = ROOT / 'scripts/ci/openclaw-enterprise-download.py'
 ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
 JOURNAL_OPERATOR = ROOT / 'scripts/ci/openclaw-enterprise-journal-operator.py'
 BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
@@ -394,6 +393,11 @@ sys.stdout.buffer.write(chunk)
             WORKFLOW.read_text(),
         )
         self.assertEqual(upload_pins, [hashlib.sha256(UPLOAD.read_bytes()).hexdigest()])
+        download_pins = re.findall(
+            r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-download\.py'",
+            WORKFLOW.read_text(),
+        )
+        self.assertEqual(download_pins, [hashlib.sha256(DOWNLOAD.read_bytes()).hexdigest()])
 
     def test_inventory_worker_finishes_without_exec_stream_and_records_failure_privately(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -514,106 +518,137 @@ validate_archive_identity "$2" "$3"
                                         capture_output=True, text=True, timeout=10)
                 self.assertEqual(result.returncode == 0, succeeds, result.stderr)
 
-    def test_versioned_restore_streams_exact_bytes(self):
-        payload = b'archive\x00bytes'
+    def test_versioned_restore_uses_bounded_range_helper(self):
+        script = SCRIPT.read_text()
+        self.assertIn('python3 scripts/ci/openclaw-enterprise-download.py', script)
+        self.assertIn('restore_version "$prefix/legacy.tar.gz"', script)
+        self.assertIn('restore_version "$prefix/receipt.json"', script)
+
+    def test_versioned_restore_retries_ranges_and_reader_slices_without_partial_commit(self):
+        spec = importlib.util.spec_from_file_location('openclaw_download', DOWNLOAD)
+        download = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(download)
+        payload = b'archive-bytes-with-several-ranges'
         digest = hashlib.sha256(payload).hexdigest()
-
-        class S3(BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.server.paths.append(self.path)
-                if self.server.fail:
-                    self.send_error(404)
-                    return
-                body = self.server.bodies.pop(0) if self.server.bodies else payload
-                self.send_response(200)
-                self.send_header('Content-Length', str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-
-            def log_message(self, *args):
-                pass
-
-        with HTTPServer(('127.0.0.1', 0), S3) as server, tempfile.TemporaryDirectory() as directory:
-            server.paths = []
-            server.fail = False
-            server.bodies = []
-            Thread(target=server.serve_forever, daemon=True).start()
-            destination = Path(directory) / 'archive'
-            shell = '''set -euo pipefail
-bucket=test
-reader=()
-reader_input=()
-reader_transport() {
-  if [[ "${TEST_READER_FAIL:-}" == always ||
-        ( "${TEST_READER_FAIL:-}" == once && ! -e "$TEST_FAILURE_MARKER" ) ]]; then
-    touch "$TEST_FAILURE_MARKER"
-    cat > "$5"
-    return 1
-  fi
-  "$@"
-}
-if [[ -n "${TEST_READER_FAIL:-}" ]]; then reader_input=(reader_transport); fi
-aws() { command aws --endpoint-url "$TEST_ENDPOINT" --no-sign-request "$@"; }
-source <(sed -n '/^restore_version() (/,/^)/p' "$1")
-restore_version key version-1 "$2" "$3" "$4"
+        fake_aws = r'''#!/usr/bin/env python3
+import json, os, pathlib, sys
+args = sys.argv[1:]
+assert args[:2] == ['s3api', 'get-object']
+version = args[args.index('--version-id') + 1]
+value = args[args.index('--range') + 1]
+start, end = map(int, value.removeprefix('bytes=').split('-'))
+body = pathlib.Path(os.environ['FAKE_SOURCE']).read_bytes()[start:end + 1]
+with open(os.environ['FAKE_AWS_LOG'], 'a') as log:
+    log.write(value + '\n')
+marker = os.environ.get('FAKE_SHORT_ONCE')
+if os.environ.get('FAKE_SHORT_ALWAYS') or marker and not pathlib.Path(marker).exists():
+    if marker:
+        pathlib.Path(marker).touch()
+    body = body[:-1]
+if os.environ.get('FAKE_CORRUPT') and body:
+    body = bytes([body[0] ^ 1]) + body[1:]
+pathlib.Path(args[args.index('--range') + 2]).write_bytes(body)
+print(json.dumps({'VersionId': 'wrong' if os.environ.get('FAKE_WRONG_VERSION') else version,
+                  'ContentRange': 'wrong' if os.environ.get('FAKE_WRONG_RANGE') else
+                      f'bytes {start}-{end}/{len(pathlib.Path(os.environ["FAKE_SOURCE"]).read_bytes())}',
+                  'ContentLength': end - start if os.environ.get('FAKE_WRONG_LENGTH') else end - start + 1}))
 '''
-            try:
-                def restore(**extra):
-                    return subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT),
-                                           str(destination), str(len(payload)), digest],
-                                          cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
-                                                         f'http://127.0.0.1:{server.server_port}',
-                                                         'TEST_FAILURE_MARKER':
-                                                         str(Path(directory) / 'reader-failed'),
-                                                         **extra},
-                                          capture_output=True, timeout=20, check=False)
+        fake_kubectl = r'''#!/usr/bin/env python3
+import os, pathlib, subprocess, sys
+args = sys.argv[1:]
+assert args[:3] == ['-n', 'ai', 'exec']
+command = args[args.index('--') + 1:]
+assert command[:2] == ['python3', '-c']
+operation = command[3]
+root = os.environ['FAKE_REMOTE_ROOT']
+mapped = [value.replace('/archive/private/offsite-123', root) for value in command[4:]]
+marker = os.environ.get('FAKE_INIT_LOST_ONCE')
+if operation == 'init' and marker and not pathlib.Path(marker).exists():
+    pathlib.Path(marker).touch()
+    subprocess.run([sys.executable, '-c', command[2], operation, *mapped], check=True)
+    sys.exit(1)
+if operation == 'upload' and os.environ.get('FAKE_UPLOAD_ALWAYS'):
+    sys.stdin.buffer.read()
+    sys.exit(1)
+marker = os.environ.get('FAKE_UPLOAD_ONCE')
+if operation == 'upload' and marker and not pathlib.Path(marker).exists():
+    pathlib.Path(marker).touch()
+    sys.stdin.buffer.read()
+    sys.exit(1)
+marker = os.environ.get('FAKE_APPEND_ONCE')
+if operation == 'commit' and marker and not pathlib.Path(marker).exists():
+    pathlib.Path(marker).touch()
+    with open(mapped[1], 'ab') as output:
+        output.write(pathlib.Path(mapped[0]).read_bytes()[:1])
+    sys.exit(1)
+if operation == 'finish' and os.environ.get('FAKE_DESTINATION_RACE'):
+    pathlib.Path(mapped[1]).write_bytes(b'foreign destination')
+os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            aws, kubectl = root / 'aws', root / 'kubectl'
+            aws.write_text(fake_aws)
+            kubectl.write_text(fake_kubectl)
+            aws.chmod(0o755)
+            kubectl.chmod(0o755)
+            source = root / 'source'
+            source.write_bytes(payload)
+            remote = root / 'remote'
+            remote.mkdir()
+            log = root / 'aws-log'
+            destination = '/archive/private/offsite-123/legacy.tar.gz'
+            local_destination = remote / 'legacy.tar.gz'
+            base = {**os.environ, 'PATH': str(root) + os.pathsep + os.environ['PATH'],
+                    'FAKE_SOURCE': str(source), 'FAKE_REMOTE_ROOT': str(remote),
+                    'FAKE_AWS_LOG': str(log)}
 
-                result = restore()
-                self.assertEqual(result.returncode, 0, result.stderr.decode())
-                self.assertEqual(destination.read_bytes(), payload)
-                self.assertEqual(parse_qs(urlsplit(server.paths[0]).query),
-                                 {'versionId': ['version-1']})
-                destination.unlink()
-                server.paths.clear()
-                server.bodies = [payload[:4], payload]
-                result = restore()
-                self.assertEqual(result.returncode, 0, result.stderr.decode())
-                self.assertEqual(len(server.paths), 2)
-                self.assertEqual(destination.read_bytes(), payload)
-                self.assertFalse(Path(str(destination) + '.partial').exists())
-                destination.unlink()
-                server.paths.clear()
-                server.bodies = [payload.replace(b'a', b'b', 1), payload]
-                result = restore()
-                self.assertEqual(result.returncode, 0, result.stderr.decode())
-                self.assertEqual(len(server.paths), 2)
-                self.assertEqual(destination.read_bytes(), payload)
-                destination.unlink()
-                server.paths.clear()
-                server.bodies = [payload[:4]] * 3
-                result = restore()
-                self.assertNotEqual(result.returncode, 0)
-                self.assertEqual(len(server.paths), 3)
-                self.assertFalse(destination.exists())
-                self.assertFalse(Path(str(destination) + '.partial').exists())
-                server.paths.clear()
-                result = restore(TEST_READER_FAIL='once')
-                self.assertEqual(result.returncode, 0, result.stderr.decode())
-                self.assertEqual(len(server.paths), 2)
-                self.assertEqual(destination.read_bytes(), payload)
-                destination.unlink()
-                server.fail = True
-                result = restore()
-                self.assertNotEqual(result.returncode, 0)
-                self.assertFalse(destination.exists())
-                self.assertFalse(Path(str(destination) + '.partial').exists())
-                server.fail = False
-                result = restore(TEST_READER_FAIL='always')
-                self.assertNotEqual(result.returncode, 0)
-                self.assertFalse(destination.exists())
-                self.assertFalse(Path(str(destination) + '.partial').exists())
-            finally:
-                server.shutdown()
+            def restore(**changes):
+                with (mock.patch.dict(os.environ, {**base, **changes}, clear=True),
+                      mock.patch.object(download, 'RANGE_SIZE', 11),
+                      mock.patch.object(download, 'SLICE_SIZE', 4)):
+                    download.restore_version('test-bucket', 'key', 'version-1',
+                                             destination, len(payload), digest,
+                                             'openclaw-retirement-reader-test')
+
+            restore(FAKE_SHORT_ONCE=str(root / 'short-once'),
+                    FAKE_UPLOAD_ONCE=str(root / 'upload-once'),
+                    FAKE_APPEND_ONCE=str(root / 'append-once'))
+            self.assertEqual(local_destination.read_bytes(), payload)
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            self.assertEqual(list(remote.glob('*.chunk-*')), [])
+            self.assertEqual(log.read_text().splitlines()[:2], ['bytes=0-10'] * 2)
+            local_destination.unlink()
+            log.unlink()
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_SHORT_ALWAYS='1')
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_WRONG_VERSION='1')
+            self.assertFalse(local_destination.exists())
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_WRONG_RANGE='1')
+            self.assertFalse(local_destination.exists())
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_WRONG_LENGTH='1')
+            self.assertFalse(local_destination.exists())
+            with self.assertRaises(download.ReaderTransferError):
+                restore(FAKE_INIT_LOST_ONCE=str(root / 'init-lost'))
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.ReaderTransferError):
+                restore(FAKE_UPLOAD_ALWAYS='1')
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.ReaderTransferError):
+                restore(FAKE_CORRUPT='1')
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.ReaderTransferError):
+                restore(FAKE_DESTINATION_RACE='1')
+            self.assertEqual(local_destination.read_bytes(), b'foreign destination')
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
 
     def test_unreviewed_stage_or_receipt_reference_stops_before_credentials(self):
         base = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': 'a' * 40,

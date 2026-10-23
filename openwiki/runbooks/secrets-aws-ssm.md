@@ -41,7 +41,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:55:33.894Z
+    at: 2026-10-23T13:22:56.341Z
 ---
 
 # AWS SSM Secret References

@@ -56,52 +56,11 @@ require_absent_object() {
     jq -e --arg key "$1" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null
 }
 
-restore_version() (
-  [[ "$4" =~ ^[1-9][0-9]*$ && "$5" =~ ^[0-9a-f]{64}$ ]] || exit 1
-  temporary="$3.partial"
-  "${reader[@]}" sh -c 'test ! -e "$1" && test ! -L "$1" && test ! -e "$2" && test ! -L "$2"' \
-    sh "$3" "$temporary" || exit 1
-  pipe_dir=
-  trap 'if [[ -n "$pipe_dir" ]]; then rm -rf -- "$pipe_dir"; fi' EXIT
-  for attempt in 1 2 3; do
-    pipe_dir="$(mktemp -d)"
-    mkfifo -m 600 "$pipe_dir/body"
-    aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
-      "$pipe_dir/body" >/dev/null &
-    source_pid=$!
-    "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$temporary" \
-      <"$pipe_dir/body" &
-    reader_pid=$!
-    stream_complete=false
-    completed_pid=
-    if wait -n -p completed_pid "$source_pid" "$reader_pid"; then
-      if [[ "$completed_pid" == "$source_pid" ]]; then
-        if wait "$reader_pid"; then stream_complete=true; fi
-      elif wait "$source_pid"; then
-        stream_complete=true
-      fi
-    fi
-    if [[ "$stream_complete" == false ]]; then
-      kill "$source_pid" "$reader_pid" 2>/dev/null || true
-      wait "$source_pid" "$reader_pid" 2>/dev/null || true
-    fi
-    rm -rf -- "$pipe_dir"
-    pipe_dir=
-    if [[ "$stream_complete" == true ]] &&
-       "${reader[@]}" sh -c '
-         set -eu
-         test -f "$1" && test ! -L "$1"
-         test "$(stat -c %s "$1")" = "$2"
-         test "$(sha256sum "$1" | cut -d " " -f1)" = "$3"
-         test ! -e "$4" && test ! -L "$4"
-         mv -- "$1" "$4"
-       ' sh "$temporary" "$4" "$5" "$3"; then
-      exit 0
-    fi
-  done
-  "${reader[@]}" rm -f -- "$temporary" || true
-  exit 1
-)
+restore_version() {
+  [[ "$4" =~ ^[1-9][0-9]*$ && "$5" =~ ^[0-9a-f]{64}$ ]] || return 1
+  python3 scripts/ci/openclaw-enterprise-download.py \
+    "$bucket" "$1" "$2" "$3" "$4" "$5" "$pod"
+}
 
 refresh_status() {
   status_refresh_count=$((status_refresh_count + 1))

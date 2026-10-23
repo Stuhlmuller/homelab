@@ -184,10 +184,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
-  - id: openwiki-source-b3bdcadf54edf75020440bdd
-    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -218,10 +218,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T11:55:33.894Z" }
+generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T11:55:33.894Z
+    at: 2026-10-23T13:22:56.341Z
 ---
 
 # Workload Inventory
@@ -428,12 +428,15 @@ checks that the active source remains unchanged until that review.
 Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) declares a
 protected `prepare-restore` stage for stopped legacy OpenClaw. Its first
 [run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
-failed in the fixed public `verification` phase; it has not established a
-verified NAS restore copy or booted the old image. T013 archive verification
-passed; T014 compatible recovery remains open, and the original claims stay
-retained and read-only. The transfer repair uses three bounded attempts and
-size/SHA-256 validation before promoting exact-version downloads, with fixed
-public archive, receipt and restore failure phases. It remains source-only
+failed in the broad public `verification` phase with only an incomplete,
+unverified scratch archive. [Retry `39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker. It has not established a verified NAS restore
+copy or booted the old image. T013 archive verification passed; T014 compatible
+recovery remains open, and the original claims stay retained and read-only.
+The source-only transfer repair uses bounded exact-version S3 ranges, 8 MiB
+SHA-256-checked reader slices, append rollback and full-digest promotion, with
+fixed public archive, receipt and restore failure phases. It remains source-only
 until a protected retry succeeds. Private restore diagnostics stay outside this
 wiki.
 

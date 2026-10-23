@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:106a0c4993854ae4249a98e371ae38dc2fa201a15d840f256f4e0f26f0103421",
+  "pageVersion": "sha256:502486f23599d711fddabad79a57e1d3712de4a3086155ae3544b81b4acae52a",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:cdfc93b74aa8a7cefa2a31a5aa3b0d545ef1792c292f04ea51bdc9dee3ec2f49"
+          "version": "repo-file-v1:sha256:c48b1a8a88930f1da2b72859cbfea97dba5296b75008a8dbcd76ad8cf19d7084"
         }
       ]
     },
@@ -205,7 +205,7 @@
       "statement": "The Enterprise operations workflow retains legacy stages and fixed binding, full-sync, reconcile, stop, verification, restore, and acceptance selections under exact-current-main guards and a shared protected queue. The full-sync helper also rejects current-main drift after the final Argo sync and health readback, with a forced-race regression fixture. Binding still lacks hosted delivery of the owner-controlled 0600 key; full-sync is blocked by the unselected phase; reconcile, stop, and verification dispatch source-bound one-shot Jobs only after a disabled-by-default gate is enabled, while restore and acceptance remain separately blocked. No Enterprise stage has passed live acceptance.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L172-L246",
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L173-L247",
           "version": "repo-lines-v1:sha256:81e53e968943b24e2de4e61d7e157aa651ddaafa22b2c16b366e1343d0c5ad59:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkODM0NjZmMDIwNTZjMDMyMWZkM2MzZTM5MzllOGRjYTg3YmY0MjczOTlhY2ZjYWZjYjM4NjI2MjAxZmFjOGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjZmM2YWYxNzhlNTVjNjZhODhhMGY5NDg0OGMwNzNmYWYyYjMwZDc0OWRmNGRkNzlmOWNhZDA4YzVhMmFkMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNzgwOWM5MjEwNmI3ZTI1NmM1ZGU0YTZlZWZjNmZmYWU5NDU4NjBmN2MwMDhjOThmYTU5NWJlYzlmY2Y3MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzZGQwZjE5YTJmYjhlZmU1ZmM5NDc4YzQyNzNhMTYxNDMwYmYxMTIwZDdjNjRiZWY4ZmZkZDlkOGE5ZDA1Y2EifQ"
         },
         {
@@ -318,11 +318,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:36a3ffc0676ce671832f81946348026822af6367da986d5c6d237277d053685a"
+          "version": "repo-file-v1:sha256:4b466397387e38ba5b3bf7cea00494257fec7b3d1aac9a8e7e49d8ffdc1b9248"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:3998796fdb36b87cfdf5823743bec23fddb6a5693efaef05d7a81f7b29c32069"
+          "version": "repo-file-v1:sha256:b16e9854023424bf7ee17f58b5d1fd2aa797b45cdd2fedab1e8ed5743d4e2a05"
         }
       ]
     },
@@ -332,7 +332,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
-          "version": "repo-file-v1:sha256:aee7852efe9ed4dffe8e46a58da4a5d459b77f0bad25c537d2352bb70b908647"
+          "version": "repo-file-v1:sha256:d55163c42044caef70d3b141068c43126ec0e6865f13bdd615475cb3781fc461"
         },
         {
           "resource": "repo://builds/openclaw-enterprise/build-operator.sh#L1-L40",
@@ -340,7 +340,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md#L84-L100",
-          "version": "repo-lines-v1:sha256:ac427a321a23a78279440a848b49c49a910d3251e6ab3f543183ed8df4f351c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
+          "version": "repo-lines-v1:sha256:374109d8eff058b90a27c16d9c15c296545f84596324ce865f40ff7fb01329e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -354,15 +354,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:676db0b24d3944eeeb98ab3f4887754132dbe73d8cbd07b8d4018a302f856ef9"
+          "version": "repo-file-v1:sha256:9b44bf4ba967b862e12f4d77616d0302edc0b3aaf29ec8d54cae214556eb6cb7"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
+          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa"
+          "version": "repo-file-v1:sha256:deab5c241a287014d8c611ec3f072ee3cbfeaf3df296240a1c727e90d5a3547b"
         }
       ]
     },
@@ -372,39 +372,39 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
+          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa"
+          "version": "repo-file-v1:sha256:deab5c241a287014d8c611ec3f072ee3cbfeaf3df296240a1c727e90d5a3547b"
         }
       ]
     },
     {
       "id": "claim_63e80cd457b64319a513fa3e37f3d51b",
-      "statement": "The merged protected prepare-restore stage requires exact current main and the successful publication reference, rechecks stopped writers and source identities, and transfers pinned archive objects into separate scratch with bounded size-and-SHA-256-verified retries. Its first run 39942297939 failed before the receipt or restore worker completed; no accepted recovery copy or compatible old-image boot has occurred.",
+      "statement": "The protected prepare-restore stage requires exact current main and the successful publication reference, rechecks stopped writers and source identities, and retains a separate recovery tree only after exact-version transfer and verification. Runs 39942297939 and 39951803625 both failed before receipt download and restore worker, with no accepted copy. The source-only transfer repair uses bounded S3 ranges with exact metadata checks, 8 MiB SHA-256-verified reader slices, append rollback and no-clobber promotion after full size and digest verification; T014 compatible boot remains open.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:676db0b24d3944eeeb98ab3f4887754132dbe73d8cbd07b8d4018a302f856ef9"
+          "version": "repo-file-v1:sha256:9b44bf4ba967b862e12f4d77616d0302edc0b3aaf29ec8d54cae214556eb6cb7"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:ed4a2cc25c95f552d5e865fd18005da4ffa31dc0b1d3adbbc16d9e2bac24338c"
+          "version": "repo-file-v1:sha256:a9c7e372fba195adf64152048659f0ec3c8ce6ae871f6f399ce0c04cc1784f1f"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
+          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa"
+          "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
+          "version": "repo-file-v1:sha256:b69ed112b09cd78a12617a14d7090a95625943f2f1f0ff387d5950bd814c3f27"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T11:55:33.894Z"
+    "at": "2026-10-23T13:22:56.341Z"
   }
 }

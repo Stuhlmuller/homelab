@@ -275,11 +275,15 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "deab5c241a287014d8c611ec3f072ee3cbfeaf3df296240a1c727e90d5a3547b", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
 			replace(openclaw_legacy_run, "71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "3296b61394cb8edea137e3cab0d46e30b13b8d0a9486f2ac953fa8b0882ec43d", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -368,8 +372,9 @@ echo "Legacy operation completed; private receipts withheld."`)
 openclaw_legacy_run := `set -euo pipefail
 umask 077
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'deab5c241a287014d8c611ec3f072ee3cbfeaf3df296240a1c727e90d5a3547b  scripts/ci/openclaw-enterprise-operations.sh'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
+sha256sum --check --status <<<'3296b61394cb8edea137e3cab0d46e30b13b8d0a9486f2ac953fa8b0882ec43d  scripts/ci/openclaw-enterprise-download.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
