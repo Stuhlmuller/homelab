@@ -3,7 +3,7 @@
   "activationEnabled": false,
   "from": "1.27.3",
   "to": "1.28.10",
-  "chartRepository": "https://istio-release.storage.googleapis.com/charts",
+  "chartRepository": "https://blob.istio.io/istio-release/charts",
   "components": [
     {
       "chart": "base",

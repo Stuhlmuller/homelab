@@ -16,6 +16,13 @@ intended base/CRDs, istiod, CNI, ztunnel, two-gateway sequence. Offline Helm
 renders with the existing release names, values, and parameters found every
 resource labeled with its release name and no resource-identity changes except
 that the 1.28.10 istiod chart omits the old `istiod` PodDisruptionBudget.
+The candidate uses [Istio's replacement chart repository](https://istio.io/latest/blog/2026/retirement-of-gcp/)
+at `https://blob.istio.io/istio-release/charts`; its downloaded archives match
+these pins. A later activation PR must allow that repository in the Argo
+AppProject and update the active source and chart mirror inventory together.
+The active 1.27.3 sources still use the GCS endpoint scheduled for retirement
+in December 2026, so that source migration is required even if the version
+hop stays on hold.
 The gateway chart keeps `image: auto`; verify the injected proxy's live image
 ID against the published `proxyv2` digest during rollout.
 
