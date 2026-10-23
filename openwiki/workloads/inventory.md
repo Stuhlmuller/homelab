@@ -34,6 +34,10 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-3f6d0b26d6634f9dca554267
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
+  - id: openwiki-source-7768e8293039ce9a3d76e6b1
+    resource: repo://clusters/homelab/apps/istio/README.md
+  - id: openwiki-source-0f74d31324e8c8db68700f72
+    resource: repo://clusters/homelab/apps/istio/upgrade-1.28.10.json
   - id: openwiki-source-18a0bbca47813e2e084aa71b
     resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
   - id: openwiki-source-448cbe27130e9e3c4e8b10b3
@@ -150,6 +154,8 @@ sources:
     resource: repo://IaC/argocd-image-updater/stack.hcl
   - id: openwiki-source-1ee0d946130d3ad97636dfdc
     resource: repo://IaC/cert-manager/stack.hcl
+  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+    resource: repo://IaC/istio/stack.hcl
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
@@ -206,10 +212,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T07:08:02.138Z" }
+generated: { by: "codex", at: "2026-10-23T08:01:16.556Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T07:28:36.279Z
+    at: 2026-10-23T08:01:16.556Z
 ---
 
 # Workload Inventory
@@ -370,6 +376,15 @@ CI transport remain until replacement client, callback and CI paths pass
 [staged acceptance](../../clusters/homelab/apps/traefik/CUTOVER.md).
 
 ## Requested Applications
+
+The `istio` entry still uses 1.27.3 chart sources and automated self-heal.
+Its [1.28.10 candidate](../../clusters/homelab/apps/istio/README.md) is
+disabled and outside Argo. It pins the replacement chart repository and
+archive hashes without changing the running mesh. The active GCS chart
+source is due for retirement in December 2026; a later reviewed PR must
+migrate the AppProject allowlist, active sources, and chart mirror inventory
+even if the version hop stays held. The [offline gate](../operations/validation-gates.md#istio-ambient-recovery)
+checks that the active source remains unchanged until that review.
 
 | App                    | Namespace          | GitOps path                                     | Terragrunt path                             | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Depends on                                                                                                          |
 | ---------------------- | ------------------ | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
