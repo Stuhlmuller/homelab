@@ -621,8 +621,8 @@ false
 
     def test_archive_publication_reports_exact_fixed_pre_upload_phase(self):
         source = SCRIPT.read_text()
-        block = ('    phase=baseline-s3-read\n' + source.split(
-            '    phase=baseline-s3-read\n', 1)[1].split(
+        block = ("    phase='baseline-s3-read'\n" + source.split(
+            "    phase='baseline-s3-read'\n", 1)[1].split(
             '    phase=publication-upload\n', 1)[0] + '    fi\n')
         categories = (
             'baseline-s3-read', 'baseline-mounted-compare',

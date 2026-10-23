@@ -256,14 +256,14 @@ case "$stage" in
       archive_sha="${ARCHIVE_REF%%/*}"
     fi
     archive_result="/private/legacy/archive-result-${archive_id}.json"
-    phase=baseline-s3-read
+    phase='baseline-s3-read'
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
-    phase=baseline-mounted-compare
+    phase='baseline-mounted-compare'
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
     observed="/private/legacy/baseline-${archive_id}.json"
     if [[ "$stage" == archive ]]; then run_inventory_worker; fi
-    phase=baseline-source-status
+    phase='baseline-source-status'
     refresh_status stopped
     if [[ "$stage" == archive ]]; then
       "${reader[@]}" sh -c '
