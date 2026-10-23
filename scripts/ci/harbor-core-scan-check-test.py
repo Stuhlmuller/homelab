@@ -91,10 +91,40 @@ class ScanTests(unittest.TestCase):
             self.assertEqual(diagnostic.read_text(), "validation:remediation\n")
             self.assertNotIn("PRIVATE_VERSION", error.getvalue())
 
+    def test_identity_failures_write_only_specific_categories(self):
+        cases = [
+            ("identity-source", lambda r: r["source"].update(type="directory"), IMAGE),
+            ("identity-image-id", lambda r: r["source"]["target"].update(imageID="sha256:" + "1" * 64), IMAGE),
+            ("identity-archive", lambda r: r["source"]["target"].update(layers=[]), IMAGE),
+            ("identity-config-hash", lambda r: r["source"]["target"].update(config=base64.b64encode(b"{}").decode()), IMAGE),
+            ("identity-distro", lambda r: r["distro"].update(name="unknown"), IMAGE),
+        ]
+        for category, change, image in cases:
+            with self.subTest(category=category), tempfile.TemporaryDirectory() as root:
+                report = self.report()
+                change(report)
+                path = Path(root) / "report.json"
+                diagnostic = Path(root) / "diagnostic"
+                path.write_text(json.dumps(report))
+                with redirect_stderr(io.StringIO()):
+                    self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), image]), 1)
+                self.assertEqual(diagnostic.read_text(), f"validation:{category}\n")
+        with tempfile.TemporaryDirectory() as root:
+            report = self.report()
+            raw = json.dumps({"os": "linux", "architecture": "arm64"}).encode()
+            image = "sha256:" + hashlib.sha256(raw).hexdigest()
+            report["source"]["target"].update(imageID=image, config=base64.b64encode(raw).decode())
+            path = Path(root) / "report.json"
+            diagnostic = Path(root) / "diagnostic"
+            path.write_text(json.dumps(report))
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), image]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-platform\n")
+
     def test_status_printer_whitelists_diagnostics(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "diagnostic"
-            for status in ("launcher", "scanner-run", "validation:remediation"):
+            for status in ("launcher", "scanner-run", "validation:identity-distro", "validation:remediation"):
                 path.write_text(status + "\n")
                 result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],
                                         capture_output=True, text=True, check=True)

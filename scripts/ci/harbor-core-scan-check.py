@@ -12,17 +12,18 @@ import sys
 
 def verify(report, image_id, require_zero_matches=False):
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id), "identity"
-    assert report["source"]["type"] == "image", "identity"
+    assert report["source"]["type"] == "image", "identity-source"
     target = report["source"]["target"]
-    assert target["imageID"] == image_id and target["layers"] and target["imageSize"] > 0, "identity"
+    assert target["imageID"] == image_id, "identity-image-id"
+    assert target["layers"] and target["imageSize"] > 0, "identity-archive"
     raw_config = base64.b64decode(target["config"], validate=True)
-    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity"
+    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity-config-hash"
     config_identity = json.loads(raw_config)
-    assert config_identity["os"] == "linux" and config_identity["architecture"] == "amd64", "identity"
+    assert config_identity["os"] == "linux" and config_identity["architecture"] == "amd64", "identity-platform"
     # Docker archives omit these summary fields; the hashed config remains authoritative.
-    assert target["os"] in ("", config_identity["os"]), "identity"
-    assert target["architecture"] in ("", config_identity["architecture"]), "identity"
-    assert report["distro"]["name"] == "photon" and report["distro"]["version"] == "5.0", "identity"
+    assert target["os"] in ("", config_identity["os"]), "identity-platform"
+    assert target["architecture"] in ("", config_identity["architecture"]), "identity-platform"
+    assert report["distro"]["name"] == "photon" and report["distro"]["version"] == "5.0", "identity-distro"
     descriptor = report["descriptor"]
     assert descriptor["name"] == "grype" and descriptor["version"] == "0.112.0", "scanner"
     assert descriptor["db"]["status"]["valid"] is True, "database"
@@ -67,7 +68,9 @@ def main(args):
         verify(report, args[1], require_zero_matches=require_zero_matches)
     except AssertionError as error:
         category = str(error)
-        if category not in {"identity", "scanner", "database", "freshness", "filtering", "schema", "remediation", "clearance"}:
+        if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-config-hash",
+                            "identity-platform", "identity-distro", "scanner", "database", "freshness",
+                            "filtering", "schema", "remediation", "clearance"}:
             category = "schema"
     except (KeyError, TypeError, ValueError, OSError):
         category = "schema"
