@@ -18,6 +18,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-20275bab1ec480742e28a50f
     resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
+  - id: openwiki-source-8918085c21c3a103803f7fbe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
@@ -36,8 +38,6 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
-    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
@@ -50,16 +50,18 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
+    resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T07:08:02.138Z" }
+generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T07:08:02.138Z
+    at: 2026-10-23T08:31:33.560Z
 ---
 
 # Storage And State
@@ -348,6 +350,16 @@ combined 2,036 MiB headroom, so workload rebalancing cannot clear an isolated
 canary. Crossplane source declares two zero-replica controllers, while live
 Deployments still request 256 MiB each on `acer`; reconciling that separate
 drift would leave only about 9 MiB after the minimum and no isolation.
+An 08:18 UTC recheck on `main` `bcc08cb` still found 383.07 GiB filesystem
+free on `acer` but only about 1,802 MiB unreserved RAM. The 503 MiB gap is
+only the declared database-plus-gateway floor. If the [initial 4,096 MiB
+planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway is co-located on `acer`, it
+exceeds unreserved requests by about 2,295 MiB before startup, backup,
+agent and peak margin. The 768 MiB agent request fits only `zimaboard-1` by
+worker request arithmetic, but that node's observed 6,430 MiB working set
+leaves about 84 MiB against allocatable RAM after that request. No existing
+node has an admitted Enterprise storage and isolated-canary placement.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to

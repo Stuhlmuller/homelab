@@ -78,6 +78,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-d2d8ff2161af78b658d004f0
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
+  - id: openwiki-source-8918085c21c3a103803f7fbe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
@@ -142,8 +144,6 @@ sources:
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
     resource: repo://IaC/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-c48a1e8c2a73ad0658f6fe77
-    resource: repo://IaC/platform-crossplane/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -340,16 +340,18 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
+  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
+    resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T08:01:16.556Z" }
+generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:01:16.556Z
+    at: 2026-10-23T08:31:33.560Z
 ---
 
 # Validation Gates
@@ -1791,6 +1793,14 @@ Pods would need about 3,342 MiB, exceeding the other nodes' combined
 but live `acer` still runs both at 256 MiB each. Their 512 MiB is a separate
 drift finding; even if reclaimed, only about 9 MiB remains after the minimum,
 with no isolated canary or transient margin. T022/T035 stay blocked.
+The 08:18 UTC recheck on `main` `bcc08cb` leaves the same stop gate. The
+503 MiB deficit is only the declared database-plus-gateway floor; co-locating
+the [4,096 MiB initial planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway on `acer` exceeds its unreserved
+requests by about 2,295 MiB before transient or peak margin. The 768 MiB agent
+request nominally fits `zimaboard-1`, but its observed working set would leave
+about 84 MiB against allocatable RAM after that request. No worker has an
+admitted isolated tainted canary, and no local Enterprise storage is admitted.
 
 The staged platform source tests exact-main maintenance receipts, safe node
 order, private prerequisite readback, Talos role/disk preservation, immutable
