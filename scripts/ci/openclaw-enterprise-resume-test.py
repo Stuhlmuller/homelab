@@ -185,6 +185,28 @@ print(template)
             marker.symlink_to(Path(directory) / "other")
             self.assertNotEqual(self.shell(code + "wait_prior_restore\n", directory).returncode, 0)
 
+    def test_completed_report_requires_promoted_private_tree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            rehearsal = Path(directory) / "rehearsal-123"
+            rehearsal.mkdir(mode=0o700)
+            tree = rehearsal / "tree"
+            tree.mkdir()
+            (tree / "local").mkdir()
+            (tree / "nas").mkdir()
+            report = rehearsal / "completed.json"
+            report.write_text('{"format":1}\n')
+            report.chmod(0o600)
+            code = function("read_prior_restore_report") + f'read_prior_restore_report "{rehearsal}"\n'
+            self.assertEqual(self.shell(code, directory).stdout, '{"format":1}\n')
+            (tree / "nas").rmdir()
+            self.assertNotEqual(self.shell(code, directory).returncode, 0)
+            (tree / "nas").symlink_to(tree / "local")
+            self.assertNotEqual(self.shell(code, directory).returncode, 0)
+            (tree / "nas").unlink()
+            (tree / "nas").mkdir()
+            report.chmod(0o644)
+            self.assertNotEqual(self.shell(code, directory).returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

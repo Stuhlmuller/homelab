@@ -275,7 +275,7 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "3af2b5ca4c0b240283142968612725bd979216a654e6ed91686a9115748959d0", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
@@ -377,7 +377,7 @@ if [[ "$RUN_STAGE" == resume-restore ]]; then
   export PRIOR_RUN_ID=39988927652
 fi
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'3af2b5ca4c0b240283142968612725bd979216a654e6ed91686a9115748959d0  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611  scripts/ci/openclaw-enterprise-operations.sh'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"

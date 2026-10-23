@@ -197,10 +197,10 @@ verify_cached_restore_file() {
   observed="$("${reader[@]}" sh -c '
     set -eu
     directory="$1"; name="$2"
-    test -d "$directory" && test ! -L "$directory"
+    test -d "$directory" && test ! -L "$directory" || exit 1
     test "$(stat -c %a "$directory")" = 700
     file="$directory/$name"
-    test -f "$file" && test ! -L "$file"
+    test -f "$file" && test ! -L "$file" || exit 1
     test "$(stat -c %a "$file")" = 600
     before="$(stat -c "%d:%i:%s:%Y" "$file")"
     digest="$(sha256sum "$file" | cut -d " " -f1)"
@@ -219,7 +219,7 @@ read_prior_restore_marker() {
       printf "pending\n"
       exit 0
     fi
-    test -f "$marker" && test ! -L "$marker"
+    test -f "$marker" && test ! -L "$marker" || exit 1
     test "$(stat -c %a "$marker")" = 600
     before="$(stat -c "%d:%i:%s:%Y" "$marker")"
     test "$(stat -c %s "$marker")" = 8
@@ -255,6 +255,19 @@ wait_prior_restore() {
     esac
   done
   return 1
+}
+
+read_prior_restore_report() {
+  "${reader[@]}" sh -c '
+    set -eu
+    test -d "$1" && test ! -L "$1" && test "$(stat -c %a "$1")" = 700 || exit 1
+    for directory in "$1/tree" "$1/tree/local" "$1/tree/nas"; do
+      test -d "$directory" && test ! -L "$directory" || exit 1
+    done
+    report="$1/completed.json"
+    test -f "$report" && test ! -L "$report" && test "$(stat -c %a "$report")" = 600 || exit 1
+    cat "$report"
+  ' sh "$1"
 }
 
 verify_restored_archive() {
@@ -502,13 +515,8 @@ case "$stage" in
       phase=verification-receipt-download
       verify_cached_restore_file "$restore" receipt.json "$receipt_bytes" "$receipt_sha"
       phase=verification-restore
-      "${reader[@]}" sh -c '
-        set -eu
-        test -d "$1" && test ! -L "$1" && test "$(stat -c %a "$1")" = 700
-        report="$1/completed.json"
-        test -f "$report" && test ! -L "$report" && test "$(stat -c %a "$report")" = 600
-        cat "$report"
-      ' sh "$rehearsal" | jq -e --arg sha "$archive_sha" --slurpfile receipt "$work/receipt.json" '
+      read_prior_restore_report "$rehearsal" |
+        jq -e --arg sha "$archive_sha" --slurpfile receipt "$work/receipt.json" '
         .format == 1 and .archiveSha256 == $sha and
         .restoredDatabases == $receipt[0].restoredDatabases and
         (.linkCount | type) == "number" and .linkCount >= 0
