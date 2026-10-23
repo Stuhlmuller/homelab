@@ -41,6 +41,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.dns_mirror_manifest = None
         self.litellm_mirror_manifest = None
         self.prometheus_mirror_manifest = None
+        self.postgres_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -119,6 +120,11 @@ class HarborPublicationGates(unittest.TestCase):
             prometheus_path.unlink(missing_ok=True)
         else:
             prometheus_path.write_text(json.dumps(self.prometheus_mirror_manifest))
+        postgres_path = self.root / "scripts/config/harbor-postgres-images.json"
+        if self.postgres_mirror_manifest is None:
+            postgres_path.unlink(missing_ok=True)
+        else:
+            postgres_path.write_text(json.dumps(self.postgres_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -677,7 +683,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|postgres)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -702,7 +708,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|postgres)", workflow)
 
     def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
         source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
@@ -729,6 +735,43 @@ class HarborPublicationGates(unittest.TestCase):
         self.rejected(mode="mirror-prometheus:quay.io/prometheus/prometheus")
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-prometheus")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_postgres_scope_declares_one_fixed_reviewed_image(self):
+        source = "docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+        selected = json.loads((ROOT / "scripts/config/harbor-postgres-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertEqual(selected, {"images": [{"source": source}]})
+        self.assertIn(selected["images"][0], catalog["images"])
+        self.assertIn("bash scripts/ci/harbor-publish.sh mirror-postgres", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus|postgres)", workflow)
+
+    def test_postgres_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
+        source = "docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("3725f", "3725e")}]},
+                      {"images": [{"source": source.replace("library/postgres", "library/other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.postgres_mirror_manifest = scope
+                self.rejected(mode="mirror-postgres")
+        self.postgres_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-postgres")
+        self.mirror_manifest = {"images": [valid]}
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-postgres")
+                self.env[key] = previous
+        self.rejected(mode="mirror-postgres:docker.io/library/postgres")
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-postgres")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):

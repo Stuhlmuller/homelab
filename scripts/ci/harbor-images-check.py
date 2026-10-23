@@ -21,6 +21,7 @@ CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 DNS_CATALOG = ROOT / "scripts/config/harbor-dns-images.json"
 LITELLM_CATALOG = ROOT / "scripts/config/harbor-litellm-images.json"
 PROMETHEUS_CATALOG = ROOT / "scripts/config/harbor-prometheus-images.json"
+POSTGRES_CATALOG = ROOT / "scripts/config/harbor-postgres-images.json"
 HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
@@ -418,6 +419,8 @@ def check():
          {"ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"}),
         ("Prometheus", PROMETHEUS_CATALOG,
          {"quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"}),
+        ("PostgreSQL", POSTGRES_CATALOG,
+         {"docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"}),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}

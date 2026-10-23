@@ -133,6 +133,7 @@ with tempfile.TemporaryDirectory() as directory:
     check.DNS_CATALOG = check.ROOT / "dns-images.json"
     check.LITELLM_CATALOG = check.ROOT / "litellm-images.json"
     check.PROMETHEUS_CATALOG = check.ROOT / "prometheus-images.json"
+    check.POSTGRES_CATALOG = check.ROOT / "postgres-images.json"
     check.HARBOR_RUNTIME_CATALOG = check.ROOT / "harbor-runtime-images.json"
     runtime_images = json.loads((original_root / "scripts/config/harbor-runtime-images.json").read_text())["images"]
     check.HARBOR_RUNTIME_CATALOG.write_text(json.dumps({"images": runtime_images}))
@@ -144,8 +145,10 @@ with tempfile.TemporaryDirectory() as directory:
     dns_source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
     litellm_source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
     prometheus_source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
+    postgres_source = "docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
     catalog = {"images": [*base_catalog["images"], *runtime_images, {"source": dns_source},
-                          {"source": litellm_source}, {"source": prometheus_source}]}
+                          {"source": litellm_source}, {"source": prometheus_source},
+                          {"source": postgres_source}]}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
     check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
@@ -153,6 +156,7 @@ with tempfile.TemporaryDirectory() as directory:
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source}]}))
     check.LITELLM_CATALOG.write_text(json.dumps({"images": [{"source": litellm_source}]}))
     check.PROMETHEUS_CATALOG.write_text(json.dumps({"images": [{"source": prometheus_source}]}))
+    check.POSTGRES_CATALOG.write_text(json.dumps({"images": [{"source": postgres_source}]}))
     check.declared_mastodon_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images
@@ -193,6 +197,15 @@ with tempfile.TemporaryDirectory() as directory:
     else:
         raise AssertionError("Unreviewed Prometheus publication scope passed")
     check.PROMETHEUS_CATALOG.write_text(json.dumps({"images": [{"source": prometheus_source}]}))
+    check.POSTGRES_CATALOG.write_text(json.dumps({"images": [{"source": postgres_source.replace("3725f", "3725e")}]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "PostgreSQL mirror scope missing required image" in str(error)
+        assert "PostgreSQL mirror scope source absent from full catalog" in str(error)
+    else:
+        raise AssertionError("Unreviewed PostgreSQL publication scope passed")
+    check.POSTGRES_CATALOG.write_text(json.dumps({"images": [{"source": postgres_source}]}))
     original_image = documents[0]["initContainers"][0]["image"]
     documents[0]["initContainers"][0]["image"] = "busybox:1.38"
     with contextlib.redirect_stdout(io.StringIO()):

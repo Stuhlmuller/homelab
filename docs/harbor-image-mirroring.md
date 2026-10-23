@@ -209,8 +209,20 @@ retain registry blobs together with Harbor database/encryption-key backups.
    scoped run proves that image's preserved digest and complete authenticated
    pull, not the full catalog or other Prometheus stack images.
 
+   To isolate the exact PostgreSQL digest that failed an authenticated pull
+   during full-catalog publication, use the fixed one-image scope:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=postgres
+   ```
+
+   `scripts/config/harbor-postgres-images.json` selects only the catalog's
+   `docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650`.
+   It retains the usual digest and complete authenticated Harbor pull checks.
+   A scoped success qualifies that digest only, not the full catalog.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `prometheus`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `postgres`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
