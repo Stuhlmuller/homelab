@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ec9d1d62a548d4ad6f55f8f8380df560d52e192a548ebe5da205fdba1b168f72",
+  "pageVersion": "sha256:01ca8e8f926d6e2dde1e7fcf07cf10d17b892b19e28faa687f4d40572c03378e",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -84,7 +84,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:87586e53c835110d98f95383384fc5f0cf2f084817371e97c05ea5ccec6e56b3"
+          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L18-L24",
@@ -202,7 +202,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:87586e53c835110d98f95383384fc5f0cf2f084817371e97c05ea5ccec6e56b3"
+          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L22-L23",
@@ -215,12 +215,12 @@
       "statement": "Protected publish-archive run 39501240221 used source archive run 39366476872 and succeeded after versioned off-NAS upload, restore, archive verification and a private final receipt. Later runs 39700564687 and 39908653791 used the publication run as a worker reference and failed before upload. Separate verify run 39910018168 succeeded against the exact publication reference and restored the versioned archive and receipt again.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L40-L60",
-          "version": "repo-lines-v1:sha256:a7a3dd8a61b1dd052979c6e1e66bed43655cdfc4d0d616037cbb8940094c309f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNkZWIyMmIxYWY0Mzk5OGRjZDRhNmMzZWViODc4ZDI0N2FkYzBlN2NjN2E4NDRlZDdlMGVhY2Y1N2MxNTMyYzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkODAxMzczNDZhYmVhMGU2NDI3ZTVlZDU4ZWVlMTMwOWJlMWEzMzA1NzJlMjA5ODhmNjQxM2VlYzJhNjJjYTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkNGU2ZTAwMmMzNTVjMGJlYjhiOTZiNmMxY2E5ZmEyNTM1MDA3MmVjZGNkZDRlN2E5OTgxYzg0MWNkNTQ5NjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmODQxNmNmZWE2NzI3YWNmMjE2NDU3YmRmNjI1NjdhNGY1ZGE1MDdmNTM3NjQ3NzJiNjFmZWVjMzk4MWI3NzIifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh#L348-L373",
-          "version": "repo-lines-v1:sha256:e0dc8ad15972cbca3a70374413904bb044d32b51b0b8d40c5ad1e99bbc18be67:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTc2MDQyNmE4ZTNhODYwZGQxNTBlNmMxMTc4YmFhNmJmMTgyNGM1N2ZlODI3M2IwMmI0YTVjZTQ1M2FhNzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0YTJiZWNmZjhhZmIzNGRiMjYwZGFiYzk2OTE1ZmZlY2ZkZTg0ODkyOTU0MWM2MTkzZGU2ZDE2NGMyMWU4ZGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5MTMzOTc1YjE1NWU5Yjk3MjBiOTRjN2M5NjI3YTMzMjg4OGUwZjRlZDUyYzI1NWVkMmUyODQ4YzY4OGJmNzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExMmY1NzU2NWJiOTMyOWQ3MzkxNjZkMGIwMzgzZWQ5NmYyNTJjNDdiYzdhZmM2YTFkOWFiYTg2Y2QzMjViOGEifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
+          "version": "repo-file-v1:sha256:a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff"
         }
       ]
     },
@@ -259,10 +259,28 @@
           "version": "repo-file-v1:sha256:904ad3d58c8a0264840235cbf8f3050c391054cc8f64fe3d0a20d472ac3a14b9"
         }
       ]
+    },
+    {
+      "id": "claim_91150f5538e845cd9c585b5964d0539e",
+      "statement": "The declared protected prepare-restore stage rechecks stopped writers, retained volume and root identities, and scratch capacity before restoring exact versioned archive objects into a separate private tree with a symlink report; it has not run and does not prove compatible legacy boot.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/retirement/retirement.py",
+          "version": "repo-file-v1:sha256:2caa449509ce19b517a1eed14f8b8346abaf50d02e84c3e3cafeb7a435a40411"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
+          "version": "repo-file-v1:sha256:a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T10:04:15.524Z"
+    "at": "2026-10-23T10:35:28.853Z"
   }
 }

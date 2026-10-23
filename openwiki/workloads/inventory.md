@@ -216,10 +216,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
+generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:04:15.524Z
+    at: 2026-10-23T10:35:28.853Z
 ---
 
 # Workload Inventory
@@ -422,6 +422,13 @@ checks that the active source remains unchanged until that review.
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
 | `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache), dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; [T022](../../specs/004-run-renovate-in-cluster/tasks.md) records 19:00/20:00 same-key hits and the 21:00 `v0.0.2` refresh; [T045](../../specs/004-run-renovate-in-cluster/tasks.md) records the 17:00 failure, 03:00 missed-slot alert, and successful 04:00 recovery; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), T024/T042 cache-fault/NAS-capacity recovery, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
+
+Draft [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) declares a
+protected `prepare-restore` stage for stopped legacy OpenClaw. It would fetch
+the successful publication's exact versioned archive and receipt and retain a
+separate verified NAS copy with private symlink classifications. It has not run
+or booted the old image. T013 archive verification passed; T014 compatible
+recovery remains open, and the original claims stay retained and read-only.
 
 Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 uses a distinct name at Argo CD wave 0 before the wave-1

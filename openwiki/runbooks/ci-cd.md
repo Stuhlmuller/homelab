@@ -40,6 +40,8 @@ sources:
     resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-d2d8ff2161af78b658d004f0
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -100,10 +102,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
+generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:04:15.524Z
+    at: 2026-10-23T10:35:28.853Z
 ---
 
 # CI/CD
@@ -234,6 +236,14 @@ succeeded at 2026-10-23 09:52 UTC against publication reference
 stage retrieved the exact versioned archive and receipt and restored the full
 local/NAS trees, both SQLite databases and historical backups. T013 is complete;
 compatible legacy boot remains open under T014.
+
+Draft [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) adds the fixed
+legacy `prepare-restore` choice to the protected operations workflow. Dispatch
+requires the exact current `main` SHA and the successful publication SHA/run ID
+as `archive_ref`. The worker rechecks stopped writers and source identities,
+fetches the recorded S3 object versions, and keeps a separate verified tree and
+private symlink report under `/archive/private/rehearsal-<RUN_ID>`. It has not
+been dispatched. A copy receipt would not boot or accept the old gateway.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added
