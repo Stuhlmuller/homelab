@@ -37,6 +37,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Browser, native origin and network denials | Pending | — | Pending |
 | Complete new-state independent restore | Pending | — | Pending |
 | 24-hour observation and selective retirement | Pending | — | Pending |
+| T059 source documentation and OpenWiki refresh | [merged PR #1560](https://github.com/Stuhlmuller/homelab/pull/1560), main `0e223d6`; protected static, lint, image-policy, network-policy and release-dry-run checks passed | — | Passed for source documentation only: five named runbooks updated and affected OpenWiki pages refreshed by the native update path. Capacity, credentials, policy enforcement, platform upgrades and Enterprise live acceptance remain pending. |
 
 Earlier publication attempts failed during source reads or after upload; none
 produced a final offsite receipt. The [detached source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872)
