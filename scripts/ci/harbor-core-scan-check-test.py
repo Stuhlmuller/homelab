@@ -129,27 +129,35 @@ class ScanTests(unittest.TestCase):
             report_path = root / "report.json"
             diagnostic = root / "diagnostic"
 
-            def write_archive(config):
+            def write_archive(config, config_name):
                 with tarfile.open(archive_path, "w") as archive:
-                    for name, data in (("manifest.json", json.dumps([{"Config": IMAGE[7:] + ".json"}]).encode()),
-                                       (IMAGE[7:] + ".json", config)):
+                    for name, data in (("manifest.json", json.dumps([{"Config": config_name}]).encode()),
+                                       (config_name, config)):
                         member = tarfile.TarInfo(name)
                         member.size = len(data)
                         archive.addfile(member, io.BytesIO(data))
 
             report = self.report()
             report_path.write_text(json.dumps(report))
-            write_archive(CONFIG)
-            with redirect_stdout(io.StringIO()):
-                self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), IMAGE]), 0)
+            for config_name in (IMAGE[7:] + ".json", "blobs/sha256/" + IMAGE[7:]):
+                write_archive(CONFIG, config_name)
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), IMAGE]), 0)
 
-            write_archive(b"PRIVATE_WRONG_CONFIG")
+            config_name = "blobs/sha256/" + IMAGE[7:]
+            write_archive(b"PRIVATE_WRONG_CONFIG", config_name)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
                                             str(report_path), IMAGE]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config\n")
 
-            write_archive(CONFIG)
+            write_archive(CONFIG, "blobs/sha256/" + "1" * 64)
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), IMAGE]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config\n")
+
+            write_archive(CONFIG, config_name)
             report["source"]["target"]["config"] = base64.b64encode(b"PRIVATE_WRONG_CONFIG").decode()
             report_path.write_text(json.dumps(report))
             with redirect_stderr(io.StringIO()):

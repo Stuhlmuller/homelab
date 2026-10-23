@@ -21,7 +21,9 @@ def verify_archive_config(archive_path, image_id):
             manifest = json.load(manifest_file)
             assert isinstance(manifest, list) and len(manifest) == 1, "identity-archive-structure"
             config_name = manifest[0]["Config"]
-            assert re.fullmatch(r"[0-9a-f]{64}\.json", config_name), "identity-archive-structure"
+            assert isinstance(config_name, str) and re.fullmatch(
+                r"(?:[0-9a-f]{64}\.json|blobs/sha256/[0-9a-f]{64})", config_name
+            ), "identity-archive-structure"
             config_member = archive.getmember(config_name)
             assert config_member.isfile() and 0 < config_member.size < 16 * 1024 * 1024, "identity-archive-structure"
             config_file = archive.extractfile(config_member)
@@ -29,7 +31,7 @@ def verify_archive_config(archive_path, image_id):
             raw_config = config_file.read()
     except (KeyError, TypeError, ValueError, OSError, tarfile.TarError) as error:
         raise AssertionError("identity-archive-structure") from error
-    assert config_name == image_id[7:] + ".json", "identity-archive-config"
+    assert config_name in (image_id[7:] + ".json", "blobs/sha256/" + image_id[7:]), "identity-archive-config"
     assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity-archive-config"
 
 
