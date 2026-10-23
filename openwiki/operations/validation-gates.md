@@ -74,8 +74,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-d65575b694fbbe7e37dd04e6
-    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
@@ -226,8 +224,6 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
-  - id: openwiki-source-67b7023614bb46ffd2f06e85
-    resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-0f5131d44d4433656e1f24db
@@ -343,7 +339,7 @@ sources:
 generated: { by: "codex", at: "2026-10-23T06:14:27.082Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T06:14:27.082Z
+    at: 2026-10-23T06:39:57.483Z
 ---
 
 # Validation Gates

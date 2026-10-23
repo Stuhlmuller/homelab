@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fb90a7a0706643a8ef7a98e6e7ba9299bbdaabbabdeabb9a269476fda8be644f",
+  "pageVersion": "sha256:df5eadd0844b418eadad227a73eb9f3b46a490ed67139eec8abc8bbb8d792a8f",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:ebae1d812b057745cbb5d6e0fdd1b5cf921fcc7aed4193d88e90bd06c3a24fe7"
+          "version": "repo-file-v1:sha256:cfcb624607da55c80f1777ee911830bb00ff67bff22fdfc0582a76f6d7762b6b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:ebae1d812b057745cbb5d6e0fdd1b5cf921fcc7aed4193d88e90bd06c3a24fe7"
+          "version": "repo-file-v1:sha256:cfcb624607da55c80f1777ee911830bb00ff67bff22fdfc0582a76f6d7762b6b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -727,16 +727,16 @@
       "statement": "A protected stock OpenClaw Enterprise controller/runtime publication signed and fully pulled both images, but the source-declared four-image controller/runtime/CLI/operator publisher and full platform catalog still lack complete acceptance receipts.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml#L50-L105",
-          "version": "repo-lines-v1:sha256:299e7fa6aefc602f4155359de4ca07c41908aa8d95c7a13f530a5cafb59a5cdc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YzhhZDg0NDgwNTU2ZTcyY2RkZTg0ZTY5ZGYyMTNhMGJkZjYzODIzNDI4NjFhY2IwYmE0YzFlZDQzZTVhY2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5YzNiMDNmMjRhMzY5MGI5YWJjZjkyYTUyYTFhMzc5MzEzNGJkYzE3NzRlN2IzMzY3N2VhMmE4MTA2YzUzMmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQzMWZjNTNlNjdiMjIzZDBkMWEzZjY4OTU3YjlhY2U2NDQ4MDU2MjA4ZGFiOTZjOWFlNDU4NjBjNGI2YTNkNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3Yzk0NjBjZTEwZWY3ZDVhOWVmMWIyYjI0Y2NjZTM3OTk3MzI3NWZkNjQ3MTYxMGU1YTQ3MWQyN2JkMTIyNDQifQ"
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
+          "version": "repo-file-v1:sha256:aee7852efe9ed4dffe8e46a58da4a5d459b77f0bad25c537d2352bb70b908647"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L17",
-          "version": "repo-lines-v1:sha256:0515863796c4a1d9376882d43a7d25bd43b9af411fecb6e26065ce00ea9b3940:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjkxZWFjODU3MzkzYWUzODY5OTVjNDJjZjdkYzM4MWM3ZDU1OWI5OWNhOGU1YTdkYmMzOGJmOTE2NGVkNzBkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjY1OWM0NDc1NzgyNzkyNjNjNGYzOGI2ZDlmNjQzZjhkZDgxZDJkNTc5MjcxZWFiNGJiMjc4YTA2NzI4Y2I4YiJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:cfcb624607da55c80f1777ee911830bb00ff67bff22fdfc0582a76f6d7762b6b"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L84-L100",
-          "version": "repo-lines-v1:sha256:ac427a321a23a78279440a848b49c49a910d3251e6ab3f543183ed8df4f351c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:d4481ac92134c6a46c97911cbd1485767a68fab4488d42c9f5c6bc39abfea8eb"
         }
       ]
     },
@@ -750,7 +750,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:ebae1d812b057745cbb5d6e0fdd1b5cf921fcc7aed4193d88e90bd06c3a24fe7"
+          "version": "repo-file-v1:sha256:cfcb624607da55c80f1777ee911830bb00ff67bff22fdfc0582a76f6d7762b6b"
         }
       ]
     },
@@ -838,7 +838,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:ebae1d812b057745cbb5d6e0fdd1b5cf921fcc7aed4193d88e90bd06c3a24fe7"
+          "version": "repo-file-v1:sha256:cfcb624607da55c80f1777ee911830bb00ff67bff22fdfc0582a76f6d7762b6b"
         }
       ]
     },
@@ -903,6 +903,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T06:14:27.082Z"
+    "at": "2026-10-23T06:39:57.483Z"
   }
 }
