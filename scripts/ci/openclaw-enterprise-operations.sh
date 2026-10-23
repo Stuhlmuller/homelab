@@ -57,21 +57,50 @@ require_absent_object() {
 }
 
 restore_version() (
-  pipe_dir="$(mktemp -d)"
-  trap 'rm -rf -- "$pipe_dir"' EXIT
-  mkfifo -m 600 "$pipe_dir/body"
-  aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
-    "$pipe_dir/body" >/dev/null &
-  source_pid=$!
-  "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$3" \
-    <"$pipe_dir/body" &
-  reader_pid=$!
-  if ! wait -n -p completed_pid "$source_pid" "$reader_pid"; then
-    kill "$source_pid" "$reader_pid" 2>/dev/null || true
-    wait "$source_pid" "$reader_pid" 2>/dev/null || true
-    exit 1
-  fi
-  if [[ "$completed_pid" == "$source_pid" ]]; then wait "$reader_pid"; else wait "$source_pid"; fi
+  [[ "$4" =~ ^[1-9][0-9]*$ && "$5" =~ ^[0-9a-f]{64}$ ]] || exit 1
+  temporary="$3.partial"
+  "${reader[@]}" sh -c 'test ! -e "$1" && test ! -L "$1" && test ! -e "$2" && test ! -L "$2"' \
+    sh "$3" "$temporary" || exit 1
+  pipe_dir=
+  trap 'if [[ -n "$pipe_dir" ]]; then rm -rf -- "$pipe_dir"; fi' EXIT
+  for attempt in 1 2 3; do
+    pipe_dir="$(mktemp -d)"
+    mkfifo -m 600 "$pipe_dir/body"
+    aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
+      "$pipe_dir/body" >/dev/null &
+    source_pid=$!
+    "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$temporary" \
+      <"$pipe_dir/body" &
+    reader_pid=$!
+    stream_complete=false
+    completed_pid=
+    if wait -n -p completed_pid "$source_pid" "$reader_pid"; then
+      if [[ "$completed_pid" == "$source_pid" ]]; then
+        if wait "$reader_pid"; then stream_complete=true; fi
+      elif wait "$source_pid"; then
+        stream_complete=true
+      fi
+    fi
+    if [[ "$stream_complete" == false ]]; then
+      kill "$source_pid" "$reader_pid" 2>/dev/null || true
+      wait "$source_pid" "$reader_pid" 2>/dev/null || true
+    fi
+    rm -rf -- "$pipe_dir"
+    pipe_dir=
+    if [[ "$stream_complete" == true ]] &&
+       "${reader[@]}" sh -c '
+         set -eu
+         test -f "$1" && test ! -L "$1"
+         test "$(stat -c %s "$1")" = "$2"
+         test "$(sha256sum "$1" | cut -d " " -f1)" = "$3"
+         test ! -e "$4" && test ! -L "$4"
+         mv -- "$1" "$4"
+       ' sh "$temporary" "$4" "$5" "$3"; then
+      exit 0
+    fi
+  done
+  "${reader[@]}" rm -f -- "$temporary" || true
+  exit 1
 )
 
 refresh_status() {
@@ -347,9 +376,13 @@ case "$stage" in
     phase=publication-restore-prepare
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
     phase=publication-restore-archive
-    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
+    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz" \
+      "$archive_size" "$(jq -er .sha256 "$work/receipt.json")"
     phase=publication-restore-receipt
-    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
+    receipt_bytes="$(wc -c <"$work/receipt.json" | tr -d ' ')"
+    receipt_sha="$(sha256sum "$work/receipt.json" | cut -d' ' -f1)"
+    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json" \
+      "$receipt_bytes" "$receipt_sha"
     phase=verification
     verify_restored_archive "$restore/receipt.json"
     "${reader[@]}" cat "$restore/receipt.json" >"$work/restored-receipt.json"
@@ -379,13 +412,22 @@ case "$stage" in
       .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
     archive_version="$(jq -er .archiveVersion "$work/final.json")"
     receipt_version="$(jq -er .receiptVersion "$work/final.json")"
+    archive_bytes="$(aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
+      --version-id "$archive_version" --query ContentLength --output text)"
+    receipt_object_bytes="$(aws s3api head-object --bucket "$bucket" --key "$prefix/receipt.json" \
+      --version-id "$receipt_version" --query ContentLength --output text)"
+    aws s3api get-object --bucket "$bucket" --key "$prefix/receipt.json" \
+      --version-id "$receipt_version" "$work/receipt.json" >/dev/null
+    # Bind the reader stream to a separate download of the final receipt's exact S3 version.
+    receipt_bytes="$(wc -c <"$work/receipt.json" | tr -d ' ')"
+    receipt_sha="$(sha256sum "$work/receipt.json" | cut -d' ' -f1)"
+    archive_sha="$(jq -er .archiveSha256 "$work/final.json")"
+    [[ "$archive_bytes" =~ ^[1-9][0-9]*$ && "$archive_sha" =~ ^[0-9a-f]{64}$ &&
+       "$receipt_object_bytes" =~ ^[1-9][0-9]*$ && "$receipt_bytes" == "$receipt_object_bytes" ]] || exit 1
     if [[ "$stage" == prepare-restore ]]; then
       refresh_status stopped
-      archive_bytes="$(aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
-        --version-id "$archive_version" --query ContentLength --output text)"
-      aws s3api get-object --bucket "$bucket" --key "$prefix/receipt.json" \
-        --version-id "$receipt_version" "$work/receipt.json" >/dev/null
       validate_archive_identity "$work/receipt.json" "$recheck"
+      [[ "$(jq -er .sha256 "$work/receipt.json")" == "$archive_sha" ]] || exit 1
       tree_bytes="$(jq -er '[.inventory.roots.local.tree.bytes, .inventory.roots.nas.tree.bytes] |
         if all(type == "number" and . >= 0) then add else empty end' "$work/receipt.json")"
       free_kib="$("${reader[@]}" df -Pk /archive | awk 'NR == 2 {print $4}')"
@@ -394,8 +436,13 @@ case "$stage" in
     fi
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
-    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
-    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
+    phase=verification-archive-download
+    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz" \
+      "$archive_bytes" "$archive_sha"
+    phase=verification-receipt-download
+    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json" \
+      "$receipt_bytes" "$receipt_sha"
+    phase=verification-restore
     if [[ "$stage" == prepare-restore ]]; then
       rehearsal="/archive/private/rehearsal-${GITHUB_RUN_ID}"
       verify_restored_archive "$restore/receipt.json" "$rehearsal"

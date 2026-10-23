@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cdb88b2b3eb7791594fd96f89cc0730e05d71845d33d22fb5512a84ab51abcdd",
+  "pageVersion": "sha256:b620889cefcf227c113f3ed2954fab4f6e916fafd42326aa9df5a98a40aaf5da",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -228,7 +228,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
-          "version": "repo-file-v1:sha256:088e81eb23646008f9a4a2ff2d9a623e6ed85f229f44eb7b2d474dcbcedc0cfe"
+          "version": "repo-file-v1:sha256:bc74d316128a5780a7850fb40bc8217073201d894a7051adefeceb169e79bf79"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L1-L46",
@@ -246,7 +246,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
+          "version": "repo-file-v1:sha256:676db0b24d3944eeeb98ab3f4887754132dbe73d8cbd07b8d4018a302f856ef9"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -348,29 +348,29 @@
     },
     {
       "id": "claim_9f239d61c134455f957409ef4b9ceb63",
-      "statement": "The protected operations workflow and legacy operations/retirement helpers now declare a source-only isolated restore-copy preparation path using exact versioned legacy archive objects; the stage has not run and T014 compatible boot remains pending.",
+      "statement": "The protected operations workflow and legacy retirement helpers own exact-version archive verification and a guarded isolated restore-copy stage; its first protected run 39942297939 failed before the receipt or worker completed, and the bounded transfer repair remains source-only until a successful retry. T014 compatible old-image boot is still pending.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
+          "version": "repo-file-v1:sha256:676db0b24d3944eeeb98ab3f4887754132dbe73d8cbd07b8d4018a302f856ef9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/retirement/retirement.py",
-          "version": "repo-file-v1:sha256:2caa449509ce19b517a1eed14f8b8346abaf50d02e84c3e3cafeb7a435a40411"
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:ed4a2cc25c95f552d5e865fd18005da4ffa31dc0b1d3adbbc16d9e2bac24338c"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:e494191a714f5727c4cdcd65e7032bc5debd4593a44aa82c2e78fa4169a5a934"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff"
-        },
-        {
-          "resource": "repo://scripts/ci/openclaw-retirement-test.py",
-          "version": "repo-file-v1:sha256:1523c2880dc5a1c90d4df8f9699c426df8458180aecd363568fb4c6d22eb403d"
+          "version": "repo-file-v1:sha256:6d4f19d360c1433bf62b4d38007c424ab6d7f492956aaa987d53b737765d38aa"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T10:35:28.853Z"
+    "at": "2026-10-23T11:55:33.894Z"
   }
 }

@@ -516,6 +516,7 @@ validate_archive_identity "$2" "$3"
 
     def test_versioned_restore_streams_exact_bytes(self):
         payload = b'archive\x00bytes'
+        digest = hashlib.sha256(payload).hexdigest()
 
         class S3(BaseHTTPRequestHandler):
             def do_GET(self):
@@ -523,10 +524,11 @@ validate_archive_identity "$2" "$3"
                 if self.server.fail:
                     self.send_error(404)
                     return
+                body = self.server.bodies.pop(0) if self.server.bodies else payload
                 self.send_response(200)
-                self.send_header('Content-Length', str(len(payload)))
+                self.send_header('Content-Length', str(len(body)))
                 self.end_headers()
-                self.wfile.write(payload)
+                self.wfile.write(body)
 
             def log_message(self, *args):
                 pass
@@ -534,38 +536,82 @@ validate_archive_identity "$2" "$3"
         with HTTPServer(('127.0.0.1', 0), S3) as server, tempfile.TemporaryDirectory() as directory:
             server.paths = []
             server.fail = False
+            server.bodies = []
             Thread(target=server.serve_forever, daemon=True).start()
             destination = Path(directory) / 'archive'
             shell = '''set -euo pipefail
 bucket=test
+reader=()
 reader_input=()
-if [[ "${TEST_READER_FAIL:-}" == true ]]; then reader_input=(false); fi
+reader_transport() {
+  if [[ "${TEST_READER_FAIL:-}" == always ||
+        ( "${TEST_READER_FAIL:-}" == once && ! -e "$TEST_FAILURE_MARKER" ) ]]; then
+    touch "$TEST_FAILURE_MARKER"
+    cat > "$5"
+    return 1
+  fi
+  "$@"
+}
+if [[ -n "${TEST_READER_FAIL:-}" ]]; then reader_input=(reader_transport); fi
 aws() { command aws --endpoint-url "$TEST_ENDPOINT" --no-sign-request "$@"; }
 source <(sed -n '/^restore_version() (/,/^)/p' "$1")
-restore_version key version-1 "$2"
+restore_version key version-1 "$2" "$3" "$4"
 '''
             try:
-                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
-                                        cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
-                                                       f'http://127.0.0.1:{server.server_port}'},
-                                        capture_output=True, timeout=20, check=False)
+                def restore(**extra):
+                    return subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT),
+                                           str(destination), str(len(payload)), digest],
+                                          cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
+                                                         f'http://127.0.0.1:{server.server_port}',
+                                                         'TEST_FAILURE_MARKER':
+                                                         str(Path(directory) / 'reader-failed'),
+                                                         **extra},
+                                          capture_output=True, timeout=20, check=False)
+
+                result = restore()
                 self.assertEqual(result.returncode, 0, result.stderr.decode())
                 self.assertEqual(destination.read_bytes(), payload)
                 self.assertEqual(parse_qs(urlsplit(server.paths[0]).query),
                                  {'versionId': ['version-1']})
+                destination.unlink()
+                server.paths.clear()
+                server.bodies = [payload[:4], payload]
+                result = restore()
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertEqual(len(server.paths), 2)
+                self.assertEqual(destination.read_bytes(), payload)
+                self.assertFalse(Path(str(destination) + '.partial').exists())
+                destination.unlink()
+                server.paths.clear()
+                server.bodies = [payload.replace(b'a', b'b', 1), payload]
+                result = restore()
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertEqual(len(server.paths), 2)
+                self.assertEqual(destination.read_bytes(), payload)
+                destination.unlink()
+                server.paths.clear()
+                server.bodies = [payload[:4]] * 3
+                result = restore()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(len(server.paths), 3)
+                self.assertFalse(destination.exists())
+                self.assertFalse(Path(str(destination) + '.partial').exists())
+                server.paths.clear()
+                result = restore(TEST_READER_FAIL='once')
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertEqual(len(server.paths), 2)
+                self.assertEqual(destination.read_bytes(), payload)
+                destination.unlink()
                 server.fail = True
-                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
-                                        cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
-                                                       f'http://127.0.0.1:{server.server_port}'},
-                                        capture_output=True, timeout=20, check=False)
+                result = restore()
                 self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(destination.exists())
+                self.assertFalse(Path(str(destination) + '.partial').exists())
                 server.fail = False
-                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
-                                        cwd=ROOT, env={**os.environ, 'TEST_READER_FAIL': 'true',
-                                                       'TEST_ENDPOINT':
-                                                       f'http://127.0.0.1:{server.server_port}'},
-                                        capture_output=True, timeout=20, check=False)
+                result = restore(TEST_READER_FAIL='always')
                 self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(destination.exists())
+                self.assertFalse(Path(str(destination) + '.partial').exists())
             finally:
                 server.shutdown()
 
@@ -624,7 +670,8 @@ restore_version key version-1 "$2"
                           'publication-archive-metadata|publication-receipt-upload|'
                           'publication-receipt-head|publication-restore-prepare|'
                           'publication-restore-archive|publication-restore-receipt|'
-                          'verification', workflow)
+                          'verification|verification-archive-download|'
+                          'verification-receipt-download|verification-restore', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
@@ -634,6 +681,9 @@ restore_version key version-1 "$2"
                                 (13, 's3-complete'), (14, 'digest')):
                 self.assertIn(f'{code}) phase=publication-{stage} ;;', script)
             self.assertIn('phase=publication-version\n    version=', script)
+            self.assertIn('phase=verification-archive-download\n    restore_version', script)
+            self.assertIn('phase=verification-receipt-download\n    restore_version', script)
+            self.assertIn('phase=verification-restore\n    if [[ "$stage" == prepare-restore ]]', script)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
             shell = '''set -euo pipefail
 source <(sed -n '/^on_exit() {/,/^}/p' "$1")
@@ -783,7 +833,7 @@ restore_version() {
 ''' + block
         with tempfile.TemporaryDirectory() as directory:
             private = Path(directory)
-            (private / 'receipt.json').write_text('{}')
+            (private / 'receipt.json').write_text('{"sha256":"' + 'a' * 64 + '"}')
             phase = private / 'phase'
             for failed in (*categories, 'publication-archive-version-none', 'none'):
                 result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
