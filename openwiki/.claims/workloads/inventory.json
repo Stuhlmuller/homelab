@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:511f2995de35e4ca82eb141868992d3ec9b136f68039294077d23681d9fc146b",
+  "pageVersion": "sha256:b1546d5f713f90513d6d93d76f922d1bc715120c7966b7df33b80853f522d3f9",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -356,7 +356,7 @@
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
-          "version": "repo-file-v1:sha256:ea986dd560cc3b4b10ed774f86157d1632ac3b180004fc13cead1508ffbbbfc4"
+          "version": "repo-file-v1:sha256:b31fb18c93b7fc9a82544bcf5e0284d31a73abf87a82c330fc5e801a34e381a6"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -506,7 +506,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -583,7 +583,7 @@
           "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md#L168-L193",
+          "resource": "repo://docs/runtime-isolation.md#L171-L196",
           "version": "repo-lines-v1:sha256:1aef65d9c5acad4e5e9ce7e85f6538c959810dde4af9afff3667d341f6243d08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZDczZmM1MmE0YmRhYzcxNTYyYzI3ZTdiNTYxOGU5NDNhZjM2OTY4ODZiODU5NTA5YmNkOWJlMTVlNzk0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZTlkMzg5ZDJjYTkxMTlkMWZkMjY0MDljNzVmYzJhNThiOGE1MThmZGU4NTIzMmY3Y2RkNWE3YjM2NmYyZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0NDUwNzAyMjAxYmJhYzQ3MjcwNWY3MDU4NWM5ZjYyZTdiNzk4YTRmYjYzMjQ0NDE0NzQ2NDk0YTZmNjdmYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMTYxZmRmNWRmNmE1NjYxMDdhMmYwYTdhMDBmYTAzYTIzYTViYTdmZDRhMTkyMDQxYWFiMWM3OGQ5M2FhMDMifQ"
         }
       ]
@@ -831,6 +831,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T16:21:49.039Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }

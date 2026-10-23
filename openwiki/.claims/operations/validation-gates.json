@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:07c0d4b6815b4d5ac34e591b5ed633ff57836d8e0c1ce4a075accd86453a225f",
+  "pageVersion": "sha256:5872a7613edc0afdd70816407c3961f57b4086b2047966bd3d99be63e30e83cf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1139,7 +1139,7 @@
       "statement": "The read-only NetworkPolicy inventory compares normalized ingress and egress rules, fails on missing, drifted, or source-only policies, and labels mixed or policy-type-transition drift direction-neutrally. Omitted or empty policyTypes defaults to Ingress, with Egress added only for nonempty egress rules; older private review hashes need refresh.",
       "evidence": [
         {
-          "resource": "repo://docs/image-egress-hardening.md#L136-L150",
+          "resource": "repo://docs/image-egress-hardening.md#L137-L151",
           "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
         },
         {
@@ -1166,7 +1166,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1308,7 +1308,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:dd22fad7bb267904ce481c12aa9a3138c22828d3d68df80ef870714c1cc4ea15"
+          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
@@ -1355,7 +1355,7 @@
           "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md#L168-L193",
+          "resource": "repo://docs/runtime-isolation.md#L171-L196",
           "version": "repo-lines-v1:sha256:1aef65d9c5acad4e5e9ce7e85f6538c959810dde4af9afff3667d341f6243d08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZDczZmM1MmE0YmRhYzcxNTYyYzI3ZTdiNTYxOGU5NDNhZjM2OTY4ODZiODU5NTA5YmNkOWJlMTVlNzk0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZTlkMzg5ZDJjYTkxMTlkMWZkMjY0MDljNzVmYzJhNThiOGE1MThmZGU4NTIzMmY3Y2RkNWE3YjM2NmYyZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0NDUwNzAyMjAxYmJhYzQ3MjcwNWY3MDU4NWM5ZjYyZTdiNzk4YTRmYjYzMjQ0NDE0NzQ2NDk0YTZmNjdmYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMTYxZmRmNWRmNmE1NjYxMDdhMmYwYTdhMDBmYTAzYTIzYTViYTdmZDRhMTkyMDQxYWFiMWM3OGQ5M2FhMDMifQ"
         }
       ]
@@ -1535,7 +1535,7 @@
           "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
-          "resource": "repo://scripts/ci/platform-maintenance-test.py#L985-L1065",
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L992-L1072",
           "version": "repo-lines-v1:sha256:4ccb1c85028c8db039eaec2d99492d183e523823f46817ece3da7b3a547af4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YzhkY2Q2MzI5M2E1OTczZDMyNjMwNjJmYTM2MjViNjVhMGE3MGJhNmExZDVjYmFmNGNhMjdmNWUxZDE4N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmJiYTM4YTA0MWE5ZjdhOTdjZDlkZTRkN2U0YWUwYTZhYmRmOGJkZTFkNTNiYWFiNDJhNjdmZjUwODBmNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjYwNTdmNGQzNTdmNGE2NjFjODVmNzMyZmU5ZDY0MDIwMjRjOTYzYjQ2ZTkwY2EwNjEyZmQxMjMzZDQ5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2MTdhZmI4YjQxZmNkN2FlMDFlYjRlMTM0YTA3N2Q5NDA0NWJjNTMwYjhiNzVmZjJmNTIxZmI1NWM2M2YwMGYifQ"
         },
         {
@@ -1629,8 +1629,8 @@
       "statement": "The Enterprise recovery fixture exercises unknown stop intent, interrupted runtime reads, and preservation of the separate legacy archive after a new-Agent stop failure; it runs in the static gate but supplies no live restore receipt.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L65-L209",
-          "version": "repo-lines-v1:sha256:9dfbcbf09deeef4aaa8a4511860662128996d42e1d3a7e7d48510fba1046181d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxMTBmZWMyNGZkOGM5YTU4MzhlNTM1MDFiZGM3MmYwN2U0NjFlYjRjMGI4MjkzOWIyZTY4YWEwYzZmNTMzZjk1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzNjcwNGUwY2Q5N2M2YWFiNTY4ZWMwMTI3YjMxYTNlODE2OGY4ZGE0YWU2MWRiNDVmNTg5OTFkZTA4NjRkY2U5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4ZDI5ZTcwZGE3OGU0ZTE2MzQ3YmM4MzdiNmZlNDRhM2MwODBlM2YzMTA1MDU0MDljOWEyM2JlYzRiMDM2NzAyIn0"
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L65-L219",
+          "version": "repo-lines-v1:sha256:be8bd9b9d82c317a617fe70920d35b1159d8dd60ef3d5425950ac98fee0db5f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxMTBmZWMyNGZkOGM5YTU4MzhlNTM1MDFiZGM3MmYwN2U0NjFlYjRjMGI4MjkzOWIyZTY4YWEwYzZmNTMzZjk1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzNjcwNGUwY2Q5N2M2YWFiNTY4ZWMwMTI3YjMxYTNlODE2OGY4ZGE0YWU2MWRiNDVmNTg5OTFkZTA4NjRkY2U5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4ZDI5ZTcwZGE3OGU0ZTE2MzQ3YmM4MzdiNmZlNDRhM2MwODBlM2YzMTA1MDU0MDljOWEyM2JlYzRiMDM2NzAyIn0"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh#L25-L31",
@@ -1762,7 +1762,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
-          "version": "repo-file-v1:sha256:07f45253f87c70888b8613e590a9ee8cc798c612e23d9006e5ed7a734150f827"
+          "version": "repo-file-v1:sha256:b98059065d0eadb2743cea72c9702ba397d624f639f2a830dee80905fce23894"
         }
       ]
     },
@@ -1891,6 +1891,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T16:21:49.039Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8b93a0f3a6ddcd18167685c7ec5ff0907101aa975da9b08759f625b14556f3c1",
+  "pageVersion": "sha256:c8579c0f3b4e6c62ccd141eb24eabbe8f996b2d5c66a2e09799aae72ad0db2fa",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -362,7 +362,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:5144cdecbce512f47541f463fbadba4ddb4faa6f07c2ff4f014268e0582e9c42"
+          "version": "repo-file-v1:sha256:4b3d2cbd3fbda425dfc3c1f60445a43b673865d542bec4d4ab8ea8ae1e5bdffd"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -401,8 +401,8 @@
           "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
         },
         {
-          "resource": "repo://docs/image-egress-hardening.md#L203-L224",
-          "version": "repo-lines-v1:sha256:27b5dc6505a6d41bafe247c6f6adbf032f0bf383b40795aaa2aa92c2abb8c134:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4OGM3MzQ5MDUzNGUzNzRiMzY0NGRiNmQ0ODVkN2UxNjkzYTliYTFkYjA0YWY3ZjYxZWU3ZDA3N2JkYWRhNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1ZTY4N2M3N2M4OTdmMzhhMmJjNzg4Nzc0MzA5MmFkYWI3NDk1NTViYTE0YzFjZjE1ZTllZjY5ZDUxOGFlNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3NzU4YmM1ODhkNmFiYzA5NDEzMjhhZTg2MDljZDhkNzBmZDgyYjE2MDQwY2NjOTI1MjA2NGNmY2NiMGQ3MTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://docs/image-egress-hardening.md#L204-L229",
+          "version": "repo-lines-v1:sha256:2859c1bf078286ddca3f3bf42691dea7dfcede07eb2726a64b8e851f3d200c3b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4OGM3MzQ5MDUzNGUzNzRiMzY0NGRiNmQ0ODVkN2UxNjkzYTliYTFkYjA0YWY3ZjYxZWU3ZDA3N2JkYWRhNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1ZTY4N2M3N2M4OTdmMzhhMmJjNzg4Nzc0MzA5MmFkYWI3NDk1NTViYTE0YzFjZjE1ZTllZjY5ZDUxOGFlNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3NzU4YmM1ODhkNmFiYzA5NDEzMjhhZTg2MDljZDhkNzBmZDgyYjE2MDQwY2NjOTI1MjA2NGNmY2NiMGQ3MTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -458,7 +458,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:f1adc8e2a4c3f57d8263bf092bdf7ea8131973cdb22e2c0de69efbe378fc5084"
+          "version": "repo-file-v1:sha256:82d41263cc122fda34f19c95f33e350857f4087edf78a6c646ac44d6ec018c07"
         }
       ]
     },
@@ -540,7 +540,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:f1adc8e2a4c3f57d8263bf092bdf7ea8131973cdb22e2c0de69efbe378fc5084"
+          "version": "repo-file-v1:sha256:82d41263cc122fda34f19c95f33e350857f4087edf78a6c646ac44d6ec018c07"
         }
       ]
     },
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -732,7 +732,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -750,7 +750,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         }
       ]
     },
@@ -796,7 +796,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:13760719ccbf4d105093af3de7ae2027a170c35dd54d0e0b5d2a3ebd0597762a"
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
         }
       ]
     },
@@ -838,7 +838,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         }
       ]
     },
@@ -941,10 +941,38 @@
           "version": "repo-lines-v1:sha256:3653dd655493ad0bf249b7a6270654dbec5b5b48dd10017e3014c7a19c76de1d:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzY1M2RkNjU1NDkzYWQwYmYyNDliN2E2MjcwNjU0ZGJlYzViNWI0OGRkMTAwMTdlMzAxNGM3YTE5Yzc2ZGUxZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzY1M2RkNjU1NDkzYWQwYmYyNDliN2E2MjcwNjU0ZGJlYzViNWI0OGRkMTAwMTdlMzAxNGM3YTE5Yzc2ZGUxZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmM0ZjFkNGMwNDNkNGNmYjc4OTBiNTI1MTI4NGMzMDdjMTUwYjU0MTM4MjQxZmVhMDQyNjhmNjhjMzExMTZmYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjNmOGM2NTJlOGVlZmQzNDY3MDkyNGY5ZWU3ZWRhOTc3MWRlYTg3Mzg3OTdjZDdkOWY5NmJjMWU4ZjE3YzNjMiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_962f4c7ca79d46c4a1762005e4ac1968",
+      "statement": "Harbor-only application pulls remain a target because full-catalog publication and consuming-reference cutover have not passed.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L9-L18",
+          "version": "repo-lines-v1:sha256:9a4624ac1e7b0375c7a0b3af053a81e5a7a6b1e16d5101328a5cab325d8b8642:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZTM3MWRmNGMyNzliM2M5MTg2YjE5NDNkMmE2OTAwN2YwMjZmOGE0OTA4ZWEzNzZhMzljMDgyNTk5MTBmNDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MWVhYzg1NzM5M2FlMzg2OTk1YzQyY2Y3ZGMzODFjN2Q1NTliOTljYThlNWE3ZGJjMzhiZjkxNjRlZDcwZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4MWJhNjE2MGUwN2M2NWJiZGJiMjMwZDZmMzA5MzExODI4NDI2NTVkNzdkODNiM2JjZjk1N2M5NjUxMjJhMzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMGQ3MWUyYmVhZjcwNTBhODIxNGU3OGYyYmU4OWQ1ZDkwMTY2MWI5NzU4NTViYTUzMzI3NWI2ODFhM2Y5MjAifQ"
+        },
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L1-L13",
+          "version": "repo-lines-v1:sha256:d7fbfd6adff643751aa33ad87fdba38d0a6a166c1dc5992458105bef4ea8987b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MjNkMzg3MjZiYTk2MzExYmIyYTMzYmQwNTVhZWNjNmFiNTY0YzJkMDE5YTA2OGMxOGEzODEwNmE0ZTEzNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MTFlZWQ2OTllNTQwNzc0ZTg3OTBlNDQ5ODQ5NDhjMTMyZDk3NDQxN2ZkMDY4ZmM3NjZkNDBmZWNhMWVkZDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxYjU4ZWY0Mjk4ZjYyM2M2MWE4ZWUwYzlkMDNjMDMxZjdhNWU3MWM4NjFhNTQ3ZjEyODU3OTY5NDRhZGRiN2YifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a556e388f9fb4988a25260aa02e4c070",
+      "statement": "Pinned Cordium ws-main and Octelium svc-upstream policies allow public IPv4 and IPv6 traffic on every port; additive NetworkPolicies cannot narrow them, and generator correction plus isolated-canary traffic qualification remain open.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2007-L2020",
+          "version": "repo-lines-v1:sha256:44a328e50473e1112936c58d1c08f93fbc147562d7b2c399edd4ee568e34a355:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhYTE5MGY3Y2Q2ZGU0NjFiODRiYTVjOWYxZjc5N2E3NTg0NWRlOThkZGQxZmIxYmUxNmQwYWM2MDY4MDAwMmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNjBiY2E2YWZhZDQ0OGYxMzA3NTE3Y2JhNjJlNTBhYzdhM2RmNDYyZjNjYzk5NTM4ODUzYThhZTYxMTc4YWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhZjgzNWEwZTNjNWI5MmYwNWE3NGZkZTQ0ZDUyNDZkZDczOWIyYzU2ZGQ1ZTQ0ZWI5Y2Q4OTEyZDRhNGJkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmMmMxYmFmNGM3M2VmZDAwMmY5NWRhZDQzY2ZjZjkwMjI0NzI1NjQyNzMwYzdhMWI4NDRkMmU0ZGVhYzI0YmIifQ"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md#L182-L224",
+          "version": "repo-lines-v1:sha256:76e7a005a1dff9350fe26c2b3d657c790fed69697061aa38257134a8b983fa19:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZDU2ZmM4ODYxZGZkNDI1ZGQyOGM1NTNkN2M3MjBiMWU0ODRmZGJmYWM5YjY0Yjk5MTFlN2RmOTdiYzFjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyMWQ4MjM3NTQ4ODdiMjFjMGM3ZWZhYjExY2Y1MWE3ZmU1ZmM3MGVhNGY1MGY5YjdiM2UyNTUyMGY2NmRiNjgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T13:22:56.341Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }

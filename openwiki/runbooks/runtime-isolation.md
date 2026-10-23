@@ -24,6 +24,10 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-007543776318a4afbd5fc1b0
@@ -56,10 +60,10 @@ sources:
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T18:25:34.713Z
 ---
 
 # Runtime Isolation
@@ -70,6 +74,10 @@ Pod Security, service accounts, Istio authorization, and workload security
 contexts are enforced desired state. Existing `NetworkPolicy` objects remain
 intent-only while Flannel is the sole active CNI and the staged firewall-only
 kube-router Application selects no node.
+Most existing non-privileged namespaces declare baseline Pod Security. The
+unsynced Enterprise foundation declares restricted enforcement for both
+`openclaw-system` and `openclaw-agents`; this is source intent, not live
+namespace acceptance.
 
 Kiali's [repository ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 replaced the operator-generated `monitoring/kiali` rule without changing its

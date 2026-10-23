@@ -12,6 +12,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -104,6 +106,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -132,10 +136,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T18:25:34.713Z
 ---
 
 # Secrets And Identity
@@ -585,6 +589,10 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   tests; Octelium admin authentication, CI issuance, tunnel access, and a
   complete protected inspection receipt remain outstanding. See the
   [Talos maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+  The fixed upgrade stages also read private role-specific control-plane and
+  worker configs from protected workflow secrets. This path remains inactive
+  while `activationEnabled` is false and its placement, recovery, and image
+  publication receipts are missing.
   The dormant firewall cleanup lane keeps capture, approval, attempt, and
   completion evidence in the private versioned maintenance bucket. The owner
   reviews the full capture outside public logs and supplies its exact digest
