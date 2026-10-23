@@ -931,11 +931,14 @@ case "$IMAGE_SCOPE" in
   litellm)
     bash scripts/ci/harbor-publish.sh mirror-litellm
     ;;
+  prometheus)
+    bash scripts/ci/harbor-publish.sh mirror-prometheus
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b9118eec66de8aa22c7b033850b0697c1fe6ae97c39e0314ff820f44aa27a9b1  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

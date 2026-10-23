@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc047800f10dfc2e4a9c4709f7ce1a9571f098136d47f51540568af9a4c31749",
+  "pageVersion": "sha256:8e980028163109abfd07fccd1172efb13535a554237bbf655972b4a219116d8a",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
+          "version": "repo-file-v1:sha256:31c7202206cafc5dc2289fa3e629c4c371446891f2df83c472c18eaf3fd5aa8c"
         }
       ]
     },
@@ -378,11 +378,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
+          "version": "repo-file-v1:sha256:31c7202206cafc5dc2289fa3e629c4c371446891f2df83c472c18eaf3fd5aa8c"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:d4481ac92134c6a46c97911cbd1485767a68fab4488d42c9f5c6bc39abfea8eb"
+          "version": "repo-file-v1:sha256:167f392de07e82955207f1fadb125c4c53260895c6fca7ad9092019ef1ceccc1"
         }
       ]
     },
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
+          "version": "repo-file-v1:sha256:31c7202206cafc5dc2289fa3e629c4c371446891f2df83c472c18eaf3fd5aa8c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:30d72c69b3c9a9bb22b69ae99399668f543714f79da8f1885bee71db66f36182"
+          "version": "repo-file-v1:sha256:aa0c3982a23847283ce422370919c3e93d33a1dc754fd9d01809ddbc43ace4a2"
         }
       ]
     },
@@ -808,25 +808,25 @@
     },
     {
       "id": "claim_b345416484b1488e86ed70ba80449b40",
-      "statement": "The draft protected prepare-restore stage would fetch exact versioned objects from the successful legacy publication and retain a separate verified NAS copy with private link classifications. It has not run or booted the old image; T013 passed, T014 remains open and original claims are retained read-only.",
+      "statement": "Merged protected prepare-restore source fetches the successful legacy publication's exact versioned archive and receipt to prepare a separate NAS recovery copy. This stage alone does not pass the still-pending T014 compatible boot gate; original PVCs and claims remain retained.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L1-L70",
+          "version": "repo-lines-v1:sha256:837330a7b203c8659b5a18f3a7269e3a9c601733def23fd9cc397138a1557bf7:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyZjRkMDU1NjY0ZDMyMDI3ODVlZmY5MjM2NmE3MzA4MWY1OTMwZTFiNDQ1OGRhNDBhOGYwOTNjZDE0YjQ4ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MmMwOGVjOGZlM2Y4NjFkZTY1MjY0MTMxNmY5MjFmZmE4NzZhNGUzYTQ5MjRlZGI2YzA4Nzg4NjZmYjAxYmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyOWZlNjExMjIzM2M1MTFmOTEzOThkZDhmMDdlZDJiMjI4NmEwNjUyOTBhYmE0NWNhMGI1OTliZjcxZjFlZTIifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L128-L175",
+          "version": "repo-lines-v1:sha256:3f5ce546d95a2925c04eb204d3efea34041e8377605460cc402aa9e28cb88de8:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNmQxY2Q2YThkNjg0ODBlZDcwZDIxZGRlYjJiODQ2ZTRiY2VkNDQyNjljODZhMDYxOTUwMTAxNzk5NGY0ZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZmM5MDFmOWVhZjFhZmY2YTExZTg3ZGRjNjY5OGY2OTM2MDE3ZTQwNzMwM2JkMDlhY2ZlZGQzMWIyODBkMmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MDBhNDQ5MjYwZDhiYzMyODZlYTg4MTQzOTFhMzM4ZTU3ZjgyOGRiZGM0ZDliNmRhMDgyNTM2OTUzMzhiOWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY5ZTIyMDI5NjU3N2ZiMWVlMDIzMmM0ODBmZTUzYTNiZTVjMDg0ZTE0YjBhZTdkMmI0MDQ0Nzg5NmYyOGEwYmYifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
+          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md#L81-L81",
+          "version": "repo-lines-v1:sha256:acdf423ff449d6e3947114f5f9a54126df19096d0afdc8a954eb16b63f243e11:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWNkZjQyM2ZmNDQ5ZDZlMzk0NzExNGY1ZjlhNTQxMjZkZjE5MDk2ZDBhZmRjOGE5NTRlYjE2YjYzZjI0M2UxMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWNkZjQyM2ZmNDQ5ZDZlMzk0NzExNGY1ZjlhNTQxMjZkZjE5MDk2ZDBhZmRjOGE5NTRlYjE2YjYzZjI0M2UxMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmM3ZGI5YjkzMDUwMjhmODhjZTczYTZiODUyNGM4ZGRiYTQxYmVkMjAyNTYyMTYzYWJjYTg2M2Y1NTBkOTM1MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTQ3MDg3MWFjZjUyMmIyNmIyNGU5MWY5MmNjNmM5OWQwMTAzYzRhZjgwZDI5NWQyODY4NGVjNjJkNDRjNGNiNyJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T10:35:28.853Z"
+    "at": "2026-10-23T11:27:28.778Z"
   }
 }

@@ -1,0 +1,7 @@
+{
+  "images": [
+    {
+      "source": "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
+    }
+  ]
+}

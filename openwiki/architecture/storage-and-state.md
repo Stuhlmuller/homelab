@@ -65,7 +65,7 @@ sources:
 generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:35:28.853Z
+    at: 2026-10-23T11:27:28.778Z
 ---
 
 # Storage And State

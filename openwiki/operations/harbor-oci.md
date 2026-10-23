@@ -156,6 +156,8 @@ sources:
     resource: repo://scripts/config/harbor-litellm-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
+  - id: openwiki-source-d8592edfd3a777f41c6b1623
+    resource: repo://scripts/config/harbor-prometheus-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
@@ -166,10 +168,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T06:14:27.082Z" }
+generated: { by: "codex", at: "2026-10-23T11:27:28.778Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:04:15.524Z
+    at: 2026-10-23T11:27:28.778Z
 ---
 
 # Harbor Private OCI Registry
@@ -426,7 +428,8 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, or `dns`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, `dns`, `litellm`, or
+`prometheus`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -460,6 +463,20 @@ Protected run [39161113974](https://github.com/Stuhlmuller/homelab/actions/runs/
 completed at exact `main` `5558f8c1` with matching digest and a complete
 authenticated Harbor pull. It does not prove full-catalog coverage or live
 resolver health.
+
+The fixed `prometheus` scope selects only the catalog's pinned
+`quay.io/prometheus/prometheus:v3.11.3-distroless` digest through
+[`harbor-prometheus-images.json`](../../scripts/config/harbor-prometheus-images.json).
+It preserves the normal source digest, destination digest, alias, and fresh
+complete authenticated Harbor pull checks. Full run
+[39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
+stopped at this image with public `destination-copy` / `command-failed` at item
+196/214; no complete catalog receipt exists. A scoped success would qualify
+only this image, not the full-catalog Talos gate or the other Prometheus stack
+images. Destination-copy failures with private Skopeo `writing blob` or
+`writing manifest` diagnostics now emit fixed `blob-upload-failed` or
+`manifest-upload-failed` categories; unknown failures remain `command-failed`
+and do not trigger another copy client or an automatic write retry.
 
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):

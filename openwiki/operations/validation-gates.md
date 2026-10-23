@@ -312,6 +312,8 @@ sources:
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-f9b3281815e3adb0fb2d9b59
     resource: repo://scripts/config/harbor-litellm-images.json
+  - id: openwiki-source-d8592edfd3a777f41c6b1623
+    resource: repo://scripts/config/harbor-prometheus-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
@@ -358,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
+generated: { by: "codex", at: "2026-10-23T11:27:28.778Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:35:28.853Z
+    at: 2026-10-23T11:27:28.778Z
 ---
 
 # Validation Gates
@@ -2387,6 +2389,16 @@ Harbor pull. Exact-main protected
 [run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
 passed the one-image publication receipt; local fixtures alone cannot prove
 that live result, and the scoped run does not clear full-catalog coverage.
+
+The fixed Prometheus qualification scope selects one exact digest already in
+the full catalog. Inventory and publisher fixtures reject missing, altered,
+extra or caller-supplied images before credentials; workflow policy pins the
+same fixed dispatch and reviewed publisher hash. Destination-copy fixtures
+allow only fixed public blob/manifest write-stage categories when the private
+diagnostic matches, retain `server-error` for HTTP 5xx, and leave unknown
+copy errors terminal as `command-failed`. These source checks do not pass T004:
+full run [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
+failed at this Prometheus image, and no complete catalog receipt exists.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
