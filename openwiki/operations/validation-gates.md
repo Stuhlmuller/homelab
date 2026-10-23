@@ -76,6 +76,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-0937bc5dca6b0bf79ccdb46a
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
   - id: openwiki-source-d2d8ff2161af78b658d004f0
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-8918085c21c3a103803f7fbe
@@ -348,10 +350,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
+generated: { by: "codex", at: "2026-10-23T09:00:55.441Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:31:33.560Z
+    at: 2026-10-23T09:00:55.441Z
 ---
 
 # Validation Gates
@@ -1947,6 +1949,11 @@ deployment. The committed
 path. These are offline state-machine checks, not live activation or recovery
 acceptance; the staged operator storage and protected execution remain
 unadmitted.
+The stop fixture now keeps the pending intent when the OCE API reports zero
+runtime Pods but an unlabelled Pod remains in `openclaw-agents`. Both stop and
+stopped-state verification require an unfiltered Kubernetes PodList with a
+resource version and no items. The staged operator Role grants `pods/list`
+only in that tenant Namespace; this source check still needs live proof.
 The static-gate [recovery fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
 checks unknown stop intent, interrupted runtime reads and retention of the
 separate legacy archive after a new-Agent stop failure. This is source-only

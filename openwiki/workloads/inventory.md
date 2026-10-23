@@ -206,6 +206,8 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
@@ -214,10 +216,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T08:31:33.560Z" }
+generated: { by: "codex", at: "2026-10-23T09:00:55.441Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:31:33.560Z
+    at: 2026-10-23T09:00:55.441Z
 ---
 
 # Workload Inventory
@@ -487,8 +489,11 @@ exact Agent grants, runtime credential/deployment readback, and idempotent
 stop. With a reviewed native origin, the source-only path guards the
 Configuration update from generation 1 to 2 and one second deployment; it
 verifies both revisions and blocks uncertain reposts. Recovery fixtures keep
-unknown stop intent and the separate legacy archive intact. Committed
-`activationEnabled: false` and the missing dedicated OpenRouter
+unknown stop intent and the separate legacy archive intact. Stop and stopped
+verification also require an independent, unfiltered PodList showing no Pods
+in the dedicated tenant Namespace; an empty Enterprise runtime alone cannot
+clear a stop intent. The tenant Role grants only the required `pods/list` read.
+Committed `activationEnabled: false` and the missing dedicated OpenRouter
 key still block activation; these fixtures are not live acceptance.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
 exists in source. A fixed protected binding lane is declared, but hosted
