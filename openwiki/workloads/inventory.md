@@ -218,10 +218,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
+generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T16:21:49.039Z
 ---
 
 # Workload Inventory
@@ -431,12 +431,16 @@ protected `prepare-restore` stage for stopped legacy OpenClaw. Its first
 failed in the broad public `verification` phase with only an incomplete,
 unverified scratch archive. [Retry `39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
 failed in fixed `verification-archive-download`; neither reached receipt
-download or the restore worker. It has not established a verified NAS restore
+download or the restore worker. [Retry `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+also failed in that broad archive-download phase before receipt or worker;
+the source, reader or finalization boundary was not identifiable. It has not
+established a verified NAS restore
 copy or booted the old image. T013 archive verification passed; T014 compatible
 recovery remains open, and the original claims stay retained and read-only.
 The source-only transfer repair uses bounded exact-version S3 ranges, 8 MiB
 SHA-256-checked reader slices, append rollback and full-digest promotion, with
-fixed public archive, receipt and restore failure phases. It remains source-only
+fixed public source-range, reader-transfer and finalization subphases for each
+download. It remains source-only
 until a protected retry succeeds. Private restore diagnostics stay outside this
 wiki.
 

@@ -124,10 +124,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
+generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T16:21:49.039Z
 ---
 
 # Source Map
@@ -192,7 +192,7 @@ desired state.
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding, guarded legacy restore-copy dispatch, phase-gated full-sync, and disabled-by-default operator dispatch](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
-| `scripts/ci/openclaw-enterprise-operations.sh`, `scripts/ci/openclaw-enterprise-download.py`, `clusters/homelab/apps/openclaw/retirement/retirement.py`, and `scripts/ci/openclaw-retirement-test.py` | [Versioned legacy archive verification and bounded ranged restore-copy transfer](architecture/storage-and-state.md), [two failed attempts and pending T014 compatible boot](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/ci/openclaw-enterprise-operations.sh`, `scripts/ci/openclaw-enterprise-download.py`, `clusters/homelab/apps/openclaw/retirement/retirement.py`, and `scripts/ci/openclaw-retirement-test.py` | [Versioned legacy archive verification and bounded ranged restore-copy transfer](architecture/storage-and-state.md), [three failed attempts, fixed public transfer-failure boundaries and pending T014 compatible boot](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound one-shot Job dispatcher and failure/restart fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
 | `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); signed Harbor digest and activation remain pending |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |

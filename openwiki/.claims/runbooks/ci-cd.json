@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:502486f23599d711fddabad79a57e1d3712de4a3086155ae3544b81b4acae52a",
+  "pageVersion": "sha256:0a5752da491e9562de24f05d69d628376bf2a4937649a54be5a400616af86710",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c48b1a8a88930f1da2b72859cbfea97dba5296b75008a8dbcd76ad8cf19d7084"
+          "version": "repo-file-v1:sha256:c297729f4d37e564a2ec4d07e6f10f58c37d6a8208f10fd7fe661513ed3d67ed"
         }
       ]
     },
@@ -318,11 +318,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:4b466397387e38ba5b3bf7cea00494257fec7b3d1aac9a8e7e49d8ffdc1b9248"
+          "version": "repo-file-v1:sha256:2992efa779605d9c981b493883203469f9ff3bb92fddf7057985a902eec31d5f"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:b16e9854023424bf7ee17f58b5d1fd2aa797b45cdd2fedab1e8ed5743d4e2a05"
+          "version": "repo-file-v1:sha256:281cac084743c156467543e146077e18277dc9e95f47a1c60ad646fe767bde5b"
         }
       ]
     },
@@ -354,15 +354,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:9b44bf4ba967b862e12f4d77616d0302edc0b3aaf29ec8d54cae214556eb6cb7"
+          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:deab5c241a287014d8c611ec3f072ee3cbfeaf3df296240a1c727e90d5a3547b"
+          "version": "repo-file-v1:sha256:e213cf57ea37b908fb8a67f178e0391f525cd198def991cbd3cbf151ee4f2eb4"
         }
       ]
     },
@@ -372,39 +372,39 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:deab5c241a287014d8c611ec3f072ee3cbfeaf3df296240a1c727e90d5a3547b"
+          "version": "repo-file-v1:sha256:e213cf57ea37b908fb8a67f178e0391f525cd198def991cbd3cbf151ee4f2eb4"
         }
       ]
     },
     {
       "id": "claim_63e80cd457b64319a513fa3e37f3d51b",
-      "statement": "The protected prepare-restore stage requires exact current main and the successful publication reference, rechecks stopped writers and source identities, and retains a separate recovery tree only after exact-version transfer and verification. Runs 39942297939 and 39951803625 both failed before receipt download and restore worker, with no accepted copy. The source-only transfer repair uses bounded S3 ranges with exact metadata checks, 8 MiB SHA-256-verified reader slices, append rollback and no-clobber promotion after full size and digest verification; T014 compatible boot remains open.",
+      "statement": "The protected prepare-restore stage requires exact current main and the successful publication reference, rechecks stopped writers and source identities, and retains a separate recovery tree only after exact-version transfer and verification. Runs 39942297939, 39951803625 and 39966041305 all failed before receipt download and restore worker, with no accepted copy; the third run's broad archive-download phase did not distinguish source, reader or finalization failure. The source-only repair exposes fixed public source-range, reader-transfer and finalization subphases while using bounded exact-version S3 ranges, 8 MiB SHA-256-verified reader slices, append rollback and no-clobber promotion after full verification. T014 compatible boot remains open.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:9b44bf4ba967b862e12f4d77616d0302edc0b3aaf29ec8d54cae214556eb6cb7"
+          "version": "repo-file-v1:sha256:d078b437792fce49b5247ae3d6bc4067d60a3589675666c54cc4c4be9e32a446"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:a9c7e372fba195adf64152048659f0ec3c8ce6ae871f6f399ce0c04cc1784f1f"
+          "version": "repo-file-v1:sha256:ba4da779d4868b6672b47452981b1ab52cf96c91dbf1efa84a1562530dffc5c9"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:efea54a99f3b3e813f3cfa9703e04e41e90719da69d83c9e149e431ac33bf6cc"
+          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
-          "version": "repo-file-v1:sha256:b69ed112b09cd78a12617a14d7090a95625943f2f1f0ff387d5950bd814c3f27"
+          "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T13:22:56.341Z"
+    "at": "2026-10-23T16:21:49.039Z"
   }
 }
