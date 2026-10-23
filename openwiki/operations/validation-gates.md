@@ -346,16 +346,18 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
+  - id: openwiki-source-4f1f492ff2ee386585deee86
+    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T09:40:54.147Z" }
+generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T09:40:54.147Z
+    at: 2026-10-23T10:04:15.524Z
 ---
 
 # Validation Gates
@@ -1739,9 +1741,10 @@ enabling registration or changing job selectors. See the
 The Enterprise model-credential workflow is protected by exact current-`main`
 source checks and validates an owner-supplied OpenRouter key before writing only
 `/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
-The stopped legacy inventory and off-NAS archive publication are verified, but
-the separate archive verification, full image catalog, isolated canary, platform
-upgrades, and new-state restore remain acceptance gates. Source-only static
+The stopped legacy inventory, off-NAS archive publication and separate
+multi-root restore verification are complete. The full image catalog, isolated
+canary, platform upgrades, compatible legacy boot and new-state restore remain
+acceptance gates. Source-only static
 checks do not activate the agent.
 
 Protected `publish-archive` run `39466313228` completed bounded multipart
@@ -1756,7 +1759,10 @@ verification and private final receipt. Later runs `39700564687` and
 `39908653791` mistakenly used that publication as a worker reference and failed
 before upload; the latter reported `publication-archive-result`. The separate
 [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
-is running against the publication reference, so T013 stays open.
+succeeded at 2026-10-23 09:52 UTC against publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`, re-fetching
+the exact versioned archive and receipt and restoring the full local/NAS trees,
+both SQLite databases and required historical backups. T013 is complete.
 
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
@@ -1764,8 +1770,8 @@ pinned image baseline without an `/app` volume. The former gateway had a
 writable root, so its original overlay contents remain unclassified; compare
 them with retained evidence before claiming compatible recovery. Three
 dangling external targets also need an explicit disposition. A rehearsal needs
-a separate offsite verification receipt, writable UID 1000 local-state
-and isolated NAS copies, and an enforced offline network boundary that blocks
+writable UID 1000 local-state and isolated NAS copies, and an enforced offline
+network boundary that blocks
 Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
 NetworkPolicies, so a deny policy alone cannot isolate the old image. Keep
 production writers stopped and original claims read-only; no isolated
