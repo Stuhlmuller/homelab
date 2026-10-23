@@ -963,7 +963,8 @@ def read_only_inspection(config, talosconfig):
     result = subprocess.run(["kubectl", "get", "nodes", "-o", "json"],
                             capture_output=True, text=True, timeout=60, check=True)
     nodes = json.loads(result.stdout).get("items")
-    if not isinstance(nodes, list) or {item.get("metadata", {}).get("name") for item in nodes} != set(NODES):
+    if (not isinstance(nodes, list) or len(nodes) != len(NODES) or
+            {item.get("metadata", {}).get("name") for item in nodes} != set(NODES)):
         raise ValueError("live Kubernetes node identities differ from reviewed input")
     observed = {}
     for node, address in zip(NODES, ADDRESSES):

@@ -104,6 +104,7 @@ class RecoveryBoundaries(unittest.TestCase):
         original_get = self.api.get
         for response in ({"revisionId": revision, "observedAt": "now",
                           "pods": [{"name": "agent-one", "phase": "Unknown"}]},
+                         {"revisionId": "rev_other", "observedAt": "now", "pods": []},
                          {"revisionId": revision, "pods": []},
                          OCE.Blocked("runtime read unavailable")):
             with self.subTest(response=response):
@@ -120,6 +121,15 @@ class RecoveryBoundaries(unittest.TestCase):
                 self.assertEqual(self.journal()["pending"], {"operation": "stop"})
                 self.assertEqual(self.journal()["revisionId"], revision)
         self.assertEqual(len([call for call in self.api.calls if call[1].endswith("/stop")]), 1)
+        writes = [call for call in self.api.calls if call[0] in
+                  {"POST", "POST-200", "POST-202", "PATCH", "DELETE"}]
+        with patch.object(OCE, "prove_driver_identity", return_value={"installationId": "ins_one"}):
+            with self.assertRaises(OCE.Blocked):
+                OCE.reconcile(self.config, self.api, self.kube, "a" * 40,
+                              {"version": 1, "key": "fixture-openrouter-key"})
+        self.assertEqual([call for call in self.api.calls if call[0] in
+                          {"POST", "POST-200", "POST-202", "PATCH", "DELETE"}], writes)
+        self.assertEqual(self.journal()["pending"], {"operation": "stop"})
         self.api.runtime_pods = []
         self.assertEqual(self.stop()["revisionId"], revision)
         self.assertNotIn("pending", self.journal())
