@@ -246,6 +246,13 @@ class PlatformMaintenance(unittest.TestCase):
             self.assertEqual(json.loads(output.read_text())["nodes"], receipt["nodes"])
             with self.assertRaises(FileExistsError):
                 self.module.save_inspection(output, receipt)
+            nodes.append(copy.deepcopy(nodes[0]))
+            commands.clear()
+            with patch.object(self.module.subprocess, "run", side_effect=fake_run):
+                with self.assertRaisesRegex(ValueError, "node identities"):
+                    self.module.read_only_inspection(self.config, talosconfig)
+            self.assertEqual(len(commands), 1)
+            nodes.pop()
             nodes[0]["status"]["addresses"][0]["address"] = "10.1.0.216"
             with patch.object(self.module.subprocess, "run", side_effect=fake_run):
                 with self.assertRaises(ValueError):
