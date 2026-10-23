@@ -100,10 +100,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T07:28:36.279Z" }
+generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T08:31:33.560Z
+    at: 2026-10-23T10:04:15.524Z
 ---
 
 # CI/CD
@@ -229,7 +229,11 @@ verification and private final receipt. Later retries `39700564687` and
 `39908653791` incorrectly used the publication run as the source worker; both
 failed before upload, with the latter reporting `publication-archive-result`.
 The separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
-is running against the publication reference; T013 remains pending.
+succeeded at 2026-10-23 09:52 UTC against publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. Its protected
+stage retrieved the exact versioned archive and receipt and restored the full
+local/NAS trees, both SQLite databases and historical backups. T013 is complete;
+compatible legacy boot remains open under T014.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added

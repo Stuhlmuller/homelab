@@ -58,10 +58,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T09:40:54.147Z" }
+generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T09:47:49.014Z
+    at: 2026-10-23T10:04:15.524Z
 ---
 
 # Storage And State
@@ -300,12 +300,16 @@ native bindings across Pod replacement. The backup CronJob is suspended;
 historical SQLite snapshots remain on the NAS. The local hostPath survives Pod replacement
 but not node-disk loss; there is no automatic node failover and recovery can lose
 writes since the last backup. Native caches are reconstructed on disaster restore.
-The post-shutdown inventory and protected off-NAS archive publication passed.
-[Publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
-restored and verified the versioned upload before its private final receipt.
-The separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
-is still running, and the new Enterprise recovery set remains unverified; keep
-all retained claims. Later `publish-archive` retries `39700564687` and
+The post-shutdown inventory, protected off-NAS archive publication and separate
+multi-root restore verification passed. [Publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+restored the versioned upload before its private final receipt. The separate
+[verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+succeeded at 2026-10-23 09:52 UTC against publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. It fetched the
+exact archived versions and rechecked full local/NAS tree content, both SQLite
+databases and required historical backups. The new Enterprise recovery set and
+compatible legacy boot remain unverified; keep all retained claims. Later
+`publish-archive` retries `39700564687` and
 `39908653791` used the publication ID as a source worker ID and failed before
 upload. They do not invalidate the successful publication.
 The legacy archive retains NAS symlink targets but not data outside its roots.
@@ -315,7 +319,7 @@ gateway had a writable root, so its overlay may have changed those targets;
 their original contents remain unclassified until compared with retained
 evidence. Three dangling external targets also remain unclassified. T014 still
 needs their disposition, a separate writable UID 1000 local-state copy, an
-isolated NAS copy, the separate offsite verification receipt and an old-image boot
+isolated NAS copy and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
 declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).

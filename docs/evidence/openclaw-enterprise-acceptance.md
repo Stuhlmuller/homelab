@@ -1,6 +1,6 @@
 # OpenClaw Enterprise Acceptance Ledger
 
-Status: **legacy stopped; archive published; replacement pending**.
+Status: **legacy stopped; archive independently verified; replacement pending**.
 Platform prerequisites have only offline source validation. No live upgrade,
 firewall enforcement, Envoy route or isolated canary is active; measured nodes
 do not admit an isolated canary without evicting unrelated stateful workloads.
@@ -15,12 +15,12 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Signed and fully pulled by protected workflow |
 | Full platform image catalog and transitive render | [main `73fbf4c`, full mirror `39906968373`](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373); [earlier `39694217983`](https://github.com/Stuhlmuller/homelab/actions/runs/39694217983) | — | Pending. The current full-catalog publication is running after the bounded Harbor HTTP 5xx read-retry repair. The prior attempt stopped at item 179/214 with public `authenticated-pull` / `server-error`; no complete 214-image authenticated receipt exists yet. |
 | LiteLLM Linux amd64 child publication | [main `0183db1c`, protected mirror run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031); `ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8` | — | Passed exact-current-main guard, source digest check, and complete authenticated Harbor pull. This one-image scope does not pass the full-catalog T004 gate. |
-| Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. The publication run below restored the uploaded archive; separate verification is pending. |
+| Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. Publication and separate verification restored the versioned off-NAS objects. |
 | Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354); [main `6de59d7c`, protected recovery `39142331296`](https://github.com/Stuhlmuller/homelab/actions/runs/39142331296) | `e8663e8451f7d76acfdd91904b7a9373a738ef5de44195ac4127ff862389307b` | Passed: the private success marker and both retained baseline copies match this digest; protected publication verified current source identities, one KMS-encrypted S3 version, and a versioned download matching the baseline. Old writers were active at this pre-shutdown gate; the next row records their shutdown. |
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
-| Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [main `9f64b56a`, successful publication `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Publication passed: the protected stage uploaded the versioned archive and receipt, restored both off-NAS objects, verified the restored archive, and wrote its private final receipt. Separate `verify` is running; T013 remains pending until that run passes. The local source and partial attempts remain retained. |
-| Legacy compatible recovery rehearsal | [read-only image and mount review on `90f7338`, 2026-10-20](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c) | — | Pending. Six external `/app` symlinks resolve to five nonempty directories in the pinned image baseline, but the former gateway's writable overlay may have changed them and has not been compared with retained evidence. Three dangling external targets also remain unclassified. The offsite publication succeeded, but separate archive verification, writable local/NAS copies, enforced offline network boundary, and isolated old-image boot remain pending. Original claims remain retained and mounted read-only by the reader. |
+| Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [publication `9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification on `90d3d413`, run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Passed T013. Protected publication uploaded the versioned archive and receipt, restored both objects and wrote a private final receipt. The separate protected `verify` run succeeded on 2026-10-23 09:52 UTC after retrieving the exact published versions and independently restoring the full local/NAS trees, both SQLite databases, NAS workspace/configuration, and historical backup directories. Local source and partial attempts remain retained. |
+| Legacy compatible recovery rehearsal | [read-only image and mount review on `90f7338`, 2026-10-20](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c) | — | Pending. Six external `/app` symlinks resolve to five nonempty directories in the pinned image baseline, but the former gateway's writable overlay may have changed them and has not been compared with retained evidence. Three dangling external targets also remain unclassified. The offsite archive passed independent verification; writable local/NAS recovery copies, enforced offline network boundary, and isolated old-image boot remain pending. Original claims remain retained and mounted read-only by the reader. |
 | Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-23 08:18 UTC recheck below | — | Blocked. Acer is 503 MiB short of database plus gateway, and the initial 4 GiB API/worker/database/Envoy/gateway planning reservation would be about 2,295 MiB short if co-located there; both exclude transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. No isolated tainted canary or admitted Enterprise placement. T022, T027 and T035 remain pending. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
@@ -50,8 +50,14 @@ retries mistakenly passed the publication run as an archive-worker reference.
 The former failed in the old broad `baseline` phase; the latter failed
 specifically at `publication-archive-result` before upload. Neither invalidates
 the successful publication. Separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
-is running against the publication reference; keep T013 pending until it
-completes.
+succeeded against the exact publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. Its protected
+stage rechecked stopped writers, fetched the versioned final receipt and its
+specified archive/receipt objects, and ran the multi-root restore verifier.
+The verifier binds both SQLite databases and full local/NAS content, including
+required NAS workspace, configuration, backup and checkpoint directories.
+The independent T013 receipt is the public run reference above; private
+receipt contents and version IDs remain outside Git.
 T038 originally assigned `private-access.yaml` to the Enterprise foundation.
 [PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420) moved the
 fixed Services to the Octelium catalog and the opaque Agent-host route,
@@ -243,8 +249,8 @@ at most about 1,284 MiB of allocatable RAM before host overhead. It already
 hosts 43 running Pods, including infrastructure DaemonSets and the retained
 legacy reader; a `NoSchedule` taint would not isolate them. No existing worker
 qualifies as the dedicated canary without moving unrelated workloads. The
-independent legacy archive/restore and measured storage/transient placement
-remain pending; T022 stays unchecked.
+independent legacy archive/restore passed; measured storage/transient placement
+remains pending, so T022 stays unchecked.
 
 At 2026-10-20 07:22 UTC on `main` `cefa1440`, another read-only
 `kubectl describe node`, `kubectl top nodes`, running-Pod inventory and kubelet

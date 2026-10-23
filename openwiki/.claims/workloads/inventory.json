@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d2518149485124a054e416d0e5dcac9c3f3ce6dc1d4d76bbd11a9e34ba370cc0",
+  "pageVersion": "sha256:06357c0e0be73f3698242dfa7312ce4e3a3cd8af73b4ec42d20efdf810724922",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -322,15 +322,15 @@
     },
     {
       "id": "claim_af434c04a9eb4187b151af1658217b9b",
-      "statement": "Legacy OpenClaw's gateway and backup writer are stopped by GitOps; local and NAS state and four PVC/PV identities remain. The protected off-NAS archive publication passed, while an independent restore verification is running. Enterprise activation remains disabled, and no canary node is admissible at current capacity.",
+      "statement": "Legacy OpenClaw's gateway and backup writer are stopped by GitOps; local and NAS state and four PVC/PV identities remain. Protected off-NAS archive publication and separate multi-root restore verification passed, while compatible old-image boot remains pending. Enterprise activation remains disabled and current capacity admits no isolated canary.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
           "version": "repo-file-v1:sha256:87586e53c835110d98f95383384fc5f0cf2f084817371e97c05ea5ccec6e56b3"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L18-L24",
+          "version": "repo-lines-v1:sha256:3c36c19e1cc807429b3487046d0f095ce8b4787a1a03bb4886760d9d9f55c246:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGNkMzY1YWYzZjQ5NTFiNjU5YjlkNDM0MGE3MGZjMzNjZDMwMzFhZDQ3NzQ0YTI5MjgyZjdkMjQ0YjBiY2I5ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTc2MjRmYTllYjkyMWFmNGZiNWJhZmNmMGQ2MzBiMGZkZWVjMWY4ZDNlZjU3NDhmYWM2ZjgxMzU5MzUyMjcxMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGJhNWQ5ZWQyMWFkNWQ2ODA3NGEyODFiMTdmMjZmN2M5OTk0YjA0ZTM4MWY4NTA2ZDk1ODY3MDgxMTNlNzhiNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDYwZGI5ZjEwYzUwNWNlZDI2N2I1ZTY0YzNkOThjOTEzYjFjNWI5ZTQxOTY4ZjM4ZmY3NmUzNmQ4MTM2YWFmNyJ9"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
+          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
         }
       ]
     },
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
+          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:87ce598e41600cc82da80893273cebe6d959cbe34ca81100e78bf5acb3cf5324"
+          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -547,7 +547,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L269-L295",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L275-L301",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -725,7 +725,7 @@
           "version": "repo-lines-v1:sha256:0b45294e9d52a589b75747ddefaabee09cf7da0e8c3dd4ecbae478aa00838ef4:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGU0Y2VkYzhlMDQzYWU5MzdjMzk0NjJkYjczMDg3NTk1YTJmYmZjZDkxOTFlYjZhMmRjMzE5NThlNzdmM2ZkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODRlNTc1MDJiNmFkZDk5Zjg3NWRmMDJkYzA3MjA0MTc0MGE1OTRhZmNiNWJmMGM3OTc4NmI0MGYzZjkxN2M1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNmE5NTEzMGY0Zjc0ZTQ0NDIzNmU3NTE4MzFmMDk0MmQ1ODhiMDdlOGNmYmNlMDExODg2OWQ2MzhlNjBjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGY3MzlhMDZjMWNiYjEyNDRlMzM2M2QzOGJjZjlmYTUwY2U4NGZlZDM5OWMyMTkzYTNjN2YwOGQ1OTkxOGIyYSJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L333-L379",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L339-L385",
           "version": "repo-lines-v1:sha256:6b46795b72fdb8ad500dbe0fe8ca8598e640db30658ed7910aad99666eb2b983:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmMmY3YmE1YzU4N2JjMWI4OWZhMDFmZDEwNDRmZGQ4Mjk4MWU1MjAwMDZjMDQxZGM5MWE3NzI0MmU3MWIxNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOThmMGYwZjdlOGNmMjExYTVmNzNmOTYxNGRlMjVhOThhNWJjODI3NTdmNTQxY2ZkYjRkNDgyODY1ZTM4NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZDU2MGM5ZDEyNDYxN2YzOTg3ZjcyNTdiY2VlMjFjNmY1MjAxNWMyZDQ1ZGQ3YWIyMzU4YWJkZTM5MTZlZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlMWE1M2U5YmVhNjU5ODE4MTExYzZmMmJlNzAwNjNhMzYwZjc1ZDU0MWRmZDczMDFhMWViNTJlZTc0N2FmN2MifQ"
         },
         {
@@ -748,7 +748,7 @@
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:4fe00fb41de76956d43c884d3c90a8d736d3e457bb2816003e7cb9cdf7c6c467"
+          "version": "repo-file-v1:sha256:904ad3d58c8a0264840235cbf8f3050c391054cc8f64fe3d0a20d472ac3a14b9"
         }
       ]
     },
@@ -809,6 +809,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T09:40:54.147Z"
+    "at": "2026-10-23T10:04:15.524Z"
   }
 }
