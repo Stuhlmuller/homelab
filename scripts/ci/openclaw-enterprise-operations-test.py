@@ -573,9 +573,12 @@ restore_version key version-1 "$2"
             self.assertEqual(result.returncode, 2)
             self.assertFalse(phase.exists())
             workflow = WORKFLOW.read_text()
-            self.assertIn('preflight|baseline|publication|publication-lookup|'
+            self.assertIn('preflight|baseline|baseline-s3-read|baseline-mounted-compare|'
+                          'baseline-source-status|publication|publication-lookup|'
                           'publication-lookup-denied|publication-lookup-failed|'
-                          'publication-lookup-response|publication-upload|'
+                          'publication-lookup-response|publication-archive-result|'
+                          'publication-source-validation|publication-destination-absence|'
+                          'publication-source-size|publication-upload|'
                           'publication-source-read|publication-s3-create|publication-s3-part|'
                           'publication-s3-complete|publication-digest|'
                           'publication-version|publication-archive-head|'
@@ -615,6 +618,77 @@ false
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(phase.read_text(), 'preflight\n')
+
+    def test_archive_publication_reports_exact_fixed_pre_upload_phase(self):
+        source = SCRIPT.read_text()
+        block = ('    phase=baseline-s3-read\n' + source.split(
+            '    phase=baseline-s3-read\n', 1)[1].split(
+            '    phase=publication-upload\n', 1)[0] + '    fi\n')
+        categories = (
+            'baseline-s3-read', 'baseline-mounted-compare',
+            'baseline-source-status', 'publication-archive-result',
+            'publication-source-validation', 'publication-destination-absence',
+            'publication-source-size',
+        )
+        workflow = WORKFLOW.read_text()
+        for category in categories:
+            self.assertIn('|' + category + '|', workflow)
+        shell = '''set -euo pipefail
+work="$TEST_WORK"
+bucket=test-bucket
+baseline=/archive/private/baseline-123.json
+archive_result=/private/legacy/archive-result-456.json
+archive_id=456
+stage=publish-archive
+BASELINE_REF=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/123
+GITHUB_SHA=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+GITHUB_RUN_ID=789
+reader=(reader_stub)
+receipt_path="/archive/private/legacy-$(printf 'a%.0s' {1..64})/receipt.json"
+trap 'result=$?; printf "%s\\n" "$phase" >"$TEST_PHASE"; exit "$result"' EXIT
+aws() {
+  [[ "$TEST_FAIL" != baseline-s3-read ]] || return 7
+  printf 'baseline\\n'
+}
+reader_stub() {
+  case "$1" in
+    cat)
+      case "$2" in
+        "$baseline")
+          [[ "$TEST_FAIL" != baseline-mounted-compare ]] || return 7
+          printf 'baseline\\n' ;;
+        "$archive_result")
+          [[ "$TEST_FAIL" != publication-archive-result ]] || return 7
+          printf '{"receipt":"%s"}\\n' "$receipt_path" ;;
+        /private/legacy/baseline-456.json)
+          [[ "$TEST_FAIL" != publication-source-validation ]] || return 7
+          printf '{"source":"observed"}\\n' ;;
+        "$receipt_path")
+          printf '{"format":1,"inventory":{"source":"observed"},"sha256":"%s"}\\n' "$(printf 'b%.0s' {1..64})" ;;
+        *) return 7 ;;
+      esac ;;
+    stat)
+      [[ "$TEST_FAIL" != publication-source-size ]] || return 7
+      printf '10\\n' ;;
+    *) return 7 ;;
+  esac
+}
+refresh_status() { [[ "$TEST_FAIL" != baseline-source-status ]]; }
+validate_baseline() { :; }
+require_absent_object() { [[ "$TEST_FAIL" != publication-destination-absence ]]; }
+''' + block
+        with tempfile.TemporaryDirectory() as directory:
+            phase = Path(directory) / 'phase'
+            for failed in (*categories, 'none'):
+                result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
+                                        env={**os.environ, 'TEST_WORK': directory,
+                                             'TEST_PHASE': str(phase), 'TEST_FAIL': failed},
+                                        capture_output=True, text=True, timeout=10,
+                                        check=False)
+                self.assertEqual(result.returncode == 0, failed == 'none',
+                                 (failed, result.stderr))
+                self.assertEqual(phase.read_text().strip(),
+                                 failed if failed != 'none' else categories[-1])
 
     def test_archive_publication_reports_exact_fixed_post_upload_phase(self):
         source = SCRIPT.read_text()

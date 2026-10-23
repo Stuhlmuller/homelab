@@ -59,6 +59,19 @@ upload/HEAD and restoration of both objects, so the exact failed substep is unkn
 No final offsite restore receipt was published and independent `verify` was not
 dispatched. The original retained archive remains authoritative; T013 is open.
 
+[Archive stage `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+completed successfully at 2026-10-21 02:58 UTC, which confirms the protected
+launcher, not its detached worker result or offsite restore. The later
+[exact-main `publish-archive` run `39700564687`](https://github.com/Stuhlmuller/homelab/actions/runs/39700564687)
+passed static, current-main and credential gates but failed at 2026-10-22
+00:47 UTC with the fixed public category `baseline`, before archive upload.
+That broad category does not identify whether baseline retrieval, mounted
+comparison, stopped-source status, detached result, private receipt validation,
+destination absence or source size failed. The reviewed helper now assigns
+fixed public pre-upload subphases for a future retry, with private diagnostics
+still withheld. No publication or independent `verify` receipt exists; T013
+remains open, and retained source claims and partial archives stay intact.
+
 T038 originally assigned `private-access.yaml` to the Enterprise foundation.
 [PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420) moved the
 fixed Services to the Octelium catalog and the opaque Agent-host route,

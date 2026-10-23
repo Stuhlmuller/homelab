@@ -256,11 +256,14 @@ case "$stage" in
       archive_sha="${ARCHIVE_REF%%/*}"
     fi
     archive_result="/private/legacy/archive-result-${archive_id}.json"
+    phase=baseline-s3-read
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
+    phase=baseline-mounted-compare
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
     observed="/private/legacy/baseline-${archive_id}.json"
     if [[ "$stage" == archive ]]; then run_inventory_worker; fi
+    phase=baseline-source-status
     refresh_status stopped
     if [[ "$stage" == archive ]]; then
       "${reader[@]}" sh -c '
@@ -280,14 +283,18 @@ case "$stage" in
         kill -0 "$worker"
       ' sh "$baseline" "$observed" "$archive_result" "$archive_id"
     else
+    phase=publication-archive-result
     receipt="$("${reader[@]}" cat "$archive_result" | jq -er .receipt)"
     [[ "$receipt" =~ ^/archive/private/legacy-[0-9a-f]{64}/receipt\.json$ ]] || exit 1
+    phase=publication-source-validation
     "${reader[@]}" cat "$observed" >"$work/observed.json"
     "${reader[@]}" cat "$receipt" >"$work/receipt.json"
     validate_baseline "$work/observed.json" "$work/status.json"
     jq -e --slurpfile observed "$work/observed.json" '.format == 1 and .inventory == $observed[0] and (.sha256 | test("^[0-9a-f]{64}$"))' "$work/receipt.json" >/dev/null
     prefix="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}"
+    phase=publication-destination-absence
     for name in legacy.tar.gz receipt.json final.json; do require_absent_object "$prefix/$name"; done
+    phase=publication-source-size
     archive_size="$("${reader[@]}" stat -c %s "${receipt%/*}/legacy.tar.gz")"
     [[ "$archive_size" =~ ^[1-9][0-9]*$ ]] || exit 1
     phase=publication-upload
