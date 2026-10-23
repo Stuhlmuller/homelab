@@ -40,6 +40,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.chainguard_mirror_manifest = None
         self.dns_mirror_manifest = None
         self.litellm_mirror_manifest = None
+        self.prometheus_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -113,6 +114,11 @@ class HarborPublicationGates(unittest.TestCase):
             litellm_path.unlink(missing_ok=True)
         else:
             litellm_path.write_text(json.dumps(self.litellm_mirror_manifest))
+        prometheus_path = self.root / "scripts/config/harbor-prometheus-images.json"
+        if self.prometheus_mirror_manifest is None:
+            prometheus_path.unlink(missing_ok=True)
+        else:
+            prometheus_path.write_text(json.dumps(self.prometheus_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -138,7 +144,8 @@ class HarborPublicationGates(unittest.TestCase):
 
     def transport_mocks(self, failure=None, mirror=False, resume=False, oci_index=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
-                        source_error="toomanyrequests", core=False, cordium=False, enterprise=False,
+                        source_error="toomanyrequests", destination_error="502 Bad Gateway",
+                        core=False, cordium=False, enterprise=False,
                         forward_start_delay=0):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
@@ -179,6 +186,7 @@ class HarborPublicationGates(unittest.TestCase):
             "resume": resume,
             "missing_error": missing_error,
             "source_error": source_error,
+            "destination_error": destination_error,
             "forward_start_delay": forward_start_delay,
         }
         mock = "#!/usr/bin/env python3\nFIXTURE = " + repr(fixture) + "\n" + textwrap.dedent('''\
@@ -438,7 +446,7 @@ class HarborPublicationGates(unittest.TestCase):
                         assert (source_directory / "blob").is_file()
                         assert (source_directory / "manifest.json").read_text() == FIXTURE["manifests"][args[-1].removeprefix("docker://")]
                         if FIXTURE["failure"] == "mirror-destination":
-                            print("502 Bad Gateway private-test-credential-must-never-appear", file=sys.stderr)
+                            print(FIXTURE["destination_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
                             raise SystemExit(20)
                         if FIXTURE["failure"] == "mirror-oci-destination":
                             print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
@@ -669,7 +677,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
-        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm)", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus)", workflow)
 
     def test_litellm_scope_rejects_tampering_before_credentials(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
@@ -685,6 +693,43 @@ class HarborPublicationGates(unittest.TestCase):
         self.litellm_mirror_manifest = {"images": [valid]}
         self.mirror_manifest = {"images": []}
         self.rejected(mode="mirror-litellm")
+
+    def test_prometheus_scope_declares_one_fixed_reviewed_image(self):
+        source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
+        selected = json.loads((ROOT / "scripts/config/harbor-prometheus-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertEqual(selected, {"images": [{"source": source}]})
+        self.assertIn(selected["images"][0], catalog["images"])
+        self.assertIn("bash scripts/ci/harbor-publish.sh mirror-prometheus", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm|prometheus)", workflow)
+
+    def test_prometheus_scope_rejects_tampering_and_invalid_dispatch_before_credentials(self):
+        source = "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("cff72", "cff73")}]},
+                      {"images": [{"source": source.replace("prometheus/prometheus", "prometheus/other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.prometheus_mirror_manifest = scope
+                self.rejected(mode="mirror-prometheus")
+        self.prometheus_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-prometheus")
+        self.mirror_manifest = {"images": [valid]}
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-prometheus")
+                self.env[key] = previous
+        self.rejected(mode="mirror-prometheus:quay.io/prometheus/prometheus")
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-prometheus")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
         self.transport_mocks(mirror=True, registries=("docker.io", "codeberg.org"))
@@ -1533,6 +1578,27 @@ class HarborPublicationGates(unittest.TestCase):
                 if failure == "upstream-digest":
                     self.assertFalse(any(a[-1].startswith("docker://") for a in copies))
                 self.assertNotIn("private-test-credential-must-never-appear", self.public_status)
+                self.assert_cleaned()
+
+    def test_destination_copy_stage_categories_are_fixed_and_fail_closed(self):
+        for message, category in (
+            ("writing blob: private upload error", "blob-upload-failed"),
+            ("writing manifest: private registry error", "manifest-upload-failed"),
+            ("unclassified private copy error", "command-failed"),
+        ):
+            with self.subTest(message=message):
+                self.transport_mocks(failure="mirror-destination", mirror=True,
+                                     destination_error=message)
+                result = self.run_helper(mode="mirror")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(dict(line.split("=", 1) for line in self.public_status.splitlines()), {
+                    "source": self.mirror_manifest["images"][0]["source"],
+                    "phase": "destination-copy",
+                    "exit_status": str(result.returncode),
+                    "category": category,
+                })
+                self.assertNotIn(message, self.public_status)
+                self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
 
     def test_mirror_resume_avoids_upstream_but_rechecks_aliases_and_complete_pulls(self):

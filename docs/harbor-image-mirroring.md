@@ -197,8 +197,20 @@ retain registry blobs together with Harbor database/encryption-key backups.
    k8s_gateway image. Require a successful digest-preserving copy and complete
    authenticated Harbor pull before merging the resolver Application.
 
+   To qualify the exact Prometheus digest after a full-catalog copy failure,
+   use the fixed one-image scope:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=prometheus
+   ```
+
+   `scripts/config/harbor-prometheus-images.json` selects only the reviewed
+   `v3.11.3-distroless` source digest already in the full catalog. A successful
+   scoped run proves that image's preserved digest and complete authenticated
+   pull, not the full catalog or other Prometheus stack images.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -324,6 +336,12 @@ retain registry blobs together with Harbor database/encryption-key backups.
    time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
+   During `destination-copy`, fixed `blob-upload-failed` and
+   `manifest-upload-failed` categories distinguish Skopeo's write stage when
+   its private diagnostic says so. Unknown copy errors remain
+   `command-failed`; no write is retried or handed to another client on that
+   basis. A scoped receipt never substitutes for a required full-catalog
+   receipt.
    Transient authenticated pull failures restart the private Harbor port-forward
    and recheck its TLS registry challenge before retrying either Docker manifests
    or OCI indexes. Hard authentication, missing-content and digest errors stop.

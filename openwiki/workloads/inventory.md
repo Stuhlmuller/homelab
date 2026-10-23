@@ -216,10 +216,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
+generated: { by: "codex", at: "2026-10-23T11:27:28.778Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:35:28.853Z
+    at: 2026-10-23T11:27:28.778Z
 ---
 
 # Workload Inventory
@@ -423,12 +423,13 @@ checks that the active source remains unchanged until that review.
 | `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache), dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; [T022](../../specs/004-run-renovate-in-cluster/tasks.md) records 19:00/20:00 same-key hits and the 21:00 `v0.0.2` refresh; [T045](../../specs/004-run-renovate-in-cluster/tasks.md) records the 17:00 failure, 03:00 missed-slot alert, and successful 04:00 recovery; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), T024/T042 cache-fault/NAS-capacity recovery, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
-Draft [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) declares a
-protected `prepare-restore` stage for stopped legacy OpenClaw. It would fetch
-the successful publication's exact versioned archive and receipt and retain a
-separate verified NAS copy with private symlink classifications. It has not run
-or booted the old image. T013 archive verification passed; T014 compatible
-recovery remains open, and the original claims stay retained and read-only.
+Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) declares a
+protected `prepare-restore` stage for stopped legacy OpenClaw. Its first
+[run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
+failed in the fixed public `verification` phase; it has not established a
+verified NAS restore copy or booted the old image. T013 archive verification
+passed; T014 compatible recovery remains open, and the original claims stay
+retained and read-only. Private restore diagnostics stay outside this wiki.
 
 Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 uses a distinct name at Argo CD wave 0 before the wave-1
