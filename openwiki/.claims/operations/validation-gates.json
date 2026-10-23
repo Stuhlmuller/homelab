@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b0cfd5352a0eaeb3889010d37c909d051285fbc39c2d5844b3bec8138f8b390f",
+  "pageVersion": "sha256:396c41efccc3f9477be1d65dc3df483bc1d8bfad46c26263b009f2996284d97c",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -582,7 +582,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -686,7 +686,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -700,7 +700,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -848,7 +848,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -910,7 +910,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
+          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -1070,7 +1070,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         }
       ]
     },
@@ -1210,7 +1210,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -1460,7 +1460,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
+          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
@@ -1620,7 +1620,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -1633,7 +1633,7 @@
       "statement": "The Enterprise recovery fixture exercises unknown stop intent, interrupted runtime reads, and preservation of the separate legacy archive after a new-Agent stop failure; it runs in the static gate but supplies no live restore receipt.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L64-L151",
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L65-L152",
           "version": "repo-lines-v1:sha256:21e990322aeaa8ce461a55e2502ca083520279233ab5778f179b886eee54b92f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMGZlYzI0ZmQ4YzlhNTgzOGU1MzUwMWJkYzcyZjA3ZTQ2MWViNGMwYjgyOTM5YjJlNjhhYTBjNmY1MzNmOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NzA0ZTBjZDk3YzZhYWI1NjhlYzAxMjdiMzFhM2U4MTY4ZjhkYTRhZTYxZGI0NWY1ODk5MWRlMDg2NGRjZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkMjllNzBkYTc4ZTRlMTYzNDdiYzgzN2I2ZmU0NGEzYzA4MGUzZjMxMDUwNTQwOWM5YTIzYmVjNGIwMzY3MDIifQ"
         },
         {
@@ -1694,7 +1694,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e356ba8fc5da32b78124c380b5b536aa462549f519988d4f935a3dac9564be5a"
+          "version": "repo-file-v1:sha256:57de4c17439d4eed2a7e3fd171eace6850ad8439df41bb67443c8176e91e839e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -1751,10 +1751,24 @@
           "version": "repo-file-v1:sha256:b77840f3fdb85205448a779d1481195b5142e14427b4b27515a82b6bd9f57740"
         }
       ]
+    },
+    {
+      "id": "claim_7f8989604c744c5db46eb94c667bc4eb",
+      "statement": "The offline Enterprise recovery fixture executes the backup preflight and rejects false, missing, empty-UID, malformed, and concatenated writer markers while accepting one valid stopped-writer object; this does not attest live PVC identity, a sustained writer fence, or scheduled off-node backup.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
+          "version": "repo-file-v1:sha256:ba13c2224b86f0b0c576773f3361bc032aa572e43790d0ae4d073cae0f994349"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
+          "version": "repo-file-v1:sha256:c055210f6bc04cea4d81537316fd9ccdb7259cdd44073a10c1c4c816f3f7357e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T06:39:57.483Z"
+    "at": "2026-10-23T07:08:02.138Z"
   }
 }

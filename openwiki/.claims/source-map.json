@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7ca0d43e4d49924983f01832a4dc41c95e719f6a82e9f4e1a7be3f9f88bbd67b",
+  "pageVersion": "sha256:ad37621dce95e1a39fef7165cb68c07c306e8ba1335df3f52d7727e27726a6a3",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -142,14 +142,14 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
+          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py#L49-L270",
           "version": "repo-lines-v1:sha256:80a0af7a33c97ece99cbd589ee0c5b39cc72643c9c80c28f0e29b2175d293db1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZWUyNzA2YTYwZjgxYzM0ZmMzYWRlMWUxM2IxMDMxM2JkMjIzODk1MTA5YzI0YzMyMmUwNDNhNmM0MDgwZGFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjFlYTVhZDlhNGZhNTEzNjYzMDAzNzJjMzVmZDA4ODM2YzU4MzhlNzk2ZGZmZTFkOGE1NGJjYzc0NGFlY2YyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NDJiMzVjMDE0YzQ2ZWQyNmZiYjMyZjAzYTQ0MjEzNjc1YzdkMDc0M2ZlNTQ5M2MwNDBlYWM4MjFiMTZjZGY2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmZGZhODdhYWJjYzk3YmJlMmIxZmE2OTc3ODI1ODM1MTJkOWMxN2YwMGFlODFiNTBhZmI4ZjRmMGVlZjg4Yzg0In0"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L64-L151",
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L65-L152",
           "version": "repo-lines-v1:sha256:21e990322aeaa8ce461a55e2502ca083520279233ab5778f179b886eee54b92f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExMGZlYzI0ZmQ4YzlhNTgzOGU1MzUwMWJkYzcyZjA3ZTQ2MWViNGMwYjgyOTM5YjJlNjhhYTBjNmY1MzNmOTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NzA0ZTBjZDk3YzZhYWI1NjhlYzAxMjdiMzFhM2U4MTY4ZjhkYTRhZTYxZGI0NWY1ODk5MWRlMDg2NGRjZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkMjllNzBkYTc4ZTRlMTYzNDdiYzgzN2I2ZmU0NGEzYzA4MGUzZjMxMDUwNTQwOWM5YTIzYmVjNGIwMzY3MDIifQ"
         },
         {
@@ -345,6 +345,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T06:31:00.176Z"
+    "at": "2026-10-23T07:08:02.138Z"
   }
 }

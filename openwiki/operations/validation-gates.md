@@ -68,6 +68,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-d2d8ff2161af78b658d004f0
@@ -336,10 +338,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T06:14:27.082Z" }
+generated: { by: "codex", at: "2026-10-23T07:08:02.138Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T06:39:57.483Z
+    at: 2026-10-23T07:08:02.138Z
 ---
 
 # Validation Gates
@@ -1858,6 +1860,11 @@ private server SAN, and `activationEnabled: false`. The PostgreSQL 18 fixture
 checks TLS 1.3, separate roles and backup boundaries, and runs pinned upstream
 migration 0008 as the migrator. It proves the app role can use its migrated
 auth table but cannot create schema objects or read a new ungranted table.
+The offline [recovery fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
+executes the [backup preflight](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
+against false, missing, empty-UID, malformed and concatenated writer markers,
+and accepts exactly one valid stopped-writer object. This does not attest a live
+claim UID, sustained writer fence or scheduled off-node backup.
 Local results do not establish live PVC, TLS or restore acceptance. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
