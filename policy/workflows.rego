@@ -350,7 +350,7 @@ approved_openclaw_operations if {
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 5
 	dispatch.inputs.expected_sha.required == true
-	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore"]
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore"]
 	dispatch.inputs.legacy_stage.default == "none"
 	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
@@ -366,17 +366,33 @@ approved_openclaw_legacy_operation if {
 	job.environment.name == "homelab-production"
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job["timeout-minutes"] == 360
-	job.permissions == {"contents": "read", "id-token": "write"}
+	job.permissions == {"actions": "read", "contents": "read", "id-token": "write"}
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
+	count(job.steps) == 7
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name, job.steps[6].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Verify Prior Restore Run", "Verify Protected Inputs", "Configure AWS Credentials", "Run Legacy Stage"]
+	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
+	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	job.steps[1].with == {"fetch-depth": 0, "persist-credentials": false}
+	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	job.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	provenance := [step | step := job.steps[_]; step.name == "Verify Prior Restore Run"]
+	count(provenance) == 1
+	provenance[0] == job.steps[3]
+	provenance[0].env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "PRIOR_RUN_ID": "39988927652", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(provenance[0].run, "\n") == openclaw_resume_provenance_run
 	credentials := [step | step := job.steps[_]; step.name == "Configure AWS Credentials"]
 	count(credentials) == 1
+	credentials[0] == job.steps[5]
 	credentials[0]["with"]["role-duration-seconds"] == 25200
 	some step in job.steps
 	step.name == "Run Legacy Stage"
-	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	step == job.steps[6]
+	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'e213cf57ea37b908fb8a67f178e0391f525cd198def991cbd3cbf151ee4f2eb4  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, "if [[ \"$RUN_STAGE\" == resume-restore ]]; then\n  export PRIOR_RUN_ID=39988927652\nfi\n")
+	contains(step.run, concat("", [`sha256sum --check --status <<<'3af2b5ca4c0b240283142968612725bd979216a654e6ed91686a9115748959d0  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 
@@ -441,12 +457,25 @@ openclaw_dispatch_guard := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
   *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
 esac
 if [[ "$ENTERPRISE_STAGE" != none ]]; then
   test -z "$BASELINE_REF"
   test -z "$ARCHIVE_REF"
+fi
+if [[ "$LEGACY_STAGE" == resume-restore ]]; then
+  test "$ARCHIVE_REF" = '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221'
+  test -z "$BASELINE_REF"
+fi`
+
+openclaw_resume_provenance_run := `set -euo pipefail
+if [[ "$RUN_STAGE" == resume-restore ]]; then
+  sha256sum --check --status <<<'8d764cc29db54d8ccf314b36862f095286b46e05da11c2c2ed84716f40fd6e94  scripts/ci/openclaw-enterprise-resume-provenance.py'
+  python3 -I scripts/ci/openclaw-enterprise-resume-provenance.py \
+    --prior-run-id "$PRIOR_RUN_ID" --archive-ref "$ARCHIVE_REF" \
+    --current-sha "$EXPECTED_SHA" \
+    --receipt "${RUNNER_TEMP}/oce-resume-provenance.json"
 fi`
 
 openclaw_enterprise_stage_run := `set -euo pipefail
@@ -976,8 +1005,10 @@ private_live_tail(tail) if {
 		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
 		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
 		"esac",
+		`rm -f "$OPENCLAW_RESUME_PROVENANCE"`,
 		"exit 1",
 		"fi",
+		`rm -f "$OPENCLAW_RESUME_PROVENANCE"`,
 		`echo "Legacy operation completed; private receipts withheld."`,
 	]
 }

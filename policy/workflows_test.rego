@@ -231,14 +231,14 @@ platform_maintenance_owner_main_check_env := {"ACTUAL_REF": "${{ github.ref }}",
 test_allows_exact_openclaw_legacy_operation if {
 	candidate := workflow_with_openclaw_legacy_operation(
 		openclaw_legacy_run,
-		{"contents": "read", "id-token": "write"},
+		{"actions": "read", "contents": "read", "id-token": "write"},
 	)
 	violations := deny with input as candidate
 	count(violations) == 0
 }
 
 test_rejects_reusable_openclaw_operations if {
-	workflow := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	workflow := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "read", "id-token": "write"})
 	events := object.union(workflow["true"], {"workflow_call": {}})
 	candidate := object.union(workflow, {"true": events})
 	violations := deny with input as candidate
@@ -247,7 +247,7 @@ test_rejects_reusable_openclaw_operations if {
 }
 
 test_rejects_openclaw_operations_run_overrides if {
-	workflow := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	workflow := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "read", "id-token": "write"})
 	every candidate in [
 		object.union(workflow, {"defaults": {"run": {"shell": "python"}}}),
 		object.union(workflow, {"env": object.union(workflow.env, {"BASH_ENV": "unreviewed"})}),
@@ -257,13 +257,13 @@ test_rejects_openclaw_operations_run_overrides if {
 		with_job_run_env(workflow, "legacy", {"BASH_ENV": "unreviewed"}),
 		with_job_run_env(workflow, "enterprise", {"ENV": "unreviewed"}),
 		with_job_run_env(workflow, "binding", {"BASH_ENV": "unreviewed"}),
-		with_step_run_setting(workflow, "legacy", 1, {"shell": "python"}),
+		with_step_run_setting(workflow, "legacy", 6, {"shell": "python"}),
 		with_step_run_setting(workflow, "enterprise", 3, {"shell": "python"}),
 		with_step_run_setting(workflow, "binding", 4, {"shell": "python"}),
 		with_step_run_setting(workflow, "enterprise", 3, {"working-directory": "unreviewed"}),
 		with_step_run_env(workflow, "static-policy", 0, {"BASH_ENV": "unreviewed"}),
-		with_step_run_env(workflow, "legacy", 1, {"BASH_ENV": "unreviewed"}),
-		with_step_run_env(workflow, "legacy", 1, {"UNREVIEWED": "value"}),
+		with_step_run_env(workflow, "legacy", 6, {"BASH_ENV": "unreviewed"}),
+		with_step_run_env(workflow, "legacy", 6, {"UNREVIEWED": "value"}),
 		with_step_run_env(workflow, "enterprise", 3, {"ENV": "unreviewed"}),
 	] {
 		violations := deny with input as candidate
@@ -275,19 +275,19 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "e213cf57ea37b908fb8a67f178e0391f525cd198def991cbd3cbf151ee4f2eb4", "0000000000000000000000000000000000000000000000000000000000000000"),
-			{"contents": "read", "id-token": "write"},
+			replace(openclaw_legacy_run, "3af2b5ca4c0b240283142968612725bd979216a654e6ed91686a9115748959d0", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
 			replace(openclaw_legacy_run, "71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79", "0000000000000000000000000000000000000000000000000000000000000000"),
-			{"contents": "read", "id-token": "write"},
+			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
 			replace(openclaw_legacy_run, "c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708", "0000000000000000000000000000000000000000000000000000000000000000"),
-			{"contents": "read", "id-token": "write"},
+			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
-		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
-		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"contents": "read", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "write", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"actions": "read", "contents": "read", "id-token": "write"}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "single"}})})}),
 	] {
 		violations := deny with input as candidate
@@ -297,10 +297,10 @@ test_rejects_changed_openclaw_legacy_operation if {
 }
 
 test_rejects_short_openclaw_legacy_session if {
-	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "read", "id-token": "write"})
+	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "read", "id-token": "write"})
 	legacy := candidate.jobs.legacy
-	short_credentials := object.union(legacy.steps[0], {"with": {"role-duration-seconds": 3600}})
-	short_job := object.union(legacy, {"steps": [short_credentials, legacy.steps[1]]})
+	short_credentials := object.union(legacy.steps[5], {"with": {"role-duration-seconds": 3600}})
+	short_job := object.union(legacy, {"steps": [legacy.steps[0], legacy.steps[1], legacy.steps[2], legacy.steps[3], legacy.steps[4], short_credentials, legacy.steps[6]]})
 	short_workflow := object.union(candidate, {"jobs": object.union(candidate.jobs, {"legacy": short_job})})
 	violations := deny with input as short_workflow
 	some msg in violations
@@ -355,8 +355,10 @@ case "$phase" in preflight|baseline|baseline-s3-read|baseline-mounted-compare|ba
   echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
 *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
 esac
+rm -f "$OPENCLAW_RESUME_PROVENANCE"
 exit 1
 fi
+rm -f "$OPENCLAW_RESUME_PROVENANCE"
 echo "Legacy operation completed; private receipts withheld."`)
 }
 
@@ -371,8 +373,11 @@ echo "Legacy operation completed; private receipts withheld."`)
 
 openclaw_legacy_run := `set -euo pipefail
 umask 077
+if [[ "$RUN_STAGE" == resume-restore ]]; then
+  export PRIOR_RUN_ID=39988927652
+fi
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'e213cf57ea37b908fb8a67f178e0391f525cd198def991cbd3cbf151ee4f2eb4  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'3af2b5ca4c0b240283142968612725bd979216a654e6ed91686a9115748959d0  scripts/ci/openclaw-enterprise-operations.sh'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
@@ -384,7 +389,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore"], "default": "none"},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore"], "default": "none"},
 		"enterprise_stage": {"options": ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
 		"baseline_ref": {}, "archive_ref": {},
 	}}},
@@ -403,9 +408,15 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"timeout-minutes": 360,
 		"permissions": permissions,
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
-		"steps": [{"name": "Configure AWS Credentials", "with": {"role-duration-seconds": 25200}}, {
+		"steps": [
+			{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}},
+			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
+			{"name": "Verify Prior Restore Run", "env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "PRIOR_RUN_ID": "39988927652", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_resume_provenance_run},
+			{"name": "Verify Protected Inputs"},
+			{"name": "Configure AWS Credentials", "with": {"role-duration-seconds": 25200}}, {
 			"name": "Run Legacy Stage",
-				"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+				"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,
 		}],
 		},
@@ -446,7 +457,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 
 openclaw_operations_fixture := workflow_with_openclaw_legacy_operation(
 	openclaw_legacy_run,
-	{"contents": "read", "id-token": "write"},
+	{"actions": "read", "contents": "read", "id-token": "write"},
 )
 
 test_rejects_mutable_docker_action_image if {

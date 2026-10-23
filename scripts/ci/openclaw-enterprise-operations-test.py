@@ -277,7 +277,7 @@ sys.stdout.buffer.write(chunk)
         guard = textwrap.dedent(dispatch.group(1))
         base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
                 'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
-                'BASELINE_REF': '', 'ARCHIVE_REF': ''}
+                'BASELINE_REF': '', 'ARCHIVE_REF': '', 'PRIOR_RUN_ID': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
             ('none', 'bind-installation', '', True),
@@ -460,6 +460,7 @@ output.write_text('verified')
         shell = '''set -euo pipefail
 work="$1"
 status_refresh_count=0
+stage=verify
 reader_input=(true)
 python3() { cp "$TEST_STATUS" "${@: -1}"; }
 source <(sed -n '/^refresh_status() {/,/^}/p' "$2")
@@ -482,7 +483,7 @@ refresh_status "$3"
 
     def test_prepare_restore_requires_archived_volume_and_root_identity(self):
         script = SCRIPT.read_text()
-        prepare = script.split('  verify|prepare-restore)\n    phase=verification', 1)[1]
+        prepare = script.split('  verify|prepare-restore|resume-restore)\n    phase=verification', 1)[1]
         preflight = 'validate_archive_identity "$work/receipt.json" "$recheck"'
         self.assertLess(prepare.index(preflight),
                         prepare.index('restore_version "$prefix/legacy.tar.gz"'))
@@ -736,9 +737,9 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
                                 (13, 's3-complete'), (14, 'digest')):
                 self.assertIn(f'{code}) phase=publication-{stage} ;;', script)
             self.assertIn('phase=publication-version\n    version=', script)
-            self.assertIn('phase=verification-archive-download\n    restore_version', script)
-            self.assertIn('phase=verification-receipt-download\n    restore_version', script)
-            self.assertIn('phase=verification-restore\n    if [[ "$stage" == prepare-restore ]]', script)
+            self.assertIn('phase=verification-archive-download\n      restore_version', script)
+            self.assertIn('phase=verification-receipt-download\n      restore_version', script)
+            self.assertIn('phase=verification-restore\n      if [[ "$stage" == prepare-restore ]]', script)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
             shell = '''set -euo pipefail
 source <(sed -n '/^on_exit() {/,/^}/p' "$1")
@@ -963,7 +964,7 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',
@@ -990,7 +991,8 @@ printf '%s\\n' "$phase"
         self.assertIn('verify_restored_archive "$restore/receipt.json" "$rehearsal"', script)
         self.assertIn('free_kib * 1024 > archive_bytes + tree_bytes + 2147483648', script)
         self.assertIn('refresh_status stopped\n      validate_archive_identity '
-                      '"$work/receipt.json" "$recheck"\n    else', script)
+                      '"$work/receipt.json" "$recheck"\n      '
+                      'verify_cached_restore_file "$restore" legacy.tar.gz', script)
         self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)
         self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
                       (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())
