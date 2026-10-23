@@ -117,7 +117,7 @@ Use these actual upstream operations:
 | Agent | Agent collection/exact GET, POST create and PATCH `harnessAuth`; bind only one logical Claw |
 | Runtime transport | `POST /namespaces/:ns/agents/:agent/runtime-credentials`; track its resulting state |
 | Deploy | `POST /namespaces/:ns/agents/:agent/deploy`; persist returned revision; paginate revision history and inspect exact deployment before retry |
-| Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state and runtime termination |
+| Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state, API runtime termination and an unfiltered empty tenant Pod list |
 | Native UI | `GET /namespaces/:ns/agents/:agent/native-admin` requires a human session with exact Agent `administer`; service keys cannot inspect it. T048 records returned `data.origin` through authenticated human-session acceptance, outside the service-key reconciler. |
 | IAM | Exact role/grant tuples; agent ServicePrincipal gets `operate` on its own model Secret, never installation administration |
 

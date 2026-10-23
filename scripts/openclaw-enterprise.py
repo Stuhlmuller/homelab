@@ -401,6 +401,18 @@ class Kubernetes:
                 candidates.append(item)
         return candidates
 
+    def tenant_pods_absent(self):
+        # Do not filter by OCE labels: a foreign or unlabelled Pod can still write.
+        # kubectl get pods -o=json synthesizes List without a resource version.
+        listing = self._json("get", "--raw", "/api/v1/namespaces/openclaw-agents/pods")
+        _require(isinstance(listing, dict) and listing.get("kind") == "PodList" and
+                 isinstance(listing.get("metadata"), dict) and
+                 isinstance(listing["metadata"].get("resourceVersion"), str) and
+                 bool(listing["metadata"]["resourceVersion"]) and
+                 listing["metadata"].get("continue") in (None, "") and
+                 listing.get("items") == [],
+                 "Enterprise tenant still has Pods or Pod list is uncertain")
+
 
 def require_driver_identity(installation):
     """GET /installation is deliberately insufficient at the pinned revision."""
@@ -1652,6 +1664,7 @@ def _verify_active_state(config, api, kube, *, allow_transitional=False):
                  agent.get("activeRevisionId") is None,
                  "Enterprise stopped revision changed")
         _assert_stopped_runtime(api, base, revision_id)
+        kube.tenant_pods_absent()
     after, second_raw = read_journal(path, config["source"]["revision"], _identity_hash(config))
     _require(raw == second_raw and state == after,
              "Enterprise journal changed during verification")
@@ -1721,6 +1734,7 @@ def stop_agent(config, api, kube, expected_sha):
         _require(agent.get("activeRevisionId") is None,
                  "Enterprise stop is still in progress")
         _assert_stopped_runtime(api, base, revision_id)
+        kube.tenant_pods_absent()
         if state.get("pending") is not None:
             state.pop("pending")
             journal.save(state)
