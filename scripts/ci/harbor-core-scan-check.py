@@ -53,6 +53,10 @@ def verify(report, image_id, require_zero_matches=False):
 
 
 def main(args):
+    diagnostic_file = None
+    if len(args) >= 2 and args[0] == "--diagnostic-file":
+        diagnostic_file = Path(args[1])
+        args = args[2:]
     try:
         require_zero_matches = len(args) == 3 and args[-1] == "--require-zero-matches"
         if require_zero_matches:
@@ -78,6 +82,8 @@ def main(args):
             "matches": len(report["matches"]), "severity_counts": dict(Counter(m["vulnerability"]["severity"] for m in report["matches"])),
             "cve_clearance": False}, sort_keys=True))
         return 0
+    if diagnostic_file is not None:
+        diagnostic_file.write_text("validation:" + category + "\n")
     print("Private report validation failed: " + category + "; findings withheld.", file=sys.stderr)
     return 1
 

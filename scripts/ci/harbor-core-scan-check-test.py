@@ -9,6 +9,8 @@ from pathlib import Path
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 import io
+import os
+import subprocess
 import tempfile
 
 spec = importlib.util.spec_from_file_location("scan", Path(__file__).with_name("harbor-core-scan-check.py"))
@@ -18,6 +20,8 @@ CONFIG = json.dumps({"os": "linux", "architecture": "amd64"}).encode()
 IMAGE = "sha256:" + hashlib.sha256(CONFIG).hexdigest()
 CORE_PUBLICATION_WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/harbor-core-images.yml"
 SCAN_SCRIPT = Path(__file__).resolve().parents[2] / "builds/harbor-core/scan.sh"
+STATUS_SCRIPT = Path(__file__).with_name("harbor-core-audit-status.sh")
+VALIDATE_WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/validate.yml"
 
 
 class ScanTests(unittest.TestCase):
@@ -72,6 +76,59 @@ class ScanTests(unittest.TestCase):
         self.assertLess(workflow.index("bash builds/harbor-core/scan.sh --require-zero-matches"),
                         workflow.index("Configure AWS Credentials"))
         self.assertIn('"$@"', SCAN_SCRIPT.read_text())
+
+    def test_failed_report_writes_only_fixed_category(self):
+        report = self.report()
+        report["matches"] = [{"vulnerability": {"severity": "High", "fix": {
+            "state": "fixed", "versions": ["PRIVATE_VERSION"]}}}]
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "report.json"
+            diagnostic = Path(root) / "diagnostic"
+            path.write_text(json.dumps(report))
+            error = io.StringIO()
+            with redirect_stderr(error):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), IMAGE]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:remediation\n")
+            self.assertNotIn("PRIVATE_VERSION", error.getvalue())
+
+    def test_status_printer_whitelists_diagnostics(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "diagnostic"
+            for status in ("launcher", "scanner-run", "validation:remediation"):
+                path.write_text(status + "\n")
+                result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],
+                                        capture_output=True, text=True, check=True)
+                self.assertEqual(result.stdout,
+                                 f"::error::Runtime audit failed ({status}); private output withheld.\n")
+            path.write_text("validation:remediation\nPRIVATE_REPORT")
+            result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],
+                                    capture_output=True, text=True, check=True)
+            self.assertEqual(result.stdout,
+                             "::error::Runtime audit failed (unknown); private output withheld.\n")
+            self.assertNotIn("PRIVATE_REPORT", result.stdout + result.stderr)
+
+    def test_scan_records_failed_stage_without_private_command_output(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            (bin_dir / "uname").write_text("#!/bin/sh\necho Linux\n")
+            (bin_dir / "docker").write_text("#!/bin/sh\necho PRIVATE_REPORT >&2\nexit 4\n")
+            for executable in bin_dir.iterdir():
+                executable.chmod(0o755)
+            diagnostic = root / "diagnostic"
+            environment = dict(os.environ, GITHUB_ACTIONS="true", RUNNER_TEMP=str(root),
+                               PATH=str(bin_dir) + os.pathsep + os.environ["PATH"])
+            result = subprocess.run(["bash", str(SCAN_SCRIPT), "--diagnostic-file", str(diagnostic)],
+                                    capture_output=True, text=True, env=environment)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(diagnostic.read_text(), "image-inspect\n")
+
+    def test_ci_keeps_raw_scan_output_in_private_log(self):
+        workflow = VALIDATE_WORKFLOW.read_text()
+        self.assertIn('--diagnostic-file "$diagnostic_file" >"$private_log" 2>&1', workflow)
+        self.assertIn('bash scripts/ci/harbor-core-audit-status.sh "$diagnostic_file"', workflow)
+        self.assertIn('trap \'rm -f "$private_log" "$diagnostic_file"\' EXIT', workflow)
 
     def test_refuses_wrong_or_filtered_or_stale_reports(self):
         changes = [

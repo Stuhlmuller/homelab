@@ -46,6 +46,11 @@ to contain zero matches before it can obtain registry credentials; this is a
 core-publication gate, not a whole-Harbor or rollout clearance. Raw image
 metadata and transport output stay private; temporary scan inputs are removed
 on exit.
+When the CI audit fails, its public error contains only a fixed stage or report
+validation category (for example, `scanner-run` or `validation:remediation`).
+The complete scanner output and report stay private, and an unknown or malformed
+diagnostic reports `unknown`. A stage narrows the failed operation; it does not
+establish the cause or grant vulnerability clearance.
 
 ## Protected publication
 
