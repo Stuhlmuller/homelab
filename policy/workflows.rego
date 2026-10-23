@@ -350,7 +350,7 @@ approved_openclaw_operations if {
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 5
 	dispatch.inputs.expected_sha.required == true
-	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore"]
 	dispatch.inputs.legacy_stage.default == "none"
 	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
@@ -376,7 +376,7 @@ approved_openclaw_legacy_operation if {
 	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'e194eea0b3b6b692ca5e622a4be999c8b61b8efae2cbff95f7d34b1b3d642698  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 
@@ -441,7 +441,7 @@ openclaw_dispatch_guard := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
   *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
 esac
 if [[ "$ENTERPRISE_STAGE" != none ]]; then

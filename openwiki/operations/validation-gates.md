@@ -238,6 +238,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
+  - id: openwiki-source-67b7023614bb46ffd2f06e85
+    resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-0f5131d44d4433656e1f24db
@@ -256,6 +258,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-c9ddde9958e557379519a49d
+    resource: repo://scripts/ci/openclaw-retirement-test.py
   - id: openwiki-source-b5946e8eb5b294e910c57270
     resource: repo://scripts/ci/platform-maintenance-stage-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -354,10 +358,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
+generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:04:15.524Z
+    at: 2026-10-23T10:35:28.853Z
 ---
 
 # Validation Gates
@@ -1763,6 +1767,14 @@ succeeded at 2026-10-23 09:52 UTC against publication reference
 `9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`, re-fetching
 the exact versioned archive and receipt and restoring the full local/NAS trees,
 both SQLite databases and required historical backups. T013 is complete.
+
+Draft [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) adds a
+fixed `prepare-restore` stage guarded by exact current `main`. Source fixtures
+reject changed source identities, overlapping or unsafe destinations, corrupt
+archives and databases, and unsafe symlink handling. The stage checks private
+scratch capacity and would retain a separate verified copy and link report from
+the publication's exact object versions. It has not been dispatched; its
+source tests do not prove an isolated old-image boot or complete T014.
 
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the

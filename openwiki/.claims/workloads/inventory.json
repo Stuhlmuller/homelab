@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:06357c0e0be73f3698242dfa7312ce4e3a3cd8af73b4ec42d20efdf810724922",
+  "pageVersion": "sha256:bc047800f10dfc2e4a9c4709f7ce1a9571f098136d47f51540568af9a4c31749",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:87586e53c835110d98f95383384fc5f0cf2f084817371e97c05ea5ccec6e56b3"
+          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L18-L24",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:de249005fd54b4fe3220bcc704b12fb88f05f98f050e500ff5af05f68f1484f4"
+          "version": "repo-file-v1:sha256:30d72c69b3c9a9bb22b69ae99399668f543714f79da8f1885bee71db66f36182"
         }
       ]
     },
@@ -616,7 +616,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:58b87afea15ff76ed35f94eaeecf666fe71301743be05e953a7a488e6053b0b6"
+          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -805,10 +805,28 @@
           "version": "repo-lines-v1:sha256:cab7b9d2a7da5b3c27f03667cd373f79b0933111e17007231c9a75b556b55853:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjNhNjM4NTBiNzAzNmU0ZjI2Zjg2ZWMxN2E5MzM1ZTA0MzkwN2Q2N2VhYzM0ODBlM2Y3YWYyZDE2NDZiNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiZGU1ZTQ0MDFkZDU0MzYzNjc2OWIyZGNmYzQ5YzU0ZWRiYTA1OGJkNmEzNmNhMjNiMDJlZDA4MzUyYzUwNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNmYWNmZDkxNGZiMWE4OWIyMjA0NzU5YzZmMTY4Yjc0MDNkYWU3YzlmYjZmMGI1NDgwZjczM2U0Yjk1ZDU4Y2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZDI4ZTIyYmRlM2QzNWM3NGRmMWNkOWU1ZGJlZjIyZmQzMzg0OGIwNDc2Mzk4MjYzYTU0ZGI5NzUyMTA5NmIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_b345416484b1488e86ed70ba80449b40",
+      "statement": "The draft protected prepare-restore stage would fetch exact versioned objects from the successful legacy publication and retain a separate verified NAS copy with private link classifications. It has not run or booted the old image; T013 passed, T014 remains open and original claims are retained read-only.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:0ef0ca6cbf96c7f2995f18c9694305c8d8cf4fcab92c989d31c893b08b2726e5"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:98b1b969b8cf75dcbe1829565e3d20358210311828b02e5537faa07ba62e409c"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:42937ac96dbbfff695504a8420f70ea2da864cd6a049100603faf095dec8dae8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T10:04:15.524Z"
+    "at": "2026-10-23T10:35:28.853Z"
   }
 }

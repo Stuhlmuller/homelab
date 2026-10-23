@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-489371bb6baef577dc131a87
@@ -24,6 +26,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-cceecc5563484f9bd562ec2b
+    resource: repo://clusters/homelab/apps/openclaw/retirement/retirement.py
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
@@ -58,10 +62,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T10:04:15.524Z" }
+generated: { by: "codex", at: "2026-10-23T10:35:28.853Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T10:04:15.524Z
+    at: 2026-10-23T10:35:28.853Z
 ---
 
 # Storage And State
@@ -312,6 +316,11 @@ compatible legacy boot remain unverified; keep all retained claims. Later
 `publish-archive` retries `39700564687` and
 `39908653791` used the publication ID as a source worker ID and failed before
 upload. They do not invalidate the successful publication.
+The declared `prepare-restore` stage would fetch the publication's exact
+versioned archive and receipt after rechecking stopped writers, retained volume
+and root identities, and private scratch capacity. It would keep a separate
+verified tree and private symlink classification report. The stage has not run;
+its copy would not boot the old gateway or prove T014 compatible recovery.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former

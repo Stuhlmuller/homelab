@@ -13,7 +13,7 @@ on:
         required: false
         default: none
         type: choice
-        options: [none, inventory, publish-inventory, archive, publish-archive, verify]
+        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore]
       enterprise_stage:
         description: Fixed Enterprise operation (binding needs a private bootstrap key; other stages need a durable journal)
         required: false
@@ -55,7 +55,7 @@ jobs:
           test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
             *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
           esac
           if [[ "$ENTERPRISE_STAGE" != none ]]; then
@@ -157,7 +157,7 @@ jobs:
           umask 077
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'e194eea0b3b6b692ca5e622a4be999c8b61b8efae2cbff95f7d34b1b3d642698  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'a606258384e273399334a683a615cf190e7ab1e1c6562ae8a2e0506e71f492ff  scripts/ci/openclaw-enterprise-operations.sh'
           sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
           EOF
