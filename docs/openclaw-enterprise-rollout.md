@@ -108,13 +108,18 @@ used the publication run as if it were the archive worker; they failed before
 upload and do not invalidate the successful publication. Separate [verify run
 `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
 succeeded against the publication reference at 2026-10-23 09:52 UTC. T013 is
-complete. Two later protected `prepare-restore` runs failed before a compatible
+complete. Three later protected `prepare-restore` runs failed before a compatible
 recovery copy: [first `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
 left only an incomplete, unverified scratch archive, and [retry
 `39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
-stopped at `verification-archive-download`. The exact transport failure is
-unclassified. Versioned restore now uses bounded S3 ranges and 8 MiB reader
-slices, with exact metadata, slice and final archive integrity checks.
+stopped at `verification-archive-download`. [Ranged-transfer retry
+`39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+failed at that same fixed phase at 2026-10-23 16:10 UTC. It left no promoted
+archive, receipt or recovery copy. The exact S3-versus-reader failure is
+unclassified. Versioned restore uses bounded S3 ranges and 8 MiB reader
+slices, with exact metadata, slice and final archive integrity checks. The
+next protected retry reports fixed source-range, reader-transfer or finalization
+subphases without exposing private transport output.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain

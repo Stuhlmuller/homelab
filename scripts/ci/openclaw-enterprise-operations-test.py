@@ -641,14 +641,31 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
                 restore(FAKE_UPLOAD_ALWAYS='1')
             self.assertFalse(local_destination.exists())
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
-            with self.assertRaises(download.ReaderTransferError):
+            with self.assertRaises(download.FinalizationError):
                 restore(FAKE_CORRUPT='1')
             self.assertFalse(local_destination.exists())
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
-            with self.assertRaises(download.ReaderTransferError):
+            with self.assertRaises(download.FinalizationError):
                 restore(FAKE_DESTINATION_RACE='1')
             self.assertEqual(local_destination.read_bytes(), b'foreign destination')
             self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            local_destination.unlink()
+            for failure, code in (({'FAKE_SHORT_ALWAYS': '1'}, 10),
+                                  ({'FAKE_UPLOAD_ALWAYS': '1'}, 20),
+                                  ({'FAKE_DESTINATION_RACE': '1'}, 30)):
+                result = subprocess.run(
+                    [sys.executable, str(DOWNLOAD),
+                     'homelab-application-backups-123456789012-us-east-1', 'key',
+                     'version-1', destination, str(len(payload)), digest,
+                     'openclaw-retirement-reader-test'],
+                    cwd=ROOT,
+                    env={**base, **failure, 'GITHUB_ACTIONS': 'true', 'GITHUB_RUN_ID': '123'},
+                    capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, code)
+                self.assertEqual(result.stdout + result.stderr, b'')
+                if local_destination.exists():
+                    local_destination.unlink()
+                self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
 
     def test_unreviewed_stage_or_receipt_reference_stops_before_credentials(self):
         base = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': 'a' * 40,
@@ -704,9 +721,12 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
                           'publication-version|publication-archive-head|'
                           'publication-archive-metadata|publication-receipt-upload|'
                           'publication-receipt-head|publication-restore-prepare|'
-                          'publication-restore-archive|publication-restore-receipt|'
-                          'verification|verification-archive-download|'
-                          'verification-receipt-download|verification-restore', workflow)
+                          'publication-restore-archive|', workflow)
+            for base in ('publication-restore-archive', 'publication-restore-receipt',
+                         'verification-archive-download', 'verification-receipt-download'):
+                for category in ('source-range', 'reader-transfer', 'finalize'):
+                    self.assertIn(f'|{base}-{category}|', workflow)
+            self.assertIn('|verification-restore)', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
@@ -742,6 +762,36 @@ false
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(phase.read_text(), 'preflight\n')
+
+    def test_versioned_restore_maps_only_fixed_public_failure_categories(self):
+        source = SCRIPT.read_text()
+        function = 'restore_version() {\n' + source.split('restore_version() {\n', 1)[1].split('\n}\n', 1)[0] + '\n}\n'
+        shell = '''set -euo pipefail
+phase="$TEST_BASE"
+bucket=test-bucket
+pod=test-reader
+python3() { return "$TEST_RC"; }
+''' + function + '''
+if restore_version key version destination 1 "$TEST_SHA"; then
+  exit 99
+else
+  result=$?
+fi
+printf '%s\\n' "$phase"
+exit "$result"
+'''
+        for base in ('publication-restore-archive', 'publication-restore-receipt',
+                     'verification-archive-download', 'verification-receipt-download'):
+            for code, suffix in ((10, 'source-range'), (20, 'reader-transfer'),
+                                 (30, 'finalize'), (42, None)):
+                result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
+                                        env={**os.environ, 'TEST_BASE': base,
+                                             'TEST_RC': str(code), 'TEST_SHA': 'a' * 64},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout.strip(),
+                                 base + ('-' + suffix if suffix else ''))
+                self.assertEqual(result.stderr, '')
 
     def test_archive_publication_reports_exact_fixed_pre_upload_phase(self):
         source = SCRIPT.read_text()

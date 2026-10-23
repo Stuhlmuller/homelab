@@ -57,9 +57,24 @@ require_absent_object() {
 }
 
 restore_version() {
+  local rc
   [[ "$4" =~ ^[1-9][0-9]*$ && "$5" =~ ^[0-9a-f]{64}$ ]] || return 1
-  python3 scripts/ci/openclaw-enterprise-download.py \
-    "$bucket" "$1" "$2" "$3" "$4" "$5" "$pod"
+  if python3 scripts/ci/openclaw-enterprise-download.py \
+    "$bucket" "$1" "$2" "$3" "$4" "$5" "$pod"; then
+    return 0
+  else
+    rc=$?
+  fi
+  case "$phase" in
+    publication-restore-archive|publication-restore-receipt|verification-archive-download|verification-receipt-download)
+      case "$rc" in
+        10) phase="${phase}-source-range" ;;
+        20) phase="${phase}-reader-transfer" ;;
+        30) phase="${phase}-finalize" ;;
+      esac
+      ;;
+  esac
+  return 1
 }
 
 refresh_status() {

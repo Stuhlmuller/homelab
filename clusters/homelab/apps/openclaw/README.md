@@ -141,7 +141,11 @@ The archive digest comes from the published final receipt. The receipt digest
 comes from a separate local download of the exact S3 version named in that
 final receipt, so same-size transport corruption also fails closed.
 The protected workflow reports fixed archive-download, receipt-download, and
-restore failure phases without exposing private transport output.
+restore failure phases without exposing private transport output. Versioned
+downloads further distinguish `source-range` fetch/metadata failure,
+`reader-transfer` exec or write failure, and `finalize` full-digest or
+promotion failure. A category identifies the failed boundary, not the private
+underlying error; inspect private diagnostics before changing the transfer path.
 Its private `link-classification.json` records raw targets as `contained`,
 `link-chain`, `missing-in-archive`, or `external`. Its `lexicalPath` is a hint,
 not proof that symlink components resolve there. `completed.json` records

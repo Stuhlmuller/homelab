@@ -24,6 +24,10 @@ class ReaderTransferError(Exception):
     pass
 
 
+class FinalizationError(Exception):
+    pass
+
+
 REMOTE = r'''import fcntl, glob, hashlib, os, stat, sys
 os.umask(0o077)
 op = sys.argv[1]
@@ -237,7 +241,7 @@ def restore_version(bucket, key, version, destination, total, expected, pod):
                 except ReaderTransferError:
                     continue
             else:
-                raise ReaderTransferError
+                raise FinalizationError
         complete = True
     finally:
         if not complete:
@@ -273,5 +277,9 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except (SourceReadError, ReaderTransferError):
-        raise SystemExit(1) from None
+    except SourceReadError:
+        raise SystemExit(10) from None
+    except ReaderTransferError:
+        raise SystemExit(20) from None
+    except FinalizationError:
+        raise SystemExit(30) from None

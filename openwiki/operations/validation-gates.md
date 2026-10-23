@@ -360,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
+generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T16:21:49.039Z
 ---
 
 # Validation Gates
@@ -1776,13 +1776,19 @@ fixed `prepare-restore` stage guarded by exact current `main`. Its first
 left an incomplete, unverified archive in scratch. The [retry
 `39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
 failed in fixed `verification-archive-download`; neither reached receipt
-download or the restore worker, and no accepted copy resulted. The source-only
+download or the restore worker. The next [retry
+`39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+failed in the same broad phase, still before receipt download or worker start;
+no accepted copy resulted. Its helper did not identify whether the source range,
+reader transfer or finalization failed. The source-only
 transfer repair fetches exact S3 versions in at most 128 MiB ranges, checks
 version, interval and length metadata, then uploads at most 8 MiB SHA-256-checked
 reader slices. Interrupted appends roll back to the prior offset; full size
 and SHA-256 checks precede no-clobber promotion. The workflow exposes
-fixed archive-download, receipt-download, and restore failure phases while
-withholding private diagnostics. Source fixtures reject short and wrong-metadata
+fixed source-range, reader-transfer and finalization subphases for archive and
+receipt downloads while withholding private diagnostics. These identify the
+failing boundary on a future run, not the private underlying error. Source
+fixtures reject short and wrong-metadata
 ranges, same-size corruption, reader transport failures, interrupted appends,
 and destination collisions, as well as changed source identities, corrupt
 archives/databases and unsafe symlinks. A successful

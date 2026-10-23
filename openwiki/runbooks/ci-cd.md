@@ -104,10 +104,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T13:22:56.341Z" }
+generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T13:22:56.341Z
+    at: 2026-10-23T16:21:49.039Z
 ---
 
 # CI/CD
@@ -249,13 +249,17 @@ and private symlink report under `/archive/private/rehearsal-<RUN_ID>`. Its firs
 left an incomplete, unverified archive in scratch. The [retry
 `39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
 failed in fixed `verification-archive-download`; neither reached receipt
-download or the restore worker, so no accepted copy exists. The source-only
+download or the restore worker. The [third run
+`39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+failed in the same broad phase, before receipt download or worker start. It did
+not identify whether the source range, reader transfer or finalization failed;
+no accepted copy exists. The source-only
 repair fetches pinned S3 versions in at most 128 MiB ranges, validates version,
 interval and length, then uploads at most 8 MiB reader slices with SHA-256
 checks. Interrupted appends roll back; full size and digest checks precede
-no-clobber promotion. The workflow reports fixed archive-download,
-receipt-download and restore
-failure phases without private diagnostics. A successful copy receipt would
+no-clobber promotion. Future failures report fixed source-range,
+reader-transfer or finalization subphases for either versioned download, plus
+the restore phase, without private diagnostics. A successful copy receipt would
 still not boot or accept the old gateway.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
