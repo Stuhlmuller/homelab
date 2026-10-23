@@ -46,9 +46,12 @@ to contain zero matches before it can obtain registry credentials; this is a
 core-publication gate, not a whole-Harbor or rollout clearance. Raw image
 metadata and transport output stay private; temporary scan inputs are removed
 on exit.
-When the CI audit fails, its public error contains only a fixed stage or report
-validation category (for example, `scanner-run`, `validation:identity-distro`,
-or `validation:remediation`).
+The scan saves the inspected image ID, then exports that ID rather than resolving
+the tag again. The checker verifies the Docker-save manifest config digest and
+Grype's raw target config against the inspected ID before checking Grype's
+reported image ID. When the CI audit fails, its public error contains only a
+fixed stage or report validation category (for example, `scanner-run`,
+`validation:identity-archive-config`, or `validation:remediation`).
 The complete scanner output and report stay private, and an unknown or malformed
 diagnostic reports `unknown`. A stage narrows the failed operation; it does not
 establish the cause or grant vulnerability clearance.

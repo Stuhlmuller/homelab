@@ -8,16 +8,39 @@ import json
 from pathlib import Path
 import re
 import sys
+import tarfile
+
+
+def verify_archive_config(archive_path, image_id):
+    try:
+        with tarfile.open(archive_path, mode="r:") as archive:
+            manifest_member = archive.getmember("manifest.json")
+            assert manifest_member.isfile() and 0 < manifest_member.size < 1024 * 1024, "identity-archive-structure"
+            manifest_file = archive.extractfile(manifest_member)
+            assert manifest_file is not None, "identity-archive-structure"
+            manifest = json.load(manifest_file)
+            assert isinstance(manifest, list) and len(manifest) == 1, "identity-archive-structure"
+            config_name = manifest[0]["Config"]
+            assert re.fullmatch(r"[0-9a-f]{64}\.json", config_name), "identity-archive-structure"
+            config_member = archive.getmember(config_name)
+            assert config_member.isfile() and 0 < config_member.size < 16 * 1024 * 1024, "identity-archive-structure"
+            config_file = archive.extractfile(config_member)
+            assert config_file is not None, "identity-archive-structure"
+            raw_config = config_file.read()
+    except (KeyError, TypeError, ValueError, OSError, tarfile.TarError) as error:
+        raise AssertionError("identity-archive-structure") from error
+    assert config_name == image_id[7:] + ".json", "identity-archive-config"
+    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity-archive-config"
 
 
 def verify(report, image_id, require_zero_matches=False):
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id), "identity"
     assert report["source"]["type"] == "image", "identity-source"
     target = report["source"]["target"]
-    assert target["imageID"] == image_id, "identity-image-id"
     assert target["layers"] and target["imageSize"] > 0, "identity-archive"
     raw_config = base64.b64decode(target["config"], validate=True)
-    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity-config-hash"
+    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity-report-config"
+    assert target["imageID"] == image_id, "identity-image-id"
     config_identity = json.loads(raw_config)
     assert config_identity["os"] == "linux" and config_identity["architecture"] == "amd64", "identity-platform"
     # Docker archives omit these summary fields; the hashed config remains authoritative.
@@ -58,6 +81,10 @@ def main(args):
     if len(args) >= 2 and args[0] == "--diagnostic-file":
         diagnostic_file = Path(args[1])
         args = args[2:]
+    archive_path = None
+    if len(args) >= 2 and args[0] == "--archive":
+        archive_path = Path(args[1])
+        args = args[2:]
     try:
         require_zero_matches = len(args) == 3 and args[-1] == "--require-zero-matches"
         if require_zero_matches:
@@ -65,10 +92,13 @@ def main(args):
         assert len(args) == 2, "schema"
         raw_report = Path(args[0]).read_bytes()
         report = json.loads(raw_report)
+        if archive_path is not None:
+            verify_archive_config(archive_path, args[1])
         verify(report, args[1], require_zero_matches=require_zero_matches)
     except AssertionError as error:
         category = str(error)
-        if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-config-hash",
+        if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-archive-structure",
+                            "identity-archive-config", "identity-report-config",
                             "identity-platform", "identity-distro", "scanner", "database", "freshness",
                             "filtering", "schema", "remediation", "clearance"}:
             category = "schema"

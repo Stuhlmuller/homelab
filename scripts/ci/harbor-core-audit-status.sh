@@ -5,7 +5,8 @@ diagnostic="$(cat -- "$1" 2>/dev/null || true)"
 case "$diagnostic" in
   launcher|image-inspect|image-export|scanner-build|scanner-run|report-validation|\
   validation:identity-source|validation:identity-image-id|validation:identity-archive|\
-  validation:identity-config-hash|validation:identity-platform|validation:identity-distro|\
+  validation:identity-archive-structure|validation:identity-archive-config|\
+  validation:identity-report-config|validation:identity-platform|validation:identity-distro|\
   validation:scanner|validation:database|validation:freshness|\
   validation:filtering|validation:schema|validation:remediation|validation:clearance)
     ;;

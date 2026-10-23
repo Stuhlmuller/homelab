@@ -11,6 +11,7 @@ from contextlib import redirect_stderr, redirect_stdout
 import io
 import os
 import subprocess
+import tarfile
 import tempfile
 
 spec = importlib.util.spec_from_file_location("scan", Path(__file__).with_name("harbor-core-scan-check.py"))
@@ -96,7 +97,7 @@ class ScanTests(unittest.TestCase):
             ("identity-source", lambda r: r["source"].update(type="directory"), IMAGE),
             ("identity-image-id", lambda r: r["source"]["target"].update(imageID="sha256:" + "1" * 64), IMAGE),
             ("identity-archive", lambda r: r["source"]["target"].update(layers=[]), IMAGE),
-            ("identity-config-hash", lambda r: r["source"]["target"].update(config=base64.b64encode(b"{}").decode()), IMAGE),
+            ("identity-report-config", lambda r: r["source"]["target"].update(config=base64.b64encode(b"{}").decode()), IMAGE),
             ("identity-distro", lambda r: r["distro"].update(name="unknown"), IMAGE),
         ]
         for category, change, image in cases:
@@ -121,10 +122,54 @@ class ScanTests(unittest.TestCase):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), str(path), image]), 1)
             self.assertEqual(diagnostic.read_text(), "validation:identity-platform\n")
 
+    def test_archive_and_report_config_are_bound_to_inspected_id(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            archive_path = root / "image.tar"
+            report_path = root / "report.json"
+            diagnostic = root / "diagnostic"
+
+            def write_archive(config):
+                with tarfile.open(archive_path, "w") as archive:
+                    for name, data in (("manifest.json", json.dumps([{"Config": IMAGE[7:] + ".json"}]).encode()),
+                                       (IMAGE[7:] + ".json", config)):
+                        member = tarfile.TarInfo(name)
+                        member.size = len(data)
+                        archive.addfile(member, io.BytesIO(data))
+
+            report = self.report()
+            report_path.write_text(json.dumps(report))
+            write_archive(CONFIG)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(scan.main(["--archive", str(archive_path), str(report_path), IMAGE]), 0)
+
+            write_archive(b"PRIVATE_WRONG_CONFIG")
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), IMAGE]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config\n")
+
+            write_archive(CONFIG)
+            report["source"]["target"]["config"] = base64.b64encode(b"PRIVATE_WRONG_CONFIG").decode()
+            report_path.write_text(json.dumps(report))
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), IMAGE]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-report-config\n")
+
+            report = self.report()
+            report["source"]["target"]["imageID"] = "sha256:" + "1" * 64
+            report_path.write_text(json.dumps(report))
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), IMAGE]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-image-id\n")
+
     def test_status_printer_whitelists_diagnostics(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "diagnostic"
-            for status in ("launcher", "scanner-run", "validation:identity-distro", "validation:remediation"):
+            for status in ("launcher", "scanner-run", "validation:identity-archive-config",
+                           "validation:identity-report-config", "validation:identity-distro", "validation:remediation"):
                 path.write_text(status + "\n")
                 result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],
                                         capture_output=True, text=True, check=True)
@@ -153,6 +198,8 @@ class ScanTests(unittest.TestCase):
                                     capture_output=True, text=True, env=environment)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(diagnostic.read_text(), "image-inspect\n")
+            self.assertIn('docker save --output "$scratch/image.tar" "$(cat "$scratch/image-id")"',
+                          SCAN_SCRIPT.read_text())
 
     def test_ci_keeps_raw_scan_output_in_private_log(self):
         workflow = VALIDATE_WORKFLOW.read_text()
