@@ -31,8 +31,9 @@ def verify_archive_config(archive_path, image_id):
             raw_config = config_file.read()
     except (KeyError, TypeError, ValueError, OSError, tarfile.TarError) as error:
         raise AssertionError("identity-archive-structure") from error
-    assert config_name in (image_id[7:] + ".json", "blobs/sha256/" + image_id[7:]), "identity-archive-config"
-    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity-archive-config"
+    config_digest = config_name[:-5] if config_name.endswith(".json") else config_name[len("blobs/sha256/"):]
+    assert hashlib.sha256(raw_config).hexdigest() == config_digest, "identity-archive-config-hash"
+    assert "sha256:" + config_digest == image_id, "identity-archive-inspect-id"
 
 
 def verify(report, image_id, require_zero_matches=False):
@@ -100,7 +101,7 @@ def main(args):
     except AssertionError as error:
         category = str(error)
         if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-archive-structure",
-                            "identity-archive-config", "identity-report-config",
+                            "identity-archive-config-hash", "identity-archive-inspect-id", "identity-report-config",
                             "identity-platform", "identity-distro", "scanner", "database", "freshness",
                             "filtering", "schema", "remediation", "clearance"}:
             category = "schema"

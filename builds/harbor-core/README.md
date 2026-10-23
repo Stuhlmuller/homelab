@@ -51,10 +51,13 @@ the tag again. The checker verifies the Docker-save manifest config digest and
 Grype's raw target config against the inspected ID before checking Grype's
 reported image ID. When the CI audit fails, its public error contains only a
 fixed stage or report validation category (for example, `scanner-run`,
-`validation:identity-archive-config`, or `validation:remediation`).
-The complete scanner output and report stay private, and an unknown or malformed
-diagnostic reports `unknown`. A stage narrows the failed operation; it does not
-establish the cause or grant vulnerability clearance.
+`validation:identity-archive-inspect-id`, or `validation:remediation`).
+The archive config hash category means its path digest and bytes disagree;
+the inspect-ID category means a self-consistent archive config differs from
+Docker's inspected ID. Neither prints the IDs. The complete scanner output
+and report stay private, and an unknown or malformed diagnostic reports
+`unknown`. A stage narrows the failed operation; it does not establish the
+cause or grant vulnerability clearance.
 
 ## Protected publication
 

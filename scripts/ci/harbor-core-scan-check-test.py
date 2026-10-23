@@ -149,13 +149,21 @@ class ScanTests(unittest.TestCase):
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
                                             str(report_path), IMAGE]), 1)
-            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config\n")
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config-hash\n")
 
             write_archive(CONFIG, "blobs/sha256/" + "1" * 64)
             with redirect_stderr(io.StringIO()):
                 self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
                                             str(report_path), IMAGE]), 1)
-            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config\n")
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-config-hash\n")
+
+            other_config = b'{"os":"linux","architecture":"amd64","other":true}'
+            other_name = "blobs/sha256/" + hashlib.sha256(other_config).hexdigest()
+            write_archive(other_config, other_name)
+            with redirect_stderr(io.StringIO()):
+                self.assertEqual(scan.main(["--diagnostic-file", str(diagnostic), "--archive", str(archive_path),
+                                            str(report_path), IMAGE]), 1)
+            self.assertEqual(diagnostic.read_text(), "validation:identity-archive-inspect-id\n")
 
             write_archive(CONFIG, config_name)
             report["source"]["target"]["config"] = base64.b64encode(b"PRIVATE_WRONG_CONFIG").decode()
@@ -176,8 +184,9 @@ class ScanTests(unittest.TestCase):
     def test_status_printer_whitelists_diagnostics(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "diagnostic"
-            for status in ("launcher", "scanner-run", "validation:identity-archive-config",
-                           "validation:identity-report-config", "validation:identity-distro", "validation:remediation"):
+            for status in ("launcher", "scanner-run", "validation:identity-archive-config-hash",
+                           "validation:identity-archive-inspect-id", "validation:identity-report-config",
+                           "validation:identity-distro", "validation:remediation"):
                 path.write_text(status + "\n")
                 result = subprocess.run(["bash", str(STATUS_SCRIPT), str(path)],
                                         capture_output=True, text=True, check=True)
