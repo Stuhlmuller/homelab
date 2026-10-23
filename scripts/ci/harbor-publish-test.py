@@ -138,7 +138,8 @@ class HarborPublicationGates(unittest.TestCase):
 
     def transport_mocks(self, failure=None, mirror=False, resume=False, oci_index=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
-                        source_error="toomanyrequests", core=False, cordium=False, enterprise=False):
+                        source_error="toomanyrequests", core=False, cordium=False, enterprise=False,
+                        forward_start_delay=0):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
@@ -178,6 +179,7 @@ class HarborPublicationGates(unittest.TestCase):
             "resume": resume,
             "missing_error": missing_error,
             "source_error": source_error,
+            "forward_start_delay": forward_start_delay,
         }
         mock = "#!/usr/bin/env python3\nFIXTURE = " + repr(fixture) + "\n" + textwrap.dedent('''\
             import json
@@ -269,11 +271,22 @@ class HarborPublicationGates(unittest.TestCase):
                         time.sleep(0.1)
             elif command == "timeout":
                 # Keep the real port-forward process lifecycle, without a network socket.
+                time.sleep(FIXTURE["forward_start_delay"])
                 os.execv(args[3], args[3:])
             elif command == "curl":
                 if FIXTURE["failure"] == "forward":
                     print("private readiness fixture", file=sys.stderr)
                     time.sleep(0.2)
+                    raise SystemExit(7)
+                # Real TLS readiness cannot succeed until the background forward
+                # listens. Wait for this fixture's current live process too.
+                for _ in range(500):
+                    try:
+                        os.kill(int((root / "forward-pid").read_text()), 0)
+                        break
+                    except (FileNotFoundError, ProcessLookupError, ValueError):
+                        time.sleep(0.01)
+                else:
                     raise SystemExit(7)
                 if FIXTURE["failure"] in ("mirror-regctl-restart-readiness-once",
                                           "mirror-regctl-restart-readiness-always") and \
@@ -1436,7 +1449,8 @@ class HarborPublicationGates(unittest.TestCase):
             with self.subTest(failure=failure):
                 self.calls.unlink(missing_ok=True)
                 (self.root / "summary").unlink(missing_ok=True)
-                self.transport_mocks(failure=failure, mirror=True)
+                self.transport_mocks(failure=failure, mirror=True,
+                                     forward_start_delay=1 if failure == "mirror-pull-server-always" else 0)
                 result = self.run_helper(mode="mirror")
                 self.assertEqual(result.returncode, 22)
                 self.assertFalse((self.root / "summary").exists())
