@@ -336,10 +336,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
+generated: { by: "codex", at: "2026-10-23T04:59:34.413Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-23T05:15:07.566Z
 ---
 
 # Validation Gates
@@ -2352,7 +2352,9 @@ publication succeeded. OCI-index pull fixtures also require recovery after
 four classified transport failures while retaining partial content in one
 temporary OCI directory, forcing recursive checks on each attempt, and
 2/4/8/16-second backoff. They require exhaustion after five attempts and an
-immediate stop on hard errors.
+immediate stop on hard errors. Separate HTTP 5xx fixtures require a recovered
+Skopeo and OCI-index pull, bounded exhaustion with the public `server-error`
+category, and no retry for HTTP 404, auth or digest failures.
 
 Enterprise image publisher fixtures also check fixed preflight, authenticated
 pull, signing and cleanup failure-phase labels without exposing private output.

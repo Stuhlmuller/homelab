@@ -375,7 +375,7 @@ class HarborPublicationGates(unittest.TestCase):
                     elif FIXTURE["mirror"]:
                         assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-restart-readiness-once", "mirror-regctl-restart-readiness-always", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth", "mirror-regctl-forward-dies"):
+                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-server-once", "mirror-regctl-pull-server-always", "mirror-regctl-restart-readiness-once", "mirror-regctl-restart-readiness-always", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth", "mirror-regctl-forward-dies"):
                         print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
                               file=sys.stderr)
                         raise SystemExit(17)
@@ -394,10 +394,13 @@ class HarborPublicationGates(unittest.TestCase):
                     if FIXTURE["mirror"] and not upstream:
                         fail_read("skopeo-pull", {
                             "mirror-pull-once": "unexpected EOF",
+                            "mirror-pull-server-once": "received unexpected HTTP status: 500",
+                            "mirror-pull-server-always": "received unexpected HTTP status: 500",
                             "mirror-pull-always": "unexpected EOF",
                             "mirror-pull-auth": "unauthorized; unexpected EOF",
                             "mirror-pull-forbidden": "403 Forbidden; unexpected EOF",
                             "mirror-pull-missing": "manifest unknown; unexpected EOF",
+                            "mirror-pull-http-missing": "HTTP status code: 404; unexpected EOF",
                             "mirror-pull-digest": "digest mismatch; unexpected EOF",
                             "mirror-pull-preserve": "Instructed to preserve digests; unexpected EOF",
                         }, directory)
@@ -480,6 +483,8 @@ class HarborPublicationGates(unittest.TestCase):
                                 raise SystemExit(22)
                         fail_read("regctl-pull", {
                             "mirror-regctl-pull-once": "TLS handshake timeout",
+                            "mirror-regctl-pull-server-once": "502 Bad Gateway",
+                            "mirror-regctl-pull-server-always": "502 Bad Gateway",
                             "mirror-regctl-restart-readiness-once": "TLS handshake timeout",
                             "mirror-regctl-restart-readiness-always": "TLS handshake timeout",
                             "mirror-regctl-pull-four": "TLS handshake timeout",
@@ -1275,14 +1280,18 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse(artifact.exists())
         self.assert_cleaned()
 
-    def test_mirror_verification_retries_one_transport_failure(self):
+    def test_mirror_verification_retries_one_retryable_read_failure(self):
         for failure, phase in (("mirror-alias-lookup-once", "alias"),
                                ("mirror-alias-verify-once", "alias"),
                                ("mirror-pull-once", "skopeo"),
-                               ("mirror-regctl-pull-once", "regctl")):
+                               ("mirror-pull-server-once", "skopeo"),
+                               ("mirror-regctl-pull-once", "regctl"),
+                               ("mirror-regctl-pull-server-once", "regctl")):
             with self.subTest(failure=failure):
                 self.calls.unlink(missing_ok=True)
                 (self.root / "summary").unlink(missing_ok=True)
+                (self.root / "skopeo-pull-failed").unlink(missing_ok=True)
+                (self.root / "regctl-pull-failed").unlink(missing_ok=True)
                 self.transport_mocks(failure=failure, mirror=True)
                 result = self.run_helper(mode="mirror")
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -1393,6 +1402,21 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertIn("category=transport-retries-exhausted\n", self.public_status)
         self.assert_cleaned()
 
+    def test_mirror_index_pull_stops_after_five_server_failures(self):
+        self.transport_mocks(failure="mirror-regctl-pull-server-always", mirror=True,
+                             registries=("docker.io",))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 22)
+        pulls = [args for args in self.calls_for("regctl")
+                 if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+        self.assertEqual(len(pulls), 5)
+        self.assertEqual(len([args for args in self.calls_for("kubectl")
+                              if "port-forward" in args]), 5)
+        self.assertFalse((self.root / "summary").exists())
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=server-error\n", self.public_status)
+        self.assert_cleaned()
+
     def test_mirror_verification_does_not_retry_hard_failures(self):
         for failure, phase, count in (
             ("mirror-alias-lookup-auth", "alias-lookup", 1),
@@ -1402,10 +1426,12 @@ class HarborPublicationGates(unittest.TestCase):
             ("mirror-pull-auth", "authenticated-pull", 1),
             ("mirror-pull-forbidden", "authenticated-pull", 1),
             ("mirror-pull-missing", "authenticated-pull", 1),
+            ("mirror-pull-http-missing", "authenticated-pull", 1),
             ("mirror-pull-digest", "authenticated-pull", 1),
             ("mirror-pull-preserve", "authenticated-pull", 1),
             ("mirror-regctl-pull-auth", "authenticated-pull", 1),
             ("mirror-pull-always", "authenticated-pull", 3),
+            ("mirror-pull-server-always", "authenticated-pull", 3),
         ):
             with self.subTest(failure=failure):
                 self.calls.unlink(missing_ok=True)
@@ -1426,10 +1452,12 @@ class HarborPublicationGates(unittest.TestCase):
                              if args[0] == "copy" and args[-2].startswith("docker://harbor.stinkyboi.com/")
                              and args[-1].startswith("dir:")]
                 self.assertEqual(len(reads), count)
-                if failure == "mirror-pull-always":
+                if failure in ("mirror-pull-always", "mirror-pull-server-always"):
                     self.assertEqual(len([args for args in self.calls_for("kubectl")
                                           if "port-forward" in args]), 3)
                     self.assertEqual(len(self.calls_for("curl")), 3)
+                if failure == "mirror-pull-server-always":
+                    self.assertIn("category=server-error\n", self.public_status)
                 self.assert_cleaned()
 
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):

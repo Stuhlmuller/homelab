@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:89d79402737411c35fbb742ed50bb1dfdda3d3fef6bf4a71db1fafa99a78c7be",
+  "pageVersion": "sha256:340b39195e63145fff99d7dd2e9c0a656f4a8a85c5b12e90cdb62c30bf731ace",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -330,7 +330,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
+          "version": "repo-file-v1:sha256:343cc9db2461df5319b62c965cd41a1f58a4bebe6ca08ce8000f5efb50f10e44"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -360,7 +360,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
+          "version": "repo-file-v1:sha256:343cc9db2461df5319b62c965cd41a1f58a4bebe6ca08ce8000f5efb50f10e44"
         }
       ]
     },
@@ -378,11 +378,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
+          "version": "repo-file-v1:sha256:343cc9db2461df5319b62c965cd41a1f58a4bebe6ca08ce8000f5efb50f10e44"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:01d64f573f091ee065ad6edbbd5e2f7a47cf585859fdf535013c8efc84bc73b9"
+          "version": "repo-file-v1:sha256:d4481ac92134c6a46c97911cbd1485767a68fab4488d42c9f5c6bc39abfea8eb"
         }
       ]
     },
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
+          "version": "repo-file-v1:sha256:343cc9db2461df5319b62c965cd41a1f58a4bebe6ca08ce8000f5efb50f10e44"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:1308cae562b348a69ea81f095a42fd8efcda6c137a54507f3f5e1e13c441dfe6"
+          "version": "repo-file-v1:sha256:cabec329d7d29d98973cce68fd1b763dbd93c6e6a7f237ff63ae62664e797bac"
         }
       ]
     },
@@ -719,6 +719,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-21T00:34:35.293Z"
+    "at": "2026-10-23T05:15:07.566Z"
   }
 }
