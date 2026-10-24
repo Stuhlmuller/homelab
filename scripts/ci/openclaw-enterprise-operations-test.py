@@ -294,9 +294,18 @@ sys.stdout.buffer.write(chunk)
 
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                       text=True).strip()
+        fake_gh_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(fake_gh_dir.cleanup)
+        fake_gh = Path(fake_gh_dir.name) / 'gh'
+        fake_gh.write_text('#!/bin/sh\nprintf "%s\\n" "$FAKE_MAIN_SHA"\n')
+        fake_gh.chmod(0o755)
         run_env = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha,
+                   'GITHUB_REF': 'refs/heads/main',
+                   'GITHUB_REPOSITORY': 'Stuhlmuller/homelab',
                    'EXPECTED_SHA': sha, 'OCTELIUM_AUTH_TOKEN': '',
-                   'GH_REPO': '', 'GH_TOKEN': ''}
+                   'GH_REPO': 'Stuhlmuller/homelab', 'GH_TOKEN': 'test',
+                   'FAKE_MAIN_SHA': sha,
+                   'PATH': f'{fake_gh_dir.name}:{os.environ["PATH"]}'}
         full_sync = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), 'full-sync'], cwd=ROOT,
                                    env=run_env, capture_output=True, text=True, timeout=5)
         self.assertEqual(full_sync.returncode, 2)
@@ -318,6 +327,44 @@ sys.stdout.buffer.write(chunk)
                                env={**run_env, 'EXPECTED_SHA': '0' * 40},
                                capture_output=True, text=True, timeout=5)
         self.assertEqual(stale.returncode, 2)
+
+    def test_enterprise_stage_rechecks_current_main_before_kubeconfig(self):
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                                      text=True).strip()
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory)
+            marker = fake / 'kubeconfig-started'
+            (fake / 'gh').write_text(
+                '#!/bin/sh\n'
+                'test "$1" = api && '
+                'test "$2" = repos/Stuhlmuller/homelab/git/ref/heads/main && '
+                'test "$3" = --jq && test "$4" = .object.sha || exit 99\n'
+                'printf "%s\\n" "$FAKE_MAIN_SHA"\n')
+            (fake / 'jq').write_text('#!/bin/sh\nexit 0\n')
+            (fake / 'bash').write_text('#!/bin/sh\n: > "$STAGE_MARKER"\nexit 77\n')
+            for name in ('gh', 'jq', 'bash'):
+                (fake / name).chmod(0o755)
+            base = {**os.environ, 'PATH': f'{fake}:{os.environ["PATH"]}',
+                    'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha, 'EXPECTED_SHA': sha,
+                    'GITHUB_REF': 'refs/heads/main',
+                    'GITHUB_REPOSITORY': 'Stuhlmuller/homelab',
+                    'OCTELIUM_AUTH_TOKEN': 'test', 'GH_REPO': 'Stuhlmuller/homelab',
+                    'GH_TOKEN': 'test', 'FAKE_MAIN_SHA': 'b' * 40,
+                    'STAGE_MARKER': str(marker)}
+            for stage, overrides in (
+                    ('full-sync', {}), ('reconcile', {}), ('stop', {}),
+                    ('verification', {}), ('restore', {}), ('acceptance', {}),
+                    ('full-sync', {'GITHUB_REF': 'refs/heads/feature',
+                                   'FAKE_MAIN_SHA': sha}),
+                    ('full-sync', {'GITHUB_REPOSITORY': 'foreign/homelab',
+                                   'FAKE_MAIN_SHA': sha})):
+                with self.subTest(stage=stage, overrides=overrides):
+                    marker.unlink(missing_ok=True)
+                    result = subprocess.run(['/bin/bash', str(ENTERPRISE_SCRIPT), stage],
+                                            cwd=ROOT, env={**base, **overrides},
+                                            capture_output=True, text=True, timeout=5)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertFalse(marker.exists())
 
     def test_installation_binding_is_pinned_protected_and_requires_private_file(self):
         workflow = WORKFLOW.read_text()
