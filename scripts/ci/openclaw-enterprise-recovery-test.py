@@ -200,10 +200,18 @@ class RecoveryBoundaries(unittest.TestCase):
     def test_restore_stage_remains_blocked_before_recovery_orchestration(self):
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT,
                                        text=True).strip()
+        fake_gh = Path(self.temp.name) / "gh"
+        fake_gh.write_text('#!/bin/sh\nprintf "%s\\n" "$FAKE_MAIN_SHA"\n')
+        fake_gh.chmod(0o755)
         result = subprocess.run(
             ["bash", str(ROOT / "scripts/ci/openclaw-enterprise-stage.sh"), "restore"],
             cwd=ROOT, env={**os.environ, "GITHUB_ACTIONS": "true",
-                           "GITHUB_SHA": head, "EXPECTED_SHA": head},
+                           "GITHUB_SHA": head, "EXPECTED_SHA": head,
+                           "GITHUB_REF": "refs/heads/main",
+                           "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
+                           "GH_REPO": "Stuhlmuller/homelab", "GH_TOKEN": "test",
+                           "FAKE_MAIN_SHA": head,
+                           "PATH": f'{self.temp.name}:{os.environ["PATH"]}'},
             capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 1)
         self.assertIn("restore blocked: durable private journal runner is not declared",
