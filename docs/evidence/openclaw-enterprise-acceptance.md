@@ -49,7 +49,20 @@ harbor.stinkyboi.com/homelab/homelab-oce-cli:homelab-4b0186236b919570164a73f5ca3
 harbor.stinkyboi.com/homelab/homelab-oce-operator:homelab-4b0186236b919570164a73f5ca3b8ef7420564cb@sha256:ec9bb06fccb2a4b268d4af3c0a11e5686dc8f6063a807e80e27fd61342914b19
 ```
 
-The first four-image attempt [40046894679](https://github.com/Stuhlmuller/homelab/actions/runs/40046894679) failed at fixed `authenticated-pull-controller` after upload; it produced no signed bundle receipt. The successful retry passed that pull and all later gates. Earlier full-catalog runs [39953746696](https://github.com/Stuhlmuller/homelab/actions/runs/39953746696) and [39968117747](https://github.com/Stuhlmuller/homelab/actions/runs/39968117747) failed at item 79/214 (`authenticated-pull` / `transport-retries-exhausted`, five OCI-index attempts) and item 207/214 (`destination-copy` / `transport-failed`), respectively. Partial copies did not pass T004. The selected Installation and values bytes differ from those embedded in the published operator image, so its digest is evidence only; `journalOperator.image` and `imageSourceSha` stay null until a later exact-source rebuild. Activation remains disabled.
+The first four-image attempt
+[40046894679](https://github.com/Stuhlmuller/homelab/actions/runs/40046894679)
+failed at fixed `authenticated-pull-controller` after upload; it produced no
+signed bundle receipt. The successful retry passed that pull and all later
+gates. Earlier full-catalog runs
+[39953746696](https://github.com/Stuhlmuller/homelab/actions/runs/39953746696)
+and [39968117747](https://github.com/Stuhlmuller/homelab/actions/runs/39968117747)
+failed at item 79/214 (`authenticated-pull` / `transport-retries-exhausted`,
+five OCI-index attempts) and item 207/214 (`destination-copy` /
+`transport-failed`), respectively. Partial copies did not pass T004. The
+selected Installation and values bytes differ from those embedded in the
+published operator image, so its digest is evidence only;
+`journalOperator.image` and `imageSourceSha` stay null until a later
+exact-source rebuild. Activation remains disabled.
 
 Earlier publication attempts failed during source reads or after upload; none
 produced a final offsite receipt. The [detached source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872)
