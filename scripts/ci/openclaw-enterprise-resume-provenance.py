@@ -24,8 +24,18 @@ PUBLISHED_ARCHIVE_REF = "9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221"
 PRIOR_JOB_ID = 120540474364
 PRIOR_JOB_STARTED_AT = "2026-10-23T16:52:54Z"
 PRIOR_JOB_COMPLETED_AT = "2026-10-23T22:53:32Z"
-PRIOR_CANCEL_SECOND = "2026-10-23T22:53:29"
 PRIOR_CANCEL_TEXT = "##[error]The operation was canceled."
+# GitHub CLI can render the same pinned job log from its cached archive or its
+# fallback stream. Bind each observed rendering as a whole, including its step
+# label and timestamps; never mix lines from different renderings.
+LOG_DIALECTS = (
+    (STAGE_STEP, "\ufeff2026-10-23T16:53:06.0258833Z",
+     "2026-10-23T16:53:06.0353791Z", "2026-10-23T16:53:06.0354590Z",
+     "2026-10-23T16:53:06.0355923Z", "2026-10-23T22:53:29.0245903Z"),
+    ("UNKNOWN STEP", "2026-10-23T16:53:06.0258845Z",
+     "2026-10-23T16:53:06.0354002Z", "2026-10-23T16:53:06.0354592Z",
+     "2026-10-23T16:53:06.0355926Z", "2026-10-23T22:53:29.0245920Z"),
+)
 UNCHANGED = (
     "scripts/config/openclaw-enterprise.json",
     "scripts/openclaw-retirement-status.py",
@@ -93,24 +103,23 @@ def parse_job(jobs):
 def parse_log(log, archive_ref):
     require(len(log) <= 8 * 1024 * 1024)
     lines = log.splitlines()
-    timestamp = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z"
-    group = [index for index, line in enumerate(lines) if re.fullmatch(
-        timestamp + r' ##\[group\]Run private_log="\$\(mktemp\)"', line)]
-    require(len(group) == 1)
-    ends = [index for index, line in enumerate(lines) if index > group[0] and
-            re.fullmatch(timestamp + r" ##\[endgroup\]", line)]
-    require(len(ends) >= 1)
-    end = ends[0]
-    markers = {}
-    for key in ("RUN_STAGE", "ARCHIVE_REF"):
-        matches = [(index, match.group(1)) for index, line in enumerate(lines)
-                   if (match := re.fullmatch(timestamp + r" +" + key + r": ([^\s]+)", line))]
-        require(len(matches) == 1 and group[0] < matches[0][0] < end)
-        markers[key] = matches[0][1]
-    cancellations = [index for index, line in enumerate(lines) if re.fullmatch(
-        re.escape(PRIOR_CANCEL_SECOND) + r"\.\d{7}Z " + re.escape(PRIOR_CANCEL_TEXT), line)]
-    require(markers == {"RUN_STAGE": "prepare-restore", "ARCHIVE_REF": archive_ref} and
-            cancellations == [end + 1])
+    for marker in ('Run private_log="$(mktemp)"', "RUN_STAGE:", "ARCHIVE_REF:",
+                   PRIOR_CANCEL_TEXT):
+        require(sum(marker in line for line in lines) == 1)
+    for label, group_at, stage_at, ref_at, end_at, cancel_at in LOG_DIALECTS:
+        prefix = f"{JOB}\t{label}\t"
+        expected = (
+            prefix + group_at + ' ##[group]Run private_log="$(mktemp)"',
+            prefix + stage_at + "   RUN_STAGE: prepare-restore",
+            prefix + ref_at + "   ARCHIVE_REF: " + archive_ref,
+            prefix + end_at + " ##[endgroup]",
+            prefix + cancel_at + " " + PRIOR_CANCEL_TEXT,
+        )
+        if all(lines.count(line) == 1 for line in expected):
+            group, stage, ref, end, cancel = (lines.index(line) for line in expected)
+            require(group < stage < ref < end and cancel == end + 1)
+            return
+    raise Blocked("prior restore provenance is unavailable or changed")
 
 
 def require_legacy_timeout(source):
@@ -170,7 +179,8 @@ def main(argv=None):
         jobs = json.loads(command("gh", "api", f"repos/Stuhlmuller/homelab/actions/runs/{args.prior_run_id}/jobs?per_page=100"))
         job_id = parse_job(jobs)
         boundary = "prior-log-fetch"
-        log = command("gh", "api", f"repos/Stuhlmuller/homelab/actions/jobs/{job_id}/logs").decode()
+        log = command("gh", "run", "view", args.prior_run_id, "--job", str(job_id),
+                      "--log", "--repo", "Stuhlmuller/homelab").decode()
         boundary = "prior-log-match"
         parse_log(log, args.archive_ref)
         boundary = "source"

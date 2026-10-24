@@ -28,13 +28,24 @@ def function(name):
     return name + "() {\n" + SOURCE.split(name + "() {\n", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
 
 
-def raw_log(archive_ref, fraction="0245920"):
-    return "\n".join((
-        '2026-10-23T16:53:06.0353000Z ##[group]Run private_log="$(mktemp)"',
-        "2026-10-23T16:53:06.0354002Z   RUN_STAGE: prepare-restore",
-        "2026-10-23T16:53:06.0354592Z   ARCHIVE_REF: " + archive_ref,
-        "2026-10-23T16:53:06.0359000Z ##[endgroup]",
-        f"2026-10-23T22:53:29.{fraction}Z ##[error]The operation was canceled.",
+def cli_log(archive_ref, cached=False):
+    if cached:
+        label = "Run Legacy Stage"
+        times = ("\ufeff2026-10-23T16:53:06.0258833Z", "2026-10-23T16:53:06.0353791Z",
+                 "2026-10-23T16:53:06.0354590Z", "2026-10-23T16:53:06.0355923Z",
+                 "2026-10-23T22:53:29.0245903Z")
+    else:
+        label = "UNKNOWN STEP"
+        times = ("2026-10-23T16:53:06.0258845Z", "2026-10-23T16:53:06.0354002Z",
+                 "2026-10-23T16:53:06.0354592Z", "2026-10-23T16:53:06.0355926Z",
+                 "2026-10-23T22:53:29.0245920Z")
+    prefix = "Protected Legacy Retention\t" + label + "\t"
+    return "\n".join(prefix + line for line in (
+        times[0] + ' ##[group]Run private_log="$(mktemp)"',
+        times[1] + "   RUN_STAGE: prepare-restore",
+        times[2] + "   ARCHIVE_REF: " + archive_ref,
+        times[3] + " ##[endgroup]",
+        times[4] + " ##[error]The operation was canceled.",
     ))
 
 
@@ -84,9 +95,9 @@ class ResumeProvenance(unittest.TestCase):
                 PROVENANCE.parse_job(jobs)
 
     def test_protected_log_binds_exact_stage_and_publication_ref(self):
-        log = raw_log(REF)
+        log = cli_log(REF)
         PROVENANCE.parse_log(log, REF)
-        PROVENANCE.parse_log(raw_log(REF, "0245903"), REF)
+        PROVENANCE.parse_log(cli_log(REF, cached=True), REF)
         lines = log.splitlines()
         for changed in (lines + [lines[1]],
                         lines + [lines[-1]],
@@ -98,7 +109,11 @@ class ResumeProvenance(unittest.TestCase):
                         [*lines[:-1], lines[-1].replace("0245920", "024592")],
                         [lines[0].replace('Run private_log="$(mktemp)"', "Run untrusted"), *lines[1:]],
                         [lines[0], lines[3], lines[1], lines[2], lines[4]],
-                        [*lines, lines[0]]):
+                        [*lines, lines[0]],
+                        [*lines, lines[1].replace("UNKNOWN STEP", "Run Legacy Stage")],
+                        [lines[0], lines[1], cli_log(REF, cached=True).splitlines()[2], *lines[3:]],
+                        [*lines[:-1], lines[-1].replace("UNKNOWN STEP", "Other Step")],
+                        [lines[0].replace("Protected Legacy Retention", "Other Job"), *lines[1:]]):
             with self.subTest(log=changed), self.assertRaises(PROVENANCE.Blocked):
                 PROVENANCE.parse_log("\n".join(changed), REF)
 
@@ -116,7 +131,7 @@ class ResumeProvenance(unittest.TestCase):
                                                          "conclusion": "cancelled",
                                                          "started_at": "2026-10-23T16:53:06Z",
                                                          "completed_at": "2026-10-23T22:53:29Z"}]}]}
-        log = raw_log(REF)
+        log = cli_log(REF)
         def command(*args, **_kwargs):
             if args[:3] == ("git", "rev-parse", "HEAD"):
                 return ("b" * 40 + "\n").encode()
@@ -126,7 +141,8 @@ class ResumeProvenance(unittest.TestCase):
                 return json.dumps(run).encode()
             if args[:3] == ("gh", "api", "repos/Stuhlmuller/homelab/actions/runs/123/jobs?per_page=100"):
                 return json.dumps(jobs).encode()
-            if args[:3] == ("gh", "api", f"repos/Stuhlmuller/homelab/actions/jobs/{PROVENANCE.PRIOR_JOB_ID}/logs"):
+            if args == ("gh", "run", "view", "123", "--job", str(PROVENANCE.PRIOR_JOB_ID),
+                        "--log", "--repo", "Stuhlmuller/homelab"):
                 return log.encode()
             raise AssertionError(args)
         with tempfile.TemporaryDirectory() as directory:
@@ -174,7 +190,7 @@ class ResumeProvenance(unittest.TestCase):
                                                          "conclusion": "cancelled",
                                                          "started_at": "2026-10-23T16:53:06Z",
                                                          "completed_at": "2026-10-23T22:53:29Z"}]}]}
-        log = raw_log(REF)
+        log = cli_log(REF)
         outputs = [("b" * 40 + "\n").encode(), ("b" * 40 + "\n").encode(),
                    json.dumps(run).encode(), json.dumps(jobs).encode(), log.encode()]
         cases = (("input", None), ("current-main", 0), ("prior-run", 2),
