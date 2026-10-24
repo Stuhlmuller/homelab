@@ -24,7 +24,8 @@ PUBLISHED_ARCHIVE_REF = "9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221"
 PRIOR_JOB_ID = 120540474364
 PRIOR_JOB_STARTED_AT = "2026-10-23T16:52:54Z"
 PRIOR_JOB_COMPLETED_AT = "2026-10-23T22:53:32Z"
-PRIOR_CANCEL_LOG = "2026-10-23T22:53:29.0245903Z ##[error]The operation was canceled."
+PRIOR_CANCEL_SECOND = "2026-10-23T22:53:29"
+PRIOR_CANCEL_TEXT = "##[error]The operation was canceled."
 UNCHANGED = (
     "scripts/config/openclaw-enterprise.json",
     "scripts/openclaw-retirement-status.py",
@@ -78,24 +79,38 @@ def parse_job(jobs):
     started = datetime.fromisoformat(matches[0]["started_at"].replace("Z", "+00:00"))
     completed = datetime.fromisoformat(matches[0]["completed_at"].replace("Z", "+00:00"))
     require(timedelta(minutes=360) <= completed - started < timedelta(minutes=361))
+    steps = matches[0].get("steps")
+    require(isinstance(steps, list))
+    stage = [step for step in steps if step.get("name") == STAGE_STEP]
+    require(len(stage) == 1 and stage[0].get("number") == 7 and
+            stage[0].get("status") == "completed" and
+            stage[0].get("conclusion") == "cancelled" and
+            stage[0].get("started_at") == "2026-10-23T16:53:06Z" and
+            stage[0].get("completed_at") == "2026-10-23T22:53:29Z")
     return matches[0]["id"]
 
 
 def parse_log(log, archive_ref):
     require(len(log) <= 8 * 1024 * 1024)
-    found = {"RUN_STAGE": [], "ARCHIVE_REF": [], "CANCEL": []}
-    for line in log.splitlines():
-        fields = line.split("\t", 2)
-        if len(fields) != 3 or fields[:2] != [JOB, STAGE_STEP]:
-            continue
-        if fields[2] == PRIOR_CANCEL_LOG:
-            found["CANCEL"].append(True)
-        for key in ("RUN_STAGE", "ARCHIVE_REF"):
-            match = re.fullmatch(r"[^\t]*Z +" + key + r": ([^\s]+)", fields[2])
-            if match:
-                found[key].append(match.group(1))
-    require(found == {"RUN_STAGE": ["prepare-restore"],
-                      "ARCHIVE_REF": [archive_ref], "CANCEL": [True]})
+    lines = log.splitlines()
+    timestamp = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z"
+    group = [index for index, line in enumerate(lines) if re.fullmatch(
+        timestamp + r' ##\[group\]Run private_log="\$\(mktemp\)"', line)]
+    require(len(group) == 1)
+    ends = [index for index, line in enumerate(lines) if index > group[0] and
+            re.fullmatch(timestamp + r" ##\[endgroup\]", line)]
+    require(len(ends) >= 1)
+    end = ends[0]
+    markers = {}
+    for key in ("RUN_STAGE", "ARCHIVE_REF"):
+        matches = [(index, match.group(1)) for index, line in enumerate(lines)
+                   if (match := re.fullmatch(timestamp + r" +" + key + r": ([^\s]+)", line))]
+        require(len(matches) == 1 and group[0] < matches[0][0] < end)
+        markers[key] = matches[0][1]
+    cancellations = [index for index, line in enumerate(lines) if re.fullmatch(
+        re.escape(PRIOR_CANCEL_SECOND) + r"\.\d{7}Z " + re.escape(PRIOR_CANCEL_TEXT), line)]
+    require(markers == {"RUN_STAGE": "prepare-restore", "ARCHIVE_REF": archive_ref} and
+            cancellations == [end + 1])
 
 
 def require_legacy_timeout(source):
@@ -154,9 +169,10 @@ def main(argv=None):
         boundary = "prior-job"
         jobs = json.loads(command("gh", "api", f"repos/Stuhlmuller/homelab/actions/runs/{args.prior_run_id}/jobs?per_page=100"))
         job_id = parse_job(jobs)
-        boundary = "prior-log"
-        parse_log(command("gh", "run", "view", args.prior_run_id, "--job", str(job_id), "--log").decode(),
-                  args.archive_ref)
+        boundary = "prior-log-fetch"
+        log = command("gh", "api", f"repos/Stuhlmuller/homelab/actions/jobs/{job_id}/logs").decode()
+        boundary = "prior-log-match"
+        parse_log(log, args.archive_ref)
         boundary = "source"
         prove_source(prior_sha, args.current_sha)
         boundary = "receipt"
