@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c8579c0f3b4e6c62ccd141eb24eabbe8f996b2d5c66a2e09799aae72ad0db2fa",
+  "pageVersion": "sha256:5e0345349c8f790c4ab4abbdc46ce0a28d244d66eab446deac9f4c3611a0f36d",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -126,7 +126,7 @@
     },
     {
       "id": "claim_69308222d1c94bb682dacb13a27cfe91",
-      "statement": "The runbook records October 11 and 19 full-catalog failures on LiteLLM's repeated-descriptor index and Harbor's correlated unique_reference error. Protected run 39210811031 published the exact Linux amd64 child with a source-digest check and complete authenticated Harbor pull. The consumer source now pins that child and removes only the rejected root index from the full catalog; a new full-catalog receipt remains required. This excludes arm64 and attestation descriptors and does not authorize live schema repair or strict mirrors.",
+      "statement": "October 11 and 19 full-catalog attempts failed on LiteLLM's repeated-descriptor index and Harbor's correlated unique_reference error. Protected run 39210811031 published the exact Linux amd64 child with a source-digest check and complete authenticated Harbor pull. The consumer pins that child and excludes only the rejected root index; later protected all run 40011909180 passed the revised 214-image catalog. The child omits arm64 and attestation descriptors, and publication alone does not authorize live schema repair or strict Talos mirrors.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/litellm/values.yaml",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -170,7 +170,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:6b70e2265aef1976b1f25d4ad7b993a2bf6e6862929bef8e72a5ecfe07fab9ff"
+          "version": "repo-file-v1:sha256:9debb5b4baf6d5c35ea9febe1482106a242ac5c4fc807f35229cc0ce48136013"
         },
         {
           "resource": "repo://builds/harbor-core/prepare-source.py",
@@ -216,7 +216,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:6b70e2265aef1976b1f25d4ad7b993a2bf6e6862929bef8e72a5ecfe07fab9ff"
+          "version": "repo-file-v1:sha256:9debb5b4baf6d5c35ea9febe1482106a242ac5c4fc807f35229cc0ce48136013"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
@@ -272,7 +272,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:6b70e2265aef1976b1f25d4ad7b993a2bf6e6862929bef8e72a5ecfe07fab9ff"
+          "version": "repo-file-v1:sha256:9debb5b4baf6d5c35ea9febe1482106a242ac5c4fc807f35229cc0ce48136013"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -698,7 +698,7 @@
     },
     {
       "id": "claim_8bdf04089df24f579540743fc5f7c2fb",
-      "statement": "The fixed LiteLLM mirror scope selects only the exact Linux amd64 child of the repeated-index source. Protected run 39210811031 passed the source-digest check and complete authenticated Harbor pull; after that receipt, the consumer source pins the child and the full catalog excludes the failing index. The scoped receipt alone does not prove full-catalog coverage or authorize strict Talos mirrors.",
+      "statement": "The fixed LiteLLM mirror scope selects only the exact Linux amd64 child of the repeated-index source. Protected run 39210811031 passed its source-digest check and complete authenticated Harbor pull; the consumer pins that child and the full catalog excludes the failing index. That scoped receipt alone did not prove full coverage; the later protected all run 40011909180 passed all 214 reviewed catalog images and authenticated pulls. Strict Talos mirrors still require their separate node-by-node gate.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -724,7 +724,7 @@
     },
     {
       "id": "claim_5d8e4ef4cd5d4a04b5ece1dedd461ec5",
-      "statement": "A protected stock OpenClaw Enterprise controller/runtime publication signed and fully pulled both images, but the source-declared four-image controller/runtime/CLI/operator publisher and full platform catalog still lack complete acceptance receipts.",
+      "statement": "A protected stock OpenClaw Enterprise controller/runtime publication signed and fully pulled the earlier pair. Protected all run 40011909180 passed the 214-image platform catalog with matching digests and complete authenticated pulls. Source-built four-image publisher run 40056484158 built controller, runtime, CLI and exact-source operator, then passed four complete authenticated Harbor pulls and signature checks; the selected operator digest is pinned in the disabled declaration.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
@@ -732,11 +732,15 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
           "version": "repo-file-v1:sha256:a250b0595a4a3fb4803532da082dcfbba20945cac7c215a1fb0d1f0b036b188a"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
         }
       ]
     },
@@ -746,29 +750,33 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:9d91f71dc367dddf4c624f4f39a5e1a8453fb87d6e8a909118766de84ef8cefd"
+          "version": "repo-file-v1:sha256:64ffd58d5e7e01518df303790d6d63349dc985339c140bb0cd18cf09091149ab"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         }
       ]
     },
     {
       "id": "claim_89190b43dbc541a481683f14a327fc0b",
-      "statement": "The dormant Enterprise chart candidate references pinned Harbor controller/runtime digests and a single EnvoyProxy mirrored-image override; transitive image publication and live pulls remain unverified.",
+      "statement": "The dormant Enterprise chart candidate references pinned Harbor controller/runtime digests and one EnvoyProxy mirrored-image override. The reviewed full catalog passed publication and authenticated pulls in protected run 40011909180, but local render comparison and publication do not prove any Enterprise Pod has pulled from Harbor.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:9673c3b68757eaba263cf2fbd682fd9c9b6818e086b1388814262ecdbca0bd1b"
+          "version": "repo-file-v1:sha256:e8bc3a7ce13355d37351296f7830bdbf8e4b689978df9630cfc1c8823599c65e"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
-          "version": "repo-lines-v1:sha256:4f8cf618d5c9d076a2a193565d46c1552bf753c1603e0f3294cd653fd0ba7871:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxYTBiMzZhNDQ1NDIzMTY5MmY1Y2M3NDg2MDdkODJmY2FkZjRlZWQ3OGI3MmZlZGViZTQ4ZWI3MmUzMTA0N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxODJlMjliMzc5Mjc3ZDVhOTRhODFmOWUxMmVmZWE3N2FhZmVmYzY4NTZmNWZjMjlkYzY1Nzg4YmU5ODVmMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml",
+          "version": "repo-file-v1:sha256:4f8cf618d5c9d076a2a193565d46c1552bf753c1603e0f3294cd653fd0ba7871"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml#L1-L2",
-          "version": "repo-lines-v1:sha256:27828993c743eb17047d8185ca1488c656dc3fdce111448a557065fb3bf19b2f:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjM0ZjRiMWRiYzg2NWU3ZTY5NDQ5N2Q5MGUyNzczMTIyM2RlMGY0OTJmOTg4YmIzNjBkOTNlYTc3MDRkMzZmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNmNzRjM2VmODRlMGYzYTk1MDVlNmI1ZGU1OTNlYTY3NzgzYmNiMzU0NmVhN2Y1NjI4NDhmYjc2ZDE1Y2ZlMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzMyMWIxYjcwMWYzZjVkNmQ5ZmY4NjQ5NTVkZmMxMmExNGNmODg3NTkyNTFiMTA5ZTRmZTMwODdhNzkwZTkxMiJ9"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
+          "version": "repo-file-v1:sha256:b745c6866df832e1a7ba272f4ef8905612fe998babb83820920fa04aa4670ccb"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         }
       ]
     },
@@ -834,11 +842,11 @@
     },
     {
       "id": "claim_442713dd84164cda9cae2f79038ae35b",
-      "statement": "The post-shutdown capacity receipt leaves isolated Enterprise canary placement blocked independently of the pending full Harbor catalog publication.",
+      "statement": "The post-shutdown capacity receipt leaves isolated Enterprise canary placement blocked even after protected run 40011909180 passed the full Harbor catalog; image publication does not supply node memory, disk or enforced network isolation.",
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2e0d03b82e48faa39f36a3b9b52b9b68fcbf259038eff741f386cc7f5481eb48"
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         }
       ]
     },
@@ -934,25 +942,25 @@
     },
     {
       "id": "claim_c1a844bb016948808c27fa49c2ae35c3",
-      "statement": "Full mirror run 39906968373 stopped at Prometheus item 196 of 214 with public destination-copy and command-failed; no complete full-catalog receipt was produced.",
+      "statement": "Full mirror run 39906968373 stopped at Prometheus item 196 of 214 with public destination-copy and command-failed; that run produced no complete catalog receipt. Later protected all run 40011909180 passed all 214 reviewed images and authenticated Harbor pulls.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L16-L16",
-          "version": "repo-lines-v1:sha256:3653dd655493ad0bf249b7a6270654dbec5b5b48dd10017e3014c7a19c76de1d:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzY1M2RkNjU1NDkzYWQwYmYyNDliN2E2MjcwNjU0ZGJlYzViNWI0OGRkMTAwMTdlMzAxNGM3YTE5Yzc2ZGUxZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzY1M2RkNjU1NDkzYWQwYmYyNDliN2E2MjcwNjU0ZGJlYzViNWI0OGRkMTAwMTdlMzAxNGM3YTE5Yzc2ZGUxZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMmM0ZjFkNGMwNDNkNGNmYjc4OTBiNTI1MTI4NGMzMDdjMTUwYjU0MTM4MjQxZmVhMDQyNjhmNjhjMzExMTZmYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjNmOGM2NTJlOGVlZmQzNDY3MDkyNGY5ZWU3ZWRhOTc3MWRlYTg3Mzg3OTdjZDdkOWY5NmJjMWU4ZjE3YzNjMiJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         }
       ]
     },
     {
       "id": "claim_962f4c7ca79d46c4a1762005e4ac1968",
-      "statement": "Harbor-only application pulls remain a target because full-catalog publication and consuming-reference cutover have not passed.",
+      "statement": "Harbor-only application pulls remain a target, not a live cluster-wide result. Protected all run 40011909180 passed full-catalog publication and authenticated Harbor pulls, while consuming-reference cutover and node-level mirror enforcement remain pending.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L9-L18",
-          "version": "repo-lines-v1:sha256:9a4624ac1e7b0375c7a0b3af053a81e5a7a6b1e16d5101328a5cab325d8b8642:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZTM3MWRmNGMyNzliM2M5MTg2YjE5NDNkMmE2OTAwN2YwMjZmOGE0OTA4ZWEzNzZhMzljMDgyNTk5MTBmNDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MWVhYzg1NzM5M2FlMzg2OTk1YzQyY2Y3ZGMzODFjN2Q1NTliOTljYThlNWE3ZGJjMzhiZjkxNjRlZDcwZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4MWJhNjE2MGUwN2M2NWJiZGJiMjMwZDZmMzA5MzExODI4NDI2NTVkNzdkODNiM2JjZjk1N2M5NjUxMjJhMzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMGQ3MWUyYmVhZjcwNTBhODIxNGU3OGYyYmU4OWQ1ZDkwMTY2MWI5NzU4NTViYTUzMzI3NWI2ODFhM2Y5MjAifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         },
         {
-          "resource": "repo://docs/image-egress-hardening.md#L1-L13",
-          "version": "repo-lines-v1:sha256:d7fbfd6adff643751aa33ad87fdba38d0a6a166c1dc5992458105bef4ea8987b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MjNkMzg3MjZiYTk2MzExYmIyYTMzYmQwNTVhZWNjNmFiNTY0YzJkMDE5YTA2OGMxOGEzODEwNmE0ZTEzNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MTFlZWQ2OTllNTQwNzc0ZTg3OTBlNDQ5ODQ5NDhjMTMyZDk3NDQxN2ZkMDY4ZmM3NjZkNDBmZWNhMWVkZDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxYjU4ZWY0Mjk4ZjYyM2M2MWE4ZWUwYzlkMDNjMDMxZjdhNWU3MWM4NjFhNTQ3ZjEyODU3OTY5NDRhZGRiN2YifQ"
+          "resource": "repo://docs/image-egress-hardening.md",
+          "version": "repo-file-v1:sha256:4b3d2cbd3fbda425dfc3c1f60445a43b673865d542bec4d4ab8ea8ae1e5bdffd"
         }
       ]
     },
@@ -973,6 +981,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T18:25:34.713Z"
+    "at": "2026-10-24T03:50:35.181Z"
   }
 }

@@ -34,6 +34,8 @@ sources:
     resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
@@ -60,10 +62,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # Storage And State
@@ -329,9 +331,16 @@ download or the restore worker. The next [retry
 also failed in `verification-archive-download` before receipt download or
 restore-worker start. Its protected download helper did not distinguish the
 S3 source range from reader transport or finalization, so the cause remains
-unclassified. No verified recovery copy resulted. A successful
-stage would retain a separate tree and private symlink classification report,
-but would not boot the old gateway or prove T014 compatible recovery.
+unclassified. The later [protected copy run
+`39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652)
+downloaded the pinned archive and receipt and started a detached restore
+worker, then its six-hour job was cancelled. Its source-bound [resume run
+`40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+passed exact-main and prior-job provenance checks, verified the stable worker
+success marker, cached archive and receipt hashes, restored database report,
+source identity and zero production writers, and prepared a separate private
+NAS scratch recovery tree. This is a partial T014 copy receipt, not an old-image
+boot or compatible recovery proof.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
