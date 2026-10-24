@@ -51,6 +51,13 @@ preconditions. The lane requires the owner-controlled, 0600 bootstrap service
 key at the fixed `bootstrap.serviceKeyFile` path. No declared runner currently
 delivers that private file, so hosted dispatch fails before binding. Do not
 dispatch it until credential delivery and the dormant Installation are proven.
+
+Do not mount the bootstrap PVC into a reader Pod as a shortcut: current
+[Flannel isolation](runtime-isolation.md) does not enforce a declared deny-all
+NetworkPolicy. Any future key reader needs proven enforcement on the admitted
+canary and source-reviewed delivery through the existing serialized binding
+lane.
+
 The fixed `full-sync` lane can sync both Applications only after a reviewed
 `installationPhase` and source registration; the current `unselected` phase
 blocks it before cluster access. `reconcile`, `stop`, and `verification` have a
@@ -151,6 +158,14 @@ restore report, source identity and zero-writer state. It neither launched
 another worker nor downloaded another archive. The private NAS scratch copy is
 prepared; no isolated old-image boot or enforced offline network boundary has
 been proven, so T014 remains open.
+
+No declared host can run that rehearsal yet. The restored archive plus a
+separate extracted UID 1000 copy and image layers exceed the current hosted
+Actions and Nix-builder scratch budgets; the available macOS host lacks Docker,
+and no isolated Talos node is admitted. Declare an adequately sized Linux
+container host with source-owned `--network none` staging and copied data
+before attempting an old-image boot. Keep original claims read-only.
+
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain
