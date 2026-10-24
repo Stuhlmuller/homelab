@@ -154,6 +154,9 @@ archive, receipt, restored database report and stopped-source identity. It
 never starts a second worker; an incomplete or failed result stays private and
 blocks recovery. See the [rollout runbook](../../../../docs/openclaw-enterprise-rollout.md)
 for the dispatch gate.
+[Protected resume `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+passed these checks on 2026-10-24 and prepared the separate private NAS scratch
+copy. It did not boot the legacy image or complete T014.
 Its private `link-classification.json` records raw targets as `contained`,
 `link-chain`, `missing-in-archive`, or `external`. Its `lexicalPath` is a hint,
 not proof that symlink components resolve there. `completed.json` records
