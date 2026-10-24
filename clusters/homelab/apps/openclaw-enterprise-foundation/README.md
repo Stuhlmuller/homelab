@@ -51,7 +51,9 @@ journal, tenant metadata/secrets and an identity-checked agent state snapshot.
 It requires `jq` and rejects a recovery marker unless `writerStopped` is true
 and `claimUid` is nonempty. The future T051 capture must verify that UID against
 the live claim and hold the writer fence throughout backup; the marker alone is
-not a live quiescence proof.
+not a live quiescence proof. The packager requires ordinary single-link files,
+compares path types and content hashes before and after copying and against the
+copied tree, and discards a partial set if material changes during backup.
 T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup`
 mount. `restore-drill.yaml` is deliberately outside the Kustomization; T045
 must run it in isolation against a complete set and verify the result. Its
