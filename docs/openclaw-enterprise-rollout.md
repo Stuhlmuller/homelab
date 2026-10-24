@@ -32,9 +32,13 @@ runtime `sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1
 CLI `sha256:9d77fddb3f099f329494910609459e7bc8076d74ab797ca3382fe80edf9f12d2`,
 and operator `sha256:ec9bb06fccb2a4b268d4af3c0a11e5686dc8f6063a807e80e27fd61342914b19`.
 The selected controller/runtime and CLI digests are pinned in source. Updating
-the Installation and values changes bytes embedded in that operator image, so
-its digest and source SHA remain unselected until a later exact-source build.
-The operator and activation gates remain disabled.
+the Installation and values changed bytes embedded in that earlier operator
+image. [Protected exact-source rebuild `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+from main `fda0d68cd2fc5d4689b6f1b048d329ae66ef3727` passed all four
+authenticated pulls and signature checks; its operator digest
+`sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`
+and source SHA are pinned in the disabled journal declaration. The operator
+and activation gates remain disabled.
 The operator build compiles `yq-go` from the flake-locked nixpkgs source with
 `CGO_ENABLED=0`; copying the dev-shell binary into Debian would leave its Nix
 ELF interpreter missing. A pull-request Linux amd64 image build checks for a

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a60efc675a4930df674e9c480ce1d3bad6eb660e8203444f56ef721ecbd8c275",
+  "pageVersion": "sha256:35d2781819d7ef0ff4fb7b5d5fdd242662333c2fff609d837c7d338afe7c342f",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -96,25 +96,29 @@
     },
     {
       "id": "claim_94dcd2ca66df43fc8ee356849dc5630b",
-      "statement": "The separate Enterprise journal-operator bundle has no Argo or Terragrunt registration and its reconciliation stages are disabled pending placement, image, and private bootstrap credential proof.",
+      "statement": "The separate Enterprise journal-operator bundle has no Argo or Terragrunt registration. Protected publisher run 40056484158 signed and fully pulled its exact-source image, which is pinned in the disabled declaration. Reconciliation stages remain disabled pending placement and private bootstrap credential proof.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L29",
-          "version": "repo-lines-v1:sha256:aba22e1524e874db7c0167e4bed6602f1bcc8331a28dc339f99e065c52c39413:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4NTA2ZTljM2YzMzA3ODY2ZDIyMjhhNDQ0ZjQwMDBlMWQzNGQzZDYzZTY5ODhlMjQzNzFkYjc2YWQwNjFjZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmNjI2ODQ1MDdlMmJmYTI0YWI0NmFjZDAwZGFmYzUyMDljMDhjYjM1OWFjNGU0NzBlYTc3ODJjODI5ZDEyMjgifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:cd7f00f1ddd34b26b78a23f497090e367007e7fdf8b0c76ebea7e350efa76d86"
         },
         {
-          "resource": "repo://docs/argocd-app-onboarding.md#L95-L105",
-          "version": "repo-lines-v1:sha256:29efc875724bdffa3215487a9c550015fbabc90d857508eced0bfc1c0c8a9fdf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlOTFlZTM3MThlYTJhNzVlMzdjMTA5OGI0YTFhYThjY2I3MDhkZjg2MjMwMmVhYzlmN2Q2NDRiNDExODk2NGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyOWU3ZjM4NGMyZjgyZGVlNjhiNTg5MzdmOWQ4ZDc1NTUxZmE2M2UwN2ExMjc1NDBjNDA5ODFhMjg2NTE3NjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlNjdlZDU5ZjQ4YjBiMDVmYmFlNDNlYTE5MTQxNTNjY2I0ZTBhNTg5NmQ4ZjM5YmIzYmUyM2I1ZTllMTgzZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxODZkNzljZDY4Y2NjMGEwYjQzY2I5YjY5YmZhNTBlMTk3NTIzOGU2ODYxNmJkYWRkZTVjMzBjODgyZjQxNDQifQ"
+          "resource": "repo://docs/argocd-app-onboarding.md",
+          "version": "repo-file-v1:sha256:b31fb18c93b7fc9a82544bcf5e0284d31a73abf87a82c330fc5e801a34e381a6"
         },
         {
-          "resource": "repo://scripts/config/openclaw-enterprise.json#L1-L70",
-          "version": "repo-lines-v1:sha256:ed2c54bcd7463576525158f5496ccb70f1430e329bd3f7a328d22d2b85926b42:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMThmNzFhOGViZjQ3N2Y2YWY4MDg0NTY3OWUwYjJjNDc2OThkNzIwOWIzZWUwY2MyN2Q1NmQ1ODY4YzYxNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4ODlkMzA4NTYzOGI2ZDVkZDU4MmE3ZDQxZmMyOTQ2N2U1OTM3MTc3ZTA0MWMyNmM5OGY5NDhiYjZjNDZhZDAifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T18:25:34.713Z"
+    "at": "2026-10-24T03:50:35.181Z"
   }
 }

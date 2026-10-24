@@ -18,6 +18,8 @@ sources:
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-cb44bee82f523806d88ae83a
     resource: repo://docs/argocd-app-onboarding.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
     resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
@@ -38,10 +40,10 @@ sources:
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-ba849f5dbd0942cee0b0087d
     resource: repo://scripts/network-policy-ownership.py
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # Argo CD App Onboarding
@@ -76,9 +78,11 @@ Registration does not prove database or secret readiness; complete sync still
 requires storage, capacity, policy and live gates.
 The legacy `openclaw` Application remains registered with a zero-replica
 gateway, suspended backup writer, and read-only recovery reader. The separate
-Enterprise journal-operator bundle has no Argo or Terragrunt registration; its
-reconciliation stages remain disabled pending placement, a signed image, and
-private bootstrap-key proof.
+Enterprise journal-operator bundle has no Argo or Terragrunt registration. Its
+exact-source image passed signed publication and authenticated pull in protected
+[run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158),
+but reconciliation remains disabled pending placement and private bootstrap-key
+proof.
 
 After the traffic probe, two reviewed GitOps commits prune the fixtures and
 then the enforcer; each may include native OpenWiki metadata. Apply the

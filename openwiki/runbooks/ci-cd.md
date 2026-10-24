@@ -104,10 +104,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # CI/CD
@@ -177,7 +177,10 @@ The protected [Enterprise images workflow](../../.github/workflows/openclaw-ente
 builds the stock controller, runtime, and CLI plus the source-bound journal
 operator from exact current `main`. The operator build and non-root smoke checks
 run before registry credentials; publication signs and completely pulls all
-four images. No signed operator digest has been accepted yet. A failed run
+four images. Protected
+[run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+passed all four authenticated pulls and signatures from source `fda0d68`; its
+operator digest is pinned in the disabled declaration. A failed run
 reports only a fixed publication phase in its job summary; private transport
 and registry output remains encrypted. A failure produces no accepted image
 receipt. Retry from current `main` after resolving that phase.
@@ -243,7 +246,7 @@ Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) added the fi
 legacy `prepare-restore` choice to the protected operations workflow. Dispatch
 requires the exact current `main` SHA and the successful publication SHA/run ID
 as `archive_ref`. The worker rechecks stopped writers and source identities,
-fetches the recorded S3 object versions, and would keep a separate verified tree
+fetches the recorded S3 object versions and retains a separate verified tree
 and private symlink report under `/archive/private/rehearsal-<RUN_ID>`. Its first
 [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
 left an incomplete, unverified archive in scratch. The [retry
@@ -253,14 +256,17 @@ download or the restore worker. The [third run
 `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
 failed in the same broad phase, before receipt download or worker start. It did
 not identify whether the source range, reader transfer or finalization failed;
-no accepted copy exists. The source-only
+those three runs produced no accepted copy. The source
 repair fetches pinned S3 versions in at most 128 MiB ranges, validates version,
 interval and length, then uploads at most 8 MiB reader slices with SHA-256
 checks. Interrupted appends roll back; full size and digest checks precede
 no-clobber promotion. Future failures report fixed source-range,
 reader-transfer or finalization subphases for either versioned download, plus
-the restore phase, without private diagnostics. A successful copy receipt would
-still not boot or accept the old gateway.
+the restore phase, without private diagnostics. Guarded
+[`resume-restore` run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+later verified the cached archive and receipt and prepared a separate private
+NAS scratch recovery tree. That copy did not boot or accept the old gateway;
+T014 remains open.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added

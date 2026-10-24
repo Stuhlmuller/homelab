@@ -86,8 +86,8 @@
     "bootstrapClaimUid": null,
     "node": null,
     "runAsUser": 10001,
-    "image": null,
-    "imageSourceSha": null
+    "image": "harbor.stinkyboi.com/homelab/homelab-oce-operator@sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08",
+    "imageSourceSha": "fda0d68cd2fc5d4689b6f1b048d329ae66ef3727"
   },
   "privateArchives": {
     "legacy": {
@@ -129,7 +129,6 @@
     ]
   },
   "executionBlockers": [
-    "Journal operator image/source pairing is not selected",
     "Dedicated OpenRouter credential is not configured",
     "Storage placement and private recovery paths are not validated"
   ],

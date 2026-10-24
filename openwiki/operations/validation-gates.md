@@ -360,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # Validation Gates
@@ -1748,9 +1748,11 @@ The Enterprise model-credential workflow is protected by exact current-`main`
 source checks and validates an owner-supplied OpenRouter key before writing only
 `/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
 The stopped legacy inventory, off-NAS archive publication and separate
-multi-root restore verification are complete. The full image catalog, isolated
-canary, platform upgrades, compatible legacy boot and new-state restore remain
-acceptance gates. Source-only static
+multi-root restore verification are complete. The 214-image catalog passed
+protected `all` publication and authenticated pulls in
+[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+The isolated canary, platform upgrades, compatible legacy boot and new-state
+restore remain acceptance gates. Source-only static
 checks do not activate the agent.
 
 Protected `publish-archive` run `39466313228` completed bounded multipart
@@ -1791,9 +1793,12 @@ failing boundary on a future run, not the private underlying error. Source
 fixtures reject short and wrong-metadata
 ranges, same-size corruption, reader transport failures, interrupted appends,
 and destination collisions, as well as changed source identities, corrupt
-archives/databases and unsafe symlinks. A successful
-stage would retain a separate verified copy and link report; source tests do
-not prove an isolated old-image boot or complete T014.
+archives/databases and unsafe symlinks. The later guarded
+[`resume-restore` run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+passed exact-main and prior-job provenance, verified the cached archive and
+receipt, and prepared a separate private NAS scratch recovery tree and link
+report. This source-bound copy does not prove an isolated old-image boot or
+complete T014.
 
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
@@ -1858,9 +1863,9 @@ ownership-limited cleanup. The protected workflow wires fixed upgrade stages
 to that executor with a pinned helper hash and bounded private results. Its
 execute path also binds canonical platform inputs to the exact dispatched
 commit, rejecting a runner-local override before an upgrade. The activation
-flag and canary node remain unset. Current-SHA recovery receipts,
-full-catalog publication, five-tag Harbor lock and an isolated canary remain
-live gates. Passing these fixtures does not qualify a live Talos node or make
+flag and canary node remain unset. The full-catalog publication receipt
+passed; current-SHA recovery receipts, five-tag Harbor lock and an isolated
+canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 The static registration fixture accepts only five exact policy/canary GitOps
 source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
@@ -1974,12 +1979,15 @@ The local `--expected-sha` guard is not an exact-remote-main check. The staged
 adds an exact-main one-shot Job dispatcher, retained journal PVC declaration,
 scoped proof RBAC and private-network intent. The static gate runs its
 [failure and restart fixtures](../../scripts/ci/openclaw-enterprise-journal-operator-test.py).
-The source-built operator image recipe and its offline fixture now check a
-clean exact-source build context, embedded SHA, non-root read-only startup, and
-fixed `kubectl`/`yq` tools before registry credentials. The protected Enterprise
-publisher is declared to sign and fully pull this fourth image. No signed
-operator digest, static PV, admitted node or proved bootstrap-key ownership
-exists, so `journalOperator.enabled: false` blocks live dispatch.
+The source-built operator image recipe and its offline fixture check a clean
+exact-source build context, embedded SHA, non-root read-only startup, and fixed
+`kubectl`/`yq` tools before registry credentials. Protected publisher
+[run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+signed and fully pulled all four images from source `fda0d68`; the selected
+operator is pinned at
+`sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
+Static PV placement, an admitted node and proved bootstrap-key ownership
+remain absent, so `journalOperator.enabled: false` blocks live dispatch.
 The source-only active path is exercised by
 [`openclaw-enterprise-active-test.py`](../../scripts/ci/openclaw-enterprise-active-test.py)
 in static and offline checks. Its fixtures cover the model-key file boundary,
@@ -2394,8 +2402,8 @@ not establish successful private image publication.
 The fixed Harbor 2.15.4 scope must contain exactly the nine digests from the
 reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
 selected-image pull verification. A successful scoped run proves only those nine
-components; the revised LiteLLM catalog still needs an `all` run for
-full-catalog acceptance.
+components. The revised LiteLLM catalog later passed protected `all` run
+`40011909180` for full-catalog acceptance.
 
 The fixed LiteLLM scope selects the one reviewed Linux amd64 child digest
 from the repeated-descriptor index. The consumer source now pins that child and
@@ -2405,7 +2413,8 @@ publisher verifies original manifest bytes and a fresh complete authenticated
 Harbor pull. Exact-main protected
 [run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
 passed the one-image publication receipt; local fixtures alone cannot prove
-that live result, and the scoped run does not clear full-catalog coverage.
+that live result, and the scoped run alone did not clear full-catalog coverage.
+The later protected `all` run `40011909180` passed all 214 catalog images.
 
 The fixed Prometheus qualification scope selects one exact digest already in
 the full catalog. Inventory and publisher fixtures reject missing, altered,

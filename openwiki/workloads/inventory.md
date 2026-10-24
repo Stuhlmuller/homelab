@@ -218,10 +218,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-23T16:21:49.039Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-23T18:25:34.713Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # Workload Inventory
@@ -246,8 +246,9 @@ LiteLLM's image pin selects the Linux amd64 child of an upstream OCI index
 that Harbor 2.15.2 rejects because it repeats child descriptors. The exact
 child passed the [protected scoped mirror receipt](../operations/harbor-oci.md#october-11-duplicate-index-failure)
 before the consumer source changed. All four observed nodes were amd64 on
-October 19; re-evaluate this pin before adding arm64 nodes. Full-catalog
-publication is still pending.
+October 19; re-evaluate this pin before adding arm64 nodes. The revised catalog
+later passed protected `all` publication and authenticated Harbor pulls in
+[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
 
 ## Import Note
 
@@ -433,15 +434,17 @@ unverified scratch archive. [Retry `39951803625`](https://github.com/Stuhlmuller
 failed in fixed `verification-archive-download`; neither reached receipt
 download or the restore worker. [Retry `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
 also failed in that broad archive-download phase before receipt or worker;
-the source, reader or finalization boundary was not identifiable. It has not
-established a verified NAS restore
-copy or booted the old image. T013 archive verification passed; T014 compatible
+the source, reader or finalization boundary was not identifiable. Guarded
+[`resume-restore` run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+later verified the cached archive and receipt and prepared a separate private
+NAS scratch recovery tree. It has not booted the old image. T013 archive
+verification passed; T014 compatible
 recovery remains open, and the original claims stay retained and read-only.
 The source-only transfer repair uses bounded exact-version S3 ranges, 8 MiB
 SHA-256-checked reader slices, append rollback and full-digest promotion, with
 fixed public source-range, reader-transfer and finalization subphases for each
-download. It remains source-only
-until a protected retry succeeds. Private restore diagnostics stay outside this
+download. The protected resume passed the copy stage, while boot remains
+unproven. Private restore diagnostics stay outside this
 wiki.
 
 Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
@@ -498,13 +501,15 @@ admitted node. `reconcile`, `stop`, and `verification` have an exact-main
 one-shot Job dispatcher but the committed disabled operator gate stops before
 Job creation; `restore` and `acceptance` remain separately blocked. A
 clean-source [operator image recipe](../../builds/openclaw-enterprise/build-operator.sh)
-and offline fixture are staged; the protected four-image publisher has not yet
-produced an accepted signed operator digest.
+and offline fixture are staged; protected
+[run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+signed and fully pulled all four images from source `fda0d68`. The selected
+operator digest and source SHA are pinned in the disabled declaration.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
 Embedded Agent; no live Agent or operator Job exists. Its staged dispatcher
-still needs a bound journal PV, placed node, signed source-paired operator
-image digest, and private bootstrap file proof before activation.
+still needs a bound journal PV, placed node and private bootstrap file proof
+before activation.
 Its active and stop paths have offline fixtures for model-key isolation,
 exact Agent grants, runtime credential/deployment readback, and idempotent
 stop. With a reviewed native origin, the source-only path guards the
