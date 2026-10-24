@@ -51,6 +51,11 @@ preconditions. The lane requires the owner-controlled, 0600 bootstrap service
 key at the fixed `bootstrap.serviceKeyFile` path. No declared runner currently
 delivers that private file, so hosted dispatch fails before binding. Do not
 dispatch it until credential delivery and the dormant Installation are proven.
+Do not mount the bootstrap PVC into a reader Pod as a shortcut: current
+[Flannel isolation](runtime-isolation.md) does not enforce a declared deny-all
+NetworkPolicy. Any key reader needs an
+enforced isolation path proven by the admitted canary, then source-reviewed
+delivery through the existing serialized binding lane.
 The fixed `full-sync` lane can sync both Applications only after a reviewed
 `installationPhase` and source registration; the current `unselected` phase
 blocks it before cluster access. `reconcile`, `stop`, and `verification` have a
