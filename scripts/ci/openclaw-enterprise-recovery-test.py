@@ -179,6 +179,22 @@ class RecoveryBoundaries(unittest.TestCase):
         self.assertEqual(self.stop()["desiredRuntimeState"], "stopped")
         self.assertNotIn("pending", self.journal())
 
+    def test_incomplete_or_nonempty_tenant_pod_list_cannot_prove_stop(self):
+        kube = OCE.Kubernetes.__new__(OCE.Kubernetes)
+        empty = {"kind": "PodList", "metadata": {"resourceVersion": "42"},
+                 "items": []}
+        with patch.object(kube, "_json", return_value=empty) as read:
+            kube.tenant_pods_absent()
+        read.assert_called_once_with("get", "--raw", "/api/v1/namespaces/openclaw-agents/pods")
+        for listing in (
+            {**empty, "metadata": {}},
+            {**empty, "metadata": {"resourceVersion": "42", "continue": "next"}},
+            {**empty, "items": [{"status": {"phase": "Unknown"}}]},
+        ):
+            with self.subTest(listing=listing), patch.object(kube, "_json", return_value=listing):
+                with self.assertRaisesRegex(OCE.Blocked, "Pod list is uncertain"):
+                    kube.tenant_pods_absent()
+
     def test_restore_stage_remains_blocked_before_recovery_orchestration(self):
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT,
                                        text=True).strip()
@@ -205,6 +221,7 @@ class RecoveryBoundaries(unittest.TestCase):
         bundle = receipt.parent / "legacy.tar.gz"
         archive_sha = LEGACY.retirement.digest(bundle)
         self.active()
+        new_state = self.journal()
         with patch.object(self.api, "post_accepted", side_effect=OCE.Blocked("stop unavailable")):
             with self.assertRaisesRegex(OCE.Blocked, "stop unavailable"):
                 self.stop()
@@ -215,6 +232,16 @@ class RecoveryBoundaries(unittest.TestCase):
         self.assertEqual(LEGACY.retirement.digest(bundle), archive_sha)
         self.assertEqual(self.api.agents["agt_one"]["desiredRuntimeState"], "running")
         self.assertEqual(self.journal()["pending"], {"operation": "stop"})
+        self.api.agents["agt_one"].update(desiredRuntimeState="stopped", activeRevisionId=None)
+        self.api.runtime_pods = []
+        self.assertEqual(self.stop()["desiredRuntimeState"], "stopped")
+        recovery = fixture.archive_root / "recovery-copy"
+        self.assertEqual(LEGACY.retirement.verify_archive(fixture.config, receipt, recovery),
+                         expected)
+        self.assertTrue((recovery / "completed.json").is_file())
+        self.assertTrue((recovery / "tree/local/state/openclaw.sqlite").is_file())
+        self.assertEqual(LEGACY.retirement.digest(bundle), archive_sha)
+        self.assertEqual(self.journal(), new_state)
 
     def test_owned_claims_and_database_survive_declarative_retirement(self):
         for path, names, kind in (
@@ -238,6 +265,10 @@ class RecoveryBoundaries(unittest.TestCase):
         postgres = (ROOT / "clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml").read_text()
         self.assertIn("persistentVolumeClaimRetentionPolicy:\n    whenDeleted: Retain\n    whenScaled: Retain", postgres)
         self.assertIn("name: occ-postgres\n        annotations:\n          argocd.argoproj.io/sync-options: Prune=false", postgres)
+        journal = (ROOT / "clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml").read_text()
+        self.assertIn("reclaimPolicy: Retain", journal)
+        self.assertIn("name: occ-operator-journal", journal)
+        self.assertIn("argocd.argoproj.io/sync-options: Prune=false", journal)
         self.assertIn("argocd.argoproj.io/sync-options: Prune=false,Delete=false",
                       (ROOT / "clusters/homelab/apps/openclaw/values.yaml").read_text())
 
