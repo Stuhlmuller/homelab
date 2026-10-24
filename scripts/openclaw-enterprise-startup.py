@@ -19,7 +19,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "clusters/homelab/apps/openclaw-enterprise"
 NAMESPACE = "openclaw-system"
-DIGEST = "980de11bbc688a33741a19c9093f613e74e464d2aae897571ac61d0056593c71"
+DIGEST = "86641419e595a5c812a8c8565d5cb027a3e406e38ec6278f704c263e310d0019"
 NAME = "occ-installation-startup-" + DIGEST[:32]
 KUBE_SERVER = "https://kubernetes-api-ci.stinkyboi.com"
 REPOSITORY = "https://github.com/Stuhlmuller/homelab.git"

@@ -41,7 +41,7 @@ readiness, then liveness restarts the container so PostgreSQL loads the new
 pair. The reviewed `occ-plugin` startup bytes live at
 `../openclaw-enterprise/installation.yaml`. The protected
 `openclaw-enterprise-startup` workflow creates and verifies only the immutable
-`occ-installation-startup-980de11bbc688a33741a19c9093f613e` Secret after
+`occ-installation-startup-86641419e595a5c812a8c8565d5cb027` Secret after
 this namespace exists and before the Enterprise Application's first sync.
 The application PreSync hook checks its exact bytes and chart checksum. No raw
 Secret is rendered or committed. `backup.sh` refuses an incomplete
