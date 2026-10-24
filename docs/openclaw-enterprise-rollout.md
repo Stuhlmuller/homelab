@@ -26,6 +26,11 @@ Enterprise image workflow. The same workflow builds, signs and fully pulls the
 repository-owned journal operator image from an exact clean `main` commit; its
 embedded source SHA must match the dispatcher declaration. Record the verified
 CLI and operator image digests before replacing their null declarations.
+The operator build compiles `yq-go` from the flake-locked nixpkgs source with
+`CGO_ENABLED=0`; copying the dev-shell binary into Debian would leave its Nix
+ELF interpreter missing. A pull-request Linux amd64 image build checks for a
+dynamic interpreter and runs non-root, read-only `kubectl` and `yq` smoke checks
+before publication.
 
 The [operations workflow](../.github/workflows/openclaw-enterprise-operations.yml)
 has a fixed `bind-installation` lane. It rechecks current `main` after checkout,
