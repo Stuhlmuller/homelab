@@ -89,6 +89,7 @@ class FirewallSourceTests(unittest.TestCase):
         container, = pod["containers"]
         self.assertEqual(set(container["args"]), FLAGS)
         self.assertEqual(len(container["args"]), len(FLAGS))
+        self.assert_firewall_entrypoint(container)
         self.assertEqual(container["livenessProbe"]["httpGet"]["host"], "127.0.0.1")
         self.assertEqual(container["readinessProbe"]["httpGet"]["host"], "127.0.0.1")
         self.assertNotIn("initContainers", pod)
@@ -100,9 +101,26 @@ class FirewallSourceTests(unittest.TestCase):
                 "path": "/run/xtables.lock", "type": "FileOrCreate"}}])
         self.assertEqual(container["volumeMounts"], [{
             "name": "xtables-lock", "mountPath": "/run/xtables.lock"}])
-        self.assertEqual({item["name"] for item in container["env"]},
-                         {"NODE_NAME", "POD_NAME"})
         self.assertEqual(pod["serviceAccountName"], "kube-router-network-policy")
+
+    def assert_firewall_entrypoint(self, container):
+        self.assertNotIn("command", container)
+        self.assertNotIn("envFrom", container)
+        self.assertEqual(container["env"], [
+            {"name": "NODE_NAME", "valueFrom": {"fieldRef": {"fieldPath": "spec.nodeName"}}},
+            {"name": "POD_NAME", "valueFrom": {"fieldRef": {"fieldPath": "metadata.name"}}},
+        ])
+
+    def test_rejects_firewall_entrypoint_and_environment_overrides(self):
+        container, = self.by_kind["DaemonSet"]["spec"]["template"]["spec"]["containers"]
+        for override in (
+            {"command": ["/bin/sh", "-c", "unreviewed"]},
+            {"envFrom": [{"configMapRef": {"name": "unreviewed"}}]},
+            {"env": [{"name": "NODE_NAME", "value": "unreviewed"},
+                     container["env"][1]]},
+        ):
+            with self.subTest(override=override), self.assertRaises(AssertionError):
+                self.assert_firewall_entrypoint({**container, **override})
 
     def test_unadmitted_canary_and_paired_image(self):
         pod = self.by_kind["DaemonSet"]["spec"]["template"]["spec"]
