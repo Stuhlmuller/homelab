@@ -33,7 +33,7 @@ rules:
   - apiGroups: [""]
     resources: [secrets]
     resourceNames:
-      - occ-installation-startup-980de11bbc688a33741a19c9093f613e
+      - occ-installation-startup-86641419e595a5c812a8c8565d5cb027
       - occ-auth
       - occ-database
       - occ-postgres-root
@@ -169,13 +169,13 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: preflight
-          image: harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164
+          image: harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2
           command: [node, /scripts/preflight.mjs]
           env:
             - {name: NODE_ENV, value: production}
             - {name: OCC_CONFIG_PATH, value: /etc/openclaw/installation/installation.yaml}
-            - {name: OCE_INSTALLATION_SECRET, value: occ-installation-startup-980de11bbc688a33741a19c9093f613e}
-            - {name: OCE_INSTALLATION_SHA256, value: 980de11bbc688a33741a19c9093f613e74e464d2aae897571ac61d0056593c71}
+            - {name: OCE_INSTALLATION_SECRET, value: occ-installation-startup-86641419e595a5c812a8c8565d5cb027}
+            - {name: OCE_INSTALLATION_SHA256, value: 86641419e595a5c812a8c8565d5cb027a3e406e38ec6278f704c263e310d0019}
             - {name: OCE_POSTGRES_CLUSTER_IP, value: 10.96.0.51}
             - {name: OCE_BOOTSTRAP_ADMIN_EMAIL, value: operator@oce.example.invalid}
           securityContext:
@@ -197,7 +197,7 @@ spec:
               - {key: check-installation.mjs, path: check-installation.mjs}
         - name: installation
           secret:
-            secretName: occ-installation-startup-980de11bbc688a33741a19c9093f613e
+            secretName: occ-installation-startup-86641419e595a5c812a8c8565d5cb027
             items:
               - {key: installation.yaml, path: installation.yaml}
 ---

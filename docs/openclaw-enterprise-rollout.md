@@ -24,8 +24,17 @@ The pinned `cmd/occ` Linux amd64 binary is built with Go 1.27.1 and a reviewed
 SHA-256, then packaged with the controller/runtime images through the protected
 Enterprise image workflow. The same workflow builds, signs and fully pulls the
 repository-owned journal operator image from an exact clean `main` commit; its
-embedded source SHA must match the dispatcher declaration. Record the verified
-CLI and operator image digests before replacing their null declarations.
+embedded source SHA must match the dispatcher declaration. The protected
+[four-image publication `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867)
+built from main `4b0186236b919570164a73f5ca3b8ef7420564cb`, signed, and fully
+pulled controller `sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2`,
+runtime `sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1`,
+CLI `sha256:9d77fddb3f099f329494910609459e7bc8076d74ab797ca3382fe80edf9f12d2`,
+and operator `sha256:ec9bb06fccb2a4b268d4af3c0a11e5686dc8f6063a807e80e27fd61342914b19`.
+The selected controller/runtime and CLI digests are pinned in source. Updating
+the Installation and values changes bytes embedded in that operator image, so
+its digest and source SHA remain unselected until a later exact-source build.
+The operator and activation gates remain disabled.
 The operator build compiles `yq-go` from the flake-locked nixpkgs source with
 `CGO_ENABLED=0`; copying the dev-shell binary into Debian would leave its Nix
 ELF interpreter missing. A pull-request Linux amd64 image build checks for a
