@@ -137,19 +137,20 @@ subphases without exposing private transport output.
 The protected `prepare-restore` run
 [`39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652)
 ended `cancelled` after the six-hour legacy job limit while its detached
-restore worker continued. The fixed `resume-restore` stage can collect that
-worker's result. Dispatch only from current protected `main`, with
-`legacy_stage=resume-restore` and
+restore worker continued. The fixed [resume run `40050057926` on signed main
+`efb6a3a`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+succeeded at 2026-10-24 02:04 UTC with
 `archive_ref=9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`.
-The stage accepts only that run, archive reference and prior source SHA. It
-binds the cancelled job's exact 360-minute timestamps, source timeout setting,
-protected job log stage/reference and terminal cancellation line. These are
-timeout evidence; GitHub does not distinguish a cancellation actor. It then
-waits for an exact stable success marker, then rechecks the cached archive and
-receipt against the original versioned S3
-objects, completed restore report, source identity and zero-writer state. It
-does not launch another worker or copy another archive. A pending, failed or
-ambiguous marker blocks continuation; retain the private scratch for diagnosis.
+Its exact-main and prior-job provenance guards passed before cluster access.
+The stage bound the cancelled job's exact 360-minute timestamps, source timeout
+setting, protected job log stage/reference and terminal cancellation line.
+Those are timeout evidence; GitHub does not distinguish a cancellation actor.
+It required a stable detached-worker success marker, then checked the cached
+archive and receipt against the original versioned S3 objects, completed
+restore report, source identity and zero-writer state. It neither launched
+another worker nor downloaded another archive. The private NAS scratch copy is
+prepared; no isolated old-image boot or enforced offline network boundary has
+been proven, so T014 remains open.
 The reader mounts its private scratch volume at `/tmp` because SQLite may need
 writable temporary files while independently indexing the archive on a
 read-only-root container. A failed detached archive is not a receipt: retain
