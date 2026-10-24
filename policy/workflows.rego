@@ -483,7 +483,7 @@ umask 077
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
   sha256sum --check --status <<<'6bdd356907a800d9ee5c0a4b9de040aca8b513931be7acbd9f8dfe397c5560b4  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
