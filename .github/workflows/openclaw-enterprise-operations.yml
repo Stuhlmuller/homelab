@@ -140,7 +140,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$RUN_STAGE" == resume-restore ]]; then
-            sha256sum --check --status <<<'d40c33c6f7a87f09da9a8a23d87a8c2e77fe5a69ff2e8cb0d0d1fb46d8fc16c6  scripts/ci/openclaw-enterprise-resume-provenance.py'
+            sha256sum --check --status <<<'ac9b3903723c7cede72cb01642b31cdd3a88b31c2cf2e4efe56e282d21af1555  scripts/ci/openclaw-enterprise-resume-provenance.py'
             python3 -I scripts/ci/openclaw-enterprise-resume-provenance.py \
               --prior-run-id "$PRIOR_RUN_ID" --archive-ref "$ARCHIVE_REF" \
               --current-sha "$EXPECTED_SHA" \
