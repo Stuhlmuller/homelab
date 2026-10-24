@@ -14,7 +14,8 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
 | Earlier stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Historical signed and fully pulled pair; the newer source-built bundle below supplies the selected digests. |
 | Full platform image catalog and transitive render | [main `8c9e0b41c151a64555bc1007203aad541464848c`, protected `all` mirror `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180) | — | Passed T004 catalog on 2026-10-24 00:06 UTC: all 214 reviewed sources matched Harbor digests and completed authenticated pulls. The six strict publication-bundle files remained byte-identical at later main `efb6a3a557a47cd73fb136f56a57f9139215b4a6`. |
-| Source-built Enterprise controller/runtime/CLI/operator | [main `4b0186236b919570164a73f5ca3b8ef7420564cb`, protected publisher `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867); exact refs below | — | Passed 2026-10-24 01:28 UTC: exact-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. Controller/runtime and CLI are pinned in source; journal operator remains disabled and unselected until rebuilt from the changed Installation/values bytes. |
+| Source-built Enterprise controller/runtime/CLI/operator | [main `4b0186236b919570164a73f5ca3b8ef7420564cb`, protected publisher `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867); exact refs below | — | Passed 2026-10-24 01:28 UTC: exact-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. Controller/runtime and CLI are pinned in source; this operator digest became historical when the selected Installation/values bytes changed. |
+| Exact-source Enterprise journal operator | [main `fda0d68cd2fc5d4689b6f1b048d329ae66ef3727`, protected publisher `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158); `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08` | — | Passed 2026-10-24 03:24 UTC: exact-current-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. The operator digest and embedded source SHA are pinned in the disabled declaration; placement, bootstrap credential and live isolation proofs remain open. |
 | Pinned Prometheus one-image qualification | [main `12bb86c84beffd8a7260049fa46abb3deeefa664`, protected `prometheus` mirror `39949606211`](https://github.com/Stuhlmuller/homelab/actions/runs/39949606211); `quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d` | — | Passed 2026-10-23 12:14 UTC: exact-current-main guard, matching digests and complete authenticated Harbor pull. This fixed one-image scope does not pass full-catalog T004. |
 | LiteLLM Linux amd64 child publication | [main `0183db1c`, protected mirror run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031); `ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8` | — | Passed exact-current-main guard, source digest check, and complete authenticated Harbor pull. This one-image scope does not pass the full-catalog T004 gate. |
 | Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. Publication and separate verification restored the versioned off-NAS objects. |
@@ -60,9 +61,15 @@ failed at item 79/214 (`authenticated-pull` / `transport-retries-exhausted`,
 five OCI-index attempts) and item 207/214 (`destination-copy` /
 `transport-failed`), respectively. Partial copies did not pass T004. The
 selected Installation and values bytes differ from those embedded in the
-published operator image, so its digest is evidence only;
-`journalOperator.image` and `imageSourceSha` stay null until a later
-exact-source rebuild. Activation remains disabled.
+earlier operator image. An exact-source rebuild on
+[main `fda0d68`, run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+passed all four authenticated pulls and signature checks. Its [job summary](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158#summary-120760493142)
+records the operator as
+`harbor.stinkyboi.com/homelab/homelab-oce-operator:homelab-fda0d68cd2fc5d4689b6f1b048d329ae66ef3727@sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
+The first exact-source attempt
+[40055163032](https://github.com/Stuhlmuller/homelab/actions/runs/40055163032)
+failed at fixed `push-runtime` before a complete receipt. Only the successful
+retry supplies the selected disabled operator image. Activation remains disabled.
 
 Earlier publication attempts failed during source reads or after upload; none
 produced a final offsite receipt. The [detached source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872)
