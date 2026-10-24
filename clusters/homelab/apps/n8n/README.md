@@ -87,6 +87,16 @@ for both POST-only hooks; it never POSTs or triggers redelivery. After cutover,
 receipts. Historical success does not establish current callback acceptance.
 Keep the legacy Tunnel route until fresh signed deliveries pass.
 
+The prestart workflow migration also verifies the existing `Codex Review Helper`
+workflow (`6wtwXT4PL5QuSGSD`): six node identities, POST webhook path, and a
+reviewed fingerprint of node behavior, connections, and settings. It publishes
+the current version only when inactive and unpublished; an already published
+version is left alone, and drift blocks the rollout. This restores automated
+pull-request actions. Verify the safe OPTIONS probe and a fresh GitHub delivery
+through the helper above. Reverting the init step does not unpublish the
+workflow; stopping those actions needs a separate reviewed workflow and GitHub
+hook change.
+
 ## Database Readiness
 
 The pod uses `DB_TYPE=postgresdb` and waits for an authenticated connection to
