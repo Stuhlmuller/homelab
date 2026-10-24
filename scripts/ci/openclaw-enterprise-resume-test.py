@@ -28,6 +28,16 @@ def function(name):
     return name + "() {\n" + SOURCE.split(name + "() {\n", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
 
 
+def raw_log(archive_ref, fraction="0245920"):
+    return "\n".join((
+        '2026-10-23T16:53:06.0353000Z ##[group]Run private_log="$(mktemp)"',
+        "2026-10-23T16:53:06.0354002Z   RUN_STAGE: prepare-restore",
+        "2026-10-23T16:53:06.0354592Z   ARCHIVE_REF: " + archive_ref,
+        "2026-10-23T16:53:06.0359000Z ##[endgroup]",
+        f"2026-10-23T22:53:29.{fraction}Z ##[error]The operation was canceled.",
+    ))
+
+
 class ResumeProvenance(unittest.TestCase):
     def test_prior_source_declares_exact_six_hour_legacy_limit(self):
         workflow = "jobs:\n  legacy:\n    timeout-minutes: 360\n  enterprise:\n    timeout-minutes: 150\n"
@@ -51,7 +61,11 @@ class ResumeProvenance(unittest.TestCase):
         job = {"id": PROVENANCE.PRIOR_JOB_ID, "name": PROVENANCE.JOB,
                "status": "completed", "conclusion": "cancelled",
                "started_at": PROVENANCE.PRIOR_JOB_STARTED_AT,
-               "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT}
+               "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT,
+               "steps": [{"name": PROVENANCE.STAGE_STEP, "number": 7,
+                          "status": "completed", "conclusion": "cancelled",
+                          "started_at": "2026-10-23T16:53:06Z",
+                          "completed_at": "2026-10-23T22:53:29Z"}]}
         self.assertEqual(PROVENANCE.parse_job({"total_count": 1, "jobs": [job]}),
                          PROVENANCE.PRIOR_JOB_ID)
         for jobs in ({"total_count": 0, "jobs": []},
@@ -59,25 +73,34 @@ class ResumeProvenance(unittest.TestCase):
                      {"total_count": 2, "jobs": [job]},
                      {"total_count": 1, "jobs": [{**job, "conclusion": "success"}]},
                      {"total_count": 1, "jobs": [{**job, "id": 999}]},
-                     {"total_count": 1, "jobs": [{**job, "completed_at": "2026-10-23T17:53:32Z"}]}):
+                     {"total_count": 1, "jobs": [{**job, "completed_at": "2026-10-23T17:53:32Z"}]},
+                     {"total_count": 1, "jobs": [{**job, "steps": []}]},
+                     {"total_count": 1, "jobs": [{**job, "steps": job["steps"] * 2}]},
+                     {"total_count": 1, "jobs": [{**job, "steps": [
+                         {**job["steps"][0], "conclusion": "success"}]}]},
+                     {"total_count": 1, "jobs": [{**job, "steps": [
+                         {**job["steps"][0], "started_at": "2026-10-23T16:53:07Z"}]}]}):
             with self.subTest(jobs=jobs), self.assertRaises(PROVENANCE.Blocked):
                 PROVENANCE.parse_job(jobs)
 
     def test_protected_log_binds_exact_stage_and_publication_ref(self):
-        prefix = "Protected Legacy Retention\tRun Legacy Stage\t2026-10-23T14:12:35.4394893Z   "
-        cancel = "Protected Legacy Retention\tRun Legacy Stage\t" + PROVENANCE.PRIOR_CANCEL_LOG
-        lines = [prefix + "RUN_STAGE: prepare-restore", prefix + "ARCHIVE_REF: " + REF, cancel]
-        PROVENANCE.parse_log("\n".join(lines), REF)
-        for log in ("\n".join(lines + [lines[0]]),
-                    "\n".join(lines + [cancel]),
-                    "\n".join([lines[0], prefix + "ARCHIVE_REF: " + "b" * 40 + "/123", cancel]),
-                    "\n".join([prefix + "RUN_STAGE: verify", lines[1], cancel]),
-                    "\n".join(lines[:1]),
-                    "\n".join(lines[:2]),
-                    "\n".join(lines[:2] + [cancel.replace("22:53:29", "17:53:29")]),
-                    "\n".join([line.replace("Run Legacy Stage", "Run Untrusted Step") for line in lines])):
-            with self.subTest(log=log), self.assertRaises(PROVENANCE.Blocked):
-                PROVENANCE.parse_log(log, REF)
+        log = raw_log(REF)
+        PROVENANCE.parse_log(log, REF)
+        PROVENANCE.parse_log(raw_log(REF, "0245903"), REF)
+        lines = log.splitlines()
+        for changed in (lines + [lines[1]],
+                        lines + [lines[-1]],
+                        [lines[0], lines[1], lines[2].replace(REF, "b" * 40 + "/123"), *lines[3:]],
+                        [lines[0], lines[1].replace("prepare-restore", "verify"), *lines[2:]],
+                        lines[:1],
+                        lines[:2],
+                        [*lines[:-1], lines[-1].replace("22:53:29", "17:53:29")],
+                        [*lines[:-1], lines[-1].replace("0245920", "024592")],
+                        [lines[0].replace('Run private_log="$(mktemp)"', "Run untrusted"), *lines[1:]],
+                        [lines[0], lines[3], lines[1], lines[2], lines[4]],
+                        [*lines, lines[0]]):
+            with self.subTest(log=changed), self.assertRaises(PROVENANCE.Blocked):
+                PROVENANCE.parse_log("\n".join(changed), REF)
 
     def test_valid_provenance_writes_exclusive_private_receipt(self):
         run = {"id": 123, "event": "workflow_dispatch", "path": PROVENANCE.WORKFLOW,
@@ -87,10 +110,13 @@ class ResumeProvenance(unittest.TestCase):
                                               "name": PROVENANCE.JOB, "status": "completed",
                                               "conclusion": "cancelled",
                                               "started_at": PROVENANCE.PRIOR_JOB_STARTED_AT,
-                                              "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT}]}
-        prefix = "Protected Legacy Retention\tRun Legacy Stage\t2026-10-23T14:12:35.4394893Z   "
-        log = (prefix + "RUN_STAGE: prepare-restore\n" + prefix + "ARCHIVE_REF: " + REF +
-               "\nProtected Legacy Retention\tRun Legacy Stage\t" + PROVENANCE.PRIOR_CANCEL_LOG)
+                                              "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT,
+                                              "steps": [{"name": PROVENANCE.STAGE_STEP,
+                                                         "number": 7, "status": "completed",
+                                                         "conclusion": "cancelled",
+                                                         "started_at": "2026-10-23T16:53:06Z",
+                                                         "completed_at": "2026-10-23T22:53:29Z"}]}]}
+        log = raw_log(REF)
         def command(*args, **_kwargs):
             if args[:3] == ("git", "rev-parse", "HEAD"):
                 return ("b" * 40 + "\n").encode()
@@ -100,7 +126,7 @@ class ResumeProvenance(unittest.TestCase):
                 return json.dumps(run).encode()
             if args[:3] == ("gh", "api", "repos/Stuhlmuller/homelab/actions/runs/123/jobs?per_page=100"):
                 return json.dumps(jobs).encode()
-            if args[:3] == ("gh", "run", "view"):
+            if args[:3] == ("gh", "api", f"repos/Stuhlmuller/homelab/actions/jobs/{PROVENANCE.PRIOR_JOB_ID}/logs"):
                 return log.encode()
             raise AssertionError(args)
         with tempfile.TemporaryDirectory() as directory:
@@ -142,16 +168,18 @@ class ResumeProvenance(unittest.TestCase):
                                               "name": PROVENANCE.JOB, "status": "completed",
                                               "conclusion": "cancelled",
                                               "started_at": PROVENANCE.PRIOR_JOB_STARTED_AT,
-                                              "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT}]}
-        prefix = "Protected Legacy Retention\tRun Legacy Stage\t2026-10-23T14:12:35Z   "
-        log = (prefix + "RUN_STAGE: prepare-restore\n" + prefix + "ARCHIVE_REF: " + REF +
-               "\nProtected Legacy Retention\tRun Legacy Stage\t" +
-               PROVENANCE.PRIOR_CANCEL_LOG)
+                                              "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT,
+                                              "steps": [{"name": PROVENANCE.STAGE_STEP,
+                                                         "number": 7, "status": "completed",
+                                                         "conclusion": "cancelled",
+                                                         "started_at": "2026-10-23T16:53:06Z",
+                                                         "completed_at": "2026-10-23T22:53:29Z"}]}]}
+        log = raw_log(REF)
         outputs = [("b" * 40 + "\n").encode(), ("b" * 40 + "\n").encode(),
                    json.dumps(run).encode(), json.dumps(jobs).encode(), log.encode()]
         cases = (("input", None), ("current-main", 0), ("prior-run", 2),
-                 ("prior-job", 3), ("prior-log", 4), ("source", None),
-                 ("receipt", None))
+                 ("prior-job", 3), ("prior-log-fetch", 4),
+                 ("prior-log-match", None), ("source", None), ("receipt", None))
         with tempfile.TemporaryDirectory() as directory:
             receipt = Path(directory) / "receipt.json"
             argv = ["--prior-run-id", "123", "--archive-ref", REF,
@@ -168,6 +196,8 @@ class ResumeProvenance(unittest.TestCase):
                         return output
                     if boundary == "receipt":
                         receipt.write_text("prior receipt")
+                    if boundary == "prior-log-match":
+                        outputs[4] = b"wrong log fixture"
                     stderr = io.StringIO()
                     with patch.dict(os.environ, {**env, "GH_TOKEN": "" if boundary == "input" else "fixture"}), \
                          patch.object(PROVENANCE, "command", side_effect=command), \
@@ -184,6 +214,7 @@ class ResumeProvenance(unittest.TestCase):
                     if boundary != "receipt":
                         self.assertFalse(receipt.exists())
                     receipt.unlink(missing_ok=True)
+                    outputs[4] = log.encode()
 
 
 class ResumeCache(unittest.TestCase):
