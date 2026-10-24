@@ -41,6 +41,17 @@ class OperatorImageBuild(unittest.TestCase):
         static_binary = self.static_yq / "bin" / "yq"
         static_binary.write_text("#!/bin/sh\necho pinned static yq\n")
         static_binary.chmod(0o700)
+        static_readelf = self.static_yq / "bin" / "readelf"
+        static_readelf.write_text('''#!/usr/bin/env bash
+set -euo pipefail
+[[ "$1" == -l && "$2" == "$STATIC_YQ_ROOT/bin/yq" ]] || exit 97
+if [[ "${FIXTURE_DYNAMIC:-}" == true ]]; then
+  printf '%s\\n' 'INTERP Requesting program interpreter'
+else
+  printf '%s\\n' 'ELF program headers without an interpreter'
+fi
+''')
+        static_readelf.chmod(0o700)
         self.executable("git", f'''case "$1" in
   rev-parse) printf '%s\\n' {SHA} ;;
   status) [[ "${{FIXTURE_DIRTY:-}}" != true ]] || printf ' M scripts/openclaw-enterprise.py\\n' ;;
@@ -57,15 +68,9 @@ esac
         self.executable("yq", "printf 'fixture dynamic yq\\n'\n")
         self.executable("nix", '''printf '%s\\n' "$*" >>"$NIX_CALLS"
 [[ "$1" == build && "$*" == *'CGO_ENABLED = "0"'* &&
-   "$*" == *'flake.inputs.nixpkgs'* && "$*" == *'x86_64-linux'* ]] || exit 97
+   "$*" == *'flake.inputs.nixpkgs'* && "$*" == *'x86_64-linux'* &&
+   "$*" == *'pkgs.binutils-unwrapped'* ]] || exit 97
 printf '%s\\n' "$STATIC_YQ_ROOT"
-''')
-        self.executable("readelf", '''[[ "$1" == -l && "$2" == "$STATIC_YQ_ROOT/bin/yq" ]] || exit 97
-if [[ "${FIXTURE_DYNAMIC:-}" == true ]]; then
-  printf '%s\\n' 'INTERP Requesting program interpreter'
-else
-  printf '%s\\n' 'ELF program headers without an interpreter'
-fi
 ''')
         self.executable("docker", '''printf '%s\\n' "$*" >>"$DOCKER_CALLS"
 if [[ "$1 $2" == 'buildx build' ]]; then
@@ -131,7 +136,7 @@ fi
     def test_missing_static_yq_blocks_before_docker(self):
         result = self.build(STATIC_YQ_ROOT=str(self.root / "missing"))
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Static operator yq build is unavailable", result.stderr)
+        self.assertIn("Static operator yq build tools are unavailable", result.stderr)
         self.assertFalse(self.calls.exists())
 
     def test_dynamic_yq_blocks_before_docker(self):

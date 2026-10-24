@@ -19,19 +19,26 @@ mkdir -p "$context/bin" "$context/scripts" \
 cp -L "$(command -v kubectl)" "$context/bin/kubectl"
 # The dev-shell yq uses a Nix ELF interpreter absent from the Debian image.
 # Rebuild the same locked nixpkgs source without cgo for a standalone binary.
-yq_static="$(nix build --no-link --print-out-paths --impure --expr \
+operator_tools="$(nix build --no-link --print-out-paths --impure --expr \
   'let flake = builtins.getFlake (toString ./.);
        pkgs = import flake.inputs.nixpkgs { system = "x86_64-linux"; };
-   in pkgs.yq-go.overrideAttrs (old: {
-     env = (old.env or {}) // { CGO_ENABLED = "0"; };
-   })')"
-[[ -x "$yq_static/bin/yq" ]] || { echo 'Static operator yq build is unavailable.' >&2; exit 1; }
-elf_headers="$(readelf -l "$yq_static/bin/yq")"
+       staticYq = pkgs.yq-go.overrideAttrs (old: {
+         env = (old.env or {}) // { CGO_ENABLED = "0"; };
+       });
+   in pkgs.symlinkJoin {
+     name = "oce-operator-build-tools";
+     paths = [ staticYq pkgs.binutils-unwrapped ];
+   }')"
+[[ -x "$operator_tools/bin/yq" && -x "$operator_tools/bin/readelf" ]] || {
+  echo 'Static operator yq build tools are unavailable.' >&2
+  exit 1
+}
+elf_headers="$("$operator_tools/bin/readelf" -l "$operator_tools/bin/yq")"
 [[ "$elf_headers" != *INTERP* ]] || {
   echo 'Operator yq still requires a dynamic ELF interpreter.' >&2
   exit 1
 }
-cp -L "$yq_static/bin/yq" "$context/bin/yq"
+cp -L "$operator_tools/bin/yq" "$context/bin/yq"
 cp scripts/openclaw-enterprise.py "$context/scripts/openclaw-enterprise.py"
 cp clusters/homelab/apps/openclaw-enterprise/installation.yaml \
   clusters/homelab/apps/openclaw-enterprise/values.yaml \
