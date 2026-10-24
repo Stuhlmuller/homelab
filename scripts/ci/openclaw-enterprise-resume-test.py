@@ -3,6 +3,7 @@
 
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -10,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from unittest.mock import patch
 
 
@@ -131,6 +133,57 @@ class ResumeProvenance(unittest.TestCase):
                 run["head_sha"] = "c" * 40
                 self.assertEqual(PROVENANCE.main(argv), 1)
                 self.assertFalse(receipt.exists())
+
+    def test_failure_reports_only_fixed_provenance_boundary(self):
+        run = {"id": 123, "event": "workflow_dispatch", "path": PROVENANCE.WORKFLOW,
+               "head_branch": "main", "status": "completed", "conclusion": "cancelled",
+               "run_attempt": 1, "head_sha": "a" * 40}
+        jobs = {"total_count": 1, "jobs": [{"id": PROVENANCE.PRIOR_JOB_ID,
+                                              "name": PROVENANCE.JOB, "status": "completed",
+                                              "conclusion": "cancelled",
+                                              "started_at": PROVENANCE.PRIOR_JOB_STARTED_AT,
+                                              "completed_at": PROVENANCE.PRIOR_JOB_COMPLETED_AT}]}
+        prefix = "Protected Legacy Retention\tRun Legacy Stage\t2026-10-23T14:12:35Z   "
+        log = (prefix + "RUN_STAGE: prepare-restore\n" + prefix + "ARCHIVE_REF: " + REF +
+               "\nProtected Legacy Retention\tRun Legacy Stage\t" +
+               PROVENANCE.PRIOR_CANCEL_LOG)
+        outputs = [("b" * 40 + "\n").encode(), ("b" * 40 + "\n").encode(),
+                   json.dumps(run).encode(), json.dumps(jobs).encode(), log.encode()]
+        cases = (("input", None), ("current-main", 0), ("prior-run", 2),
+                 ("prior-job", 3), ("prior-log", 4), ("source", None),
+                 ("receipt", None))
+        with tempfile.TemporaryDirectory() as directory:
+            receipt = Path(directory) / "receipt.json"
+            argv = ["--prior-run-id", "123", "--archive-ref", REF,
+                    "--current-sha", "b" * 40, "--receipt", str(receipt)]
+            env = {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "Stuhlmuller/homelab",
+                   "GITHUB_SHA": "b" * 40, "GH_TOKEN": "fixture"}
+            for boundary, failed_at in cases:
+                with self.subTest(boundary=boundary):
+                    calls = iter(enumerate(outputs))
+                    def command(*_args, **_kwargs):
+                        index, output = next(calls)
+                        if index == failed_at:
+                            raise PROVENANCE.Blocked("sensitive failure detail")
+                        return output
+                    if boundary == "receipt":
+                        receipt.write_text("prior receipt")
+                    stderr = io.StringIO()
+                    with patch.dict(os.environ, {**env, "GH_TOKEN": "" if boundary == "input" else "fixture"}), \
+                         patch.object(PROVENANCE, "command", side_effect=command), \
+                         patch.object(PROVENANCE, "prove_source", side_effect=(
+                             PROVENANCE.Blocked("sensitive failure detail")
+                             if boundary == "source" else None)), \
+                         patch.object(PROVENANCE, "PRIOR_RUN_ID", "123"), \
+                         patch.object(PROVENANCE, "PRIOR_SOURCE_SHA", "a" * 40), \
+                         patch.object(PROVENANCE, "PUBLISHED_ARCHIVE_REF", REF), \
+                         redirect_stderr(stderr):
+                        self.assertEqual(PROVENANCE.main(argv), 1)
+                    self.assertEqual(stderr.getvalue(),
+                                     f"Prior restore provenance blocked: {boundary}\n")
+                    if boundary != "receipt":
+                        self.assertFalse(receipt.exists())
+                    receipt.unlink(missing_ok=True)
 
 
 class ResumeCache(unittest.TestCase):

@@ -132,6 +132,7 @@ def main(argv=None):
     parser.add_argument("--current-sha", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args(argv)
+    boundary = "input"
     try:
         require(RUN_ID.fullmatch(args.prior_run_id) and
                 ARCHIVE_REF.fullmatch(args.archive_ref) and
@@ -142,17 +143,23 @@ def main(argv=None):
                 os.environ.get("GITHUB_REPOSITORY") == "Stuhlmuller/homelab" and
                 os.environ.get("GITHUB_SHA") == args.current_sha and
                 os.environ.get("GH_TOKEN"))
+        boundary = "current-main"
         require(command("git", "rev-parse", "HEAD").decode().strip() == args.current_sha)
         require(command("gh", "api", "repos/Stuhlmuller/homelab/git/ref/heads/main",
                         "--jq", ".object.sha").decode().strip() == args.current_sha)
+        boundary = "prior-run"
         run = json.loads(command("gh", "api", f"repos/Stuhlmuller/homelab/actions/runs/{args.prior_run_id}"))
         prior_sha = parse_run(run, args.prior_run_id)
         require(prior_sha == PRIOR_SOURCE_SHA)
+        boundary = "prior-job"
         jobs = json.loads(command("gh", "api", f"repos/Stuhlmuller/homelab/actions/runs/{args.prior_run_id}/jobs?per_page=100"))
         job_id = parse_job(jobs)
+        boundary = "prior-log"
         parse_log(command("gh", "run", "view", args.prior_run_id, "--job", str(job_id), "--log").decode(),
                   args.archive_ref)
+        boundary = "source"
         prove_source(prior_sha, args.current_sha)
+        boundary = "receipt"
         require(args.receipt.is_absolute() and not args.receipt.exists() and
                 not args.receipt.is_symlink() and args.receipt.parent.is_dir())
         payload = json.dumps({"priorRunId": args.prior_run_id,
@@ -166,7 +173,7 @@ def main(argv=None):
             output.flush()
             os.fsync(output.fileno())
     except (Blocked, ValueError, OSError, UnicodeError):
-        print("Prior restore provenance blocked", file=sys.stderr)
+        print(f"Prior restore provenance blocked: {boundary}", file=sys.stderr)
         return 1
     print("Prior six-hour cancelled restore job verified")
     return 0
