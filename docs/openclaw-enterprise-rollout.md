@@ -131,9 +131,9 @@ stopped at `verification-archive-download`. [Ranged-transfer retry
 failed at that same fixed phase at 2026-10-23 16:10 UTC. It left no promoted
 archive, receipt or recovery copy. The exact S3-versus-reader failure is
 unclassified. Versioned restore uses bounded S3 ranges and 8 MiB reader
-slices, with exact metadata, slice and final archive integrity checks. The
-next protected retry reports fixed source-range, reader-transfer or finalization
-subphases without exposing private transport output.
+slices, with exact metadata, slice and final archive integrity checks. Its
+failure categories distinguish source-range, reader-transfer and finalization
+without exposing private transport output.
 The protected `prepare-restore` run
 [`39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652)
 ended `cancelled` after the six-hour legacy job limit while its detached
