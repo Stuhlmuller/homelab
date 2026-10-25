@@ -117,3 +117,25 @@ test('writes only private immutable logs and snapshots', async () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test('collector API access and policy reconcile before its dormant CronJob', () => {
+  const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
+  const read = (name) => fs.readFileSync(path.join(root, name), 'utf8');
+  const kust = read('kustomization.yaml');
+  const cron = read('acceptance-schedule-collector-cronjob.yaml');
+  const rbac = read('acceptance-schedule-collector-rbac.yaml');
+  const policy = read('acceptance-schedule-collector-networkpolicy.yaml');
+  assert.match(kust, /^  - acceptance-schedule-collector-rbac.yaml$/m);
+  assert.match(kust, /^  - acceptance-schedule-collector-networkpolicy.yaml$/m);
+  assert.doesNotMatch(kust, /^  - acceptance-schedule-collector-cronjob.yaml$/m);
+  assert.match(cron, /^  suspend: true$/m);
+  assert.match(cron, /serviceAccountName: renovate-acceptance-schedule-collector/);
+  assert.match(rbac, /kind: ServiceAccount[\s\S]*kind: Role[\s\S]*kind: RoleBinding/);
+  assert.deepEqual([...rbac.matchAll(/verbs: \[([^\]]+)\]/g)].map((x) => x[1]),
+    ['get', 'list', 'list', 'get']);
+  assert.match(policy, /app\.kubernetes\.io\/name: renovate-acceptance-schedule-collector/);
+  assert.match(policy, /policyTypes: \[Ingress, Egress\]/);
+  assert.match(policy, /cidr: 10\.96\.0\.1\/32[\s\S]*port: 443/);
+  assert.match(policy, /cidr: 10\.1\.0\.199\/32[\s\S]*port: 6443/);
+});

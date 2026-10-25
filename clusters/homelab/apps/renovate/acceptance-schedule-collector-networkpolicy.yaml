@@ -1,4 +1,4 @@
-# Stage outside Kustomize with the collector. Match both service VIP and post-DNAT API endpoint.
+# Reconcile before activating the staged collector CronJob; selects no current Pod.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

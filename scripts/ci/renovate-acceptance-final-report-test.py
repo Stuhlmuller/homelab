@@ -12,16 +12,21 @@ APP = ROOT / 'clusters/homelab/apps/renovate'
 class FinalReport(unittest.TestCase):
     def test_job_is_inert_and_cannot_write_or_reach_network(self):
         text = (APP / 'acceptance-final-report-job.yaml').read_text()
+        policy = (APP / 'acceptance-final-report-networkpolicy.yaml').read_text()
         kustomization = (APP / 'kustomization.yaml').read_text()
         self.assertNotIn('acceptance-final-report-job.yaml', kustomization)
+        self.assertIn('acceptance-final-report-networkpolicy.yaml', kustomization)
         self.assertEqual(len(re.findall(r'(?m)^kind: Job$', text)), 1)
-        self.assertEqual(len(re.findall(r'(?m)^kind: NetworkPolicy$', text)), 1)
+        self.assertEqual(len(re.findall(r'(?m)^kind: NetworkPolicy$', policy)), 1)
+        self.assertNotIn('kind: NetworkPolicy', text)
         for required in ('suspend: true', 'args: [report]',
                          'automountServiceAccountToken: false',
                          'readOnlyRootFilesystem: true',
-                         'runAsUser: 12021', 'claimName: renovate-acceptance-ledger',
-                         'ingress: []', 'egress: []'):
+                         'runAsUser: 12021', 'claimName: renovate-acceptance-ledger'):
             self.assertIn(required, text)
+        for required in ('app.kubernetes.io/component: acceptance-final-report',
+                         'policyTypes: [Ingress, Egress]', 'ingress: []', 'egress: []'):
+            self.assertIn(required, policy)
         self.assertEqual(text.count('readOnly: true'), 3)
         self.assertNotIn('secretName:', text)
         self.assertNotIn('renovate-cache', text)
