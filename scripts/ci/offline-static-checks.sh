@@ -989,7 +989,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-plan.yml:static-policy' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
-    '.github/workflows/terragrunt-plan.yml:terragrunt-plan'
+    '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
+    '.github/workflows/validate.yml:repo'
 } | LC_ALL=C sort)"
 [[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
   echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
@@ -1033,6 +1034,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
+.github/workflows/harbor-helm-charts.yml a4d3ec44e396c8c19a9894ffd34c75147f6f340ebd1b1440f6ab24f83591c421
 .github/workflows/harbor-mirror.yml 6997115e75b9ed25943f9878cb8402fa6840a06de5783e8d7c47c362acb8f6e9
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
@@ -1044,7 +1046,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml 31a190f5e8fb0f4feea6f9a238277d8f8f864d4318fcea44c435713207e0b170
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
+.github/workflows/platform-maintenance.yml 4248d1a351483ff5e29e4d0f0761d3805ae8b33436d4b3cab8c7644a67ed1b84
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -1052,8 +1054,9 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
+.github/workflows/terragrunt-apply.yml 59025688b41a1af3772014caf74a03fb3bf63889f3004bc914b3d397fffddcd8
 .github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
+.github/workflows/validate.yml 8cb282020097a1b302c6759bb8fc3437d5782c8febe8b0cb0007d26fae852b93
 EOF
 echo "::endgroup::"
 
@@ -1228,7 +1231,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}") and contains("Istio phase {0} @ {1}")) and
+    .on.workflow_dispatch.inputs.istio_phase == {
+      "description": "Protected Istio 1.28.10 component phase, only with argocd_app=istio",
+      "required": false,
+      "type": "string"
+    } and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
@@ -1251,18 +1259,21 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
       "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "GH_TOKEN": "${{ github.token }}",
       "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
       "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
     } and
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
+      "ISTIO_PHASE",
       "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.ISTIO_PHASE == "${{ inputs.istio_phase }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {

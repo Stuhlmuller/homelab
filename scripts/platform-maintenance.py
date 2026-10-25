@@ -254,6 +254,126 @@ class DurableReceipts:
             stage = f"istio-{item['to']}"
             key = f"openclaw-enterprise/platform/stages/{stage}/verified.json"
             self.load_one(key, directory / f"{stage}.json")
+            if stage == "istio-1.28.10":
+                with tempfile.TemporaryDirectory(prefix="istio-components-", dir=directory) as name:
+                    component_dir = private_directory(Path(name))
+                    summary = read_private_json(directory / f"{stage}.json")
+                    if (summary.get("format") != 1 or summary.get("stage") != stage or
+                            summary.get("verified") is not True or
+                            summary.get("pinSha256") != PIN_SHA256 or
+                            summary.get("observedVersion") != "1.28.10" or
+                            not isinstance(summary.get("runId"), str) or
+                            not re.fullmatch(r"[1-9][0-9]*", summary["runId"]) or
+                            set(summary.get("components", {})) !=
+                            {str(phase) for phase in range(1, 7)}):
+                        raise ValueError("Istio stage summary is incomplete")
+                    for phase in range(1, 7):
+                        prefix = ("openclaw-enterprise/platform/istio/1.28.10/"
+                                  f"components/phase-{phase}")
+                        start = component_dir / f"phase-{phase}-started.json"
+                        verified = component_dir / f"phase-{phase}-verified.json"
+                        self.load_one(f"{prefix}/started.json", start)
+                        self.load_one(f"{prefix}/verified.json", verified)
+                        before, after = read_private_json(start), read_private_json(verified)
+                        root_sha = hashlib.sha256(json.dumps(
+                            before, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+                        if after.get("startedSha256") != root_sha:
+                            apply_run = after.get("applyRunId")
+                            if not isinstance(apply_run, str) or not re.fullmatch(
+                                    r"[1-9][0-9]*", apply_run):
+                                raise ValueError("Istio verified phase has no reviewed retry")
+                            retry = component_dir / f"phase-{phase}-retry.json"
+                            self.load_one(f"{prefix}/attempts/{apply_run}/started.json", retry)
+                            before = read_private_json(retry)
+                            if before.get("rootStartedSha256") != root_sha:
+                                raise ValueError("Istio retry does not bind original start")
+                        if (before.get("format") != 1 or before.get("stage") != stage or
+                                before.get("phase") != phase or
+                                before.get("status") != "started" or
+                                before.get("verified") is not False or
+                                after.get("format") != 1 or after.get("stage") != stage or
+                                after.get("phase") != phase or
+                                after.get("status") != "verified" or
+                                after.get("verified") is not True or
+                                after.get("sourceSha") != before.get("sourceSha") or
+                                after.get("applyRunId") != before.get("runId") or
+                                after.get("bundleSha256") != before.get("bundleSha256") or
+                                after.get("startedSha256") != hashlib.sha256(json.dumps(
+                                    before, sort_keys=True, separators=(",", ":")).encode()).hexdigest() or
+                                summary["components"][str(phase)] != hashlib.sha256(json.dumps(
+                                    after, sort_keys=True, separators=(",", ":")).encode()).hexdigest() or
+                                after.get("xds", {}).get("acked") is not True or
+                                after.get("hbone", {}).get("tls") is not True or
+                                after.get("hbone", {}).get("database") != "ok"):
+                            raise ValueError("Istio component receipt is incomplete or changed")
+                        verify_path_probe(after.get("pathProbe"), f"{stage}-phase-{phase}",
+                                          "stage", after.get("verificationSha"))
+                        if phase == 6:
+                            if (after.get("runId") != summary["runId"] or
+                                    after.get("verificationSha") != summary.get("sourceSha")):
+                                raise ValueError("Istio stage summary is not the final protected phase")
+                    verify_istio_completion_run(summary, self, component_dir, after)
+
+
+def verify_istio_completion_run(summary, store, directory, final_component):
+    """A durable summary from a failed workflow cannot admit Kubernetes."""
+    current_sha = os.environ.get("GITHUB_SHA")
+    if not isinstance(current_sha, str) or not SHA.fullmatch(current_sha):
+        raise ValueError("Istio completion source is unavailable")
+
+    def successful(record):
+        source_sha, run_id = record.get("verificationSha"), record.get("runId")
+        if (not isinstance(source_sha, str) or not SHA.fullmatch(source_sha) or
+                not isinstance(run_id, str) or not re.fullmatch(r"[1-9][0-9]*", run_id)):
+            return False
+        result = subprocess.run(
+            ["gh", "api", f"repos/Stuhlmuller/homelab/actions/runs/{run_id}"],
+            capture_output=True, text=True, timeout=30, check=True)
+        run = json.loads(result.stdout)
+        title = f"Platform istio-1.28.10-phase-6 @ {source_sha}"
+        return (run.get("id") == int(run_id) and run.get("head_sha") == source_sha and
+                run.get("head_branch") == "main" and run.get("event") == "workflow_dispatch" and
+                run.get("status") == "completed" and run.get("conclusion") == "success" and
+                run.get("run_attempt", 0) >= 1 and
+                run.get("path") == ".github/workflows/platform-maintenance.yml" and
+                run.get("name") == title and run.get("display_title") == title and
+                subprocess.run(["git", "merge-base", "--is-ancestor", source_sha,
+                                current_sha], cwd=ROOT, capture_output=True,
+                               timeout=15).returncode == 0)
+
+    if (summary.get("sourceSha") == final_component.get("verificationSha") and
+            summary.get("runId") == final_component.get("runId") and
+            successful(final_component)):
+        return
+    prefix = "openclaw-enterprise/platform/istio/1.28.10/components/phase-6/attestations/"
+    history = store.call("s3api", "list-object-versions",
+                         ["--prefix", prefix, "--no-paginate"])
+    versions = history.get("Versions", [])
+    if (history.get("IsTruncated") is not False or history.get("DeleteMarkers") or
+            not isinstance(versions, list) or len(versions) > 32):
+        raise ValueError("Istio attestation history is incomplete")
+    original_hash = hashlib.sha256(json.dumps(
+        final_component, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    for item in versions:
+        key, version = item.get("Key"), item.get("VersionId")
+        if (not isinstance(key, str) or
+                not re.fullmatch(re.escape(prefix) + r"[1-9][0-9]*\.json", key) or
+                not isinstance(version, str) or version in ("", "null") or
+                item.get("IsLatest") is not True):
+            raise ValueError("Istio attestation history is ambiguous")
+        record = json.loads(store.download(key, version, directory))
+        if (record.get("attestsSha256") == original_hash and
+                record.get("sourceSha") == final_component.get("sourceSha") and
+                record.get("bundleSha256") == final_component.get("bundleSha256") and
+                record.get("startedSha256") == final_component.get("startedSha256") and
+                record.get("verified") is True and record.get("xds", {}).get("acked") is True and
+                record.get("hbone", {}).get("tls") is True and
+                record.get("hbone", {}).get("database") == "ok"):
+            verify_path_probe(record.get("pathProbe"), "istio-1.28.10-phase-6",
+                              "stage", record.get("verificationSha"))
+            if successful(record):
+                return
+    raise ValueError("final Istio component lacks a successful protected run")
 
 
 def validate_config(config):
@@ -914,7 +1034,7 @@ def _grafana_health_via_port_forward(pod_name):
 def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
     """Run fixed functional paths before a node/stage can be marked verified."""
     if (node not in (*NODES, "stage") or
-            not re.fullmatch(r"(?:talos|kubernetes)-\d+\.\d+\.\d+", stage) or
+            not re.fullmatch(r"(?:talos|kubernetes)-\d+\.\d+\.\d+|istio-1\.28\.10-phase-[1-6]", stage) or
             not isinstance(source_sha, str) or not SHA.fullmatch(source_sha)):
         raise ValueError("unreviewed inter-node probe identity")
     wait_seconds = min(config["readinessDeadlineSeconds"]["storage"], 300)

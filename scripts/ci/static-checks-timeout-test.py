@@ -49,6 +49,8 @@ class Timeout(unittest.TestCase):
                          "platform-maintenance-credentials-test.py",
                          "istio-upgrade-gate-test.py",
                          "istio-image-overlays-test.py",
+                         "istio-prior-run-check-test.py",
+                         "istio-upgrade-test.py",
                          "network-policy-canary-node-test.py",
                          "network-policy-enforcement-test.py",
                          "network-policy-qualification-test.py",

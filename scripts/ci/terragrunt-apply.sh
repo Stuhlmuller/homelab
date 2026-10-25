@@ -256,9 +256,18 @@ plan_and_apply_argocd_apps() {
   # This Application auto-syncs after registration. Inspect its saved plan
   # whenever a full or targeted run includes the Istio unit.
   if [[ -n "$istio_plan_file" ]]; then
-    terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
-      render --json --write=false --no-color |
-      python3 scripts/ci/istio-upgrade-gate.py authorize-apply --plan-dir "$plan_dir"
+    if [[ -n "${ISTIO_PHASE:-}" ]]; then
+      local rendered_istio="$plan_dir/istio-render.json"
+      terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+        render --json --write=false --no-color >"$rendered_istio"
+      verify_current_main_commit
+      python3 -I scripts/istio-upgrade.py preapply --phase "$ISTIO_PHASE" \
+        --expected-sha "$GITHUB_SHA" --plan-dir "$plan_dir" --rendered "$rendered_istio"
+    else
+      terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+        render --json --write=false --no-color |
+        python3 scripts/ci/istio-upgrade-gate.py authorize-apply --plan-dir "$plan_dir"
+    fi
   fi
 
   (
@@ -271,6 +280,19 @@ plan_and_apply_argocd_apps() {
 }
 
 prepare_terragrunt_filter_base
+istio_phase="${ISTIO_PHASE:-}"
+case "$istio_phase" in
+  '') ;;
+  [1-6])
+    [[ "${TERRAGRUNT_ARGOCD_APP:-}" == istio &&
+       "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false &&
+       "${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}" == false ]] || {
+      echo "Istio phase requires an unrepaired targeted Istio Application apply." >&2
+      exit 2
+    }
+    ;;
+  *) echo "Unreviewed Istio component phase." >&2; exit 2 ;;
+esac
 backup_storage_scope="${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}"
 case "$backup_storage_scope" in
   true)

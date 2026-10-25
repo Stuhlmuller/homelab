@@ -35,6 +35,28 @@ TRAEFIK_PROJECT = {"spec": {
 }}
 ISTIO_RENDER = {"inputs": {"manifest": json.loads(
     (SOURCE / "fixtures/istio-application-1.27.3.json").read_text())}}
+ISTIO_CHART_DIGESTS = {chart: "sha256:" + ("1" * 64) for chart in
+                       ("base", "istiod", "cni", "ztunnel", "gateway")}
+
+
+def active_istio_candidate():
+    candidate = json.loads((SOURCE.parent.parent /
+        "clusters/homelab/apps/istio/upgrade-1.28.10.json").read_text())
+    candidate.update(activationEnabled=True, phase=1, priorRunId="123",
+                     harborRunId="456", chartRunId="789",
+                     chartManifestDigests=ISTIO_CHART_DIGESTS)
+    return candidate
+
+
+def active_istio_render():
+    rendered = json.loads(json.dumps(ISTIO_RENDER))
+    manifest = rendered["inputs"]["manifest"]
+    manifest["spec"]["syncPolicy"]["automated"]["prune"] = False
+    source = manifest["spec"]["sources"][0]
+    source.pop("chart")
+    source.update(repoURL="oci://harbor.stinkyboi.com/mirror/helm/base",
+                  targetRevision=ISTIO_CHART_DIGESTS["base"])
+    return rendered
 
 # Every external operation is enumerated. Real jq evaluates the production
 # predicates; these stubs only provide inputs and verify saved-plan sequencing.
@@ -325,6 +347,16 @@ class TerragruntApplyTest(unittest.TestCase):
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
                          "terragrunt-current-main.sh", "istio-upgrade-gate.py"):
                 shutil.copyfile(SOURCE / name, scripts / name)
+            (scripts / "fixtures").mkdir()
+            shutil.copyfile(SOURCE / "fixtures/istio-application-1.27.3.json",
+                            scripts / "fixtures/istio-application-1.27.3.json")
+            (root / "scripts/istio-upgrade.py").write_text(
+                "import json, os, pathlib, sys\n"
+                "assert sys.argv[1:4] == ['preapply', '--phase', '1']\n"
+                "with (pathlib.Path(os.environ['FIXTURE_ROOT']) / 'calls.jsonl').open('a') as log:\n"
+                "    log.write(json.dumps({'event': 'istio.preapply', 'tool': 'python3', "
+                "'args': sys.argv[1:]}) + '\\n')\n"
+                "sys.exit(43)\n")
             candidate_target = root / "clusters/homelab/apps/istio/upgrade-1.28.10.json"
             candidate_target.parent.mkdir(parents=True)
             candidate_target.write_text(json.dumps(candidate or json.loads(
@@ -334,6 +366,12 @@ class TerragruntApplyTest(unittest.TestCase):
                          "tailnet-gateway.yaml"):
                 shutil.copyfile(SOURCE.parent.parent / "clusters/homelab/apps/istio" / name,
                                 candidate_target.parent / name)
+            overlays = candidate_target.parent / "upgrade-1.28.10"
+            overlays.mkdir()
+            for name in ("istiod-images.json", "istiod-final-images.json", "cni-images.json",
+                         "ztunnel-images.json", "gateway-images.json"):
+                shutil.copyfile(SOURCE.parent.parent / "clusters/homelab/apps/istio/upgrade-1.28.10" / name,
+                                overlays / name)
             shutil.copyfile(SOURCE.parent.parent / ".argocd-values-ref-placeholder.yaml",
                             root / ".argocd-values-ref-placeholder.yaml")
             for unit in ("homelab/us-west-2/bootstrap/argocd",
@@ -349,6 +387,7 @@ class TerragruntApplyTest(unittest.TestCase):
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
                            "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
                            "TERRAGRUNT_ARGOCD_APP": target,
+                           "ISTIO_PHASE": str(config.get("istio_phase", "")),
                            "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
                            "TERRAGRUNT_APPLICATION_BACKUP_STORAGE": scope}
             if not config.get("without_azuread"):
@@ -385,25 +424,39 @@ class TerragruntApplyTest(unittest.TestCase):
         ])
 
     def test_active_istio_phase_stops_before_any_argocd_apply(self):
-        candidate = json.loads((SOURCE.parent.parent / "clusters/homelab/apps/istio/upgrade-1.28.10.json").read_text())
-        candidate["activationEnabled"] = True
-        candidate["phase"] = 1
-        rendered = json.loads(json.dumps(ISTIO_RENDER))
-        rendered["inputs"]["manifest"]["spec"]["sources"][0].update(
-            repoURL="https://blob.istio.io/istio-release/charts", targetRevision="1.28.10")
+        candidate = active_istio_candidate()
+        rendered = active_istio_render()
         result, events = self.run_apply(target="istio", candidate=candidate,
                                         istio_render=rendered, istio_change=True)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Istio specification change needs protected post-sync health receipts", result.stderr)
+        self.assertIn("active Istio phase requires protected one-component admission", result.stderr)
         self.assertIn("istio.render", events)
         self.assertNotIn("apps.apply", events)
+
+    def test_active_phase_calls_private_preapply_before_any_application_write(self):
+        candidate = active_istio_candidate()
+        rendered = active_istio_render()
+        result, events = self.run_apply(target="istio", candidate=candidate,
+                                        istio_render=rendered, istio_change=True,
+                                        istio_phase=1, github_actions=True)
+        self.assertEqual(result.returncode, 43, result.stderr)
+        self.assertIn("istio.preapply", events)
+        self.assertNotIn("apps.apply", events)
+
+    def test_phase_input_rejects_full_or_other_application_scope(self):
+        for target in ("", "nofx"):
+            with self.subTest(target=target):
+                result, events = self.run_apply(target=target, istio_phase=1)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Istio phase requires an unrepaired targeted", result.stderr)
+                self.assertNotIn("apps.apply", events)
 
     def test_changed_istio_source_with_disabled_phase_stops_before_apply(self):
         rendered = json.loads(json.dumps(ISTIO_RENDER))
         rendered["inputs"]["manifest"]["spec"]["sources"][0]["targetRevision"] = "1.28.10"
         result, events = self.run_apply(target="istio", istio_render=rendered)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Istio charts must advance one ordered source at a time", result.stderr)
+        self.assertIn("Istio Application must match the ordered immutable OCI source", result.stderr)
         self.assertIn("istio.render", events)
         self.assertNotIn("apps.apply", events)
 

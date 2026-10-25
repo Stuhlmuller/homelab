@@ -2,9 +2,13 @@
   "schemaVersion": 1,
   "activationEnabled": false,
   "phase": 0,
+  "priorRunId": null,
+  "harborRunId": null,
+  "chartRunId": null,
+  "chartManifestDigests": null,
   "from": "1.27.3",
   "to": "1.28.10",
-  "chartRepository": "https://blob.istio.io/istio-release/charts",
+  "chartRepository": "oci://harbor.stinkyboi.com/mirror/helm",
   "components": [
     {
       "chart": "base",

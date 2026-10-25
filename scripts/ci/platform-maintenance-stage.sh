@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|istio-1.28.10-phase-[1-6]|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -42,21 +42,23 @@ bucket="$(terragrunt render --config IaC/application-backup-storage.hcl --json -
   --output text)" == 'aws:kms' ]]
 
 retain_result() {
-  local result="$1" name="$2" key response checksum version readback
+  local result="$1" name="$2" key checksum readback
   [[ -f "$result" && ! -L "$result" && "$(stat -c %a "$result")" == 600 &&
      "$(stat -c %s "$result")" -le 1048576 ]] || exit 1
   key="openclaw-enterprise/platform/${GITHUB_SHA}/${GITHUB_RUN_ID}/${name}.json"
   checksum="$(openssl dgst -sha256 -binary "$result" | base64 -w0)"
-  response="$(aws s3api put-object --bucket "$bucket" --key "$key" --body "$result" \
+  # A 5xx or failed head may follow a committed S3 put. On a same-run retry,
+  # accept only the exact one-version, checksummed bytes already published.
+  if ! aws s3api put-object --bucket "$bucket" --key "$key" --body "$result" \
     --server-side-encryption aws:kms --if-none-match '*' \
-    --checksum-algorithm SHA256 --checksum-sha256 "$checksum")"
-  version="$(jq -er .VersionId <<<"$response")"
-  [[ "$version" != null && "$version" != "" ]] || exit 1
-  readback="$(aws s3api head-object --bucket "$bucket" --key "$key" \
-    --version-id "$version" --checksum-mode ENABLED)"
-  jq -e --arg version "$version" --arg checksum "$checksum" \
-    '.VersionId == $version and .ChecksumSHA256 == $checksum and .ServerSideEncryption == "aws:kms"' \
-    <<<"$readback" >/dev/null
+    --checksum-algorithm SHA256 --checksum-sha256 "$checksum" >/dev/null; then
+    : # Readback below decides whether an earlier or just-failed put committed.
+  fi
+  readback="$(mktemp "$work/.retain-result.XXXXXX")"
+  rm -f "$readback"
+  load_receipt "$key" "$readback"
+  cmp -s "$result" "$readback" || exit 1
+  rm -f "$readback"
 }
 
 load_receipt() {
@@ -204,6 +206,14 @@ case "$stage" in
       exit 1
     fi
     retain_result "$work/cleanup.json" cleanup
+    ;;
+  istio-1.28.10-phase-[1-6])
+    connect_talos
+    install -m 0700 -d "$work/receipts"
+    python3 -I scripts/istio-upgrade.py verify --phase "${stage##*-}" \
+      --expected-sha "$GITHUB_SHA" --talosconfig "$work/talosconfig" \
+      --receipt-dir "$work/receipts"
+    retain_result "$work/receipts/$stage.json" "$stage"
     ;;
   talos-*|kubernetes-*)
     [[ -n "${OCE_CONTROLPLANE_CONFIG_B64:-}" && -n "${OCE_WORKER_CONFIG_B64:-}" ]] || exit 1

@@ -216,6 +216,70 @@ aws() {
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(trace, ["head"])
 
+    def test_run_result_recovers_exact_post_put_write_on_retry(self):
+        source = STAGE.read_text()
+        functions = ""
+        for name in ("retain_result", "load_receipt"):
+            functions += name + "() {" + source.split(name + "() {", 1)[1].split("\n}\n", 1)[0] + "\n}\n"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            bin_dir = path / "bin"
+            bin_dir.mkdir()
+            store = path / "durable.json"
+            fail_head = path / "fail-head-once"
+            fail_head.touch()
+            result_file = path / "result.json"
+            result_file.write_text('{"verified":true}\n')
+            result_file.chmod(0o600)
+            aws = bin_dir / "aws"
+            aws.write_text("#!/usr/bin/env python3\n"
+                           "import base64, hashlib, json, os, pathlib, sys\n"
+                           "a=sys.argv[1:]; op=a[1]; p=pathlib.Path(os.environ['TEST_STORE'])\n"
+                           "key=a[a.index('--prefix')+1] if op=='list-object-versions' else a[a.index('--key')+1]\n"
+                           "if op=='put-object':\n"
+                           "    if not p.exists(): p.write_bytes(pathlib.Path(a[a.index('--body')+1]).read_bytes())\n"
+                           "    sys.exit(42)  # response lost after commit, or conditional retry\n"
+                           "if op=='list-object-versions':\n"
+                           "    print(json.dumps({'IsTruncated':False,'DeleteMarkers':[],"
+                           "'Versions':[{'Key':key,'VersionId':'v1','IsLatest':True}] if p.exists() else []}))\n"
+                           "elif op=='head-object':\n"
+                           "    flag=pathlib.Path(os.environ['TEST_FAIL_HEAD'])\n"
+                           "    if flag.exists(): flag.unlink(); sys.exit(53)\n"
+                           "    data=p.read_bytes(); print(json.dumps({'VersionId':'v1',"
+                           "'ServerSideEncryption':'aws:kms','ContentLength':len(data),"
+                           "'ChecksumSHA256':base64.b64encode(hashlib.sha256(data).digest()).decode()}))\n"
+                           "elif op=='get-object':\n"
+                           "    pathlib.Path(a[-1]).write_bytes(p.read_bytes()); print('{}')\n"
+                           "else: sys.exit(99)\n")
+            aws.chmod(0o700)
+            stat = bin_dir / "stat"
+            stat.write_text("#!/usr/bin/env python3\nimport os, sys\n"
+                            "value=sys.argv[2]; info=os.stat(sys.argv[3])\n"
+                            "print(oct(info.st_mode & 0o777)[2:] if value=='%a' else info.st_size)\n")
+            stat.chmod(0o700)
+            base64_wrapper = bin_dir / "base64"
+            base64_wrapper.write_text("#!/usr/bin/env python3\nimport base64, sys\n"
+                                      "sys.stdout.write(base64.b64encode(sys.stdin.buffer.read()).decode())\n")
+            base64_wrapper.chmod(0o700)
+            env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}",
+                       TEST_STORE=str(store), TEST_FAIL_HEAD=str(fail_head),
+                       GITHUB_SHA=SHA, GITHUB_RUN_ID="123")
+            shell = "set -euo pipefail\nbucket=test-bucket\nwork=\"$TEST_WORK\"\n" + functions + \
+                    '\nretain_result "$TEST_RESULT" phase-1\n'
+            env.update(TEST_WORK=str(path), TEST_RESULT=str(result_file))
+            first = subprocess.run([shutil.which("bash"), "-c", shell], env=env,
+                                   capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(first.returncode, 0)
+            self.assertEqual(store.read_bytes(), result_file.read_bytes())
+            second = subprocess.run([shutil.which("bash"), "-c", shell], env=env,
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            result_file.write_text('{"verified":false}\n')
+            third = subprocess.run([shutil.which("bash"), "-c", shell], env=env,
+                                   capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(third.returncode, 0)
+            self.assertEqual(store.read_text(), '{"verified":true}\n')
+
     def test_cleanup_loads_both_receipts_before_firewall_helper(self):
         source = STAGE.read_text().split('  owned-cleanup)\n', 1)[1]
         helper = source.index('python3 scripts/network-policy-cleanup.py')

@@ -241,11 +241,12 @@ approved_platform_maintenance if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 7
-	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "istio-1.28.10-phase-1", "istio-1.28.10-phase-2", "istio-1.28.10-phase-3", "istio-1.28.10-phase-4", "istio-1.28.10-phase-5", "istio-1.28.10-phase-6", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	dispatch.inputs.expected_sha.required == true
-	count(object.keys(input)) == 5
+	count(object.keys(input)) == 6
+	input["run-name"] == "Platform ${{ inputs.stage }} @ ${{ github.sha }}"
 	input.permissions == {}
 	input.env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}
 	count(object.keys(input.jobs)) == 2
@@ -335,7 +336,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'d3fce8f5636d7e4fd9d9e6137e2c1f2a894e08f377e06bb8b1c30801d4fe38fe  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
