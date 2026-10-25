@@ -349,11 +349,16 @@ private source object. Hash and claim binding detect missing, reused, or
 changed files, but independent review must establish that the source material
 is authentic and exhaustive.
 
-The temporary `acceptance-schedule-collector-cronjob.yaml`,
-`acceptance-schedule-collector-rbac.yaml`, and
-`acceptance-schedule-collector-networkpolicy.yaml` are staged suspended and outside
-Kustomize. After the local ledger binds, activate them in a reviewed PR and
-verify the first collector Job succeeds before starting the seven-day clock.
+The collector ServiceAccount, read-only Role/RoleBinding, and API-only
+NetworkPolicy are in Kustomize while
+`acceptance-schedule-collector-cronjob.yaml` remains suspended and outside it.
+Merge this protected prerequisite first. Before a separate reviewed activation
+change adds and unsuspends the CronJob, verify Argo CD synced the prerequisite
+revision and read back the collector ServiceAccount, Role, RoleBinding, and
+NetworkPolicy in `automation`; confirm the policy selects no current Pod and
+has only the expected API endpoints. The collector must not start until those
+objects exist. After the local ledger binds, activate the CronJob and verify
+its first Job succeeds before starting the seven-day clock.
 The collector runs at :05, :20, :35, and :50 UTC. Its dedicated ServiceAccount
 can get only the Renovate CronJob, list Jobs/Pods in `automation`, and read Pod
 logs there; it has no write verb, GitHub App key, or production cache mount.
@@ -645,10 +650,12 @@ first read time as the timing upper bound. The report worker binds explicit
 schedule or PR-approval deferrals to the sealed report completion time. A
 private reviewer must still check the stored material and effective policy.
 Each sealed report receipt records the SHA-256 of its mounted production
-`config.js` policy. After every acceptance writer is suspended and drained,
-the staged `acceptance-source-review-job.yaml` may be activated in a reviewed
-GitOps change. It mounts the ledger read-only, has no GitHub App key or
-Kubernetes token, and denies network egress. It replays each eligible receipt
+`config.js` policy. The deny-all `acceptance-source-review-networkpolicy.yaml` reconciles before
+any source-review Job. Verify it exists in `automation` after Argo CD sync;
+then, after every acceptance writer is suspended and drained, activate the
+staged `acceptance-source-review-job.yaml` in a separate reviewed GitOps
+change. It mounts the ledger read-only and has no GitHub App key, Kubernetes
+token, or network egress. It replays each eligible receipt
 against the exact hashed raw report and stored GitHub PR snapshots, and checks
 that the report policy hash matches the frozen private review input. Its Pod
 logs contain only aggregate source-link counts. A mismatch or missing raw
@@ -670,8 +677,10 @@ and schedule-collector writers through reviewed GitOps; verify none of their
 Jobs or Pods remains pending or active. Activate the staged read-only
 `acceptance-source-review-job.yaml` only after that freeze. Activate the staged
 `acceptance-final-report-job.yaml` through a separate reviewed change after
-source replay and writer drainage. The final Job has no App key, Kubernetes
-token, or network egress and mounts the protected ledger read-only. Its
+source replay and writer drainage. Verify the pre-reconciled deny-all
+`acceptance-final-report-networkpolicy.yaml` exists in `automation` before
+that activation. The final Job has no App key, Kubernetes token, or network
+egress and mounts the protected ledger read-only. Its
 `report` mode reads the frozen sample and private outcomes and prints only
 aggregate counts. Review the source evidence and final report. Compare the
 final report's `ledgerSha256` with the last observer poll digest; a mismatch
