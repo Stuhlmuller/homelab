@@ -575,7 +575,7 @@ webhook rewrites their Pod image. Check both webhook replicas, Certificate
 readiness and the injected CA before the Octelium stage.
 
 Before the Harbor Application PR, on clean reviewed current `main`, pre-pull
-the nine active Harbor 2.15.2 runtime images through the private Harbor route
+the twelve Harbor Application images through the private Harbor route
 onto all four nodes:
 
 ```sh
@@ -589,7 +589,7 @@ done
 ```
 
 Repeat without `--execute` immediately before merging Harbor. Each node must
-report nine cached Harbor references. Check Argo Application sync/health,
+report twelve cached Harbor references. Check Argo Application sync/health,
 Deployment/StatefulSet/DaemonSet/CronJob/Job templates and current Pods after
 each stage. Retain completed and failed Pods in the audit ledger but exclude
 them from the current-workload count. Correlate a previously uncached node

@@ -43,7 +43,7 @@ The PostSync bootstrap creates the private `homelab` project and reconciles:
 
 Bootstrap uses upstream image names. The steady-state Harbor Application uses
 explicit digest-pinned `harbor.stinkyboi.com/mirror/...` references after the
-node hostname route, complete authenticated pulls, and nine-image node pre-pull.
+node hostname route, complete authenticated pulls, and twelve-image node pre-pull.
 The protected Harbor cutover commit can be reverted through a protected PR to
 restore upstream GitOps references during registry recovery; the Talos rollback
 patch alone changes transport and does not rewrite Pod images. The initial
