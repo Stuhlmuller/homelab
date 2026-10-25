@@ -93,14 +93,18 @@ list again after labeling. Each Node patch tests
 taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.
 If the Node patch succeeded but the final `canary-admit.json` upload failed,
-dispatch protected `canary-admit-recover` on the same current-main SHA with the
-original `admission_run_id`. This owner-only stage loads the immutable
-pre-mutation attempt and its exact placement version, refuses an existing final
-admission receipt, and runs a short-lived privileged host firewall probe. It
+dispatch owner-only protected `canary-admit-recover` on current `main` with the
+original admission SHA as `evidence_source_sha` and its `admission_run_id`.
+The original SHA must be an ancestor of current `main`. The stage loads that
+SHA's immutable pre-mutation attempt and exact placement version, refuses an
+existing final admission receipt, then runs a short-lived privileged host
+firewall probe. It
 confirms empty kube-router rules, absent enforcer and fixtures, and no foreign
 Pod on the same UID/boot Node before removing only the owned label and taint
-with resource-version/UID tests. It works after placement expires because it
-retracts admission rather than accepting a new one. The probe's attempt is
+with resource-version/UID tests using the current-main code. It works after
+placement expires or `main` advances because it retracts admission rather than
+accepting a new one. A changed canary node or taint blocks recovery for review.
+The probe's attempt is
 stored before Pod creation; if the probe remains, use protected
 `firewall-baseline-recover` with its recovery run ID as `baseline_run_id`, the
 same main SHA as `baseline_source_sha`, and the original `admission_run_id` to
