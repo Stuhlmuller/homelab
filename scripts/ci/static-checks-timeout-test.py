@@ -39,6 +39,7 @@ class Timeout(unittest.TestCase):
                          "renovate-acceptance-review-test.py",
                          "renovate-acceptance-schedule-test.py",
                          "renovate-acceptance-schedule-collector-test.js",
+                         "renovate-acceptance-schedule-assemble-test.py",
                          "renovate-acceptance-report-test.js",
                          "renovate-acceptance-pr-proof-test.js",
                          "renovate-acceptance-source-review-test.js",
