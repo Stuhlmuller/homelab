@@ -141,6 +141,10 @@ and atomically publishes it to the retained NFS backup claim. It retains
 and stable application keys still need their final backup contract. NFS media
 and backups share a NAS and do not protect against NAS loss.
 
+The Ruby launcher creates a private `0700` directory under the writable `/tmp`
+volume for upload processing. The volume root is group-managed by Kubernetes
+and lacks the sticky bit Ruby requires for a shared temporary directory.
+
 Before acceptance, prove a successful scheduled backup and restore the newest
 dump into an isolated PostgreSQL instance. Verify tables, accounts, and media
 references before trusting the restore. Initialize the extensions and limited application role from
