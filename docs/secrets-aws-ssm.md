@@ -403,6 +403,7 @@ cluster CA is intentionally rotated.
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | renovate | `renovate` | `renovate` | `/homelab/renovate/github-app/issuer-id`, `/homelab/renovate/github-app/private-key` |
+| renovate acceptance (staged) | `renovate-acceptance` | `renovate-acceptance` | `/homelab/renovate/acceptance/github-app/issuer-id`, `/homelab/renovate/acceptance/github-app/private-key` |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
 not an active secret contract and has no ExternalSecret consumer. It remains in
@@ -695,6 +696,108 @@ the legacy Action remains the only writer until cutover. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
 See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+
+The temporary acceptance observer uses a separate, read-only GitHub App. Its
+two Standard SecureString placeholders must first be created by a reviewed
+apply of `IaC/live/aws-ssm-parameters`. From the exact reviewed, clean remote
+`main`, use an existing operator SSO profile and the repo-owned manifest flow:
+
+```sh
+aws sso login --profile <operator-sso-profile>
+reviewed_main_sha=$(git rev-parse HEAD)
+python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
+  --expected-sha "$reviewed_main_sha" create
+```
+
+Open the printed loopback URL on the same machine, create the App under the
+`Stuhlmuller` organization, then use the printed installation URL to install
+it on **all repositories**. The manifest declares only Checks, Contents,
+Issues, Metadata, Pull requests, Commit statuses, and Dependabot alerts
+repository read, plus Members organization read. It subscribes to no events
+and disables webhook delivery. The script checks the org ownership, exact
+read grants, no events, AWS account, SSO identity, and both version-one
+placeholders. It exchanges GitHub's one-hour code in memory and sends the PEM
+to SSM through AWS CLI stdin. It prints no key, token, or SSM value. Verify
+the completed installation from that same reviewed main:
+
+```sh
+python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
+  --expected-sha "$reviewed_main_sha" verify
+```
+
+If intake stops after GitHub creates the App, keep the public App ID printed
+before either SSM write. If the private-key slot reached version 2 but the
+issuer slot remains the version-one placeholder, resume that exact App from
+the current reviewed main:
+
+```sh
+reviewed_main_sha=$(git rev-parse HEAD)
+python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
+  --expected-sha "$reviewed_main_sha" --app-id <printed-public-app-id> resume
+```
+
+`resume` checks the stored key against that App's exact name, organization,
+read grants, and event policy before writing only the acceptance issuer slot.
+It rechecks both SSM slots immediately before that write. If the issuer write
+succeeded but its CLI receipt was lost, the same command verifies the complete
+version-two pair without another write. It refuses any other slot state; in
+particular, a failed first key write leaves both placeholders and requires a
+separately reviewed owner cleanup of the newly created App before starting a
+fresh registration. Never paste the PEM or SSM values into a recovery command.
+
+Only after verification should a reviewed GitOps change include
+`clusters/homelab/apps/renovate/acceptance-externalsecret.yaml`, check its
+`Ready=True` condition and target Secret metadata without reading values, and
+later unsuspend the acceptance Jobs. All acceptance Pods mount the read-only
+App Secret `renovate-acceptance` at `/var/run/secrets/renovate-acceptance`;
+they cannot read the writer's `renovate` Secret. The inventory Job alone also
+mounts the one-shot review Secret described below. The intake accepts initial
+placeholders only. Rotation needs a separately reviewed path.
+
+The private acceptance review is a separate one-shot input that can exceed one
+SSM SecureString. After private owner, policy, and source review, use the
+guarded [operator command](../scripts/renovate-acceptance-review.py) from
+current signed `main` to create the fixed, immutable
+`automation/renovate-acceptance-review` Secret. Only the staged inventory Job
+mounts it. The Job copies the input to the dedicated acer-local ledger before
+freezing its sample; the read-only App and review input remain separate.
+Retire the transient Secret after a successful inventory Job, or retract it
+before activation or after a terminal failure. Neither operation changes the
+private ledger. No additional SSM reader grant is needed for review delivery.
+
+### Retire the temporary acceptance identity
+
+After the seven-day report is reviewed, complete the T047 ledger cleanup and
+remove all acceptance Jobs, CronJobs, the ledger claim, and the acceptance
+ExternalSecret from Kustomize through reviewed GitOps. Confirm Argo CD is
+synced, no acceptance Pod or Job remains, and both the
+`renovate-acceptance` ExternalSecret and target Secret are absent in
+`automation`. The target uses `creationPolicy: Owner`, so pruning the
+ExternalSecret garbage-collects the Secret; `deletionPolicy: Delete` also
+removes it if both SSM sources disappear first. Do not remove SSM values while
+either Kubernetes object remains.
+
+Before deleting the App, refresh `reviewed_main_sha` to the then-current clean
+remote `main`, run the `verify` command above, and record its numeric App ID
+and slug. An organization owner or App manager can delete the App registration
+through [GitHub's Developer settings](https://docs.github.com/en/apps/maintaining-github-apps/deleting-a-github-app).
+Its deletion also uninstalls every installation. **Obtain explicit owner
+authorization for this exact provider UI deletion when T047 is ready.**
+Confirm the recorded App ID is absent from the organization installation list
+at `GET /orgs/Stuhlmuller/installations`; an unauthorized or failed query is
+not an absence receipt. Do not delete or alter the production Renovate writer
+App.
+
+In a separate reviewed IaC change, remove only the two
+`/homelab/renovate/acceptance/github-app/` parameter blocks from
+`IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`.
+Generate the stack, inspect a saved plan for those two SecureString destroys
+and the corresponding reader-policy contraction, then apply that exact plan
+through the declared operator workflow. Verify both names are absent from
+SSM metadata in account `716182248480`, region `us-west-2`, without reading
+any value. Stop if the plan touches `/homelab/renovate/github-app/` or any
+unrelated resource. Remove the staged ExternalSecret and one-time intake code
+in the reviewed cleanup change once no longer needed.
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret

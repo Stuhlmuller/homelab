@@ -32,6 +32,13 @@ python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
 node --test scripts/ci/renovate-cache-corruption-drill-test.mjs
 python3 -I scripts/ci/renovate-cache-capacity-drill-test.py
+python3 -I scripts/ci/renovate-acceptance-app-test.py
+node --test scripts/ci/renovate-acceptance-observer-test.js
+node --test scripts/ci/renovate-acceptance-inventory-test.js
+python3 -I scripts/ci/renovate-acceptance-review-test.py
+node --test scripts/ci/renovate-acceptance-report-test.js
+node --test scripts/ci/renovate-acceptance-pr-proof-test.js
+python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py

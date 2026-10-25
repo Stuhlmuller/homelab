@@ -1,0 +1,45 @@
+# Staged only: add to platform-storage before binding the namespaced acceptance claim.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: renovate-acceptance-ledger-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: renovate-acceptance-ledger-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-observer
+    app.kubernetes.io/part-of: homelab-automation
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 64Gi
+  claimRef:
+    name: renovate-acceptance-ledger
+    namespace: automation
+  hostPath:
+    path: /var/lib/renovate-acceptance-ledger
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - acer
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: renovate-acceptance-ledger-local
+  volumeMode: Filesystem
