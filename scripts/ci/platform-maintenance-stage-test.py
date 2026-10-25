@@ -154,6 +154,11 @@ class PlatformStageTests(unittest.TestCase):
         self.assertLess(source.index('retain_result "$work/baseline-recover-attempt.json"'),
                         source.index('python3 -I scripts/network-policy-firewall-baseline.py recover'))
 
+    def test_read_only_traefik_stage_reaches_protected_entry_without_canary_activation(self):
+        result, external = self.run_stage("traefik-qualify")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(external)
+
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
         self.assertIn("platform-maintenance.py execute", source)

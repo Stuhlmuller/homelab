@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-admit-recover|canary-abort|canary-release|canary-release-recover|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-admit-recover|canary-abort|canary-release|canary-release-recover|qualify|traefik-qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -21,7 +21,8 @@ if [[ "$stage" == placement || "$stage" == firewall-baseline || "$stage" == cana
 elif [[ "$stage" == canary-admit || "$stage" == canary-admit-recover ||
         "$stage" == canary-release || "$stage" == canary-release-recover ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
-elif [[ "$stage" != inspect && "$stage" != firewall-baseline && "$stage" != firewall-baseline-recover ]]; then
+elif [[ "$stage" != inspect && "$stage" != firewall-baseline &&
+        "$stage" != firewall-baseline-recover && "$stage" != traefik-qualify ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
 if [[ "$stage" == canary-admit-recover || "$stage" == canary-abort ]]; then
@@ -528,6 +529,12 @@ case "$stage" in
     bash scripts/ci/install-kubeconfig.sh
     python3 scripts/network-policy-qualification.py --config "$config" --output "$work/qualification.json"
     retain_result "$work/qualification.json" qualification
+    ;;
+  traefik-qualify)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
+    bash scripts/ci/install-kubeconfig.sh
+    python3 -I scripts/traefik-network-policy-qualification.py --output "$work/traefik-qualification.json"
+    retain_result "$work/traefik-qualification.json" traefik-qualification
     ;;
   ownership-capture|ownership-approve)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
