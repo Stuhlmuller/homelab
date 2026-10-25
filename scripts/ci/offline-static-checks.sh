@@ -374,7 +374,7 @@ yq -o=json '.' "$kiali_values" |
       | select(.name == "wait-for-prometheus")
     ] | (
       length == 1 and
-      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
       .[0].imagePullPolicy == "IfNotPresent" and
       .[0].command == ["curl"] and
       .[0].args == [
@@ -1644,20 +1644,7 @@ yq -o=json '.' "$cert_manager_values" \
       .startupapicheck.image.digest
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
-tag_only_images="$(
-  {
-    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
-    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } \
-    | rg -v '@sha256:' \
-    || true
-)"
-
-if [[ -n "$tag_only_images" ]]; then
-  echo "Container images must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
-  exit 1
-fi
+python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
