@@ -151,20 +151,17 @@ repositories without a new bot PR, but its Harbor lookups failed before the
 registry-only route was deployed. It does not prove scheduled operation or
 cache reuse. Scheduled dry-run Pods must prove repository coverage, planned
 proposals, unchanged App identity and merge policy, and a cache hit for the
-same datasource key across Pod UIDs. After a cold canary lookup, inspect
-restricted logs from two warm scheduled Pods with distinct UIDs. Confirm the
-exact `Returning cached value` marker for namespace
+same datasource key across Pod UIDs. The completed canary proof used the exact
+`Returning cached value` marker for namespace
 `github-releases-datasource-v2` and key
-`https://api.github.com/:Stuhlmuller:renovate` in both. Only this marker is
-raised from TRACE to INFO. A shorter second run alone does not prove cache
-reuse. The INFO marker includes `namespace` and `key`, which can contain
-private repository or package names. Restrict Pod-log access; keep raw records
-out of public PRs, issues, and CI output. Publish only aggregate cache-hit
-results and distinct Pod UIDs. Remove `logLevelRemap` through a reviewed PR
-after evidence is captured and before enabling writes; keep the hourly schedule
-and Renovate's normal cache freshness rules.
-`scripts/ci/renovate-log-remap-test.mjs` verifies the INFO record and its
-metadata against an installed copy of pinned Renovate 44.167.4.
+`https://api.github.com/:Stuhlmuller:renovate` in restricted logs from two
+warm scheduled Pods with distinct UIDs. A shorter second run alone does not
+prove cache reuse. The temporary INFO remap has been removed because its
+`namespace` and `key` fields can identify private repositories or packages.
+Keep raw records out of public PRs, issues, and CI output; publish only
+aggregate cache-hit results and distinct Pod UIDs. Future cache checks need
+scoped TRACE or a mock upstream counter. Keep the hourly schedule and
+Renovate's normal cache freshness rules.
 
 On 2026-10-19, the 19:00 and 20:00 scheduled Pods had distinct UIDs and each
 hit that exact cached key. After the protected v0.0.2 release at 20:20 UTC, the

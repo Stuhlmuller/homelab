@@ -49,7 +49,19 @@ kubectl get jobs -n automation -l app.kubernetes.io/name=renovate
 kubectl logs -n automation job/<completed-renovate-job> --timestamps
 ```
 
-Expect owner-filtered discovery, all App-accessible eligible repositories, no onboarding PR for a config-free repository, and no GitHub writes. Verify the PVC remains bound across distinct Pod UIDs; record a scoped package-cache hit for the same datasource key or an independent mock-registry request count, using the marker in the pinned image. A shorter second run alone is insufficient. The temporary custom manager and canary file already live in Stuhlmuller/renovate; its v0.0.1 release is published. Confirm the first cold lookup, then a hit for the same github-releases datasource key in two consecutive hourly scheduled Pods with distinct UIDs. Only the exact `Returning cached value` marker is temporarily remapped from TRACE to INFO. Inspect restricted logs for namespace `github-releases-datasource-v2` and key `https://api.github.com/:Stuhlmuller:renovate` in both warm Pods. Keep the hourly schedule and normal cache freshness rules. Publish v0.0.2 only through the reviewed companion workflow and confirm a later scheduled scan sees it after normal cache refresh. Remove the companion fixture, canary rule, and workflow through a reviewed PR after acceptance; delete renovate.json only if it remains canary-only. Remove the log remap through a reviewed homelab PR before enabling writes. The INFO record retains `namespace` and `key`, which can identify private repositories or packages. Keep raw records in restricted Pod logs; publish only aggregate cache-hit results and Pod UIDs, never raw lines or keys in PRs, issues, or CI output. If the App sees fewer repositories than the owner inventory or its installation does not select all repositories, stop cutover and add a reviewed, repository-owned access-management path before changing the installation.
+Expect owner-filtered discovery, all App-accessible eligible repositories, no
+onboarding PR for a config-free repository, and no GitHub writes. Verify the PVC
+persists across distinct Pod UIDs. A shorter second run alone is insufficient
+cache evidence: use scoped restricted TRACE or a mock-registry counter to prove
+a same-key hit, then confirm a newly published canary version appears after
+normal refresh. [The parity receipt](dry-run-parity-receipt.md) records the
+completed v0.0.1/v0.0.2 proof. Its temporary INFO remap was removed because
+cache keys can identify private repositories and packages; do not reintroduce
+it for write-enabled runs. Keep raw records out of public PRs, issues, and CI
+output. Remove the companion canary fixture and workflow through a reviewed PR
+after acceptance, deleting `renovate.json` only if it remains canary-only. If
+the App sees fewer repositories than the owner inventory or its installation
+does not select all repositories, stop cutover and add a reviewed access path.
 
 The mock discovery fixture above proves the add/remove rule; it does not claim
 that a real owner transfer occurred.
