@@ -379,3 +379,16 @@ public app address records stay until a later guarded retirement.
   `.talos/talosconfig`.
 - Talos machine config changes should stay patch-oriented when only one node
   differs from the shared baseline.
+
+## October 25 Cordium capacity preparation
+
+The October 17 reclaim is deployed, but newer reservations leave Acer with only
+about 1,161.7 MiB unreserved. The [new measured plan](../../docs/cordium-acer-capacity-2026-10-25.md)
+moves four stateless controllers to `zimaboard-1`, increases the under-reserved
+Kiali operator to 384 MiB, and adjusts bounded excess requests while retaining
+Alertmanager and LiteLLM PostgreSQL on Acer. It targets 1,168 MiB of Acer
+reservations, without changing limits, replicas or volumes. This is preparation,
+not live rollout evidence. Fresh node pressure, actual memory and scheduling
+headroom must pass after GitOps before a single 2 GiB workspace. Ephemeral CI
+workspaces must require Acer; preserve the six original non-ephemeral workspace
+selectors and local PV identities.

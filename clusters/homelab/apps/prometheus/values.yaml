@@ -3,6 +3,8 @@ grafana:
 nodeExporter:
   enabled: false
 kube-state-metrics:
+  nodeSelector:
+    kubernetes.io/hostname: zimaboard-1
   resources:
     requests:
       memory: 128Mi
@@ -59,6 +61,11 @@ prometheus:
 alertmanager:
   enabled: true
   alertmanagerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: acer
+    resources:
+      requests:
+        memory: 64Mi
     # checkov:skip=CKV_SECRET_6: Kubernetes Secret resource name, not secret material.
     configSecret: alertmanager-discord-webhook
     podMetadata:

@@ -126,3 +126,10 @@ For telemetry rollback, revert the Kiali values and Prometheus monitor changes
 in git and let Argo CD reconcile both apps. Historical metrics remain until
 normal retention expires. A green Argo CD status alone does not prove traffic
 visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.
+
+## Controller capacity
+
+The [October 25 Cordium capacity plan](../../../../docs/cordium-acer-capacity-2026-10-25.md)
+places only the Kiali operator on `zimaboard-1` with 384 MiB requested, above its
+measured 250.9 MiB peak. The Kiali operand remains independently configured by
+`cr.spec.deployment`; its access and resource settings are unchanged.

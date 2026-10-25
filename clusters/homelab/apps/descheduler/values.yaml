@@ -1,3 +1,5 @@
+nodeSelector:
+  kubernetes.io/hostname: zimaboard-1
 kind: Deployment
 deschedulerPolicy:
   profiles:

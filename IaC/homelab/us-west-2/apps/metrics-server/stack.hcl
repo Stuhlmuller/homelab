@@ -18,6 +18,9 @@ inputs = {
           releaseName = "metrics-server"
           valuesObject = {
             args = ["--kubelet-insecure-tls"]
+            nodeSelector = {
+              "kubernetes.io/hostname" = "zimaboard-1"
+            }
           }
         }
       }

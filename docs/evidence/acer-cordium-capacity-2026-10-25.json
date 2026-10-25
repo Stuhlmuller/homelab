@@ -1,0 +1,101 @@
+{
+  "date": "2026-10-25",
+  "base_main": "e7ec266bb24abb7b0bea549faec53caa1cad6ab9",
+  "measurement_window": "7d",
+  "not_live_rollout_evidence": true,
+  "acer": {
+    "allocatable_mib": 15260.6640625,
+    "before_requests_mib": 14099,
+    "released_requests_mib": 1168,
+    "projected_headroom_mib": 2329.6640625,
+    "after_one_2048_mib_workspace_and_8_mib_sysctl_mib": 273.6640625,
+    "observed_available_memory_mib": 3584
+  },
+  "worker": {
+    "name": "zimaboard-1",
+    "before_requests_mib": 3884,
+    "observed_available_memory_mib": 2078,
+    "projected_available_after_sum_of_controller_peaks_mib": 1680.65
+  },
+  "controller_moves": [
+    {
+      "workload": "descheduler",
+      "from": "acer",
+      "to": "zimaboard-1",
+      "before_request_mib": 256,
+      "after_request_mib": 256,
+      "peak_mib": 38.43
+    },
+    {
+      "workload": "metrics-server",
+      "from": "acer",
+      "to": "zimaboard-1",
+      "before_request_mib": 200,
+      "after_request_mib": 200,
+      "peak_mib": 59.66
+    },
+    {
+      "workload": "prometheus-kube-state-metrics",
+      "from": "acer",
+      "to": "zimaboard-1",
+      "before_request_mib": 128,
+      "after_request_mib": 128,
+      "peak_mib": 48.35
+    },
+    {
+      "workload": "kiali-operator",
+      "from": "acer",
+      "to": "zimaboard-1",
+      "before_request_mib": 64,
+      "after_request_mib": 384,
+      "peak_mib": 250.91
+    }
+  ],
+  "request_changes": [
+    {
+      "workload": "alertmanager",
+      "before_mib": 200,
+      "after_mib": 64,
+      "peak_mib": 37.7
+    },
+    {
+      "workload": "litellm-postgres",
+      "before_mib": 256,
+      "after_mib": 128,
+      "peak_mib": 46.88
+    },
+    {
+      "workload": "dispatcharr-app",
+      "before_mib": 1024,
+      "after_mib": 896,
+      "peak_mib": 610.2
+    },
+    {
+      "workload": "dispatcharr-celery",
+      "before_mib": 512,
+      "after_mib": 448,
+      "peak_mib": 341.28
+    },
+    {
+      "workload": "dispatcharr-redis",
+      "before_mib": 128,
+      "after_mib": 64,
+      "peak_mib": 7.38
+    }
+  ],
+  "minimum_observed_samples": 34249,
+  "memory_limits_unchanged": true,
+  "cpu_requests_unchanged": true,
+  "volumes_unchanged": true,
+  "database_and_alertmanager_placement": "explicitly retained on acer",
+  "original_stopped_workspaces": 6,
+  "original_workspaces_all_non_ephemeral": true,
+  "runtime_gates": [
+    "fresh readiness and capacity after GitOps",
+    "worker available memory at least 1536 MiB after controller moves",
+    "Acer available memory at least 3072 MiB before workspace creation",
+    "published patched controller, namespace mappings and Acer eligibility",
+    "ephemeral workspace hard Acer selector",
+    "one bounded workspace; abort on memory pressure; verify exact owned cleanup"
+  ]
+}

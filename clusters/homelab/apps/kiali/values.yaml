@@ -1,3 +1,10 @@
+# Operator only; the Kiali operand's placement remains independently managed.
+nodeSelector:
+  kubernetes.io/hostname: zimaboard-1
+resources:
+  requests:
+    memory: 384Mi
+
 metrics:
   enabled: true
 
