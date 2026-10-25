@@ -897,7 +897,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     (. | tostring | contains("update-pr-plan-description") | not) and
     (. | tostring | contains("pull-requests") | not) and
     ([.jobs | to_entries[] | select(.value.environment != null) | .key]) == ["terragrunt-plan"] and
-    .jobs["terragrunt-gate"].if == "${{ always() }}" and
+    .jobs["terragrunt-gate"].if == "${{ !cancelled() }}" and
     .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan", "terragrunt-plan-skipped"] and
     .jobs["terragrunt-gate"].permissions == {} and
     .jobs["terragrunt-gate"].environment == null and
@@ -1098,7 +1098,7 @@ done <<'EOF'
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
-.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
+.github/workflows/terragrunt-plan.yml 9b201f1924bd6c5de50cff847dbdedb6b91faf2292920a50a81b5020b5c3261a
 EOF
 echo "::endgroup::"
 
