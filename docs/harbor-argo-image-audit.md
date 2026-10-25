@@ -37,6 +37,10 @@ they do not count toward the current-workload acceptance target.
 
 The baseline contains 198 current Pods and 93 historical Pods. Application
 status was 42 Synced/Healthy, four Synced/Degraded, and one OutOfSync/Healthy.
+The read-only controller inventory includes 264 image references in current
+Deployment, StatefulSet, DaemonSet, CronJob and unfinished Job templates,
+including scaled-down workloads. All 264 upstream references map to the
+reviewed catalog after normalizing registry shorthand and tag/digest aliases.
 Record post-stage current counts here after each protected merge and Argo
 reconciliation. Keep the historical column even after current references reach
 zero; Kubernetes may later garbage-collect those completed Pods.
