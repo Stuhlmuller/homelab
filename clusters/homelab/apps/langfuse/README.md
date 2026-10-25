@@ -71,7 +71,7 @@ cutover and rollback before moving the database.
 
 ## Web memory
 
-Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
+Web memory: `1280Mi` request, `2Gi` limit; CPU and worker unchanged.
 The worker cannot schedule on `zimaboard-2`: its 1 GiB limit can overwhelm that
 worker's 1.28 GiB allocatable memory alongside node services and PostgreSQL.
 The pinned image uses Node 24 with no runtime heap override. Reserve the full
