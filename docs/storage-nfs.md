@@ -125,6 +125,11 @@ The default `nfs-default` StorageClass remains the path for application config,
 most PostgreSQL data, dashboards, metrics, and other app-owned state. The
 exceptions are:
 
+- Renovate's proposed `renovate-cache-dedicated` static claim on a separate
+  20 GiB QTS thick volume and `/renovate-cache` NFS export. The manifest is
+  staged outside the live Kustomization until a reviewed NAS provisioning
+  path and export readiness exist; the current `renovate-cache` still uses
+  `nfs-default`. See `clusters/homelab/apps/renovate/README.md`.
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
 - `deluge-config-local`, `radarr-config-local`, and `sonarr-config-local`,
