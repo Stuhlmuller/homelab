@@ -113,8 +113,9 @@ The staged `platform-istio-egress` Application defines a waypoint and the
 first caller-specific external destination, LiteLLM to OpenRouter on TLS 443.
 Its auto-sync stays disabled. The live cluster lacks Gateway API CRDs. Global
 ambient DNS capture is disabled; LiteLLM has a per-Pod opt-in that requires
-rollout and acceptance. The waypoint cannot be treated as active
-until those owned prerequisites and a traffic canary pass. The waypoint's
+rollout and acceptance. After the CRDs and DNS capture are verified, a
+separate GitOps change can enable waypoint sync; then its traffic canary must
+pass before adding callers. The waypoint's
 service-account policy handles meshed TCP; kube-router remains the hard
 network boundary for direct bypass, UDP, and non-ambient workloads. See
 [`istio-egress/README.md`](../../clusters/homelab/platform/istio-egress/README.md).

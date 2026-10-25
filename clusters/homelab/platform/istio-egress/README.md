@@ -13,17 +13,19 @@ GatewayClass are absent; the single CRD owner is the staged
 Envoy Gateway controller. Istio CNI sets
 `cni.ambient.dnsCapture: false` globally. LiteLLM opts in through its pod
 annotation, supported since Istio 1.25; verify the replacement Pod has DNS
-capture and still reaches its existing destinations before syncing this
+capture and still reaches its existing destinations before enabling this
 Application. The active Istio 1.27.3 release is also
 behind the repository's held upgrade ladder. Keep auto-sync disabled until
-the prerequisites are deployed and an isolated traffic canary passes.
+the CRDs and LiteLLM DNS capture are verified. Then enable it through a
+separate reviewed GitOps change and qualify the route before adding callers.
 
-Activation checks: CRDs established, `istio-waypoint` class present, waypoint
-Programmed and ready, LiteLLM request to OpenRouter succeeds through the
-waypoint, another mesh principal gets denied, and direct IP or undeclared host
-traffic is blocked by an enforcing network-layer policy. The last condition
-cannot be supplied by Istio alone. Flannel does not enforce NetworkPolicy;
-the staged kube-router canary must qualify before claiming hard default deny.
+Istio route checks after sync: waypoint Programmed and ready, LiteLLM request
+to OpenRouter succeeds through it, and another mesh principal gets denied.
+These checks do not prove a hard outbound allowlist: direct IP or undeclared
+host traffic still needs an enforcing network-layer rule. Flannel does not
+enforce NetworkPolicy; the staged kube-router canary remains held without an
+isolated worker. Router enforcement, if later added by the owner, needs its
+own evidence. No router change is part of this Application.
 Do not enable `REGISTRY_ONLY` as a substitute. Talos image pulls, non-ambient
 namespaces, and Deluge's WireGuard UDP path need separate policy.
 

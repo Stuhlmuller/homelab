@@ -3,6 +3,8 @@ kind: Gateway
 metadata:
   name: waypoint
   namespace: istio-egress
+  labels:
+    istio.io/waypoint-for: service
   annotations:
     networking.istio.io/service-type: ClusterIP
 spec:

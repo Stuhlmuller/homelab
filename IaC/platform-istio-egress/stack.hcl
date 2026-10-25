@@ -26,7 +26,7 @@ inputs = {
     info = [
       {
         name  = "activation"
-        value = "disabled until Gateway API CRDs, waypoint readiness, and LiteLLM allow/deny traffic are verified"
+        value = "disabled until Gateway API CRDs and LiteLLM DNS capture are verified; qualify waypoint traffic after sync"
       }
     ]
   }

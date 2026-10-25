@@ -31,6 +31,7 @@ class IstioEgressTests(unittest.TestCase):
         self.assertEqual(namespace["metadata"]["labels"]["istio.io/dataplane-mode"], "ambient")
         self.assertEqual(namespace["metadata"]["labels"]["istio.io/use-waypoint"], "waypoint")
         self.assertEqual(waypoint["spec"]["gatewayClassName"], "istio-waypoint")
+        self.assertEqual(waypoint["metadata"]["labels"]["istio.io/waypoint-for"], "service")
         self.assertEqual(waypoint["spec"]["listeners"], [
             {"name": "mesh", "port": 15008, "protocol": "HBONE"}])
         self.assertEqual(service["spec"], {
