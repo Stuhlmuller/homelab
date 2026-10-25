@@ -399,6 +399,7 @@ cluster CA is intentionally rotated.
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | renovate | `renovate` | `renovate` | `/homelab/renovate/github-app/issuer-id`, `/homelab/renovate/github-app/private-key` |
+| renovate Harbor read | `renovate-harbor-pull` | `renovate-harbor-pull` | `/homelab/renovate/harbor-pull-password` (generated copy of `/homelab/harbor/robot-pull-password`) |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
 not an active secret contract and has no ExternalSecret consumer. It remains in
@@ -691,6 +692,19 @@ the legacy Action remains the only writer until cutover. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
 See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+
+The separate `automation/renovate-harbor-pull` ExternalSecret reads only
+`/homelab/renovate/harbor-pull-password`, generated from the existing
+`/homelab/harbor/robot-pull-password` SecureString by the shared SSM unit. Once
+the staged contract is Ready, a following CronJob change mounts its target
+Secret as a read-only password file outside the package cache. The global
+Docker host rule then uses that value only for
+`https://harbor.stinkyboi.com` with the project-scoped pull robot. The
+ExternalSecret refreshes every five minutes; a later Job reads the refreshed
+file after coordinated Harbor robot and SSM rotation. The new exact SSM
+parameter and reader grant require a protected private saved plan before
+the CronJob can use them; no new Harbor robot is created. Verify the target
+metadata and a successful private lookup without printing either credential.
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret

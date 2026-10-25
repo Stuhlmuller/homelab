@@ -4,6 +4,7 @@ namespace: automation
 resources:
   - cronjob.yaml
   - externalsecret.yaml
+  - harbor-pull-externalsecret.yaml
   - networkpolicy.yaml
   - pvc.yaml
   - serviceaccount.yaml
