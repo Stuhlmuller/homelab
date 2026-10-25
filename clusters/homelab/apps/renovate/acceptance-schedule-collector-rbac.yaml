@@ -1,4 +1,4 @@
-# Stage outside Kustomize. Namespace-scoped read access only while SC-001 runs.
+# Reconcile before activating the staged collector CronJob.
 apiVersion: v1
 kind: ServiceAccount
 metadata:

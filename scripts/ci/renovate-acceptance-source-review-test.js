@@ -128,6 +128,7 @@ test('changed policy hash, report branch, or PR head fails closed', () => {
 test('review Job is dormant, private, and credential-free', () => {
   const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
   const job = fs.readFileSync(path.join(root, 'acceptance-source-review-job.yaml'), 'utf8');
+  const policy = fs.readFileSync(path.join(root, 'acceptance-source-review-networkpolicy.yaml'), 'utf8');
   const kust = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
   assert.match(job, /^  suspend: true$/m);
   assert.match(job, /automountServiceAccountToken: false/);
@@ -135,5 +136,11 @@ test('review Job is dormant, private, and credential-free', () => {
   assert.match(job, /readOnly: true/);
   assert.doesNotMatch(job, /secretName:|claimName: renovate-cache/);
   assert.doesNotMatch(kust, /- acceptance-source-review-job.yaml/);
+  assert.match(kust, /- acceptance-source-review-networkpolicy.yaml/);
+  assert.doesNotMatch(job, /^kind: NetworkPolicy$/m);
+  assert.match(policy, /app\.kubernetes\.io\/component: acceptance-source-review/);
+  assert.match(policy, /policyTypes: \[Ingress, Egress\]/);
+  assert.match(policy, /^  ingress: \[\]$/m);
+  assert.match(policy, /^  egress: \[\]$/m);
   assert.match(kust, /- acceptance-source-review.js/);
 });
