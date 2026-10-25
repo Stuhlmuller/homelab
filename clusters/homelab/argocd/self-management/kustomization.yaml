@@ -10,4 +10,5 @@ resources:
   - openclaw-enterprise-appproject.yaml
   - application.yaml
   - oidc-external-secret.yaml
+  - harbor-istio-oci-external-secret.yaml
   - virtualservice.yaml

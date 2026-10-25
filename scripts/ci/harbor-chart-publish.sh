@@ -4,6 +4,11 @@ set -euo pipefail
 [[ $# -eq 0 && "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
 [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && "${GITHUB_REF:-}" == refs/heads/main ]]
 [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${EXPECTED_SHA:-}" == "$GITHUB_SHA" ]]
+case "${CHART_SCOPE:-current}" in
+  current) check_mode=--check; publish_mode=--publish ;;
+  istio-1.28.10) check_mode=--check-istio-1.28.10; publish_mode=--publish-istio-1.28.10 ;;
+  *) echo 'Unknown chart publication scope.' >&2; exit 2 ;;
+esac
 [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
 : "${OCTELIUM_AUTH_TOKEN:?The protected CI cluster credential is required}"
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set}"
@@ -14,7 +19,7 @@ if grep -Eq '(^|[[:space:]])harbor[.]stinkyboi[.]com([[:space:]]|$)|# homelab-ha
   echo 'Harbor hosts entry already exists.' >&2
   exit 1
 fi
-python3 -I scripts/ci/harbor-chart-publish.py --check
+python3 -I scripts/ci/harbor-chart-publish.py "$check_mode"
 
 umask 077
 scratch="$(mktemp -d "${RUNNER_TEMP}/harbor-charts.XXXXXX")"
@@ -88,5 +93,5 @@ helm registry login harbor.stinkyboi.com --username "robot\$mirror+pull" \
 skopeo login --authfile "$scratch/reader-skopeo.json" --username "robot\$mirror+pull" \
   --password-stdin harbor.stinkyboi.com <"$scratch/reader-password" >/dev/null
 rm -f -- "$scratch/publisher-password" "$scratch/reader-password"
-python3 -I scripts/ci/harbor-chart-publish.py --publish \
+python3 -I scripts/ci/harbor-chart-publish.py "$publish_mode" \
   "$scratch/reader-skopeo.json" "$scratch/reader-helm.json" "$scratch/publisher-helm.json"

@@ -398,6 +398,27 @@ test_rejects_mastodon_reading_another_workload_secret if {
 	contains(msg, "outside its allowed application prefixes")
 }
 
+argocd_harbor_secret(key) := {
+	"apiVersion": "external-secrets.io/v1",
+	"kind": "ExternalSecret",
+	"metadata": {"name": "argocd-harbor-istio-oci", "namespace": "argocd"},
+	"spec": {
+		"secretStoreRef": {"kind": "ClusterSecretStore", "name": "aws-ssm"},
+		"data": [{"secretKey": "password", "remoteRef": {"key": key}}],
+	},
+}
+
+test_argocd_may_read_only_mirror_pull_robot_outside_own_prefix if {
+	allowed := deny with input as argocd_harbor_secret("/homelab/harbor/mirror-robot-pull-password")
+	count(allowed) == 0
+	push_denials := deny with input as argocd_harbor_secret("/homelab/harbor/mirror-robot-push-password")
+	some push_denial in push_denials
+	contains(push_denial, "outside its allowed application prefixes")
+	admin_denials := deny with input as argocd_harbor_secret("/homelab/harbor/admin-password")
+	some admin_denial in admin_denials
+	contains(admin_denial, "outside its allowed application prefixes")
+}
+
 renovate_secret(key) := {
 	"apiVersion": "external-secrets.io/v1",
 	"kind": "ExternalSecret",
