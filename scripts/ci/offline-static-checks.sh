@@ -17,17 +17,17 @@ echo "::endgroup::"
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
-expected_units="$(rg -c '^unit "' IaC/terragrunt.stack.hcl)"
-parsed_units="$(terragrunt_stack_unit_paths < IaC/terragrunt.stack.hcl | wc -l | tr -d ' ')"
+expected_units="$(rg '^unit "' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
+parsed_units="$(rg '^  path[[:space:]]*=' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
-if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/; then
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/homelab/us-west-2 IaC/; then
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
-terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
   render --json --write=false --no-color \
   | jq -e '
       .inputs.manifest.spec as $spec |
@@ -129,11 +129,11 @@ echo "::group::Terragrunt Azure credential gate"
       *) return 1 ;;
     esac
   }
-  terragrunt_stack_units_at_ref() {
+  terragrunt_stack_unit_paths_at_ref() {
     if [[ "$stack_change" == true && "$1" == head ]]; then
-      printf 'changed\n'
+      printf 'IaC/live/azuread-applications/changed\n'
     else
-      printf 'unchanged\n'
+      printf 'IaC/live/azuread-applications/unchanged\n'
     fi
   }
 
@@ -149,7 +149,7 @@ echo "::group::Terragrunt Azure credential gate"
   root_change=false
 
   for changed_path in \
-    IaC/live/azuread-applications/fleet/.terraform.lock.hcl \
+    IaC/homelab/us-west-2/apps/fleet/azuread/.terraform.lock.hcl \
     IaC/terragrunt-catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
     IaC/terragrunt-catalog/modules/azuread-saml-application/main.tf \
     IaC/terragrunt-catalog/modules/azuread-family-user/main.tf; do
@@ -158,18 +158,18 @@ echo "::group::Terragrunt Azure credential gate"
       exit 1
     fi
   done
-  [[ "$(terragrunt_azuread_changed_filter)" == "*" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread" ]]
   changed_path="IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"
   if terragrunt_azuread_stack_changed; then
     echo "An unrelated module change must not require Azure credentials." >&2
     exit 1
   fi
-  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
   changed_path="IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf"
-  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
   changed_path="scripts/ci/terragrunt-plan.sh"
-  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
-  [[ "$(terragrunt_azuread_changed_filter true)" == "*" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter true)" == "*/azuread" ]]
   changed_path=""
 
   stack_change=true
@@ -229,13 +229,13 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
 (
-  cd IaC/live/argocd-apps
+  cd IaC/homelab/us-west-2/apps
   terragrunt_stack_changed() { return 0; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
   terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
-  [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine" ]]
+  [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine/argocd" ]]
   if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
     echo "Unsafe Argo CD Application unit filter was accepted" >&2
     exit 1
@@ -261,7 +261,7 @@ echo "::group::Terragrunt generated-unit filters"
     exit 1
   fi
   [[ "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
-    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine" ]]
+    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine/argocd" ]]
 )
 echo "::endgroup::"
 
@@ -986,6 +986,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
+    '.github/workflows/harbor-helm-charts.yml:publish' \
+    '.github/workflows/harbor-helm-charts.yml:validate' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \
@@ -997,6 +999,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/image-automation.yml:observe' \
     '.github/workflows/image-automation.yml:promote' \
     '.github/workflows/image-automation.yml:verify' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
@@ -1078,6 +1082,7 @@ done <<'EOF'
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
+.github/workflows/langfuse-postgres-checkpoint.yml 10fcf54954c0c3020582a993f792cc0923a1d6c631d0bc5d9fdd103d0a0d58fb
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
@@ -1108,6 +1113,7 @@ for workflow_job in \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
+  '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
@@ -1611,7 +1617,7 @@ echo "::endgroup::"
 
 echo "::group::Image digest pins"
 cert_manager_values="clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"
-terragrunt --log-disable --working-dir IaC/live/argocd-apps/cert-manager \
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/cert-manager/argocd \
   render --json --write=false --no-color \
   | jq -e '
       any(.inputs.manifest.spec.sources[];

@@ -280,8 +280,8 @@ trigger redelivery merely to validate ingress.
 - Prometheus direct tailnet ingress is intentionally absent from desired state;
   Grafana is the reviewed operator-facing metrics UI.
 - First live rollout on 2026-05-24 applied AWS SSM Parameter Store placeholders
-  through `IaC/live/aws-ssm-parameters` and registered Argo CD Applications
-  through `IaC/live/argocd-apps`.
+  through `IaC/homelab/us-west-2/shared/aws-ssm-parameters` and registered Argo CD Applications
+  through `IaC/homelab/us-west-2/apps`.
 - Prometheus disables the `kube-prometheus-stack` node-exporter subchart during
   this rollout because the cluster's baseline Pod Security policy rejects its
   host namespaces, hostPath mounts, and host port `9100`.

@@ -5,9 +5,9 @@ include "root" {
 locals {
   root_config                          = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   kubernetes_config_path               = local.root_config.locals.kubernetes_config_path
-  self_management_application_manifest = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/application.yaml"
-  self_management_project_manifest     = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/appproject.yaml"
-  workloads_project_manifest           = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/workloads-appproject.yaml"
+  self_management_application_manifest = "${dirname(find_in_parent_folders("root.hcl"))}/../clusters/homelab/argocd/self-management/application.yaml"
+  self_management_project_manifest     = "${dirname(find_in_parent_folders("root.hcl"))}/../clusters/homelab/argocd/self-management/appproject.yaml"
+  workloads_project_manifest           = "${dirname(find_in_parent_folders("root.hcl"))}/../clusters/homelab/argocd/self-management/workloads-appproject.yaml"
   oidc_sso_secret_name                 = "argocd-oidc-sso"
   oidc_sso_issuer                      = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
   oidc_sso_admin_group                 = "argocd-admins"

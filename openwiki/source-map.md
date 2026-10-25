@@ -59,13 +59,13 @@ sources:
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
-    resource: repo://IaC/mastodon/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
-    resource: repo://IaC/openclaw-enterprise/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
-    resource: repo://IaC/tailnet-dns/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
@@ -154,7 +154,7 @@ desired state.
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
-| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
+| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
 | `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
@@ -188,7 +188,7 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Source-declared, unsynced workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `clusters/homelab/apps/openclaw-enterprise-operator/` | [Unregistered journal claim, scoped proof RBAC, and private Job network intent](workloads/inventory.md); static PV, placement, and activation remain pending |
-| `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl`, `IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding, guarded legacy restore-copy dispatch, phase-gated full-sync, and disabled-by-default operator dispatch](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
@@ -201,13 +201,16 @@ desired state.
 | `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
-| `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
+| `IaC/homelab/us-west-2/apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 
 Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
-[registration](../IaC/mastodon/stack.hcl),
+[registration](../IaC/homelab/us-west-2/apps/mastodon/stack.hcl),
 [secret declarations](../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
 [protected SMTP injection](../.github/workflows/mastodon-smtp-credential.yml), and
 [public DNS publication](../.github/workflows/mastodon-public-dns.yml).
 See the [inventory](workloads/inventory.md),
 [credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
 and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
+Database role provisioning: [SQL and initial extensions](../clusters/homelab/apps/mastodon/initdb-configmap.yaml),
+[ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
+[PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).

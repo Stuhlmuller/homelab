@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "clusters/homelab/platform/istio-egress"
-UNIT = ROOT / "IaC/live/argocd-apps/platform-istio-egress"
+UNIT = ROOT / "IaC/homelab/us-west-2/apps/platform-istio-egress/argocd"
 
 
 def documents(path):

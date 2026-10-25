@@ -54,7 +54,7 @@ class VerifyTest(unittest.TestCase):
             elif args[0] == "terragrunt" and args[-2:] == ["stack", "generate"]:
                 pass
             elif args[0] == "terragrunt" and "plan" in args:
-                unit = Path(args[args.index("--working-dir") + 1]).name
+                unit = Path(args[args.index("--working-dir") + 1]).parent.name
                 status = plan_status if unit == fail_unit else 0
                 output = "synthetic-private-plan"
             else:
@@ -74,7 +74,7 @@ class VerifyTest(unittest.TestCase):
         status, calls, output = self.run_script()
         self.assertEqual(status, 0, output)
         plans = [args for args in calls if "plan" in args]
-        self.assertEqual([Path(args[args.index("--working-dir") + 1]).name for args in plans],
+        self.assertEqual([Path(args[args.index("--working-dir") + 1]).parent.name for args in plans],
                          ["fleet", "fleet-pilot-user", "grafana", "octelium"])
         for args in plans:
             self.assertEqual(args[args.index("plan") + 1:],

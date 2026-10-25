@@ -264,6 +264,13 @@ healthy proxies and actual application access from a mesh client before changing
 DNS. Preserve current app state and enrollment URLs; confirm Fleet check-in,
 native Cordium execution/reconnection, and uncached node registry pulls.
 
+For the Fleet iPhone gate, use the [guarded one-shot check-in helper](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+It verifies the selected enrollment, reads Fleet's pending command and profile
+state, then sends one blank APNs ping only when that preflight is clear. A newer
+MDM check-in timestamp is required; a successful ping or an online Tailscale
+peer alone does not satisfy the gate. The pending-work check is a snapshot, so
+coordinate against concurrent Fleet changes during the test.
+
 Switch webhook registrations after public reachability and negative-path checks;
 require fresh signed delivery before retiring the former callbacks. Migrate CI to pre-signed ephemeral mesh keys only after its API proxy,
 RBAC and admission boundary are deployed. Retire old DNS, Cloudflare Tunnel and
@@ -327,10 +334,11 @@ Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-legacy OpenClaw HTTP 502 only when each reviewed declaration and live
-Deployment specifies zero replicas and no live replicas remain. Other
-application 5xx responses fail. These exceptions check routing, not runtime
-health. Deployed Traefik routes and TLS must match the reviewed checkout.
+legacy OpenClaw HTTP 500 or 502 only when each reviewed declaration and live
+Deployment specifies zero replicas and no live replicas remain. OpenClaw also
+requires no EndpointSlice endpoints. Other application 5xx responses fail.
+These exceptions check routing, not runtime health. Deployed Traefik routes and
+TLS must match the reviewed checkout.
 `--retire-private --check` probes the original 27 migration HTTPS routes;
 bare `--check` also probes both staged Enterprise routes. The Agent probe uses
 a concrete `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's
@@ -347,10 +355,17 @@ migrates the verified existing account while preserving credentials and
 owned-file rollback. After any later public retirement, wait the old TTL and
 verify normal DNS, canonical TLS and native gRPC.
 
-The callback helpers change only the fixed n8n hooks and Policy Bot App webhook
-URL. Non-executing preflights protect live workflows; private local receipts
-require both a newer delivery ID and timestamp after cutover. Historical success
-cannot satisfy acceptance. The CI publisher captures sensitive provider keys
+The callback helpers keep the surviving Github Emergency Bot hook `636944763`
+and Policy Bot App webhook on Funnel. The unused Codex Review Helper hook
+`589400612` is retired through the reviewed
+[`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) command from
+clean current `main`, after a fresh Emergency delivery. It verifies the exact
+helper identity and URL before deleting that ID, then requires its ID and
+callback path to be absent on any host and Emergency settings unchanged.
+Non-executing preflights protect live workflows; private local receipts require
+both a newer delivery ID and timestamp after cutover. The separate Policy Bot
+check also requires a fresh signed delivery. Historical success cannot satisfy
+acceptance. The CI publisher captures sensitive provider keys
 privately, signs via `file:/dev/stdin` and publishes only three scoped GitHub
 secrets after checking signed current main, environment protection and the
 trusted homelab signing profile. It removes the old client-ID variables only
@@ -362,8 +377,9 @@ private-file read restriction.
 PolicyBot's safe GET preflight requires HTTP 404 with exactly one valid backend
 `X-Request-ID` at `/api/github/hook`, and root HTTP 404 without that header.
 The pinned app registers POST only: GET proves routing, not HMAC validation.
-Fresh successful signed delivery remains the acceptance gate. The two fixed n8n
-POST-only hooks use non-executing OPTIONS probes before their URL changes.
+Fresh successful signed delivery remains the acceptance gate. The surviving
+Emergency Bot POST-only hook uses a non-executing OPTIONS probe before its URL
+change; the inactive helper workflow stays unpublished.
 
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,

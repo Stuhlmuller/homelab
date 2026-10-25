@@ -66,7 +66,7 @@ class Registration(unittest.TestCase):
         cls.apps = {}
         for name in ("openclaw-enterprise-foundation", "openclaw-enterprise"):
             rendered = json.loads(run("terragrunt", "--working-dir",
-                                      f"IaC/live/argocd-apps/{name}", "--log-disable",
+                                      f"IaC/homelab/us-west-2/apps/{name}/argocd", "--log-disable",
                                       "render", "--json", "--write=false", "--no-color"))
             cls.apps[name] = rendered
 
@@ -91,11 +91,11 @@ class Registration(unittest.TestCase):
 
     def test_shared_gateway_crds_have_one_pinned_platform_owner(self):
         crd_app = json.loads(run("terragrunt", "--working-dir",
-                                "IaC/live/argocd-apps/platform-gateway-api-crds",
+                                "IaC/homelab/us-west-2/apps/platform-gateway-api-crds/argocd",
                                 "--log-disable", "render", "--json", "--write=false",
                                 "--no-color"))["inputs"]["manifest"]
         platform = json.loads(run("terragrunt", "--working-dir",
-                                  "IaC/live/argocd-apps/platform-envoy-gateway",
+                                  "IaC/homelab/us-west-2/apps/platform-envoy-gateway/argocd",
                                   "--log-disable", "render", "--json", "--write=false",
                                   "--no-color"))["inputs"]["manifest"]
         crds_source, *_ = crd_app["spec"]["sources"]
@@ -181,7 +181,7 @@ class Registration(unittest.TestCase):
             "repoURL": "https://github.com/Stuhlmuller/homelab.git",
             "path": "clusters/homelab/apps/openclaw-enterprise",
             "targetRevision": "main"})
-        dependencies = [Path(path).resolve().name for path in
+        dependencies = [Path(path).resolve().parent.name for path in
                         self.apps["openclaw-enterprise"]["dependencies"]["paths"]]
         self.assertEqual(dependencies,
                          ["openclaw-enterprise-foundation", "platform-envoy-gateway"])

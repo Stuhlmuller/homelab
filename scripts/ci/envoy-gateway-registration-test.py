@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-UNIT = ROOT / "IaC/live/argocd-apps/platform-envoy-gateway"
-CRD_UNIT = ROOT / "IaC/live/argocd-apps/platform-gateway-api-crds"
+UNIT = ROOT / "IaC/homelab/us-west-2/apps/platform-envoy-gateway/argocd"
+CRD_UNIT = ROOT / "IaC/homelab/us-west-2/apps/platform-gateway-api-crds/argocd"
 
 
 class EnvoyGatewayRegistrationTests(unittest.TestCase):

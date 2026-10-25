@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: mastodon-postgres
     app.kubernetes.io/part-of: mastodon
   annotations:
-    argocd.argoproj.io/sync-wave: '0'
+    argocd.argoproj.io/sync-wave: '-1'
 spec:
   selector:
     app.kubernetes.io/name: mastodon-postgres
@@ -25,7 +25,7 @@ metadata:
     app.kubernetes.io/name: mastodon-postgres
     app.kubernetes.io/part-of: mastodon
   annotations:
-    argocd.argoproj.io/sync-wave: '0'
+    argocd.argoproj.io/sync-wave: '-1'
     checkov.io/skip1: CKV_K8S_40=The bounded init container owns the new local volume directory; the datastore runs as UID 65534.
     checkov.io/skip5: CKV_K8S_25=Only the bounded directory-ownership init container adds CHOWN and FOWNER; datastore containers drop all capabilities.
 spec:
@@ -191,6 +191,11 @@ spec:
         - name: auth
           secret:
             secretName: mastodon-datastores
+            items:
+              - key: POSTGRES_PASSWORD
+                path: POSTGRES_PASSWORD
+              - key: POSTGRES_APP_PASSWORD
+                path: POSTGRES_APP_PASSWORD
         - name: local-data
           persistentVolumeClaim:
             claimName: mastodon-postgres-local

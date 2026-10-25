@@ -9,6 +9,7 @@ terragrunt_generate_stack
 python3 -I scripts/ci/speckit-check.py
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
+python3 -I scripts/ci/mastodon-database-role-test.py
 python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
 python3 -I scripts/ci/mastodon-public-dns-test.py
@@ -44,6 +45,7 @@ python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 -I scripts/ci/litellm-provider-credential-test.py
 python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
+python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 -I scripts/ci/octelium-entra-oidc-test.py
