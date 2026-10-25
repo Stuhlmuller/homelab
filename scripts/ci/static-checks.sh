@@ -14,6 +14,7 @@ python3 -I scripts/ci/nix-cache-signature-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
+python3 -I scripts/ci/openclaw-legacy-netns-preflight-test.py
 python3 -I scripts/ci/openclaw-enterprise-resume-test.py
 python3 -I scripts/ci/openclaw-enterprise-journal-operator-test.py
 python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
