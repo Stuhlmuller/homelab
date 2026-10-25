@@ -100,7 +100,8 @@ def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
     attempt = PLATFORM["read_private_json"](path)
     token = attempt.get("podToken") if isinstance(attempt, dict) else None
     if (not isinstance(attempt, dict) or attempt.get("format") != 1 or
-            attempt.get("stage") not in (("firewall-baseline", "canary-admit-recover")
+            attempt.get("stage") not in (("firewall-baseline", "canary-admit-recover",
+                                          "firewall-activation-baseline")
                                          if stage is None else (stage,)) or
             attempt.get("status") != "attempted" or
             attempt.get("verified") is not False or
@@ -124,6 +125,23 @@ def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement):
             attempt.get("nodeUid") != placement.get("nodeUid") or
             attempt.get("bootID") != placement.get("bootID")):
         raise ValueError("recovery probe attempt differs from selected placement")
+    return attempt
+
+
+def read_activation_attempt(path, source_sha, evidence_sha, run_id, placement, config):
+    attempt = read_attempt(path, source_sha, run_id, "firewall-activation-baseline")
+    selected = config.get("activationAdmission")
+    if (not isinstance(selected, dict) or
+            attempt.get("admissionSourceSha") != evidence_sha or
+            attempt.get("admissionRunId") != selected.get("runId") or
+            attempt.get("admissionVersionId") != selected.get("versionId") or
+            selected.get("sourceSha") != evidence_sha or
+            attempt.get("placementRunId") != placement.get("placementRunId") or
+            not isinstance(attempt.get("placementVersionId"), str) or
+            attempt["placementVersionId"] in ("", "null") or
+            attempt.get("nodeUid") != placement.get("nodeUid") or
+            attempt.get("bootID") != placement.get("bootID")):
+        raise ValueError("activation baseline attempt differs from admitted placement")
     return attempt
 
 
@@ -281,22 +299,31 @@ def delete_probe(token, private_dir, uid=None, timeout_seconds=120):
 
 def execute(args):
     recovery = getattr(args, "recovery_placement", None) is not None
+    activation = getattr(args, "activation_placement", None) is not None
+    if recovery and activation:
+        raise ValueError("baseline capture accepts one admitted mode")
     PLATFORM["require_reviewed_execution_config"](args.config, args.expected_sha)
     config = PLATFORM["validate_config"](json.loads(args.config.read_text()))
-    if config["activationEnabled"] is not False or config["canary"]["node"] != NODE:
+    if config["activationEnabled"] is not activation or config["canary"]["node"] != NODE:
         raise ValueError("baseline requires pre-enable canary configuration")
     PLATFORM["protected_context"](args.expected_sha)
     CLEANUP["require_current_main"](args.expected_sha)
     manifest = require_reviewed_manifest(args.expected_sha)
     placement = None
-    if recovery:
+    if recovery or activation:
         if not PLATFORM["SHA"].fullmatch(args.evidence_source_sha or ""):
-            raise ValueError("recovery probe requires original admission SHA")
-        placement = PLATFORM["read_private_json"](args.recovery_placement)
+            raise ValueError("admitted probe requires original admission SHA")
+        placement = PLATFORM["read_private_json"](
+            args.recovery_placement if recovery else args.activation_placement)
         CANARY["validate_placement"](placement, config, args.evidence_source_sha, False)
-        attempt = read_recovery_attempt(args.attempt, args.expected_sha,
-                                        args.evidence_source_sha,
-                                        os.environ["GITHUB_RUN_ID"], placement)
+        if recovery:
+            attempt = read_recovery_attempt(args.attempt, args.expected_sha,
+                                            args.evidence_source_sha,
+                                            os.environ["GITHUB_RUN_ID"], placement)
+        else:
+            attempt = read_activation_attempt(args.attempt, args.expected_sha,
+                                              args.evidence_source_sha,
+                                              os.environ["GITHUB_RUN_ID"], placement, config)
         manifest["spec"]["tolerations"] = [CANARY_TOLERATION]
     else:
         attempt = read_attempt(args.attempt, args.expected_sha, os.environ["GITHUB_RUN_ID"])
@@ -306,22 +333,34 @@ def execute(args):
     store = OWNERSHIP["PrivateStore"](args.bucket)
     store.store.check()
     CANARY["require_runtime_absent"](True)
-    inspect_identity = (lambda: recovery_node_identity(placement)) if recovery else node_identity
+    def admitted_identity():
+        node, labeled, tainted = CANARY["node_state"](config, placement)
+        if not (labeled and tainted):
+            raise ValueError("activation baseline requires admitted Node isolation")
+        CANARY["require_exclusive_canary_label"](config, placement, True)
+        return recovery_node_identity(placement)
+
+    inspect_identity = (admitted_identity if activation else
+                        (lambda: recovery_node_identity(placement)) if recovery else
+                        node_identity)
     identity = inspect_identity()
     assigned = system_pods()
     if recovery and assigned != placement["systemDaemonSetPods"]:
         raise ValueError("recovery probe system Pods differ from selected placement")
-    record = {"format": 1, "stage": "firewall-recovery-proof" if recovery else
-              "firewall-baseline", "status": "started",
+    record = {"format": 1, "stage": "firewall-activation-baseline" if activation else
+              "firewall-recovery-proof" if recovery else "firewall-baseline",
+              "status": "started",
               "verified": False, "sourceSha": args.expected_sha, "runId":
               os.environ["GITHUB_RUN_ID"], "node": NODE,
               "nodeUid": identity[0], "bootID": identity[1],
               "startedAt": datetime.now(timezone.utc).isoformat()}
-    if recovery:
+    if recovery or activation:
         record.update(evidenceSourceSha=args.evidence_source_sha,
                       admissionRunId=attempt["admissionRunId"],
                       placementRunId=attempt["placementRunId"],
                       placementVersionId=attempt["placementVersionId"])
+    if activation:
+        record["admissionVersionId"] = attempt["admissionVersionId"]
     CLEANUP["write_record"](output, record)
     token = attempt["podToken"]
     manifest["metadata"]["annotations"][RUN_ANNOTATION] = token
@@ -337,13 +376,15 @@ def execute(args):
             create_attempted = True
             created = CLEANUP["kubernetes_json"]("-n", "kube-system", "create", "-f",
                                                  str(pod_file))
-            created_uid = require_probe_pod(created, token, recovery=recovery)
-            wait_ready(token, created_uid, recovery=recovery)
+            created_uid = require_probe_pod(created, token, recovery=recovery or activation)
+            wait_ready(token, created_uid, recovery=recovery or activation)
             if inspect_identity() != identity:
                 raise ValueError("preflight Node identity changed during inspection")
-            require_probe_pod(get_pod(), token, created_uid, running=True, recovery=recovery)
+            require_probe_pod(get_pod(), token, created_uid, running=True,
+                              recovery=recovery or activation)
             state = CLEANUP["snapshot"](POD)
-            require_probe_pod(get_pod(), token, created_uid, running=True, recovery=recovery)
+            require_probe_pod(get_pod(), token, created_uid, running=True,
+                              recovery=recovery or activation)
             operations, chains, sets = CLEANUP["cleanup_plan"](state)
             if operations or chains or sets:
                 raise ValueError("kube-router firewall baseline is not empty")
@@ -367,7 +408,7 @@ def execute(args):
                        completedAt=datetime.now(timezone.utc).isoformat())
         key = (f"openclaw-enterprise/platform/{args.expected_sha}/"
                f"{os.environ['GITHUB_RUN_ID']}/"
-               f"{'firewall-recovery-capture' if recovery else 'firewall-baseline-capture'}.json")
+               f"{'firewall-activation-capture' if activation else 'firewall-recovery-capture' if recovery else 'firewall-baseline-capture'}.json")
         store.write_once(key, capture, OWNERSHIP["MAX_CAPTURE"])
         record.update({key_: capture[key_] for key_ in
                        ("status", "verified", "firewallBaselineEmpty", "ownedChains",
@@ -429,15 +470,18 @@ def main():
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--attempt", type=Path, required=True)
     parser.add_argument("--recovery-placement", type=Path)
+    parser.add_argument("--activation-placement", type=Path)
     parser.add_argument("--evidence-source-sha")
     parser.add_argument("--baseline-source-sha")
     parser.add_argument("--baseline-run-id")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.action == "recover" and (args.recovery_placement or args.evidence_source_sha):
+        if args.action == "recover" and (args.recovery_placement or
+                                          args.activation_placement or args.evidence_source_sha):
             raise ValueError("orphan probe cleanup does not use placement evidence")
-        if args.action != "recover" and not args.recovery_placement and args.evidence_source_sha:
+        if args.action != "recover" and not (args.recovery_placement or
+                                              args.activation_placement) and args.evidence_source_sha:
             raise ValueError("baseline capture does not use admission evidence")
         recover(args) if args.action == "recover" else execute(args)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError,

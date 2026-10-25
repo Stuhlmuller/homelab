@@ -110,22 +110,42 @@ stored before Pod creation; if the probe remains, use protected
 same main SHA as `baseline_source_sha`, and the original `admission_run_id` to
 delete only that token/UID-matched Pod before retrying.
 
-Admission only gates the Node taint and label. The later enforcer and fixture
-rollout still needs its own protected fresh capacity gate; that gate is not
-implemented, so do not enable the rollout yet. Once that gate and the fixture
-image mirror are ready, merge one reviewed change that sets `activationEnabled`
-to `true` in `scripts/config/platform-maintenance.json`, enables automated sync
-and pruning in both
+Admission only gates the Node taint and label. The protected Terragrunt Apply
+path now remeasures the admitted Node immediately before each targeted
+enforcer/fixture activation and writes a private, immutable capacity receipt
+under the activation `main` SHA and apply run ID. It keeps the full 704Mi peak
+memory reservation plus 128Mi margin in both phases; the fixture check accounts
+for the already-running enforcer from one kubelet summary. It credits at most
+the enforcer's 250m CPU request, keeping any excess measured use in the Node
+budget because the enforcer has no CPU limit. Full or differently
+targeted applies cannot activate either Application. The last measured
+`zimaboard-2` headroom fails this gate, so do not enable the rollout until a new read-only
+measurement passes and the fixture image mirror is ready. Then merge one
+reviewed change that sets `activationEnabled` to `true` and pins
+`activationAdmission.sourceSha`, `runId`, and exact S3 `versionId` to the
+verified `canary-admit` receipt in `scripts/config/platform-maintenance.json`,
+enables automated sync and pruning in both
 `IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl` and
 `IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`, and lists `fixtures.yaml` in
 `canary/kustomization.yaml`. Dispatch the protected Terragrunt Apply workflow
 on the exact current `main` SHA for `argocd_app=platform-network-policy` first;
-verify its DaemonSet is Ready on the admitted node. Then dispatch it for
+it checks capacity before creating a pinned, short-lived host probe, verifies
+zero kube-router firewall objects, deletes that probe by UID, then remeasures
+capacity before applying the saved Application plan. Its private attempt marker
+can be selected by the existing protected `firewall-baseline-recover` stage if
+the runner stops before probe deletion. Use that stage before any retry.
+Verify its DaemonSet is Ready on the admitted node. Then dispatch it for
 `argocd_app=platform-network-policy-canary`. Argo CD syncs the fixtures. Verify
 both Applications are Synced/Healthy and the three fixture Pods are Ready on
 the admitted node before dispatching the read-only `qualify` stage. An
 unrelated merge that stales either dispatch requires a retry against current
 `main`.
+
+If either capacity check fails, the protected apply stops before that
+Application changes. If the enforcer activated but fixture admission fails,
+keep the Node isolated and correct capacity before a new protected fixture
+apply. To abandon the canary, use the reviewed GitOps fixture/firewall removal
+sequence and owner-bound cleanup below before releasing its taint and label.
 
 To remove the fixtures, first merge a reviewed change restoring `resources: []`
 while leaving automatic sync and pruning enabled and setting `allowEmpty = true`.

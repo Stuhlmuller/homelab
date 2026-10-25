@@ -127,7 +127,7 @@ def pod_requests(pod):
     return total
 
 
-def capacity(capture):
+def capacity(capture, enforcer=None):
     node = CLEANUP["kubernetes_json"]("get", "node", NODE)
     allocatable = node.get("status", {}).get("allocatable", {})
     if not isinstance(allocatable, dict):
@@ -141,7 +141,12 @@ def capacity(capture):
                           "name": item["metadata"]["name"],
                           "uid": item["metadata"]["uid"]} for item in pods),
                         key=lambda item: (item["namespace"], item["name"]))
-    if identities != capture["systemDaemonSetPods"]:
+    expected = list(capture["systemDaemonSetPods"])
+    if enforcer is not None:
+        expected.append({key: enforcer["metadata"][key] for key in
+                         ("namespace", "name", "uid")})
+        expected.sort(key=lambda item: (item["namespace"], item["name"]))
+    if identities != expected:
         raise ValueError("assigned Pods changed since firewall capture")
     requests = [pod_requests(pod) for pod in pods]
     used_requests = [sum(item[index] for item in requests) for index in (0, 1)]
@@ -154,6 +159,11 @@ def capacity(capture):
     fresh(metrics.get("timestamp"), 120)
     observed_memory = quantity(metrics["usage"]["memory"])
     observed_cpu = quantity(metrics["usage"]["cpu"], True)
+    observed_node_memory = observed_memory
+    observed_node_cpu = observed_cpu
+    observed_enforcer_memory = 0
+    observed_enforcer_cpu = 0
+    summary_time = None
     summary = json.loads(CLEANUP["command"](
         "kubectl", "--request-timeout=20s", "get", "--raw",
         f"/api/v1/nodes/{NODE}/proxy/stats/summary"))
@@ -166,18 +176,70 @@ def capacity(capture):
             type(filesystem.get("capacityBytes")) is not int or
             available > filesystem["capacityBytes"]):
         raise ValueError("canary node filesystem headroom is insufficient")
-    if (memory - used_requests[0] - PLANNED_MEMORY_REQUEST < MEMORY_MARGIN or
+    remaining_memory_request = PLANNED_MEMORY_REQUEST
+    remaining_cpu_request = PLANNED_CPU_REQUEST
+    if enforcer is not None:
+        enforcer_requests = pod_requests(enforcer)
+        remaining_memory_request -= enforcer_requests[0]
+        remaining_cpu_request -= enforcer_requests[1]
+        if remaining_memory_request != 96 * MIB or remaining_cpu_request != 30:
+            raise ValueError("enforcer requests differ from reviewed budget")
+        node_memory = summary.get("node", {}).get("memory", {})
+        node_cpu = summary.get("node", {}).get("cpu", {})
+        pod_ref = enforcer["metadata"]
+        pod_summaries = summary.get("pods")
+        if not isinstance(pod_summaries, list):
+            raise ValueError("kubelet Pod metrics are missing")
+        matching = [item for item in pod_summaries if isinstance(item, dict)
+                    if item.get("podRef") == {key: pod_ref[key] for key in
+                                               ("namespace", "name", "uid")}]
+        if len(matching) != 1:
+            raise ValueError("kubelet enforcer metrics identity differs")
+        pod_memory = matching[0].get("memory", {})
+        pod_cpu = matching[0].get("cpu", {})
+        times = [fresh(item.get("time"), 120) for item in
+                 (node_memory, node_cpu, pod_memory, pod_cpu)]
+        if any(abs((item - times[0]).total_seconds()) > 30 for item in times[1:]):
+            raise ValueError("kubelet enforcer metrics are not concurrent")
+        summary_time = times[0].isoformat()
+        node_memory_bytes = node_memory.get("workingSetBytes")
+        pod_memory_bytes = pod_memory.get("workingSetBytes")
+        node_cpu_nanos = node_cpu.get("usageNanoCores")
+        pod_cpu_nanos = pod_cpu.get("usageNanoCores")
+        if (any(type(value) is not int or value < 0 for value in
+                (node_memory_bytes, pod_memory_bytes, node_cpu_nanos, pod_cpu_nanos)) or
+                not 0 <= pod_memory_bytes <= min(512 * MIB, node_memory_bytes) or
+                not 0 <= pod_cpu_nanos <= node_cpu_nanos or
+                observed_memory > node_memory_bytes or
+                observed_cpu > (node_cpu_nanos + 999999) // 1000000):
+            raise ValueError("kubelet enforcer metrics cannot bound Node usage")
+        observed_node_memory = node_memory_bytes
+        observed_node_cpu = (node_cpu_nanos + 999999) // 1000000
+        observed_enforcer_memory = pod_memory_bytes
+        observed_enforcer_cpu = (pod_cpu_nanos + 999999) // 1000000
+        observed_memory = node_memory_bytes - pod_memory_bytes
+        credited_cpu_nanos = min(pod_cpu_nanos, enforcer_requests[1] * 1000000)
+        observed_cpu = (node_cpu_nanos - credited_cpu_nanos + 999999) // 1000000
+    if (memory - used_requests[0] - remaining_memory_request < MEMORY_MARGIN or
             memory - observed_memory - PLANNED_MEMORY_LIMIT < MEMORY_MARGIN or
-            cpu - used_requests[1] - PLANNED_CPU_REQUEST < CPU_MARGIN or
+            cpu - used_requests[1] - remaining_cpu_request < CPU_MARGIN or
             cpu - observed_cpu - PLANNED_CPU_REQUEST < CPU_MARGIN):
         raise ValueError("canary node memory or CPU headroom is insufficient")
     return {"allocatableMemoryBytes": memory, "requestedMemoryBytes": used_requests[0],
             "observedMemoryBytes": observed_memory,
+            "observedNodeMemoryBytes": observed_node_memory,
+            "observedEnforcerMemoryBytes": observed_enforcer_memory,
             "plannedMemoryRequestBytes": PLANNED_MEMORY_REQUEST,
             "plannedMemoryLimitBytes": PLANNED_MEMORY_LIMIT,
             "allocatableCpuMilli": cpu, "requestedCpuMilli": used_requests[1],
             "observedCpuMilli": observed_cpu, "plannedCpuRequestMilli": PLANNED_CPU_REQUEST,
+            "observedNodeCpuMilli": observed_node_cpu,
+            "observedEnforcerCpuMilli": observed_enforcer_cpu,
             "nodeFsAvailableBytes": available, "memoryMarginBytes": MEMORY_MARGIN,
+            "enforcerAlreadyPresent": enforcer is not None,
+            "nodeMetricsTimestamp": metrics["timestamp"],
+            "kubeletSummaryTimestamp": summary_time,
+            "nodeFsTimestamp": filesystem["time"],
             "cpuMarginMilli": CPU_MARGIN, "nodeFsMinimumBytes": NODEFS_MINIMUM}
 
 

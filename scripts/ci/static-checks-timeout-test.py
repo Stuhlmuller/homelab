@@ -53,6 +53,7 @@ class Timeout(unittest.TestCase):
                          "network-policy-ownership-test.py",
                          "network-policy-cleanup-test.py",
                          "network-policy-placement-test.py",
+                         "network-policy-activation-capacity-test.py",
                          "envoy-gateway-prerequisite-test.py",
                          "envoy-gateway-registration-test.py",
                          "network-policy-registration-test.py"):
