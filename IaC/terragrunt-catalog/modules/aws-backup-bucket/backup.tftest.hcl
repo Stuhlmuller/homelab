@@ -18,11 +18,6 @@ override_data {
   values = { region = "us-east-1" }
 }
 
-override_data {
-  target = data.aws_iam_openid_connect_provider.github_actions
-  values = { arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
-}
-
 variables {
   bucket_name         = "test-etcd-backups-123456789012-us-east-1"
   expected_account_id = "123456789012"

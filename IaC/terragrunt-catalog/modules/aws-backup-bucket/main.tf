@@ -66,10 +66,6 @@ variable "publisher" {
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
-data "aws_iam_openid_connect_provider" "github_actions" {
-  count = var.publisher == null ? 0 : 1
-  url   = "https://token.actions.githubusercontent.com"
-}
 
 locals {
   bucket_arn = "arn:aws:s3:::${var.bucket_name}"
@@ -251,9 +247,10 @@ resource "aws_iam_role" "publisher" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect    = "Allow"
-      Action    = "sts:AssumeRoleWithWebIdentity"
-      Principal = { Federated = data.aws_iam_openid_connect_provider.github_actions[0].arn }
+      Effect = "Allow"
+      Action = "sts:AssumeRoleWithWebIdentity"
+      # The CI plan role cannot enumerate IAM providers; the owner account is checked above.
+      Principal = { Federated = "arn:aws:iam::${var.expected_account_id}:oidc-provider/token.actions.githubusercontent.com" }
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud"           = "sts.amazonaws.com"
