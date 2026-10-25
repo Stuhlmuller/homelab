@@ -379,6 +379,10 @@ class RecoveryBoundaries(unittest.TestCase):
         (fake_bin / "pg_restore").write_text("#!/bin/sh\nexit 0\n")
         for name in ("pg_dump", "pg_restore"):
             (fake_bin / name).chmod(0o755)
+        mountpoint = fake_bin / "mountpoint"
+        mountpoint.write_text('#!/bin/sh\n[ "$1" = -q ] && [ "$2" = '
+                              + shlex.quote(str(backup.parent)) + ' ]\n')
+        mountpoint.chmod(0o755)
         (root / "database-bootstrap.sql").write_text("SELECT 1;\n")
         (root / "backup-password").write_text("fixturepassword")
         (root / "postgres-ca.crt").write_text("fixture-ca")
@@ -397,6 +401,25 @@ class RecoveryBoundaries(unittest.TestCase):
         real_cp = shutil.which("cp")
         self.assertIsNotNone(real_cp)
         environment = {**os.environ, "PATH": str(fake_bin) + ":" + os.environ["PATH"]}
+        mountpoint.write_text('#!/bin/sh\nexit 1\n')
+        unmounted = subprocess.run(["sh", str(script)], text=True, capture_output=True,
+                                   env=environment, check=False)
+        self.assertNotEqual(unmounted.returncode, 0)
+        self.assertIn("private backup destination is not mounted", unmounted.stderr)
+        self.assertEqual(list(backup.iterdir()), [])
+        mountpoint.write_text('#!/bin/sh\n[ "$1" = -q ] && [ "$2" = '
+                              + shlex.quote(str(backup.parent)) + ' ]\n')
+        backup.rmdir()
+        container_storage = root / "container-storage"
+        container_storage.mkdir()
+        backup.symlink_to(container_storage, target_is_directory=True)
+        redirected = subprocess.run(["sh", str(script)], text=True, capture_output=True,
+                                    env=environment, check=False)
+        self.assertNotEqual(redirected.returncode, 0)
+        self.assertIn("private backup directory must not be a symlink", redirected.stderr)
+        self.assertEqual(list(container_storage.iterdir()), [])
+        backup.unlink()
+        backup.mkdir()
         baseline = subprocess.run(["sh", str(script)], text=True, capture_output=True,
                                   env=environment, check=False)
         self.assertEqual(baseline.returncode, 0, baseline.stderr)
