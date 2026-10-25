@@ -392,6 +392,14 @@ test_allows_mastodon_owned_credentials if {
 	count(violations) == 0
 }
 
+test_argocd_can_read_only_harbor_pull_robot_password if {
+	allowed := deny with input as oce_secret("argocd", "/homelab/harbor/mirror-robot-pull-password")
+	count(allowed) == 0
+	denied := deny with input as oce_secret("argocd", "/homelab/harbor/mirror-robot-push-password")
+	some msg in denied
+	contains(msg, "outside its allowed application prefixes")
+}
+
 test_rejects_mastodon_reading_another_workload_secret if {
 	violations := deny with input as mastodon_secret("/homelab/fleet/mysql-root-password")
 	some msg in violations
