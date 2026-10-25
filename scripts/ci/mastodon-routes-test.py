@@ -19,6 +19,19 @@ def documents(name):
 
 
 class Routes(unittest.TestCase):
+    def test_fresh_bootstrap_creates_backup_before_verification(self):
+        rendered = subprocess.check_output(["kubectl", "kustomize", str(APP)], text=True)
+        resources = json.loads(subprocess.check_output([
+            "yq", "eval-all", "-o=json", ". as $doc ireduce ([]; . + [$doc])", "-",
+        ], input=rendered, text=True))
+        by_name = {r["metadata"]["name"]: r for r in resources}
+        backup = by_name["mastodon-initial-backup-v1"]
+        verify = by_name["mastodon-restore-verification-v1"]
+        self.assertEqual(backup["spec"], by_name["mastodon-backup"]["spec"]["jobTemplate"]["spec"])
+        wave = lambda r: int(r["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"])
+        self.assertLess(wave(documents("bootstrap-job.yaml")[0]), wave(backup))
+        self.assertLess(wave(backup), wave(verify))
+
     def test_restore_failure_cannot_report_success(self):
         script = documents("restore-verification-job.yaml")[0]["spec"]["template"]["spec"]["containers"][0]["args"][0]
         with tempfile.TemporaryDirectory() as directory:
