@@ -39,7 +39,7 @@ sources:
 generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T06:21:14.425Z
+    at: 2026-10-25T11:21:20.412Z
 ---
 
 # GitOps Flow

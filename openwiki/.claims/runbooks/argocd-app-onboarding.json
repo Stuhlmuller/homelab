@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6ff31605d3b9ba6caa61243d0513e641da448063bce93da442061cc31bca28bc",
+  "pageVersion": "sha256:248d438130713fc2eed0111d14c15fa3353df1ab06e5271da8d881ef3fca4c9f",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -100,7 +100,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:cd7f00f1ddd34b26b78a23f497090e367007e7fdf8b0c76ebea7e350efa76d86"
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
@@ -119,6 +119,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T06:41:51.112Z"
+    "at": "2026-10-25T11:21:20.412Z"
   }
 }

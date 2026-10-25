@@ -42,6 +42,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
@@ -65,7 +67,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T06:41:51.112Z
+    at: 2026-10-25T11:21:20.412Z
 ---
 
 # Storage And State

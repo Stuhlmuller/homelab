@@ -136,10 +136,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-25T11:21:20.412Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T06:21:14.425Z
+    at: 2026-10-25T11:21:20.412Z
 ---
 
 # Secrets And Identity
@@ -345,7 +345,7 @@ has a dedicated ServiceAccount with automatic token mounting disabled. Its
 one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
 read-only RBAC can GET only the exact reviewed Installation Secret and selected
 workload proofs. Reconcile and stop require the chart's bootstrap service key
-as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
+as a UID-1000-owned `0600` file on the retained bootstrap claim. The bundle
 is not registered in Argo CD, that file ownership is unproved, and the operator
 gate remains disabled; these permissions are source intent, not live access.
 

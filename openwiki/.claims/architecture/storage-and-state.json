@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:92481144ae4ddd7f181b95bbfbb563af0cddb063c8155da55f60865a09fdbc0f",
+  "pageVersion": "sha256:3a82f8514010aa62b9b4d59f51a40626cd35286eeb9a42d9ab901e22b1316515",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -29,7 +29,7 @@
           "version": "repo-lines-v1:sha256:d3324ca24a463beb26511d43f38ae1abc5b99b355fda9f779b6fea3252bc92f7:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTBhZjU4NmQzZTUxNTg1NmRmNTFmZGFhZGY0YTU4ZGQ3YWJjYzcxM2JlYjY2NjYyMzUzMzRmZTQyMGU5OTliZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTc0NmEwNjY0OGJlYmJmN2M2ZWUyNjFhZGI4YmU5NjFlNTA0ZjJiYzhhYWI1ZTEzY2ZmZmE0OTc2NTcyYzJiMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmE2Nzk2MWQ2OTE2NzEzMmFhYjNhYjc5MGYxYWZjOTE3OGU0MDg0YzQ2NGUxY2Y0ODZmMjkxZWVhYjc0MGNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjdkODNlYzUwNTViYjIyMTIzZGFhNDUwN2JlM2YzZDFlYzMzZDA5N2NkODQ0Y2Y5YzkwMzYxNmVmZDBhMWEzYSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L119-L132",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L123-L136",
           "version": "repo-lines-v1:sha256:4e8ab64c17872b37eaa813701ef25add66a0f87d88406308ca87c1ad1bb132c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NGYxYjY1MTRmZWQ2MjA3NzJmMDY2MDg5NjkzOWRkY2UyYWFjYTViYzBmNTU3ZDU1ZjVjYmI2NmJmODlmYzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2Yjk4YjE5NTg5YmNiNmMzZmFjNjJjMDdkMzBiMzdiOGZlMzYwOWYyNGM5MzkxOTkzMzhiNWQ0Mzg0NzU2NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNGZlYTA5YzY0NjQ1MGZlZDRmMDc0ZTgzMzQwMDRjYTkyY2NhOTkzNGU1NzBiNzgyMDU4YjczYWFmMTliMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YjAzY2NhZDI5ZWFkYTc0YWZlYmRhNzc3ZGVmNjUzOGVmMDAzMDk4NjRlMmI2ZTMwODhhMGQzYjM4ZDBkYWEifQ"
         },
         {
@@ -43,8 +43,8 @@
       "statement": "Before obtaining a GitHub token, Renovate flushes a 4 KiB cache probe and fails if it cannot write. The nfs-default 20Gi request neither reserves nor caps NAS storage and the provisioner cannot resize this PVC, so a full share needs capacity restored through a declared path after reviewed CronJob suspension.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L117",
-          "version": "repo-lines-v1:sha256:6e3dd52ced19de008e9e0a8f2f0d2ee865070cb95789f60430bc92da1f916723:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiOTM0NTNlZGQ1NDE0Y2UzYzlkOTJkMzM0OWI1ZDA4MGYwZDgxODc0MzcwNDdlMDA0NzUxZjIxNzYxYTc3NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhM2EyNjk5ZTI1Nzc1YjAyY2Q1YTlkOTcwZmYzZTkzODYzYTQxNGQwYTNlYjUxZWE2MzJmOWQ4ZmQ3MTliMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L121",
+          "version": "repo-lines-v1:sha256:353410884a7e12a12d1a39c9e62f167ccc299e43679fddac5d055224169b9049:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiOTM0NTNlZGQ1NDE0Y2UzYzlkOTJkMzM0OWI1ZDA4MGYwZDgxODc0MzcwNDdlMDA0NzUxZjIxNzYxYTc3NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhM2EyNjk5ZTI1Nzc1YjAyY2Q1YTlkOTcwZmYzZTkzODYzYTQxNGQwYTNlYjUxZWE2MzJmOWQ4ZmQ3MTliMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
@@ -56,17 +56,17 @@
         },
         {
           "resource": "repo://docs/storage-nfs.md",
-          "version": "repo-file-v1:sha256:7ca05741f4f081ac1ee2f1b8b6bf6b70883d195407ade9da3b919996b5e6f6a9"
+          "version": "repo-file-v1:sha256:168122630de73ccd482886b03fd0565ebe613fd3ad0fcfd51fd84631eaaaac20"
         }
       ]
     },
     {
       "id": "claim_a9d5edc1d5204ff7b0501daf1016929e",
-      "statement": "Pinned local Renovate recovery checks show missing and malformed package or repository cache entries rebuild, and a full-cache write probe prevents GitHub access; live failed-cycle and next-slot recovery remain unverified.",
+      "statement": "Pinned local Renovate recovery checks show missing and malformed package or repository cache entries rebuild, and a full-cache write probe prevents GitHub access; a live cache-failure cycle and next-slot recovery remain unverified.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:72653e540cd6e644c3308a0c7a244d26f82c75316f5da19aeea6e35ee2625ec2"
+          "version": "repo-file-v1:sha256:1e592304e43b6be666a3597777540ff1c98721848abb86ae2323b29c2e2822ea"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
+          "version": "repo-file-v1:sha256:1a94861057e312e7057d54473c2f26cfbee3ef873c3d1ee0d79e389d44abcc64"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -137,8 +137,8 @@
       "statement": "Two consecutive 19:00 and 20:00 scheduled Renovate Pods hit the same public canary cache key on the retained PVC; after the protected v0.0.2 release, the 21:00 scheduled run refreshed that record and selected a new public canary branch proposal, completing T022.",
       "evidence": [
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
-          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L18-L25",
+          "version": "repo-lines-v1:sha256:ae2837f10364a7787afbb773dab14249aa0f7026343b2ddcd68d6897596a0ec7:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDQ0MjE4YjA5ZTExZTkzYzRiZTZkNTdlM2RmMjRhY2JhNzhhMDI5MmIyNTUzMGMxODliNDhiNmVhOGQ2MjM2MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
@@ -151,15 +151,15 @@
       "statement": "No verified QNAP /homelab capacity-restoration operation is declared; an isolated tmpfs ENOSPC drill cannot prove recovery from a full NAS export, so T024/T042 and writer cutover remain blocked on a declared capacity path and direct recovery evidence.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L107-L117",
-          "version": "repo-lines-v1:sha256:cc26d8f5cf7a32aef563ca9efff526b3ad4143f803bccc32787c973dab94a307:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3NWU2OTczOTY4MWMyYTA4OTI0Yzg2MzRmM2Y3NzAzMGJmNWJjZjA2YzIxYWMyMjY2MmM1YjgzZTBhYmZhYjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1NTA4YTZkZmI3ZmZkNzc3MzIzNTUyYjI0NTBiYjU5MTA2NmZkMmI0Zjk3MDNhYmZjNTZmYWQ5YmJjZGVhNjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L107-L121",
+          "version": "repo-lines-v1:sha256:b848b050113d2cd4c93350bf6b486c1a4f96111548ecc034634a6436dd7cd691:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3NWU2OTczOTY4MWMyYTA4OTI0Yzg2MzRmM2Y3NzAzMGJmNWJjZjA2YzIxYWMyMjY2MmM1YjgzZTBhYmZhYjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1NTA4YTZkZmI3ZmZkNzc3MzIzNTUyYjI0NTBiYjU5MTA2NmZkMmI0Zjk3MDNhYmZjNTZmYWQ5YmJjZGVhNjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
         },
         {
-          "resource": "repo://docs/storage-nfs.md#L100-L116",
+          "resource": "repo://docs/storage-nfs.md#L106-L122",
           "version": "repo-lines-v1:sha256:deebe82892264997728d5547e0b3b961cf86056424f93eb8a727da8e12d19c2d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNjVlMTg1MGNjZjQ1ZDg4NGU3N2I1ZWZhYTI3NjM3MjliNzM5ZmZlZTE3NDQ2MmI0NWFmMjRkNjdjYTdkZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmOTRiN2YxYWRmZWZjZmIxYjk1NjlhMzUwNjNjMzdlOTVlMWEyZWUzNjYwYTNkZGNkYzc0YjkyNzFlNjdjZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiZDc5YzU0ZGRkMTQ1NjhiYWRhYWRiNDdkNzllNDIyOGJlNTMwZGFiMGQyMDlhOWNmNWU4ZDA1MzUxOTM3YWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImViNDdiZTM3YWE0Y2JiNjI3YzNiMGE1YmI3NDlmNDQxMTg2MjQzZDRkNzcwZWQ4NTU4OWMyYWYwM2U1NDg5ZTYifQ"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L26-L26",
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L33-L33",
           "version": "repo-lines-v1:sha256:6367c8fc3d21343fac2f461cc65f00e67ec18450bd1b4cbe262932a3a8d27da0:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM2N2M4ZmMzZDIxMzQzZmFjMmY0NjFjYzY1ZjAwZTY3ZWMxODQ1MGJkMWI0Y2JlMjYyOTMyYTNhOGQyN2RhMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjM2N2M4ZmMzZDIxMzQzZmFjMmY0NjFjYzY1ZjAwZTY3ZWMxODQ1MGJkMWI0Y2JlMjYyOTMyYTNhOGQyN2RhMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjc4ODQ0ZDdjOWVjOGE3NmJlOGNmNzQ5YjBhOGQwYzlmYTMzNjUzODc3YjgyYTZlYmNmYzEzMzUyY2E1NDdiZCJ9"
         }
       ]
@@ -176,19 +176,23 @@
     },
     {
       "id": "claim_142fce561c734aaca7703660665c09fd",
-      "statement": "Enterprise reconciliation still needs a durable private journal. The unregistered operator bundle now declares a retained 1Gi local journal PVC and StorageClass but no static PV or admitted placement; exact-main reconcile, stop, and verification Job dispatch is gated off, full-sync is blocked by the unselected installation phase, and restore and acceptance remain separately blocked.",
+      "statement": "Enterprise reconciliation still needs a durable private journal. The unregistered operator bundle declares a retained 1Gi local journal PVC and StorageClass but no static PV or admitted placement; exact-main reconcile, stop, and verification Job dispatch is gated off, full-sync is blocked by the unselected installation phase, and restore and acceptance remain separately blocked.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L17",
-          "version": "repo-lines-v1:sha256:bd805e65dcd4448ec563a1c9ca53c813a0eee28e6a03e2e7f03ab781318463c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZmViM2U4NGY3MDU2YzYzNDA5NTllZjRjYzliMzQ3ZDA2N2VjZjI4ZGZlZWRkMWE3YjY4MGJiZjk5MTJiNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM4NWEzZjFiMDk3MjA2Y2M4YzJlY2UxNmYxYzIwOTM0MjlhNzJmN2M1OWZiNDYyMjk1Y2QwNTExZmE4MWE0MjYifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
-          "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml",
+          "version": "repo-file-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L27-L50",
-          "version": "repo-lines-v1:sha256:2bb2a90e863f614bdd8d2d0bdee1d2ec3fa93f44fe07c525755362e84fcf53f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzMGM2ZWEyMmNjYTBjNDJiZmM3MTMyYjA5YWQ5NTdkMGE1MmI0M2YxNjAyZWQ2MzY2OTcyMzFmMTZiMDFjMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -248,11 +252,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:04bcadde4d22cd0e83fab58e385f2d4d7b16d8d4d3e8c9aae29b9a9c9ef146ec"
+          "version": "repo-file-v1:sha256:12d468da123124f2d1bfcf69e3daa6deef7c279240c0fc4c097b209b5a2cfd8d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
-          "version": "repo-file-v1:sha256:95baa44ed471d8efc23d3d652cc8c78d320cf6874fc3982514ce8acbc201ced9"
+          "version": "repo-file-v1:sha256:342876ca0a2dee507da86ab30c5d9dc7e88c987400cb0bf267947fc5095ad10b"
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
@@ -289,6 +293,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T06:41:51.112Z"
+    "at": "2026-10-25T11:21:20.412Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2a6f390edc6706aa0e05b15dc682404954dd49209a55977a6f8c550d07d2499c",
+  "pageVersion": "sha256:84a98e4e1d37c66e67a851561161c6786c2a5e62c70c5e94cedda63ce4def5e9",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -142,11 +142,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
+          "version": "repo-file-v1:sha256:1a94861057e312e7057d54473c2f26cfbee3ef873c3d1ee0d79e389d44abcc64"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py#L49-L270",
-          "version": "repo-lines-v1:sha256:80a0af7a33c97ece99cbd589ee0c5b39cc72643c9c80c28f0e29b2175d293db1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZWUyNzA2YTYwZjgxYzM0ZmMzYWRlMWUxM2IxMDMxM2JkMjIzODk1MTA5YzI0YzMyMmUwNDNhNmM0MDgwZGFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjFlYTVhZDlhNGZhNTEzNjYzMDAzNzJjMzVmZDA4ODM2YzU4MzhlNzk2ZGZmZTFkOGE1NGJjYzc0NGFlY2YyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NDJiMzVjMDE0YzQ2ZWQyNmZiYjMyZjAzYTQ0MjEzNjc1YzdkMDc0M2ZlNTQ5M2MwNDBlYWM4MjFiMTZjZGY2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmZGZhODdhYWJjYzk3YmJlMmIxZmE2OTc3ODI1ODM1MTJkOWMxN2YwMGFlODFiNTBhZmI4ZjRmMGVlZjg4Yzg0In0"
+          "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py#L49-L296",
+          "version": "repo-lines-v1:sha256:37f625ce14499ae73784a3269288683240cb4498bd85136a27ce549e856caca2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQ4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZWUyNzA2YTYwZjgxYzM0ZmMzYWRlMWUxM2IxMDMxM2JkMjIzODk1MTA5YzI0YzMyMmUwNDNhNmM0MDgwZGFjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NjFlYTVhZDlhNGZhNTEzNjYzMDAzNzJjMzVmZDA4ODM2YzU4MzhlNzk2ZGZmZTFkOGE1NGJjYzc0NGFlY2YyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3NDJiMzVjMDE0YzQ2ZWQyNmZiYjMyZjAzYTQ0MjEzNjc1YzdkMDc0M2ZlNTQ5M2MwNDBlYWM4MjFiMTZjZGY2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmZGZhODdhYWJjYzk3YmJlMmIxZmE2OTc3ODI1ODM1MTJkOWMxN2YwMGFlODFiNTBhZmI4ZjRmMGVlZjg4Yzg0In0"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L67-L256",
@@ -161,7 +161,7 @@
           "version": "repo-lines-v1:sha256:7578981a3291df6d25eb16c0a90b34bcf5daadddd36140c480a3f4c45f7ebf1b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3ZDYwNmY5OTU0ZmNmYmQxYTliNGFlY2Y1MWY5ZGQwMTJiMjQyYzk4YjhmMTA4ZWZhZWJjNzJhMDEyNmE5ZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkM2VkMGE0ZDkzN2Y1MjAzMmM0OGRhMGMyNzFkNjM4ODBlMWIyNWI4NjVlYTEwMjU0ZWZjZjYzNmYzYjI5NDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5OGFjOWZlY2RlNzI5OTc5Y2QxMDNiYTBmZDhiZjRjZmJlMTJhOGY3ODBhYTlmNjU2YjM4YmRhNzJhODIwMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3ODVhZmY5M2NmMzZlNmVjNDc3NjRhNTc5MjIxZTkwMWYzNDk3Mzc1YjQxNDQ1ODExZTc5YjdkOWJiODJkNzYifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1492-L1657",
+          "resource": "repo://scripts/openclaw-enterprise.py#L1494-L1659",
           "version": "repo-lines-v1:sha256:56206414860d556bfa19aa1944877b078884410615ddc1f39f4b48d134b802ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1MDYzOTY4MmMxYzY0NmI0Nzc1NmI4ZDg0NjRhYThkN2FmZjQ2MDg4NWMyNGRmYzVjNTRmMTc5ZmI1Y2I2NGU4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3YjAwMmEwMmJiMjcxMjVlZjEyMmVjMGNiZWFkZjU1ZTljYjFhMmExNDNhNzFiOWRiOWUxYTQyNjI4N2I4NWQ0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlNmY2Y2ZmYzM3ZGVlOTNjZmQyMjhkZTQ1NDBjNTFiYTA3ODZlZDUzZTVjMmE1NzIwY2EyMDkzMzZhNmQyMmI0In0"
         }
       ]
@@ -307,8 +307,8 @@
       "statement": "The unregistered Enterprise operator directory owns the retained journal claim and local class, scoped proof RBAC and private Job network intent, while the dispatcher owns exact source and claim identity checks; actual PV placement and activation remain pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L53",
-          "version": "repo-lines-v1:sha256:df48c9814c36d7d48a552aab7ea26b9a5fa487ae5cabef2364eba07a5b5f8eab:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L57",
+          "version": "repo-lines-v1:sha256:c221129a1d3f4f69a760b5febbc21abfdad5eaa6d5cdf27c8d72d0dd5068f3cc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
@@ -375,6 +375,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T06:41:51.112Z"
+    "at": "2026-10-25T11:21:20.412Z"
   }
 }
