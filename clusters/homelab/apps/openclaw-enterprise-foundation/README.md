@@ -55,8 +55,11 @@ not a live quiescence proof. The packager requires ordinary single-link files
 and discards a partial set when pre-copy, post-copy, and captured path/content
 manifests differ.
 T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup`
-mount. `restore-drill.yaml` is deliberately outside the Kustomization; T045
-must run it in isolation against a complete set and verify the result. Its
+mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
+archive directory before creating anything; the future Job must still prove
+that the volume is the reviewed off-node destination. `restore-drill.yaml` is
+deliberately outside the Kustomization; T045 must run it in isolation against
+a complete set and verify the result. Its
 fixed-name Job is a one-shot candidate; a declared repeat/recreate workflow is
 still required before T045/T049 can accept recurring restore evidence. Its Pod
 logs report only the fixed success/failure stage; raw restore details remain

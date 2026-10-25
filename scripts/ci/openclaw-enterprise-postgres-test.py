@@ -236,19 +236,26 @@ class PostgresFoundation(unittest.TestCase):
                                 'timestamp="20261019T000000Z"')
         candidate = self.root / "backup.sh"
         candidate.write_text(script)
+        fake_bin = self.root / "backup-bin"
+        fake_bin.mkdir(exist_ok=True)
+        mountpoint = fake_bin / "mountpoint"
+        mountpoint.write_text("#!/bin/sh\nexit 0\n")
+        mountpoint.chmod(0o755)
+        backup_env = {**POSTGRES_ENV,
+                      "PATH": f"{fake_bin}{os.pathsep}{POSTGRES_ENV['PATH']}"}
         gateway = self.material / "gateway/occ"
         gateway.rename(self.root / "missing-gateway")
-        incomplete = run("sh", str(candidate), check=False)
+        incomplete = run("sh", str(candidate), check=False, env=backup_env)
         self.assertNotEqual(incomplete.returncode, 0)
         self.assertFalse(backups.exists())
         (self.root / "missing-gateway").rename(gateway)
-        backup = run("sh", str(candidate))
+        backup = run("sh", str(candidate), env=backup_env)
         self.assertIn("verified OpenClaw Enterprise recovery set", backup.stdout)
         complete = next(backups.iterdir())
         self.assertTrue((complete / "database.dump").is_file())
         self.assertTrue((complete / "database-bootstrap.sql").is_file())
         checksum = (complete / "SHA256SUMS").read_bytes()
-        duplicate = run("sh", str(candidate), check=False)
+        duplicate = run("sh", str(candidate), check=False, env=backup_env)
         self.assertNotEqual(duplicate.returncode, 0)
         self.assertIn("backup destination already exists", duplicate.stderr)
         self.assertEqual(list(backups.iterdir()), [complete])
