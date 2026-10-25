@@ -94,3 +94,12 @@ never mount it or expose it as an application env var. The contract uses OnChang
 revision v1: after an approved producer rotation, reconcile the generated copy,
 advance its revision, wait for readiness, and verify a fresh image pull. Secret
 materialization alone activates no controller image or runner pool.
+
+The generator now requires Acer for `spec.isEphemeral` workspaces, including
+CI/smoke and runner workspaces. It leaves non-ephemeral selectors unchanged;
+read-only native inventory on October 25 verified all six originals are
+non-ephemeral. Their bound local PVs continue selecting their original worker.
+The disabled runner pool declares the same Acer target. This prevents newly
+available worker reservations from attracting a 2 GiB CI workspace onto a node
+without equivalent physical headroom. Runtime acceptance still requires the
+Acer role, namespace configuration, local storage and published controller image.

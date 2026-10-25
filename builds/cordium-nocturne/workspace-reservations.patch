@@ -1,35 +1,25 @@
 --- a/cluster/nocturne/nocturne/controllers/workspaces/k8s.go
 +++ b/cluster/nocturne/nocturne/controllers/workspaces/k8s.go
-@@ -82,7 +82,8 @@
- 		return 250 * 1000
- 	}()
- 
+@@ -85 +85,2 @@
 -	return corev1.PodSpec{
 +	pod := corev1.PodSpec{
 +		HostUsers: utils_types.BoolToPtr(false),
- 		NodeSelector: func() map[string]string {
- 			return map[string]string{
- 				"octelium.com/node-mode-cordium": "",
-@@ -191,11 +192,6 @@
- 				}(),
- 
- 				Resources: corev1.ResourceRequirements{
+@@ -87,2 +88,3 @@
+-			return map[string]string{
+-				"octelium.com/node-mode-cordium": "",
++			selector := map[string]string{"octelium.com/node-mode-cordium": ""}
++			if ws.GetSpec().GetIsEphemeral() {
++				selector["kubernetes.io/hostname"] = "acer"
+@@ -89,0 +92 @@
++			return selector
+@@ -194,5 +196,0 @@
 -					Requests: corev1.ResourceList{
 -						corev1.ResourceMemory: resource.MustParse("5Mi"),
 -						corev1.ResourceCPU:    resource.MustParse("10m"),
 -						// corev1.ResourceEphemeralStorage: resource.MustParse("50Mi"),
 -					},
- 					Limits: corev1.ResourceList{
- 						corev1.ResourceMemory: resource.MustParse(
- 							fmt.Sprintf("%dMi", func() uint32 {
-@@ -340,6 +336,10 @@
- 			},
- 		},
- 	}
+@@ -342,0 +341,4 @@
 +	for index := range pod.Containers {
 +		pod.Containers[index].Resources.Requests = pod.Containers[index].Resources.Limits.DeepCopy()
 +	}
 +	return pod
- }
- 
- func (c *Controller) newDeployment(ws *cordiumv1.Workspace, ownerCM *corev1.ConfigMap) *appsv1.Deployment {
