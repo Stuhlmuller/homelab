@@ -181,6 +181,30 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "langfuse_raw_inventory_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      identifiers = [data.aws_iam_openid_connect_provider.github_actions.arn]
+      type        = "Federated"
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:Stuhlmuller/homelab:environment:homelab-production"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "external_secrets_boundary" {
   statement {
     sid       = "DenyTemporarySessionCredentials"
@@ -253,9 +277,16 @@ resource "aws_iam_role_policy_attachment" "parameter_reader_administration" {
   policy_arn = aws_iam_policy.parameter_reader_administration.arn
 }
 
+resource "aws_iam_role" "langfuse_raw_inventory" {
+  name                 = "homelab-langfuse-raw-inventory"
+  assume_role_policy   = data.aws_iam_policy_document.langfuse_raw_inventory_assume_role.json
+  max_session_duration = 7200
+  tags                 = var.tags
+}
+
 resource "aws_iam_role_policy" "langfuse_raw_inventory" {
   name   = "langfuse-raw-version-inventory"
-  role   = aws_iam_role.github_actions.id
+  role   = aws_iam_role.langfuse_raw_inventory.name
   policy = data.aws_iam_policy_document.langfuse_raw_inventory.json
 
   lifecycle {

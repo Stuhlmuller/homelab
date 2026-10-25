@@ -112,7 +112,42 @@ run "apply_role_reads_only_langfuse_blob_storage_identity" {
   }
 }
 
-run "apply_role_reads_only_exact_langfuse_raw_versions" {
+run "dedicated_inventory_role_trust_excludes_plan_prs_and_other_repos" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.langfuse_raw_inventory_assume_role]
+  }
+
+  assert {
+    condition = (
+      jsondecode(data.aws_iam_policy_document.langfuse_raw_inventory_assume_role.json).Statement == [{
+        Effect = "Allow"
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Principal = {
+          Federated = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+        }
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+            "token.actions.githubusercontent.com:sub" = "repo:Stuhlmuller/homelab:environment:homelab-production"
+          }
+        }
+      }] &&
+      alltrue([for subject in [
+        "repo:Stuhlmuller/homelab:environment:homelab-plan",
+        "repo:Stuhlmuller/homelab:ref:refs/heads/main",
+        "repo:Stuhlmuller/homelab:ref:refs/heads/feature",
+        "repo:Stuhlmuller/github-iac:environment:github-iac-production",
+        "repo:Other/homelab:environment:homelab-production",
+      ] : !contains(flatten([jsondecode(data.aws_iam_policy_document.langfuse_raw_inventory_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"]]), subject)])
+    )
+    error_message = "The inventory role must trust only the homelab production environment, never an unprotected plan, branch, or another repository."
+  }
+}
+
+run "dedicated_inventory_role_reads_only_exact_langfuse_raw_versions" {
   command = plan
 
   plan_options {
@@ -122,8 +157,10 @@ run "apply_role_reads_only_exact_langfuse_raw_versions" {
 
   assert {
     condition = (
-      aws_iam_role.github_actions.name == "test-apply" &&
+      aws_iam_role.langfuse_raw_inventory.name == "homelab-langfuse-raw-inventory" &&
+      aws_iam_role.langfuse_raw_inventory.max_session_duration == 7200 &&
       aws_iam_role_policy.langfuse_raw_inventory.name == "langfuse-raw-version-inventory" &&
+      aws_iam_role_policy.langfuse_raw_inventory.role == "homelab-langfuse-raw-inventory" &&
       [for statement in jsondecode(aws_iam_role_policy.langfuse_raw_inventory.policy).Statement : {
         Sid       = statement.Sid
         Effect    = statement.Effect
