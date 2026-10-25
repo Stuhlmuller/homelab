@@ -857,3 +857,6 @@ and [activation gates](../operations/validation-gates.md#mastodon-activation-gat
 Merge, actual rollout, loaded-library checks, owner login, SMTP receipt,
 public website/media/streaming/federation and backup/isolated-restore acceptance
 remain distinct milestones.
+
+Web, Sidekiq, streaming and migration/owner Jobs select Acer for memory
+headroom. Datastores and the local-socket backup Job remain on `zimaboard-1`.

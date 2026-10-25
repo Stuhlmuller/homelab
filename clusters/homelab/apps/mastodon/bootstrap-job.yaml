@@ -20,6 +20,8 @@ spec:
         app.kubernetes.io/name: mastodon-owner-bootstrap
     spec:
       serviceAccountName: mastodon
+      nodeSelector:
+        kubernetes.io/hostname: acer
       automountServiceAccountToken: false
       restartPolicy: Never
       securityContext:

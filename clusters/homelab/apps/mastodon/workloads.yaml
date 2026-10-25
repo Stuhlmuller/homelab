@@ -41,6 +41,8 @@ spec:
         homelab.stuhlmuller.dev/runtime-revision: v2
     spec:
       serviceAccountName: mastodon
+      nodeSelector:
+        kubernetes.io/hostname: acer
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
@@ -162,6 +164,8 @@ spec:
         homelab.stuhlmuller.dev/runtime-revision: v2
     spec:
       serviceAccountName: mastodon
+      nodeSelector:
+        kubernetes.io/hostname: acer
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
@@ -300,6 +304,8 @@ spec:
         homelab.stuhlmuller.dev/runtime-revision: v2
     spec:
       serviceAccountName: mastodon
+      nodeSelector:
+        kubernetes.io/hostname: acer
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
