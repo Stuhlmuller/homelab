@@ -509,13 +509,14 @@ gate remains disabled; these permissions are source intent, not live access.
   when seven days or less remain; revoked or expired tokens fail startup rather
   than silently creating a replacement. A Ready daemon starts the renewal loop
   but does not prove a successful renewal; verify expiry metadata during the
-  eligible window without exposing token material. The main container exposes
-  only its own retained profile, and the committed OpenCode configuration routes
-  inference through LiteLLM; no ChatGPT/Codex OAuth runtime is configured.
-  It does not mount the backend JWT, database password, fixed code, or a model
-  API key. This remains a trusted operator runtime because tasks can read that
-  profile. Its dedicated ServiceAccount has no Kubernetes token and receives
-  explicit Istio access only to the Multica backend.
+  eligible window without exposing token material. The main container retains
+  its own profile and mounts the dedicated `multica-litellm` token as a read-only
+  file for model access. The committed OpenCode configuration routes through
+  LiteLLM; no ChatGPT/Codex OAuth runtime is configured. It does not mount the
+  backend JWT, database password, fixed code, or upstream OpenRouter key.
+  This remains a trusted operator runtime because tasks can read that profile.
+  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
+  Istio access only to the Multica backend.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
