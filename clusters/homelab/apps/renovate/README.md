@@ -1,10 +1,9 @@
 # Renovate
 
 Renovate scans Stuhlmuller-owned GitHub repositories at 00 minutes past every
-hour, UTC. The `automation` CronJob runs in Renovate's full dry-run mode. The
-old writer in `Stuhlmuller/renovate` remains authoritative until dry-run parity
-is verified and its entire workflow is removed through a reviewed PR. Only
-then may a reviewed homelab change remove `dryRun: 'full'`.
+hour, UTC. The `automation` CronJob is the sole writer after the reviewed
+companion workflow deletion and Actions-key retirement. The cluster writer
+preserves the existing App identity and repository auto-merge policy.
 
 The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge

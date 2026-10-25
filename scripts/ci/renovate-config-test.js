@@ -98,7 +98,7 @@ test('mints a signed installation token and preserves the current global policy'
     'config:best-practices', ':automergeAll', 'replacements:all',
     'schedule:automergeDaily', 'security:openssf-scorecard',
   ]);
-  assert.equal(resolved.dryRun, 'full');
+  assert.equal(Object.hasOwn(resolved, 'dryRun'), false);
   assert.equal(resolved.cacheDir, '/cache/renovate');
   assert.equal(resolved.baseDir, '/tmp/renovate');
   assert.equal(resolved.repositoryCache, 'enabled');
@@ -155,10 +155,10 @@ test('refuses invalid or nearly expired installation tokens', async () => {
   }
 });
 
-test('keeps package-cache keys out of INFO logs during full dry run', async () => {
+test('write mode keeps package-cache keys out of INFO logs on the hourly schedule', async () => {
   const { config } = load();
   const resolved = await config();
-  assert.equal(resolved.dryRun, 'full');
+  assert.equal(Object.hasOwn(resolved, 'dryRun'), false);
   assert.equal(Object.hasOwn(resolved, 'logLevelRemap'), false);
   const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
   assert.match(cronjob, /^  suspend: false$/m);

@@ -112,6 +112,5 @@ module.exports = async function config() {
     cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
-    dryRun: 'full',
   };
 };
