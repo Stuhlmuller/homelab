@@ -329,6 +329,38 @@ aws() {
         self.assertLess(ownership, placement)
         self.assertLess(placement, helper)
         self.assertIn('"$work/receipts/placement.json" "$placement_version"', source)
+        self.assertIn('cleanupRunId: $cleanupRunId', source)
+        self.assertIn('cleanupPodUid: $cleanupPodUid', source)
+        self.assertLess(source.index('retain_result "$work/canary-attempt.json"'),
+                        source.index('scripts/network-policy-canary-node.py'))
+
+    def test_release_recovery_binds_immutable_attempt_before_probe_and_patch(self):
+        source = STAGE.read_text().split('  canary-release-recover)\n', 1)[1].split(
+            '  canary-admit-recover|canary-abort)\n', 1)[0]
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        self.assertIn('"${RELEASE_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$', STAGE.read_text())
+        self.assertIn('git rev-list --first-parent "$GITHUB_SHA" | grep -Fx "$RELEASE_SOURCE_SHA"',
+                      STAGE.read_text())
+        release = source.index('load_receipt "$release_key" "$work/receipts/release-attempt.json"')
+        cleanup = source.index('load_receipt "$cleanup_key" "$work/receipts/cleanup.json"')
+        ownership = source.index('load_receipt "$ownership_key" "$work/receipts/firewall-ownership.json"')
+        placement = source.index('load_receipt "$placement_key" "$work/receipts/placement.json"')
+        attempted = source.index('retain_result "$work/receipts/recovery-attempt.json"')
+        probe = source.index('scripts/network-policy-firewall-baseline.py')
+        proof = source.index('retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof')
+        patch = source.index('scripts/network-policy-canary-node.py release-recover')
+        self.assertTrue(release < cleanup < ownership < placement < attempted < probe < proof < patch)
+        self.assertIn('cmp "$work/receipts/release-attempt.json"', source)
+        self.assertIn('cmp "$work/receipts/cleanup.json"', source)
+        self.assertIn('cmp "$work/receipts/firewall-ownership.json"', source)
+        self.assertIn('cmp "$work/receipts/placement.json"', source)
+        self.assertIn('--release-recovery', source)
+        self.assertIn('canary-release-recover-attempt', source)
+        self.assertIn('canary-release-recover-interrupted', source)
+        self.assertIn('"$RUN_STAGE" = canary-release-recover', workflow)
+        self.assertIn('RELEASE_SOURCE_SHA: ${{ inputs.release_source_sha }}', workflow)
+        self.assertIn('RELEASE_RUN_ID: ${{ inputs.release_run_id }}', workflow)
+        self.assertIn('attempt_name=canary-release-recover-attempt', STAGE.read_text())
 
     def test_canary_admit_selects_immutable_placement_version(self):
         source = STAGE.read_text().split('  canary-admit|canary-release)\n', 1)[1].split(
@@ -365,7 +397,7 @@ aws() {
         self.assertEqual(source.count('require_absent_receipt "$admission_key"'), 2)
         self.assertIn('--admission-run-id "$ADMISSION_RUN_ID"', source)
         self.assertEqual(source.count('--evidence-source-sha "$EVIDENCE_SOURCE_SHA"'), 2)
-        self.assertIn('if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ]; then',
+        self.assertIn('if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ] || [ "$RUN_STAGE" = canary-release-recover ]; then',
                       workflow)
         self.assertIn('group: platform-maintenance-production', workflow)
         self.assertIn('cancel-in-progress: false', workflow)

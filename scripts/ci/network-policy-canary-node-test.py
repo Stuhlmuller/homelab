@@ -41,6 +41,7 @@ def cleanup():
     return {"format": 1, "stage": "owned-firewall-cleanup", "status": "verified",
             "verified": True, "sourceSha": SHA, "node": "zimaboard-1",
             "nodeUid": "uid", "bootID": "boot", "captureRunId": "456",
+            "cleanupPodUid": "cleanup-pod-uid",
             "beforeSha256": "c" * 64, "afterSha256": "b" * 64,
             "completedAt": "2026-10-19T00:00:00Z"}
 
@@ -82,6 +83,33 @@ def recovery_proof():
             "captureKey": f"openclaw-enterprise/platform/{SHA}/789/firewall-recovery-capture.json"}
 
 
+def release_attempt():
+    return {"format": 1, "stage": "canary-release", "status": "attempted",
+            "verified": False, "sourceSha": SHA, "runId": "678",
+            "cleanupRunId": "567", "captureRunId": "456",
+            "cleanupPodUid": "cleanup-pod-uid", "evidenceSourceSha": EVIDENCE_SHA,
+            "admissionRunId": "123", "placementRunId": "456",
+            "placementVersionId": "version-1", "node": "zimaboard-1",
+            "nodeUid": "uid", "bootID": "boot"}
+
+
+def release_recovery_attempt(source_sha=SHA):
+    return {**release_attempt(), "stage": "canary-release-recover",
+            "sourceSha": source_sha, "runId": "789", "releaseSourceSha": SHA,
+            "releaseRunId": "678", "podToken": "e" * 48}
+
+
+def release_recovery_proof(source_sha=SHA):
+    return {**release_recovery_attempt(source_sha),
+            "stage": "firewall-release-recovery-proof", "status": "verified",
+            "verified": True, "firewallBaselineEmpty": True, "ownedChains": 0,
+            "ownedSets": 0, "podDeleted": True,
+            "observedState": "taint-only",
+            "snapshotSha256": "d" * 64,
+            "completedAt": datetime.now(timezone.utc).isoformat(),
+            "captureKey": f"openclaw-enterprise/platform/{source_sha}/789/firewall-recovery-capture.json"}
+
+
 def node(admitted=False):
     labels = {"foreign.example/owner": "keep"}
     annotations = {"foreign.example/note": "keep"}
@@ -121,6 +149,19 @@ def cleanup_pod():
     return pod
 
 
+def dormant_cleanup_daemonset():
+    return {"metadata": {"name": SUT["CLEANUP"]["CLEANUP"]},
+            "spec": {"selector": {"matchLabels": {
+                "app.kubernetes.io/name": SUT["CLEANUP"]["CLEANUP"]}},
+                "template": {"spec": {"nodeSelector": {CANARY: "true"},
+                    "automountServiceAccountToken": False, "hostNetwork": True,
+                    "containers": [{"image": SUT["CLEANUP"]["IMAGE"],
+                                    "command": ["/bin/sh", "-c"],
+                                    "args": ["sleep 86400"],
+                                    "securityContext": {"privileged": True}}]}}},
+            "status": {"desiredNumberScheduled": 0, "numberReady": 0}}
+
+
 def apply_patch(state, operations):
     for operation in operations:
         parts = [part.replace("~1", "/").replace("~0", "~")
@@ -145,6 +186,58 @@ def apply_patch(state, operations):
 
 
 class CanaryNodeTests(unittest.TestCase):
+    def test_release_runtime_requires_dormant_cleanup_controller_and_no_pods(self):
+        for pods, daemonset, failure in (
+                ([], dormant_cleanup_daemonset(), None),
+                ([cleanup_pod()], dormant_cleanup_daemonset(), "cleanup Pod still exists"),
+                ([], dormant_cleanup_daemonset() | {"status": {}}, "not the reviewed"),
+                ([], dormant_cleanup_daemonset() | {"status": {
+                    "desiredNumberScheduled": 1, "numberReady": 0}}, "not the reviewed")):
+            with self.subTest(failure=failure):
+                if pods:
+                    pods[0]["spec"]["nodeName"] = "another-node"
+
+                def kube_json(*arguments):
+                    if arguments[:4] == ("-n", "kube-system", "get", "daemonset"):
+                        return copy.deepcopy(daemonset)
+                    if arguments[:4] == ("-n", "kube-system", "get", "pods") and \
+                            "-l" not in arguments:
+                        return {"metadata": {}, "items": copy.deepcopy(pods)}
+                    return {"metadata": {}, "items": []}
+
+                with patch.dict(SUT["CLEANUP"], {
+                        "command": lambda *_: "", "kubernetes_json": kube_json}):
+                    if failure:
+                        with self.assertRaisesRegex(ValueError, failure):
+                            SUT["require_release_runtime_quiesced"](
+                                CONFIG, placement(EVIDENCE_SHA), "cleanup-pod-uid")
+                    else:
+                        SUT["require_release_runtime_quiesced"](
+                            CONFIG, placement(EVIDENCE_SHA), "cleanup-pod-uid")
+
+    def test_clean_release_inventory_allows_workloads_but_rejects_firewall_or_incomplete_list(self):
+        workload = {"metadata": {"namespace": "default", "name": "workload",
+                                 "uid": "workload-uid"},
+                    "spec": {"nodeName": "zimaboard-1"}}
+        restarted = system_pod()
+        restarted["metadata"]["uid"] = "restarted-system-pod"
+        items = [restarted, workload]
+        expected = [{"namespace": "default", "name": "workload", "uid": "workload-uid"},
+                    {"namespace": "kube-system", "name": "flannel-1",
+                     "uid": "restarted-system-pod"}]
+        with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *_: {
+                "metadata": {}, "items": items}}):
+            self.assertEqual(SUT["clean_release_pods"](CONFIG, expected), expected)
+            with self.assertRaisesRegex(ValueError, "changed since firewall proof"):
+                SUT["clean_release_pods"](CONFIG, expected[:1])
+        for listing, error in (({"metadata": {}, "items": [cleanup_pod()]}, "forbidden"),
+                               ({"metadata": {"continue": "next"}, "items": items},
+                                "incomplete")):
+            with self.subTest(error=error), patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": lambda *_: listing}), self.assertRaisesRegex(
+                    ValueError, error):
+                SUT["clean_release_pods"](CONFIG)
+
     def test_admission_refuses_remaining_or_incomplete_preflight_pod(self):
         for raw, listing in (("{\"kind\":\"Pod\"}", {"metadata": {}, "items": []}),
                              ("", {"metadata": {}, "items": [{"metadata":
@@ -682,6 +775,47 @@ class CanaryNodeTests(unittest.TestCase):
                 {"activationEnabled": True, "canary": {"node": "zimaboard-2"}},
                 EVIDENCE_SHA, SHA)
 
+    def test_release_source_allows_unrelated_main_advance_but_not_runtime_drift(self):
+        current = "d" * 40
+        config = {"activationEnabled": True, "canary": {"node": "zimaboard-2"}}
+
+        def committed(command, **_):
+            if "rev-list" in command:
+                return f"{current}\n{SHA}\n"
+            relative = command[-1].split(":", 1)[1]
+            if relative == "scripts/config/platform-maintenance.json":
+                return json.dumps({**config, "unrelatedUpgrade": "older"}).encode()
+            return (ROOT / relative).read_bytes()
+
+        with patch.object(SUT["subprocess"], "check_output", side_effect=committed):
+            SUT["require_release_source"](config, SHA, current)
+
+        def changed(command, **_):
+            if "rev-list" in command:
+                return f"{current}\n{SHA}\n"
+            relative = command[-1].split(":", 1)[1]
+            if relative.endswith("cleanup/daemonset.yaml"):
+                return b"changed"
+            if relative == "scripts/config/platform-maintenance.json":
+                return json.dumps(config).encode()
+            return (ROOT / relative).read_bytes()
+
+        with patch.object(SUT["subprocess"], "check_output", side_effect=changed):
+            with self.assertRaisesRegex(ValueError, "source changed"):
+                SUT["require_release_source"](config, SHA, current)
+
+        def changed_canary(command, **_):
+            if "rev-list" in command:
+                return f"{current}\n{SHA}\n"
+            relative = command[-1].split(":", 1)[1]
+            if relative == "scripts/config/platform-maintenance.json":
+                return json.dumps({**config, "canary": {"node": "another-node"}}).encode()
+            return (ROOT / relative).read_bytes()
+
+        with patch.object(SUT["subprocess"], "check_output", side_effect=changed_canary):
+            with self.assertRaisesRegex(ValueError, "configuration changed"):
+                SUT["require_release_source"](config, SHA, current)
+
     def test_interrupted_abort_keeps_taint_then_can_retry(self):
         foreign = system_pod()
         foreign["metadata"].update({"namespace": "default", "name": "foreign",
@@ -1047,6 +1181,154 @@ class CanaryNodeTests(unittest.TestCase):
         state["metadata"]["resourceVersion"] = "11"
         with self.assertRaises(AssertionError):
             apply_patch(state, operations)
+
+    def test_release_recovery_receipts_bind_original_cleanup_and_same_run_proof(self):
+        args = argparse.Namespace(expected_sha="d" * 40, release_source_sha=SHA,
+                                  release_run_id="678", cleanup_run_id="567",
+                                  evidence_source_sha=EVIDENCE_SHA, admission_run_id="123")
+        transition = []
+        with patch.dict(os.environ, {"GITHUB_RUN_ID": "789"}), patch.dict(SUT["CLEANUP"], {
+                "require_firewall_removal_transition":
+                lambda old, new: transition.append((old, new))}):
+            SUT["validate_release_recovery_receipts"](
+                release_attempt(), release_recovery_attempt(args.expected_sha),
+                release_recovery_proof(args.expected_sha), cleanup(), ownership(),
+                placement(EVIDENCE_SHA), args, CONFIG)
+            self.assertEqual(transition, [(EVIDENCE_SHA, SHA)])
+            for changed in ({"cleanupRunId": "999"}, {"cleanupPodUid": "other"},
+                            {"admissionRunId": "999"}):
+                with self.subTest(changed=changed), self.assertRaisesRegex(
+                        ValueError, "release attempt"):
+                    SUT["validate_release_recovery_receipts"](
+                        release_attempt() | changed,
+                        release_recovery_attempt(args.expected_sha),
+                        release_recovery_proof(args.expected_sha), cleanup(), ownership(),
+                        placement(EVIDENCE_SHA), args, CONFIG)
+            with self.assertRaisesRegex(ValueError, "firewall proof"):
+                SUT["validate_release_recovery_receipts"](
+                    release_attempt(), release_recovery_attempt(args.expected_sha),
+                    release_recovery_proof(args.expected_sha) | {"podDeleted": False},
+                    cleanup(), ownership(), placement(EVIDENCE_SHA), args, CONFIG)
+            with self.assertRaisesRegex(ValueError, "cleanup receipt"):
+                SUT["validate_release_recovery_receipts"](
+                    release_attempt(), release_recovery_attempt(args.expected_sha),
+                    release_recovery_proof(args.expected_sha),
+                    cleanup() | {"sourceSha": "f" * 40}, ownership(),
+                    placement(EVIDENCE_SHA), args, CONFIG)
+
+    def test_release_recovery_requires_owner_before_receipt_or_cluster_access(self):
+        with patch.dict(SUT["PLATFORM"], {
+                "require_reviewed_execution_config": lambda *_: None,
+                "validate_config": lambda _: CONFIG,
+                "protected_context": lambda _: None,
+                "private_directory": lambda *_: self.fail("private receipt accessed")}), \
+                patch.dict(SUT["OWNERSHIP"], {"require_owner_attestation":
+                    lambda: (_ for _ in ()).throw(ValueError("owner required"))}), \
+                patch.dict(SUT["release_recover"].__globals__, {
+                    "require_current_main": lambda *_: self.fail("cluster accessed")}), \
+                self.assertRaisesRegex(ValueError, "owner required"):
+            SUT["release_recover"](argparse.Namespace(
+                config=ROOT / "scripts/config/platform-maintenance.json",
+                expected_sha=SHA))
+
+    def test_release_recovery_requires_matching_marker_and_atomic_untaint(self):
+        source_sha = "d" * 40
+
+        def run(state, expected_error=None, proof_state=None, pods=None):
+            patches, records, sources = [], [], []
+            proof_state = proof_state or ("taint-only" if TAINT in state["spec"]["taints"]
+                                          else "clean")
+            current_pods = [system_pod()] if pods is None else pods
+            observed_pods = sorted(({
+                "namespace": pod["metadata"]["namespace"],
+                "name": pod["metadata"]["name"], "uid": pod["metadata"]["uid"]}
+                for pod in current_pods),
+                key=lambda item: (item["namespace"], item["name"], item["uid"]))
+            proof = release_recovery_proof(source_sha) | {"observedState": proof_state}
+            if proof_state == "clean":
+                proof["observedPods"] = observed_pods
+            selected = {"placement.json": placement(EVIDENCE_SHA),
+                        "firewall-ownership.json": ownership(), "cleanup.json": cleanup(),
+                        "release-attempt.json": release_attempt(),
+                        "recovery-attempt.json": release_recovery_attempt(source_sha),
+                        "firewall-recovery-proof.json": proof}
+
+            def kube_json(*arguments):
+                if arguments[:2] == ("get", "node"):
+                    return copy.deepcopy(state)
+                if arguments[:2] == ("get", "pods"):
+                    return {"metadata": {}, "items": copy.deepcopy(current_pods)}
+                return {"metadata": {}, "items": []}
+
+            def command(*arguments):
+                if "patch" in arguments:
+                    operations = json.loads(arguments[arguments.index("-p") + 1])
+                    patches.append(operations)
+                    apply_patch(state, operations)
+                    return json.dumps(state)
+                return ""
+
+            with tempfile.TemporaryDirectory() as directory, patch.dict(
+                    os.environ, {"GITHUB_RUN_ID": "789"}), patch.dict(SUT["PLATFORM"], {
+                        "require_reviewed_execution_config": lambda *_: None,
+                        "validate_config": lambda _: CONFIG,
+                        "protected_context": lambda _: None,
+                        "private_directory": lambda path: path,
+                        "private_output": lambda path: path,
+                        "read_private_json": lambda path: selected[path.name]}), patch.dict(
+                    SUT["CLEANUP"], {"kubernetes_json": kube_json, "command": command,
+                        "require_firewall_removal_transition": lambda *_: None,
+                        "write_record": lambda _path, record, replace=False:
+                        records.append(copy.deepcopy(record))}), patch.dict(
+                    SUT["OWNERSHIP"], {"require_owner_attestation": lambda: None}), patch.dict(
+                    SUT["release_recover"].__globals__, {
+                        "require_current_main": lambda _: None,
+                        "require_release_source": lambda _config, old, new:
+                        sources.append((old, new)),
+                        "require_release_runtime_quiesced": lambda *_: None}):
+                args = argparse.Namespace(
+                    config=ROOT / "scripts/config/platform-maintenance.json",
+                    expected_sha=source_sha, receipt_dir=Path(directory),
+                    output=Path(directory) / "result.json", release_source_sha=SHA,
+                    release_run_id="678", cleanup_run_id="567",
+                    evidence_source_sha=EVIDENCE_SHA, admission_run_id="123")
+                if expected_error:
+                    with self.assertRaisesRegex(ValueError, expected_error):
+                        SUT["release_recover"](args)
+                else:
+                    self.assertTrue(SUT["release_recover"](args)["verified"])
+            return patches, records, sources
+
+        state = taint_only()
+        patches, records, sources = run(state)
+        self.assertEqual(len(patches), 1)
+        self.assertEqual([step["path"] for step in patches[0][-2:]],
+                         [SUT["ADMISSION_PATH"], "/spec/taints/1"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+        self.assertNotIn(SUT["ADMISSION"], state["metadata"]["annotations"])
+        self.assertEqual([record["status"] for record in records], ["started", "verified"])
+        self.assertTrue(records[-1]["mutationPerformed"])
+        self.assertFalse(records[-1]["observedClean"])
+        self.assertEqual(sources, [(SHA, source_sha), (SHA, source_sha)])
+        patches, _, _ = run(taint_only(run_id="999"), "admission marker")
+        self.assertEqual(patches, [])
+        patches, _, _ = run(node(admitted=True), "isolation state changed")
+        self.assertEqual(patches, [])
+        workload = {"metadata": {"namespace": "default", "name": "workload",
+                                 "uid": "workload-uid"},
+                    "spec": {"nodeName": "zimaboard-1"}}
+        patches, records, _ = run(node(), pods=[system_pod(), workload])
+        self.assertEqual(patches, [])
+        self.assertEqual([record["status"] for record in records], ["started", "verified"])
+        self.assertFalse(records[-1]["mutationPerformed"])
+        self.assertTrue(records[-1]["observedClean"])
+        patches, _, _ = run(taint_only(), "isolation state changed", proof_state="clean")
+        self.assertEqual(patches, [])
+        stale = node()
+        stale["metadata"]["annotations"][SUT["ADMISSION"]] = \
+            SUT["admission_marker"](EVIDENCE_SHA, "999")
+        patches, _, _ = run(stale, "unexpected canary")
+        self.assertEqual(patches, [])
 
 
 if __name__ == "__main__":
