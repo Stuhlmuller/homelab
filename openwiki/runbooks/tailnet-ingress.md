@@ -334,10 +334,11 @@ Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-legacy OpenClaw HTTP 502 only when each reviewed declaration and live
-Deployment specifies zero replicas and no live replicas remain. Other
-application 5xx responses fail. These exceptions check routing, not runtime
-health. Deployed Traefik routes and TLS must match the reviewed checkout.
+legacy OpenClaw HTTP 500 or 502 only when each reviewed declaration and live
+Deployment specifies zero replicas and no live replicas remain. OpenClaw also
+requires no EndpointSlice endpoints. Other application 5xx responses fail.
+These exceptions check routing, not runtime health. Deployed Traefik routes and
+TLS must match the reviewed checkout.
 `--retire-private --check` probes the original 27 migration HTTPS routes;
 bare `--check` also probes both staged Enterprise routes. The Agent probe uses
 a concrete `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's
