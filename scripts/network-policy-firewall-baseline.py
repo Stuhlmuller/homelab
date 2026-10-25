@@ -66,8 +66,10 @@ def node_identity():
     return uid, boot_id
 
 
-def recovery_node_identity(placement):
-    node, _, _ = CANARY["node_state"]({"canary": {"node": NODE}}, placement)
+def recovery_node_identity(placement, evidence_sha, admission_run_id):
+    node, _, tainted = CANARY["node_state"]({"canary": {"node": NODE}}, placement)
+    if tainted:
+        CANARY["require_admission_marker"](node, evidence_sha, admission_run_id)
     uid = node["metadata"]["uid"]
     listing = CLEANUP["kubernetes_json"]("get", "nodes", "-l",
                                         f"kubernetes.io/hostname={NODE}", "--chunk-size=0")
@@ -99,9 +101,10 @@ def get_pod():
 def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
     attempt = PLATFORM["read_private_json"](path)
     token = attempt.get("podToken") if isinstance(attempt, dict) else None
+    allowed_stages = (("firewall-baseline", "canary-admit-recover", "canary-abort")
+                      if stage is None else stage if isinstance(stage, tuple) else (stage,))
     if (not isinstance(attempt, dict) or attempt.get("format") != 1 or
-            attempt.get("stage") not in (("firewall-baseline", "canary-admit-recover")
-                                         if stage is None else (stage,)) or
+            attempt.get("stage") not in allowed_stages or
             attempt.get("status") != "attempted" or
             attempt.get("verified") is not False or
             attempt.get("sourceSha") != source_sha or
@@ -113,7 +116,8 @@ def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
 
 
 def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement):
-    attempt = read_attempt(path, source_sha, run_id, "canary-admit-recover")
+    attempt = read_attempt(path, source_sha, run_id,
+                           ("canary-admit-recover", "canary-abort"))
     if (not isinstance(attempt.get("admissionRunId"), str) or
             not OWNERSHIP["RUN_ID"].fullmatch(attempt["admissionRunId"]) or
             attempt.get("evidenceSourceSha") != evidence_sha or
@@ -306,7 +310,9 @@ def execute(args):
     store = OWNERSHIP["PrivateStore"](args.bucket)
     store.store.check()
     CANARY["require_runtime_absent"](True)
-    inspect_identity = (lambda: recovery_node_identity(placement)) if recovery else node_identity
+    inspect_identity = (lambda: recovery_node_identity(
+        placement, args.evidence_source_sha, attempt["admissionRunId"])) \
+        if recovery else node_identity
     identity = inspect_identity()
     assigned = system_pods()
     if recovery and assigned != placement["systemDaemonSetPods"]:

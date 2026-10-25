@@ -241,7 +241,7 @@ approved_platform_maintenance if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 11
-	dispatch.inputs.stage.options == ["inspect", "firewall-baseline", "firewall-baseline-recover", "placement", "canary-admit", "canary-admit-recover", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "firewall-baseline", "firewall-baseline-recover", "placement", "canary-admit", "canary-admit-recover", "canary-abort", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.baseline_source_sha.required == false
 	dispatch.inputs.baseline_source_sha.type == "string"
 	dispatch.inputs.baseline_run_id.required == false
@@ -304,7 +304,7 @@ approved_platform_maintenance if {
 
 platform_maintenance_dispatch_check := `test "${ACTUAL_REF}" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then
+if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ]; then
   test "$GITHUB_ACTOR_ID" = 57728706
   test "$GITHUB_RUN_ATTEMPT" = 1
 fi`
@@ -330,7 +330,7 @@ test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .objec
 platform_maintenance_owner_main_check := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "$ACTUAL_SHA" = "$EXPECTED_SHA"
-if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then
+if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ]; then
   test "$GITHUB_ACTOR_ID" = 57728706
   test "$GITHUB_RUN_ATTEMPT" = 1
 fi
@@ -343,7 +343,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'dd0ce17cc573acff38974b0dca233a8708adbf2ae988578837adce27823acddb  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'bda975bc15217c4557828790f37788b8047c137323e44b16826142f4ff9238e5  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
