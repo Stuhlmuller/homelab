@@ -66,6 +66,8 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
@@ -138,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Secrets And Identity
@@ -557,12 +559,12 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`. Only `homelab-plan` requires reviewer approval.
-  The production environment
+  `homelab-production`. PR plans use `homelab-plan` without a required
+  environment reviewer. The production environment
   permits only `main` and releases credentials without another approval;
-  main-only diagnostics also use production. Approve a pull request plan only
-  after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
-  identity. Repository Actions policy rejects mutable action tags, and the
+  main-only diagnostics also use production. Review the pull request plan and
+  exact code before merge because that job assumes the environment-bound AWS
+  OIDC identity. Repository Actions policy rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
   always-on checks and no force pushes. The CI connector does not pass Octelium
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
