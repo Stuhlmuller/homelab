@@ -149,6 +149,15 @@ margin. `zimaboard-2` has four unrelated Pods, including single-replica
 `Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
 requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
+The [evacuation manifests](../../clusters/homelab/apps/multica/values.yaml)
+move Multica frontend to `acer`, the [Harbor exporter](../../clusters/homelab/apps/harbor/vulnerability-exporter.yaml)
+to `zimaboard-1`, and [Cloudflared](../../clusters/homelab/apps/octelium-public/deployment.yaml)
+across those two nodes. The [admission check](../../scripts/network-policy-canary-node.py)
+allows `istio-cni-node` only as a system DaemonSet; it still rejects unrelated
+Pods. Langfuse PostgreSQL remains on `zimaboard-2` until its separate
+backup-gated move. After source merges, verify Argo, endpoints, client paths,
+and fresh node capacity before treating the evacuation as live or admitting a
+canary.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
