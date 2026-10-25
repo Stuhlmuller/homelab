@@ -640,16 +640,20 @@ publishing acceptance.
 
 Start the seven-day clock only after the sample and baseline are verified.
 Keep the observer suspended if the inventory, a datasource, private-source
-access, or the pinned image's datasource API fails validation. After the window,
-suspend the observer, inventory, report, and proof writers through reviewed
-GitOps and verify no acceptance Job or Pod is pending or active. Run the final
-aggregate-only report mode against this frozen ledger through a reviewed
-read-only Job, then review its aggregate and private receipts. If no declared
-read-only report path exists, keep cleanup suspended until one is added.
-Compare the final report's `ledgerSha256` with the last observer poll digest.
-A mismatch means the report is stale: regenerate and review it before cleanup.
-The digest is safe to retain in the public activation change; never publish the
-ledger or its private files.
+access, or the pinned image's datasource API fails validation. After the
+seven-day window, suspend and drain the observer, inventory, report, PR-proof,
+and schedule-collector writers through reviewed GitOps; verify none of their
+Jobs or Pods remains pending or active. Activate the staged read-only
+`acceptance-source-review-job.yaml` only after that freeze. Activate the staged
+`acceptance-final-report-job.yaml` through a separate reviewed change after
+source replay and writer drainage. The final Job has no App key, Kubernetes
+token, or network egress and mounts the protected ledger read-only. Its
+`report` mode reads the frozen sample and private outcomes and prints only
+aggregate counts. Review the source evidence and final report. Compare the
+final report's `ledgerSha256` with the last observer poll digest; a mismatch
+means the report is stale and must be regenerated and reviewed. The digest is
+safe to retain in the public activation change; never publish private files.
+A missing or failed final report keeps cleanup suspended.
 
 `acceptance-ledger-cleanup-job.yaml` is deliberately suspended and outside
 `kustomization.yaml`. In a reviewed activation PR, replace

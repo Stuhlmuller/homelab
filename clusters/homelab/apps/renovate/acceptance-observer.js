@@ -406,9 +406,9 @@ function readPrivateOutcomes() {
   return JSON.parse(fs.readFileSync(outcomesPath, 'utf8'));
 }
 
-function privateDirectory() {
-  fs.mkdirSync(ledgerDir, { recursive: true, mode: 0o700 });
-  const metadata = fs.lstatSync(ledgerDir);
+function privateDirectory(create = true, directory = ledgerDir) {
+  if (create) fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const metadata = fs.lstatSync(directory);
   if (!metadata.isDirectory() || metadata.uid !== process.getuid() ||
       (metadata.mode & 0o077)) throw new Error('ledger-permissions');
 }
@@ -566,7 +566,7 @@ async function poll(ledger) {
 async function main() {
   const mode = process.argv[2];
   if (mode !== 'poll' && mode !== 'report') throw new Error('invalid-mode');
-  privateDirectory();
+  privateDirectory(mode === 'poll');
   const metadata = fs.lstatSync(ledgerPath);
   if (!metadata.isFile() || metadata.uid !== process.getuid() ||
       (metadata.mode & 0o077)) throw new Error('ledger-permissions');
@@ -592,6 +592,6 @@ if (require.main === module) {
 
 module.exports = { selectSample, recordPoll, aggregate, aggregateReport, verifyFrozenSample,
   windowHealth,
-  readPrivateOutcomes,
+  readPrivateOutcomes, privateDirectory,
   verifyPrivateEvidence,
   readToken, renovateRoot, datasourceApi, poll };
