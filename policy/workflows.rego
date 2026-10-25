@@ -348,13 +348,13 @@ approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
-	count(dispatch.inputs) == 6
+	count(dispatch.inputs) == 11
 	dispatch.inputs.expected_sha.required == true
 	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore", "network-preflight", "publish-discord-cache", "transfer-discord-cache"]
 	dispatch.inputs.legacy_stage.default == "none"
-	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "cleanup-failed-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
-	count(input.jobs) == 4
+	count(input.jobs) == 5
 	approved_openclaw_legacy_operation
 	approved_openclaw_enterprise_operation
 }
@@ -418,23 +418,23 @@ fi`)
 
 approved_openclaw_enterprise_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	count(dispatch.inputs) == 6
+	count(dispatch.inputs) == 11
 	dispatch.inputs.expected_sha.required == true
-	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "cleanup-failed-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
 	input.permissions == {}
-	count(input.jobs) == 4
+	count(input.jobs) == 5
 	static := input.jobs["static-policy"]
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
-	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}"}
 	trim(static.steps[0].run, "\n") == openclaw_dispatch_guard
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.enterprise
 	job["runs-on"] == "ubuntu-24.04"
 	job["timeout-minutes"] == 150
 	job.needs == ["static-policy"]
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'"
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation' && inputs.enterprise_stage != 'cleanup-failed-bind'"
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.environment.name == "homelab-production"
 	job.permissions == {"contents": "read"}
@@ -471,13 +471,33 @@ approved_openclaw_enterprise_operation if {
 	trim(binding.steps[3].run, "\n") == platform_maintenance_main_check
 	binding.steps[4].env == {"EXPECTED_SHA": job.steps[4].env.EXPECTED_SHA, "OCTELIUM_AUTH_TOKEN": job.steps[4].env.OCTELIUM_AUTH_TOKEN, "GH_REPO": job.steps[4].env.GH_REPO, "GH_TOKEN": job.steps[4].env.GH_TOKEN}
 	trim(binding.steps[4].run, "\n") == openclaw_enterprise_binding_run
+	cleanup := input.jobs["cleanup-failed-bind"]
+	cleanup["runs-on"] == "ubuntu-24.04"
+	cleanup.needs == ["static-policy"]
+	cleanup.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'cleanup-failed-bind'"
+	cleanup.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
+	cleanup.environment.name == "homelab-production"
+	cleanup.permissions == {"contents": "read"}
+	cleanup["timeout-minutes"] == 20
+	count(cleanup.steps) == 5
+	[cleanup.steps[0].name, cleanup.steps[1].name, cleanup.steps[2].name, cleanup.steps[3].name, cleanup.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Cleanup", "Remove Exact Failed Binding Job"]
+	cleanup.steps[0].env == job.steps[0].env
+	trim(cleanup.steps[0].run, "\n") == platform_maintenance_main_check
+	cleanup.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	cleanup.steps[1].with == {"fetch-depth": 0, "persist-credentials": false}
+	cleanup.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	cleanup.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	cleanup.steps[3].env == job.steps[0].env
+	trim(cleanup.steps[3].run, "\n") == platform_maintenance_main_check
+	cleanup.steps[4].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(cleanup.steps[4].run, "\n") == openclaw_enterprise_cleanup_run
 }
 
 openclaw_dispatch_guard := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:cleanup-failed-bind|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
   *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
 esac
 if [[ "$ENTERPRISE_STAGE" != none ]]; then
@@ -505,6 +525,19 @@ if [[ "$LEGACY_STAGE" == transfer-discord-cache ]]; then
   [[ "$CACHE_REF" =~ ^[0-9a-f]{40}/[1-9][0-9]*$ ]]
   test -z "$BASELINE_REF"
   test -z "$ARCHIVE_REF"
+fi
+if [[ "$ENTERPRISE_STAGE" == cleanup-failed-bind ]]; then
+  [[ "$FAILED_BIND_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+  [[ "$FAILED_BIND_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+  [[ "$FAILED_BIND_ATTEMPT" =~ ^[1-9][0-9]{0,4}$ ]]
+  [[ "$FAILED_BIND_JOB_UID" =~ ^[0-9a-f-]{36}$ ]]
+  [[ "$FAILED_BIND_POD_UID" =~ ^[0-9a-f-]{36}$ ]]
+else
+  test -z "$FAILED_BIND_SOURCE_SHA"
+  test -z "$FAILED_BIND_RUN_ID"
+  test -z "$FAILED_BIND_ATTEMPT"
+  test -z "$FAILED_BIND_JOB_UID"
+  test -z "$FAILED_BIND_POD_UID"
 fi`
 
 openclaw_resume_provenance_run := `set -euo pipefail
@@ -530,6 +563,23 @@ if ! {
   exit 1
 fi
 echo 'Enterprise stage passed; private receipts withheld.'`
+
+openclaw_enterprise_cleanup_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+chmod 600 "$private_log"
+trap 'rm -f "$private_log"' EXIT
+if ! {
+  ulimit -f 1024 &&
+  sha256sum --check --status <<<'bf5bed5a0b810ff7d50a6869b071287b7d38594254e3f0775cc6acc4041d2e65  scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh' &&
+  sha256sum --check --status <<<'ff9ea086848b0039dd0113d0eb07be490d6f4ffe347a4a8b439a35d757d7fd96  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
+  sha256sum --check --status <<<'3fe456e1e8db5efb2b060d5239d8221444b8afc62f3a0b1ea667f131cdfd26cc  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  timeout 15m nix develop --command bash scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh
+} >"$private_log" 2>&1; then
+  echo '::error::Failed binding cleanup blocked; private diagnostics withheld.'
+  exit 1
+fi
+echo 'Failed binding cleanup completed; private diagnostics withheld.'`
 
 openclaw_enterprise_binding_run := `set -euo pipefail
 umask 077
@@ -913,6 +963,10 @@ private_live_output(run) if {
 
 private_live_output(run) if {
 	trim(run, "\n") == openclaw_enterprise_binding_run
+}
+
+private_live_output(run) if {
+	trim(run, "\n") == openclaw_enterprise_cleanup_run
 }
 
 native_receipt_private_run := `set -euo pipefail
