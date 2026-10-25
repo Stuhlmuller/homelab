@@ -1940,9 +1940,22 @@ system Pod identities, requested resources, metrics and node filesystem
 headroom; it keeps platform activation disabled. Admission rejects placement
 older than 30 minutes or its baseline older than one hour, then rechecks the
 bound capture, Pod identities, Node metrics, filesystem and capacity before
-Node mutation. A separate fresh capacity gate is still needed before the later
-enforcer and fixture rollout. Qualification also requires a reviewed
-`activationEnabled: true` change in the maintenance config. The isolated
+Node mutation. Protected targeted Terragrunt Apply now requires a new
+admitted-state capacity measurement before each enforcer and fixture
+activation. It verifies the selected immutable admission and placement S3
+versions, current Node UID/boot, owned taint/label, exact system Pod inventory,
+fresh metrics and node filesystem, then stores a private capacity receipt under
+the exact activation `main` SHA and apply run ID. The fixture phase subtracts
+only the Ready enforcer Pod's measured kubelet usage and still reserves the full
+704Mi runtime limit plus 128Mi margin. The last `zimaboard-2` measurement
+cannot pass.
+The enforcer phase first rejects insufficient capacity, then uses the pinned
+protected host probe to prove kube-router chains and sets are still empty. It
+deletes that token/UID-matched Pod, verifies its private capture and repeats
+capacity measurement before Argo activation; an immutable attempt marker lets
+`firewall-baseline-recover` remove an orphan before retry.
+Activation requires a reviewed `activationEnabled: true` config change with
+the exact prior admission SHA, run ID and S3 version. The isolated
 canary does not protect Traefik on `zimaboard-0`; a later reviewed expansion
 and direct unauthorized-Pod denial plus positive private ingress, callback,
 Harbor, and Octelium checks remain separate acceptance gates. With a fresh

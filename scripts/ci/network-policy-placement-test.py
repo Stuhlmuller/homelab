@@ -135,6 +135,55 @@ class PlacementTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "assigned Pods"):
             run(allocatable, {"metadata": {}, "items": []}, metrics, summary)
 
+    def test_admitted_enforcer_capacity_preserves_full_peak_budget(self):
+        enforcer = pod()
+        enforcer["metadata"].update(name="kube-router-network-policy-abc", uid="enforcer-uid")
+        enforcer["spec"]["containers"][0]["resources"] = {
+            "requests": {"memory": "250Mi", "cpu": "250m"},
+            "limits": {"memory": "512Mi"}}
+        node = {"status": {"allocatable": {"memory": "1308Mi", "cpu": "1950m"}}}
+        listing = {"metadata": {}, "items": [pod(), enforcer]}
+        metrics = {"kind": "NodeMetrics", "metadata": {"name": NODE},
+                   "timestamp": now(), "usage": {"memory": "500Mi", "cpu": "300m"}}
+        summary = {"node": {"nodeName": NODE,
+                   "memory": {"time": now(), "workingSetBytes": 500 * SUT["MIB"]},
+                   "cpu": {"time": now(), "usageNanoCores": 300000000},
+                   "fs": {"time": now(), "availableBytes": 8 * 1024**3,
+                          "capacityBytes": 16 * 1024**3}},
+                   "pods": [{"podRef": {"namespace": "kube-system",
+                                        "name": "kube-router-network-policy-abc",
+                                        "uid": "enforcer-uid"},
+                             "memory": {"time": now(), "workingSetBytes": 100 * SUT["MIB"]},
+                             "cpu": {"time": now(), "usageNanoCores": 100000000}}]}
+
+        def run(fs=summary, metric=metrics, candidate=enforcer):
+            with patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": lambda *args: node if args[:2] == ("get", "node") else listing,
+                    "complete_items": lambda value, _: value["items"],
+                    "command": lambda *args: json.dumps(
+                        metric if "metrics.k8s.io" in args[-1] else fs),
+                    "ready": lambda *_: True}):
+                return SUT["capacity"](baseline(), candidate)
+
+        receipt = run()
+        self.assertEqual(receipt["observedMemoryBytes"], 400 * SUT["MIB"])
+        self.assertEqual(receipt["plannedMemoryLimitBytes"], 704 * SUT["MIB"])
+        self.assertTrue(receipt["enforcerAlreadyPresent"])
+        changed = copy.deepcopy(summary)
+        changed["node"]["memory"]["workingSetBytes"] = 600 * SUT["MIB"]
+        with self.assertRaisesRegex(ValueError, "headroom"):
+            run(changed, metrics | {"usage": {"memory": "600Mi", "cpu": "300m"}})
+        for mutation in (lambda value: value["pods"].clear(),
+                         lambda value: value["pods"][0]["podRef"].update(uid="wrong"),
+                         lambda value: value["pods"][0]["memory"].update(
+                             time=(datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()),
+                         lambda value: value["node"]["memory"].update(
+                             workingSetBytes=450 * SUT["MIB"])):
+            changed = copy.deepcopy(summary)
+            mutation(changed)
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                run(changed)
+
     def test_no_receipt_before_exact_source_and_live_recheck(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "placement.json"

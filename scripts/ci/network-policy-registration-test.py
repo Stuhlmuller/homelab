@@ -69,11 +69,24 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
             "targetRevision": "main"}])
 
     def test_source_pair_matches_reviewed_phase(self):
+        phase = check_phase(render(UNIT), render(CANARY_UNIT),
+                            POLICY_MANIFEST.read_text(), CANARY_MANIFEST.read_text())
         self.assertIn(
-            check_phase(render(UNIT), render(CANARY_UNIT),
-                        POLICY_MANIFEST.read_text(), CANARY_MANIFEST.read_text()),
+            phase,
             {"dormant", "fixture-qualification", "fixture-pruned",
              "firewall-pruned", "canary-retired"})
+        config = json.loads((ROOT / "scripts/config/platform-maintenance.json").read_text())
+        if phase == "fixture-qualification":
+            selection = config.get("activationAdmission")
+            self.assertIs(config.get("activationEnabled"), True)
+            self.assertIsInstance(selection, dict)
+            self.assertEqual(set(selection), {"sourceSha", "runId", "versionId"})
+            self.assertRegex(selection["sourceSha"], r"^[0-9a-f]{40}$")
+            self.assertRegex(selection["runId"], r"^[1-9][0-9]*$")
+            self.assertTrue(selection["versionId"] and selection["versionId"] != "null")
+        elif phase == "dormant":
+            self.assertIs(config.get("activationEnabled"), False)
+            self.assertIsNone(config.get("activationAdmission"))
 
     def test_cleanup_application_is_separate_and_dormant(self):
         app = render(CLEANUP_UNIT)

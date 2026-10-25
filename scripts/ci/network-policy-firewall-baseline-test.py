@@ -195,35 +195,68 @@ class FirewallBaselineTests(unittest.TestCase):
                                                      EVIDENCE_SHA, "123",
                                                      placement)
 
+    def test_activation_attempt_binds_verified_admission_and_is_recoverable(self):
+        config = {"activationAdmission": {"sourceSha": EVIDENCE_SHA,
+                  "runId": "987", "versionId": "admit-version"}}
+        placement = {"placementRunId": "456", "nodeUid": "node-uid",
+                     "bootID": "boot-id"}
+        marker = {"format": 1, "stage": "firewall-activation-baseline",
+                  "status": "attempted", "verified": False, "sourceSha": SHA,
+                  "runId": "123", "node": SUT["NODE"], "nodeUid": "node-uid",
+                  "bootID": "boot-id", "admissionSourceSha": EVIDENCE_SHA,
+                  "admissionRunId": "987", "admissionVersionId": "admit-version",
+                  "placementRunId": "456", "placementVersionId": "place-version",
+                  "podToken": "1" * 48}
+        with patch.dict(SUT["PLATFORM"], {"read_private_json": lambda *_: marker}):
+            self.assertEqual(SUT["read_activation_attempt"](
+                Path("/unused"), SHA, EVIDENCE_SHA, "123", placement, config), marker)
+            self.assertEqual(SUT["read_attempt"](Path("/unused"), SHA, "123",
+                                                  stage=None), marker)
+            for changed in ({"admissionVersionId": "wrong"}, {"nodeUid": "replaced"},
+                            {"placementVersionId": ""}):
+                with self.subTest(changed=changed), patch.dict(marker, changed):
+                    with self.assertRaises(ValueError):
+                        SUT["read_activation_attempt"](
+                            Path("/unused"), SHA, EVIDENCE_SHA, "123", placement, config)
+
     def run_baseline(self, plan, identities=None, delete_fails=False, create_fails=False,
-                     recovery=False, assigned=None):
+                     recovery=False, activation=False, assigned=None, capture_fails=False,
+                     admitted=True):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             path.chmod(0o700)
             output = path / "baseline.json"
             config = json.loads(SUT["CONFIG"].read_text())
+            if activation:
+                config["activationEnabled"] = True
+                config["activationAdmission"] = {
+                    "sourceSha": EVIDENCE_SHA, "runId": "987", "versionId": "admit-version"}
             events = []
             stale = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime(
                 "%Y-%m-%dT%H:%M:%SZ")
             placement = {"format": 1, "verified": True,
-                         "sourceSha": EVIDENCE_SHA if recovery else SHA,
+                         "sourceSha": EVIDENCE_SHA if recovery or activation else SHA,
                          "placementRunId": "456", "node": SUT["NODE"],
                          "canaryNode": SUT["NODE"], "nodeUid": "node-uid",
                          "bootID": "boot-id", "measured": True,
                          "isolatedTaint": config["canary"]["taint"],
                          "firewallBaselineEmpty": True,
-                         "baselineSourceSha": EVIDENCE_SHA if recovery else SHA,
+                         "baselineSourceSha": EVIDENCE_SHA if recovery or activation else SHA,
                          "baselineRunId": "789", "baselineCapturedAt": stale,
                          "baselineCaptureSha256": "0" * 64,
                          "baselineCaptureVersionId": "version-1",
                          "systemDaemonSetPods": [], "capturedAt": stale}
-            marker = {"format": 1, "stage": "canary-admit-recover",
+            marker = {"format": 1, "stage": "firewall-activation-baseline" if activation else
+                      "canary-admit-recover",
                       "status": "attempted", "verified": False, "sourceSha": SHA,
                       "evidenceSourceSha": EVIDENCE_SHA,
                       "runId": "123", "node": SUT["NODE"], "nodeUid": "node-uid",
                       "bootID": "boot-id", "admissionRunId": "987",
                       "placementRunId": "456", "placementVersionId": "version-2",
                       "podToken": "1" * 48}
+            if activation:
+                marker.update(admissionSourceSha=EVIDENCE_SHA,
+                              admissionVersionId="admit-version")
 
             class Store:
                 def __init__(self, _bucket):
@@ -234,6 +267,8 @@ class FirewallBaselineTests(unittest.TestCase):
 
                 def write_once(self, key, record, limit):
                     events.append("capture")
+                    if capture_fails:
+                        raise ValueError("capture receipt upload failed")
                     self.capture = (key, record, limit)
 
             store = Store("bucket")
@@ -278,12 +313,17 @@ class FirewallBaselineTests(unittest.TestCase):
                         "snapshot": lambda *_: state,
                         "cleanup_plan": lambda *_: plan,
                         "snapshot_sha256": lambda *_: "0" * 64}), \
-                    patch.dict(SUT["CANARY"], {"require_runtime_absent": absent}), \
+                    patch.dict(SUT["CANARY"], {
+                        "require_runtime_absent": absent,
+                        "node_state": lambda *_: ({}, admitted, admitted),
+                        "require_exclusive_canary_label": lambda *_: events.append(
+                            "exclusive-label")}), \
                     patch.dict(SUT["OWNERSHIP"], {"PrivateStore": lambda *_: store}), \
                     patch.dict(helper, {"require_reviewed_manifest": lambda *_:
                                      json.loads(SUT["MANIFEST"].read_text()),
                                      "read_attempt": lambda *_, **__: marker if recovery else
                                      {"podToken": "1" * 48},
+                                     "read_activation_attempt": lambda *_: marker,
                                      "node_identity": node_identity,
                                      "recovery_node_identity": lambda *_: node_identity(),
                                      "system_pods": lambda: [] if assigned is None else assigned,
@@ -297,8 +337,9 @@ class FirewallBaselineTests(unittest.TestCase):
                     result = SUT["execute"](argparse.Namespace(
                         config=SUT["CONFIG"], expected_sha=SHA,
                         bucket="bucket", attempt=path / "attempt.json", output=output,
-                        evidence_source_sha=EVIDENCE_SHA if recovery else None,
-                        recovery_placement=path / "placement.json" if recovery else None))
+                        evidence_source_sha=EVIDENCE_SHA if recovery or activation else None,
+                        recovery_placement=path / "placement.json" if recovery else None,
+                        activation_placement=path / "placement.json" if activation else None))
                 except ValueError as exc:
                     result = None
                     error = str(exc)
@@ -380,6 +421,42 @@ class FirewallBaselineTests(unittest.TestCase):
         self.assertIn("snapshot", capture[1])
         self.assertLess(events.index("delete"), events.index("capture"))
         self.assertEqual(result["captureKey"], proof["captureKey"])
+
+    def test_activation_baseline_requires_empty_host_and_verified_deletion(self):
+        result, error, events, receipt, capture = self.run_baseline(
+            ([], 0, 0), activation=True)
+        self.assertIsNone(error)
+        self.assertEqual(result["stage"], "firewall-activation-baseline")
+        self.assertTrue(result["podDeleted"])
+        self.assertEqual(result["admissionVersionId"], "admit-version")
+        self.assertEqual(capture[0],
+                         f"openclaw-enterprise/platform/{SHA}/123/"
+                         "firewall-activation-capture.json")
+        self.assertLess(events.index("delete"), events.index("capture"))
+        for options, message in (({"plan": ([('iptables-nft', '-D', 'owned')], 1, 0)},
+                                  "not empty"),
+                                 ({"plan": ([], 0, 0), "delete_fails": True},
+                                  "deletion was not observed"),
+                                 ({"plan": ([], 0, 0), "capture_fails": True},
+                                  "capture receipt upload failed"),
+                                 ({"plan": ([], 0, 0), "admitted": False},
+                                  "admitted Node isolation")):
+            candidate, failure, activity, output, saved = self.run_baseline(
+                activation=True, **options)
+            with self.subTest(message=message):
+                self.assertIsNone(candidate)
+                self.assertIn(message, failure)
+                self.assertIsNone(saved)
+                if message != "admitted Node isolation":
+                    self.assertIn("delete", activity)
+                self.assertFalse(json.loads(output)["verified"] if output else False)
+        changed, failure, activity, output, saved = self.run_baseline(
+            ([], 0, 0), activation=True,
+            identities=[("node-uid", "boot-id")] * 4 + [("replaced", "boot-id")])
+        self.assertIsNone(changed)
+        self.assertIn("Node or assigned Pods changed", failure)
+        self.assertIn("delete", activity)
+        self.assertIsNone(saved)
 
     def test_recovery_refuses_owned_firewall_and_deletes_probe(self):
         result, error, events, receipt, capture = self.run_baseline(
