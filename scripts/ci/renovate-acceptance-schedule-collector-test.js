@@ -14,7 +14,9 @@ const scheduledAt = '2026-10-25T04:00:00Z';
 function fixture({ complete = true, marker = true, failed = false } = {}) {
   const cron = { kind: 'CronJob', metadata: { name: 'renovate', uid: cronUid,
     resourceVersion: '101', generation: 1 }, spec: { schedule: '0 * * * *',
-    timeZone: 'Etc/UTC', suspend: false }, status: { lastScheduleTime: scheduledAt } };
+    timeZone: 'Etc/UTC', suspend: false, concurrencyPolicy: 'Forbid',
+    startingDeadlineSeconds: 900, successfulJobsHistoryLimit: 3,
+    failedJobsHistoryLimit: 3 }, status: { lastScheduleTime: scheduledAt } };
   const job = { metadata: { name: jobName, uid: jobUid, creationTimestamp: scheduledAt,
     annotations: { 'batch.kubernetes.io/cronjob-scheduled-timestamp': scheduledAt },
     ownerReferences: [{ controller: true, kind: 'CronJob', name: 'renovate', uid: cronUid }] },
@@ -50,6 +52,12 @@ test('keeps a conservative discovery-completion marker and only CronJob-owned id
   assert.equal(result.jobs[0].uid, jobUid);
   assert.equal(result.jobs[0].scheduledAt, scheduledAt);
   assert.equal(result.jobs[0].phase, 'succeeded');
+  assert.deepEqual({ concurrencyPolicy: result.cronjob.concurrencyPolicy,
+    startingDeadlineSeconds: result.cronjob.startingDeadlineSeconds,
+    successfulJobsHistoryLimit: result.cronjob.successfulJobsHistoryLimit,
+    failedJobsHistoryLimit: result.cronjob.failedJobsHistoryLimit },
+  { concurrencyPolicy: 'Forbid', startingDeadlineSeconds: 900,
+    successfulJobsHistoryLimit: 3, failedJobsHistoryLimit: 3 });
   assert.equal(result.pods[0].uid, podUid);
   assert.equal(result.pods[0].log.discoveryCompletedAt, '2026-10-25T04:01:00.930994Z');
   assert.equal(result.pods[0].log.globalStartedAt, '2026-10-25T04:00:35.762380Z');
