@@ -55,6 +55,11 @@ flowchart LR
 
 Reviewed source separates infrastructure registration from runtime reconciliation.
 
+The trusted pull-request Terragrunt plan streams its human-readable output in
+Actions. Secret values are marked sensitive in Terraform, while saved plans and
+JSON policy inputs remain temporary and are deleted after the run. See the
+[CI/CD runbook](../../docs/ci-cd.md) and [plan workflow](../../.github/workflows/terragrunt-plan.yml).
+
 Infrastructure and application registration are modeled through Terragrunt and
 OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
 that point back at repository-owned manifests, Helm values, or Kustomize

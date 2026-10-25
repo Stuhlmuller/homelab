@@ -1549,9 +1549,10 @@ terragrunt stack run plan
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
-then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
-details and live command output are withheld from the public PR and Actions
-logs. Run the same order locally when reproducing a failure.
+then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. The
+human-readable plan streams to the Actions log. Saved plan files and
+JSON policy inputs remain temporary and are removed on exit. Run the same
+order locally when reproducing a failure.
 
 The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
 stack or shared root sources, or plan inputs, change. Missing client and tenant
