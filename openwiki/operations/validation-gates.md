@@ -2009,7 +2009,12 @@ headroom; it keeps platform activation disabled. Admission rejects placement
 older than 30 minutes or its baseline older than one hour, then rechecks the
 bound capture, Pod identities, Node metrics, filesystem and capacity before
 Node mutation. A separate fresh capacity gate is still needed before the later
-enforcer and fixture rollout. With a fresh receipt,
+enforcer and fixture rollout. Qualification also requires a reviewed
+`activationEnabled: true` change in the maintenance config. The isolated
+canary does not protect Traefik on `zimaboard-0`; a later reviewed expansion
+and direct unauthorized-Pod denial plus positive private ingress, callback,
+Harbor, and Octelium checks remain separate acceptance gates. With a fresh
+receipt,
 admission verifies the exact Node UID and boot
 ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
 Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
