@@ -497,6 +497,7 @@ on `zimaboard-1` leaves 373 MiB against its sampled working set. Relocating
 use and reduces that estimate to 129 MiB before startup or rolling overlap.
 Neither one-service split is an admitted placement.
 
+The operator ruled out hardware upgrades and requested service retirements.
 A source-only retirement candidate would **suspend**, not delete, all five
 Langfuse Pods and both Dispatcharr Pods while retaining their claims and
 credentials. This releases 2,816 + 1,664 = 4,480 MiB of requests on `acer`.
@@ -537,7 +538,8 @@ sets `Recreate`, so a second Gateway Pod is not part of this calculation;
 verify that the eventual controller image still contains this behavior.
 For screening, reserve 512 MiB for one API or worker replacement plus another
 512 MiB, roughly twice that sampled spread. This 1 GiB post-Gateway-burst
-floor is a planning filter, not measured peak or rollout acceptance.
+floor is a planning filter, not measured peak or rollout acceptance. A stricter
+1 GiB residual after the Gateway burst and replacement needs more capacity.
 
 <!-- markdownlint-disable-next-line MD013 -->
 [gateway-recreate]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L14668-L14673
@@ -550,6 +552,7 @@ floor is a planning filter, not measured peak or rollout acceptance.
 | Multica runtime (512 MiB) | 2,058 MiB | 266 MiB | Below the 512 MiB residual floor; local session/credential state has no approved loss path. |
 | Grafana (768 MiB) | 2,314 MiB | 522 MiB | Barely clears the filter but loses dashboards and Grafana-managed alerts; its SQLite/PVC state lacks a verified independent restore. |
 | Mastodon, including its three Acer Pods (1,152 MiB) | 2,698 MiB | 906 MiB | Public service outage; local PostgreSQL/Redis, NFS media, application keys and a database-only NAS backup lack a complete independent restore. |
+| Multica runtime + Grafana (1,280 MiB) | 2,826 MiB | 1,034 MiB | Clears the illustrative 1 GiB residual screen but also stops the agent daemon and monitoring; neither retained state has a verified independent restore. |
 
 <!-- markdownlint-enable MD013 -->
 
