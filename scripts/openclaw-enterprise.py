@@ -1344,6 +1344,8 @@ def _read_registered(config, api, kube, state):
              state.get("configurationGeneration") is not None,
              "Enterprise inactive tenant must be reconciled first")
     kube.tenant_prepared(namespace_id, require_claimed=True)
+    discover_exact(api.get("/namespaces"), config["namespace"]["logicalName"], namespace_id,
+                   {"existingNamespace": config["namespace"]["existingNamespace"]})
     namespace = api.get("/namespaces/" + namespace_id)
     _require(isinstance(namespace, dict) and namespace.get("id") == namespace_id and
              namespace.get("name") == config["namespace"]["logicalName"] and
