@@ -51,7 +51,7 @@ class InventoryTests(unittest.TestCase):
                         "ContentLength": min(size, 1),
                         "ContentRange": f"bytes 0-0/{size}" if size else None,
                         "ServerSideEncryption": "aws:kms"}
-            self.fail(args)
+            raise AssertionError(args)
 
         report = SUT.inventory(fake, "bucket", "123456789012")
         self.assertEqual(report["objects"], [
