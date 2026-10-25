@@ -209,9 +209,9 @@ error headers, lookup errors, or mutex timeouts. Argo CD was Synced/Healthy
 at main `90fc7761618c43a9f120130d584dd7ae4eea0da5`. T045 is complete;
 cache-fault recovery under T024/T042 remains open.
 
-A temporary acceptance observer is planned but not yet declared. Once added,
-keep it suspended until its private sample is fixed before the seven-day
-window. It must poll upstream without the Renovate cache or GitHub writes;
+The temporary acceptance observer is staged suspended. Keep it suspended
+until its private sample is fixed before the seven-day window. It must poll
+upstream without the Renovate cache or GitHub writes;
 its separate protected ledger retains private release brackets. Publish only
 aggregate results, then erase the ledger and retire its Job and claim through
 reviewed GitOps. Report a controlled canary separately from natural releases.
@@ -231,3 +231,255 @@ Pod remains, then use the guarded companion
 to restore the repository key from SSM. Verify its receipt before restoring the
 legacy workflow through a reviewed PR. The interval between legacy deletion
 and first cluster write is a planned no-writer gap.
+
+## Temporary acceptance observer
+
+The acceptance ledger uses a dedicated 64 GiB static Talos-local PV at
+`/var/lib/renovate-acceptance-ledger` on `acer`. Every acceptance worker has
+an `acer` node selector; the PV has the same node affinity. The shared QNAP
+NFS export squashes clients to one guest identity and cannot enforce private
+ledger ownership, so it must not hold the sample, reports, review input, or
+receipts. Before delivering private input, run the suspended
+`renovate-acceptance-ledger-init` Job through reviewed GitOps. It refuses a
+nonempty path and sets the volume root to UID/GID 12021, mode `0700`.
+Verify the PVC is bound to the local PV and the init Job succeeded before
+activating any acceptance worker. A node loss, failed poll, or missing
+15-minute slot makes the seven-day window inconclusive; restart from a newly
+reviewed private sample and empty ledger after the node recovers.
+
+The local PV's capacity is advisory for a hostPath. Before activation, verify
+`acer` is Ready and has at least 80 GiB free on its node filesystem. A
+read-only kubelet check on 2026-10-24 showed 412 GiB available. The proof
+reader bounds each report to 128 MiB and the set to 192 hourly reports; the
+runner also bounds each diagnostic log to 128 MiB when sealing. Thus the
+seven-day raw report/log ceiling is 48 GiB, leaving room for the ledger and
+evidence in the declared 64 GiB size. If measured reports exceed those bounds
+or node free space falls, keep the CronJobs suspended and resize through
+reviewed desired state before starting the window.
+
+The separate `renovate-acceptance-observer` CronJob is staged suspended. It
+would poll every 15 minutes during the seven-day acceptance window. It mounts
+only `renovate-acceptance-ledger`, never `renovate-cache`. It mounts only the
+separate `renovate-acceptance` App Secret and asks GitHub for an installation
+token limited to `contents` and `metadata` **read** permissions. The App's
+installation grants must also be read-only; `readToken()` rejects a write grant.
+Its own GitHub POST mints that token; datasource clients may POST read-only
+GraphQL queries. The observer calls the pinned Renovate image's datasource
+implementations directly, bypassing the
+package-cache wrapper. Any datasource-local cache is confined to one Pod's
+ephemeral `/tmp`; the next poll uses a new Pod. It uses the dedicated no-token
+`renovate` ServiceAccount and Pod-local registry route; it has no Kubernetes API
+token or inbound Service.
+
+The separate `acceptance-report-job.yaml` is also suspended and omitted from
+Kustomize. A reviewed GitOps change is required to run it. It uses Renovate
+44.167.4's experimental `reportType: file` in a full dry run with the same
+committed runner policy and a token from the dedicated read-only App. That App's
+actual grants, private-repository coverage, and expected Administration API
+denial need live verification before activation. Its base and package
+cache are Pod-local `/tmp`; it never mounts `renovate-cache`. The pinned report
+contains actual extracted `packageFiles` and lookup updates, plus branch
+results such as `prNo`, `result`, and `prBlockedBy`. The Pod UID names its raw
+report and private Renovate log under `/ledger/private/reports`. A successful
+scan verifies the report shape, file permissions, and SHA-256, then creates an
+exclusive, timestamped hash receipt. A failed scan, missing report, or malformed
+report creates no success receipt. Pod logs show aggregate counts only; the raw
+report and diagnostic log may contain private package or repository details.
+The report Job mounts only the dedicated acceptance App key, not the writer key.
+
+The report is a candidate extraction and policy-outcome source, not a verified
+acceptance sample. Its API is experimental. The inventory Job still reads the
+repository cache; private review input supplies source visibility and policy
+evidence. The report and PR proof CronJobs are staged suspended at :10 and :55
+each hour, respectively. Their one-shot Job variants remain omitted and
+suspended. A reviewed GitOps change must activate the recurring pair only
+after the sample, App grants, report capacity, and private review are checked.
+The proof worker binds an exact sampled package, file, and version to a sealed
+report. A single `not-scheduled` or `needs-pr-approval` branch result becomes a
+private policy-deferral receipt timestamped at report completion. Other branch
+results establish eligibility but require a verified proposal; errors remain
+unknown. The worker retains the matching branch material for private review.
+GitHub PR `created_at` is context only, since a later synchronize can add a
+version. Missing or conflicting proof stays unknown.
+
+`acceptance-pr-proof-job.yaml` stages a read-only GitHub proof path. It is
+omitted from Kustomize and suspended. It verifies a pinned report and private
+hash receipt, matches an exact sampled package, file, and version to one
+Renovate PR number, then reads that PR and its complete GitHub file diff with
+a read-scoped App token. A matching added line must contain both the package
+and version. It requires GitHub's response clock to agree within one minute,
+then writes the private diff snapshot and hashed outcome receipt to the ledger;
+Pod logs contain counts only. Its read time plus that minute is a conservative
+**upper bound** for the proposal. Reads more than four hours after the
+last-absent bound, missing patches, and ambiguous PR matches remain unknown.
+PR `created_at` is retained only as context. A proposal observed after four
+hours remains a late outcome. The seven-day window needs reviewed activation
+of both recurring CronJobs and enough protected ledger capacity for all scans.
+
+Before starting this CronJob, freeze a private inventory from the pinned
+Renovate image's actual repository-extraction cache. Full dry-run skips cache
+persistence, so this requires a successful later write-enabled scan. The
+`acceptance-inventory-job.yaml` Job is deliberately omitted from Kustomize and
+has `suspend: true`; merging this source cannot start it. It uses the same
+no-token `renovate` ServiceAccount and Pod-local registry route. Its cache mount
+is read-only, and it writes only to the separate protected ledger. Activate it
+through a reviewed GitOps change only after the
+App transfer, write cutover, and private review input are ready.
+
+Deliver the private review input once with the repository-owned
+`scripts/renovate-acceptance-review.py` command from clean, signed current
+`main`. Keep the source JSON outside git as an owner-only mode `0600` file.
+The command creates only the fixed, immutable
+`automation/renovate-acceptance-review` Secret and verifies readback without
+printing values. Its `review.json` key mounts only in the omitted, suspended
+inventory Job. That Job freezes a mode `0600` copy owned by UID 12021 on the
+dedicated acer-local ledger at `/ledger/private/review.json`; the directory has
+mode `0700`. The input contains a
+fixed seed, the pinned image digest and `config.js` SHA-256, every non-archived
+owned repository's default branch, current head SHA, Renovate cache SHA-512 and
+extraction config hash, plus one decision for **every** extracted dependency.
+Each decision uses the SHA-256 key returned by `candidateKey(repository,
+baseBranch, manager, packageFile, index, dependency)` in
+`acceptance-inventory.js`. A sampled decision needs a canonical HTTPS
+`registryUrl`, `public` or `private` **source** visibility, and private
+visibility/policy evidence references. An excluded decision needs a reason and
+private policy evidence. It also needs an independently obtained owner-inventory
+receipt (`ownerInventory.repositories`, SHA-256, source, and a verification time
+within one hour) and `expectedStrata` counts for each eligible datasource ×
+source-visibility pair. The Job compares these with App-visible repositories
+and reviewed extraction decisions. Repository visibility is not source visibility;
+rate-limited or failed anonymous registry checks are unknown. Never publish
+the review file or private package names.
+
+The Job verifies the pinned cache-v13 Brotli payload and SHA-512, every
+extraction row's review decision, exact current GitHub repository inventory and
+per-repository default-branch SHA, one canonical registry URL, and the mounted
+config/image identity. A missing repo, unknown visibility/policy, stale cache,
+ambiguous registry, or mismatched declared stratum fails before seeding. It
+atomically creates one `ledger.json` with the full private inventory and
+provenance embedded, mode `0600`, and logs counts only. A retry after an
+interrupted write can safely complete; it will not replace a frozen sample.
+Suspend the main Renovate CronJob through GitOps and verify no active Job while
+freezing this baseline. Keep
+the observer suspended until a private reviewer checks the full eligible
+datasource × source-visibility strata and source evidence. The cache is
+pre-lookup, so evidence references in `review.json` need independent effective
+policy and registry-access verification; the Job alone cannot prove them.
+
+The private input delivery path is declared, but independent owner inventory,
+source-visibility, and effective-policy receipt production and review remain
+open. Keep the Job omitted/suspended until those inputs and the first
+write-enabled extraction cache are ready. Do not place files on the ledger with
+an ad hoc live command. A review larger than 900 KiB needs a new reviewed
+delivery contract before seeding; this path does not split or truncate it.
+
+After the private source review is complete and the seeding change is ready,
+deliver the file shortly before reviewed GitOps activation so the owner
+inventory receipt remains within its one-hour validity window:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py install \
+  --expected-sha <current-main-sha> --private-file <absolute-private-path> --execute
+```
+
+The command requires the homelab API endpoint and never echoes the JSON. A
+failed inventory Job keeps the Secret for diagnosis. If a corrected input is
+needed, first verify the Job is suspended or terminally failed, then run
+`retract --expected-sha <current-main-sha> --execute` from current signed main
+before a new `install`. Retraction changes only that Secret; an already frozen
+ledger needs a separate reviewed reset. After the inventory Job succeeds and
+its aggregate receipt is reviewed, retire the transient Secret:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py retire \
+  --expected-sha <current-main-sha> --execute
+```
+
+The seed first selects one deterministic repository for each upstream datasource,
+package, and normalized registry URL, rejecting conflicting visibility for the
+same source. It then
+selects up to five packages per datasource and source-visibility stratum by
+SHA-256 of the preregistered seed and dependency key. It writes the
+selection once to `/ledger/private/ledger.json` with mode `0600`; the seed stays
+private. A second seed refuses to replace it. Check the seed Job's aggregate
+counts, then use a
+reviewed GitOps change to unsuspend the CronJob. Its first healthy poll sets
+the baseline. Later healthy polls record each new version with the previous
+healthy request-start time and first presence response time. Failed source
+polls stay in the private ledger and mark spanning brackets ambiguous; they do
+not advance a bracket. Only counts appear in Pod logs. The `report` mode emits
+aggregate sample, stratum, poll-failure, missed-slot, bracket, and ambiguous-event
+counts; raw brackets stay on the protected PVC. Do not publish the inventory or
+ledger.
+
+For the offline SC-002 report, keep `outcomes.json` as a mode `0600` regular file
+beside the ledger on the protected PVC. Bind it to `ledger.inventorySha256`, set
+`schema: 1`, and provide `receipts` keyed by the sampled item's SHA-256 `key`
+and exact observed `version`. Each receipt needs an `eligibility` status:
+`eligible`, `policy-ineligible`, `excluded-outage`, or `unknown`. Receipt
+eligibility evidence has a `source` path under `evidence/`, its exact SHA-256,
+and a `verifiedAt` time;
+policy-ineligible adds a policy `reason`. An excluded outage or maintenance
+also needs an `exclusion` with `reason` (`source-outage`, `github-outage`, or
+`maintenance`), `startAt`, `endAt`, an `affectedAt` time within both that
+interval and the event's four-hour window, a nonempty `impact` describing the
+affected scheduled lookup, write, or maintenance attempt, `source`, SHA-256, and
+`verifiedAt`. Eligible
+events may have an `outcome` with `kind` (`proposal` or `deferral`), `at`, private
+`source`, SHA-256, and `verifiedAt`; a deferral also needs its policy `reason`.
+
+The `/ledger/private/evidence` directory must have mode `0700`; each referenced
+JSON file must be a mode `0600` regular file. Its envelope is `{schema:1, key,
+version, kind, claim, material}`: `key` and `version` match the exact receipt,
+`kind` is `eligibility`, `outcome`, or `exclusion`, `claim` is the matching
+receipt field without `source` and `sha256`, and `material` is a nonempty private
+source object. A missing file, mismatched hash, or mismatched envelope makes
+the report inconclusive. The file binds a claim to material but does not prove
+that GitHub or a package registry supplied it; independent reviewed production
+and verification are required.
+
+The report joins exact events, counts eligible events without an outcome in the
+denominator, and measures four hours from the conservative `lastAbsent` bound.
+It emits only aggregate counts and a rate. Unknown eligibility, incomplete
+evidence fields, missing eligible outcomes, ambiguous brackets, or fewer than
+ten eligible natural releases
+make the result inconclusive. Below 95% on-time gives `criteria-not-met` using
+integer counts; the displayed rate is floored to two decimals. The best script
+status is `review-required`: locally bound receipts alone cannot prove their
+GitHub PR or restricted policy-log source. A reviewed
+private receipt-production and independent source-verification path remains a
+gate before any SC-002 acceptance claim; do not commit private receipt content
+or inject it through an ad hoc live command.
+The staged PR verifier checks an exact version in a GitHub diff and uses its
+first read time as the timing upper bound. The report worker binds explicit
+schedule or PR-approval deferrals to the sealed report completion time. A
+private reviewer must still check the stored material and effective policy.
+`review-required` requires 673 contiguous healthy 15-minute polls; missing
+slots or node loss force `inconclusive`. Separately verify excluded intervals,
+hourly runner slots, and reviewable proposal or policy-deferral sources before
+publishing acceptance.
+
+Start the seven-day clock only after the sample and baseline are verified.
+Keep the observer suspended if the inventory, a datasource, private-source
+access, or the pinned image's datasource API fails validation. After the
+aggregate report is reviewed, erase the private files with a reviewed GitOps
+cleanup Job and verify `/ledger/private` is empty. Next remove `Prune=false`
+from the PVC and PV and `Delete=false` from the PV through GitOps; verify the
+live annotations are gone. Remove the CronJob, script, init/cleanup Jobs,
+PVC, PV, and local
+StorageClass through reviewed changes; verify the claim and PV are gone.
+The retained local PV does not erase its hostPath on deletion. Use a separate
+reviewed exact-path storage cleanup on `acer` and verify
+`/var/lib/renovate-acceptance-ledger` has no retained files before closing
+T035.
+Remove the suspended report and proof CronJobs, one-shot Job manifests,
+inventory Job, and acceptance scripts through the same reviewed GitOps change.
+Prune the acceptance ExternalSecret and target `renovate-acceptance` Secret
+through reviewed desired state and verify both absent. Obtain explicit owner
+authorization/handoff before deleting the dedicated acceptance App in GitHub
+owner Developer settings; verify its recorded App ID is absent from the
+installation list. Remove only the two
+`/homelab/renovate/acceptance/github-app/` SSM names through a reviewed
+`IaC/live/aws-ssm-parameters` saved-plan PR and verify both absent. Keep the
+production `renovate` App and Secret intact.
+A PVC reset before the aggregate review destroys acceptance evidence.

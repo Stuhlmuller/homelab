@@ -1,0 +1,126 @@
+# Staged suspended; activate through reviewed GitOps after private evidence preflight.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate-acceptance-report-hourly
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV_K8S_22=Renovate may install package-manager tools under image-managed paths; report, logs, and receipt stay on the private ledger.
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-report
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  schedule: "10 * * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 2400
+      backoffLimit: 0
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+            app.kubernetes.io/name: renovate
+            app.kubernetes.io/component: acceptance-report
+            app.kubernetes.io/part-of: homelab-automation
+        spec:
+          automountServiceAccountToken: false
+          serviceAccountName: renovate
+          nodeSelector:
+            kubernetes.io/hostname: acer
+          hostAliases:
+            - ip: 10.96.0.50
+              hostnames: [harbor.stinkyboi.com]
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 12021
+            runAsGroup: 0
+            runAsNonRoot: true
+            fsGroup: 12021
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: report
+              image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+              imagePullPolicy: IfNotPresent
+              workingDir: /usr/src/app
+              command:
+                - node
+                - /usr/src/app/acceptance-report-runner.js
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                  ephemeral-storage: 1Gi
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                  ephemeral-storage: 8Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: false
+              volumeMounts:
+                - name: observer
+                  mountPath: /usr/src/app/acceptance-observer.js
+                  subPath: acceptance-observer.js
+                  readOnly: true
+                - name: observer
+                  mountPath: /usr/src/app/config.js
+                  subPath: acceptance-report-config.js
+                  readOnly: true
+                - name: observer
+                  mountPath: /usr/src/app/acceptance-report-runner.js
+                  subPath: acceptance-report-runner.js
+                  readOnly: true
+                - name: config
+                  mountPath: /usr/src/app/runner-config.js
+                  subPath: config.js
+                  readOnly: true
+                - name: github-app
+                  mountPath: /var/run/secrets/renovate-acceptance
+                  readOnly: true
+                - name: podinfo
+                  mountPath: /var/run/podinfo
+                  readOnly: true
+                - name: ledger
+                  mountPath: /ledger
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: observer
+              configMap:
+                name: renovate-acceptance-observer
+            - name: config
+              configMap:
+                name: renovate-config
+            - name: github-app
+              secret:
+                secretName: renovate-acceptance
+                defaultMode: 0440
+                items:
+                  - key: issuer-id
+                    path: issuer-id
+                  - key: private-key
+                    path: private-key
+            - name: podinfo
+              downwardAPI:
+                items:
+                  - path: uid
+                    fieldRef:
+                      fieldPath: metadata.uid
+            - name: ledger
+              persistentVolumeClaim:
+                claimName: renovate-acceptance-ledger
+            - name: tmp
+              emptyDir:
+                sizeLimit: 8Gi
