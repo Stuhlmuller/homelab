@@ -1148,6 +1148,19 @@ proxies, replaces them one at a time, and waits for Harbor-image Pods to become
 Ready and old upstream Pods to exit. A failed proxy stops the hook. Live
 generated-Pod convergence still needs verification after GitOps sync.
 
+The [explicit Argo cutover runbook](../../docs/harbor-image-mirroring.md#explicit-argo-workload-cutover)
+orders supporting Applications, generated Pods, then Harbor's own Application
+after protected full-catalog publication. The [audit ledger](../../docs/harbor-argo-image-audit.md)
+counts current Argo-owned Pods separately from historical Pods and excludes
+Talos static/system images. The [render gate](../../scripts/ci/harbor-rendered-images-check.py)
+rejects upstream references in Argo-owned desired state, including init
+containers and hooks. Before Harbor's own direct image cutover, use the
+[declared Talos operator](../../scripts/talos-harbor-mirrors.py) to cache its
+twelve runtime images on each node. Exercise upstream recovery through a
+protected GitOps revert of the Harbor cutover and restore it through a second
+protected PR; neither a cached restart nor a Talos mirror rollback proves
+recovery of direct Harbor Pod references.
+
 The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
 and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
 stopped during the second upstream copy used for PostgreSQL tag aliases (17.5,
