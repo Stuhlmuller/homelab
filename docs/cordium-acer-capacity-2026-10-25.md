@@ -58,3 +58,12 @@ Rollback first removes the exact owned smoke through its native cleanup path,
 then restores source configuration through protected delivery. Recheck capacity
 before returning controllers to Acer; preserve all volumes. Crossplane stays in
 its already-deployed standby state.
+
+## Current rollout hold
+
+A later October 25 read-only check found only 1,334.7 MiB available on
+`zimaboard-1` while its regular Renovate job was active. This is below the
+1,536 MiB minimum even before moving the four controllers. PR #1656 remains
+draft; do not apply this placement proposal. Require fresh evidence that the
+destination retains the reserve during regular workloads, or revise placement
+and reservations. An idle interval alone does not establish steady-state capacity.

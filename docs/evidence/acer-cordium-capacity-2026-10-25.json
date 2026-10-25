@@ -97,5 +97,12 @@
     "published patched controller, namespace mappings and Acer eligibility",
     "ephemeral workspace hard Acer selector",
     "one bounded workspace; abort on memory pressure; verify exact owned cleanup"
-  ]
+  ],
+  "latest_readiness": {
+    "status": "held",
+    "acer_available_mib": 3448.2,
+    "worker_available_mib": 1334.7,
+    "worker_regular_renovate_job_active": true,
+    "reason": "Worker available memory below 1536 MiB before proposed controller moves; no rollout."
+  }
 }

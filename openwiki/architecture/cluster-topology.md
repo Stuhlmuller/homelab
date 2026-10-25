@@ -392,3 +392,8 @@ not live rollout evidence. Fresh node pressure, actual memory and scheduling
 headroom must pass after GitOps before a single 2 GiB workspace. Ephemeral CI
 workspaces must require Acer; preserve the six original non-ephemeral workspace
 selectors and local PV identities.
+
+The follow-up capacity proposal remains draft: a fresh read with regular Renovate
+active found worker memory below its declared reserve before the proposed
+controller moves. See the [rollout hold](../../docs/cordium-acer-capacity-2026-10-25.md#current-rollout-hold).
+No relocation or reservation change was applied.
