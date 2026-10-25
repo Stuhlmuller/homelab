@@ -8,7 +8,7 @@
 - [Octelium](octelium.md) - Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence.
 - [Runbooks Index](overview.md) - Task routes through Talos onboarding, Argo CD, storage, secrets, Octelium access, validation, rollback, and recovery runbooks.
 - [Argo CD App Rollback](rollback.md) - Repository-owned Argo CD rollback and the separate backup and restore decision required for persistent application data.
-- [Runtime Isolation](runtime-isolation.md) - Pod Security, service accounts, Istio authorization, workload security contexts, and unenforced NetworkPolicy limits on flannel.
+- [Runtime Isolation](runtime-isolation.md) - Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates.
 - [AWS SSM Secret References](secrets-aws-ssm.md) - SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume.
 - [NFS Storage](storage-nfs.md) - QNAP NFS exports, default StorageClass and media volumes, with provisioning, persistence, backup, and restore validation.
 - [Tailnet And App Ingress](tailnet-ingress.md) - Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover.

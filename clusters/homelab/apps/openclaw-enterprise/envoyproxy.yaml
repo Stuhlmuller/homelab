@@ -1,0 +1,23 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: oce-private-gateway
+  namespace: openclaw-system
+  labels:
+    app.kubernetes.io/name: openclaw-enterprise
+    app.kubernetes.io/instance: oce
+    app.kubernetes.io/component: gateway-routing
+    app.kubernetes.io/managed-by: Helm
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        pod:
+          nodeSelector:
+            oce-role: control
+        container:
+          image: harbor.stinkyboi.com/mirror/docker.io/envoyproxy/envoy:7369b033550a14997e5d698677b7b51f0210a80754f5d084c5caa1a78268267b@sha256:7369b033550a14997e5d698677b7b51f0210a80754f5d084c5caa1a78268267b
+      envoyService:
+        name: occ-gateway-654a256bceae
+        type: ClusterIP

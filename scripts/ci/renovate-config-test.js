@@ -155,6 +155,20 @@ test('refuses invalid or nearly expired installation tokens', async () => {
   }
 });
 
+test('temporarily exposes only package-cache hit markers during full dry run', async () => {
+  const { config } = load();
+  const resolved = await config();
+  assert.equal(resolved.dryRun, 'full');
+  assert.deepEqual(
+    Array.from(resolved.logLevelRemap, ({ matchMessage, newLogLevel }) => ({ matchMessage, newLogLevel })),
+    [{ matchMessage: '/^Returning cached value$/', newLogLevel: 'info' }],
+  );
+  const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
+  assert.match(cronjob, /^  suspend: false$/m);
+  assert.match(cronjob, /^  schedule: "0 \* \* \* \*"$/m);
+  assert.match(cronjob, /^  concurrencyPolicy: Forbid$/m);
+});
+
 test('keeps Renovate cache refresh defaults and mounts credentials outside the PVC', async () => {
   const { config } = load();
   const resolved = await config();

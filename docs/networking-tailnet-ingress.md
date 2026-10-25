@@ -44,12 +44,18 @@ python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-hand
 
 The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
 `stinkyboi.com`** in Tailscale DNS. Enable **Use with exit node** for clients
-using an exit node. Do not set a global nameserver. Keep the 27 public app
-records until ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls,
-and callbacks pass. Then follow the guarded retirement in the
-[cutover guide](../clusters/homelab/apps/traefik/CUTOVER.md). After retirement,
-a resolver outage fails closed; recover the declared resolver or signed proxy
-and do not republish public application addresses.
+using an exit node. Do not set a global nameserver. The resolver keeps private
+answers for all 29 current approved names, including the apex. The separate
+[public app subdomain cutover](../specs/005-retire-public-app-dns/quickstart.md)
+retires A/AAAA/CNAME records for only the 26 approved non-apex names after
+ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls, and callbacks
+pass. Intentionally stopped apps need matching zero-replica source and live
+checks in place of a serving HTTP response. Public apex A/MX/TXT and any CAA,
+the Cloudflare zone and DNS-01
+validation, four legacy public endpoints (`octelium-transport`,
+`kubernetes-api-ci`, `n8n-webhook`, and `policy-bot-hook`), and unrelated names
+remain. A resolver outage after retirement gives those 26 names no public app fallback;
+recover the declared resolver or signed proxy without republishing addresses.
 
 Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients
@@ -64,6 +70,8 @@ before changing Harbor's global DNS.
 | Application UIs, including Fleet | Existing `*.stinkyboi.com` application names | Tailscale private Traefik listener to Kubernetes Services |
 | Octelium control plane for Cordium | Apex, `octelium`, `portal`, `console`, and `octelium-api` names | Private Traefik routes; native API uses HTTP/2 gRPC |
 | Cordium workspaces | `*.cordium.stinkyboi.com` | Private Traefik to retained Cordium/Octelium Services |
+| OpenClaw Enterprise console and old URL | `console.oce.stinkyboi.com`, `openclaw.stinkyboi.com` | Private Traefik to authenticated Octelium Services; old URL switches at final cutover |
+| OpenClaw Enterprise native Agent | `agent-<32-hex>.agents.oce.stinkyboi.com` | Private Traefik to Enterprise API; OCE checks the exact Agent permission |
 | Kubernetes for Cordium | Private `kubernetes-api.homelab` Service | Existing restricted Octelium client session |
 | CI Kubernetes after phase 2b | `homelab-tailscale-operator.tail67beb.ts.net` | Authenticated operator API proxy with scoped CI tags and Kubernetes RBAC |
 | n8n webhooks | `n8n-webhook.tail67beb.ts.net` | Funnel to Traefik's separate callback listener |
@@ -71,8 +79,8 @@ before changing Harbor's global DNS.
 
 [`routes.yaml`](../clusters/homelab/apps/traefik/routes.yaml) is the explicit
 host/backend source. The file provider does not discover arbitrary Services.
-Traefik's certificate covers the apex, `*.stinkyboi.com`, and the Cordium
-workspace wildcard. Application authentication remains at each backend;
+Traefik's certificate covers the apex, `*.stinkyboi.com`, the Cordium
+workspace wildcard, `console.oce.stinkyboi.com`, and `*.agents.oce.stinkyboi.com`. Application authentication remains at each backend;
 Tailscale limits network access. AFFiNE native login and Harbor OCI credentials
 continue to reach the application unchanged. Prometheus has no ingress.
 
@@ -89,7 +97,7 @@ The `tailscale` Argo CD Application owns the operator and
 `homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing
 with `tag:k8s`. Keep it for remote Talos/LAN access. The provider-owned complete
 policy in `scripts/config/tailscale-policy.json` owns approvals and tag grants;
-use the [Tailscale operator unit](../IaC/modules/tailscale-access/README.md) for
+use the [Tailscale operator unit](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for
 reviewed policy changes instead of editing the admin console.
 
 ```sh

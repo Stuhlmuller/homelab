@@ -1,0 +1,251 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oce-preflight
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+automountServiceAccountToken: true
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oce-quiesce
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: oce-preflight
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+rules:
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames:
+      - occ-installation-startup-86641419e595a5c812a8c8565d5cb027
+      - occ-auth
+      - occ-database
+      - occ-postgres-root
+      - occ-private-gateway-key
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    resourceNames: [occ-bootstrap-admin-password]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [services]
+    resourceNames: [occ-postgres]
+    verbs: [get]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [list]
+  - apiGroups: [batch]
+    resources: [jobs]
+    resourceNames: [oce-initialization]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: oce-quiesce
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    resourceNames: [openclaw-enterprise-api, openclaw-enterprise-worker]
+    verbs: [get]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    resourceNames: [openclaw-enterprise-api, openclaw-enterprise-worker]
+    verbs: [get, update]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: oce-preflight
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+subjects:
+  - kind: ServiceAccount
+    name: oce-preflight
+    namespace: openclaw-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: oce-preflight
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: oce-quiesce
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+subjects:
+  - kind: ServiceAccount
+    name: oce-quiesce
+    namespace: openclaw-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: oce-quiesce
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: oce-lifecycle-hooks
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-40"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw-enterprise-lifecycle
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: 10.96.0.1/32}
+        - ipBlock: {cidr: 10.1.0.199/32}
+      ports:
+        - {protocol: TCP, port: 443}
+        - {protocol: TCP, port: 6443}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: oce-preflight
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-18"
+    helm.sh/hook-delete-policy: before-hook-creation
+    checkov.io/skip1: CKV_K8S_38=Preflight needs its narrowly scoped token to read Secret, PVC, EndpointSlice and prior Jobs.
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openclaw-enterprise-lifecycle
+        app.kubernetes.io/instance: oce
+        app.kubernetes.io/component: preflight
+    spec:
+      serviceAccountName: oce-preflight
+      automountServiceAccountToken: true
+      restartPolicy: Never
+      nodeSelector: {oce-role: control}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: preflight
+          image: harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2
+          command: [node, /scripts/preflight.mjs]
+          env:
+            - {name: NODE_ENV, value: production}
+            - {name: OCC_CONFIG_PATH, value: /etc/openclaw/installation/installation.yaml}
+            - {name: OCE_INSTALLATION_SECRET, value: occ-installation-startup-86641419e595a5c812a8c8565d5cb027}
+            - {name: OCE_INSTALLATION_SHA256, value: 86641419e595a5c812a8c8565d5cb027a3e406e38ec6278f704c263e310d0019}
+            - {name: OCE_POSTGRES_CLUSTER_IP, value: 10.96.0.51}
+            - {name: OCE_BOOTSTRAP_ADMIN_EMAIL, value: operator@oce.example.invalid}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: scripts, mountPath: /scripts, readOnly: true}
+            - {name: installation, mountPath: /etc/openclaw/installation, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap:
+            name: oce-lifecycle-scripts
+            items:
+              - {key: preflight.mjs, path: preflight.mjs}
+              - {key: check-installation.mjs, path: check-installation.mjs}
+        - name: installation
+          secret:
+            secretName: occ-installation-startup-86641419e595a5c812a8c8565d5cb027
+            items:
+              - {key: installation.yaml, path: installation.yaml}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: oce-quiesce
+  namespace: openclaw-system
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-15"
+    helm.sh/hook-delete-policy: before-hook-creation
+    checkov.io/skip1: CKV_K8S_38=Quiesce needs its narrowly scoped token to scale exact API and worker Deployments and observe Pods.
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 240
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openclaw-enterprise-lifecycle
+        app.kubernetes.io/instance: oce
+        app.kubernetes.io/component: quiesce
+    spec:
+      serviceAccountName: oce-quiesce
+      automountServiceAccountToken: true
+      restartPolicy: Never
+      nodeSelector: {oce-role: control}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: quiesce
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          command: [python3, -I, -B, /scripts/quiesce.py]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          volumeMounts:
+            - {name: scripts, mountPath: /scripts, readOnly: true}
+      volumes:
+        - name: scripts
+          configMap:
+            name: oce-lifecycle-scripts
+            items:
+              - {key: quiesce.py, path: quiesce.py}

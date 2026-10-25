@@ -3,8 +3,9 @@
 # Octelium Access Plane
 
 Application and control hostnames retain their existing `*.stinkyboi.com`
-names while moving to private Traefik ingress on Tailscale. Only n8n and
-Policy Bot callbacks use public Funnel URLs. Follow the
+names while moving to private Traefik ingress on Tailscale. n8n and Policy Bot
+callbacks use public Funnel URLs; four legacy endpoint names remain public
+until a separate retirement. Follow the
 [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md); DNS changes,
 Mac migration, and CI/native transport changes have separate acceptance gates.
 
@@ -380,8 +381,9 @@ license, or email-based identity workaround is needed.
 ## Cutover Gate
 
 The checks below describe the retained legacy ingress. They are not acceptance
-for the Traefik migration; use the ordered cutover and its per-application,
-callback, native API, and CI checks for that transition.
+for the Traefik migration or [public app subdomain retirement](../specs/005-retire-public-app-dns/quickstart.md).
+After the 26 approved non-apex records are retired, this historical public-app
+gate cannot pass; use the current private DNS and HTTPS checks instead.
 
 Run the e2e gate before declaring any Octelium app route ready:
 
@@ -508,9 +510,10 @@ An account policy requiring Cloudflare Access may add a separate login gate;
 the carrier does not grant Octelium authorization.
 
 The public DNS-restoration workflow is removed before private DNS cutover.
-Use the [current tailnet DNS cutover](../clusters/homelab/apps/traefik/CUTOVER.md#current-tailnet-dns-cutover),
+Use the [current tailnet DNS cutover](../specs/005-retire-public-app-dns/quickstart.md),
 which requires a signed resolver, direct queries and an owner nameserver handoff
-before the guarded public-record retirement. Keep the
+before retiring the 26 approved non-apex public app address records. The
+public apex and four legacy public endpoints remain. Keep the
 Tunnel Deployment and old carrier only until replacement acceptance. Reverting
 transport requires a reviewed desired-state change; do not restore public DNS
 through a historical workflow or an ad hoc command.
@@ -606,8 +609,9 @@ scripts/octelium-gateway-dns.sh --dry-run
 ```
 
 The old public application DNS publisher is retired. The private resolver
-follows reviewed Traefik routes and its Service annotation; public-record
-retirement is a later, guarded 27-name cutover.
+follows reviewed Traefik routes and its Service annotation for all 29 current
+approved names; [public-record retirement](../specs/005-retire-public-app-dns/quickstart.md)
+selects only the 26 non-apex names from the original 27-name migration set.
 
 ## Octelium Enterprise Package
 
@@ -855,9 +859,10 @@ octelium connect --domain stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
-The app hostnames publish exact proxied Cloudflare Tunnel CNAMEs, so human
-browser access can reach Octelium clientless `WEB` Services without first
-running `octelium connect`. CLI VPN sessions still use
+Before public app subdomain retirement, app hostnames published exact proxied
+Cloudflare Tunnel CNAMEs for Octelium clientless `WEB` access. The current
+26-name cutover removes those public app answers; ordinary tailnet clients
+resolve them privately to Traefik. CLI VPN sessions still use
 `octelium-api.stinkyboi.com` and the Octelium Gateway records.
 
 The `octelium-public` tunnel is also the reviewed backbone for unauthenticated
@@ -945,7 +950,9 @@ and checks absence. Already absent succeeds.
 For a future private app removal, change the Traefik route and approved Service
 hostname annotation together, then verify the resolver removes its locally
 authoritative answer after the reviewed change is deployed. Public records for
-the initial 27 names have their own guarded retirement path. Verify the old URL no longer
+the 26 non-apex app subdomains have their own
+[guarded retirement path](../specs/005-retire-public-app-dns/quickstart.md);
+the apex and legacy public endpoints remain. Verify the old URL no longer
 serves the app.
 Restore its catalog entry and apply the catalog to roll back; generated proxy
 UIDs must be refreshed after recreation.

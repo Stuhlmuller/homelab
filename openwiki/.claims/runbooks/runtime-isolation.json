@@ -1,32 +1,324 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:368a927a5cfaa07d785dfbc8665be7bc8ed7a4b7134b7c35098c8583e7113e1f",
+  "pageVersion": "sha256:922e16490de120c5cac6efb9724a30480c8d07cd12ed89f05095682074ccd4b6",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
-      "statement": "The 2026-10-12 read-only egress audit found all Flannel and ztunnel instances Ready but no Gateway API CRDs/GatewayClass, NRI configuration, or kube-network-policies deployment; legacy Istio Gateway resources do not supply the Gateway API egress path. No egress enforcement is active. Activation first requires a dedicated tainted canary worker with reviewed capacity, scheduling, and storage placement, a declared Gateway API/NRI dataplane, private inventory audit, and positive and negative ambient canary evidence.",
+      "statement": "The 2026-10-12 read-only audit found ready Flannel and ztunnel but no Gateway API CRDs or GatewayClass; firewall-only kube-router and Envoy Gateway are staged with automatic sync disabled, and no NetworkPolicy enforcement is active. Protected run 40011909180 passed the reviewed 214-image catalog with authenticated Harbor pulls. Activation still requires policy review, a measured isolated tainted canary, live traffic and lifecycle qualification, and ownership-limited cleanup; no existing worker currently qualifies.",
       "evidence": [
         {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+        },
+        {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
+          "version": "repo-file-v1:sha256:4b3d2cbd3fbda425dfc3c1f60445a43b673865d542bec4d4ab8ea8ae1e5bdffd"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+        }
+      ]
+    },
+    {
+      "id": "claim_3a03a33eef1c45b4a4fd071facb605ef",
+      "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, admitted tainted node, and exact fixture commands, arguments, container security contexts, identities, and policy before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L77-L93",
+          "version": "repo-lines-v1:sha256:e096727a973080c1a15653f753c5d2ea4d1d40e831260cb9878c4e20157009d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py",
-          "version": "repo-file-v1:sha256:fe5d5912c9c103367f5c1720f97f6e978e631ca03f1f88cfef9a1af1f34d68bf"
+          "resource": "repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml#L20-L210",
+          "version": "repo-lines-v1:sha256:1e6f33fb6e1aa167d543c2768b0b74ef1d02c48bae2628a76c4926b766c79d53:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzYWQyMDFmYjJkNjc0MzZjMTAxNDZkYTZiMGIzYjJlZTQ3YTNlNDFkMDZiZTIyMzcyOGI1NWIwOGY4Y2I2MjcwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzOTg2ZDRmMmI2MWQwOTJjNzJiZmU1MGU4YTJlYWI4NTFlZDE3MzlkOWY5YjA1OTMxOGQ2MjIwMjY4ZGIyYTNiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4ZmVmZTA1OGY4NzMwOWMyNjU3NzRmMzAwYTdhYTg0MGJhYTU0MWJhZjM2Y2Q5YjgwODQwNjgzNzY2MzhlZTU3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NTkyMjIxYWFlMzQxZDA4NTEwYjk1NWY2YWFhN2JkM2M0YTFkOTAxZDk2N2IxODRlZjJjOThjMTFkZTQzYTVmIn0"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L250-L333",
+          "version": "repo-lines-v1:sha256:8bf6e3138a0862486c94c3f796c654d61751b4dd7ddd4c7cb6dbb5549dcfba4e:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMWZjZTA2YTk1NDM1OTAxZjk2M2M3Zjc5MjEyN2U0OWJkNzEwYTYzNDljYTAyZTBmZjQ2OThkNzcwZTIzMDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NzNkNmJmOTJhY2I2ZTE4ZmExMjI4YjkwMzYyYTM3ZGVhZDYwYzExZmY3NGE1Mjk1OGZlNGFhNjI1ZGNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3MDcyNzcyZmNlODQ3MWMzN2RkMjg0M2UzMjczMTI5MzdmZjI3MmI4NTJhNDZlZDZiMDEzODA5YzkzZDZlNmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_73469053f76b42e68fc38df4e36672d2",
+      "statement": "The Kiali source applies a name-distinct ingress policy at wave 0 and disables the operator policy at wave 1 without changing the broad TCP 20001/9090 spec; an October 19 read-only recheck found the old policy absent and the source-owned replacement equal to the former complete spec, while traffic and enforcement proof remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
+          "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+        }
+      ]
+    },
+    {
+      "id": "claim_fd1f1361d5be4385a2e8ab5f8467f033",
+      "statement": "Nine repository-owned DNS egress policies select only CoreDNS Pods on TCP and UDP port 53; offline checks verify the policy peers and matching CoreDNS Service and Deployment selectors, while live isolated-canary DNS qualification remains pending.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:ba96d393e96eef109996906f46deba7d5ace54d237d9d4477667ea9f224f03c9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e0b77425215f4abca9ff2ee185a1bef4",
+      "statement": "The read-only NetworkPolicy inventory fingerprints normalized ingress and egress rules and fails on missing or drifted ingress-only generated policies; exact generator renders and fresh private snapshots remain prerequisites for an enforcement canary.",
+      "evidence": [
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L137-L151",
+          "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py#L174-L198",
+          "version": "repo-lines-v1:sha256:90caa2edd6d222bd92fe0d46519fcbee0fd04b638f1c2143f38064bc92890da7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOTk4NDczMTk1MGEzYWIxOTdmNjY2OGJlNWNhODgzNGQwYmJiZmQzNTk4MDAxM2Y1MTY4NWIwNzZiOTkwYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1ZGJmNjBmNjJjMTM4MDVhN2JiZmNmMzk0OTI0NTZhODY0MWU0MDRhZDc1ZTUzM2QxNjVjZmU1NDkxYmIzNmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjMzZkNjg3ZWVlNGM4YTM4MzM4ZTk3ZTlmNjIxZDhkN2M2OTBjZTliYjVkYzA5NWNlODY2ZDdjNjY4ZDQwOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NDM5YTNiMjM1NjViM2Y1Y2IxZTg4MzM0ZTg0MmNkMDE2NTg1MzIzMmY5NzczODdhNTVhZjZmMGQxMDFjMGQifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py#L609-L626",
+          "version": "repo-lines-v1:sha256:ce2a2c6677dc17e89afa30a6f3729aca090f43804217a8d0b486474c38db1cc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmOWFlMGE5ODMzNWIzMjM3YmJiMWY5MTI1OTE3NzFlYTI1ZjI1NDJlNGY0Nzc2ZDllYjhmMDliOTE0YjI4ZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5MDkwMDZlNTExNzFmM2I2MDZhOTU3OWQ2YmUxMmM5ZGQxM2QyOWEwZGI0YjIyMWExYmJkYTA3MmQ2YTgwMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzNjRhNmM3ODI5NDQ2MjZjMzQwMzFjOTcwNzYwODcyMWEzYTBiZGJhMmVhZTY3ODQyMWI4ZWMxN2ZjZmY4NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1MGEzMjc3NjAzZTgyZTQ1YTMyNGU4MmM4N2I3YzE5OGM0OWNkZmUyNDcxMjVlYWQwODZhM2YyMDliMTU1MTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4e53605094f640e4938d3cb45593c573",
+      "statement": "Declared source policies restrict Cloudflared private egress to two routed Istio gateway Pod labels on TCP/443 and Octelium ingress dataplane Pod labels on TCP/8080, and restrict Harbor component and vulnerability-exporter metrics ingress to labeled Prometheus Pods in monitoring.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
+          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:22487ad94034680e20936d33d7703a37858801be8e9e591aa719597f3542bff0"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-peers-test.py",
+          "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
+        }
+      ]
+    },
+    {
+      "id": "claim_df550be630404f5589b7fe301ede3983",
+      "statement": "Harbor nginx and Mastodon gateway ingress select istio-system ingressgateway Pods; Harbor nginx retains labeled Traefik and same-namespace bootstrap peers. Mastodon's ambient policy includes gateway-origin HBONE TCP/15008 with application TCP/3000 and TCP/4000. Flannel does not enforce these rules, so live canary paths and probes remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml#L43-L75",
+          "version": "repo-lines-v1:sha256:ce647f80462beb4258d862d266c8fc0ac7eb7a6e2a3f2552a742037a1e49af4a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNDUyODM5YTZmYmIzM2QxNTRlOTYyZjA3ZDcxNDg1MWY2YTY0NDZjM2M4MzkxYjg1NTU4YmQ1ZDAxZWFkMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3Y2YzYmI4MDA3ZjAyNGM4MWMwY2Q2Y2U4YzRhYjg1MmJkOGJmZTFlZDU3ZTdjNTlmZGY1OTc4YjdhNzQyOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1OTIyMjFhYWUzNDFkMDg1MTBiOTU1ZjZhYWE3YmQzYzRhMWQ5MDFkOTY3YjE4NGVmMmM5OGMxMWRlNDNhNWYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/namespace.yaml",
+          "version": "repo-file-v1:sha256:ba8b5055c383d5c72d06319a315b4a7bf6e1fb5abdf3d979f4e8ad58e800be75"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+        }
+      ]
+    },
+    {
+      "id": "claim_e39c23c5f3b74dbcb878461c9b40a289",
+      "statement": "The generated policy source-owner ledger pins the original 18 policy source locations; 17 remaining generated full-spec hashes still match the prior live snapshot, while Cordium ws-main and Octelium svc-upstream retain broad egress findings and generator renders and canary traffic remain unqualified.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
-          "version": "repo-file-v1:sha256:df7edfc19aae05013415cc745f01da6d11a05cfe6645f932d5195c260c984137"
+          "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
+        }
+      ]
+    },
+    {
+      "id": "claim_1fe3e5cebba240eab41ab9f354d44e96",
+      "statement": "The protected canary qualifier probes Kubernetes Service DNS through the reviewed kube-dns Service over TCP and UDP 53, rejects malformed replies or an A record differing from the live Kubernetes Service IP, and records both DNS outcomes; lifecycle and real-workload qualification remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L77-L90",
+          "version": "repo-lines-v1:sha256:766abf4d327a432962220174dcdd72e60cd9d30d353405e3d132e5519547108f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMmE3MmNjMDRkNmQ5YmJhYjcyYWZlZjVhMmVlNjU5MTAzM2U1ZmQ5ZmQwYTkyYjZiNzUyOGNlNDFhNGNhYTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwYjBkNzQyNDI0ODkwMzE0YWYwY2QyODQxODJjYmM0YTY1NDY0MWYyZDQwMDY4ZDM2ZTQzMzU5NjU4ODY3ZTUifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L350-L379",
+          "version": "repo-lines-v1:sha256:29d4532aa2efba2b48821feb99f3b2ccd15ec04bd7c7d38dffd4133799877439:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjYTAxOWQ2YWJjZjgxMmViMzg3ZGM3YjQwYjcwODY2Y2Y5NTRlZTVlMDU4YTNhNzk2ODc5MTQzY2VkNDc3NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwZTRmYjRkNDIzZWMzZTYwYTFkMDNkYjA4OGU1N2U4YjM1MjIxZDkxMzg0OTM2YTg4ZmQ5Mzg5NzllZDlkOTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZmNTE2OTIzNDcwZGE2Mjc3MjUwZWNjNDM1N2VjYjU5MGY0MDFhYTI1OTE2NTg4YWQzODM5YWUxOWEzOTJhZWMifQ"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py#L79-L123",
+          "version": "repo-lines-v1:sha256:03244aed459ffeca0a1f53160d5fbc8e9405f1774ff3ae2b7a525f9f2e1e4530:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlODk0MmRiZTc0YTJlMjAzN2YzZGNiMDYyZTQ5MGJjZWIyZmY5MDQ4YzIzYzhmNWM2MTkxNWJmNTgxOTg3NDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3OGJlMDk2MTkyZDJiZGU2NTY2Zjc4NzY2OTg0MTA0Yzg4ZDg0ZjI0NjA0ODVhYTVmN2FlZTZmYjgxYWViNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmYjVjZTk1ZTZjYmQwOWU3YTIxMWNkMjg1MmQxYWUzODM1MTk0ZDE3YmZjZTFkZTI2MmRmMzVkYzNhZjU0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY2NDM0MDA0ZDBjYzM1YjgxMzg1OTdkNjhjNGQ2YzdlN2VkNmZhYmI2ODI3YmZhMGU4MjRhZjIyY2UzZjUxNWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a1d2283e1ef44106934ed5c6f36fe09a",
+      "statement": "A 2026-10-20 read-only NetworkPolicy inventory counted 66 live policies: 17 Genesis-managed and 49 Argo-owned. All 49 Argo-owned complete specs matched repository renders; this source convergence does not qualify live enforcement or canary traffic.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py",
+          "version": "repo-file-v1:sha256:23b79082ba80381a274c9c52b5cd174e0253a4f0f923235361727dd049da5c09"
+        }
+      ]
+    },
+    {
+      "id": "claim_528a83aaf3c54142a8498741549c428f",
+      "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found the best worker with about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise reservation, 6,308 MiB actual use and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent a NoSchedule taint from isolating a canary.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L309-L335",
+          "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5e504f3f5d474952842ef66e70778779",
+      "statement": "Three pinned Cordium v0.12.7, four pinned Octelium v0.35.0 Genesis, and ten pinned Octelium Enterprise generated NetworkPolicy complete expected-spec fixtures are source-bound; all 17 are reviewed, while pinned generator-binary renders remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium/generated-networkpolicies.json",
+          "version": "repo-file-v1:sha256:21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+        }
+      ]
+    },
+    {
+      "id": "claim_1ff9fd9e6769482b8f537a5cae85c758",
+      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress without a public-egress input; additive NetworkPolicies cannot narrow either allow. Reviewed upstream patches or forks, rebuilt pinned images, actual generator renders, and isolated canary qualification of required destinations and private-range denial are prerequisites for enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2010-L2013",
+          "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md#L171-L196",
+          "version": "repo-lines-v1:sha256:1aef65d9c5acad4e5e9ce7e85f6538c959810dde4af9afff3667d341f6243d08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZDczZmM1MmE0YmRhYzcxNTYyYzI3ZTdiNTYxOGU5NDNhZjM2OTY4ODZiODU5NTA5YmNkOWJlMTVlNzk0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZTlkMzg5ZDJjYTkxMTlkMWZkMjY0MDljNzVmYzJhNThiOGE1MThmZGU4NTIzMmY3Y2RkNWE3YjM2NmYyZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0NDUwNzAyMjAxYmJhYzQ3MjcwNWY3MDU4NWM5ZjYyZTdiNzk4YTRmYjYzMjQ0NDE0NzQ2NDk0YTZmNjdmYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMTYxZmRmNWRmNmE1NjYxMDdhMmYwYTdhMDBmYTAzYTIzYTViYTdmZDRhMTkyMDQxYWFiMWM3OGQ5M2FhMDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b74a0aa4689d47f491bdfac25d4ac038",
+      "statement": "Protected first-parent history accepts unrelated commits around the two dedicated fixture-prune and firewall-prune GitOps commits while rejecting intervening changes under operational source roots or Nix flake inputs. Ownership capture and approval bind a private versioned firewall snapshot and owner digest. Capture through release require absent fixture resources and complete canary-node Pod inventory matching reviewed system DaemonSet UIDs plus the validated cleanup Pod while it runs. Release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint; changed system Pod UID blocks this path pending separate recovery.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
+        }
+      ]
+    },
+    {
+      "id": "claim_14442a22300f421ba21a6a5916c3a84c",
+      "statement": "Firewall rule deletion and Kubernetes Pod inventory are not atomic; a Pod tolerating the canary isolation taint could arrive during deletion, so live activation stays blocked until isolated placement excludes that arrival or a reviewed repository-owned isolation path is added.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+        }
+      ]
+    },
+    {
+      "id": "claim_e1418bd0438c4568b43109318a9d3d97",
+      "statement": "The 2026-10-23 read-only placement checks still block isolated network-policy qualification. Acer has disk but is 503 MiB short of the declared database-plus-gateway floor and about 2,295 MiB short of the initial 4,096 MiB planning reservation if co-located. Zima-1 cannot be cleared by the other nodes' current free requests; Zima-2 would require relocating four unrelated Pods, including Recreate Langfuse PostgreSQL, and lacks peak and service-continuity proof.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml#L24-L49",
+          "version": "repo-lines-v1:sha256:57effe6a5b33538413cab10d85bd9ec615646709976fd5751848000b2341f1f8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliMjUxNmY0Y2ViMmNiNjZkNzg2OTY3NzUxYjFkN2U4YjgzNmU4ZGY3YmFjYjM2MDNjM2Y4YzhkY2IzMjliMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlMzA4YzQ5MDY3ODgxNzEzYWM5MTlmMTExNzUxMDFhZTdjZjkwYjdkNGJiNjYyNWEwZDc4ZGQzNmNhNWFiN2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiZDgwZjU2YjUzNzQ5ZjQ2MTBiMWMwOWY2NzM3YTFiZDZjMjZkYjY0MmM4ZDBiMDAzZTVjODk2NzJmNzg2OGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZiMTQ1ZmQzMmYxYmJhNzk1ZmU5MDlkOGNkNWRmYTY5ODQ3NTY4ZDQ2NjA2MmU3N2ZiYzMyNDM5YTFmMmNjMDgifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/daemonset.yaml#L100-L119",
+          "version": "repo-lines-v1:sha256:2876cfbcc88a641d47fa95d5c84bbc76edd416dab54756ef08f8cf9d74c40330:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlNGEwNWExMWUyNzIxZTlhNTViNDhlMjcwYzA1NjFiYTQzYzFkNmQyNTVhMzE4YzI3ZDQzZGVjNDQ0MzBjZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2YTRmMjQyNmEwZTUwMmNjNWQyYzQxYWI1YjExNjZkY2VhMjMzZTg4NjJlN2YyMmZjMGYxZDA3ZmNlMjk4YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjU2MTkzMGUzMmRhNDZiNzViMWMxZmY5MDVlYTdmMzgzZTcxNGNkZGFjODA1ZTc4YTgyN2UzNTNlYzVkN2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlYTFlNjNiNWJhN2ZmZTVhNjJlNzk3YmJhOGZlNDQzMzU4ZTc4ZDg4M2Y1ZjViYzMwOGY3MzQxZWFhMGY5MjQifQ"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L363-L398",
+          "version": "repo-lines-v1:sha256:7bc16dde62ee864193f6b9ba6aee62caa15267682fa5e9e7c5877a6b6d249ebb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwOWJjNGVlOGE1NDMzMzQ0NDBiYzUyOGZiZTRmYjYzMTk1MjM1NTNhNDI4NThjNjI3N2VlNTQwODU5Zjc3NzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjY1MzZhZGExNDZmNjBhMTQ0M2IyZmZjZmI0MDhjNDU5YmQ1ZDY2YzEzZjIwOTEwN2M2NmQzZTExMGU2NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhODljODc0OTUzNzg0OGU3YTVlMjkxZTU2Y2Y1NTZlNzFhNWI3MWU4Y2JiMmMxZmVmZDUzYjliZTMzM2I4ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2OGExMzk1NGMyOGI3YzQ5YjZlOTI4OTEwMzYwNjNkNmRlNzA1YTlkYTY0NzE5MWI2NWQ4Nzg4MTFjOWVjODAifQ"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/research.md#L150-L153",
+          "version": "repo-lines-v1:sha256:7234126d60dc7803de8f87f9d6a8c991178998943c91ab8746e8948257708ef7:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzFjMDk2MTA5YzBjNjk1OGUzMjE3YzBhMDhmMzFiMzg4MTYzOTRhYjNjNzRmN2U4MzhlZjhiNTkwMTkwZGNmYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM5YjcyZjM4MjYxMDcyNTBjNTdkZDY1OTBhNTY1MmNiNzk0MzE1YTExYzAzZDNmNzQxOTBhMTRlY2E2YjVkYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTc1NDYwNjAzNDVmYzBhM2FlNmY3NWI5MDNhMDc5YWQ5NmI1N2MzZTdmYzIwZDdlNTkyOTlmMmEzNDFhZDE4NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWViZGJiNTNkZWRlNTMxYTg5NmU0YWEyYjFkYzZlN2ZiOWRhZTIyZmY1M2RhOWE3N2U4ODdhOTY3YzI4YTg5YiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b8e02310950a43f7a12b4f59f82ba826",
+      "statement": "The dormant Enterprise foundation declares restricted Pod Security enforcement for both openclaw-system and openclaw-agents, while most existing non-privileged namespaces use baseline; the declarations do not prove a live namespace rollout.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L1-L13",
+          "version": "repo-lines-v1:sha256:15a12464a7c6494886c6827bdd1a682f0b8020c0d0417bae73ba31ddc211d4eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmOTMxN2E5NDRjODVhYjY3YmEzNDczYTNlZGNhMTI5MzYyNjQyMjQ3YjRlNDZlYjQwOWYxZjQ3ZjNhMTZhMmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyYTA2OGJmZWVlMTNmMDBhZWNhM2NlOWI5NDYxNTY5MjAwYTU1MTQ2MDRkYWQ0M2NjMzYyNTQxMjlhMmQ2MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUzZjQ4YzI2YTY1MjZhMDY0Nzc3NzY4YzgxMjI3ZTIxYTA4MjVlMmQ0NTUzOGFiYzI3ZWIxMWM2OWE1ZDdhMTAifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml#L1-L35",
+          "version": "repo-lines-v1:sha256:0b9a6c35e2b6def9228859bc767e128b1c6f077a46940be38c1a41c026594d16:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjYTFjZmE0MTUzMGZkYWU3N2IwOWI4ZThjNzY3YWVmMDIyOTBiYmFiNWU4OWVjMThmZWZlMGJjOWJiNzkwMzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjNjk2ZTE5MTQ3ZjE1NzJkNjQyNDg2MzZmMTI4ODhkZTY1YjZjM2U0OWVhMWEzMGVmNmRiYWUxM2M2ZDNiZTQifQ"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md#L25-L41",
+          "version": "repo-lines-v1:sha256:83f2dccf7cd8605019a3b26f59c00d3b64997b7df2354d0d62345ce549183cea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MWIxMjM1MzIyMmIwYzEyMGZlYTY3YjdkYjJlMzI4MzM2MjVjMzJjMjFlMzkzNWVkNWE4NThlZTcxMWE1N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MThjNjRmZjI5NTMwYjE3NzMyNWMxOTc0NWE2YjE2OWUxMDkxNDIyZDNjYzg3NzI3NjQzOWRkZTQ3NmY2ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzZDM1NDQwMTZjODU2Njk5ZWFmYzNkNDU1OTg1ZTNkZDkyZGExYmQyN2Y1ZGE5NmRkYTk4ZWM0ZWNmOWNmNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg2MWE0YzdkMTcwYjhmMjhjN2U4Y2M0MmQ5NjgyNWU2NDdiZjU2NmE1ZmM1YmU4YTliMTA3YzI1MTVhODgxYTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T05:44:36.454Z"
+    "at": "2026-10-24T03:50:35.181Z"
   }
 }

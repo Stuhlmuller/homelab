@@ -1,0 +1,24 @@
+# Staged only. No Argo CD Application references this directory before T022/T035.
+# T035 must add a separately retained static PV with the selected node/path.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openclaw-enterprise-journal-local
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: occ-operator-journal
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: openclaw-enterprise-journal-local
+  volumeName: occ-operator-journal

@@ -1,5 +1,9 @@
 # Feature Specification: Private Tailnet Service DNS
 
+Historical public-cutover scope: the 27-name retirement described below is
+superseded by the [26-name app subdomain cutover](../005-retire-public-app-dns/quickstart.md).
+The 27-name private resolver scope remains.
+
 **Feature Branch**: `codex/tailnet-service-dns`
 
 **Feature Directory**: `specs/004-tailnet-service-dns`

@@ -14,12 +14,12 @@ and only the affected source before editing. Ordinary app onboarding also uses
 | Concern | Edit |
 | --- | --- |
 | Unit identity, template source and output paths | `IaC/terragrunt.stack.hcl` |
-| Per-application inputs and chart pins | `IaC/stacks/<app>/stack.hcl` |
+| Per-application inputs and chart pins | `IaC/<app>/stack.hcl` |
 | Shared Application defaults | `IaC/stack-defaults.hcl` |
-| Reusable generated unit behavior | `IaC/.catalog/units/` |
+| Reusable generated unit behavior | `IaC/terragrunt-catalog/units/` |
 | Backend, state encryption and shared inputs | `IaC/root.hcl` |
 | Kubernetes provider connection | `IaC/kubernetes-provider.hcl` |
-| Typed infrastructure resources | `IaC/modules/` or pinned catalog modules |
+| Typed infrastructure resources | `IaC/terragrunt-catalog/modules/` or pinned catalog modules |
 
 `IaC/bootstrap` and `IaC/live` are generated at their historical paths using
 `no_dot_terragrunt_stack = true`; do not edit their generated `terragrunt.hcl`
@@ -33,7 +33,7 @@ live in module/template HCL; CI regenerates locks and checksums during init.
 ## Shared Application contract
 
 All active app and platform registrations use
-`IaC/.catalog/units/live/argocd-app`. Each app's `stack.hcl` loads shared locals
+`IaC/terragrunt-catalog/units/live/argocd-app`. Each app's `stack.hcl` loads shared locals
 from `IaC/stack-defaults.hcl` and sets `inputs.defaults = local.shared.argocd_defaults`;
 add only differing `metadata`, `spec` and `dependencies` fields. The root index
 loads the app file's `inputs` with `read_terragrunt_config` as the unit's `values`.

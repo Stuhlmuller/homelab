@@ -55,7 +55,7 @@ DNS, access, storage, controllers, or shared applications.
 **Constraints**: Capacity/canary allocation currently blocks execution. No manual
 live fixes, unverified image substitutions, automatic Kubernetes downgrade,
 secret disclosure, or old-data deletion. Fresh agent activation requires explicit
-model/key configuration; deployment includes a real model probe.
+model/key configuration and a real model probe.
 
 The 2026-10-17 read-only refresh in [research.md](research.md#r4--capacity-is-a-real-execution-gate)
 confirmed the starting versions and no canary/CRDs. Istio 1.27.9 is unnecessary
@@ -216,10 +216,12 @@ OCE Namespace to the latter through its supported `existingNamespace` input.
 Create an OCE-owned fresh agent claim; never adopt old claims. Keep new and old
 archives separate and independently recoverable.
 
-Private owner flow: stable OpenClaw URL -> authenticated console -> OCE native
-agent authorization -> private Envoy -> agent gateway. Resolve the native origin
-from OCE, not a guessed hash. New per-agent hosts route to the OCE API, preserving
-Host/WebSocket behavior and narrowly scoped session cookies.
+Private owner flow: stable OpenClaw URL -> Octelium-authenticated console ->
+OCE native exact-Agent authorization -> private Envoy -> agent gateway.
+Resolve the native origin from OCE, not a guessed hash. The console and old
+redirect use Octelium; only the narrow native HostRegexp goes directly from
+private Tailscale/Traefik to OCE API, preserving Host/WebSocket behavior and
+the `oce.stinkyboi.com` session cookie.
 
 ## Validation and Requirement Coverage
 

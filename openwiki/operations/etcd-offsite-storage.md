@@ -10,8 +10,8 @@ tags: ["operations", "storage", "backup"]
 The [operator runbook](../../docs/etcd-offsite-storage.md) declares the dedicated
 `homelab-etcd-backups-716182248480-us-east-1` S3 bucket through
 `IaC/operator/etcd-backup-storage`. The reusable
-[module](../../IaC/modules/aws-backup-bucket/main.tf) owns its complete bucket
-configuration; the [catalog unit](../../IaC/.catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
+[module](../../IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf) owns its complete bucket
+configuration; the [catalog unit](../../IaC/terragrunt-catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
 pins the account and region and shares the normal encrypted state backend.
 
 Versioning retains completed object versions indefinitely. The only lifecycle

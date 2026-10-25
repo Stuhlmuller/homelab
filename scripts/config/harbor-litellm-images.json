@@ -1,0 +1,7 @@
+{
+  "images": [
+    {
+      "source": "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
+    }
+  ]
+}

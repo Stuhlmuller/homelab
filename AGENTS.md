@@ -230,7 +230,7 @@ PR as the operational change.
 - OpenWiki Markdown documentation under `openwiki` + project-local Codex
   skill `homelab-knowledge-base` for cross-change architecture notes,
   inventories, build patterns, and knowledge-base update workflow
-- HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
+- HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/terragrunt-catalog/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
 - Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
 
 ## Repository OpenWiki Policy

@@ -1,5 +1,9 @@
 # Tasks: Private Tailnet Service DNS
 
+Historical task record: its 27-name public-retirement scope is superseded by
+the [26-name app subdomain cutover](../005-retire-public-app-dns/quickstart.md).
+The completed checkboxes below describe the original resolver delivery.
+
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contracts](contracts/), and [quickstart.md](quickstart.md)
 
 **Scope boundary**: Implement and deploy the resolver, verify its assigned tailnet IPv4 and direct DNS path, then pause for the owner to add that IP as the restricted `stinkyboi.com` nameserver. Implement the guarded public-retirement path now; do not execute it before the owner handoff and later cutover acceptance.

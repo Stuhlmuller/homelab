@@ -10,9 +10,10 @@ rendered manifests, then let Argo CD converge them.
 
 The live audit on 2026-05-24 found kube-flannel as the only CNI DaemonSet.
 Flannel provides pod networking, but it does not enforce Kubernetes
-`NetworkPolicy`. Until this repo installs an enforcing CNI or a dedicated
-policy engine, `NetworkPolicy` objects are documentation placeholders rather
-than a reliable isolation control.
+`NetworkPolicy`. The firewall-only kube-router source is staged with automatic
+sync disabled and no admitted node; until it passes the canary gates below,
+`NetworkPolicy` objects are documentation placeholders rather than a reliable
+isolation control.
 
 Current enforced controls are therefore:
 
@@ -24,12 +25,15 @@ Current enforced controls are therefore:
 - namespace Pod Security labels that are explicit in repo-owned namespace
   manifests.
 
-Non-privileged runtime namespaces use the `baseline` Pod Security profile so
-new workloads cannot silently add privileged containers, host networking,
-hostPath mounts, or other host-level access. Move a namespace to `privileged`
-only with the documented justification and owner below. These namespaces warn
-and audit against the stricter `restricted` profile so future chart changes
-surface before becoming production assumptions.
+Most existing non-privileged runtime namespaces use the `baseline` Pod Security
+profile so new workloads cannot silently add privileged containers, host
+networking, hostPath mounts, or other host-level access. The staged Enterprise
+foundation declares `restricted` enforcement for `openclaw-system` and
+`openclaw-agents`; neither namespace is active until its Application is synced.
+Move a namespace to `privileged` only with the documented justification and
+owner below. Baseline namespaces warn and audit against the stricter
+`restricted` profile so future chart changes surface before becoming runtime
+assumptions.
 
 ## Istio Ambient Service Access
 
@@ -152,16 +156,76 @@ to `media`. The long-term hardening path is to move Deluge and its shared
 downloads contract into a dedicated privileged namespace or replace the VPN
 pattern with one that does not require privileged namespace admission.
 
-## Network Policy Placeholder
+## Staged NetworkPolicy enforcement
 
-Before adding `NetworkPolicy` manifests that are expected to enforce traffic,
-first add one of these repo-owned prerequisites:
+[`clusters/homelab/platform/network-policy/`](../clusters/homelab/platform/network-policy/README.md)
+owns the pinned kube-router firewall DaemonSet, isolated canary fixtures and
+ownership-limited cleanup. It leaves Flannel as the CNI and kube-proxy as the
+service proxy. The Argo registrations are dormant; no node is selected or
+tainted. The [policy review](evidence/openclaw-enterprise-policy-review.json)
+still has unqualified source-bound generated policies and broad egress findings. The
+[acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
+existing node safely admits the isolated canary.
 
-- a CNI migration plan to a policy-enforcing CNI, with rollback notes; or
-- a policy-engine installation that can enforce equivalent L3/L4 controls.
+The three Cordium Genesis policies have a [read-only expected-spec fixture](../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
+for `cordium/ws-main`, `octelium/cordium-nocturne`, and
+`octelium/cordium-rscserver`. Their complete specs match the live read-only
+recheck and the constructors in pinned [Cordium v0.12.7](https://github.com/octelium/cordium/tree/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis).
+Pass this fixture as an additional `--render` input when auditing Cordium and
+Octelium; it is not applied by Kustomize. `ws-main` still allows every port to
+public IPv4/IPv6 ranges after private-range exclusions, so its strict broad
+egress finding and canary traffic review remain open.
 
-After enforcement exists, start with namespace default-deny policies and add
-the smallest allow rules for DNS, ingress gateway traffic, metrics scraping,
-and app-to-app dependencies. The first PR that makes `NetworkPolicy` effective
-must include a render check and a live read-only verification plan that proves
-denied traffic is actually denied.
+Four Octelium Genesis policies have a separate [v0.35.0 expected-spec fixture](../clusters/homelab/apps/octelium/generated-networkpolicies.json)
+based on the pinned [constructors](https://github.com/octelium/octelium/tree/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components).
+Their complete specs matched a fresh read-only live check on October 20.
+Pass that fixture as another `--render` input; it is not a deployed owner.
+`octelium/svc-upstream` still allows all ports to public IPv4/IPv6 ranges,
+so source binding does not qualify its traffic.
+
+The pinned [Cordium constructor](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254-L345)
+and [non-dev Genesis write](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L64-L71),
+plus [Octelium's constructor and unconditional install](https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237-L325),
+expose no public-egress setting: each constructs the all-port public rule in
+code. An additive NetworkPolicy cannot revoke an existing allow. A reviewed
+upstream change or fork must rebuild and pin both generators, refresh the
+expected-spec fixtures from their actual renders, and qualify required
+destinations and private-range denial on the isolated canary before strict
+enforcement.
+
+The ten Octelium Enterprise Genesis policies have a separate [v0.22.0
+expected-spec fixture](../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
+derived from the pinned [constructors](https://github.com/octelium/octelium-ee/tree/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components).
+Their complete specs matched current live policies on October 20. Pass this
+fixture as another `--render` input; it does not deploy or qualify their
+ingress traffic. All 17 generated policies now have source-reviewed fixtures,
+but Flannel still provides no NetworkPolicy enforcement and canary qualification
+remains open.
+
+The source policies now limit cloudflared's private egress to the two routed
+Istio gateways and Octelium ingress dataplane, Harbor metrics ingress to the
+Prometheus Pod, and Harbor/Mastodon gateway ingress to the Istio gateway Pod.
+Mastodon's ambient namespace also allows gateway-origin HBONE on TCP/15008;
+Istio [requires that destination port](https://github.com/istio/istio.io/blob/release-1.27/content/en/docs/ambient/usage/networkpolicy/index.md)
+before traffic can reach its application ports.
+Before enforcement, recheck live Service selectors, EndpointSlices and Pod labels,
+then prove these paths on the isolated canary, including ambient HBONE and Service
+translation and kubelet health probes. Mastodon's web and streaming Pods were
+absent at source review, so their allowed path also needs a live canary proof.
+
+Before making policies effective, finish owner/render review, publish every
+fixture and controller image, admit a tainted node with measured memory and
+local storage, and prove allowed and denied traffic plus restart, API-loss,
+IP-reuse and reboot behavior on that node. Preserve DNS, API, mesh HBONE,
+webhook, NFS and recovery access. A candidate fixture's narrow deny result
+does not make the stock Enterprise agent's broad public TCP/443 egress a
+domain allowlist. Follow the [canary and cleanup runbook](../clusters/homelab/platform/network-policy/README.md)
+before expanding enforcement; deleting the DaemonSet alone may leave firewall
+rules behind.
+
+Nine [source-owned DNS policies](evidence/openclaw-enterprise-policy-review.json)
+require CoreDNS Pods labeled `k8s-app=kube-dns` in `kube-system`; six were
+narrowed in this review. Changing the `kube-dns` Service selector or CoreDNS
+Pod labels requires updating all nine policies together, then proving TCP and
+UDP 53 through the Service on the
+isolated canary before firewall enforcement.
