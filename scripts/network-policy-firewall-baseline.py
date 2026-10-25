@@ -112,10 +112,11 @@ def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
     return attempt
 
 
-def read_recovery_attempt(path, source_sha, run_id, placement):
+def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement):
     attempt = read_attempt(path, source_sha, run_id, "canary-admit-recover")
     if (not isinstance(attempt.get("admissionRunId"), str) or
             not OWNERSHIP["RUN_ID"].fullmatch(attempt["admissionRunId"]) or
+            attempt.get("evidenceSourceSha") != evidence_sha or
             not isinstance(attempt.get("placementRunId"), str) or
             attempt["placementRunId"] != placement.get("placementRunId") or
             not isinstance(attempt.get("placementVersionId"), str) or
@@ -289,9 +290,12 @@ def execute(args):
     manifest = require_reviewed_manifest(args.expected_sha)
     placement = None
     if recovery:
+        if not PLATFORM["SHA"].fullmatch(args.evidence_source_sha or ""):
+            raise ValueError("recovery probe requires original admission SHA")
         placement = PLATFORM["read_private_json"](args.recovery_placement)
-        CANARY["validate_placement"](placement, config, args.expected_sha, False)
+        CANARY["validate_placement"](placement, config, args.evidence_source_sha, False)
         attempt = read_recovery_attempt(args.attempt, args.expected_sha,
+                                        args.evidence_source_sha,
                                         os.environ["GITHUB_RUN_ID"], placement)
         manifest["spec"]["tolerations"] = [CANARY_TOLERATION]
     else:
@@ -314,7 +318,8 @@ def execute(args):
               "nodeUid": identity[0], "bootID": identity[1],
               "startedAt": datetime.now(timezone.utc).isoformat()}
     if recovery:
-        record.update(admissionRunId=attempt["admissionRunId"],
+        record.update(evidenceSourceSha=args.evidence_source_sha,
+                      admissionRunId=attempt["admissionRunId"],
                       placementRunId=attempt["placementRunId"],
                       placementVersionId=attempt["placementVersionId"])
     CLEANUP["write_record"](output, record)
@@ -424,13 +429,16 @@ def main():
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--attempt", type=Path, required=True)
     parser.add_argument("--recovery-placement", type=Path)
+    parser.add_argument("--evidence-source-sha")
     parser.add_argument("--baseline-source-sha")
     parser.add_argument("--baseline-run-id")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.action == "recover" and args.recovery_placement:
+        if args.action == "recover" and (args.recovery_placement or args.evidence_source_sha):
             raise ValueError("orphan probe cleanup does not use placement evidence")
+        if args.action != "recover" and not args.recovery_placement and args.evidence_source_sha:
+            raise ValueError("baseline capture does not use admission evidence")
         recover(args) if args.action == "recover" else execute(args)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError,
             subprocess.TimeoutExpired, http.client.HTTPException) as exc:

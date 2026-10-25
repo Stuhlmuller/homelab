@@ -24,6 +24,11 @@ elif [[ "$stage" == canary-admit || "$stage" == canary-admit-recover ||
 elif [[ "$stage" != inspect && "$stage" != firewall-baseline && "$stage" != firewall-baseline-recover ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
+if [[ "$stage" == canary-admit-recover ]]; then
+  [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&
+     "${EVIDENCE_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || exit 2
+  git merge-base --is-ancestor "$EVIDENCE_SOURCE_SHA" "$GITHUB_SHA" || exit 1
+fi
 
 work="$(mktemp -d)"
 chmod 700 "$work"
@@ -279,7 +284,6 @@ case "$stage" in
     retain_result "$work/canary.json" "$stage"
     ;;
   canary-admit-recover)
-    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
     bash scripts/ci/install-kubeconfig.sh
     kubectl auth can-i create pods -n kube-system --quiet
     kubectl auth can-i create pods/exec -n kube-system --quiet
@@ -289,29 +293,31 @@ case "$stage" in
     kubectl auth can-i get nodes --quiet
     kubectl auth can-i list nodes --quiet
     install -m 0700 -d "$work/receipts"
-    load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit-attempt.json" \
+    load_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit-attempt.json" \
       "$work/receipts/admission-attempt.json"
-    jq -e --arg sourceSha "$GITHUB_SHA" --arg runId "$ADMISSION_RUN_ID" \
+    jq -e --arg sourceSha "$EVIDENCE_SOURCE_SHA" --arg runId "$ADMISSION_RUN_ID" \
       '.format == 1 and .stage == "canary-admit" and .status == "attempted" and
        .verified == false and .sourceSha == $sourceSha and .runId == $runId' \
       "$work/receipts/admission-attempt.json" >/dev/null
-    require_absent_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
+    require_absent_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
     placement_run_id="$(jq -er '.placementRunId | select(type == "string" and test("^[1-9][0-9]*$"))' \
       "$work/receipts/admission-attempt.json")"
     placement_version="$(jq -er '.placementVersionId | select(type == "string" and . != "" and . != "null")' \
       "$work/receipts/admission-attempt.json")"
-    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement/${placement_run_id}.json" \
+    load_receipt "openclaw-enterprise/platform/receipts/${EVIDENCE_SOURCE_SHA}/placement/${placement_run_id}.json" \
       "$work/receipts/placement.json" "$placement_version"
     node="$(jq -er '.node | select(type == "string" and . != "")' "$work/receipts/placement.json")"
     node_uid="$(jq -er '.nodeUid | select(type == "string" and . != "")' "$work/receipts/placement.json")"
     boot_id="$(jq -er '.bootID | select(type == "string" and . != "")' "$work/receipts/placement.json")"
     pod_token="$(openssl rand -hex 24)"
-    jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+    jq -n --arg sourceSha "$GITHUB_SHA" --arg evidenceSourceSha "$EVIDENCE_SOURCE_SHA" \
+      --arg runId "$GITHUB_RUN_ID" \
       --arg admissionRunId "$ADMISSION_RUN_ID" --arg placementRunId "$placement_run_id" \
       --arg placementVersionId "$placement_version" --arg node "$node" \
       --arg nodeUid "$node_uid" --arg bootID "$boot_id" --arg podToken "$pod_token" \
       '{format: 1, stage: "canary-admit-recover", status: "attempted", verified: false,
-        sourceSha: $sourceSha, runId: $runId, admissionRunId: $admissionRunId,
+        sourceSha: $sourceSha, evidenceSourceSha: $evidenceSourceSha,
+        runId: $runId, admissionRunId: $admissionRunId,
         placementRunId: $placementRunId, placementVersionId: $placementVersionId,
         node: $node, nodeUid: $nodeUid, bootID: $bootID, podToken: $podToken}' \
       >"$work/recovery-attempt.json"
@@ -319,6 +325,7 @@ case "$stage" in
     retain_result "$work/recovery-attempt.json" canary-admit-recover-attempt
     if ! python3 -I scripts/network-policy-firewall-baseline.py --config "$config" \
       --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+      --evidence-source-sha "$EVIDENCE_SOURCE_SHA" \
       --recovery-placement "$work/receipts/placement.json" \
       --attempt "$work/recovery-attempt.json" \
       --output "$work/receipts/firewall-recovery-proof.json"; then
@@ -329,9 +336,10 @@ case "$stage" in
       exit 1
     fi
     retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof
-    require_absent_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
+    require_absent_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
     if ! python3 -I scripts/network-policy-canary-node.py recover \
       --config "$config" --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+      --evidence-source-sha "$EVIDENCE_SOURCE_SHA" \
       --admission-run-id "$ADMISSION_RUN_ID" \
       --placement-run-id "$placement_run_id" --placement-version-id "$placement_version" \
       --receipt-dir "$work/receipts" --output "$work/canary-recovery.json"; then

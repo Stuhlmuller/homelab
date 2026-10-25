@@ -1949,13 +1949,16 @@ then the selector label. A complete cluster-wide selector inventory must show
 no labeled Node before mutation and again just before labeling; if another
 Node appears after the patch, admission removes its own label and retains the
 taint. If the Node patch succeeds but the final admission receipt cannot be
-uploaded, owner-only protected `canary-admit-recover` loads the immutable
-attempt and exact placement version, refuses a final admission receipt, then
+uploaded, owner-only protected `canary-admit-recover` takes the original
+admission `evidence_source_sha` and run ID. It requires that source to be an
+ancestor of current `main`, loads its immutable attempt and exact placement
+version, refuses a final admission receipt under the original SHA, then
 runs a UID-owned privileged host probe. It requires an empty live IPv4/IPv6/ipset
 kube-router snapshot, deleted probe Pod, absent enforcer/fixtures, matching
 Node UID/boot and system Pods, and no other selected Node. It removes only the
 owned label/taint with resource-version and UID tests. This rollback remains
-available after placement expiry under the original current-main SHA. An
+available after placement expiry or a newer current-main commit, provided
+the configured canary node and taint still match the original placement. An
 orphaned probe has token/UID-bound `firewall-baseline-recover` cleanup using
 the recovery run and admission IDs.
 `canary-release` requires the reviewed cleanup receipt

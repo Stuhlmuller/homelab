@@ -19,6 +19,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 SUT = runpy.run_path(str(ROOT / "scripts/network-policy-firewall-baseline.py"))
 SHA = "a" * 40
+EVIDENCE_SHA = "b" * 40
 
 
 def pod(token="token", uid="pod-uid"):
@@ -172,22 +173,26 @@ class FirewallBaselineTests(unittest.TestCase):
         placement = {"placementRunId": "456", "nodeUid": "node-uid", "bootID": "boot-id"}
         attempt = {"format": 1, "stage": "canary-admit-recover", "status": "attempted",
                    "verified": False, "sourceSha": SHA, "runId": "123",
+                   "evidenceSourceSha": EVIDENCE_SHA,
                    "node": SUT["NODE"], "nodeUid": "node-uid", "bootID": "boot-id",
                    "admissionRunId": "789", "placementRunId": "456",
                    "placementVersionId": "version-2", "podToken": "1" * 48}
         with patch.dict(SUT["PLATFORM"], {"read_private_json": lambda *_: attempt}):
-            self.assertEqual(SUT["read_recovery_attempt"](Path("/unused"), SHA, "123",
+            self.assertEqual(SUT["read_recovery_attempt"](Path("/unused"), SHA,
+                                                          EVIDENCE_SHA, "123",
                                                           placement), attempt)
             self.assertEqual(SUT["read_attempt"](Path("/unused"), SHA, "123",
                                                   stage=None), attempt)
             with self.assertRaisesRegex(ValueError, "preflight ownership"):
                 SUT["read_attempt"](Path("/unused"), SHA, "123")
-            for changed in ({"admissionRunId": ""}, {"placementRunId": "455"},
+            for changed in ({"admissionRunId": ""}, {"evidenceSourceSha": SHA},
+                            {"placementRunId": "455"},
                             {"placementVersionId": ""}, {"nodeUid": "replacement"},
                             {"bootID": "new-boot"}, {"podToken": "a" * 47}):
                 with self.subTest(changed=changed), patch.dict(attempt, changed):
                     with self.assertRaises(ValueError):
-                        SUT["read_recovery_attempt"](Path("/unused"), SHA, "123",
+                        SUT["read_recovery_attempt"](Path("/unused"), SHA,
+                                                     EVIDENCE_SHA, "123",
                                                      placement)
 
     def run_baseline(self, plan, identities=None, delete_fails=False, create_fails=False,
@@ -200,18 +205,21 @@ class FirewallBaselineTests(unittest.TestCase):
             events = []
             stale = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime(
                 "%Y-%m-%dT%H:%M:%SZ")
-            placement = {"format": 1, "verified": True, "sourceSha": SHA,
+            placement = {"format": 1, "verified": True,
+                         "sourceSha": EVIDENCE_SHA if recovery else SHA,
                          "placementRunId": "456", "node": SUT["NODE"],
                          "canaryNode": SUT["NODE"], "nodeUid": "node-uid",
                          "bootID": "boot-id", "measured": True,
                          "isolatedTaint": config["canary"]["taint"],
-                         "firewallBaselineEmpty": True, "baselineSourceSha": SHA,
+                         "firewallBaselineEmpty": True,
+                         "baselineSourceSha": EVIDENCE_SHA if recovery else SHA,
                          "baselineRunId": "789", "baselineCapturedAt": stale,
                          "baselineCaptureSha256": "0" * 64,
                          "baselineCaptureVersionId": "version-1",
                          "systemDaemonSetPods": [], "capturedAt": stale}
             marker = {"format": 1, "stage": "canary-admit-recover",
                       "status": "attempted", "verified": False, "sourceSha": SHA,
+                      "evidenceSourceSha": EVIDENCE_SHA,
                       "runId": "123", "node": SUT["NODE"], "nodeUid": "node-uid",
                       "bootID": "boot-id", "admissionRunId": "987",
                       "placementRunId": "456", "placementVersionId": "version-2",
@@ -289,6 +297,7 @@ class FirewallBaselineTests(unittest.TestCase):
                     result = SUT["execute"](argparse.Namespace(
                         config=SUT["CONFIG"], expected_sha=SHA,
                         bucket="bucket", attempt=path / "attempt.json", output=output,
+                        evidence_source_sha=EVIDENCE_SHA if recovery else None,
                         recovery_placement=path / "placement.json" if recovery else None))
                 except ValueError as exc:
                     result = None
@@ -352,6 +361,8 @@ class FirewallBaselineTests(unittest.TestCase):
         self.assertIsNone(error)
         proof = json.loads(receipt)
         self.assertEqual(proof["stage"], "firewall-recovery-proof")
+        self.assertEqual(proof["sourceSha"], SHA)
+        self.assertEqual(proof["evidenceSourceSha"], EVIDENCE_SHA)
         self.assertEqual(proof["runId"], "123")
         self.assertEqual(proof["admissionRunId"], "987")
         self.assertEqual(proof["placementRunId"], "456")
@@ -365,6 +376,7 @@ class FirewallBaselineTests(unittest.TestCase):
                          f"openclaw-enterprise/platform/{SHA}/123/"
                          "firewall-recovery-capture.json")
         self.assertEqual(capture[0], proof["captureKey"])
+        self.assertEqual(capture[1]["evidenceSourceSha"], EVIDENCE_SHA)
         self.assertIn("snapshot", capture[1])
         self.assertLess(events.index("delete"), events.index("capture"))
         self.assertEqual(result["captureKey"], proof["captureKey"])

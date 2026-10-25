@@ -19,7 +19,7 @@ SHA = "a" * 40
 
 
 class PlatformStageTests(unittest.TestCase):
-    def run_stage(self, stage, canary_node=None):
+    def run_stage(self, stage, canary_node=None, evidence_sha="", ancestry=True):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             config = json.loads(CONFIG.read_text())
@@ -32,6 +32,11 @@ class PlatformStageTests(unittest.TestCase):
             bin_dir.mkdir()
             (bin_dir / "gh").write_text(f"#!/bin/sh\nprintf '%s\\n' {SHA}\n")
             (bin_dir / "gh").chmod(0o700)
+            (bin_dir / "git").write_text(
+                "#!/bin/sh\n[ \"$1\" = merge-base ] && [ \"$2\" = --is-ancestor ] && "
+                "[ \"$3\" = \"$EVIDENCE_SOURCE_SHA\" ] && [ \"$4\" = \"$GITHUB_SHA\" ] "
+                "&& [ \"$ANCESTRY_OK\" = true ]\n")
+            (bin_dir / "git").chmod(0o700)
             marker = path / "external-command"
             for name in ("terragrunt", "aws", "talosctl", "kubectl", "octelium"):
                 executable = bin_dir / name
@@ -40,7 +45,9 @@ class PlatformStageTests(unittest.TestCase):
             env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}",
                        GITHUB_ACTIONS="true", GITHUB_REF="refs/heads/main",
                        GITHUB_SHA=SHA, EXPECTED_SHA=SHA, GITHUB_RUN_ID="123",
-                       RUN_STAGE=stage)
+                       RUN_STAGE=stage, EVIDENCE_SOURCE_SHA=evidence_sha,
+                       ADMISSION_RUN_ID="123", OCTELIUM_AUTH_TOKEN="fixture",
+                       ANCESTRY_OK="true" if ancestry else "false")
             result = subprocess.run(["bash", str(STAGE)], cwd=path, env=env,
                                     capture_output=True, text=True, timeout=10)
             return result, marker.exists()
@@ -62,11 +69,21 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertFalse(external)
 
     def test_canary_with_reviewed_node_reaches_protected_entry_even_before_activation(self):
-        for stage in ("canary-admit", "canary-admit-recover", "canary-release"):
+        for stage in ("canary-admit", "canary-release"):
             with self.subTest(stage=stage):
                 result, external = self.run_stage(stage, "zimaboard-1")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(external)
+
+    def test_recovery_requires_explicit_ancestor_admission_sha_before_external_access(self):
+        for evidence_sha, ancestry, external in (("", True, False),
+                                                 ("b" * 40, False, False),
+                                                 ("b" * 40, True, True)):
+            with self.subTest(evidence_sha=evidence_sha, ancestry=ancestry):
+                result, accessed = self.run_stage("canary-admit-recover", "zimaboard-1",
+                                                  evidence_sha, ancestry)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(accessed, external)
 
     def test_pre_enable_baseline_reaches_protected_entry_with_reviewed_node(self):
         result, external = self.run_stage("firewall-baseline", "zimaboard-2")
@@ -318,18 +335,24 @@ aws() {
             '  qualify)\n', 1)[0]
         workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
         self.assertIn("canary-admit-recover", workflow)
-        self.assertIn('"${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$', source)
+        self.assertIn('"${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$', STAGE.read_text())
+        self.assertIn('"${EVIDENCE_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$', STAGE.read_text())
+        self.assertIn('git merge-base --is-ancestor "$EVIDENCE_SOURCE_SHA" "$GITHUB_SHA"',
+                      STAGE.read_text())
+        self.assertIn('openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit-attempt.json', source)
         self.assertLess(source.index('canary-admit-attempt.json'),
                         source.index('require_absent_receipt'))
         self.assertLess(source.index('require_absent_receipt'),
                         source.index('placement/${placement_run_id}.json'))
+        self.assertIn('receipts/${EVIDENCE_SOURCE_SHA}/placement/${placement_run_id}.json', source)
         self.assertIn('"$work/receipts/placement.json" "$placement_version"', source)
         self.assertLess(source.index('retain_result "$work/recovery-attempt.json"'),
                         source.index('scripts/network-policy-firewall-baseline.py'))
         self.assertLess(source.index('retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof'),
                         source.index('scripts/network-policy-canary-node.py recover'))
-        self.assertEqual(source.count('require_absent_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"'), 2)
+        self.assertEqual(source.count('require_absent_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"'), 2)
         self.assertIn('--admission-run-id "$ADMISSION_RUN_ID"', source)
+        self.assertEqual(source.count('--evidence-source-sha "$EVIDENCE_SOURCE_SHA"'), 2)
         self.assertIn('if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then',
                       workflow)
         self.assertIn('group: platform-maintenance-production', workflow)

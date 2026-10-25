@@ -272,7 +272,9 @@ def validate_recovery_receipts(attempt, proof, placement, args, config):
     admission_run_id = getattr(args, "admission_run_id", None)
     placement_run_id = getattr(args, "placement_run_id", None)
     placement_version_id = getattr(args, "placement_version_id", None)
-    if (not isinstance(admission_run_id, str) or
+    if (not isinstance(args.evidence_source_sha, str) or
+            not PLATFORM["SHA"].fullmatch(args.evidence_source_sha) or
+            not isinstance(admission_run_id, str) or
             not re.fullmatch(r"[1-9][0-9]*", admission_run_id) or
             not isinstance(placement_run_id, str) or
             not re.fullmatch(r"[1-9][0-9]*", placement_run_id) or
@@ -289,7 +291,7 @@ def validate_recovery_receipts(attempt, proof, placement, args, config):
             attempt.get("stage") != "canary-admit" or
             attempt.get("status") != "attempted" or
             attempt.get("verified") is not False or
-            attempt.get("sourceSha") != args.expected_sha or
+            attempt.get("sourceSha") != args.evidence_source_sha or
             attempt.get("runId") != admission_run_id or
             any(attempt.get(key) != value for key, value in
                 (identity | selection).items())):
@@ -300,6 +302,7 @@ def validate_recovery_receipts(attempt, proof, placement, args, config):
             proof.get("stage") != "firewall-recovery-proof" or
             proof.get("status") != "verified" or proof.get("verified") is not True or
             proof.get("sourceSha") != args.expected_sha or
+            proof.get("evidenceSourceSha") != args.evidence_source_sha or
             proof.get("runId") != run_id or
             proof.get("admissionRunId") != admission_run_id or
             any(proof.get(key) != value for key, value in
@@ -332,7 +335,7 @@ def recover(args):
     require_current_main(args.expected_sha)
     directory = PLATFORM["private_directory"](args.receipt_dir)
     placement = PLATFORM["read_private_json"](directory / "placement.json")
-    validate_placement(placement, config, args.expected_sha, False)
+    validate_placement(placement, config, args.evidence_source_sha, False)
     attempt = PLATFORM["read_private_json"](directory / "admission-attempt.json")
     proof = PLATFORM["read_private_json"](directory / "firewall-recovery-proof.json")
     validate_recovery_receipts(attempt, proof, placement, args, config)
@@ -347,6 +350,7 @@ def recover(args):
     require_exclusive_canary_label(config, placement, labeled)
     record = {"format": 1, "stage": "canary-admit-recover", "status": "started",
               "verified": False, "sourceSha": args.expected_sha,
+              "evidenceSourceSha": args.evidence_source_sha,
               "runId": os.environ["GITHUB_RUN_ID"],
               "admissionRunId": args.admission_run_id,
               "placementRunId": args.placement_run_id,
@@ -511,13 +515,14 @@ def main():
     parser.add_argument("--placement-run-id")
     parser.add_argument("--placement-version-id")
     parser.add_argument("--admission-run-id")
+    parser.add_argument("--evidence-source-sha")
     parser.add_argument("--output", type=Path, required=True)
     try:
         args = parser.parse_args()
         if args.action == "recover":
             recover(args)
         else:
-            if args.admission_run_id:
+            if args.admission_run_id or args.evidence_source_sha:
                 raise ValueError("admission run applies only to canary recovery")
             execute(args)
         print("Canary Node stage verified; private receipt retained")
