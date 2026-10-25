@@ -435,17 +435,24 @@ found 25/25 native twins Ready for 24 hours, but `zimaboard-0` had only about
 5 MiB conservative request margin and 969 MiB observed margin against its
 2,765 MiB rolling screen. The request calculation includes Deluge's 128 MiB
 restartable init sidecar, which the node's allocated-resource display omitted.
-Even pausing five node-bound media apps and moving Nix builder plus Harbor
-Trivy would yield only about 2,677 MiB request margin before placing Enterprise
-API/worker there. A further reviewed move of the NFS-backed NOFX backend
-could raise that to about 2,933 MiB, only 168 MiB above the native rolling
-screen **before** adding Enterprise Pods. That narrow native reserve rules out
-using `zimaboard-0` for API/worker in this candidate. If the native off-ramp
-then qualified, pausing Dispatcharr and reconciling Crossplane standby could
-leave about 2,026 MiB request margin with the initial Enterprise budget on
-`acer`. This would stop automated media downloads and Plex Live TV. It still
-needs media recovery, 24-hour whole-node peaks, placement and restart headroom,
-and direct native Pod-IP and end-to-end proof.
+Pausing five node-bound media apps and Nix builder, then moving Harbor Trivy,
+would yield only about 2,677 MiB request margin on `zimaboard-0`. The proposed
+`#1584` Cloudflared/exporter evacuation could add 128 MiB, leaving just 40 MiB
+above the native rolling screen before backup Jobs. Moving Nix builder to
+`zimaboard-1` instead is unadmitted: that node has about 9 GiB filesystem free
+against the builder's 8 GiB ephemeral request and 16 GiB limit. Moving NOFX
+would need trader quiescence and a fresh SQLite PVC backup. None of these
+variants admits Enterprise API/worker on the native worker. If the native
+off-ramp qualified, pausing Dispatcharr and reconciling Crossplane standby
+could leave about 2,026 MiB request margin with the initial Enterprise budget
+on `acer`. This would stop automated media downloads and Plex Live TV; it still
+needs 24-hour whole-node peaks, placement and restart headroom, and direct
+native Pod-IP and end-to-end proof.
+Four media config backups last succeeded on 2026-10-18; later Jobs hit their
+15/30-minute deadlines on a node with only about 5 MiB conservatively free
+by requests. Dispatcharr has no complete backup/restore workflow. Pausing the
+builder first might let fresh media backups run, but no service pause is
+recovery-ready now.
 Pausing Langfuse instead needs a complete PostgreSQL, ClickHouse, Valkey,
 object-store and recovery-material backup with independent restore; the
 current PostgreSQL-only checkpoint cannot authorize that pause.
