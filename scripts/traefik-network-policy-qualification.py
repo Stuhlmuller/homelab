@@ -134,9 +134,10 @@ def inspect_policies(probes, traefik, harbor_namespace):
     harbor_policies = items(kubernetes_json("-n", "harbor", "get", "networkpolicies", "--chunk-size=0"))
     denied_labels = probes["deny"]["metadata"].get("labels", {})
     allowed_labels = probes["allow"]["metadata"].get("labels", {})
-    selected = lambda labels: [policy for policy in harbor_policies
-                               if "Egress" in policy_types(policy.get("spec", {})) and
-                               selector_matches(policy["spec"]["podSelector"], labels)]
+    def selected(labels):
+        return [policy for policy in harbor_policies
+                if "Egress" in policy_types(policy.get("spec", {})) and
+                selector_matches(policy["spec"]["podSelector"], labels)]
     if selected(denied_labels):
         raise ValueError("denied source has an Egress NetworkPolicy")
     allowed_policies = selected(allowed_labels)
