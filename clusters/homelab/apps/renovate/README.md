@@ -286,13 +286,17 @@ that the SSM values and later ExternalSecret projection are ready, no same-name
 organization or environment secret exists, the repository Actions private key
 is absent, and old runs are drained. Then enable cluster writes through a
 reviewed homelab change. Historical workflow revisions can be rerun while the
-old key exists. For rollback, first suspend the cluster CronJob through
-reviewed GitOps, verify Argo CD synced and no pending or active Renovate Job or
-Pod remains, then use the guarded companion
-`scripts/restore-renovate-actions-key.py` from exact reviewed companion `main`
-to restore the repository key from SSM. Verify its receipt before restoring the
-legacy workflow through a reviewed PR. The interval between legacy deletion
-and first cluster write is a planned no-writer gap.
+old key exists. For rollback, suspend the cluster CronJob through reviewed
+GitOps, verify exact Argo CD sync and no pending or active Renovate Job or Pod,
+then repair or revert the same cluster runner through reviewed desired state.
+Before the first successful write-enabled Job, return to full dry-run or keep
+the CronJob suspended and record the no-writer gap. Keep the old Actions key
+absent. Restore the legacy workflow only after a fresh credential-free probe
+from a GitHub-hosted runner proves its Harbor Docker datasource route, the
+cluster stays drained, and guarded companion key restoration from exact
+reviewed `main` yields a verified receipt. The workflow still needs a separate
+reviewed PR. The interval between legacy deletion and first cluster write is
+a planned no-writer gap.
 
 ## Temporary acceptance observer
 
