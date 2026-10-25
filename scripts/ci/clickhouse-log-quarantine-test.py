@@ -100,6 +100,8 @@ def static_check():
 
 
 def runtime_check(image):
+    # CI runners cannot reach the private Harbor route; the public source has the same pinned digest.
+    image = image.removeprefix("harbor.stinkyboi.com/mirror/")
     if not shutil.which("docker"):
         raise SystemExit("Docker runtime unavailable: docker executable not found")
     contexts = json.loads(command("docker", "context", "inspect"))
