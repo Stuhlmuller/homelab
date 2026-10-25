@@ -56,14 +56,15 @@ def ownership():
 
 def admission_attempt():
     return {"format": 1, "stage": "canary-admit", "status": "attempted",
-            "verified": False, "sourceSha": SHA, "runId": "123",
+            "verified": False, "sourceSha": EVIDENCE_SHA, "runId": "123",
             "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
             "placementRunId": "456", "placementVersionId": "version-1"}
 
 
 def recovery_proof():
     return {"format": 1, "stage": "firewall-recovery-proof", "status": "verified",
-            "verified": True, "sourceSha": SHA, "runId": "789",
+            "verified": True, "sourceSha": SHA, "evidenceSourceSha": EVIDENCE_SHA,
+            "runId": "789",
             "admissionRunId": "123", "placementRunId": "456",
             "placementVersionId": "version-1", "node": "zimaboard-1",
             "nodeUid": "uid", "bootID": "boot", "firewallBaselineEmpty": True,
@@ -373,7 +374,8 @@ class CanaryNodeTests(unittest.TestCase):
 
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
                    cleanup_pods=None, label_inventory=None, capacity_error=None,
-                   selected_run="456", selected_version="version-1", loaded_run=None):
+                   selected_run="456", selected_version="version-1", loaded_run=None,
+                   source_sha=SHA, fail_main_after_label=False):
         commands, records, events = [], [], []
         self.last_records = records
         self.last_events = events
@@ -438,7 +440,7 @@ class CanaryNodeTests(unittest.TestCase):
                     "private_directory": lambda path: path,
                     "private_output": lambda path: path,
                     "read_private_json": lambda path: (placement(EVIDENCE_SHA if action ==
-                    "release" else SHA) | {"placementRunId": loaded_run or selected_run}
+                    "release" else source_sha) | {"placementRunId": loaded_run or selected_run}
                     if path.name == "placement.json" else
                     ownership() if path.name == "firewall-ownership.json" else cleanup())}), \
                     patch.dict(SUT["CLEANUP"], {
@@ -452,11 +454,14 @@ class CanaryNodeTests(unittest.TestCase):
                     records.append(copy.deepcopy(record))}), patch.object(SUT["time"],
                     "sleep", lambda _: None), patch.dict(
                     SUT["execute"].__globals__, {
-                        "require_current_main": lambda _: None,
+                        "require_current_main": lambda _: (_ for _ in ()).throw(
+                            ValueError("source is not exact current main")) if
+                            fail_main_after_label and state["metadata"]["labels"].get(
+                                CANARY) == "true" else None,
                         "require_fresh_capacity": capacity_gate}):
             args = argparse.Namespace(action=action,
                                       config=ROOT / "scripts/config/platform-maintenance.json",
-                                      expected_sha=SHA, receipt_dir=Path(directory),
+                                      expected_sha=source_sha, receipt_dir=Path(directory),
                                       output=Path(directory) / "result.json", bucket="bucket",
                                       placement_run_id=selected_run if action == "admit" else None,
                                       placement_version_id=selected_version if action == "admit" else None)
@@ -477,7 +482,7 @@ class CanaryNodeTests(unittest.TestCase):
 
     def run_recovery(self, state, *, selected=None, attempt=None, proof=None,
                      pods=None, expected_error=None):
-        selected = selected if selected is not None else placement()
+        selected = selected if selected is not None else placement(EVIDENCE_SHA)
         attempt = attempt if attempt is not None else admission_attempt()
         proof = proof if proof is not None else recovery_proof()
         commands, records = [], []
@@ -527,6 +532,7 @@ class CanaryNodeTests(unittest.TestCase):
                 action="recover", config=ROOT / "scripts/config/platform-maintenance.json",
                 expected_sha=SHA, receipt_dir=Path(directory),
                 output=Path(directory) / "result.json", bucket=None,
+                evidence_source_sha=EVIDENCE_SHA,
                 admission_run_id="123", placement_run_id="456",
                 placement_version_id="version-1")
             if expected_error:
@@ -538,7 +544,7 @@ class CanaryNodeTests(unittest.TestCase):
         return commands, records, state
 
     def test_recover_expired_admission_removes_only_owned_label_then_taint(self):
-        selected = placement()
+        selected = placement(EVIDENCE_SHA)
         selected["capturedAt"] = "2026-01-01T00:00:00Z"
         selected["baselineCapturedAt"] = "2026-01-01T00:00:00Z"
         commands, records, state = self.run_recovery(node(admitted=True), selected=selected)
@@ -570,11 +576,12 @@ class CanaryNodeTests(unittest.TestCase):
 
     def test_recover_rejects_forged_selection_or_missing_firewall_proof(self):
         for evidence, changes, error in (
-                ("attempt", {"sourceSha": EVIDENCE_SHA}, "admission attempt"),
+                ("attempt", {"sourceSha": SHA}, "admission attempt"),
                 ("attempt", {"runId": "124"}, "admission attempt"),
                 ("attempt", {"nodeUid": "other"}, "admission attempt"),
                 ("attempt", {"placementVersionId": "forged"}, "admission attempt"),
                 ("proof", {"runId": "788"}, "same-run empty firewall"),
+                ("proof", {"evidenceSourceSha": SHA}, "same-run empty firewall"),
                 ("proof", {"admissionRunId": "124"}, "same-run empty firewall"),
                 ("proof", {"placementRunId": "457"}, "same-run empty firewall"),
                 ("proof", {"placementVersionId": "forged"}, "same-run empty firewall"),
@@ -847,6 +854,22 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertEqual(self.last_events, ["inventory", "label", "inventory"])
         self.assertEqual(self.last_records[-1]["placementRunId"], "457")
         self.assertEqual(self.last_records[-1]["placementVersionId"], "version-2")
+
+    def test_stale_main_after_label_recovers_from_original_admission_sha(self):
+        state = node()
+        with self.assertRaisesRegex(ValueError, "exact current main"):
+            self.run_action("admit", state, source_sha=EVIDENCE_SHA,
+                            fail_main_after_label=True)
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
+        self.assertEqual(state["metadata"]["labels"][CANARY], "true")
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        commands, records, state = self.run_recovery(state)
+        self.assertEqual(len(commands), 2)
+        self.assertEqual(records[-1]["sourceSha"], SHA)
+        self.assertEqual(records[-1]["evidenceSourceSha"], EVIDENCE_SHA)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
 
     def test_new_occupant_after_label_removes_label(self):
         state = node()

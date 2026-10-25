@@ -232,11 +232,14 @@ absent, then adds the dedicated
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
 the taint. If admission changed the Node but
-its final receipt upload failed, protected `canary-admit-recover` uses the
-immutable attempt and selected placement version. A same-run privileged probe
+its final receipt upload failed, owner-only protected `canary-admit-recover`
+runs on current `main` with the original admission SHA and run ID. That SHA
+must be an ancestor of current `main`. It uses the original immutable attempt
+and selected placement version. A same-run privileged probe
 confirms the host firewall remains empty and deletes its owned Pod before
 UID/resource-version guarded removal of only the canary label and taint. It
-works after placement expiry, under the original exact current `main` SHA.
+works after placement expiry or a newer `main` commit while the reviewed
+canary node and taint remain unchanged.
 An orphaned recovery probe uses the protected `firewall-baseline-recover`
 token/UID deletion path with its recovery run and admission IDs.
 After a qualifying traffic probe, exact reviewed GitOps commits

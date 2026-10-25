@@ -38,7 +38,7 @@ on:
         required: false
         type: string
       evidence_source_sha:
-        description: Exact qualify main SHA before fixture and firewall removal
+        description: Original admission SHA for recovery, or qualify SHA for ownership capture
         required: false
         type: string
       capture_run_id:
@@ -191,7 +191,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'8d1efc862995212bdfab5ea14785cf85487e0fb40941bf04dfa2337a90b21805  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'dd0ce17cc573acff38974b0dca233a8708adbf2ae988578837adce27823acddb  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then
