@@ -8,10 +8,18 @@ sources:
     resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
+  - id: openwiki-source-62b4804f94bc9a36375f5db0
+    resource: repo://clusters/homelab/apps/external-secrets/cluster-secret-store.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
@@ -30,6 +38,24 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-da9a8209d90a2a569457a808
+    resource: repo://clusters/homelab/apps/multica/README.md
+  - id: openwiki-source-846efb58b681f5ac619edfd7
+    resource: repo://clusters/homelab/apps/multica/runtime/bootstrap.py
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-0937bc5dca6b0bf79ccdb46a
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -42,48 +68,78 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-f19aa740c5d820d4dd28114e
+    resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-  - id: openwiki-source-aef98a0b80c0ff330c310ed1
-    resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-4fa6e8b8348f9583e76afe30
-    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
-  - id: openwiki-source-326a085bf1ea3cb64a10924e
-    resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
-  - id: openwiki-source-e9bb34bdbee430c2456beb6d
-    resource: repo://IaC/modules/entra-owner-mail/main.tf
-  - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
-  - id: openwiki-source-77d110fdd1547564be86e611
-    resource: repo://IaC/modules/tailscale-access/main.tf
-  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/modules/tailscale-access/README.md
-  - id: openwiki-source-43b94de29b6b12121d020dc6
-    resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
+  - id: openwiki-source-c2916697314c2405c38ebc73
+    resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
+  - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
+  - id: openwiki-source-5edf712b7916c34ad7d2c410
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
+  - id: openwiki-source-13b48922f1b929b52f4a0233
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-9d870d4d05777e4847356500
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/variables.tf
+  - id: openwiki-source-1f0ad12bbff1986d64be6620
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-96fd4f3e569f8bc04da5259d
+    resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
+  - id: openwiki-source-cfb569f646f8b7c98a134fdf
+    resource: repo://scripts/ci/platform-maintenance-credentials-test.py
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
+  - id: openwiki-source-7941d9a35910fdb69c63e9c1
+    resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
+  - id: openwiki-source-447d6bc69ac6883500089232
+    resource: repo://scripts/platform-maintenance-credentials.sh
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
-    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
+  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
+    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-a44b67b396abfe9ddff04314
+    resource: repo://specs/004-run-renovate-in-cluster/tasks.md
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # Secrets And Identity
@@ -110,7 +166,7 @@ recovery archive retention.
 ## Tailscale provider foundation
 
 The staged ingress migration uses `tailscale/tailscale` 0.29.2 in the operator-only
-[`tailscale-access` module](../../IaC/modules/tailscale-access/README.md).
+[`tailscale-access` module](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 It adopts the complete existing policy before changing it; applying an additive
 fragment would overwrite unrelated access. The committed policy preserves legacy
 users, tags, SSH and route approvals while giving new CI tags only explicit grants.
@@ -153,7 +209,7 @@ signers. Preview and execution validate every cached current signature and all
 previous authority metadata before any removal. Execution rechecks each target;
 an already-absent previous authority remains safe to retry. Preview never signs,
 publishes or changes cache contents. Keep an encrypted private cache backup and use the
-[module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
+[module runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for rotation and
 recovery. If an older publisher lost the wrapper before saving a receipt, the
 separate orphan-recovery mode requires the exact current provider identity,
 unique authority, this Mac's signer metadata and a timestamp within one day.
@@ -174,9 +230,13 @@ Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
 recovery. The separate tailnet resolver watches approved Kubernetes Services
 and needs no DNS write token. Only the later guarded retirement helper reads
-the existing scoped cert-manager Cloudflare token; it can delete public
-A/AAAA/CNAME records for the fixed 27 names after owner tailnet DNS handoff and
-client acceptance. It has no record-publication or restoration mode.
+the existing scoped cert-manager Cloudflare token. Feature 005 limits its
+public A/AAAA/CNAME deletion to the 26 non-apex names from the fixed migration
+set after owner tailnet DNS handoff and client acceptance. The private resolver
+retains all 29 current approved names. Public apex, mail, DNS-01 validation,
+and unrelated public names stay in the zone; see the
+[cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
+The helper has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
 
@@ -199,14 +259,25 @@ changing DNS alone does not authorize deleting those credentials.
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
 
-The staged [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
-reuses its existing GitHub App. IaC declares two SecureString placeholders for
-the App issuer and private key. A temporary role permits the companion
-repository to transfer only those two values; it cannot read them back. The
-`automation` ExternalSecret projects both as files and refreshes every five
-minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
-and removal of the temporary writer grant are verified. The current code is
-desired state, not evidence that the credentials have reached the cluster.
+The [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
+reuses its existing GitHub App. IaC declared two SecureString placeholders for
+the App issuer and private key. The [2026-10-19 transfer receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records both parameters at version 2 and a later `Ready=True` refresh of the
+`automation/renovate` ExternalSecret. It projects both credentials as files
+every five minutes. Current IAM source removes the temporary exact-scope
+companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, the operator applied the private, un-targeted saved plan with only the
+role and inline-policy deletions. A read-only IAM lookup returned
+`NoSuchEntity`, and a fresh full-unit plan had no changes. The CronJob is now
+scheduled hourly in UTC and remains in full dry-run mode. Its earlier
+19:00 and 20:00 UTC Jobs each finished all eight eligible repositories and
+logged the same public release cache-key hit on separate Pods. After the
+protected companion canary published `v0.0.2` at 20:20 UTC, the 21:00 scheduled
+dry run hit that key and selected the new public canary branch proposal. The
+durable aggregate receipt closes T022. Cache-fault recovery, full parity, and
+writer cutover remain open. The legacy GitHub Action remains the only writer. The App
+lacks repository Administration read, a recorded migration exception whose
+first write-enabled outcome still needs policy review.
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name
@@ -214,7 +285,7 @@ organization or environment secrets, and drained old runs. Cluster writes then
 require a separate reviewed GitOps change. Rollback first suspends and drains
 cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
-cutover has not occurred.
+writer cutover has not occurred.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when
@@ -234,6 +305,49 @@ boundary. After repair, verify a controlled repository-driven refresh before
 rotating dependent credentials.
 See [AWS forward access sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html)
 and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-viaawsservice).
+
+### Dormant OpenClaw Enterprise boundary
+
+The declared but unapplied [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+prepares restricted `openclaw-system` and external `openclaw-agents` namespaces.
+The `aws-ssm` store allow-list includes both; eight `OnChange` ExternalSecrets
+project only exact `/homelab/openclaw-enterprise/` parameters and retain target
+Secrets on deletion. The model key remains a placeholder until the protected
+workflow supplies a distinct OpenRouter key. These declarations do not prove
+materialization or authorize activation.
+
+`occ-database` templates separate `application-url` and `migration-url` keys
+from generated app and migrator passwords. Both URLs name the private
+`occ-postgres` Service and require `sslmode=verify-full` with the retained
+`occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
+password is a separate target. cert-manager declares that CA and a server
+certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
+and live TLS verification remain pending.
+
+The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
+non-secret `installation.yaml` bytes. Its exact SHA-256 is bound in Helm values.
+A protected exact-`main` workflow can create and reread only that fixed Secret
+after the foundation namespace exists; this PR does not run it. The initial
+Secret has no installation ID. The source-only
+[`bind-installation.py`](../../scripts/openclaw-enterprise-bind-installation.py)
+attests both Ready controller Pods and the returned `GET /installation` ID,
+then patches only the Secret annotation with UID/resource-version guards and
+readback. A fixed [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
+rechecks exact current `main` and pins the reviewed binder, but the hosted runner
+has no declared delivery for the owner-controlled 0600 bootstrap service-key file.
+No binding run or live readback has occurred; activation remains blocked.
+SSM-backed model, database, auth, and gateway credentials remain separate from
+these startup bytes.
+
+The staged [journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+has a dedicated ServiceAccount with automatic token mounting disabled. Its
+one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
+read-only RBAC can GET only the exact reviewed Installation Secret and selected
+workload proofs. Reconcile and stop require the chart's bootstrap service key
+as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
+is not registered in Argo CD, that file ownership is unproved, and the operator
+gate remains disabled; these permissions are source intent, not live access.
 
 ## Identity Notes
 
@@ -364,7 +478,7 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `refreshPolicy: OnChange` and `deletionPolicy: Retain`. The new backend Secret
   prevents starting before the fixed code is present; PostgreSQL retains its
   original Secret. Rotate generated JWT and PostgreSQL values through
-  the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
+  the committed `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
   catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack;
   do not hand-edit
   `/homelab/multica/postgres-password`, because future applies restore the
@@ -383,8 +497,9 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   an unsafe public credential.
   The server runtime uses only the fixed-code key in an init container to
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
-  local PVC. The daemon renews it; revoked or expired tokens fail startup
-  rather than silently creating a replacement. The main container exposes only
+  local PVC. The pinned daemon asks the backend to renew that token in place
+  when seven days or less remain; revoked or expired tokens fail startup rather
+  than silently creating a replacement. The main container exposes only
   its own profile, including native ChatGPT OAuth state retained on the runtime
   PVC; it does not mount the backend JWT, database password, fixed code, or a
   model API key. This remains a trusted operator runtime because tasks can read
@@ -457,6 +572,35 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
   affects CI, operator, and Cordium Kubernetes access, so validate both Services
   after rotation.
+  The protected Talos maintenance lane has a separate CLIENT authentication
+  token, `OCE_OCTELIUM_CLIENT_AUTH_TOKEN`, limited by
+  `homelab-platform-talos-ci-access` to the private TCP
+  `talos-api-ci.homelab` Service. Its repository helper
+  [`platform-maintenance-credentials.sh`](../../scripts/platform-maintenance-credentials.sh)
+  runs only from an exact, clean `main` checkout; it verifies the reviewed
+  Octelium WORKLOAD User, policy, and Service before creating or rotating the
+  dedicated Credential. It does not delete the User's CLIENTLESS Kubernetes
+  sessions. The same helper issues a separate 30-day Talos `os:admin` client
+  from a valid operator identity, proves its certificate and key differ from
+  the operator's, tests read-only direct access, and publishes only the encoded
+  client as `OCE_TALOSCONFIG_B64` in `homelab-production`. It never uploads the
+  operator's client config. Protected inspect run `39362087271` stopped at the
+  Talos connection setup with both inputs empty. The helper has only local
+  tests; Octelium admin authentication, CI issuance, tunnel access, and a
+  complete protected inspection receipt remain outstanding. See the
+  [Talos maintenance runbook](../../docs/talos-control-plane-maintenance.md).
+  The fixed upgrade stages also read private role-specific control-plane and
+  worker configs from protected workflow secrets. This path remains inactive
+  while `activationEnabled` is false and its placement, recovery, and image
+  publication receipts are missing.
+  The dormant firewall cleanup lane keeps capture, approval, attempt, and
+  completion evidence in the private versioned maintenance bucket. The owner
+  reviews the full capture outside public logs and supplies its exact digest
+  to a fresh protected approval run. That run verifies the owner actor, live
+  snapshot, absent fixture namespace and workloads, exact reviewed canary Pod
+  inventory, and current `main` before writing an
+  immutable receipt under the capture run ID. Partial deletion needs a new
+  capture and approval, including when no owned objects remain.
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
@@ -485,7 +629,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   grant. Trust is limited to `homelab-plan`, `homelab-production`,
   `github-iac-plan`, and `github-iac-production`. Apply trust changes only with
   a reviewed administrator session and the single-role saved-plan gate in
-  `IaC/operator/README.md`; the first rollout must import the existing role
+  `docs/operator-infrastructure.md`; the first rollout must import the existing role
   before planning. CI must not traverse `IaC/operator` or gain permission to
   replace its own attachment. The
   grant is bounded to policy slots `00` through `09` and the exact
@@ -495,7 +639,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   runtime key. The correction reuses the operator-owned policy and attachment;
   it adds no cryptographic or key-administration permission. Apply only the
   reviewed single-policy saved-plan update through
-  [the operator runbook](../../IaC/operator/README.md#full-unit-reconciliation),
+  [the operator runbook](../../docs/operator-infrastructure.md#full-unit-reconciliation),
   never CI self-administration; stop on unrelated drift. On September 30, 2026
   PDT (October 1 UTC), the saved plan applied and a fresh full-unit plan was a
   no-op; CI simulation allows only `kms:DescribeKey` on the current SSM key,
@@ -571,7 +715,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `/homelab/n8n/postgres-app-password` values; n8n receives only the app
   password through `n8n-postgres-client` and
   `DB_POSTGRESDB_PASSWORD_FILE`.
-- OpenClaw uses `/homelab/openclaw/app-secret` as
+- The stopped legacy OpenClaw retains `/homelab/openclaw/app-secret` as
   `OPENCLAW_GATEWAY_TOKEN`; bootstrap configures gateway auth with an OpenClaw
   SecretRef to that environment value instead of a generated file under the
   container user's home directory. OpenClaw uses
@@ -591,6 +735,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   that key for a homelab-only installation token on each CLI/Git invocation.
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
+- Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
+  contract. OpenTofu generates five internal values; the model key stays a
+  placeholder until the owner supplies a distinct OpenRouter inference key to
+  the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
+  It verifies the key and writes only the new SSM path. The selected
+  `openrouter/free` model uses OCE's OpenAI-compatible provider configuration.
+  Activation remains disabled until the key, consumer refresh, and real model
+  probe pass. No legacy OpenClaw or LiteLLM credential is an alias for this
+  agent. See the [SSM contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure
@@ -772,7 +925,7 @@ checks did not exercise a new password or MFA challenge. Test actual pilot login
 denial after its initial password change and MFA setup; an interrupted
 authentication flow is not proof of denial. Keep actual HUMAN identifiers private.
 
-The [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
+The [`operator/entra-owner-mail` unit](../../IaC/terragrunt-catalog/modules/entra-owner-mail/README.md)
 retires the historical mail-only Graph PATCH. Its `removed` block forgets only
 the retired Terraform state address after a separately reviewed plan; it does
 not write Graph or release the old SMTP alias. The supported replacement is an
@@ -858,7 +1011,7 @@ on enforced containment.
 
 ## Mastodon credential boundary
 
-The [Mastodon declaration](../../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+The [Mastodon declaration](../../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
 adds ten exact `/homelab/mastodon/` parameters and namespace-scoped External
 Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
 owner password are generated in encrypted state. The external SMTP slot starts

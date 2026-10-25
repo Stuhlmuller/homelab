@@ -1,59 +1,69 @@
 # Staged Tailscale cutover
 
-This change prepares parallel Traefik ingress and operator utilities. Merging it
-alone does not migrate DNS, Mac clients, GitHub callbacks, or CI transport.
-Keep the existing Octelium routes, Cloudflare Tunnel, callback URLs, native
-catalog, and macOS carrier available until their replacement passes acceptance.
-Fleet has no Funnel route; its existing hostname moves to private mesh DNS.
+The staged Traefik migration below records how private ingress and operator
+utilities were established. Keep Octelium routes, Cloudflare Tunnel, callback
+URLs, native catalog, and macOS carrier until their separate replacement gates
+pass. Fleet has no Funnel route; its application hostname uses private mesh DNS.
 
 ## Current tailnet DNS cutover
 
-The earlier ingress migration below records how the existing private Traefik
-entry point was established. For the separate DNS resolver, use the
-[tailnet DNS validation guide](../../../../specs/004-tailnet-service-dns/quickstart.md).
-Publish the pinned image to Harbor, merge and apply the reviewed resolver
-Application, sign its fixed proxy, and run the direct check against its observed
-Service IP over UDP and TCP:
+The separate [tailnet resolver](../../platform/tailnet-dns/README.md) serves all
+29 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
+routing. Confirm its signed proxy, observed Service IP, and direct UDP/TCP
+answers:
 
 ```sh
 python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
 ```
 
-**Pause for the owner** to add that IP as the restricted `stinkyboi.com`
-nameserver in tailnet DNS, with **Use with exit node** if those clients need
-it. Keep public application records during this pause. After ordinary tailnet
-client lookups and existing HTTPS, Fleet, Harbor node pulls, native clients,
-and Funnel restrictions pass, capture the live Cloudflare record baseline and
-largest previous TTL. Record off-tailnet impact for the apex and Cordium
-wildcard, preview the fixed 27-name retirement, and execute it only from the
-reviewed `main` checkout with complete evidence. Wait the old TTL and verify
-public A/AAAA/CNAME absence for those names plus public survival of unrelated
-names and apex MX/TXT. The helper preserves other record types and cannot
-republish those private application addresses. During an outage after this
-retirement, restore the resolver through Argo/Terragrunt and re-sign its fixed
-proxy if necessary; public record restoration is not the outage rollback.
+Confirm the owner enabled that IP as the restricted `stinkyboi.com` nameserver
+in tailnet DNS, with **Use with exit node** when needed. An ordinary client's OS
+DNS path must answer all 29 names privately. The
+[current public cutover](../../../../specs/005-retire-public-app-dns/quickstart.md)
+then removes only A/AAAA/CNAME records for the 26 approved non-apex app
+subdomains. It preserves the public apex, mail and DNS-01 records, Cloudflare
+zone, four legacy public endpoints, and unrelated names. Confirm existing
+HTTPS, Fleet, Harbor node pulls, native clients, and Funnel restrictions first.
+For an intentionally stopped app, confirm zero replicas in both reviewed source
+and the live Deployment; its backend HTTP error is then expected while its DNS
+name remains private. Serving routes must still pass.
+Run `python3 -I scripts/tailscale-private-dns-check.py --retire-private --check`
+for the original 27 migration routes. Bare `--check` also probes the two staged
+Enterprise routes; their backend readiness is separate from this public
+record retirement.
+For every one of the 26 names, record whether off-tailnet callers were
+`migrated` or `accepted_loss`. A missing decision blocks deletion.
 
-After the owner setting and all gates pass, use a clean reviewed `main`
-checkout. Keep the evidence file outside this public repository and complete
-its confirmation fields using actual client and off-tailnet checks:
+Use a clean reviewed `main` checkout. Keep the evidence file outside this
+public repository and complete its confirmation fields using actual client and
+off-tailnet checks:
 
 ```sh
 mkdir -p -m 700 ~/.local/state/homelab
 scripts/tailscale-private-dns.sh --retire-private --dry-run \
-  --baseline-out ~/.local/state/homelab/tailnet-dns-retirement.json
-# Complete and review that JSON evidence before this later production action.
-reviewed_sha=$(git rev-parse HEAD)
+  --baseline-out ~/.local/state/homelab/app-subdomain-retirement.json
+# Complete and review the private JSON evidence before execution.
 scripts/tailscale-private-dns.sh --retire-private --execute \
-  --expected-sha "$reviewed_sha" \
-  --evidence ~/.local/state/homelab/tailnet-dns-retirement.json
+  --expected-sha REVIEWED_MAIN_SHA \
+  --evidence ~/.local/state/homelab/app-subdomain-retirement.json
 ```
 
-The preview lists exact Cloudflare IDs and the old maximum authoritative TTL.
-Execution rechecks the live records, private resolver, normal client DNS, and
-HTTPS before deleting only A/AAAA/CNAME records for the 27 migration names.
-After the reported TTL from the last deletion, confirm public absence and
-normal private access again. A partial run can be retried with the same evidence
-after investigating the failure; it never creates application records.
+Set `REVIEWED_MAIN_SHA` to the exact merged `git rev-parse HEAD`. Review the
+preview's 26-name record IDs and largest previous TTL. Before the first DELETE,
+the helper blocks relevant child-zone NS delegation and effective public
+answers from broader wildcards or CNAME chains. It does not traverse child
+zones. It compares the selected Cloudflare API zone's nameservers with the
+parent delegation and rejects failed or non-authoritative TTL replies. A
+final full-field target reread catches changes during inspection. A changed
+target baseline or incomplete evidence blocks execution.
+After the reported TTL from the last deletion, verify no public A/AAAA/CNAME
+answers for all 26 names and a concrete
+Cordium child, while public apex, unrelated names, Cloudflare delegation,
+cert-manager DNS-01 readiness, and both Traefik and Istio Certificates remain
+healthy. See the linked quickstart for exact read-only checks. Investigate a
+partial run before retrying through the same helper and evidence. Resolver
+recovery restores the declared Service or signed proxy through the reviewed
+path; it never republishes retired public app addresses.
 
 ## Before execution
 
@@ -109,10 +119,11 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    The old public DNS publication preview is superseded by the current tailnet
    DNS cutover above.
 
-   AFFiNE may return 502 or 503 while suspended because Traefik uses its static
-   ClusterIP backend. The check accepts either status only when the repository
-   and live Deployment both explicitly declare zero replicas and no live replicas
-   remain. Other application 5xx responses still fail readiness.
+   AFFiNE may return 500, 502, or 503, and legacy OpenClaw may return 502,
+   while suspended behind their static ClusterIP backends. The check accepts
+   these statuses only when the repository and live Deployment both explicitly
+   declare zero replicas and no live replicas remain. Other application 5xx
+   responses still fail readiness.
 
 4. The previous public application A/AAAA publication step is retired. Do not
    run it as part of the new resolver rollout.

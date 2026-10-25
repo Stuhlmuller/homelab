@@ -3,10 +3,9 @@ type: runbook
 title: "Talos Control-Plane Maintenance"
 description: "Authenticated Talos maintenance, etcd snapshot integrity, macOS backup scheduling, retention, offsite publication, and recovery limits."
 tags: ["runbook", "talos", "maintenance"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-11T00:16:41.141Z
 sources:
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-2d8396976c82220440798f1a
@@ -17,14 +16,37 @@ sources:
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
-  - id: openwiki-source-f585f8850806deb1619ec0c5
-    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-11T00:16:41.141Z" }
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-2a039ed5aad5ca72f1f03c9a
+    resource: repo://scripts/ci/network-policy-registration-test.py
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-719a8f57b80adfae662090ca
+    resource: repo://scripts/ci/platform-maintenance-test.py
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-23T18:25:34.713Z
 ---
 
 # Talos Control-Plane Maintenance
 
 Canonical runbook: [`docs/talos-control-plane-maintenance.md`](../../docs/talos-control-plane-maintenance.md)
+
+The declared Talos minor-version and Kubernetes upgrade ladder is wired in
+source but inactive. Keep the historical patch audits separate from the
+unpassed placement, recovery, publication, and live upgrade gates below.
 
 The [routine etcd backup runbook](../../docs/talos-etcd-backup.md) owns
 `scripts/talos-etcd-backup.py`: authenticated snapshot download to a private
@@ -153,5 +175,74 @@ Do not invent limits while metrics are unavailable.
 The canonical runbook also owns the dated 2026-08-25 corrupt-object recovery.
 That recovery is exact-key and snapshot-first, with a Talos snapshot-restore
 rollback; do not generalize it into a routine etcd mutation path.
+
+## Staged Enterprise platform maintenance
+
+The [platform maintenance workflow](../../.github/workflows/platform-maintenance.yml)
+and [committed ladder](../../scripts/config/platform-maintenance.json) define
+Talos `1.11.3 → 1.11.6 → 1.12.12 → 1.13.11 → 1.14.4`, followed by a separately
+gated Kubernetes `1.34.11 → 1.35.9` stage. The protected lane requires exact
+current `main`, a distinct Octelium client tunnel and Talos mTLS. Inspect and
+offline validation do not execute upgrades. The protected upgrade branch now
+invokes the ordered executor after strict role-specific Talos config validation.
+Before an upgrade execute, the executor compares the canonical platform config
+bytes with the exact dispatched commit and rejects a runner-local override.
+It restores exactly one checksummed, versioned, current-SHA copy of placement,
+direct-LAN Talos recovery, fresh off-node etcd and image-publication receipts.
+Before each Talos node command, it records a durable start marker; a verified
+marker follows node and cluster health, with active/persistent machine role,
+disk and mirror configuration unchanged. An ambiguous or interrupted marker
+stops automatic retry and requires direct-LAN review.
+
+Talos appends target version tags during `upgrade-k8s`. The executor verifies
+the five Harbor aliases are digest-matched and immutable, and that every node
+has the no-fallback Harbor routes before that command. The tag lock, protected
+recovery receipt producer, isolated canary, and Istio completions remain open
+gates; `activationEnabled` is still false. No live node or control-plane
+upgrade is accepted from this source alone. The canonical runbook gives the
+direct-LAN commands and stop conditions.
+The Kubernetes stage also checks live Istiod, CNI, ztunnel and both injected
+gateway workloads immediately before the command and after verification. It
+requires the reviewed Istio 1.30.6 digest in every relevant image reference,
+fully observed and ready controllers not marked for deletion, complete DaemonSet placement, and total
+Deployment replicas equal to desired so old terminating replicas block the stage. Matching
+mutable tags fail the gate. T025 must align chart image hubs and digest-bearing
+injection with the reviewed catalog before this stage can run.
+
+The same protected lane stages `canary-admit` and `canary-release` separately
+from upgrades. Admission requires reviewed placement and adds the isolation
+taint before the selector label. It rejects another Node with that label before
+mutation and immediately before labeling, and removes its own label if a
+post-patch check detects a conflict. After qualification, the exact qualify →
+fixture-prune → firewall-prune order must hold on the first-parent history of
+current `main`. Documentation and evidence commits may interleave; other
+source edits cannot. The static gate checks exact GitOps source phases, while private
+ownership and cleanup receipts still bind each protected run to current
+`main`. Apply the
+fixture prune and verify the live `network-policy-canary` namespace and all
+fixture workloads are absent before capture. Protected `ownership-capture`
+stores the full remaining firewall snapshot in private versioned S3; the owner
+reviews it and dispatches `ownership-approve` with its run ID and digest.
+Approval rechecks the live snapshot, fixture absence, node identity and
+current main before an immutable receipt can authorize `owned-cleanup`.
+Partial cleanup requires a new capture and approval. Capture, approval,
+cleanup, and release also require the complete live canary-node Pod inventory
+to match the reviewed system DaemonSet Pod namespace/name/UID identities plus
+the validated cleanup Pod while it runs. After cleanup Pod deletion, release
+rechecks that only the reviewed system Pods remain before removing the taint.
+An incomplete inventory or extra, terminating or replaced Pod blocks the
+stage. A normal system DaemonSet Pod restart changes its UID; the immutable
+qualify-SHA placement cannot be refreshed after firewall removal through this
+workflow, so stop for a separately reviewed recovery path. Inventory checks
+and firewall deletion are not atomic; a Pod tolerating the taint could arrive
+during deletion. Live activation stays blocked until isolated placement rules
+out that arrival or a reviewed repository-owned isolation path is added.
+Release verifies the cleanup and ownership receipts, original placement,
+reviewed removal history and fixture absence. A newer `main` requires fresh
+SHA-bound capture, approval, and cleanup before release. It removes the label,
+waits for
+cleanup DaemonSet Pods to disappear cluster-wide, rechecks the node Pod
+inventory, then removes the taint. An interrupted release keeps the taint for
+direct review; the committed `canary.node` is unset.
 
 See [Cluster Topology](../architecture/cluster-topology.md) and [Validation](validation.md).

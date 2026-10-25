@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ab23cfe71a1af23f8b8d2ff9ae2c6cf615252f25d493b2e373c8c89f3be2c202",
+  "pageVersion": "sha256:7290f89eb69d96f9cb4600f47bafd9f244c5711326b3d95e4b49908d929317be",
   "claims": [
     {
       "id": "claim_90504df127484cc1967cce8cc178ca30",
@@ -8,13 +8,13 @@
       "evidence": [
         {
           "resource": "repo://docs/argocd-node-pressure-2026-10-10.md",
-          "version": "repo-file-v1:sha256:9ebb6675879889446c5281d2f3cd7613f697216ca087b6d1a8cf34fc0a07c162"
+          "version": "repo-file-v1:sha256:3fb023d451c0421894984fe2ebff2e8464dc662f4a414988fd94c9ae73ea8020"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:10:58.872Z"
+    "at": "2026-10-19T05:01:55.414Z"
   }
 }

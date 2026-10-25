@@ -63,13 +63,17 @@ For an outage, run the same checker without `--initial-handoff`, inspect Argo,
 Pods, Service status and the proxy's Tailnet Lock signature. Restore the failed
 declaration through reviewed Argo/Terragrunt desired state; if only its key
 rotated, use the fixed signer. Re-run direct UDP/TCP and normal client checks.
-After the later public cutover, private names fail closed while the resolver is
-down; do not restore public app A/AAAA/CNAME as an outage workaround.
+After public app subdomain retirement, the 26 retired non-apex names fail
+closed while the resolver is down; do not restore public app A/AAAA/CNAME as
+an outage workaround. The apex remains privately answered while healthy and
+retains its existing public A and mail records.
 
-The [cutover contract](../../../../specs/004-tailnet-service-dns/contracts/cutover.md)
-requires owner DNS confirmation, client and route acceptance, off-tailnet apex
-and Cordium impact decision, a live Cloudflare baseline and old maximum TTL.
-Only then preview the fixed 27-name `--retire-private` helper, execute from
-reviewed `main`, wait the old TTL and verify public absence. It preserves
-unrelated names and apex MX/TXT/CAA/NS/SOA. This initial resolver rollout stops
-before the owner setting and does not delete public records.
+The current [26-name cutover contract](../../../../specs/005-retire-public-app-dns/contracts/cutover.md)
+requires owner DNS confirmation, all 27 private answers and HTTPS routes,
+with declared and live zero-replica checks for intentionally stopped apps,
+per-name off-tailnet caller decisions, a complete public baseline, and the old
+maximum TTL. Preview and execute from reviewed `main`; verify public absence
+for the 26 subdomains after that TTL. Preserve the Cloudflare zone, public apex
+records, DNS-01 validation, the four legacy public endpoints, and unrelated
+names. The initial resolver rollout stopped before owner DNS handoff and did
+not delete public records.

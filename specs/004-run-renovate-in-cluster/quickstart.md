@@ -5,7 +5,7 @@ Use this after implementation. Apply only reviewed repository desired state thro
 
 ## Before the first cluster run
 
-1. Record the current Stuhlmuller/renovate workflow/config commit, latest successful run, App PR author, and accessible repository count. Verify the App installation covers all owned repositories, including future additions. Do not paste private repository names into public reports.
+1. Record the current Stuhlmuller/renovate workflow/config commit, latest successful run, App PR author, and accessible repository count. Verify the App installation covers all owned repositories, including future additions. Compare actual App grants with the documented Administration-read parity exception in contracts/runner-contract.md; verify first write-enabled outcomes rather than assuming private protection settings. Do not paste private repository names into public reports.
 2. Review and merge the SSM placeholder and dedicated OIDC transfer-role changes. Review the private saved plan through the existing protected apply path; secret-bearing shared-unit plans are not public PR artifacts.
 3. Dispatch the reviewed, fixed-target transfer workflow in Stuhlmuller/renovate. Confirm only the declared SSM parameter metadata. Never read or print the Secret value.
 4. Publish and verify the digest-pinned Renovate image through the declared Harbor mirror workflow before merging the consuming CronJob. Confirm the Argo CD Application points at main and the automation namespace is allowed.
@@ -39,7 +39,7 @@ nix develop --command node scripts/ci/renovate-cache-recovery-test.mjs "$renovat
 
 ## Dry-run gate
 
-Merge the CronJob suspended with Renovate full dry-run mode committed in its global config. Confirm ExternalSecret readiness and target Secret metadata while suspended, then remove the temporary transfer grant. Unsuspend through a reviewed GitOps change only after both checks pass. Argo CD then creates hourly Jobs; the legacy daily GitHub Action remains the only writer. Inspect status and logs from two consecutive Jobs, including a new Pod using the same PVC:
+Merge the CronJob suspended with Renovate full dry-run mode committed in its global config. Confirm ExternalSecret readiness and target Secret metadata while suspended, then remove the temporary transfer grant. Unsuspend through a reviewed GitOps change only after both checks pass. Argo CD then creates hourly Jobs; the legacy daily GitHub Action remains the only writer. Inspect status and logs from the cold Job and two later scheduled Jobs using the same PVC:
 
 ```sh
 kubectl get application renovate -n argocd
@@ -49,7 +49,19 @@ kubectl get jobs -n automation -l app.kubernetes.io/name=renovate
 kubectl logs -n automation job/<completed-renovate-job> --timestamps
 ```
 
-Expect owner-filtered discovery, all App-accessible eligible repositories, no onboarding PR for a config-free repository, and no GitHub writes. Verify the PVC remains bound across distinct Pod UIDs; record a scoped TRACE package-cache hit for the same datasource key or an independent mock-registry request count, using the marker in the pinned image. A shorter second run alone is insufficient. Add a temporary homelab custom-manager fixture that watches GitHub Releases from Stuhlmuller/renovate. Warm that lookup, publish its next controlled release through a reviewed companion workflow, and confirm a later scheduled scan sees it after normal cache refresh. Remove the fixture and canary workflow through reviewed changes after acceptance. Keep TRACE logs private. If the App sees fewer repositories than the owner inventory or its installation does not select all repositories, stop cutover and add a reviewed, repository-owned access-management path before changing the installation.
+Expect owner-filtered discovery, all App-accessible eligible repositories, no
+onboarding PR for a config-free repository, and no GitHub writes. Verify the PVC
+persists across distinct Pod UIDs. A shorter second run alone is insufficient
+cache evidence: use scoped restricted TRACE or a mock-registry counter to prove
+a same-key hit, then confirm a newly published canary version appears after
+normal refresh. [The parity receipt](dry-run-parity-receipt.md) records the
+completed v0.0.1/v0.0.2 proof. Its temporary INFO remap was removed because
+cache keys can identify private repositories and packages; do not reintroduce
+it for write-enabled runs. Keep raw records out of public PRs, issues, and CI
+output. Remove the companion canary fixture and workflow through a reviewed PR
+after acceptance, deleting `renovate.json` only if it remains canary-only. If
+the App sees fewer repositories than the owner inventory or its installation
+does not select all repositories, stop cutover and add a reviewed access path.
 
 The mock discovery fixture above proves the add/remove rule; it does not claim
 that a real owner transfer occurred.

@@ -21,7 +21,10 @@ INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
 TARGET = "homelab-ingress.tail67beb.ts.net"
 MESH = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
 MIGRATION_NAMES_SHA256 = "4c4ce2ef575a18a2e18e6cc782a12228fc92fb4f3908c1ccc6a80da52f730b59"
+OCE_NAMES = ["console.oce.stinkyboi.com", "*.agents.oce.stinkyboi.com"]
 CRITICAL_PATHS = {"fleet_setup_denied", "harbor_node_pulls", "native_api", "cordium_reconnect", "public_callbacks"}
+APEX = "stinkyboi.com"
+ADDRESS_TYPES = {"A", "AAAA", "CNAME"}
 
 
 def run(*command):
@@ -39,15 +42,28 @@ def inventory():
         if not isinstance(value[key], list) or not value[key]:
             raise RuntimeError("DNS inventory requires explicit nonempty hostname lists")
         for host in value[key]:
-            if not isinstance(host, str) or not re.fullmatch(r"(?:[a-z0-9-]+\.)?stinkyboi\.com|\*\.cordium\.stinkyboi\.com", host):
+            if not isinstance(host, str) or not (re.fullmatch(
+                    r"(?:[a-z0-9-]+\.)?stinkyboi\.com|\*\.cordium\.stinkyboi\.com", host)
+                    or host in OCE_NAMES):
                 raise RuntimeError("DNS inventory includes a hostname outside the reviewed scope")
     names = value["hostnames"] + value["retired_hostnames"]
     if len(names) != len(set(names)):
         raise RuntimeError("DNS inventory includes duplicate or conflicting names")
-    digest = hashlib.sha256("\n".join(sorted(value["hostnames"])).encode()).hexdigest()
-    if len(value["hostnames"]) != 27 or digest != MIGRATION_NAMES_SHA256:
-        raise RuntimeError("The public retirement inventory must remain the fixed 27-name migration set")
+    migration = value["hostnames"][:27]
+    digest = hashlib.sha256("\n".join(sorted(migration)).encode()).hexdigest()
+    if digest != MIGRATION_NAMES_SHA256 or value["hostnames"][27:] != OCE_NAMES:
+        raise RuntimeError("The public retirement inventory must retain the fixed 27-name migration set and reviewed OCE names")
     return value
+
+
+def retirement_names(value):
+    names = value["hostnames"][:27]
+    if len(names) != 27 or names.count(APEX) != 1 or len(set(names)) != 27:
+        raise RuntimeError("Public retirement requires the fixed 27-name private inventory")
+    retired = [name for name in names if name != APEX]
+    if len(retired) != 26 or set(retired) & set(value["retired_hostnames"]):
+        raise RuntimeError("Public retirement requires exactly 26 approved non-apex names")
+    return retired
 
 
 def verify_main(expected):
@@ -128,16 +144,29 @@ def declared_routes():
             raise RuntimeError("Deployed Traefik routes/TLS config differ from the reviewed checkout")
 
 
+def deployment_suspended(namespace, name):
+    live = json.loads(run("kubectl", "-n", namespace, "get", "deployment", name, "-o", "json"))
+    return (live.get("metadata", {}).get("name") == name
+            and live.get("metadata", {}).get("namespace") == namespace
+            and type(live.get("spec", {}).get("replicas")) is int and live["spec"]["replicas"] == 0
+            and live.get("status", {}).get("replicas", 0) == 0)
+
+
 def affine_suspended():
     source = json.loads(run("yq", "-o=json", ".", str(ROOT / "clusters/homelab/apps/affine/deployment.yaml")))
     if (source.get("kind") != "Deployment" or source.get("metadata", {}).get("name") != "affine"
             or type(source.get("spec", {}).get("replicas")) is not int or source["spec"]["replicas"] != 0):
         return False
-    live = json.loads(run("kubectl", "-n", "affine", "get", "deployment", "affine", "-o", "json"))
-    return (live.get("metadata", {}).get("name") == "affine"
-            and live.get("metadata", {}).get("namespace") == "affine"
-            and type(live.get("spec", {}).get("replicas")) is int and live["spec"]["replicas"] == 0
-            and live.get("status", {}).get("replicas", 0) == 0)
+    return deployment_suspended("affine", "affine")
+
+
+def openclaw_suspended():
+    source = json.loads(run("yq", "-o=json", ".", str(ROOT / "clusters/homelab/apps/openclaw/values.yaml")))
+    controllers = source.get("controllers") if isinstance(source, dict) else None
+    controller = controllers.get("openclaw") if isinstance(controllers, dict) else None
+    if not isinstance(controller, dict) or type(controller.get("replicas")) is not int or controller["replicas"] != 0:
+        return False
+    return deployment_suspended("ai", "openclaw")
 
 
 def routes(value, address=None):
@@ -147,12 +176,15 @@ def routes(value, address=None):
                 probe(hostname, address, "/octelium.api.main.user.v1.MainService/GetStatus", protocol)
         else:
             wildcard = hostname.startswith("*.")
-            test_host = hostname.replace("*.", "dns-preflight.", 1) if wildcard else hostname
+            child = "agent-" + "0" * 32 if hostname == OCE_NAMES[1] else "dns-preflight"
+            test_host = hostname.replace("*.", child + ".", 1) if wildcard else hostname
             path = "/v2/" if hostname == "harbor.stinkyboi.com" else "/"
             status, headers = probe(test_host, address, path)
-            accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and status == 404)
-            if hostname == "affine.stinkyboi.com" and status in (502, 503):
+            accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and hostname != OCE_NAMES[1] and status == 404)
+            if hostname == "affine.stinkyboi.com" and status in (500, 502, 503):
                 accepted = affine_suspended()
+            elif hostname == "openclaw.stinkyboi.com" and status == 502:
+                accepted = openclaw_suspended()
             if not accepted:
                 raise RuntimeError(f"Traefik TLS/upstream readiness failed for {hostname}: HTTP {status}")
             if hostname == "harbor.stinkyboi.com" and (status != 401 or not any(
@@ -163,31 +195,136 @@ def routes(value, address=None):
 
 
 def authoritative_servers():
-    names = run("dig", "+short", "+time=3", "+tries=1", "NS", "stinkyboi.com").split()
-    if not names or any(not name.endswith(".ns.cloudflare.com.") for name in names):
-        raise RuntimeError("Expected the declared Cloudflare authoritative nameservers")
-    return names
+    output = run("dig", "+noall", "+comments", "+authority", "+time=3", "+tries=1",
+                 "+norecurse", "@a.gtld-servers.net", APEX, "NS")
+    authority_count = re.search(r"\bAUTHORITY:\s*(\d+)", output)
+    flags = re.search(r";; flags:\s*([^;]+);", output)
+    if (not re.search(r"status:\s*NOERROR\b", output) or not authority_count or not flags
+            or "qr" not in flags.group(1).split() or "tc" in flags.group(1).split()):
+        raise RuntimeError("Public parent delegation could not be inspected")
+    names = []
+    authority = False
+    for line in output.splitlines():
+        if line.startswith(";; AUTHORITY SECTION:"):
+            authority = True
+        elif line.startswith(";;") or not line.strip():
+            continue
+        elif authority:
+            fields = line.split()
+            if (len(fields) != 5 or fields[0].rstrip(".").lower() != APEX or not fields[1].isdigit()
+                    or fields[2] != "IN" or fields[3] != "NS"):
+                raise RuntimeError("Unexpected public parent delegation response")
+            names.append(fields[4].lower())
+    if len(names) < 2 or len(names) != int(authority_count.group(1)) or len(names) != len(set(names)) or any(
+            not re.fullmatch(r"[a-z0-9-]+\.ns\.cloudflare\.com\.", name) for name in names):
+        raise RuntimeError("Expected complete Cloudflare parent delegation")
+    return sorted(names)
+
+
+def verify_zone_nameservers(api_names):
+    if (not isinstance(api_names, list) or len(api_names) < 2
+            or any(not isinstance(name, str) or not re.fullmatch(
+                r"[a-z0-9-]+\.ns\.cloudflare\.com\.?", name.lower()) for name in api_names)):
+        raise RuntimeError("Cloudflare zone nameservers are incomplete")
+    normalized = [name.lower().rstrip(".") + "." for name in api_names]
+    if len(normalized) != len(set(normalized)) or set(normalized) != set(authoritative_servers()):
+        raise RuntimeError("Selected Cloudflare zone nameservers differ from public parent delegation")
 
 
 def answers(server, host, kind):
-    output = run("dig", "+noall", "+answer", "+time=3", "+tries=1", "+norecurse", "@" + server, host, kind)
-    result = []
-    for line in output.splitlines():
-        fields = line.split()
-        if len(fields) != 5 or fields[2] != "IN" or not fields[1].isdigit():
-            raise RuntimeError("Unexpected authoritative DNS response")
-        result.append((fields[3], fields[4], int(fields[1])))
-    return result
+    return [(record[1], record[2], record[3]) for record in public_answers(server, host, kind)]
 
 
 def previous_ttl(value):
     # API ttl=1 means automatic; measure served TTLs instead of assuming its duration.
     ttl = 0
     for server in authoritative_servers():
-        for hostname in value["hostnames"]:
+        for hostname in retirement_names(value):
             for kind in ("A", "AAAA", "CNAME"):
                 ttl = max([ttl] + [record[2] for record in answers(server, hostname, kind)])
     return ttl
+
+
+def public_answers(server, hostname, kind):
+    output = run("dig", "+noall", "+comments", "+answer", "+authority", "+time=3", "+tries=1",
+                 "+norecurse", "@" + server, hostname, kind)
+    header = re.search(r"status:\s*(\w+)", output)
+    flags = re.search(r";; flags:\s*([^;]+);", output)
+    answer_count = re.search(r"\bANSWER:\s*(\d+)", output)
+    if (not header or header.group(1) not in ("NOERROR", "NXDOMAIN") or not flags
+            or "aa" not in flags.group(1).split() or "tc" in flags.group(1).split() or not answer_count):
+        raise RuntimeError(f"Incomplete authoritative DNS inspection for {hostname}")
+    section = ""
+    answer = []
+    for line in output.splitlines():
+        if line.startswith(";; ANSWER SECTION:"):
+            section = "answer"
+        elif line.startswith(";; AUTHORITY SECTION:"):
+            section = "authority"
+        elif line.startswith(";;") or not line.strip():
+            continue
+        elif section == "answer":
+            fields = line.split()
+            if len(fields) < 5 or fields[2] != "IN" or not fields[1].isdigit():
+                raise RuntimeError(f"Unexpected authoritative answer for {hostname}")
+            answer.append((fields[0].rstrip(".").lower(), fields[3], fields[4], int(fields[1])))
+    if answer and answer[0][0] != hostname:
+        raise RuntimeError(f"Unexpected authoritative answer owner for {hostname}")
+    if len(answer) != int(answer_count.group(1)):
+        raise RuntimeError(f"Incomplete authoritative answer for {hostname}")
+    return answer
+
+
+def inspect_public_zone(value, zone_records, current):
+    names = retirement_names(value)
+    targets = set(names)
+    wildcard_child = "dns-preflight.cordium.stinkyboi.com"
+    inspected = names + [wildcard_child]
+    if not isinstance(zone_records, list) or not isinstance(current, list):
+        raise RuntimeError("Complete public-zone and selected-record snapshots are required")
+    seen_ids = set()
+    selected = set()
+    for record in zone_records:
+        if (not isinstance(record, dict) or set(record) != {"id", "name", "type"}
+                or not isinstance(record["id"], str) or not record["id"] or record["id"] in seen_ids
+                or not isinstance(record["name"], str) or not record["name"]
+                or not isinstance(record["type"], str) or record["type"] not in ADDRESS_TYPES | {"NS"}):
+            raise RuntimeError("Incomplete or duplicate public-zone record metadata")
+        seen_ids.add(record["id"])
+        owner = record["name"]
+        kind = record["type"]
+        if owner in targets and kind in ADDRESS_TYPES:
+            selected.add((record["id"], owner, kind))
+        if owner not in targets and owner.endswith(".cordium.stinkyboi.com"):
+            raise RuntimeError(f"Out-of-scope public Cordium child blocks retirement: {owner}")
+        if (kind == "NS" and owner != APEX
+                and any(host == owner or host.endswith("." + owner)
+                        or (owner.startswith("*.") and host.endswith(owner[1:]))
+                        for host in inspected)):
+            raise RuntimeError(f"Public child-zone delegation blocks retirement: {owner}")
+        if (kind in ADDRESS_TYPES and owner.startswith("*.") and owner not in targets
+                and any(host.endswith(owner[1:]) for host in inspected)):
+            raise RuntimeError(f"Out-of-scope public wildcard blocks retirement: {owner}")
+    selected_current = set()
+    for record in current:
+        if (not isinstance(record, dict) or record.get("name") not in targets
+                or not isinstance(record.get("type"), str) or record["type"] not in ADDRESS_TYPES
+                or not isinstance(record.get("id"), str)):
+            raise RuntimeError("Selected public record snapshot is invalid")
+        selected_current.add((record["id"], record["name"], record["type"]))
+    if selected != selected_current or len(selected_current) != len(current):
+        raise RuntimeError("Public-zone inventory differs from selected exact-owner records")
+    by_name = {name: set() for name in names}
+    for record in current:
+        by_name[record["name"]].add(record["type"])
+    for server in authoritative_servers():
+        for host in inspected:
+            source = "*.cordium.stinkyboi.com" if host == wildcard_child else host
+            for kind in ADDRESS_TYPES:
+                response = public_answers(server, host, kind)
+                if response and not by_name[source]:
+                    raise RuntimeError(f"Unexpected effective public answer source for {host}")
+    return len(names)
 
 
 def validate_retirement_evidence(evidence, value, expected_sha):
@@ -209,14 +346,14 @@ def validate_retirement_evidence(evidence, value, expected_sha):
     if not isinstance(critical, dict) or set(critical) != CRITICAL_PATHS or any(value is not True for value in critical.values()):
         raise RuntimeError("All critical client and callback checks must be recorded")
     off_tailnet = evidence["off_tailnet"]
-    if not isinstance(off_tailnet, dict) or set(off_tailnet) != {"stinkyboi.com", "*.cordium.stinkyboi.com"} or any(
+    if not isinstance(off_tailnet, dict) or set(off_tailnet) != set(retirement_names(value)) or any(
             decision not in ("migrated", "accepted_loss") for decision in off_tailnet.values()):
-        raise RuntimeError("Apex and Cordium wildcard off-tailnet impact needs a recorded decision")
+        raise RuntimeError("Every retired app subdomain needs an off-tailnet caller decision")
     ttl = evidence["previous_ttl_seconds"]
     if type(ttl) is not int or ttl < 0:
         raise RuntimeError("Retirement evidence needs the old maximum public TTL")
-    if evidence["checked_names"] != value["hostnames"]:
-        raise RuntimeError("Public baseline must confirm all 27 exact migration names were queried")
+    if evidence["checked_names"] != retirement_names(value):
+        raise RuntimeError("Public baseline must confirm the ordered 26 non-apex names were queried")
     records = evidence["baseline_records"]
     if not isinstance(records, list) or (records and ttl == 0):
         raise RuntimeError("Public baseline records require a measured old TTL")
@@ -224,7 +361,8 @@ def validate_retirement_evidence(evidence, value, expected_sha):
     for record in records:
         if (not isinstance(record, dict) or set(record) != {"id", "name", "type", "content", "proxied", "ttl"}
                 or not isinstance(record["id"], str) or not record["id"] or record["id"] in ids
-                or record["name"] not in value["hostnames"] or record["type"] not in ("A", "AAAA", "CNAME")
+                or record["name"] not in retirement_names(value)
+                or not isinstance(record["type"], str) or record["type"] not in ADDRESS_TYPES
                 or not isinstance(record["content"], str) or not record["content"]
                 or type(record["proxied"]) is not bool or type(record["ttl"]) is not int or record["ttl"] < 1):
             raise RuntimeError("Public baseline contains an invalid, duplicate or out-of-scope record")
@@ -240,20 +378,33 @@ def verify_private_dns(value, addresses, resolver_ip):
         resolved = {item[4][0] for item in socket.getaddrinfo(test_host, 443, type=socket.SOCK_STREAM)}
         if resolved != expected:
             raise RuntimeError(f"Normal client DNS for {hostname} does not match the private Traefik Service")
-    routes(value)
-    print("Direct resolver, normal client DNS, and canonical HTTPS routes verified", file=sys.stderr)
+    routes({"hostnames": value["hostnames"][:27]})
+    print("Direct resolver, normal client DNS, and migration HTTPS routes verified", file=sys.stderr)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--retire-private", action="store_true", help="Prepare fixed 27-name public DNS retirement")
+    parser.add_argument("--retire-private", action="store_true", help="Prepare fixed 26-name public app retirement")
     parser.add_argument("--execute", action="store_true", help="Gate retirement on reviewed main and cutover evidence")
     parser.add_argument("--check", action="store_true", help="Read-only live route readiness check")
     parser.add_argument("--baseline-ttl", action="store_true", help="Measure the old maximum authoritative TTL")
+    parser.add_argument("--zone-name-servers", help="Cloudflare zone nameservers to compare with parent delegation")
+    parser.add_argument("--inspect-zone", type=Path, help="Inspect complete public-zone record metadata before deletion")
+    parser.add_argument("--current", type=Path, help="Selected exact-owner records for public-zone inspection")
     parser.add_argument("--expected-sha")
     parser.add_argument("--evidence", type=Path, help="Private cutover evidence JSON outside this repository")
     args = parser.parse_args()
     value = inventory()
+    if args.zone_name_servers is not None:
+        if not args.retire_private or args.execute:
+            parser.error("--zone-name-servers requires read-only --retire-private")
+        verify_zone_nameservers(json.loads(args.zone_name_servers))
+        return
+    if args.inspect_zone or args.current:
+        if not args.retire_private or args.execute or not args.inspect_zone or not args.current:
+            parser.error("--inspect-zone requires --retire-private and --current without --execute")
+        inspect_public_zone(value, json.loads(args.inspect_zone.read_text()), json.loads(args.current.read_text()))
+        return
     if args.baseline_ttl:
         if not args.retire_private or args.execute:
             parser.error("--baseline-ttl requires a read-only --retire-private call")
@@ -271,15 +422,16 @@ def main():
             raise RuntimeError("Current public TTL exceeds the saved baseline; capture and review a new baseline")
     elif args.evidence or args.expected_sha:
         parser.error("--evidence and --expected-sha require --execute")
-    if args.retire_private and not args.execute:
-        print("Fixed 27-name retirement inventory verified")
+    if args.retire_private and not (args.execute or args.check):
+        print(f"Fixed 26-name public retirement inventory verified; {len(value['hostnames'])} private names retained")
         return
     addresses = mesh_addresses()
     if args.execute or args.check:
         declared_routes()
     if args.execute or args.check:
+        route_value = {"hostnames": value["hostnames"][:27]} if args.retire_private else value
         for address in addresses["A"] + addresses["AAAA"]:
-            routes(value, address)
+            routes(route_value, address)
     if args.execute:
         verify_private_dns(value, addresses, resolver_ip)
     elif not args.check:

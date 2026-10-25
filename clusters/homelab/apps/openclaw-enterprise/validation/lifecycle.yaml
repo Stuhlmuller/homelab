@@ -1,0 +1,48 @@
+release: oce
+namespace: openclaw-system
+sourceRevision: 33bb74590a749f37934da4502fca6035cd234a55
+expectedHooks:
+  "-40": [oce-preflight, oce-quiesce, oce-lifecycle-scripts, oce-lifecycle-hooks]
+  "-30": [oce-bootstrap-isolation]
+  "-20": [openclaw-enterprise-initialization]
+  "-18": [oce-preflight]
+  "-15": [oce-quiesce]
+  "-10": [oce-initialization]
+scenarios:
+  - name: first-install
+    deployments: absent
+    matchingPods: 0
+    expected: quiesce-succeeds
+  - name: partial-first-install
+    deployments: api-only
+    expected: migration-blocked
+  - name: prior-initialization-active
+    previousJob: active
+    expected: preflight-blocks-before-quiesce
+  - name: prior-initialization-pod-active
+    previousJob: failed
+    previousPod: Running
+    expected: preflight-blocks-before-quiesce
+  - name: candidate-rejected
+    startupChecksum: mismatched
+    expected: preflight-blocks-before-quiesce
+  - name: foreign-writer
+    matchingPodOwner: foreign
+    expected: migration-blocked
+  - name: worker-scale-conflict
+    workerScaleUpdate: conflict
+    expected: migration-blocked-api-may-remain-stopped
+  - name: pod-termination-timeout
+    matchingPodAfterScale: Running
+    expected: migration-blocked
+  - name: migration-failed
+    replicasAfterQuiesce: {api: 0, worker: 0}
+    expected: writers-remain-stopped
+  - name: cancelled-after-quiesce
+    replicasAfterQuiesce: {api: 0, worker: 0}
+    expected: retry-preflight-then-initialization
+  - name: successful-upgrade
+    replicasBefore: {api: 1, worker: 1}
+    replicasAfterQuiesce: {api: 0, worker: 0}
+    matchingPodsAfterQuiesce: 0
+    expected: stock-init-then-normal-sync-restores-one-each

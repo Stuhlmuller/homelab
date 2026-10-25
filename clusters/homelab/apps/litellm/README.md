@@ -67,6 +67,13 @@ Telemetry admission covers management and model-discovery routes too: native
 authentication failures can parse their bodies before logging. Model/provider
 restrictions apply only to inference, preserving native key-management bodies.
 
+The image pin selects the Linux amd64 child of the upstream OCI index because
+Harbor 2.15.2 rejects that index's repeated child descriptors. All four observed
+nodes were amd64 on October 19, 2026. The exact child passed the protected
+[Harbor publication and full-pull receipt](../../../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure)
+before this consumer changed. Re-evaluate the pin before adding arm64 nodes;
+the full-catalog mirror receipt remains pending.
+
 The pinned image is affected by
 [GHSA-4xpc-pv4p-pm3w](https://github.com/BerriAI/litellm/security/advisories/GHSA-4xpc-pv4p-pm3w).
 Admission rejects malformed or duplicate Host headers on every HTTP route
@@ -140,7 +147,7 @@ and the policy present before native-key migration. Do not bypass admission.
 
 The Application enables
 [server-side diff](https://argo-cd.readthedocs.io/en/stable/user-guide/diff-strategies/)
-through `IaC/stacks/litellm/stack.hcl`. Argo's older structured-merge comparison
+through `IaC/litellm/stack.hcl`. Argo's older structured-merge comparison
 reported the Ready PostgreSQL StatefulSet OutOfSync while both the normal CLI
 diff and Kubernetes server-side dry run were empty (including Argo tracking
 metadata). This setting uses admission-aware dry runs without ignoring fields

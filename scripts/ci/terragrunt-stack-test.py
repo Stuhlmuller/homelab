@@ -21,11 +21,11 @@ def run(*args, cwd, input=None):
 
 def unit(name, group="argocd-apps", values="defaults = local.argocd_defaults", config=False):
     unit_values = (
-        f'read_terragrunt_config("${{get_terragrunt_dir()}}/stacks/{name}/stack.hcl").inputs'
+        f'read_terragrunt_config("${{get_terragrunt_dir()}}/{name}/stack.hcl").inputs'
         if config else "{\n    " + values + "\n  }"
     )
     return f'''unit "{name}" {{
-  source = "./.catalog/units/live/argocd-app"
+  source = "./terragrunt-catalog/units/live/argocd-app"
   path = "live/{group}/{name}"
   no_dot_terragrunt_stack = true
   values = {unit_values}
@@ -85,7 +85,7 @@ eval "$4"
     def separate_app_configs(self):
         (self.root / "IaC/stack-defaults.hcl").write_text(self.locals)
         for name in ("kept", "retired"):
-            path = self.root / "IaC/stacks" / name / "stack.hcl"
+            path = self.root / "IaC/" / name / "stack.hcl"
             path.parent.mkdir(parents=True)
             path.write_text('''locals {
   shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
@@ -106,7 +106,7 @@ inputs = { defaults = local.shared.argocd_defaults }
     def test_app_config_changes_select_apps_without_azure_or_retirement(self):
         self.separate_app_configs()
         self.base = self.commit()
-        path = self.root / "IaC/stacks/kept/stack.hcl"
+        path = self.root / "IaC/kept/stack.hcl"
         path.write_text(path.read_text().replace(
             "inputs = { defaults = local.shared.argocd_defaults }",
             'inputs = { defaults = local.shared.argocd_defaults, spec = { project = "workloads" } }'))
@@ -132,7 +132,7 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.separate_app_configs()
         self.base = self.commit()
         self.stack.write_text(unit("kept", config=True) + self.azure + self.operator)
-        (self.root / "IaC/stacks/retired/stack.hcl").unlink()
+        (self.root / "IaC/retired/stack.hcl").unlink()
         head = self.commit()
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
                          "IaC/live/argocd-apps/retired")
@@ -190,8 +190,8 @@ class SharedAppTemplateTest(unittest.TestCase):
         # Keep real backend key derivation; render does not initialize the backend.
         shutil.copyfile(ROOT / "IaC/root.hcl", cls.root / "root.hcl")
         shutil.copyfile(ROOT / "IaC/kubernetes-provider.hcl", cls.root / "kubernetes-provider.hcl")
-        shutil.copytree(ROOT / "IaC/.catalog/units/live/argocd-app",
-                        cls.root / ".catalog/units/live/argocd-app")
+        shutil.copytree(ROOT / "IaC/terragrunt-catalog/units/live/argocd-app",
+                        cls.root / "terragrunt-catalog/units/live/argocd-app")
         shutil.copyfile(ROOT / "IaC/stack-defaults.hcl", cls.root / "stack-defaults.hcl")
         overrides = '''defaults = local.shared.argocd_defaults
     dependencies = ["sparse-app"]
@@ -216,7 +216,7 @@ class SharedAppTemplateTest(unittest.TestCase):
     }'''
         for name, inputs in (("sparse-app", "defaults = local.shared.argocd_defaults"),
                              ("override-app", overrides)):
-            path = cls.root / "stacks" / name / "stack.hcl"
+            path = cls.root / name / "stack.hcl"
             path.parent.mkdir(parents=True)
             path.write_text('''locals {
   shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
@@ -229,7 +229,7 @@ inputs = {
 
     def test_repeat_generation_and_clean_preserve_source_configs(self):
         paths = [self.root / "terragrunt.stack.hcl", self.root / "stack-defaults.hcl",
-                 *self.root.glob("stacks/*/stack.hcl")]
+                 *self.root.glob("*/stack.hcl")]
         before = {path: path.read_bytes() for path in paths}
         run("terragrunt", "--log-disable", "stack", "generate", cwd=self.root)
         run("terragrunt", "--log-disable", "stack", "generate", "--source-update", cwd=self.root)

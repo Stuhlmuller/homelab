@@ -99,7 +99,7 @@ Expected plan:
   after `applications.argoproj.io` and `appprojects.argoproj.io` are
   established.
 - Uses the Terragrunt catalog `helm-release` module at the immutable commit
-  declared in `IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl`.
+  declared in `IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl`.
 - Shows no raw secrets, kubeconfigs, tokens, keys, or certificate material.
 
 ## Apply

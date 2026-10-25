@@ -8,13 +8,17 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
+import posixpath
 import shutil
+import sqlite3
 import stat
 import sys
 import tarfile
 import tempfile
 import threading
 import time
+from contextlib import closing, contextmanager
 from pathlib import Path, PurePosixPath
 
 
@@ -59,6 +63,15 @@ def private_file(path, owner=None):
     return path
 
 
+@contextmanager
+def sqlite_phase(phase):
+    try:
+        yield
+    except sqlite3.Error as error:
+        error.retirement_phase = phase
+        raise
+
+
 def digest(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
@@ -69,12 +82,26 @@ def content_identity(value):
                        if key in value}, sort_keys=True).encode() + b'\n'
 
 
+def tree_paths(root):
+    """Visit paths in Path order without holding the whole retained tree in RAM."""
+    pending = [iter((root,))]
+    while pending:
+        try:
+            path = next(pending[-1])
+        except StopIteration:
+            pending.pop()
+            continue
+        info = path.lstat()
+        yield path, info
+        if stat.S_ISDIR(info.st_mode):
+            pending.append(iter(sorted(path.iterdir())))
+
+
 def tree(root):
     """Bind every retained byte and permission, including historical archives."""
     record, content = hashlib.sha256(), hashlib.sha256()
     count = total = 0
-    for path in (root, *sorted(root.rglob('*'))):
-        info = path.lstat()
+    for path, info in tree_paths(root):
         if not (stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode)
                 or stat.S_ISLNK(info.st_mode)):
             raise ValueError('unsupported special file in legacy state')
@@ -251,10 +278,39 @@ def stopped(status, config, observed, baseline):
         raise ValueError('legacy writer or source identity is active, missing, or uncertain')
 
 
+class DiskInodes:
+    """Keep tarfile's hardlink lookup on private disk, not in the Python heap."""
+
+    def __init__(self, db):
+        self.db = db
+        db.execute('CREATE TABLE inodes (id TEXT PRIMARY KEY, name TEXT NOT NULL) WITHOUT ROWID')
+
+    @staticmethod
+    def key(inode):
+        return f'{inode[0]}:{inode[1]}'
+
+    def __contains__(self, inode):
+        return self.db.execute('SELECT 1 FROM inodes WHERE id = ?',
+                               (self.key(inode),)).fetchone() is not None
+
+    def __getitem__(self, inode):
+        row = self.db.execute('SELECT name FROM inodes WHERE id = ?',
+                              (self.key(inode),)).fetchone()
+        if row is None:
+            raise KeyError(inode)
+        return row[0]
+
+    def __setitem__(self, inode, name):
+        self.db.execute('INSERT OR REPLACE INTO inodes VALUES (?, ?)',
+                        (self.key(inode), name))
+
+
 def add_tree(tar, root, label):
     def check(member):
         if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
             raise ValueError('unsupported special file in legacy state')
+        # Python 3.11 retains every written header unless the cache is cleared.
+        tar.members.clear()
         # Retain raw link targets; independent restore creates links only after data verification.
         if member.isfile() and member.size == 0 and not (member.mode & 0o444):
             tar.addfile(member)
@@ -264,75 +320,233 @@ def add_tree(tar, root, label):
     tar.add(root, arcname=label, recursive=True, filter=check)
 
 
-def verify_bundle(bundle, expected, config, expected_roots):
+def member_kind(member):
+    for predicate, kind in ((member.isfile, 'file'), (member.isdir, 'directory'),
+                            (member.issym, 'symlink'), (member.islnk, 'hardlink')):
+        if predicate():
+            return kind
+    raise ValueError('archive contains unsafe or duplicate member')
+
+
+def index_bundle(bundle, index):
+    """Validate all headers before extraction, with membership stored on disk."""
+    with tarfile.open(bundle, 'r|gz') as tar:
+        for member in tar:
+            # Python 3.11 also caches headers in stream mode; SQLite is the index.
+            tar.members.clear()
+            name = PurePosixPath(member.name)
+            if (not name.parts or name.is_absolute() or name.parts[0] not in ('local', 'nas')
+                    or '..' in name.parts or member.name != str(name)):
+                raise ValueError('archive contains unsafe or duplicate member')
+            kind = member_kind(member)
+            parent = str(name.parent)
+            if parent != '.':
+                row = index.execute('SELECT kind FROM members WHERE name = ?', (parent,)).fetchone()
+                if row != ('directory',):
+                    raise ValueError('archive contains unsafe member path')
+            elif kind != 'directory':
+                raise ValueError('archive contains unsafe member path')
+            if kind == 'hardlink':
+                target = PurePosixPath(member.linkname)
+                if (not target.parts or target.is_absolute() or '..' in target.parts
+                        or member.linkname != str(target) or target.parts[0] != name.parts[0]
+                        or index.execute('SELECT kind FROM members WHERE name = ?',
+                                         (str(target),)).fetchone() != ('file',)):
+                    raise ValueError('archive contains unsafe hardlink')
+            try:
+                index.execute('INSERT INTO members VALUES (?, ?, ?, ?, ?, 0)',
+                              (member.name, kind, member.linkname, member.size, member.mode))
+            except sqlite3.IntegrityError as error:
+                raise ValueError('archive contains unsafe or duplicate member') from error
+    if any(index.execute('SELECT kind FROM members WHERE name = ?', (root,)).fetchone()
+           != ('directory',) for root in ('local', 'nas')):
+        raise ValueError('archive is missing a retained root')
+    index.commit()
+
+
+def unverified_link_path(index, roots, source, target):
+    """Find path components that an archive cannot prove safe to traverse."""
+    raw = target if target.startswith('/') else posixpath.join(posixpath.dirname(source), target)
+    parts = [part for part in raw.split('/') if part not in ('', '.')]
+    walked = []
+    entered_root = False
+    for position, part in enumerate(parts):
+        if part == '..':
+            if walked:
+                walked.pop()
+        else:
+            walked.append(part)
+        prefix = '/' + '/'.join(walked)
+        match = next(((label, root) for label, root in roots.items()
+                      if prefix == root or prefix.startswith(root + '/')), None)
+        if match:
+            entered_root = True
+            label, root = match
+            if prefix != root:
+                member = label + '/' + prefix[len(root):].lstrip('/')
+                row = index.execute('SELECT kind FROM members WHERE name = ?',
+                                    (member,)).fetchone()
+                if row is None:
+                    return 'missing-in-archive'
+                if position < len(parts) - 1:
+                    if row[0] == 'symlink':
+                        return 'link-chain'
+                    if row[0] != 'directory':
+                        return 'missing-in-archive'
+        elif entered_root or not any(root.startswith(prefix.rstrip('/') + '/')
+                                     for root in roots.values()):
+            return 'external'
+    return None
+
+
+def classify_links(index, config):
+    """Describe link dependencies without dereferencing private source paths."""
+    roots = {label: posixpath.normpath(config[key]) for label, key in
+             (('local', 'localRoot'), ('nas', 'nasRoot'))}
+    for name, target in index.execute('SELECT name, link FROM members '
+                                      "WHERE kind = 'symlink' ORDER BY name"):
+        label, _, relative = name.partition('/')
+        source = posixpath.join(roots[label], relative)
+        resolved = posixpath.normpath(target if target.startswith('/') else
+                                      posixpath.join(posixpath.dirname(source), target))
+        entry = {'member': name, 'target': target, 'lexicalPath': resolved,
+                 'absolute': target.startswith('/')}
+        issue = unverified_link_path(index, roots, source, target)
+        if issue:
+            entry['class'] = issue
+            yield entry
+            continue
+        for target_label, root in roots.items():
+            if resolved == root or resolved.startswith(root + '/'):
+                suffix = resolved[len(root):].lstrip('/')
+                member = target_label + ('/' + suffix if suffix else '')
+                row = index.execute('SELECT kind FROM members WHERE name = ?',
+                                    (member,)).fetchone()
+                entry['targetMember'] = member
+                entry['class'] = ('missing-in-archive' if row is None else
+                                  'link-chain' if row[0] == 'symlink' else 'contained')
+                break
+        else:
+            entry['class'] = 'external'
+        yield entry
+
+
+def write_link_report(path, index, config, archive_sha):
+    private_dir(path.parent, config['nasUid'])
+    with path.open('x', encoding='utf-8') as output:
+        os.fchmod(output.fileno(), 0o600)
+        output.write('{"archiveSha256":' + json.dumps(archive_sha) + ',"format":1,"links":[')
+        count = 0
+        for entry in classify_links(index, config):
+            if count:
+                output.write(',')
+            json.dump(entry, output, sort_keys=True)
+            count += 1
+        output.write(']}\n')
+        output.flush()
+        os.fsync(output.fileno())
+    return count
+
+
+def verified_restore_destination(destination, bundle, config):
+    destination = Path(destination)
+    if not destination.is_absolute() or destination.exists() or destination.is_symlink():
+        raise ValueError('isolated restore destination must be new and absolute')
+    parent = private_dir(destination.parent, config['nasUid'])
+    destination = parent / destination.name
+    sources = [Path(config[key]).resolve() for key in
+               ('localRoot', 'nasRoot', 'stateMount', 'agentMount')]
+    if any(destination == source or destination.is_relative_to(source)
+           or source.is_relative_to(destination) for source in sources):
+        raise ValueError('isolated restore destination overlaps retained source')
+    bundle_parent = private_dir(bundle.parent, config['nasUid'])
+    if destination == bundle_parent or destination.is_relative_to(bundle_parent):
+        raise ValueError('isolated restore destination overlaps downloaded archive')
+    return destination
+
+
+def verify_bundle(bundle, expected, config, expected_roots, restore_at=None,
+                  expected_databases=None):
     private_file(bundle, config['nasUid'])
     if digest(bundle) != expected:
         raise ValueError('archive checksum mismatch')
-    with tempfile.TemporaryDirectory(prefix='oce-legacy-restore-',
-                                     dir=private_dir(bundle.parent, config['nasUid'])) as scratch:
-        with tarfile.open(bundle, 'r:gz') as tar:
-            members = tar.getmembers()
-            names = {}
-            links = []
-            for member in members:
-                name = PurePosixPath(member.name)
-                if (not name.parts or name.is_absolute() or name.parts[0] not in ('local', 'nas')
-                        or '..' in name.parts or member.name != str(name) or name in names
-                        or not (member.isfile() or member.isdir() or member.issym() or member.islnk())):
-                    raise ValueError('archive contains unsafe or duplicate member')
-                if member.islnk():
-                    target = PurePosixPath(member.linkname)
-                    if (not target.parts or target.is_absolute() or '..' in target.parts
-                            or member.linkname != str(target) or target.parts[0] != name.parts[0]
-                            or target not in names or not names[target].isfile()):
-                        raise ValueError('archive contains unsafe hardlink')
-                names[name] = member
-                if member.issym():
-                    links.append(member)
-            non_directories = {name for name, member in names.items() if not member.isdir()}
-            if (not {'local', 'nas'} <= {m.name for m in members if m.isdir()}
-                    or any(any(parent in non_directories for parent in name.parents) for name in names)):
-                raise ValueError('archive contains unsafe member path')
-            tar.extractall(scratch, members=(m for m in members if not m.issym()), filter='data')
+    if restore_at is not None:
+        restore_at = verified_restore_destination(restore_at, bundle, config)
+    with (tempfile.TemporaryDirectory(prefix='oce-legacy-restore-',
+                                      dir=private_dir(bundle.parent, config['nasUid'])) as scratch,
+          tempfile.TemporaryDirectory(prefix='restore-index-', dir=private_dir(
+              Path(config['scratchRoot']))) as index_dir):
+        index_path = Path(index_dir) / 'members.sqlite'
+        with sqlite_phase('member-index'), closing(sqlite3.connect(index_path)) as index:
+            index_path.chmod(0o600)
+            index.execute('PRAGMA journal_mode = OFF')
+            index.execute('PRAGMA cache_size = -1024')
+            index.execute('CREATE TABLE members (name TEXT PRIMARY KEY, kind TEXT NOT NULL, '
+                          'link TEXT NOT NULL, size INTEGER NOT NULL, mode INTEGER NOT NULL, '
+                          'extracted INTEGER NOT NULL) WITHOUT ROWID')
+            index_bundle(bundle, index)
+            with tarfile.open(bundle, 'r|gz') as tar:
+                for member in tar:
+                    tar.members.clear()
+                    kind = member_kind(member)
+                    row = index.execute('SELECT kind, link, size, mode, extracted FROM members '
+                                        'WHERE name = ?', (member.name,)).fetchone()
+                    if row != (kind, member.linkname, member.size, member.mode, 0):
+                        raise ValueError('archive changed during restore')
+                    index.execute('UPDATE members SET extracted = 1 WHERE name = ?',
+                                  (member.name,))
+                    if kind == 'symlink':
+                        continue
+                    if kind == 'hardlink':
+                        os.link(Path(scratch) / member.linkname, Path(scratch) / member.name)
+                    else:
+                        # Headers and parent kinds were checked before extraction; links are separate.
+                        tar.extract(member, path=scratch, set_attrs=False)
+                        if kind == 'file':
+                            (Path(scratch) / member.name).chmod(member.mode & 0o777)
+            if index.execute('SELECT 1 FROM members WHERE extracted = 0 LIMIT 1').fetchone():
+                raise ValueError('archive changed during restore')
+            for name, target in index.execute('SELECT name, link FROM members '
+                                              "WHERE kind = 'symlink' ORDER BY name"):
+                path = Path(scratch) / name
+                parent = path.parent
+                while parent != Path(scratch):
+                    if parent.is_symlink() or not parent.is_dir():
+                        raise ValueError('archive symlink has unsafe parent')
+                    parent = parent.parent
+                if path.is_symlink() or path.exists():
+                    raise ValueError('archive symlink replaces restored data')
+                os.symlink(target, path)
+                if not stat.S_ISLNK(path.lstat().st_mode) or os.readlink(path) != target:
+                    raise ValueError('archive symlink differs from source metadata')
+            for name, mode in index.execute("SELECT name, mode FROM members WHERE kind = 'directory' "
+                                            'ORDER BY length(name) DESC'):
+                (Path(scratch) / name).chmod(mode & 0o777)
+            link_count = (write_link_report(Path(scratch) / 'link-classification.json',
+                                            index, config, expected)
+                          if restore_at is not None else None)
         local, nas = Path(scratch) / 'local', Path(scratch) / 'nas'
         for label in ('local', 'nas'):
-            content = hashlib.sha256()
-            for member in sorted((m for m in members if PurePosixPath(m.name).parts[0] == label),
-                                 key=lambda m: PurePosixPath(m.name)):
-                value = {'path': str(PurePosixPath(member.name).relative_to(label)),
-                         'type': 'file' if member.isfile() or member.islnk() else
-                                 'link' if member.issym() else 'directory'}
-                if value['type'] == 'file':
-                    value['sha256'] = digest(Path(scratch) / member.name)
-                elif value['type'] == 'link':
-                    value['target'] = member.linkname
-                content.update(content_identity(value))
-            if content.hexdigest() != expected_roots[label]['tree'].get('contentSha256'):
+            if tree(Path(scratch) / label)['contentSha256'] != expected_roots[label]['tree'].get('contentSha256'):
                 raise ValueError('archive content differs from stopped source')
-        for relative in config['requiredLocal']:
-            verify_read_only_database(local / relative, config, config['nasUid'])
+        with sqlite_phase('restored-database'):
+            for relative in config['requiredLocal']:
+                verify_read_only_database(local / relative, config, config['nasUid'])
         for relative in config['requiredNas']:
             item = nas / relative
-            archive_dir = PurePosixPath('nas') / relative
             if (item.is_symlink() or not item.is_dir()
-                    or not any(archive_dir in name.parents for name in names)):
+                    or not any(item.iterdir())):
                 raise ValueError('archive restore omitted required NAS state')
         restored = {name: digest(local / name) for name in config['requiredLocal']}
-        link_paths = []
-        for member in links:
-            path = Path(scratch).joinpath(*PurePosixPath(member.name).parts)
-            parent = path.parent
-            while parent != Path(scratch):
-                if parent.is_symlink() or not parent.is_dir():
-                    raise ValueError('archive symlink has unsafe parent')
-                parent = parent.parent
-            if path.is_symlink() or path.exists():
-                raise ValueError('archive symlink replaces restored data')
-            link_paths.append((path, member.linkname))
-        for path, target in link_paths:
-            os.symlink(target, path)
-            if not stat.S_ISLNK(path.lstat().st_mode) or os.readlink(path) != target:
-                raise ValueError('archive symlink differs from source metadata')
+        if expected_databases is not None and restored != expected_databases:
+            raise ValueError('restored database differs from archive receipt')
+        if restore_at is not None:
+            restore_at.mkdir(mode=0o700)
+            os.rename(scratch, restore_at / 'tree')
+            write_private(restore_at / 'completed.json',
+                          {'format': 1, 'archiveSha256': expected,
+                           'restoredDatabases': restored, 'linkCount': link_count},
+                          config['nasUid'])
         return restored
 
 
@@ -350,12 +564,21 @@ def archive(config, status_path, baseline_path, observed_path, destination):
         raise ValueError('archive destination cannot share a source root')
     scratch = Path(tempfile.mkdtemp(prefix='.partial-oce-legacy-', dir=destination))
     bundle = scratch / 'legacy.tar.gz'
-    with bundle.open('xb') as output:
-        with gzip.GzipFile(fileobj=output, mode='wb', mtime=0, filename='') as compressed:
-            with tarfile.open(fileobj=compressed, mode='w', dereference=False) as tar:
-                local, nas = roots(config)
-                add_tree(tar, local, 'local')
-                add_tree(tar, nas, 'nas')
+    with tempfile.TemporaryDirectory(prefix='tar-inodes-', dir=private_dir(
+            Path(config['scratchRoot']))) as index_dir:
+        index_path = Path(index_dir) / 'inodes.sqlite'
+        with sqlite_phase('writer-index'), closing(sqlite3.connect(index_path)) as index:
+            index_path.chmod(0o600)
+            index.execute('PRAGMA journal_mode = OFF')
+            index.execute('PRAGMA cache_size = -1024')
+            with bundle.open('xb') as output:
+                with gzip.GzipFile(fileobj=output, mode='wb', mtime=0, filename='') as compressed:
+                    with tarfile.open(fileobj=compressed, mode='w', dereference=False) as tar:
+                        tar.inodes = DiskInodes(index)
+                        local, nas = roots(config)
+                        add_tree(tar, local, 'local')
+                        add_tree(tar, nas, 'nas')
+            del tar  # Release the writer before independent restore.
     bundle.chmod(0o600)
     restored = verify_bundle(bundle, digest(bundle), config, observed['roots'])
     if restored != {name: item['sha256'] for name, item in observed['databases'].items()}:
@@ -377,7 +600,7 @@ def archive(config, status_path, baseline_path, observed_path, destination):
     return completed / 'receipt.json'
 
 
-def verify_archive(config, receipt_path):
+def verify_archive(config, receipt_path, restore_at=None):
     receipt_path = private_file(receipt_path, config['nasUid'])
     record = json.loads(receipt_path.read_text())
     identity = record.get('inventory', {})
@@ -388,18 +611,20 @@ def verify_archive(config, receipt_path):
             or identity.get('claims') != {name: config[name] for name in (
                 'localClaim', 'stateClaim', 'agentClaim', 'nasClaim')}):
         raise ValueError('archive receipt does not match the committed recovery contract')
+    database_hashes = {name: item['sha256'] for name, item in identity['databases'].items()}
+    if record['restoredDatabases'] != database_hashes:
+        raise ValueError('archive receipt database hashes disagree')
     restored = verify_bundle(receipt_path.parent / 'legacy.tar.gz', record['sha256'], config,
-                             identity['roots'])
-    if restored != record['restoredDatabases'] or restored != {
-        name: item['sha256'] for name, item in record['inventory']['databases'].items()
-    }:
+                             identity['roots'], restore_at, database_hashes)
+    if restored != database_hashes:
         raise ValueError('archive restore differs from receipt')
     return record
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('inventory', 'archive', 'verify-archive'))
+    parser.add_argument('operation', choices=('inventory', 'archive', 'verify-archive',
+                                              'prepare-restore'))
     parser.add_argument('--config', required=True, type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--status', type=Path)
@@ -427,11 +652,25 @@ def main():
         elif args.operation == 'verify-archive' and args.receipt:
             verify_archive(config, args.receipt)
             print('Verified independent legacy restore')
+        elif args.operation == 'prepare-restore' and args.receipt and args.destination:
+            if os.environ.get('GITHUB_ACTIONS') != 'true':
+                raise ValueError('isolated restore preparation runs only in the protected workflow')
+            verify_archive(config, args.receipt, args.destination)
+            print('Prepared private isolated legacy restore; gateway boot remains unverified')
         else:
             parser.error('operation-specific private output, status, destination, or receipt required')
         return 0
-    except (OSError, ValueError, RuntimeError, KeyError, tarfile.TarError) as error:
-        print(f'Legacy retirement refused: {type(error).__name__}', file=sys.stderr)
+    except (OSError, ValueError, RuntimeError, KeyError, sqlite3.Error, tarfile.TarError) as error:
+        detail = ''
+        if isinstance(error, sqlite3.Error):
+            code = getattr(error, 'sqlite_errorname', None)
+            if not isinstance(code, str) or not re.fullmatch(r'SQLITE_[A-Z0-9_]+', code):
+                code = 'UNKNOWN'
+            phase = getattr(error, 'retirement_phase', args.operation)
+            if phase not in ('member-index', 'restored-database', 'writer-index'):
+                phase = args.operation
+            detail = f' phase={phase} sqlite_errorname={code}'
+        print(f'Legacy retirement refused: {type(error).__name__}{detail}', file=sys.stderr)
         return 1
     finally:
         stop.set()

@@ -9,8 +9,8 @@ Inspect the owning source, callers, tests, and affected workload README. Consult
 [the task route](../../../openwiki/quickstart.md) when the user asks for wiki
 context or source inspection leaves an important architecture or dependency
 uncertainty. Keep desired state
-in the repository: `clusters/homelab/` for runtime resources, `IaC/stacks/` and
-`IaC/terragrunt.stack.hcl` for registration, `IaC/modules/` for typed
+in the repository: `clusters/homelab/` for runtime resources, `IaC/` and
+`IaC/terragrunt.stack.hcl` for registration, `IaC/terragrunt-catalog/modules/` for typed
 infrastructure, and `.talos/` for Talos patches. Do not edit generated
 `IaC/live/` units or live resources.
 

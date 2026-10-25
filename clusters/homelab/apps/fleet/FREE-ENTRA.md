@@ -43,7 +43,7 @@ enrolled device.
 
 The first deployed browser test failed with `account_disabled`. Fleet accepted
 the signed identity but matched the external Microsoft-account owner's personal
-email to the password-only recovery account. The [SAML module](../../../../IaC/modules/azuread-saml-application/README.md)
+email to the password-only recovery account. The [SAML module](../../../../IaC/terragrunt-catalog/modules/azuread-saml-application/README.md)
 therefore declares a dedicated, stable Graph claims mapping from
 `userprincipalname` to SAML NameID, preserving basic claims and the existing
 signing key. Keep the recovery account password-only and the organizational UPN
@@ -311,7 +311,7 @@ nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fle
 ```
 
 For the `stuhlmuller.net` pilot, first follow the two-stage
-[custom-domain operator module](../../../../IaC/modules/entra-domain-verification/README.md):
+[custom-domain operator module](../../../../IaC/terragrunt-catalog/modules/entra-domain-verification/README.md):
 read the existing domain with verification disabled, publish its exact returned
 TXT through the DNS owner's reviewed code path, then enable verification in a
 separate reviewed commit. Only after its `Managed`, verified, non-default status

@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-VARIABLES = ROOT / "IaC/modules/azuread-saml-application/variables.tf"
+VARIABLES = ROOT / "IaC/terragrunt-catalog/modules/azuread-saml-application/variables.tf"
 EXPECTED_FIELDS = {"owner_user_object_ids", "allowed_user_object_ids"}
 EXPECTED_PATTERN = (
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"

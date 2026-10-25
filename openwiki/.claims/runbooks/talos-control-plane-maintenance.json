@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ae2df04bb9128343cd9127749694fe7b45173528a2db4074200a33494e7465ec",
+  "pageVersion": "sha256:c981c552e484401b95ee7e57efc70d57c9ad09255e7778f286ad81cb83a666f6",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
       "statement": "The first 2026-10-10 zimaboard-2 stall involved NFS-backed n8n PostgreSQL and NOFX Pods, so the no-PVC remote-reboot exception did not apply; a physical power-cycle recovered the worker.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L902-L910",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1106-L1114",
           "version": "repo-lines-v1:sha256:8ddb89afc2ddedf13089ad08ca1770687ec67bab1e008749c64164b3b00e4586:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzkzYzAxM2JhNjI0MzY4OTBmNWY2ZGJlNjg4MzY0NDk5MGZhZGMyODgwMjU2OGI0YTBlODkxNjVjYThjMTc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBmNDEzY2Y1MTJiNzZmYTUxMjI3MzkyZTc1ZDcxMTFjZTQwODBiNTFjMjcwOGZlNTViNzFmNzU3MTZjNjE5YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2I1NTdmMDY3YzhkNWY5Y2Y1MjExNWJiMjI4OGE2NTY5MDA0YjA3ZTc4YTg4MWFlNzcyYmY1MzRkY2JjNmJmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDhjMjNkOWFkOGNlYjhlYmMwNjYwY2RiMDg4OTc0MTU1ZjM5YzdlM2U2NWI5Y2Y3YzdlZTJiMjZhNjA1YzM1NiJ9"
         }
       ]
@@ -17,19 +17,19 @@
       "statement": "The second 2026-10-10 zimaboard-2 stall involved a Langfuse worker beside an Argo CD controller and recovered after Kubernetes moved the heavy Pods; repository Helm values exclude that node for both workload groups.",
       "evidence": [
         {
-          "resource": "repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl#L73-L84",
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L82-L93",
           "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L85-L93",
-          "version": "repo-lines-v1:sha256:a20e2045e85d2aa5f782703adfe064fabcfd098317c7e75b4315deaa675382b4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1YjE4NWE5MWU2NjU1MzhjMzJlM2I0Zjk3Y2U2ZDkyZGQ2NzRhMzE4NjI3ZmZjMzg0YzdjYzllZWMzZGVlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMWYxYjBmZjllMzU3OTQzYTIzOGNkZDA5MmNjZjMyY2YxN2RjZDA3ZTcxNWQyMjFjNTlkZmMzYmJlZmVmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjlkZDA2NDYwNzk4YmYzMWY0NTZiYTJmODM4ZjQ4MmNmNjJiNDU0YmMyODczZDJiZDE3NDdlZmQ5ZDYwN2UxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk5NzEwOGJlNjAxZGY0ZTU0MmRlOWNiMjhjNGJjMTNlYzVmMGRmMGY3MDUzZjcxNzFhZTdlMTQyNmVjYjc5ZCJ9"
+          "version": "repo-lines-v1:sha256:cadc0ff8530d19b6f5ce21b3bda486a1a0fe405eb77163a3cfdabfc6eb81f54d:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY1NjE4MGRlZTI4ODIzZGZiZmZmN2NkY2I1Y2ZiYWUyMWU4ZWFjNDM3ZjdkMGViOWYzNjRiOTVkMTJlNjBlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjliY2VjYzNiNjAyZjFhMWY1NjM2YmIzMTg5NDEwNTY2ODJiN2RmMTYxZDQ4ZWM3MGM4MDg0MjI2YTdhNTU1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2JmMDZiNTg2NzFjMmYxYTBhMzM0ZjYxMWRjODAxY2FjMjI0MThkNTVlN2E4OTg2OWJiNjk2ZmU5YjA0MTAxMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTJlZjNjYzY2NDcxZWI5Mzk4MWYxZWZmOTU2ZjZkYWM4NTQyYzA4ZWIyNGEyMTQ3MDJmNTBjY2ViNWQxYjdiMCJ9"
         },
         {
           "resource": "repo://docs/argocd-node-pressure-2026-10-10.md#L15-L29",
           "version": "repo-lines-v1:sha256:ae9b60e40aac1039466761279e2049d285dc168fbf80d53c09c7714f6373184c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNThmYmFkNmJlYmI0YjdjYTUyYjA3MzhjNTEwMTBhNzU3Mzk4NGZjMjk4M2ViOTMzZmNhNTNjMGJjOTAzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTFhOWVhNWJmN2UwYTFiNzcyZjA1YmMxMjkwODhiYzFiYWI3MmZiMzkxZmFhMjM5NGVmZjUzM2EyOTZmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L911-L913",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1115-L1117",
           "version": "repo-lines-v1:sha256:08c23d9ad8ceb8ebc0660cdb088974155f39c7e3e65b9cf7c7ee2b26a605c356:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDNjNmM2OTEzZjc4MTQ4YzcyMzI5ODc4N2Q0NmMzMmNlMmRjODJkMDczOGE5YTM1ODlhMjI1MzA3ZTQwODYyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZkOTgwY2ExODE3YjA0NGQ4MTM2NDdhZDBkZjI4ZjRkMDczZjFhZjU5MzU1OTRjMDNmYmI2M2E1NTc1ZjE4MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE3MjVmNTBhMjQ1NzVkMmU1YzYxY2E5MTgzMzAyZTkxYThjZDhkMWM0YzhhNzU4ZWIwNDFlMzczODI0N2I5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NjNhNDkxZGNmNDY5ZTMwZWQ2MzdmZmZiNWQ1MDAwZmM1Y2M5NmNhNDRmN2UyZWUxOTVhMTNiNTMyYjgzOSJ9"
         }
       ]
@@ -39,11 +39,11 @@
       "statement": "The n8n controller lacks node affinity, requests 512 MiB and permits 2 GiB while using Recreate; a rollout may register active webhook integrations on startup, so placement or budget changes need callback verification.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/n8n/README.md#L61-L66",
+          "resource": "repo://clusters/homelab/apps/n8n/README.md#L64-L69",
           "version": "repo-lines-v1:sha256:465b5bf560dadbb17e5b5f124eed3e909b58ea696341ae6d12787ce23beeaecd:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGI2MzFjMzIxNWVlY2Q2MWExYWU0MTI4ZDNhNTIyNWE4YzIxYTBhNjkwMDEyOGQ5OWZlZmE3MGUyNTBlMjViYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTFhYTFjOGZlMzkzMTY4ZWFjNjViNmQ0ZWMzOWEzNmIyZDMzZjNlYjI4N2E5YTRlMTJlZDQ0Y2YzOTQ0YzQzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjJjYmU5YzhmMjgzZmM1YWYyOTA3MGQwMGU1ZDliN2ExMmU5OGFiZDg1ODJjMDZmMjg1Njc1ZmI0NjY0ZDI1MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjZhMmQwMDI3NjBkYmYwYmJmMjcwYTczODE1MGRlODc0ODhmZWIxZThkNThlY2NhNjc3OGQwMDY0MzkyMDZkMCJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L219-L224",
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L247-L252",
           "version": "repo-lines-v1:sha256:7f7abada4b576fd071ffd0286660e82ad33e1a855740c92f1f62d4b80a9f5f4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTMwZWU2ZjA0MWFkOGI2YjgzYTI0ZjVlZGJhYjEwZDFkOTNlNTBjMWFiYjlkZTc3NmIwMmQzOTgzYTIwM2RkYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2FmMjE2ZjBlNTc1N2YyYzYxNmY2MDgwYzU4Mzk4Njc1Zjc3OGNmNmEzNmUwM2Q0NDNiZTkxMzFhZDZlNDc4ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTc4ZDg2MzI3MmRjMjljMzIzMzNmYWY1MDJlYWVmOGY0MGRiOTJlNjhlMzlkYTg1YzNmYWM5MjZhODRhN2UzZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2FjYzI5NDA3ZWYzNGI1NWMxN2FiNmI1YjIwOTA5N2Y5NDI2NDYxMDkxZjA0OWI5Y2ZjZDIxOWVjNGYxMWI2NyJ9"
         },
         {
@@ -51,10 +51,152 @@
           "version": "repo-lines-v1:sha256:25d4468bfe61c9b65e4302def838de4c66f2a58be905915e447723d074da5a24:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkNDBmMzNmMjQ3MjkzM2RjMzY1ZmJjZGVjZDc5M2Q4NWUzYzBlNGFlZTAwNzkyMDZiYTYyMDEzZTNlY2M5OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2Y3MmJlMzRiYmYwNzU2M2U3YjYzYmM0NGM0YjU3MmI5MTE3MjdmMzQzMjczZjE3ZGZjYTdhZDA2OGJjZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4NDRhMjRjNDhjZTY2YTBhYmU3OTFhOTIzYWEyZTcwNTAwYjI4Njk2ZTQzZjgzMWJmYzI4NDY3NjQxMDhhMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzMjFlZmZkYmI2ZGFiMTc1ZWQ5ZWUyMGQxZGM4MDZkNjY4NmY4Mzg5NjU3NDY5ZWYxMmQ4ZTBmY2RlMWJhNGYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_aee080632cde4d8c8fa4b41eab1888f4",
+      "statement": "The protected OpenClaw Enterprise maintenance workflow declares the ordered Talos and Kubernetes ladder and now invokes its source-pinned executor for fixed upgrade stages, but the committed activation flag is false and the canary is unset; no live upgrade is accepted from this source alone.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
+    },
+    {
+      "id": "claim_d70c51c6921f42729858c53d36f0a0b8",
+      "statement": "The maintenance executor restores current-SHA versioned recovery and publication evidence before changes, refuses ambiguous durable receipts, compares Talos machine identity across serial upgrades, and requires immutable digest-matched Harbor aliases plus no-fallback mirrors before Kubernetes upgrade.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L205-L246",
+          "version": "repo-lines-v1:sha256:ead7f6ac386c438b1e28f55e255ef7eb50054f6253561c61ca8572b61db22e9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhMzJmNzFmZTE2OTkxMzRlMmY5NWZiZDdjZTcxNzZjMzYzZTBiOTIyOGM2NDQwYzkzYzVlMzE0NmQxYjlhZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjODY2NmZjYjc0ZDk1ZTRkNzQ0ZjFjMmE0ZDEzYTQ0OTU3NzE2ODMwYjI0OWQxNDk0NzYyYjM2ODQzMGU1YjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMGI4ZTRiYzgxNDY4N2JjZjlhNDc2NzlmZDJmMzc5YTVlY2E4MDJkNjhhNWJmMGM3MjU3ZDAxZWE5MjRiMjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxNzc2ZDI3ZmJmNzE3MzdkOTJmNDgzZDI4YTc0MGFmYTJiMjE0MjllNWM4NWRlOTZhMDAwNDc5MDhiMGYzOGMifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L295-L340",
+          "version": "repo-lines-v1:sha256:a542e6f1613b2e19b2174e6efd236a34925625b3ad0761ea52ce8e6b7f42a87e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2OWMyNzEzY2RmZjI5NGY2OWFkOWI2YWI2MTZhZDdjMzI1ZDQxYTRiOTk5MjIyOGUzZmE3NjU3MDg4OTE4ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxZDVkZGYwNTkxYWU4NTYzZTk1NmJhNTdlYjNjZjllZDc1MDhkNDBiMTAyOGVmOGViMTc2MGZlOTYxZmQ2NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjODRkMjE0MmEyM2NjYTNjOWQ5MjdlYWQyZTRiMTg1NmM3NzFmNTVjZGZhZTZkMGIzYTY2ODQxNWJhNzhlMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjNWEzOWQyZGE5ZTMxNmMyYjBkZjU5NzU2MGMwMjcwZjAyMGUzYjRhZTZlMjkyM2U5NmY3ZmRhZGM3MmZjNmYifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L816-L875",
+          "version": "repo-lines-v1:sha256:c794b1e7a8203708429ea9f16a11d3306e5bf3e2daede5b74d6eed3da4fcd8a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyNDQ2N2E4YzliYjBmNjE1MjQ2NzI3NGViNTdlY2Q2MjlhNmUwNzNkNjZjNjA0OGE2ZmE1YjI2NTQzYTBjNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNDc3NjQ4NDcxNGMzNDdmYTc2M2ZjMjY3YmNhOThlMmY0NGY0MDBlMTE1MjkzNjQxZThmMDVjMTE3ZDcwZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjczNWQ2ZmIwZGY0NGQwYzFkYzdiMDY3YThkODRiODllMjY5NWE3YzljNmM1MWJjYmU0NTE2NzdmMjZkNDJkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyM2M1YWE2ODc2MjQwZjAzYzgwZTVhZDU2M2FhYjMxOTgzYjM1OGY2NDhlYTY3NWFkYzIyMWZlYjI1YzE1YzYifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L893-L929",
+          "version": "repo-lines-v1:sha256:9f765e54cfb3c1f8ec7bba3cb239241b67ff49cdd75b4fe227b9bdc6df5593c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MzFiNWVkMjE3YTM4NjExNjM4ODgxZGRmZmZkNTA0YzBkMDdjZTgxNTg2OWYyNDdjODZhYTdmMjhlYjhjZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNzJiZTAwOTNkNDViYTYwNzQxOGM5MDk3MTdjYjNhZWFhNzQ2MDkzNmU4MjQ0OTk4ZDQwOTFmNDY0OGVjYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NGI1ZjA1NmFkMGY4MzBjMDYyNTc2MjgzYjUwYWJlOTA4YjEyNDkyMmUwZDFlNGJiZGFjZTNhYWMzNzU3YWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2NGRlYzQ3Y2ZjNDIwODU0NzhmMjdjNzM2NWRjMTY0OTExMDdlYmI4NDY3ZWZmMzk5MDA4NGFjODliY2UwODgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e9da4204d46d419fb68987ac2372d4a0",
+      "statement": "The protected canary lane is separate from Talos and Kubernetes upgrades. Exact qualify-to-fixture-prune-to-firewall-prune history and absent fixture resources gate private ownership capture, approval and cleanup. Assigned canary Pods must match reviewed system DaemonSet namespace/name/UID identities plus the validated cleanup Pod while it runs; after its deletion, release rechecks only reviewed system Pods before removing the taint. A changed system Pod UID after firewall removal needs separately reviewed recovery; the committed canary node remains unset.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
+        }
+      ]
+    },
+    {
+      "id": "claim_eaa988ef9ebc4a1dbc57989fd7807ce6",
+      "statement": "Kubernetes Pod inventory checks and multi-command firewall deletion are not atomic; a Pod tolerating the isolation taint could arrive during deletion, so live activation remains blocked until isolated placement excludes that arrival or a reviewed repository-owned isolation path is added.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md",
+          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+        }
+      ]
+    },
+    {
+      "id": "claim_e3609cd6e53a4df3a77ee23dff3882a1",
+      "statement": "The protected platform maintenance executor compares canonical platform-maintenance.json bytes with the exact dispatched commit before upgrade execution and rejects a runner-local activation or canary override; the source keeps activation disabled and the canary node unset.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-test.py",
+          "version": "repo-file-v1:sha256:6d2487ddcd1acd2837a1c8a337663f03673e0a1558ae2765bf1495b13ad97c06"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py",
+          "version": "repo-file-v1:sha256:c448a2dddfdbe019109a3b09afd776bffd90ff0b5bca24a231efb5405265bd0d"
+        }
+      ]
+    },
+    {
+      "id": "claim_c97e238e181b4c739a2b69476c970504",
+      "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 references, fully observed and ready controllers not marked for deletion, Deployment total replicas equal to desired, and complete DaemonSet placement. Matching mutable tags fail; T025 must align chart image hubs and injected proxy digests before the gate can pass.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L517-L527",
+          "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L992-L1072",
+          "version": "repo-lines-v1:sha256:4ccb1c85028c8db039eaec2d99492d183e523823f46817ece3da7b3a547af4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YzhkY2Q2MzI5M2E1OTczZDMyNjMwNjJmYTM2MjViNjVhMGE3MGJhNmExZDVjYmFmNGNhMjdmNWUxZDE4N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmJiYTM4YTA0MWE5ZjdhOTdjZDlkZTRkN2U0YWUwYTZhYmRmOGJkZTFkNTNiYWFiNDJhNjdmZjUwODBmNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjYwNTdmNGQzNTdmNGE2NjFjODVmNzMyZmU5ZDY0MDIwMjRjOTYzYjQ2ZTkwY2EwNjEyZmQxMjMzZDQ5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2MTdhZmI4YjQxZmNkN2FlMDFlYjRlMTM0YTA3N2Q5NDA0NWJjNTMwYjhiNzVmZjJmNTIxZmI1NWM2M2YwMGYifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L607-L695",
+          "version": "repo-lines-v1:sha256:45f630b8ea44c02806fabc6b01460d26740c9439ee9d12b717411b9066b52d28:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExOGVmYTc2OWZjNGQ0NTBiNTNlMzcxYzZjYjJkNzlkMGQ0YTdmZmU4ZDBlOTc3OTA0ZTcyODZhODdmN2UwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYzJiOWZlMTUzYWVjYWYyZjljYWI0NzVmNjMwOTExY2Q4NzBjNWQ3YjZlYTU3YjZjMzRlYTkzNWQ2YzdjZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhMWEwM2RjOGNkNTM5YTFjOTNmODI0MDViODZhNGY1ZmM5ZTJlMGVmYTgxYTM4YmQ3MGE3MmQyNDdkMGExNDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b76ce685f9946cda16a284f3a6c7828",
+      "statement": "The policy cleanup guard requires dedicated fixture and enforcer prune commits in first-parent order. It allows intervening documentation and inventory evidence commits but rejects other source changes, including private receipt bucket and validation inputs. The static gate verifies exact source phases; current-main ownership capture, approval, and cleanup receipts remain required before release.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md",
+          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-registration-test.py",
+          "version": "repo-file-v1:sha256:2b1eb2eea4bc70ba7c353e15ff9a7ad93e0bd0148ab1542edd41ce9a50d6a412"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:16:41.141Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }

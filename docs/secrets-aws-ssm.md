@@ -117,7 +117,7 @@ publisher's `0600` cache, including its separate public authority identities,
 outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
 expiry), then explicitly retire old cached signing authorities after CI
 acceptance. Expiring an auth key alone does not remove that authority. The
-[module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
+[module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns preview, publication,
 acceptance, rotation, and recovery commands.
 
 ## Mastodon secret contract
@@ -151,31 +151,70 @@ settings, activation, and rollback. This preparation is not live-secret proof.
 
 The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
 none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
-SSM unit generates the five internal values below in encrypted state and grants
+SSM unit generates the six internal values below in encrypted state and grants
 their exact parameter names to the External Secrets reader. The model key is a
-placeholder until a separate protected `homelab-production` credential workflow
-writes an owner-supplied OpenAI key. `REPLACE_ME` must block activation and any
-billable probe. That workflow must use the existing
-`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role, a fixed parameter name and an exact
-current-main SHA; it must not accept the key as a dispatch argument or print it.
+placeholder until `openclaw-enterprise-model-credential.yml` in the protected
+`homelab-production` environment writes an owner-supplied OpenRouter API key.
+`REPLACE_ME` must block activation and any provider probe, but not foundation
+or stopped Agent creation. Never register a placeholder as an OCC `harnessAuth`
+Secret. The workflow uses the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role,
+a fixed parameter name and an exact current-main SHA; it never accepts the key
+as a dispatch argument or prints it.
 
-| SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
+Temporarily store the new owner OpenRouter key in the `homelab-production`
+environment secret `OCE_MODEL_API_KEY`, then dispatch the
+[fixed credential workflow](../.github/workflows/openclaw-enterprise-model-credential.yml)
+on `main` with its exact current commit as `expected_sha`. Its
+[writer](../scripts/litellm-provider-credential.py) checks OpenRouter
+authentication and writes only `/homelab/openclaw-enterprise/model-api-key`;
+it never copies the LiteLLM credential. Verify the SSM version receipt,
+advance the committed `OnChange` ExternalSecret revision, and check the target
+Secret and OCC `harnessAuth` binding. After reviewed activation, verify real
+inference from the Agent on that consumer revision. Authentication at
+`/api/v1/key` alone is not acceptance. Remove the temporary GitHub secret only
+after that end-to-end check succeeds.
+
+Before rotating a working key, retain its known-good owner copy privately until
+the replacement passes. If the first key fails a pre-activation check, keep
+[`activationEnabled: false`](../scripts/config/openclaw-enterprise.json),
+replace the temporary GitHub input with a corrected owner key, and repeat the
+same protected workflow; do not activate or delete unverified input. If the
+first activation or an active rotation fails real inference, stop the Agent
+through reviewed reconciliation and use the same fixed workflow to restore the
+still-safe known-good owner key. If none exists or it is unsafe, use a corrected
+new owner key instead. Verify the newer SSM version, commit another
+ExternalSecret revision, reconcile the OCC Secret and Agent, and confirm real
+inference on the restored consumer revision before deleting the temporary
+GitHub input or revoking the failed key. Keep all key values out of git,
+dispatch inputs and logs.
+
+| SSM parameter suffix | Producer | Planned ExternalSecret target/key | Runtime consumer |
 | --- | --- | --- | --- |
 | `postgres-admin-password` | OpenTofu generated | `openclaw-system/occ-postgres-admin` `password` | PostgreSQL bootstrap and isolated recovery |
 | `postgres-migrator-password` | OpenTofu generated | `openclaw-system/occ-postgres-migrator` `password` | Schema migration Job |
 | `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
-| `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API/worker session signing |
+| `postgres-backup-password` | OpenTofu generated | `openclaw-system/occ-postgres-backup` `password` | Read-only logical backup job only |
+| `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API and initialization bootstrap session signing |
 | `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
-| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Fresh agent's native model Secret only |
+| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Protected reconciler registers the key as the fresh Agent's OCC `harnessAuth` Secret; OCE projects `OPENAI_API_KEY` only to that agent |
 
-The foundation must materialize the exact TLS-verified application and
-migration URLs in `openclaw-system/occ-database` without mounting the admin or
-migrator password in API/worker Pods. All six ExternalSecrets use `OnChange` and
+The database container reads the three non-admin PostgreSQL passwords once to
+bootstrap their roles; the scheduled backup job receives only `occ_backup`.
+The dormant foundation declares exact TLS-verified application and migration
+URLs in `openclaw-system/occ-database` without mounting the admin, migrator or backup
+password in API/worker Pods. Its URL template relies on the committed
+alphanumeric-only password generator; change the template if that contract
+changes. All eight ExternalSecrets use `OnChange` and
 retained targets. A credential rotation requires advancing a committed revision,
 checking ExternalSecret readiness, then restarting only consumers that read the
 value once. A changed SSM value alone is not a rollout. Add `openclaw-system`
 and `openclaw-agents` to the `aws-ssm` ClusterSecretStore allow-list with their
 first ExternalSecrets; do not broaden the reader to a prefix wildcard.
+
+PostgreSQL roles read their generated passwords only during initial database
+bootstrap. Rotating any of those four SSM values also needs a declared role
+password update before affected clients restart. That update path is still
+pending; hold PostgreSQL password revisions until it exists and is tested.
 
 Bootstrap writes the initial administrator password and service key to the
 retained private bootstrap volume. Cert-manager owns the private gateway CA and
@@ -183,18 +222,38 @@ listener certificate in separate Secrets; neither is an SSM password. Preserve
 the bootstrap files, CA Secret, auth key, gateway key, database roles and new
 agent state as one recovery set. The protected operations workflow must receive
 Talos client identity through its protected credential path, never a repo file
-or an SSM value projected into application Pods. No such live projection or
-credential write exists yet.
+or an SSM value projected into application Pods. No live Talos projection or
+Enterprise model-credential write has occurred yet.
 
-The planned protected workflows use distinct `homelab-production` environment
+The protected workflows use distinct `homelab-production` environment
 secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
-writer, and `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
-the fixed platform-maintenance job. Neither is a workflow dispatch input or an
-application environment variable. Cluster jobs reuse the existing
-`OCTELIUM_CI_AUTH_TOKEN` private route, and AWS writes use the existing
-`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling those jobs, verify
-their exact destinations and direct recovery access; the declarations above
-do not grant Talos or model access by themselves.
+writer; `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
+the fixed platform-maintenance job; and
+`OCE_OCTELIUM_CLIENT_AUTH_TOKEN` is a separate Octelium `CLIENT` credential
+for its private TCP Talos Service. Neither token nor config is a workflow
+dispatch input or an application environment variable. The fixed upgrade
+stages consume `OCE_CONTROLPLANE_CONFIG_B64` and
+`OCE_WORKER_CONFIG_B64` as private role-specific Talos configs for strict
+validation and ordered execution. Their committed activation gate is false;
+placement, recovery and publication receipts remain required before a live
+upgrade. Kubernetes API reads,
+including protected inspect, reuse the existing clientless
+`OCTELIUM_CI_AUTH_TOKEN` route, and AWS writes
+use the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling any
+stage, verify its exact destination and direct recovery access; declarations
+alone do not grant Talos or model access.
+
+Publish the two protected Talos inspection inputs only through
+[`scripts/platform-maintenance-credentials.sh`](../scripts/platform-maintenance-credentials.sh)
+from a clean, current `main` checkout. Its Octelium mode verifies the dedicated
+CLIENT policy and service without deleting the existing clientless CI sessions.
+Its Talos mode issues and tests a separate 30-day client from a valid private
+operator identity; it does not reuse or upload the operator certificate. The
+helper writes fixed `homelab-production` environment secret names and verifies
+their presence without reading them back. Rotate before the Talos client
+expires. Protected inspect run `39362087271` stopped before Talos connection
+because these two inputs were empty; publication and live tunnel validation
+remain outstanding.
 
 ## AI gateway contract
 
@@ -500,19 +559,22 @@ are removed before changing application records. Credential retirement follows
 successful application, callback, CI, and Cordium acceptance in a separate change.
 
 The tailnet resolver reads the approved Traefik Service and requires no DNS
-write token. The later guarded public-record retirement helper reads the
-existing scoped cert-manager Cloudflare DNS token from SSM. It removes only
-the fixed 27 private application names' A/AAAA/CNAME records after the owner
-tailnet DNS handoff and client acceptance; it preserves callback, CI, carrier,
-unrelated names, and other record types. API responses and token values stay
-out of public logs. Follow the [current cutover](../clusters/homelab/apps/traefik/CUTOVER.md#current-tailnet-dns-cutover)
+write token. The guarded public-record retirement helper reads the existing
+scoped cert-manager Cloudflare DNS token from SSM. It removes only A/AAAA/CNAME
+records for the 26 approved non-apex app subdomains after the owner tailnet DNS
+handoff and client acceptance. The public apex, mail and certificate validation
+records, Cloudflare zone, four legacy callback/CI/carrier names, unrelated
+names, and other record types remain. API responses and token values stay out
+of public logs. Follow the [current 26-name cutover](../specs/005-retire-public-app-dns/quickstart.md)
 from a clean reviewed `main` checkout.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
-token itself in git. The cert-manager ExternalSecret refreshes this value every
-five minutes so DNS-01 token rotations converge quickly without hand-editing the
-Kubernetes Secret.
+token itself in git. The cert-manager ExternalSecret uses `OnChange` refresh;
+rotate its declared source through the reviewed secret workflow, without
+hand-editing the Kubernetes Secret. Check its Ready condition, the Cloudflare
+ClusterIssuer, and both Traefik and Istio Certificates before and after public
+app subdomain retirement.
 
 ## Microsoft Entra SSO Bootstrap
 
@@ -615,17 +677,24 @@ after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
 
 Renovate reuses the App credentials held by the separate
-`Stuhlmuller/renovate` GitHub Actions runner. Its reviewed transfer workflow
-writes only the fixed issuer ID and private-key parameters through a dedicated,
-temporary OIDC role; no key appears in this repository or a workflow artifact.
+`Stuhlmuller/renovate` GitHub Actions runner. Protected transfer run
+`39196912858` on 2026-10-19 wrote only the fixed issuer ID and private-key
+parameters through the temporary OIDC role. Both SecureStrings reached version
+2, and no key entered this repository or a workflow artifact.
 The `renovate` ExternalSecret in `automation` projects them into the `renovate`
 Secret as `issuer-id` and `private-key`, mounted read-only as files under
-`/var/run/secrets/renovate`. It refreshes every five minutes. Rotate through a
-reviewed temporary transfer grant, then verify a refresh after the transfer
-and confirm a later Job uses the same App identity before retiring the grant.
-Keep the CronJob suspended until a post-transfer refresh is confirmed and the
-transfer grant is removed. See the
-[Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+`/var/run/secrets/renovate`. It refreshes every five minutes. After transfer,
+it refreshed at 03:56:19 UTC with `Ready=True` and a changed target Secret
+resource version. At that check, the CronJob was suspended with no Job. The
+temporary transfer role was later retired through the reviewed saved-plan path:
+a read-only IAM lookup returned `NoSuchEntity`, and a fresh full-unit plan had
+no changes. The [operator receipt](operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records those checks. The [hourly CronJob](../clusters/homelab/apps/renovate/cronjob.yaml)
+is now declared unsuspended in [full dry-run mode](../clusters/homelab/apps/renovate/config.js);
+the legacy Action remains the only writer until cutover. Rotation requires a
+reviewed reintroduction of the same limited role, a later ExternalSecret
+refresh, and a Job using the same App identity before retiring the grant again.
+See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret

@@ -149,7 +149,7 @@ active writer's database. Preserve local claims until recovery is verified.
 
 ## Application registration
 
-`IaC/stacks/mastodon/stack.hcl` uses the shared Application template, source
+`IaC/mastodon/stack.hcl` uses the shared Application template, source
 revision `main`, and the existing `homelab` AppProject because its retained
 local storage needs PersistentVolume and StorageClass permissions. The project
 allows the Mastodon namespace explicitly. Dependencies order registrations;

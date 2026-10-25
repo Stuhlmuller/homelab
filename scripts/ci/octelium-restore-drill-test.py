@@ -20,6 +20,10 @@ def run(*args, **kwargs):
 class RestoreDrillTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        for binary in ("initdb", "pg_ctl", "createdb", "psql", "pg_dumpall", "pg_dump", "pg_restore"):
+            version = run(binary, "--version").stdout.strip()
+            if not version.startswith(f"{binary} (PostgreSQL) 14."):
+                raise AssertionError(f"{binary} must be PostgreSQL 14, found {version}")
         cls.temp = tempfile.TemporaryDirectory(prefix="od-", dir="/tmp")
         cls.root = Path(cls.temp.name)
         cls.socket = cls.root / "socket"

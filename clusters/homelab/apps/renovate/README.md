@@ -1,11 +1,10 @@
 # Renovate
 
 Renovate scans Stuhlmuller-owned GitHub repositories at 00 minutes past every
-hour, UTC. The `automation` CronJob is initially suspended, and its committed
-config uses Renovate's full dry-run mode. The old writer in
-`Stuhlmuller/renovate` remains authoritative until dry-run parity is verified
-and its entire workflow is removed through a reviewed PR. Only then may a
-reviewed homelab change remove `dryRun: 'full'`.
+hour, UTC. The `automation` CronJob runs in Renovate's full dry-run mode. The
+old writer in `Stuhlmuller/renovate` remains authoritative until dry-run parity
+is verified and its entire workflow is removed through a reviewed PR. Only
+then may a reviewed homelab change remove `dryRun: 'full'`.
 
 The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
@@ -15,7 +14,7 @@ and processes repositories without a config file. The 2026-10-19 owner API
 inventory had 18 repositories: 10 archived and eight eligible non-archived,
 including four private repositories and no forks. The active
 `rstuhlmuller-renovate` App installation selected all repositories. The last
-observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
+observed legacy scheduled run (39193708267) succeeded at 2026-10-19 03:14 UTC.
 Its App-token scan started and finished all eight then-eligible owner
 repositories, including the four private repositories, and scanned none of the
 ten archives; the owner had no forks to exercise live fork handling.
@@ -24,18 +23,19 @@ and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
 dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
 bot username and Git author so startup needs no account lookup. The legacy
 workflow and global config reference no separate private-registry credential
-input; the workflow uses only the existing App secrets. The public App
-definition currently requests repository Checks, Contents, Issues, Pull
-requests, Commit statuses, and Workflows write; Metadata and Dependabot alerts
-read; and organization Members and Administration read. It lacks repository
-Administration read from
-Renovate's recommended grants. This does not block discovery, but a repository
-override using automatic rebasing may lose branch-protection awareness. The
-operator credential cannot enumerate the current installation-token repository
-list or confirm effective installation grants; compare its eligible count of
-eight, effective grants and repository overrides, and the existing PR author
-with the first cluster dry run before cutover. Keep private repository names out
-of public reports.
+input; the workflow uses only the existing App secrets. The GitHub
+organization installation API confirmed on 2026-10-19 that the active App
+selects all repositories and has effective repository Checks, Contents, Issues,
+Pull requests, Commit statuses, and Workflows write; Metadata and Dependabot
+alerts read; and organization Members and Administration read. It lacks
+repository Administration read from Renovate's recommended grants. This does
+not block discovery, but a repository override using automatic rebasing may
+lose branch-protection awareness. The operator credential cannot enumerate the
+current installation-token repository list; all-repositories selection, the
+owner inventory, and the eight-of-eight legacy App-token scan imply coverage.
+Compare actual cluster discovery, repository overrides, and existing PR author
+with the first scheduled dry run before cutover. Keep private repository names
+out of public reports.
 
 ## Credentials and storage
 
@@ -50,16 +50,21 @@ arguments, or the cache. The Pod has no Kubernetes API token. The token must
 cover all owner repositories. The Job has a 40-minute deadline and config
 requires 55 minutes of token validity at startup; otherwise it fails closed.
 
-The protected credential-transfer workflow in `Stuhlmuller/renovate` writes
-the existing App credentials to those exact SSM paths. Apply the temporary
-exact-scope transfer role through reviewed IaC before transfer. Verify
-ExternalSecret `Ready=True` and target Secret metadata without reading values,
-and require its refresh timestamp to follow the transfer receipt. It refreshes
-every five minutes so a previously projected placeholder cannot remain stale.
-Then retire the temporary write grant before unsuspending the CronJob. The
-first full dry run must successfully mint an App token. For rotation, restore
-that reviewed grant, transfer new values, wait for a later ExternalSecret
-refresh, verify a later Job under the same App, and retire the grant again.
+The protected credential-transfer workflow in `Stuhlmuller/renovate` wrote the
+existing App credentials to those exact SSM paths on 2026-10-19 in run
+`39196912858`. Both SecureStrings reached version 2. The ExternalSecret
+refreshes every five minutes. It refreshed at 03:56:19 UTC after transfer,
+with `Ready=True` and a changed target Secret resource version; no values were
+read. The CronJob remained suspended with no Renovate Job.
+The operator then removed the temporary transfer role through the reviewed
+saved-plan path and verified an IAM `NoSuchEntity` lookup and a fresh no-op plan.
+The [operator receipt](../../../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records the checks without credential values. A manual full dry run minted an
+App token and finished all eight eligible repositories; scheduled scans must
+still prove parity and cache reuse. For rotation, reintroduce the same limited
+role through a reviewed change, transfer new values, wait for a later
+ExternalSecret refresh, verify a later Job under the same App, and retire the
+grant again.
 
 The retained `renovate-cache` 20 GiB `nfs-default` PVC holds Renovate's
 datasource, private-package, and repository-extraction caches. It contains
@@ -69,6 +74,20 @@ cache can be rebuilt; it has no backup. Argo CD does not prune the PVC. The
 non-root container has a writable ephemeral root because the Renovate image
 installs package-manager tools there for lockfile updates. No Service or ingress
 is exposed.
+
+Harbor Docker lookups use the canonical `harbor.stinkyboi.com` TLS name through
+the registry-only `traefik-registry` Service at `10.96.0.50:443`. A Pod-local
+host alias selects this route without changing cluster DNS or node image pulls.
+On 2026-10-19, destination ztunnel rejected the first dry-run Pod's default
+service identity at the shared private listener before Harbor received traffic.
+The dedicated `renovate` ServiceAccount mounts no Kubernetes token; Istio allows
+only its identity to the registry listener on port 9443. That listener exposes
+only OCI and token paths. No Harbor credential is configured, matching the old
+runner; anonymous lookups can see the public `mirror` project but not private
+projects. In dry-run verification, distinguish a transport failure from an
+expected authentication denial. Hold writer cutover if an eligible private
+package requires a credential. Revert this route change through GitOps if it
+breaks registry access.
 
 ### Cache failure and recovery
 
@@ -85,10 +104,17 @@ kubectl -n automation describe pod <renovate-pod>
 kubectl -n automation describe job <renovate-job>
 ```
 
-For capacity, increase the request in `pvc.yaml` through a reviewed PR and
-Argo CD. `nfs-default` permits claim expansion; confirm the bound claim's
-reported capacity and the backing NFS share's free space before relying on the
-larger request. A larger claim does not repair a full NAS share.
+The `20Gi` request in `pvc.yaml` neither reserves NAS space nor caps this
+cache: `nfs-default` does not enforce per-claim size, and its provisioner
+cannot resize PVCs. If the backing share is full, suspend `cronjob.yaml`
+through a reviewed PR, restore share capacity through a declared path, and
+verify the next scheduled Job after resuming. If no declared NAS capacity path
+exists, add one before changing live state. Increasing the PVC request will
+not restore writes. No verified QNAP `/homelab` capacity-restoration operation
+is declared yet. A bounded, isolated tmpfs `ENOSPC` drill can test failure
+visibility and later normal PVC use, but cannot prove recovery from an actual
+full NAS export. T024/T042 and writer cutover remain blocked on a declared
+capacity path and direct recovery evidence.
 
 Renovate 44.167.4 treats missing or malformed package entries as misses and
 skips malformed repository cache files; a later run can rebuild both from
@@ -119,12 +145,35 @@ kubectl kustomize clusters/homelab/apps/renovate
 
 Use the Terragrunt, static, Conftest, and protected private-plan gates in
 `specs/004-run-renovate-in-cluster/quickstart.md` before live reconciliation.
-While suspended, confirm the ExternalSecret is Ready, the target Secret exists,
-and no Job was created. Then unsuspend only through reviewed GitOps code. Two
-scheduled dry-run Pods must prove repository coverage, planned proposals,
-unchanged App identity and merge policy, and a cache hit for the same datasource
-key across Pod UIDs. A shorter second run alone does not prove cache reuse.
-Keep detailed Renovate logs private.
+Before activation, the ExternalSecret was Ready, the target Secret existed,
+and the CronJob was suspended. A manual full dry run finished all eight eligible
+repositories without a new bot PR, but its Harbor lookups failed before the
+registry-only route was deployed. It does not prove scheduled operation or
+cache reuse. Scheduled dry-run Pods must prove repository coverage, planned
+proposals, unchanged App identity and merge policy, and a cache hit for the
+same datasource key across Pod UIDs. The completed canary proof used the exact
+`Returning cached value` marker for namespace
+`github-releases-datasource-v2` and key
+`https://api.github.com/:Stuhlmuller:renovate` in restricted logs from two
+warm scheduled Pods with distinct UIDs. A shorter second run alone does not
+prove cache reuse. The temporary INFO remap has been removed because its
+`namespace` and `key` fields can identify private repositories or packages.
+Keep raw records out of public PRs, issues, and CI output; publish only
+aggregate cache-hit results and distinct Pod UIDs. Future cache checks need
+scoped TRACE or a mock upstream counter. Keep the hourly schedule and
+Renovate's normal cache freshness rules.
+
+On 2026-10-19, the 19:00 and 20:00 scheduled Pods had distinct UIDs and each
+hit that exact cached key. After the protected v0.0.2 release at 20:20 UTC, the
+21:00 full dry run kept the cache hit and gained one branch-commit proposal for
+the public canary; its four other proposals were unchanged. Renovate's pinned
+full dry-run path stops before creating a new PR, so no create-PR marker is
+expected. The
+[parity receipt](../../../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md)
+records the aggregate evidence. A manual cluster Job created the public canary
+record at 05:13 UTC after v0.0.1 was published; historical Job and Pod
+metrics confirm it mounted the retained PVC. T022 is complete. Real PR creation
+and policy remain gated by T031.
 
 Read-only status checks:
 
@@ -141,6 +190,24 @@ cover a missed start, a cycle with no success by its deadline, and a missing
 CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
+
+For per-repository failures, correlate restricted `ERROR`/`FATAL` records and
+their repository tags with the final repository summaries. Pinned Renovate can
+log `Repository finished` with `done`/`exitCode 0` after a datasource lookup
+error, then exit the overall Job nonzero for retained error records. Do not
+treat a final per-repository processing summary alone as an error-free scan.
+
+The protected missed-slot drill produced no 03:00 UTC Job, and
+`RenovateHourlyCycleMissing` fired at 03:20:47 UTC. The reviewed recovery
+restored hourly desired state at 03:35:11 UTC. The unsuspended CronJob created
+Job `renovate-29874480` at 04:00:00 UTC; a read-only Prometheus check at
+04:00:38 UTC found the missed-cycle rule inactive with no `ALERTS` series.
+That Job succeeded at 04:20:23 UTC using Pod UID
+`dd063320-8d27-493e-8c62-104aadbb6140`: eight repository starts and
+finishes, 124 dry-run markers, one exact public canary cache hit, and zero
+error headers, lookup errors, or mutex timeouts. Argo CD was Synced/Healthy
+at main `90fc7761618c43a9f120130d584dd7ae4eea0da5`. T045 is complete;
+cache-fault recovery under T024/T042 remains open.
 
 A temporary acceptance observer is planned but not yet declared. Once added,
 keep it suspended until its private sample is fixed before the seven-day

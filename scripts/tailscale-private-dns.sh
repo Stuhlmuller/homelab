@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Retire only the fixed public DNS migration set after private client acceptance.
+# Retire only approved public app subdomains after private client acceptance.
 set -euo pipefail
 
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
@@ -17,7 +17,7 @@ usage() {
 Usage: scripts/tailscale-private-dns.sh --retire-private [--dry-run] [--baseline-out FILE]
        scripts/tailscale-private-dns.sh --retire-private --execute --expected-sha SHA --evidence FILE
 
-Dry-run reads all 27 exact names and previews only A/AAAA/CNAME deletions.
+Dry-run reads the 26 non-apex app names and previews only A/AAAA/CNAME deletions.
 --baseline-out writes a private evidence template with the old maximum public TTL;
 complete its cutover checks before execution. Execution requires reviewed main,
 healthy private DNS and clients, and the saved baseline. Retired CI/callback/
@@ -108,20 +108,69 @@ cf_api() {
 
 zone_response="$(cf_api GET "/zones?name=${zone_name}")"
 zone_id="$(jq -er --arg name "$zone_name" '.result | select(length == 1) | .[0] | select(.name == $name) | .id' <<<"$zone_response")"
+zone_nameservers="$(jq -c --arg name "$zone_name" '.result | select(length == 1) | .[0] | select(.name == $name) | .name_servers' <<<"$zone_response")"
+"${preflight[@]}" --zone-name-servers "$zone_nameservers"
 inventory="$root/scripts/config/tailscale-private-dns.json"
-checked_names="$(jq -ce '.hostnames' "$inventory")"
+checked_names="$(jq -ce '[.hostnames[:27][] | select(. != "stinkyboi.com")]' "$inventory")"
 names="$(jq -r '.[]' <<<"$checked_names")"
 
 records_for() {
   local hostname="$1" encoded response
   encoded="$(jq -rn --arg name "$hostname" '$name | @uri')"
   response="$(cf_api GET "/zones/${zone_id}/dns_records?name=${encoded}&per_page=100")"
-  # An incomplete page or unexpected name must abort before any deletion.
+  # Validate every returned owner before filtering record types.
   jq -ce --arg name "$hostname" '
     select(.result | type == "array") |
     select(.result_info.total_count == (.result | length)) |
-    [.result[] | select(.type == "A" or .type == "AAAA" or .type == "CNAME")] |
-    select(all(.[]; .name == $name and (.id | type == "string")))' <<<"$response"
+    select(all(.result[]; .name == $name and (.id | type == "string") and (.id | length > 0))) |
+    [.result[] | select(.type == "A" or .type == "AAAA" or .type == "CNAME")]' <<<"$response"
+}
+
+scan_zone() {
+  local page=1 expected_total=-1 expected_pages=-1 response total pages count wanted
+  : >"$private_dir/zone-ids.jsonl"
+  : >"$private_dir/zone-metadata.jsonl"
+  while :; do
+    response="$(cf_api GET "/zones/${zone_id}/dns_records?per_page=100&page=${page}")"
+    jq -e --argjson page "$page" '
+      (.result | type == "array") and
+      (.result_info.page == $page) and (.result_info.per_page == 100) and
+      (.result_info.count == (.result | length)) and
+      (.result_info.total_count | type == "number") and (.result_info.total_count > 0) and
+      (.result_info.total_pages | type == "number") and
+      (.result_info.total_pages == ((.result_info.total_count + 99) / 100 | floor)) and
+      all(.result[]; type == "object" and (.id | type == "string") and (.id | length > 0) and
+        (.name | type == "string") and (.type | type == "string"))
+    ' >/dev/null <<<"$response" || { echo 'error: incomplete public-zone page' >&2; return 1; }
+    total="$(jq -er '.result_info.total_count' <<<"$response")"
+    pages="$(jq -er '.result_info.total_pages' <<<"$response")"
+    count="$(jq -er '.result_info.count' <<<"$response")"
+    if [[ "$expected_total" == -1 ]]; then
+      expected_total="$total"
+      expected_pages="$pages"
+    elif [[ "$total" != "$expected_total" || "$pages" != "$expected_pages" ]]; then
+      echo 'error: public-zone page totals changed during inspection' >&2
+      return 1
+    fi
+    wanted=100
+    if (( page == pages )); then wanted=$((total - 100 * (pages - 1))); fi
+    if (( count != wanted )); then
+      echo 'error: incomplete public-zone page' >&2
+      return 1
+    fi
+    jq -c '.result[].id' <<<"$response" >>"$private_dir/zone-ids.jsonl"
+    jq -c '.result[] | select(.type == "A" or .type == "AAAA" or .type == "CNAME" or .type == "NS") | {id,name,type}' \
+      <<<"$response" >>"$private_dir/zone-metadata.jsonl"
+    if (( page == pages )); then break; fi
+    page=$((page + 1))
+  done
+  jq -se --argjson total "$expected_total" 'length == $total and length == (unique | length)' \
+    "$private_dir/zone-ids.jsonl" >/dev/null || {
+      echo 'error: duplicate or incomplete public-zone record IDs' >&2; return 1;
+    }
+  jq -sc '.' "$private_dir/zone-metadata.jsonl" >"$private_dir/zone.json"
+  # A delegated child can serve records outside this zone, so inspection blocks instead of changing its NS.
+  "${preflight[@]}" --inspect-zone "$private_dir/zone.json" --current "$private_dir/current.json"
 }
 
 private_dir="$(mktemp -d)"
@@ -132,6 +181,8 @@ while IFS= read -r hostname; do
 done <<<"$names"
 
 current="$(jq -cs 'add | map({id,name,type,content,ttl,proxied}) | sort_by(.name,.type,.id)' "$private_dir"/*.json)"
+printf '%s\n' "$current" >"$private_dir/current.json"
+scan_zone
 
 if [[ "$dry_run" == "true" ]]; then
   previous_ttl="$("${preflight[@]}" --baseline-ttl)"
@@ -144,7 +195,7 @@ if [[ "$dry_run" == "true" ]]; then
       normal_client_dns_confirmed:false,
       critical_paths_confirmed:{fleet_setup_denied:false,harbor_node_pulls:false,native_api:false,
         cordium_reconnect:false,public_callbacks:false},
-      off_tailnet:{"stinkyboi.com":"","*.cordium.stinkyboi.com":""},
+      off_tailnet:($names | map({key:.,value:""}) | from_entries),
       previous_ttl_seconds:$ttl, checked_names:$names, baseline_records:$records
     }')"
     (umask 077; set -C; printf '%s\n' "$template" >"$baseline_out")
@@ -156,6 +207,13 @@ fi
 baseline="$(jq -ce '.baseline_records | sort_by(.name,.type,.id)' "$evidence")"
 jq -e --argjson baseline "$baseline" 'all(.[]; . as $record | any($baseline[]; . == $record))' <<<"$current" >/dev/null || {
   echo 'error: live public records differ from the saved baseline; no records deleted' >&2; exit 1;
+}
+fresh="$(
+  while IFS= read -r hostname; do records_for "$hostname" || exit 1; done <<<"$names" |
+    jq -cs 'add | map({id,name,type,content,ttl,proxied}) | sort_by(.name,.type,.id)'
+)"
+[[ "$fresh" == "$current" ]] || {
+  echo 'error: public target records changed during inspection; no records deleted' >&2; exit 1;
 }
 
 while IFS= read -r hostname; do
@@ -171,5 +229,5 @@ while IFS= read -r hostname; do
 done <<<"$names"
 
 previous_ttl="$(jq -r '.previous_ttl_seconds' "$evidence")"
-echo "All 27 names read back without A/AAAA/CNAME; wait ${previous_ttl} seconds from the last deletion before public resolver checks."
+echo "All 26 app subdomains read back without A/AAAA/CNAME; wait ${previous_ttl} seconds from the last deletion before public resolver checks."
 echo 'Legacy CI, callback, carrier, unrelated names, and non-address records were preserved.'

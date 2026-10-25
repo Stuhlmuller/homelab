@@ -55,7 +55,7 @@ must use reviewed repository desired state:
    sampling in the [Talos maintenance runbook](talos-control-plane-maintenance.md#degraded-recovery-issuer-cutover-resource-stall);
    this incident does not authorize its dated recovery mutations.
 2. Review actual controller placement and workload memory budgets against the
-   [Argo CD catalog unit](../IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl),
+   [Argo CD catalog unit](../IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl),
    which already declares two controller replicas. Propose any resource or
    scheduling changes there, validate the plan, and deliver through the
    [declared bootstrap path](argocd-bootstrap.md).

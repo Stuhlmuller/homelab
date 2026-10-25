@@ -1,5 +1,9 @@
 # Data Model: Private Tailnet Service DNS
 
+The original 27-name public-cutover model is superseded by the
+[26-name app subdomain cutover](../005-retire-public-app-dns/quickstart.md).
+All 27 approved names remain in the private resolver model below.
+
 No application database is added. These entities describe repository declarations, observed Kubernetes/Tailscale state and cutover evidence.
 
 ## Approved private name
@@ -34,7 +38,10 @@ State: **declared** → **proxy ready** → **signed and reachable** → **owner
 | Approved name, AAAA | k8s_gateway Service watch | NODATA while the Traefik Service is IPv4-only. |
 | Unrelated `stinkyboi.com` name, A/AAAA | Public forward | Existing public answer or public NXDOMAIN. |
 | Any name, MX/TXT/CAA/SOA/NS | Public forward view | Public zone's answer, including apex mail/security records. |
-| Approved name after public retirement, missing resolver/declaration | No usable private/public address | Fail closed; never return a stale public application address. |
+| Retired non-apex approved name, missing resolver/declaration | No usable private/public address | Fail closed; never return a stale public application address. |
+
+The apex remains privately answered while the resolver is healthy, but keeps
+its public A record. It is outside the retired-subdomain fail-closed guarantee.
 
 ## Public record and cutover evidence
 

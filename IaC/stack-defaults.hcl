@@ -1,4 +1,4 @@
-# Shared Application defaults; application-specific inputs live in stacks/<app>/stack.hcl.
+# Shared Application defaults; application-specific inputs live in <app>/stack.hcl.
 locals {
   repo_url        = "https://github.com/Stuhlmuller/homelab.git"
   target_revision = "main"
