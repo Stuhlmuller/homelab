@@ -116,7 +116,7 @@ def mac_host(api, mdm, token, host_id):
 def saml_outputs():
     result = subprocess.run([
         "terragrunt", "--log-disable", "--working-dir",
-        str(ROOT / "IaC/live/azuread-applications/fleet"), "output", "-json",
+        str(ROOT / "IaC/homelab/us-west-2/apps/fleet/azuread"), "output", "-json",
     ], capture_output=True, check=True, timeout=120)
     outputs = json.loads(result.stdout)
     tenant = str(uuid.UUID(outputs["tenant_id"]["value"]))

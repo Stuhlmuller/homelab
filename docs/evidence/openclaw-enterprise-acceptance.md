@@ -397,7 +397,7 @@ DaemonSets, the proposed 250 MiB enforcer and three 32 MiB fixtures; peak and
 service-continuity admission remain unproven. No existing node qualifies under
 T022's no-unrelated-eviction rule; no node was relabeled, tainted or moved.
 
-The [Crossplane source](../../IaC/platform-crossplane/stack.hcl) declares
+The [Crossplane source](../../IaC/homelab/us-west-2/apps/platform-crossplane/stack.hcl) declares
 both controller replicas at zero, but the live Argo Application lacks those
 Helm parameters and two live Pods on `acer` still request 256 MiB each.
 Reconciliation through the protected declared path might reclaim 512 MiB,

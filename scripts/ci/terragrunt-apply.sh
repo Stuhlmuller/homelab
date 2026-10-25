@@ -3,6 +3,7 @@ set -euo pipefail
 umask 077
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
 cleanup_dirs=()
@@ -16,7 +17,7 @@ cleanup_temp_dirs() {
     fi
   done
 
-  find IaC/live/aws-ssm-parameters IaC/live/kubernetes-node-labels \
+  find IaC/homelab/us-west-2/shared/aws-ssm-parameters IaC/homelab/us-west-2/shared/kubernetes-node-labels \
     \( -name plan.out -o -name plan.json \) -type f -delete 2>/dev/null || true
 }
 
@@ -134,12 +135,12 @@ adopt_existing_ssm_parameters() {
 plan_and_apply_ssm_prerequisites() {
   echo "::group::AWS SSM parameter declaration plan and apply"
   (
-    cd IaC/live/aws-ssm-parameters
+    cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
     rm -f plan.out plan.json
     adopt_existing_ssm_parameters
     terragrunt plan -out plan.out -no-color
     terragrunt --log-disable show -json plan.out >plan.json
-    conftest test --policy ../../../policy --output github plan.json
+    conftest test --policy "${repo_root}/policy" --output github plan.json
     verify_current_main_commit
     terragrunt apply -no-color plan.out
   )
@@ -157,11 +158,11 @@ plan_and_apply_langfuse_prerequisites() {
   langfuse_plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-langfuse-plan.XXXXXX")"
   cleanup_dirs+=("$langfuse_plan_dir")
   (
-    cd IaC/live/langfuse-blob-storage
+    cd IaC/homelab/us-west-2/apps/langfuse/blob-storage
     terragrunt init -no-color
     terragrunt plan -out "$langfuse_plan_dir/plan.out" -no-color
     terragrunt --log-disable show -json "$langfuse_plan_dir/plan.out" >"$langfuse_plan_dir/plan.json"
-    conftest test --policy ../../../policy --output github "$langfuse_plan_dir/plan.json"
+    conftest test --policy "${repo_root}/policy" --output github "$langfuse_plan_dir/plan.json"
     verify_current_main_commit
     terragrunt apply -no-color "$langfuse_plan_dir/plan.out"
   )
@@ -174,11 +175,11 @@ plan_and_apply_application_backup_storage() {
   plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-openclaw-archive-plan.XXXXXX")"
   cleanup_dirs+=("$plan_dir")
   (
-    cd IaC/operator/application-backup-storage
+    cd IaC/homelab/us-west-2/operator/application-backup-storage
     terragrunt init -no-color
     terragrunt plan -out "$plan_dir/plan.out" -no-color
     terragrunt --log-disable show -json "$plan_dir/plan.out" >"$plan_dir/plan.json"
-    conftest test --policy ../../../policy --output github "$plan_dir/plan.json"
+    conftest test --policy "${repo_root}/policy" --output github "$plan_dir/plan.json"
     verify_current_main_commit
     terragrunt apply -no-color "$plan_dir/plan.out"
   )
@@ -193,7 +194,7 @@ plan_and_apply_argocd_apps() {
   cleanup_dirs+=("$plan_dir")
 
   (
-    cd IaC/live/argocd-apps
+    cd IaC/homelab/us-west-2/apps
     filter="$(terragrunt_argocd_app_filter)"
     terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 --source-update \
       --out-dir "$plan_dir" --json-out-dir "$plan_dir" -- plan -no-color
@@ -216,7 +217,7 @@ plan_and_apply_argocd_apps() {
   fi
 
   (
-    cd IaC/live/argocd-apps
+    cd IaC/homelab/us-west-2/apps
     filter="$(terragrunt_argocd_app_filter)"
     verify_current_main_commit
     terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
@@ -246,13 +247,13 @@ if [[ "$backup_storage_scope" == true ]]; then
 fi
 
 repair_argocd_app_state_unit="$(
-  cd IaC/live/argocd-apps
+  cd IaC/homelab/us-west-2/apps
   terragrunt_argocd_app_state_repair_unit
 )"
 if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "mastodon" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
-  (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
+  (cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter) >/dev/null
   echo "::group::Targeted Argo CD apply prerequisites"
   kubectl -n argocd get appproject homelab -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
     .spec |
@@ -307,7 +308,7 @@ fi
 if [[ -n "$repair_argocd_app_state_unit" ]]; then
   echo "::group::Targeted Argo CD Application state repair"
   (
-    cd "IaC/live/argocd-apps/${repair_argocd_app_state_unit}"
+    cd "IaC/homelab/us-west-2/apps/${repair_argocd_app_state_unit}"
     terragrunt init -no-color
     verify_current_main_commit
     if ! repair_output="$(terragrunt run -- untaint -no-color kubernetes_manifest.this 2>&1)"; then
@@ -337,7 +338,7 @@ if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
 fi
 
 if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
-  echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
+  echo "AzureAD credentials are required because IaC/homelab/us-west-2/apps changed or the apply diff could not be determined." >&2
   echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2
   exit 1
 fi
@@ -350,7 +351,7 @@ echo "::endgroup::"
 
 echo "::group::Argo CD bootstrap apply"
 (
-  cd IaC/bootstrap/argocd
+  cd IaC/homelab/us-west-2/bootstrap/argocd
   terragrunt init -no-color
   if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'helm_release.this'; then
     if helm status argocd --namespace argocd >/dev/null 2>&1; then
@@ -370,11 +371,11 @@ plan_and_apply_langfuse_prerequisites
 
 echo "::group::Kubernetes node label apply"
 (
-  cd IaC/live/kubernetes-node-labels
+  cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
   rm -f plan.out plan.json
   terragrunt plan -out plan.out -no-color
   terragrunt --log-disable show -json plan.out >plan.json
-  conftest test --policy ../../../policy --output github plan.json
+  conftest test --policy "${repo_root}/policy" --output github plan.json
   verify_current_main_commit
   terragrunt apply -no-color plan.out
 )
@@ -383,16 +384,16 @@ echo "::endgroup::"
 echo "::group::AzureAD application registration apply"
 if azuread_credentials_available; then
   (
-    cd IaC/live/azuread-applications
+    cd IaC/homelab/us-west-2/apps
     verify_current_main_commit
-    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter)" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter)" --filter "$(terragrunt_azuread_pilot_filter)" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
   )
 elif terragrunt_azuread_stack_changed; then
-  echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
+  echo "AzureAD credentials are required because IaC/homelab/us-west-2/apps changed or the apply diff could not be determined." >&2
   echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2
   exit 1
 else
-  echo "::warning::Skipping AzureAD application registration because AzureAD credentials are not configured and IaC/live/azuread-applications did not change in this push."
+  echo "::warning::Skipping AzureAD application registration because AzureAD credentials are not configured and IaC/homelab/us-west-2/apps did not change in this push."
 fi
 echo "::endgroup::"
 
@@ -405,7 +406,7 @@ verify_current_main_commit
 kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml
 if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then
   (
-    cd IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth
+    cd IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth
     terragrunt init -no-color
     if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'kubernetes_secret_v1.this'; then
       verify_current_main_commit
@@ -419,8 +420,8 @@ echo "::endgroup::"
 
 echo "::group::Kubernetes secret materialization apply"
 (
-  cd IaC/live/kubernetes-secrets
+  cd IaC/homelab/us-west-2/shared/kubernetes-secrets
   verify_current_main_commit
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/kubernetes-secrets/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+  terragrunt run --all --filter "$(terragrunt_changed_filter '*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
 )
 echo "::endgroup::"

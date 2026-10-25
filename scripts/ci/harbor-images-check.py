@@ -172,7 +172,7 @@ def declared_mastodon_images():
 
 def chart_sources():
     charts = []
-    stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC").glob("*/stack.hcl"))]
+    stacks = sorted((ROOT / "IaC/homelab/us-west-2/apps").glob("*/stack.hcl"))
     for stack in stacks:
         for match in re.finditer(r"\{([^{}]*\bchart\s*=[^{}]*)", stack.read_text()):
             fields = dict(re.findall(r'(repoURL|chart|targetRevision)\s*=\s*"([^\"]+)"', match[1]))

@@ -140,7 +140,7 @@ activation gates below are satisfied.
    account `716182248480`, `us-east-1`, AWS-managed `alias/aws/s3`, versioned,
    no completed-object expiry. Reuse `IaC/terragrunt-catalog/modules/aws-backup-bucket`; the staged
    catalog unit is `IaC/terragrunt-catalog/units/operator/application-backup-storage`.
-   The unit is staged in `IaC/terragrunt.stack.hcl` for the measured OpenClaw
+   The unit is staged in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` for the measured OpenClaw
    Enterprise legacy archive; the protected apply must still pass its scoped
    plan before the bucket exists. It does not activate the separate application
    backup host or timer. Review storage, request and KMS costs after measuring

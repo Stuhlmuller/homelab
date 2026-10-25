@@ -547,7 +547,7 @@ dependencies:
 
 ```sh
 (cd IaC && terragrunt stack generate)
-cd IaC/live/aws-ssm-parameters
+cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-push-password"]' \
   -out /path/to/private/mirror-publisher-secret.plan
@@ -574,7 +574,7 @@ first stage. It has a separate saved plan from the publisher bootstrap:
 
 ```sh
 (cd IaC && terragrunt stack generate)
-cd IaC/live/aws-ssm-parameters
+cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-pull-password"]' \
   -out /path/to/private/mirror-reader-secret.plan

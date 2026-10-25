@@ -84,7 +84,7 @@ Exports list on 10.1.0.2:
 
 ## GitOps Desired State
 
-`IaC/live/argocd-apps/platform-storage/terragrunt.hcl` registers the parent
+`IaC/homelab/us-west-2/apps/platform-storage/argocd/terragrunt.hcl` registers the parent
 `platform-storage` Application through the Terragrunt catalog. That parent
 points at `clusters/homelab/platform/storage` and auto-syncs by default.
 
@@ -231,7 +231,7 @@ app has acceptable backup and restore coverage.
   storage integration was added.
 - Persistent app Terragrunt units were checked on 2026-05-24. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
   Radarr, Sonarr, LiteLLM, OpenClaw, and n8n each explicitly depend on
-  `IaC/live/argocd-apps/platform-storage`.
+  `IaC/homelab/us-west-2/apps/platform-storage/argocd`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

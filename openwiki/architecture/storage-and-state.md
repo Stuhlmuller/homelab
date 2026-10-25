@@ -39,7 +39,7 @@ sources:
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
@@ -96,7 +96,7 @@ still reported Synced/Healthy. Kubernetes recreated PostgreSQL on
 without manual mutation. Check database and dependent workload readiness, not
 Argo status alone, during release acceptance.
 
-The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
+The operator-owned `IaC/homelab/us-west-2/operator/state-bucket-encryption` unit manages only
 the existing S3 state bucket's encryption configuration, enabling S3 Bucket
 Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
 [State Encryption](../operations/state-encryption.md) for configuration, recovery, and rollback.
@@ -641,7 +641,7 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/octelium-storage`
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
-- `IaC/live/argocd-apps/platform-storage`
+- `IaC/homelab/us-west-2/apps/platform-storage/argocd`
 
 ## OpenClaw identity coordinator ownership
 

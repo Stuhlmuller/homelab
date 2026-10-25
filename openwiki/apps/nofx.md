@@ -38,8 +38,8 @@ passes and is executed. The retained Cloudflare Tunnel and Octelium WEB
 Service support legacy callers; Octelium requires `homelab-human-web-access`
 before NOFX's own login and passes its application `Authorization` header for
 the session JWT. The GitOps source is `clusters/homelab/apps/nofx`. The Argo CD
-Application uses `IaC/nofx/stack.hcl` registration inputs, indexed by
-`IaC/terragrunt.stack.hcl`.
+Application uses `IaC/homelab/us-west-2/apps/nofx/stack.hcl` registration inputs, indexed by
+`IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`.
 
 The [declared frontend policy](../../clusters/homelab/apps/nofx/networkpolicy.yaml)
 allows egress only to CoreDNS on TCP/UDP 53 and the NOFX backend on TCP
