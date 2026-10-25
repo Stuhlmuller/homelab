@@ -77,6 +77,22 @@ def require_active_funnel(api, webhook):
         raise RuntimeError('Emergency rollback applies only to the active Funnel callback')
 
 
+def resume_rollback(api, webhook):
+    if webhook.ROLLBACK_RECEIPT.exists() or REDELIVERY_RECEIPT.exists():
+        raise RuntimeError('Rollback resume requires missing receipts and no redelivery attempt')
+    if api('GET', webhook.CONFIG_PATH).get('url') != webhook.PREVIOUS_URL:
+        raise RuntimeError('Rollback resume requires the retained callback already active')
+    require_failed_pr_head()
+    # The first attempt changed the URL but could not write its private receipt.
+    def read_only_api(method, *args):
+        if method != 'GET':
+            raise RuntimeError('Rollback resume cannot change the App callback')
+        return api(method, *args)
+    webhook.reconcile(read_only_api, execute=True, rollback=True)
+    if webhook.read_receipt(webhook.ROLLBACK_RECEIPT, webhook.PREVIOUS_URL) is None:
+        raise RuntimeError('Rollback resume did not save its private receipt')
+
+
 def matches_fixed_gate(delivery, webhook, url, redelivery):
     payload = delivery.get('request', {}).get('payload', {})
     check = payload.get('check_run', {})
@@ -177,6 +193,7 @@ def main():
     parser.add_argument('--expected-head', required=True, help='Full reviewed and signed recovery PR head SHA')
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--rollback', action='store_true', help='Set only the fixed previous callback')
+    mode.add_argument('--resume-rollback', action='store_true', help='Complete a rollback whose URL changed before its receipt was saved')
     mode.add_argument('--redeliver', action='store_true', help='Redeliver only the fixed failed #1679 Gate delivery')
     mode.add_argument('--verify', action='store_true', help='Read only the exact redelivery and #1679 Policy Bot status')
     parser.add_argument('--execute', action='store_true', help='Perform the selected one-time action after explicit user approval')
@@ -200,6 +217,8 @@ def main():
     if args.rollback:
         require_active_funnel(api, webhook)
         webhook.reconcile(api, execute=True, rollback=True)
+    elif args.resume_rollback:
+        resume_rollback(api, webhook)
     elif args.redeliver:
         redeliver_failed_gate(api, webhook)
     else:

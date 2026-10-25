@@ -345,6 +345,59 @@ class EmergencyGuardTests(unittest.TestCase):
                 emergency.require_active_funnel(api, webhook)
             api.assert_not_called()
 
+    def test_emergency_resume_saves_missing_receipt_without_second_patch(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(webhook, 'ROLLBACK_RECEIPT', Path(directory)/'rollback.json'), \
+             patch.object(emergency, 'REDELIVERY_RECEIPT', Path(directory)/'redelivery.json'), \
+             patch.object(emergency, 'require_failed_pr_head') as require_pr, \
+             patch.object(webhook, 'preflight_target'):
+            calls = []
+            delivery_reads = 0
+            def api(method, path, body=None):
+                nonlocal delivery_reads
+                calls.append((method, path))
+                if method != 'GET':
+                    self.fail('Resume must not mutate the App callback')
+                if path == webhook.CONFIG_PATH:
+                    return {'url': webhook.PREVIOUS_URL, 'secret': 'redacted'}
+                if path == '/app/hook/deliveries?per_page=10':
+                    delivery_reads += 1
+                    return ([{'id': emergency.FAILED_DELIVERY_ID + 1}]
+                            if delivery_reads == 1 else [])
+                self.fail(f'Unexpected API path: {path}')
+            with contextlib.redirect_stdout(io.StringIO()):
+                emergency.resume_rollback(api, webhook)
+            require_pr.assert_called_once_with()
+            self.assertTrue(webhook.ROLLBACK_RECEIPT.exists())
+            self.assertNotIn('PATCH', [method for method, _ in calls])
+            with self.assertRaises(RuntimeError):
+                emergency.resume_rollback(api, webhook)
+            webhook.ROLLBACK_RECEIPT.unlink()
+            emergency.REDELIVERY_RECEIPT.touch()
+            with self.assertRaises(RuntimeError):
+                emergency.resume_rollback(api, webhook)
+            emergency.REDELIVERY_RECEIPT.unlink()
+            with patch.object(webhook, 'reconcile') as reconcile, self.assertRaises(RuntimeError):
+                emergency.resume_rollback(lambda *_: {'url': webhook.URL}, webhook)
+            reconcile.assert_not_called()
+            config_reads = 0
+            attempted = []
+            def changed_api(method, path, *_args):
+                nonlocal config_reads
+                attempted.append(method)
+                if method != 'GET':
+                    self.fail('Resume sent a callback mutation after the URL changed')
+                if path == webhook.CONFIG_PATH:
+                    config_reads += 1
+                    return {'url': webhook.PREVIOUS_URL if config_reads == 1 else webhook.URL}
+                if path == '/app/hook/deliveries?per_page=10':
+                    return []
+                self.fail(f'Unexpected API path: {path}')
+            with self.assertRaisesRegex(RuntimeError, 'cannot change the App callback'):
+                emergency.resume_rollback(changed_api, webhook)
+            self.assertEqual(attempted, ['GET', 'GET', 'GET'])
+            self.assertFalse(webhook.ROLLBACK_RECEIPT.exists())
+
     def test_redelivery_is_one_exact_post_after_receipt_and_payload_checks(self):
         failed = {
             'id': emergency.FAILED_DELIVERY_ID, 'guid': 'fixture-guid', 'url': webhook.URL,

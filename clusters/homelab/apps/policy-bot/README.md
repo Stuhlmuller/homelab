@@ -112,7 +112,19 @@ current-main base before touching credentials. The helper then preflights the
 old hook and root through fixed public DNS and strict hostname-checked TLS,
 patches only the fixed previous URL, reads
 back the unchanged HMAC secret/settings, and saves a private rollback receipt.
-It does not trigger an event. After the callback readback, run the separate
+It does not trigger an event. If the URL changed but writing the local receipt
+failed, fix receipt-directory access and use the guarded resume mode from a
+refreshed signed PR head:
+
+```sh
+nix develop --command python3 -I scripts/policy-bot-webhook-emergency.py \
+  --expected-main '<fresh-main-sha>' \
+  --expected-head '<reviewed-pr-head-sha>' --resume-rollback --execute
+```
+
+Resume requires the old URL and absent rollback and redelivery receipts. It
+verifies #1679's fixed head and saves the receipt without another callback
+PATCH. After the callback readback, run the separate
 fixed [GitHub App redelivery](https://docs.github.com/en/rest/apps/webhooks#redeliver-a-delivery-for-an-app-webhook)
 command from the same reviewed checkout with fresh main/head SHAs:
 
