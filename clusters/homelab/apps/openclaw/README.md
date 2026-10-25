@@ -248,9 +248,35 @@ Its output is a private-transfer contract:
 hashes. It contains no
 retained OpenClaw state, credentials, or install records. The
 [CI check](../../../../.github/workflows/openclaw-discord-offline-cache.yml)
-builds and tests but discards that output. A later reviewed operation must
-publish the pair privately, check the manifest SHA-256 on download, and prove
-the isolated restored boot; this preparatory check does not pass T014.
+builds and tests but discards that output. After its pinned-image offline proof
+passes on protected `main`, the `publish-discord-cache` stage of the
+[protected operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
+rebuilds the public package closure and stores all three files under a fresh
+`openclaw-enterprise/legacy-discord-cache/<SOURCE_SHA>/<RUN_ID>/` prefix in the
+versioned KMS backup bucket. It verifies exact downloaded object versions and
+writes `final.json` last. Do not reuse a partial prefix. `transfer-discord-cache`
+accepts that exact SHA/run ID as `cache_ref`, checks the final receipt, each
+version, manifest, lock and tar safety, then copies exact versions into new
+owner-only `/archive/private/discord-cache-<TRANSFER_RUN_ID>` scratch through
+bounded reader slices. It writes `completed.json` only after all copied hashes
+match. Both stages require the stopped legacy writer and unchanged reader/PVC
+identity. They never mount or edit the retained source claims. Run each stage
+from a fresh exact current `main` SHA; keep private receipts out of Git and
+public CI logs. A successful transfer does not prove a no-egress old-image
+boot, real turn, or scheduled job, so T014 remains open.
+
+```sh
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-discord-cache
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=transfer-discord-cache \
+  -f cache_ref=<PUBLICATION_SHA>/<PUBLICATION_RUN_ID>
+```
+
+The first run must finish successfully before transfer. A failed or partial run
+keeps its unique prefix or scratch directory for private diagnosis; retry with
+a new workflow run after fixing the cause. Neither stage should be dispatched
+until the pinned offline cache check and protected review have passed.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
