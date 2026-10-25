@@ -370,7 +370,7 @@ test_rejects_changed_openclaw_installation_binding if {
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"binding": object.union(job, {"concurrency": {"group": "other", "cancel-in-progress": false, "queue": "max"}})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"binding": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": "true"}), steps[4]]})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"binding": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_binding_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
-		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"binding": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_binding_run, "test -f /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json", "true")})]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"binding": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_binding_run, "openclaw-enterprise-stage.sh bind-installation", "openclaw-enterprise-stage.sh reconcile")})]})})}),
 	] {
 		violations := deny with input as changed
 		some msg in violations
@@ -486,7 +486,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"runs-on": "ubuntu-24.04",
 		"needs": ["static-policy"],
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'",
-		"timeout-minutes": 30,
+		"timeout-minutes": 45,
 		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
 		"environment": {"name": "homelab-production"},
 		"permissions": {"contents": "read"},
@@ -495,7 +495,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"persist-credentials": false}},
 			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false}},
 			{"name": "Recheck Current Main Commit Before Binding", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
-			{"name": "Bind Reviewed Installation", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": openclaw_enterprise_binding_run},
+			{"name": "Bind Reviewed Installation", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_enterprise_binding_run},
 		],
 	},
 	},

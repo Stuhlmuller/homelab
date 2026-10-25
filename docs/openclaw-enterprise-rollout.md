@@ -48,19 +48,25 @@ before publication.
 The [operations workflow](../.github/workflows/openclaw-enterprise-operations.yml)
 has a fixed `bind-installation` lane. It rechecks current `main` after checkout,
 runs under the protected production environment and shared operations queue,
-pins the reviewed binder checksum, and withholds private output. The binder
-can annotate only the already reviewed startup Secret after proving the live
-Installation, Pod, and Secret identities; the patch uses UID/resource-version
-preconditions. The lane requires the owner-controlled, 0600 bootstrap service
-key at the fixed `bootstrap.serviceKeyFile` path. No declared runner currently
-delivers that private file, so hosted dispatch fails before binding. Do not
-dispatch it until credential delivery and the dormant Installation are proven.
+pins the reviewed stage and dispatcher checksums, and withholds private output.
+A source-bound in-cluster Job reads the UID-1000-owned, `0600` bootstrap key
+from its read-only PVC mount and proves the live Installation, Pod, and startup
+Secret identities. It emits one bounded private readiness receipt. The runner
+checks the Job and Pod UIDs, image, mounts, service account, source and Secret
+UID/resource version, then rechecks exact current `main` immediately before a
+single guarded patch of the named Secret annotation. The Job must confirm the
+bound Installation and unchanged workloads afterward. The runner never reads
+the key; the Job cannot patch the Secret. An uncertain patch is read back once
+without repeating the write.
 
-Do not mount the bootstrap PVC into a reader Pod as a shortcut: current
-[Flannel isolation](runtime-isolation.md) does not enforce a declared deny-all
-NetworkPolicy. Any future key reader needs proven enforcement on the admitted
-canary and source-reviewed delivery through the existing serialized binding
-lane.
+The operator remains disabled, and current [Flannel isolation](runtime-isolation.md)
+does not enforce the declared deny-all NetworkPolicy. Do not dispatch binding
+until its signed image is rebuilt and pinned from this source, the admitted
+canary proves enforcement, and placement, claims, key ownership and dormant
+Installation are reviewed. If `main` advances after Job creation, the unbound
+Job fails and blocks later dispatches. Its exact failed Job requires read-only
+inspection and a separate reviewed, identity-checked cleanup workflow before
+a new exact-main attempt; no automatic Job deletion is included here.
 
 The fixed `full-sync` lane can sync both Applications only after a reviewed
 `installationPhase` and source registration; the current `unselected` phase

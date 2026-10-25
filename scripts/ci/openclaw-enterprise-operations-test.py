@@ -25,8 +25,6 @@ DISCORD_BUILDER = ROOT / 'scripts/openclaw-discord-offline-cache.py'
 DISCORD_PUBLICATION = ROOT / 'scripts/ci/openclaw-discord-cache-publication.py'
 ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
 JOURNAL_OPERATOR = ROOT / 'scripts/ci/openclaw-enterprise-journal-operator.py'
-BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
-BINDER_SHA256 = 'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 ROLE = ROOT / 'IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf'
@@ -368,31 +366,24 @@ sys.stdout.buffer.write(chunk)
                     self.assertEqual(result.returncode, 2, result.stderr)
                     self.assertFalse(marker.exists())
 
-    def test_installation_binding_is_pinned_protected_and_requires_private_file(self):
+    def test_installation_binding_uses_protected_operator_without_runner_key(self):
         workflow = WORKFLOW.read_text()
         binding = workflow.split('\n  binding:\n', 1)[1]
         self.assertIn("inputs.enterprise_stage == 'bind-installation'", binding)
         self.assertIn('name: homelab-production', binding)
         self.assertIn('group: openclaw-enterprise-operations-production', binding)
         self.assertIn('queue: max', binding)
-        self.assertIn('OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}', binding)
+        self.assertIn('GH_REPO:', binding)
+        self.assertIn('GH_TOKEN:', binding)
         self.assertNotIn('id-token: write', binding)
         self.assertLess(binding.index('name: Recheck Current Main Commit Before Binding'),
                         binding.index('name: Bind Reviewed Installation'))
         self.assertIn('test "$ACTUAL_SHA" = "$(gh api', binding)
-        self.assertIn(f'{BINDER_SHA256}  scripts/openclaw-enterprise-bind-installation.py',
-                      binding)
-        if BINDER.exists():
-            self.assertEqual(hashlib.sha256(BINDER.read_bytes()).hexdigest(), BINDER_SHA256)
-        self.assertIn('test "$(jq -r \'.bootstrap.serviceKeyFile // empty\' '
-                      'scripts/config/openclaw-enterprise.json)" = '
-                      '/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json',
-                      binding)
-        self.assertIn('test -f /private/openclaw-enterprise/bootstrap/'
-                      'initial-admin-service-key.json', binding)
-        self.assertIn("stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/"
-                      'initial-admin-service-key.json', binding)
-        self.assertIn("timeout 10m nix develop --command bash <<'EOF'", binding)
+        self.assertIn('timeout 40m nix develop --command bash '
+                      'scripts/ci/openclaw-enterprise-stage.sh bind-installation', binding)
+        self.assertIn('scripts/ci/openclaw-enterprise-journal-operator.py', binding)
+        self.assertNotIn('test -f /private/openclaw-enterprise/bootstrap', binding)
+        self.assertNotIn('python3 -I scripts/openclaw-enterprise-bind-installation.py', binding)
         self.assertIn('ulimit -f 1024', binding)
         self.assertIn('private diagnostics withheld', binding)
         self.assertNotIn('cat "$private_log"', binding)
@@ -400,36 +391,23 @@ sys.stdout.buffer.write(chunk)
         run = textwrap.dedent(binding.split('        run: |\n')[-1])
         with tempfile.TemporaryDirectory() as directory:
             fake = Path(directory)
-            (fake / 'sha256sum').write_text('#!/bin/sh\nexit 0\n')
-            (fake / 'jq').write_text(
-                '#!/bin/sh\nprintf "%s\\n" '
-                '"/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json"\n')
             marker = fake / 'ran-binder'
+            (fake / 'sha256sum').write_text('#!/bin/sh\nexit 1\n')
             (fake / 'timeout').write_text(
                 '#!/bin/sh\ntouch "$BINDER_MARKER"\nexit 0\n')
-            (fake / 'stat').write_text('#!/bin/sh\nprintf "0:644\\n"\n')
-            (fake / 'id').write_text('#!/bin/sh\nprintf "0\\n"\n')
-            for name in ('sha256sum', 'jq', 'timeout', 'stat', 'id'):
+            for name in ('sha256sum', 'timeout'):
                 (fake / name).chmod(0o755)
-            # Reject a missing key and an existing key with weak file mode.
-            for gate, file_tests in (
-                    ('missing', 'return 1'),
-                    ('weak_mode', 'return 0')):
-                with self.subTest(gate=gate):
-                    private_file = ('test() { if [[ "$1" == -f || "$1" == -s ]]; '
-                                    f'then {file_tests}; else builtin test "$@"; fi; }}\n')
-                    result = subprocess.run(['bash', '-c', private_file + run], cwd=ROOT,
-                                            env={**os.environ,
-                                                 'PATH': f'{fake}:{os.environ["PATH"]}',
-                                                 'OCTELIUM_AUTH_TOKEN': 'test',
-                                                 'EXPECTED_SHA': 'a' * 40,
-                                                 'BINDER_MARKER': str(marker)},
-                                            capture_output=True, text=True, timeout=5)
-                    self.assertEqual(result.returncode, 1, result.stderr)
-                    self.assertEqual(result.stdout.strip(),
-                                     '::error::Enterprise Installation binding blocked; '
-                                     'private diagnostics withheld.')
-                    self.assertFalse(marker.exists())
+            result = subprocess.run(['bash', '-c', run], cwd=ROOT,
+                                    env={**os.environ,
+                                         'PATH': f'{fake}:{os.environ["PATH"]}',
+                                         'EXPECTED_SHA': 'a' * 40,
+                                         'BINDER_MARKER': str(marker)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertEqual(result.stdout.strip(),
+                             '::error::Enterprise Installation binding blocked; '
+                             'private diagnostics withheld.')
+            self.assertFalse(marker.exists())
 
     def test_workflow_pins_current_operations_script(self):
         pins = re.findall(

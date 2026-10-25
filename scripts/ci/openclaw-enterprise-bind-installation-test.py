@@ -2,7 +2,9 @@
 """Offline CAS and identity fixtures for the post-bootstrap Secret binder."""
 
 from copy import deepcopy
+from contextlib import redirect_stdout
 import importlib.util
+import io
 import json
 from pathlib import Path
 import unittest
@@ -203,6 +205,50 @@ class InstallationBinding(unittest.TestCase):
             self.assertEqual(binder.main(["--expected-sha", "a" * 40,
                                           "--credential-file", "/private/key"]), 1)
             key.assert_not_called()
+
+    def test_cluster_bridge_emits_only_bounded_proof_and_checks_post_patch(self):
+        bridge = binder.JobBridge("a" * 40, "oce-journal-bind-installation-123-1")
+        _, second = self.snapshots()
+        metadata = second["secret"]["metadata"]
+        unbound = deepcopy(second["secret"])
+        bound = deepcopy(unbound)
+        bound["metadata"]["annotations"][binder.ANNOTATION] = "ins_one"
+        bound["metadata"]["resourceVersion"] = "101"
+        output = io.StringIO()
+        with patch.object(binder.startup, "kube_json", side_effect=[unbound, bound]), \
+             patch.object(binder, "_secret", return_value=unbound), \
+             patch.object(binder.time, "sleep"), redirect_stdout(output):
+            bridge.ready_and_wait("ins_one", metadata, False)
+        self.assertEqual(output.getvalue().count("OCE_BIND_READY:"), 1)
+        receipt = json.loads(output.getvalue().split(":", 1)[1])
+        self.assertEqual(receipt["secretUid"], "secret-one")
+        self.assertEqual(receipt["secretResourceVersion"], "100")
+        self.assertEqual(receipt["jobName"], "oce-journal-bind-installation-123-1")
+        self.assertEqual(receipt["alreadyBound"], False)
+        self.assertNotIn("key", output.getvalue().lower())
+
+    def test_cluster_bridge_rejects_changed_secret_without_runner_patch(self):
+        bridge = binder.JobBridge("a" * 40, "oce-journal-bind-installation-123-1")
+        _, second = self.snapshots()
+        changed = deepcopy(second["secret"])
+        changed["metadata"]["resourceVersion"] = "101"
+        with patch.object(binder.startup, "kube_json", return_value=changed), \
+             patch.object(binder, "_secret", return_value=changed), \
+             redirect_stdout(io.StringIO()), self.assertRaisesRegex(
+                 binder.oce.Blocked, "changed before protected"):
+            bridge.ready_and_wait("ins_one", second["secret"]["metadata"], False)
+
+    def test_cluster_bind_never_patches_secret_and_rechecks_api_after_bridge(self):
+        bridge = unittest.mock.Mock()
+        pre = self.snapshots()
+        post = self.snapshots(bound=True)
+        with patch.object(binder.startup, "kube") as patch_secret:
+            result = binder.bind("a" * 40, self.config,
+                                 API("ins_one", "ins_one", "ins_one"),
+                                 Kubernetes([*pre, *post]), bridge)
+        self.assertEqual(result["installationId"], "ins_one")
+        bridge.ready_and_wait.assert_called_once()
+        patch_secret.assert_not_called()
 
 
 if __name__ == "__main__":

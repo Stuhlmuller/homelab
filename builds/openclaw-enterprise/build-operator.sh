@@ -14,7 +14,7 @@ source_sha="$(git rev-parse HEAD)"
 }
 context="$(mktemp -d "${TMPDIR:-/tmp}/oce-operator-build.XXXXXX")"
 trap 'rm -rf -- "$context"' EXIT
-mkdir -p "$context/bin" "$context/scripts" \
+mkdir -p "$context/bin" "$context/scripts/config" \
   "$context/clusters/homelab/apps/openclaw-enterprise"
 cp -L "$(command -v kubectl)" "$context/bin/kubectl"
 # The dev-shell yq uses a Nix ELF interpreter absent from the Debian image.
@@ -39,7 +39,9 @@ elf_headers="$("$operator_tools/bin/readelf" -l "$operator_tools/bin/yq")"
   exit 1
 }
 cp -L "$operator_tools/bin/yq" "$context/bin/yq"
-cp scripts/openclaw-enterprise.py "$context/scripts/openclaw-enterprise.py"
+cp scripts/openclaw-enterprise.py scripts/openclaw-enterprise-startup.py \
+  scripts/openclaw-enterprise-bind-installation.py "$context/scripts/"
+cp scripts/config/openclaw-enterprise.json "$context/scripts/config/"
 cp clusters/homelab/apps/openclaw-enterprise/installation.yaml \
   clusters/homelab/apps/openclaw-enterprise/values.yaml \
   "$context/clusters/homelab/apps/openclaw-enterprise/"
@@ -55,6 +57,9 @@ docker buildx build --load --platform linux/amd64 \
     --entrypoint cat homelab-oce-operator:build /opt/homelab/operator-source.sha)" == "$source_sha" ]]
 docker run --rm --network none --read-only --user 10001:10001 \
   homelab-oce-operator:build --help >/dev/null
+docker run --rm --network none --read-only --user 10001:10001 \
+  --entrypoint python3 homelab-oce-operator:build -I \
+  /opt/homelab/scripts/openclaw-enterprise-bind-installation.py --help >/dev/null
 docker run --rm --network none --read-only --user 10001:10001 \
   --entrypoint kubectl homelab-oce-operator:build version --client --output=json >/dev/null
 docker run --rm --network none --read-only --user 10001:10001 \

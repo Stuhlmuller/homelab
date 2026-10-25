@@ -25,11 +25,15 @@ class OperatorImageBuild(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         for path in ("builds/openclaw-enterprise", "scripts", "bin",
+                     "scripts/config",
                      "clusters/homelab/apps/openclaw-enterprise"):
             (self.root / path).mkdir(parents=True)
         for path in ("builds/openclaw-enterprise/build-operator.sh",
                      "builds/openclaw-enterprise/operator.Dockerfile",
                      "scripts/openclaw-enterprise.py",
+                     "scripts/openclaw-enterprise-startup.py",
+                     "scripts/openclaw-enterprise-bind-installation.py",
+                     "scripts/config/openclaw-enterprise.json",
                      "clusters/homelab/apps/openclaw-enterprise/installation.yaml",
                      "clusters/homelab/apps/openclaw-enterprise/values.yaml"):
             shutil.copyfile(ROOT / path, self.root / path)
@@ -78,6 +82,11 @@ if [[ "$1 $2" == 'buildx build' ]]; then
   cmp "$context/bin/yq" "$STATIC_YQ_ROOT/bin/yq"
   sha256sum "$context/scripts/openclaw-enterprise.py" >"$CONTEXT_RECORD"
   cat "$context/operator-source.sha" >>"$CONTEXT_RECORD"
+  for path in scripts/openclaw-enterprise-startup.py \
+              scripts/openclaw-enterprise-bind-installation.py \
+              scripts/config/openclaw-enterprise.json; do
+    cmp "$context/$path" "$path"
+  done
   test -s "$context/clusters/homelab/apps/openclaw-enterprise/installation.yaml"
   test -s "$context/clusters/homelab/apps/openclaw-enterprise/values.yaml"
 elif [[ "$1 $2" == 'image inspect' ]]; then
@@ -116,6 +125,9 @@ fi
                             and "--help" in call for call in calls))
         self.assertTrue(any("--entrypoint kubectl" in call for call in calls))
         self.assertTrue(any("--entrypoint yq" in call for call in calls))
+        self.assertTrue(any("--entrypoint python3" in call and
+                            "openclaw-enterprise-bind-installation.py --help" in call
+                            for call in calls))
         self.assertTrue(any("--entrypoint yq" in call and
                             "-o=json . /opt/homelab/clusters/homelab/apps/"
                             "openclaw-enterprise/values.yaml" in call for call in calls))

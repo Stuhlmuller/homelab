@@ -8,16 +8,18 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "scripts/config/openclaw-enterprise.json"
-STAGES = {"reconcile": "reconcile", "stop": "stop", "verification": "verify"}
+STAGES = {"bind-installation": "bind-installation", "reconcile": "reconcile",
+          "stop": "stop", "verification": "verify"}
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 UID = re.compile(r"[0-9a-f-]{36}\Z")
 IMAGE = re.compile(r"harbor\.stinkyboi\.com/homelab/homelab-oce-operator@sha256:[0-9a-f]{64}\Z")
 NODE = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\Z")
-JOB_NAME = re.compile(r"oce-journal-(reconcile|stop|verification)-[1-9][0-9]{0,19}-[1-9][0-9]{0,4}\Z")
+JOB_NAME = re.compile(r"oce-journal-(bind-installation|reconcile|stop|verification)-[1-9][0-9]{0,19}-[1-9][0-9]{0,4}\Z")
 
 
 class Blocked(RuntimeError):
@@ -112,14 +114,20 @@ def contract(config, stage, expected):
             "operator placement or pinned source is incomplete")
     require(stage != "reconcile" or config.get("activationEnabled") is False,
             "active reconciliation needs a separate model credential handoff")
+    require(stage != "bind-installation" or
+            (config.get("activationEnabled") is False and
+             config.get("installationPhase") == "unselected"),
+            "Installation binding requires the inactive reviewed candidate")
     return operator
 
 
 def prove_image_source(operator, expected):
     source = operator["imageSourceSha"]
     command(["git", "merge-base", "--is-ancestor", source, expected])
-    # These are the only repository files the embedded reconciler reads.
+    # These are the repository files embedded in the operator image.
     for name in ("scripts/openclaw-enterprise.py",
+                 "scripts/openclaw-enterprise-bind-installation.py",
+                 "scripts/openclaw-enterprise-startup.py",
                  "clusters/homelab/apps/openclaw-enterprise/installation.yaml",
                  "clusters/homelab/apps/openclaw-enterprise/values.yaml"):
         require(command(["git", "show", source + ":" + name]) ==
@@ -223,12 +231,20 @@ def build_job(stage, expected, run_id, operator, projection, attempt="1"):
             receipt["configSha256"] == hashlib.sha256(
                 projection["data"]["openclaw-enterprise.json"].encode()).hexdigest(),
             "operator projected source receipt changed")
-    args = [STAGES[stage], "--config", "/etc/oce-operator-config/openclaw-enterprise.json",
+    args = ["--config", "/etc/oce-operator-config/openclaw-enterprise.json",
             "--expected-sha", expected, "--operator-source-sha",
             operator["imageSourceSha"], "--reviewed-config-sha256", receipt["configSha256"]]
-    if stage != "verification":
+    if stage == "bind-installation":
+        args += ["--credential-file",
+                 "/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json",
+                 "--job-name", name]
+    else:
+        args.insert(0, STAGES[stage])
+    if stage in ("reconcile", "stop"):
         args += ["--credential-file",
                  "/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json"]
+    entrypoint = ("openclaw-enterprise-bind-installation.py" if stage == "bind-installation"
+                  else "openclaw-enterprise.py")
     return {"apiVersion": "batch/v1", "kind": "Job",
             "metadata": {"name": name, "namespace": operator["namespace"], "labels": labels},
             "spec": {"backoffLimit": 0, "activeDeadlineSeconds": 1800,
@@ -244,7 +260,7 @@ def build_job(stage, expected, run_id, operator, projection, attempt="1"):
                          "containers": [{"name": "operator", "image": operator["image"],
                                          "imagePullPolicy": "IfNotPresent",
                                          "command": ["python3", "-I",
-                                                     "/opt/homelab/scripts/openclaw-enterprise.py"],
+                                                     "/opt/homelab/scripts/" + entrypoint],
                                          "args": args,
                                          "env": [{"name": "KUBECONFIG",
                                                   "value": "/etc/oce-operator-kubeconfig/config"}],
@@ -325,7 +341,194 @@ def job_identity(actual, intended):
             pod.get("volumes") == wanted["volumes"])
 
 
-def dispatch(job):
+def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
+    """Patch only after a fresh, source-bound proof from the running key reader."""
+    namespace = intended_job["metadata"]["namespace"]
+    name = intended_job["metadata"]["name"]
+    job_uid = actual_job.get("metadata", {}).get("uid")
+    require(isinstance(job_uid, str) and UID.fullmatch(job_uid),
+            "binding Job UID is missing")
+    proof = None
+    pod_name = None
+    for _ in range(90):
+        listing = kubectl_json("-n", namespace, "get", "pods", "-l",
+                               "batch.kubernetes.io/job-name=" + name, "-o=json")
+        pods = listing.get("items") if isinstance(listing, dict) else None
+        require(isinstance(pods, list) and len(pods) <= 1,
+                "binding Pod identity is ambiguous")
+        if pods:
+            pod = pods[0]
+            require(isinstance(pod, dict), "binding Pod identity is invalid")
+            metadata = pod.get("metadata", {})
+            spec = pod.get("spec", {})
+            require(isinstance(metadata, dict) and isinstance(spec, dict),
+                    "binding Pod identity is invalid")
+            owners = metadata.get("ownerReferences") or []
+            containers = spec.get("containers")
+            wanted = intended_job["spec"]["template"]["spec"]
+            labels = metadata.get("labels")
+            require(isinstance(owners, list) and isinstance(labels, dict) and
+                    metadata.get("namespace") == namespace and
+                    isinstance(metadata.get("name"), str) and
+                    metadata["name"].startswith(name + "-") and
+                    labels.get("batch.kubernetes.io/job-name") == name and
+                    labels.get("batch.kubernetes.io/controller-uid") == job_uid and
+                    labels.get("app.kubernetes.io/name") == "oce-journal-operator" and
+                    isinstance(metadata.get("uid"), str) and
+                    UID.fullmatch(metadata["uid"]) and
+                    len(owners) == 1 and isinstance(owners[0], dict) and
+                    owners[0].get("controller") is True and
+                    owners[0].get("kind") == "Job" and owners[0].get("name") == name and
+                    owners[0].get("uid") == job_uid and
+                    labels.get("homelab.stuhlmuller.dev/source-sha") == expected and
+                    labels.get("homelab.stuhlmuller.dev/stage") == "bind-installation" and
+                    spec.get("serviceAccountName") == operator["serviceAccount"] and
+                    spec.get("automountServiceAccountToken") is False and
+                    spec.get("restartPolicy") == "Never" and
+                    spec.get("nodeSelector") == wanted["nodeSelector"] and
+                    spec.get("nodeName") == operator["node"] and
+                    spec.get("securityContext") == wanted["securityContext"] and
+                    spec.get("volumes") == wanted["volumes"] and
+                    not spec.get("initContainers") and
+                    not spec.get("ephemeralContainers") and
+                    spec.get("hostNetwork") in (None, False) and
+                    spec.get("hostPID") in (None, False) and
+                    spec.get("hostIPC") in (None, False) and
+                    spec.get("shareProcessNamespace") in (None, False) and
+                    spec.get("hostUsers") in (None, False) and
+                    spec.get("dnsPolicy") in (None, "ClusterFirst") and
+                    spec.get("schedulerName") in (None, "default-scheduler") and
+                    not spec.get("tolerations") and not spec.get("hostAliases") and
+                    not spec.get("dnsConfig") and not spec.get("runtimeClassName") and
+                    isinstance(containers, list) and len(containers) == 1 and
+                    isinstance(containers[0], dict) and
+                    all(containers[0].get(field) == wanted["containers"][0][field]
+                        for field in ("name", "image", "command", "args", "env",
+                                      "imagePullPolicy", "terminationMessagePath",
+                                      "terminationMessagePolicy", "volumeMounts",
+                                      "securityContext", "resources")) and
+                    not containers[0].get("envFrom") and
+                    not containers[0].get("lifecycle") and
+                    not containers[0].get("ports") and
+                    not containers[0].get("volumeDevices"),
+                    "binding Pod source or owner changed")
+            require(pod.get("status", {}).get("phase") in ("Pending", "Running", "Succeeded"),
+                    "binding Pod failed before the protected patch")
+            if pod["status"]["phase"] in ("Running", "Succeeded"):
+                states = pod["status"].get("containerStatuses") or []
+                if not (len(states) == 1 and states[0].get("name") == "operator" and
+                        (states[0].get("state", {}).get("running") is not None or
+                         states[0].get("state", {}).get("terminated", {}).get("exitCode") == 0)):
+                    time.sleep(2)
+                    continue
+                pod_name = metadata["name"]
+                try:
+                    raw = command(["kubectl", "--request-timeout=15s", "-n", namespace,
+                                   "logs", "pod/" + pod_name, "-c", "operator",
+                                   "--tail=20", "--limit-bytes=4096"])
+                except Blocked:
+                    time.sleep(2)
+                    continue
+                lines = [line for line in raw.splitlines()
+                         if line.startswith("OCE_BIND_READY:")]
+                require(len(lines) <= 1, "binding Job emitted ambiguous proof")
+                if lines:
+                    try:
+                        proof = json.loads(lines[0][len("OCE_BIND_READY:"):])
+                    except ValueError:
+                        raise Blocked("binding Job emitted invalid proof") from None
+                    break
+        time.sleep(2)
+    require(proof is not None and pod_name is not None and isinstance(proof, dict) and
+            set(proof) == {"schema", "expectedSha", "jobName", "installationId",
+                           "secretUid", "secretResourceVersion",
+                           "alreadyBound", "issuedAt"} and
+            type(proof["schema"]) is int and proof["schema"] == 1 and
+            proof["expectedSha"] == expected and proof["jobName"] == name and
+            isinstance(proof["installationId"], str) and
+            re.fullmatch(r"ins_[A-Za-z0-9_-]+", proof["installationId"]) and
+            isinstance(proof["secretUid"], str) and UID.fullmatch(proof["secretUid"]) and
+            isinstance(proof["secretResourceVersion"], str) and
+            re.fullmatch(r"[1-9][0-9]*", proof["secretResourceVersion"]) and
+            type(proof["alreadyBound"]) is bool and
+            type(proof["issuedAt"]) is int and
+            -5 <= time.time() - proof["issuedAt"] <= 60,
+            "binding Job proof is stale or invalid")
+    candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+    secret_name = "occ-installation-startup-" + hashlib.sha256(candidate).hexdigest()[:32]
+    secret = kubectl_json("-n", namespace, "get", "secret", secret_name, "-o=json")
+    metadata = secret.get("metadata", {}) if isinstance(secret, dict) else {}
+    annotations = metadata.get("annotations") if isinstance(metadata, dict) else None
+    require(isinstance(metadata, dict) and isinstance(annotations, dict) and
+            metadata.get("uid") == proof["secretUid"] and
+            metadata.get("resourceVersion") == proof["secretResourceVersion"] and
+            secret.get("immutable") is True and secret.get("type") == "Opaque" and
+            metadata.get("name") == secret_name and
+            metadata.get("namespace") == namespace and
+            metadata.get("labels") == {"app.kubernetes.io/part-of": "openclaw-enterprise"} and
+            annotations.get("homelab.stuhlmuller.dev/installation-sha256") ==
+            hashlib.sha256(candidate).hexdigest(),
+            "startup Secret differs from binding proof")
+    annotation = annotations.get("openclaw.dev/installation-id")
+    if proof["alreadyBound"]:
+        require(annotation == proof["installationId"],
+                "existing Installation binding changed")
+        exact_main(expected, environ)
+        return
+    require(annotation is None, "startup Secret was bound before protected patch")
+    current_pod = kubectl_json("-n", namespace, "get", "pod", pod_name, "-o=json")
+    current_job = kubectl_json("-n", namespace, "get", "job", name, "-o=json")
+    pod_status = current_pod.get("status", {}) if isinstance(current_pod, dict) else {}
+    pod_metadata = current_pod.get("metadata", {}) if isinstance(current_pod, dict) else {}
+    job_metadata = current_job.get("metadata", {}) if isinstance(current_job, dict) else {}
+    job_status = current_job.get("status", {}) if isinstance(current_job, dict) else {}
+    container_statuses = pod_status.get("containerStatuses") if isinstance(pod_status, dict) else None
+    require(isinstance(pod_status, dict) and isinstance(pod_metadata, dict) and
+            pod_metadata.get("uid") == pod["metadata"]["uid"] and
+            pod_status.get("phase") == "Running" and
+            isinstance(container_statuses, list) and len(container_statuses) == 1 and
+            isinstance(container_statuses[0], dict) and
+            container_statuses[0].get("name") == "operator" and
+            isinstance(container_statuses[0].get("state"), dict) and
+            isinstance(container_statuses[0].get("state", {}).get("running"), dict) and
+            isinstance(current_job, dict) and isinstance(job_metadata, dict) and
+            isinstance(job_status, dict) and
+            job_identity(current_job, intended_job) and
+            job_metadata.get("uid") == job_uid and
+            job_status.get("active") == 1 and
+            not job_status.get("conditions"),
+            "binding Job stopped before the protected patch")
+    require(-5 <= time.time() - proof["issuedAt"] <= 60,
+            "binding Job proof expired before the protected patch")
+    operations = [
+        {"op": "test", "path": "/metadata/uid", "value": proof["secretUid"]},
+        {"op": "test", "path": "/metadata/resourceVersion",
+         "value": proof["secretResourceVersion"]},
+        {"op": "add", "path": "/metadata/annotations/openclaw.dev~1installation-id",
+         "value": proof["installationId"]},
+    ]
+    patch = json.dumps(operations, separators=(",", ":"))
+    exact_main(expected, environ)
+    try:
+        command(["kubectl", "--request-timeout=15s", "-n", namespace,
+                 "patch", "secret", secret_name, "--type=json", "-p", patch])
+    except Blocked:
+        # A response can be lost after an atomic patch. Read once; never retry the write.
+        observed = kubectl_json("-n", namespace, "get", "secret", secret_name, "-o=json")
+        seen = observed.get("metadata", {}) if isinstance(observed, dict) else {}
+        seen_annotations = seen.get("annotations") if isinstance(seen, dict) else None
+        require(isinstance(seen_annotations, dict) and
+                seen.get("uid") == proof["secretUid"] and
+                seen.get("resourceVersion") != proof["secretResourceVersion"] and
+                seen.get("labels") == metadata["labels"] and
+                seen_annotations == {**annotations,
+                                     "openclaw.dev/installation-id": proof["installationId"]} and
+                observed.get("immutable") is True and observed.get("type") == "Opaque" and
+                observed.get("data") == secret.get("data"),
+                "binding Secret patch outcome is uncertain")
+
+
+def dispatch(job, *, ready=None):
     namespace = job["metadata"]["namespace"]
     name = job["metadata"]["name"]
     listing = kubectl_json("-n", namespace, "get", "jobs", "-o=json")
@@ -358,6 +561,10 @@ def dispatch(job):
     if existing is None:
         command(["kubectl", "--request-timeout=15s", "create", "-f", "-"],
                 body=json.dumps(job), timeout=30)
+    if ready is not None:
+        actual = kubectl_json("-n", namespace, "get", "job", name, "-o=json")
+        require(job_identity(actual, job), "binding Job identity changed")
+        ready(actual, job)
     if existing is None or not any(
             entry.get("type") == "Complete" and entry.get("status") == "True"
             for entry in existing.get("status", {}).get("conditions") or []):
@@ -390,7 +597,11 @@ def main(argv=None, environ=None):
         job = build_job(stage, expected, environ.get("GITHUB_RUN_ID", ""),
                         operator, projection, environ.get("GITHUB_RUN_ATTEMPT", ""))
         exact_main(expected, environ)
-        dispatch(job)
+        if stage == "bind-installation":
+            dispatch(job, ready=lambda actual, intended: bind_proof_and_patch(
+                actual, intended, expected, operator, environ))
+        else:
+            dispatch(job)
     except (Blocked, OSError, ValueError, KeyError, TypeError):
         print("Enterprise operator blocked; private diagnostics withheld", file=sys.stderr)
         return 1
