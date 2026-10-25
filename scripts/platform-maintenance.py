@@ -853,6 +853,7 @@ def _webhook_path_proof(deadline_seconds):
                     return {"policyBotStatus": 404, "policyBotRequestId": True,
                             "n8nStatus": 404, "n8nApplicationBody": True}
         except (OSError, http.client.HTTPException):
+            # Network failures can recover during the bounded restart window.
             pass
         remaining = deadline - time.monotonic()
         if remaining <= 0:
