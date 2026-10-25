@@ -309,13 +309,15 @@ omitted from Kustomize and suspended. It verifies a pinned report and private
 hash receipt, matches an exact sampled package, file, and version to one
 Renovate PR number, then reads that PR and its complete GitHub file diff with
 a read-scoped App token. A matching added line must contain both the package
-and version. It requires GitHub's response clock to agree within one minute
-and the PR to be open and unmerged when read. It then writes the private diff
-snapshot and hashed outcome receipt to the ledger;
-Pod logs contain counts only. Its read time plus that minute is a conservative
-**upper bound** for the proposal. Reads more than four hours after the
+and version. It requires GitHub's response clock to agree within one minute.
+The worker reads the PR again after fetching all changed files and discards
+proof if its head, file count, or state changed. An open PR uses the read time
+plus that minute as a conservative proposal **upper bound**. A GitHub-confirmed
+merged PR uses `merged_at` as its bound; a closed unmerged PR is not proof.
+It then writes the private diff snapshot and hashed outcome receipt to the
+ledger; Pod logs contain counts only. Reads more than four hours after the
 last-absent bound, missing patches, and ambiguous PR matches remain unknown.
-PR `created_at` is retained only as context. A proposal observed after four
+PR `created_at` is retained only as context. A proposal bound after four
 hours remains a late outcome. The seven-day window needs reviewed activation
 of both recurring CronJobs and enough protected ledger capacity for all scans.
 

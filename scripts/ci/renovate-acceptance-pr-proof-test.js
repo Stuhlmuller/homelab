@@ -21,7 +21,7 @@ const branch = { branchName: 'renovate/fixture-package-1.x', prNo: 42,
   upgrades: [{ datasource: 'npm', depName: 'fixture-package',
   packageFile: 'package.json', newVersion: '1.1.0' }] };
 const report = { problems: [], repositories: { [repository]: { branches: [branch] } } };
-const pull = { number: 42, changed_files: 1, state: 'open',
+const pull = { number: 42, changed_files: 1, state: 'open', merged: false,
   closed_at: null, merged_at: null,
   created_at: '2026-10-19T00:21:00.000Z', user: { login: 'rstuhlmuller-renovate[bot]' },
   base: { ref: 'main', repo: { full_name: repository } },
@@ -47,6 +47,7 @@ test('GitHub PR patch proves an exact version only at the read time upper bound'
   assert.equal(result.claim.at, observedAt);
   assert.equal(result.material.createdAt, pull.created_at);
   assert.equal(result.material.reportSha256, 'b'.repeat(64));
+  assert.equal(result.material.mergedAt, null);
   assert.equal(proof.proposalProof(item, event, match, pull, files,
     '2026-10-19T04:01:00.000Z', 'main').claim.at,
   '2026-10-19T04:01:00.000Z');
@@ -72,6 +73,42 @@ test('GitHub PR patch proves an exact version only at the read time upper bound'
     base: { ref: 'other', repo: { full_name: repository } } }, files, observedAt, 'main'), null);
   assert.equal(proof.proposalProof(item, event, match, { ...pull,
     head: { ...pull.head, ref: 'unrelated' } }, files, observedAt, 'main'), null);
+});
+
+test('stable PR snapshots reject a changed head, file count, or state during file fetch', () => {
+  assert.equal(proof.samePullSnapshot(pull, { ...pull }), true);
+  assert.equal(proof.samePullSnapshot(pull, { ...pull,
+    head: { ...pull.head, sha: 'b'.repeat(40) } }), false);
+  assert.equal(proof.samePullSnapshot(pull, { ...pull, changed_files: 2 }), false);
+  assert.equal(proof.samePullSnapshot(pull, { ...pull,
+    state: 'closed', merged: true, closed_at: observedAt, merged_at: observedAt }), false);
+  assert.equal(proof.samePullSnapshot(pull, null), false);
+});
+
+test('a confirmed merge uses merge time, never creation or later read time', () => {
+  const match = proof.candidate(item, event, [{ receipt: { ...receipt,
+    report: { sha256: 'b'.repeat(64) } }, report }]);
+  const onTime = '2026-10-19T00:26:00.000Z';
+  const merged = { ...pull, state: 'closed', merged: true,
+    closed_at: onTime, merged_at: onTime };
+  const result = proof.proposalProof(item, event, match, merged, files,
+    observedAt, 'main');
+  assert.equal(result.claim.at, onTime);
+  assert.equal(result.claim.verifiedAt, observedAt);
+  assert.equal(result.material.mergedAt, onTime);
+  assert.notEqual(result.claim.at, pull.created_at);
+  const late = '2026-10-19T04:30:00.000Z';
+  const laterRead = '2026-10-19T05:00:00.000Z';
+  const lateResult = proof.proposalProof(item, event, match,
+    { ...merged, closed_at: late, merged_at: late }, files, laterRead, 'main');
+  assert.equal(lateResult.claim.at, late);
+  assert.ok(Date.parse(lateResult.claim.at) - Date.parse(event.lastAbsent) > 4 * 3600000);
+  assert.equal(proof.proposalProof(item, event, match,
+    { ...merged, merged: false }, files, observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(item, event, match,
+    { ...merged, merged_at: null }, files, observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(item, event, match,
+    { ...merged, merged_at: laterRead }, files, observedAt, 'main'), null);
 });
 
 test('only an exact report branch with an explicit policy result can defer a release', () => {
@@ -194,24 +231,51 @@ test('collector writes private version-bound proof and logs aggregate counts onl
       assert.deepEqual(permissions, { contents: 'read', metadata: 'read', pull_requests: 'read' });
       return 'ghs_test';
     };
+    let variant = 'head-changed';
+    let pullReads = 0;
     global.fetch = async (url) => ({ ok: true,
-      headers: { get: () => new Date().toUTCString() }, json: async () =>
-      url.includes('/files?') ? files : { ...pull, created_at: iso(-8) } });
+      headers: { get: () => new Date().toUTCString() }, json: async () => {
+        if (url.includes('/files?')) return files;
+        const changed = ++pullReads % 2 === 0;
+        const current = { ...pull, created_at: iso(-8) };
+        if (changed && variant === 'head-changed') {
+          return { ...current, head: { ...pull.head, sha: 'b'.repeat(40) } };
+        }
+        if (changed && variant === 'state-changed') {
+          return { ...current, state: 'closed', merged: true,
+            closed_at: iso(-5), merged_at: iso(-5) };
+        }
+        return current;
+      } });
     console.log = (line) => output.push(line);
     await proof.collect(directory);
-    const outcomes = JSON.parse(fs.readFileSync(path.join(directory, 'outcomes.json')));
+    let outcomes = JSON.parse(fs.readFileSync(path.join(directory, 'outcomes.json')));
+    assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome, undefined);
+    assert.deepEqual(JSON.parse(output[0]), { mode: 'proposal-proof', candidates: 1, proven: 0,
+      eligible: 2, deferred: 1, unknown: 1 });
+    variant = 'state-changed';
+    pullReads = 0;
+    await proof.collect(directory);
+    outcomes = JSON.parse(fs.readFileSync(path.join(directory, 'outcomes.json')));
+    assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome, undefined);
+    assert.deepEqual(JSON.parse(output[1]), { mode: 'proposal-proof', candidates: 1, proven: 0,
+      eligible: 0, deferred: 0, unknown: 1 });
+    variant = 'stable';
+    pullReads = 0;
+    await proof.collect(directory);
+    outcomes = JSON.parse(fs.readFileSync(path.join(directory, 'outcomes.json')));
     assert.equal(outcomes.receipts.length, 2);
     assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome.kind, 'proposal');
     assert.equal(outcomes.receipts.find((entry) => entry.version === '1.2.0').outcome.kind, 'deferral');
     assert.equal(outcomes.receipts.every((entry) => entry.eligibility.status === 'eligible'), true);
     assert.equal(fs.statSync(path.join(directory, 'outcomes.json')).mode & 0o077, 0);
     assert.equal(observer.verifyPrivateEvidence(outcomes, directory).size, 4);
-    assert.deepEqual(JSON.parse(output[0]), { mode: 'proposal-proof', candidates: 1, proven: 1,
-      eligible: 2, deferred: 1, unknown: 0 });
+    assert.deepEqual(JSON.parse(output[2]), { mode: 'proposal-proof', candidates: 1, proven: 1,
+      eligible: 0, deferred: 0, unknown: 0 });
     assert.equal(output.join('').includes(repository), false);
     assert.equal(output.join('').includes(event.version), false);
     await proof.collect(directory);
-    assert.deepEqual(JSON.parse(output[1]), { mode: 'proposal-proof', candidates: 0, proven: 0,
+    assert.deepEqual(JSON.parse(output[3]), { mode: 'proposal-proof', candidates: 0, proven: 0,
       eligible: 0, deferred: 0, unknown: 0 });
   } finally {
     observer.readToken = oldToken;

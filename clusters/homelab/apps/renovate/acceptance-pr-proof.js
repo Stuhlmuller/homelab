@@ -105,13 +105,32 @@ function reportDecision(item, event, reports) {
   return eligibility ? { ...eligibility, deferral } : null;
 }
 
+function samePullSnapshot(before, after) {
+  if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return false;
+  return before.number === after.number &&
+    before?.changed_files === after?.changed_files &&
+    before?.state === after?.state && before?.merged === after?.merged &&
+    before?.closed_at === after?.closed_at && before?.merged_at === after?.merged_at &&
+    before?.head?.sha === after?.head?.sha && before?.head?.ref === after?.head?.ref &&
+    before?.head?.repo?.full_name === after?.head?.repo?.full_name &&
+    before?.base?.ref === after?.base?.ref &&
+    before?.base?.repo?.full_name === after?.base?.repo?.full_name &&
+    before?.user?.login === after?.user?.login;
+}
+
 function proposalProof(item, event, match, pull, files, observedAt, baseBranch) {
+  const open = pull?.state === 'open' && pull.merged === false &&
+    pull.closed_at == null && pull.merged_at == null;
+  const merged = pull?.state === 'closed' && pull.merged === true &&
+    validTime(pull.closed_at) && validTime(pull.merged_at) &&
+    Date.parse(pull.merged_at) >= Date.parse(pull.created_at) &&
+    Date.parse(pull.merged_at) <= Date.parse(observedAt);
   if (!match || typeof event.version !== 'string' || !event.version ||
       event.version.length > 256 || /[\r\n]/.test(event.version) ||
       !validTime(observedAt) || Date.parse(observedAt) < Date.parse(event.firstPresent) ||
       !Array.isArray(files) || !Number.isSafeInteger(pull?.changed_files) ||
       pull.changed_files !== files.length || pull.number !== match.number ||
-      pull.state !== 'open' || pull.closed_at != null || pull.merged_at != null ||
+      !(open || merged) ||
       pull.user?.login !== bot || pull.base?.repo?.full_name !== item.repository ||
       pull.head?.repo?.full_name !== item.repository ||
       pull.head?.ref !== match.branch.branchName || pull.base?.ref !== baseBranch ||
@@ -127,9 +146,11 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch) 
       packageName.test(line.slice(1)) && version.test(line.slice(1))));
   if (!file) return null;
   return {
-    claim: { kind: 'proposal', at: observedAt, verifiedAt: observedAt },
+    claim: { kind: 'proposal', at: merged ? pull.merged_at : observedAt,
+      verifiedAt: observedAt },
     material: { provenance: 'github-pr-file-snapshot-v1', repository: item.repository,
       pullNumber: pull.number, createdAt: pull.created_at, observedAt,
+      mergedAt: merged ? pull.merged_at : null,
       branchName: match.branch.branchName, headSha: pull.head.sha,
       reportPodUid: match.receipt.podUid,
       reportSha256: match.receipt.report.sha256, packageFile: item.packageFile,
@@ -229,10 +250,13 @@ async function collect(directory = privateDir) {
   for (const { item, event, id, match, baseBranch } of work) {
     const repository = item.repository;
     if (!/^Stuhlmuller\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('invalid-repository');
-    const pull = await github(token, `/repos/${repository}/pulls/${match.number}`);
+    const route = `/repos/${repository}/pulls/${match.number}`;
+    const pull = await github(token, route);
     const files = await pullFiles(token, repository, match.number, pull.changed_files);
+    const finalPull = await github(token, route);
+    if (!samePullSnapshot(pull, finalPull)) continue;
     // The upper bound allows for the maximum accepted difference from GitHub's Date header.
-    const result = proposalProof(item, event, match, pull,
+    const result = proposalProof(item, event, match, finalPull,
       files, new Date(Date.now() + 60000).toISOString(), baseBranch);
     if (!result) continue;
     verified.push({ item, event, id, result });
@@ -297,4 +321,5 @@ if (require.main === module) collect().catch(() => {
   process.exitCode = 1;
 });
 
-module.exports = { privateFile, verifiedReports, candidate, reportDecision, proposalProof, pullFiles, collect };
+module.exports = { privateFile, verifiedReports, candidate, reportDecision, samePullSnapshot,
+  proposalProof, pullFiles, collect };
