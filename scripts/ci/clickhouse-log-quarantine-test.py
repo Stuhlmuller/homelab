@@ -56,7 +56,7 @@ def contract(resources):
         deployment["metadata"].get("annotations", {}).get(wave, "0")
     ), "Quarantine config must sync before the Recreate deployment"
     assert set(config["data"]) == {"log-quarantine.xml", SCRIPT}
-    assert re.fullmatch(r"clickhouse/clickhouse-server:[^@]+@sha256:[0-9a-f]{64}",
+    assert re.fullmatch(r"harbor\.stinkyboi\.com/mirror/docker\.io/clickhouse/clickhouse-server:[^@]+@sha256:[0-9a-f]{64}",
                         container["image"]), "Runtime must use the rendered immutable image"
     init, = pod["initContainers"]
     assert init["image"] == container["image"], "Quarantine must use the exact server image"
