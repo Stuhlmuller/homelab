@@ -28,6 +28,10 @@ image pulls and Renovate's Docker lookups. Host-only resolution on nodes and a
 Pod-local alias in Renovate send `harbor.stinkyboi.com` there; TLS still validates
 that hostname. Its router permits only `/v2`, `/v2/` descendants, and
 `/service/token`, preserving Authorization headers.
+Traefik itself keeps its digest-pinned upstream image: pulling its image through
+this Service would require Traefik to be running before it can start. Restore
+the upstream image through a reviewed PR and Argo CD reconciliation if this
+route loses all ready endpoints; do not patch the live Deployment.
 Harbor dashboards, management APIs, and every other application host are excluded.
 The ambient AuthorizationPolicy restricts the registry listener to the declared
 node source addresses and `cluster.local/ns/automation/sa/renovate`; it does not

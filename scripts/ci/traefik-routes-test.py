@@ -50,6 +50,11 @@ ROUTERS = HTTP["routers"]
 
 
 class RouteTests(unittest.TestCase):
+    def test_registry_proxy_bootstraps_without_its_own_service(self):
+        values = read_yaml("clusters/homelab/apps/traefik/values.yaml")
+        image = values["controllers"]["traefik"]["containers"]["app"]["image"]
+        self.assertEqual(image["repository"], "docker.io/library/traefik")
+
     def test_complete_private_inventory_and_direct_backends(self):
         controls = {"cordium", "octelium-cluster", "octelium-alias",
                     "octelium-api", "octelium-console", "oce-console",
