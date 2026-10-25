@@ -126,7 +126,7 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
@@ -172,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-25T06:30:24.097Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T11:21:20.412Z
 ---
 
 # Harbor Private OCI Registry
@@ -201,9 +201,9 @@ runtime state lives in
 Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
 bootstrap and registry recovery use the reviewed upstream rollback path.
 Harbor-only application pulls are a target, not a live cluster-wide result:
-the reviewed full catalog passed protected publication and authenticated Harbor
-pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180),
-while consuming-reference cutover remains pending.
+the earlier 214-image catalog passed protected publication and authenticated
+Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+The current catalog has 215 images and needs a fresh complete receipt; consuming-reference cutover remains pending.
 
 The retained legacy `https://harbor.stinkyboi.com` path uses Cloudflare Tunnel,
 the Octelium `harbor` WEB Service, and the shared Istio gateway until private
@@ -493,8 +493,9 @@ complete authenticated Harbor pull checks. Full run
 stopped at this image with public `destination-copy` / `command-failed` at item
 196/214; that run produced no complete catalog receipt. The later protected
 [`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
-passed all 214 reviewed images and authenticated Harbor pulls. The earlier
-scoped success alone qualified only this image, not the full-catalog Talos gate
+passed all 214 images in that revision with authenticated Harbor pulls. The
+current 215-image catalog needs a fresh complete receipt. The earlier scoped
+success alone qualified only this image, not the full-catalog Talos gate
 or the other Prometheus stack images. Destination-copy failures with private
 Skopeo `writing blob` or `writing manifest` diagnostics now emit fixed `blob-upload-failed` or
 `manifest-upload-failed` categories; unknown failures remain `command-failed`
@@ -548,8 +549,9 @@ child and the full catalog excludes the failing index. This retains the image
 selected by the current amd64 nodes, but omits arm64 and attestation
 descriptors; re-evaluate before adding arm64 nodes. The later protected
 [`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
-passed the revised 214-image catalog. The earlier scoped receipt alone did not
-prove full coverage or authorize strict Talos mirrors.
+passed the revised 214-image catalog at that revision. The current 215-image
+catalog needs a fresh complete receipt. The earlier scoped receipt alone did
+not prove full coverage or authorize strict Talos mirrors.
 
 The two-image Traefik scope can publish the native probe independently of the
 full-catalog receipt. A scoped receipt still proves only selected image
@@ -564,7 +566,8 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage; the revised LiteLLM catalog passed protected `all` run `40011909180`.
+coverage; protected `all` run `40011909180` passed the earlier 214-image
+catalog, while the current 215-image catalog needs a fresh complete receipt.
 That upgrade must verify singleton nginx retains a rolling update, so its existing
 Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
@@ -891,9 +894,10 @@ in the catalog; application runtime references must use Harbor.
 
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
-The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Their consuming Renovate PRs remain held until that
-publication and pull acceptance finish.
+Protected `all` run `40011909180` verified the earlier 214-image catalog and
+complete authenticated Harbor pulls, including these destinations. The current
+215-image catalog needs a fresh complete receipt. Their consuming
+Renovate PRs still need independent review, validation, and live acceptance.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
@@ -946,8 +950,8 @@ checks the complete destination download.
 The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. Protected
 [`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
-passed the 214-image platform catalog with complete authenticated pulls.
-The source-declared four-image publisher builds the repository-owned journal
+passed the earlier 214-image platform catalog with complete authenticated pulls.
+The current 215-image catalog needs a fresh complete receipt. The source-declared four-image publisher builds the repository-owned journal
 operator from an exact clean `main` checkout before registry credentials, then
 signs and completely pulls the controller, runtime, CLI and operator images.
 Protected [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
@@ -1000,8 +1004,9 @@ digests. Publication and cold-pull acceptance remain pending; the runner pool
 stays disabled. See the [runner contract](../../builds/cordium-runner/README.md).
 
 No consumer migration, zero-CVE result or live egress enforcement is
-established by these prerequisites. The full catalog has a protected receipt;
-image pulls remain node/containerd traffic, outside Istio pod interception.
+established by these prerequisites. The earlier 214-image catalog has a
+protected receipt; the current 215-image catalog does not yet. Image pulls
+remain node/containerd traffic, outside Istio pod interception.
 
 ## Proposed Chainguard automation
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:271cd16bdf23b4879181225baf3bc7c3c0c9b253dc08ffd556f820362e192666",
+  "pageVersion": "sha256:2a1e160ab4de8a713289cccb697ab164d91335909c9baf5366fede91f53d03df",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
+          "version": "repo-file-v1:sha256:9162eeaa4c209ec37f7a6b38ef6b74eac620680f33b910b6ed61b054765b4997"
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://docs/octelium.md",
-          "version": "repo-file-v1:sha256:615cb5ec0b77ea0e265b7e72e2ea1678cc4a4ed40b2f62d63024fa39d3c993c4"
+          "version": "repo-file-v1:sha256:b58cb995175515ecdbdba040dcf3b67d12973ed3efb681f3cd3b138c4549ac2b"
         }
       ]
     },
@@ -43,8 +43,8 @@
           "version": "repo-lines-v1:sha256:c592237f1c838a1f2a7b2d9f565fb05373be1e8d0937c43b882487bac1007c54:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmN2Y2NzU4MmZlOGU1ZTE4NzIwODEwNTJlYjAxMWFjZDg4MjQ0OTBkYzZkYWE3MGE0ZmQ5MWM2YTk5MzI4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyZTFiYTNlODExYmFiMjFlNzdiZTViNzM4YTdiNDA3ZDAxOTQ3ZjU5MThjNDVhM2MwZTcwYjE1ZDY4NTE4ODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiNGVjNzQwNjY0Njg2OTkyNWNkMzdiYmRmYzgzZTExYjI0YzQ0MjM5ZWJlZjJhYmJjMzg3Nzc2N2NlNzZmNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0M2Y5ZGQ4YjgxMWI3NTNiN2EzYmNlZTVmMmUxMjM0NDk0ZDJiM2RjZjYyNTZlN2UwOWUzYThkNjZlZGI0YjcifQ"
         },
         {
-          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L34",
-          "version": "repo-lines-v1:sha256:e946754f3b740525429184e83d01cca7127e2937ac7b15567425f9743e1ed020:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMGE5NDJhMWQ0MzEwNGQyYTg0MWQ3MWIxYmJmZTYwZmJlYjIxN2NjNDRiMTQwMzJlNDE1NmVmODEyYTA3Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L37",
+          "version": "repo-lines-v1:sha256:7be042d276d13bf88979ce6ca4a6320e49cbb242eed45eca04dff648aa15b3b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkYTE0MDE1ZGQyYjBkOGUyOTk0NzkxYjEzMTVkYWMwZWVkMWZiMThjMGIzZTRmNjNjNDA3NzRkYzc2ZWFhNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
         }
       ]
     },
@@ -87,6 +87,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T06:21:14.425Z"
   }
 }

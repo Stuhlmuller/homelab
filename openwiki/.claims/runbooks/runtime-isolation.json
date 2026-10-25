@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:922e16490de120c5cac6efb9724a30480c8d07cd12ed89f05095682074ccd4b6",
+  "pageVersion": "sha256:871ef940ed54bb1b49c03344dce1749516373500af22eaf723ba78d375eece00",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
-      "statement": "The 2026-10-12 read-only audit found ready Flannel and ztunnel but no Gateway API CRDs or GatewayClass; firewall-only kube-router and Envoy Gateway are staged with automatic sync disabled, and no NetworkPolicy enforcement is active. Protected run 40011909180 passed the reviewed 214-image catalog with authenticated Harbor pulls. Activation still requires policy review, a measured isolated tainted canary, live traffic and lifecycle qualification, and ownership-limited cleanup; no existing worker currently qualifies.",
+      "statement": "The 2026-10-12 read-only audit found ready Flannel and ztunnel but no Gateway API CRDs or GatewayClass; firewall-only kube-router and Envoy Gateway are staged with automatic sync disabled, and no NetworkPolicy enforcement is active. Protected run 40011909180 passed the earlier 214-image catalog with authenticated Harbor pulls; the current catalog has 215 images and needs a fresh complete receipt. Activation also requires policy review, a measured isolated tainted canary, live traffic and lifecycle qualification, and ownership-limited cleanup; no existing worker currently qualifies.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:960b4cfac84dbc289fcccdad140083fa6f45676ba15dfdab68cf1276f302618e"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -21,6 +21,10 @@
         {
           "resource": "repo://docs/runtime-isolation.md",
           "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
         }
       ]
     },
@@ -74,7 +78,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ba96d393e96eef109996906f46deba7d5ace54d237d9d4477667ea9f224f03c9"
+          "version": "repo-file-v1:sha256:46e46ec54a8b709ee14d6e5faa1d104c18b9966b9196c17ddff538e8a6bd6c3c"
         }
       ]
     },
@@ -191,7 +195,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found the best worker with about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise reservation, 6,308 MiB actual use and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent a NoSchedule taint from isolating a canary.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L309-L335",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L317-L343",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -242,7 +246,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -254,7 +258,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -268,11 +272,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
         }
       ]
     },
@@ -289,7 +293,7 @@
           "version": "repo-lines-v1:sha256:2876cfbcc88a641d47fa95d5c84bbc76edd416dab54756ef08f8cf9d74c40330:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlNGEwNWExMWUyNzIxZTlhNTViNDhlMjcwYzA1NjFiYTQzYzFkNmQyNTVhMzE4YzI3ZDQzZGVjNDQ0MzBjZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2YTRmMjQyNmEwZTUwMmNjNWQyYzQxYWI1YjExNjZkY2VhMjMzZTg4NjJlN2YyMmZjMGYxZDA3ZmNlMjk4YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjU2MTkzMGUzMmRhNDZiNzViMWMxZmY5MDVlYTdmMzgzZTcxNGNkZGFjODA1ZTc4YTgyN2UzNTNlYzVkN2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlYTFlNjNiNWJhN2ZmZTVhNjJlNzk3YmJhOGZlNDQzMzU4ZTc4ZDg4M2Y1ZjViYzMwOGY3MzQxZWFhMGY5MjQifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L363-L398",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L371-L406",
           "version": "repo-lines-v1:sha256:7bc16dde62ee864193f6b9ba6aee62caa15267682fa5e9e7c5877a6b6d249ebb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwOWJjNGVlOGE1NDMzMzQ0NDBiYzUyOGZiZTRmYjYzMTk1MjM1NTNhNDI4NThjNjI3N2VlNTQwODU5Zjc3NzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjY1MzZhZGExNDZmNjBhMTQ0M2IyZmZjZmI0MDhjNDU5YmQ1ZDY2YzEzZjIwOTEwN2M2NmQzZTExMGU2NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhODljODc0OTUzNzg0OGU3YTVlMjkxZTU2Y2Y1NTZlNzFhNWI3MWU4Y2JiMmMxZmVmZDUzYjliZTMzM2I4ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2OGExMzk1NGMyOGI3YzQ5YjZlOTI4OTEwMzYwNjNkNmRlNzA1YTlkYTY0NzE5MWI2NWQ4Nzg4MTFjOWVjODAifQ"
         },
         {
@@ -319,6 +323,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T11:21:20.412Z"
   }
 }
