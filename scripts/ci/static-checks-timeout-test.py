@@ -31,6 +31,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-full-sync-test.py",
                          "openclaw-enterprise-access-test.py",
                          "renovate-config-test.js",
+                         "renovate-cache-corruption-drill-test.mjs",
                          "renovate-cache-capacity-drill-test.py", "tailnet-dns-test.py",
                          "openclaw-enterprise-foundation-test.py",
                          "openclaw-enterprise-postgres-test.py",

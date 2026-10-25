@@ -159,6 +159,9 @@ Before GitOps activation, verify in QTS that this is a separate 20 GiB volume,
 `showmount -e 10.1.0.2` lists `/renovate-cache`, and the four-node allow-list
 is exact. Add only `renovate-cache-pv.yaml` to the `platform-storage`
 Kustomization in a reviewed PR and verify its cluster-scoped PV reconciles.
+Each activation PR must update `scripts/ci/renovate-cache-capacity-drill-test.py`
+to assert that phase's intended Kustomization membership and Job suspension;
+its staging assertions deliberately fail after a resource is activated.
 Renovate's `homelab-workloads` Argo project cannot own a PV. In a second
 reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
 `dedicated-cache-claim-probe.yaml` to Renovate's Kustomization; set the Job's

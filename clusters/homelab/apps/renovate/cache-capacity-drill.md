@@ -50,5 +50,6 @@ claim are never drill targets.
 
 If the mount, volume size, or claim identity differs, stop. Do not fill
 `/homelab`, delete the PVC, or clear Renovate's cache to complete this drill.
-The missing/corrupt cache fixture and first real write-enabled proposal remain
-separate acceptance gates.
+The missing-cache cutover, the
+[public package-cache corruption drill](cache-corruption-drill.md), and the
+first real write-enabled proposal remain separate acceptance gates.
