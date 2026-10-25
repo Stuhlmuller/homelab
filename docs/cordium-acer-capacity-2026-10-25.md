@@ -16,7 +16,7 @@ Keep Alertmanager and LiteLLM PostgreSQL explicitly on Acer. Change only these
 memory requests; all memory limits, CPU requests, replicas and volumes remain:
 
 | Container | Before | After | Seven-day peak |
-|---|---:|---:|---:|
+| --- | ---: | ---: | ---: |
 | Alertmanager | 200 MiB | 64 MiB | 37.7 MiB |
 | LiteLLM PostgreSQL | 256 MiB | 128 MiB | 46.9 MiB |
 | Dispatcharr app | 1,024 MiB | 896 MiB | 610.2 MiB |
