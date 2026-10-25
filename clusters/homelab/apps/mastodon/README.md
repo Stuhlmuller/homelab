@@ -17,6 +17,10 @@ the private apex portal and independent federation discovery. Owner bootstrap
 creates `rodman` with `rodman@stuhlmuller.net`. Google Workspace SMTP uses
 `smtp.gmail.com:587`, the same login and sender address. Inject the protected
 SMTP credential before registration; the Rails launcher rejects placeholders.
+The public egress policy allows TCP 80/443 for federation and the configured
+SMTP port 587 for web and Sidekiq. It does not open implicit TLS port 465; the
+mounted runtime config uses STARTTLS on 587. Qualify remote federation and
+email delivery under the canary policy before enforcing this boundary.
 
 ## Storage and credentials
 
