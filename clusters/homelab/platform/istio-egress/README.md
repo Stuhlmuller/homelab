@@ -9,10 +9,11 @@ host and port but cannot inspect HTTPS paths.
 
 The live cluster cannot apply this yet. Gateway API CRDs and `istio-waypoint`
 GatewayClass are absent; the single CRD owner is the staged
-`platform-envoy-gateway` Application. Istio CNI currently sets
-`cni.ambient.dnsCapture: false`; ambient ServiceEntry routing to a waypoint
-requires DNS capture. Enable and qualify it through the owned Istio release
-path before syncing this Application. The active Istio 1.27.3 release is also
+`platform-envoy-gateway` Application. Istio CNI sets
+`cni.ambient.dnsCapture: false` globally. LiteLLM opts in through its pod
+annotation, supported since Istio 1.25; verify the replacement Pod has DNS
+capture and still reaches its existing destinations before syncing this
+Application. The active Istio 1.27.3 release is also
 behind the repository's held upgrade ladder. Keep auto-sync disabled until
 the prerequisites are deployed and an isolated traffic canary passes.
 

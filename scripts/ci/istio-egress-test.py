@@ -39,6 +39,7 @@ class IstioEgressTests(unittest.TestCase):
             "resolution": "DNS"})
         litellm, = documents(ROOT / "clusters/homelab/apps/litellm/values.yaml")
         self.assertEqual(litellm["serviceAccount"]["name"], "litellm")
+        self.assertEqual(litellm["podAnnotations"]["ambient.istio.io/dns-capture"], "true")
         self.assertEqual(litellm["proxy_config"]["model_list"][0]["litellm_params"]["api_base"],
                          "https://openrouter.ai/api/v1")
         self.assertEqual(policy["spec"], {
