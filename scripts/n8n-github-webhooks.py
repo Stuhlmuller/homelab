@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import subprocess
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,15 +48,20 @@ def hook_inventory(api):
     return {item['id']: item for item in hooks}
 
 
+def uses_retired_path(item):
+    url = item['config'].get('url')
+    return isinstance(url, str) and urllib.parse.urlsplit(url).path.rstrip('/') == '/webhook/' + RETIRED_PATH
+
+
 def require_retired_absent(api):
     hooks = hook_inventory(api)
-    if RETIRED_HOOK in hooks or any(item['config'].get('url') in RETIRED_URLS for item in hooks.values()):
+    if RETIRED_HOOK in hooks or any(uses_retired_path(item) for item in hooks.values()):
         raise RuntimeError('Retired Codex Review Helper hook or callback path still exists')
 
 
 def retire_helper(api=github, execute=False):
     hooks = hook_inventory(api)
-    if any(item['config'].get('url') in RETIRED_URLS for identifier, item in hooks.items() if identifier != RETIRED_HOOK):
+    if any(uses_retired_path(item) for identifier, item in hooks.items() if identifier != RETIRED_HOOK):
         raise RuntimeError('Another hook uses the retired callback path')
     if RETIRED_HOOK not in hooks:
         print('Codex Review Helper hook already absent')

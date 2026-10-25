@@ -27,7 +27,7 @@ class WebhookTests(unittest.TestCase):
         clock.start()
         self.addCleanup(clock.stop)
 
-    def api(self, *, drift=False, retired_drift=False, duplicate_callback=False,
+    def api(self, *, drift=False, retired_drift=False, duplicate_callback_host=None,
             changed=False, delete_changed=False, fresh=True):
         hooks = {identifier: {'id': identifier, 'name': 'web', 'active': True, 'events': ['pull_request'],
                              'config': {'url': HOOKS.PREVIOUS_HOST + '/webhook/' + path,
@@ -42,8 +42,8 @@ class WebhookTests(unittest.TestCase):
             hooks[next(iter(HOOKS.HOOKS))]['events'] = ['push']
         if retired_drift:
             hooks[HOOKS.RETIRED_HOOK]['events'] = ['push']
-        if duplicate_callback:
-            hooks[777] = {'id': 777, 'config': {'url': HOOKS.HOST + '/webhook/' + HOOKS.RETIRED_PATH}}
+        if duplicate_callback_host:
+            hooks[777] = {'id': 777, 'config': {'url': duplicate_callback_host + '/webhook/' + HOOKS.RETIRED_PATH}}
         calls, patched = [], set()
         def api(method, path, body=None):
             calls.append((method, path, body))
@@ -170,7 +170,9 @@ class WebhookTests(unittest.TestCase):
             self.assertIsNone(HOOKS.github('DELETE', HOOKS.BASE + str(HOOKS.RETIRED_HOOK)))
 
     def test_retirement_rejects_drift_and_incomplete_inventory_before_delete(self):
-        for kwargs in ({'retired_drift': True}, {'duplicate_callback': True}):
+        for kwargs in ({'retired_drift': True},
+                       {'duplicate_callback_host': HOOKS.HOST},
+                       {'duplicate_callback_host': 'https://third-host.example'}):
             api, calls = self.api(**kwargs)
             with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(RuntimeError):
                 HOOKS.retire_helper(api, execute=True)
@@ -191,6 +193,10 @@ class WebhookTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             HOOKS.retire_helper(api, execute=True)
         HOOKS.require_retired_absent(api)
+        third_api, _ = self.api(duplicate_callback_host='https://third-host.example')
+        third_api('DELETE', HOOKS.BASE + str(HOOKS.RETIRED_HOOK))
+        with self.assertRaises(RuntimeError):
+            HOOKS.require_retired_absent(third_api)
 
 
 if __name__ == '__main__':
