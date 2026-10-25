@@ -711,13 +711,14 @@ python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
 
 Open the printed loopback URL on the same machine, create the App under the
 `Stuhlmuller` organization, then use the printed installation URL to install
-it on **all repositories**. The manifest declares only Checks, Contents,
-Issues, Metadata, Pull requests, Commit statuses, and Dependabot alerts
-repository read, plus Members organization read. It subscribes to no events
-and disables webhook delivery. The script checks the org ownership, exact
-read grants, no events, AWS account, SSO identity, and both version-one
-placeholders. It exchanges GitHub's one-hour code in memory and sends the PEM
-to SSM through AWS CLI stdin. It prints no key, token, or SSM value. Verify
+it on **all repositories**. The manifest requests repository read access for
+Administration, Checks, Contents, Issues, Metadata, Pull requests, Commit
+statuses, and Dependabot alerts, plus organization Members read access.
+It subscribes to no events and disables webhook delivery. The script checks
+the org ownership, exact read grants, no events, AWS account, SSO identity,
+and both version-one placeholders. It exchanges GitHub's one-hour code in
+memory and sends the PEM to SSM through AWS CLI stdin. It prints no key,
+token, or SSM value. Verify
 the completed installation from that same reviewed main:
 
 ```sh
