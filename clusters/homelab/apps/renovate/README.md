@@ -401,6 +401,23 @@ full slot input on the protected ledger until independent review and reviewed
 cleanup. Missing collector cadence, identity, timing, or outage evidence makes
 SC-001 inconclusive.
 
+After a complete window, run
+`python3 -I scripts/renovate-acceptance-schedule-assemble.py --source
+<absolute-private-schedule-dir> --window-start <UTC-hour> --output
+<new-private-output-dir>` offline. The assembler requires all 673 quarter-hour
+snapshots from the first :05 through the next :05 after the seven-day window,
+the same CronJob UID/generation and exact hourly UTC schedule, `Forbid`, a
+900-second start deadline, and three retained Jobs per result. It verifies
+every referenced immutable log digest and discovery marker, and cross-checks
+the CronJob's last scheduled hour against captured Jobs. A terminal Job
+with no global Renovate marker can be recorded as a private prestart failure
+and an empty run; a Job that started Renovate without a discovery-completion
+marker makes assembly inconclusive. It creates `slots.json` and one hashed
+claim-bound source file per planned hour, all mode `0600`, in a new mode `0700`
+directory. Missing, duplicate, late, changed, or unsafe captures fail closed;
+the output is never placed in git. Reviewed outage/maintenance exclusions
+need separate private receipts before the evaluator can subtract those hours.
+
 For the acer-local ledger, the staged
 `acceptance-schedule-assemble-job.yaml` and its deny-all
 `acceptance-schedule-assemble-networkpolicy.yaml` are the declared execution

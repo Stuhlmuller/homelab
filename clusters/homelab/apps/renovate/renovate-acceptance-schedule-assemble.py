@@ -255,6 +255,17 @@ def build_document(schedule_dir, window_start):
         snapshot = selected[index][0]
         current_identity = validate_snapshot(snapshot, index, window_start)
         captured_at = utc(snapshot["finishedAt"])
+        last_schedule = snapshot["cronjob"].get("lastScheduleTime")
+        if last_schedule is not None:
+            scheduled_at = utc(last_schedule)
+            if (scheduled_at > captured_at or scheduled_at.minute or scheduled_at.second
+                    or scheduled_at.microsecond):
+                raise AssemblyError("invalid-last-schedule-time")
+            if (window_start <= scheduled_at < window_start + timedelta(days=7)
+                    and not any(isinstance(job, dict) and isinstance(job.get("scheduledAt"), str)
+                                and utc(job["scheduledAt"]) == scheduled_at
+                                for job in snapshot["jobs"])):
+                raise AssemblyError("scheduled-job-missing-from-capture")
         if cron_identity is None:
             cron_identity = current_identity
         elif current_identity != cron_identity:
