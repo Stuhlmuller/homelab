@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # CI/CD Pipeline
 
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->

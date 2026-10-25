@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Argo CD Bootstrap Runbook
 
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->

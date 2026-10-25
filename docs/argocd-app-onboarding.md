@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Argo CD App Onboarding
 
 This feature registers requested homelab applications plus supporting
@@ -32,8 +34,8 @@ cross-namespace RoleBindings there.
 
 ## Applications
 
-| App                             | Kind              | Namespace               | GitOps path                                                                | Terragrunt path                                        | Auto-sync     | Dependencies                                                                                       |
-| ------------------------------- | ----------------- | ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------- |
+| App                             | Kind              | Namespace               | GitOps path                                                                | Terragrunt path                                                     | Auto-sync     | Dependencies                                                                                       |
+| ------------------------------- | ----------------- | ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
 | platform-image-policy           | support           | cluster-scoped          | `clusters/homelab/platform/image-policy`                                   | `IaC/homelab/us-west-2/apps/platform-image-policy/argocd`           | Yes           | none (audit-only)                                                                                  |
 | platform-network-policy         | staged            | `kube-system`           | `clusters/homelab/platform/network-policy`                                 | `IaC/homelab/us-west-2/apps/platform-network-policy/argocd`         | No, no prune  | platform-dns; admission and canary qualification before activation                                 |
 | platform-network-policy-canary  | staged            | `network-policy-canary` | `clusters/homelab/platform/network-policy/canary`                          | `IaC/homelab/us-west-2/apps/platform-network-policy-canary/argocd`  | No, no prune  | platform-network-policy; tainted node and mirrored fixtures before activation                      |
