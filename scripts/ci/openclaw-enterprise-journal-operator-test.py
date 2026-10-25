@@ -32,7 +32,8 @@ def ready_operator():
     operator = config["journalOperator"]
     operator.update(enabled=True, journalClaimUid=UUID, journalVolumeUid=UUID,
                     bootstrapClaimUid=UUID, journalPath="/var/lib/openclaw-enterprise/journal",
-                    node="zimaboard-2", image="harbor.stinkyboi.com/homelab/"
+                    node="zimaboard-2", runAsUser=1000,
+                    image="harbor.stinkyboi.com/homelab/"
                     "homelab-oce-operator@sha256:" + "b" * 64, imageSourceSha=IMAGE_SHA)
     return config
 
@@ -66,6 +67,15 @@ class JournalOperator(unittest.TestCase):
         config["journalOperator"]["imageSourceSha"] = "invalid"
         with self.assertRaisesRegex(runner.Blocked, "pinned source"):
             runner.contract(config, "stop", SHA)
+
+    def test_operator_uid_must_read_upstream_private_bootstrap_key(self):
+        config = ready_operator()
+        config["journalOperator"]["runAsUser"] = 10001
+        with self.assertRaisesRegex(runner.Blocked, "bootstrap key owner"):
+            runner.contract(config, "stop", SHA)
+        config["journalOperator"]["runAsUser"] = 1000
+        self.assertEqual(runner.contract(config, "stop", SHA),
+                         config["journalOperator"])
 
     def test_prior_image_source_must_match_current_reconciler_inputs(self):
         operator = ready_operator()["journalOperator"]
@@ -126,7 +136,8 @@ class JournalOperator(unittest.TestCase):
             self.assertEqual(pod["nodeSelector"], {"kubernetes.io/hostname": "zimaboard-2"})
             self.assertNotIn("nodeName", pod)
             self.assertFalse(pod["automountServiceAccountToken"])
-            self.assertEqual(pod["securityContext"]["runAsUser"], 10001)
+            self.assertEqual(pod["securityContext"]["runAsUser"], 1000)
+            self.assertEqual(pod["securityContext"]["runAsGroup"], 1000)
             self.assertEqual(pod["securityContext"]["seccompProfile"]["type"], "RuntimeDefault")
             container = pod["containers"][0]
             self.assertEqual(container["args"][0], command)
