@@ -242,7 +242,9 @@ bypass readiness or issue an ad hoc reboot.
 
 ## Final retirement
 
-Require all private app checks, Fleet device check-in, Harbor pulls, migrated CI,
+Require all private app checks, an off-LAN Fleet device check-in (use the
+[one-shot iPhone verifier](../fleet/README.md#rollout-and-validation)), Harbor
+pulls, migrated CI,
 fresh signed callback deliveries, and Cordium execution/reconnection before a
 separate retirement change. That change removes old application/native catalog
 routes, obsolete credentials, the Cloudflare Tunnel, and finally legacy DNS.

@@ -264,6 +264,13 @@ healthy proxies and actual application access from a mesh client before changing
 DNS. Preserve current app state and enrollment URLs; confirm Fleet check-in,
 native Cordium execution/reconnection, and uncached node registry pulls.
 
+For the Fleet iPhone gate, use the [guarded one-shot check-in helper](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+It verifies the selected enrollment, reads Fleet's pending command and profile
+state, then sends one blank APNs ping only when that preflight is clear. A newer
+MDM check-in timestamp is required; a successful ping or an online Tailscale
+peer alone does not satisfy the gate. The pending-work check is a snapshot, so
+coordinate against concurrent Fleet changes during the test.
+
 Switch webhook registrations after public reachability and negative-path checks;
 require fresh signed delivery before retiring the former callbacks. Migrate CI to pre-signed ephemeral mesh keys only after its API proxy,
 RBAC and admission boundary are deployed. Retire old DNS, Cloudflare Tunnel and
