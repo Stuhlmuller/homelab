@@ -181,6 +181,16 @@ class Assemble(unittest.TestCase):
         self.write_snapshots()
         with self.assertRaisesRegex(ASSEMBLER.AssemblyError, "changed-or-suspended-cronjob"):
             ASSEMBLER.build_document(self.source, START)
+        self.snapshots[200]["cronjob"]["suspend"] = False
+        self.snapshots[200]["cronjob"]["generation"] = 2
+        self.write_snapshots()
+        with self.assertRaisesRegex(ASSEMBLER.AssemblyError, "changed-cronjob-identity"):
+            ASSEMBLER.build_document(self.source, START)
+        self.snapshots[200]["cronjob"]["generation"] = 1
+        self.snapshots[200]["cronjob"]["failedJobsHistoryLimit"] = 0
+        self.write_snapshots()
+        with self.assertRaisesRegex(ASSEMBLER.AssemblyError, "changed-or-suspended-cronjob"):
+            ASSEMBLER.build_document(self.source, START)
 
 
 if __name__ == "__main__":

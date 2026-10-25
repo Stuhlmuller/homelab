@@ -392,6 +392,20 @@ full slot input on the protected ledger until independent review and reviewed
 cleanup. Missing collector cadence, identity, timing, or outage evidence makes
 SC-001 inconclusive.
 
+For the acer-local ledger, the staged
+`acceptance-schedule-assemble-job.yaml` and its deny-all
+`acceptance-schedule-assemble-networkpolicy.yaml` are the declared execution
+path. Both remain outside Kustomize; the Job is suspended and its UTC window
+start is an invalid placeholder. After every acceptance writer is suspended
+and drained, set the exact reviewed start hour and activate the Job and policy
+through one reviewed GitOps change. The pinned Python image reads snapshots
+and logs through a read-only subPath, writes only below the collector-created
+private `assembled/` subPath, mounts no App key or cache, and has no Kubernetes
+token or network egress. It logs aggregate counts only; inspect the private
+`assembled/seven-day/slots.json` and claim files through the reviewed ledger
+path. The assembler already invokes the evaluator before publishing the
+output, so a separate in-cluster evaluator Job is unnecessary.
+
 Run `python3 -I scripts/renovate-acceptance-schedule.py
 <absolute-private-slots.json>` offline after the window. Its aggregate JSON
 reports planned, excluded, denominator, timely starts (at most 15 minutes),
