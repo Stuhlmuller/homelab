@@ -84,8 +84,9 @@ python3 -I scripts/n8n-github-webhooks.py --retire-helper
 Its guarded `--execute` changes only the Emergency hook URL, preserving its
 path, secret, events, and settings. It requires root 404 and a safe OPTIONS 204
 response for that POST-only hook; it never POSTs or triggers redelivery.
-`--retire-helper --execute --expected-sha <merged-main-sha>` removes only the
-reviewed helper hook after a fresh successful Emergency delivery. Repeating it
+`--retire-helper --execute --expected-sha REVIEWED_MAIN_SHA` removes only the
+reviewed helper hook after a fresh successful Emergency delivery. Here
+`REVIEWED_MAIN_SHA` is the full reviewed current `main` commit. Repeating it
 after verified absence is a no-op. `--require-delivery` requires the retired
 ID and callback path to be absent and a newer successful Emergency delivery
 than its saved cutover receipt. Historical success does not establish current
