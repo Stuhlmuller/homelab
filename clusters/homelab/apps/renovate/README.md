@@ -358,32 +358,48 @@ private source object. Hash and claim binding detect missing, reused, or
 changed files, but independent review must establish that the source material
 is authentic and exhaustive.
 
-The read-only evidence producer still needs a reviewed, retained path. During
-the seven-day window it must snapshot the CronJob schedule and every matching
-Job/Pod UID, scheduled-hour annotation, conditions, and timestamps before the
-CronJob's three retained successful and failed Jobs are pruned. It must retain
-restricted, timestamped Renovate logs that establish the actual beginning of
-owner discovery when possible, its completion, and the Job's finish, plus a
-complete Job/Pod list or watch
-receipt proving when an hour had no run. Every slot's `collection` hash must
-bind that exhaustive private snapshot; an exclusion file must contain the
-outage or maintenance interval and evidence of its impact on that specific
-hour. Prometheus' retained `kube_job_created` and
-`kube_pod_container_state_started` history may corroborate Job/Pod timing if
-its scrape coverage and retention for the entire window are verified. Those
-metrics do not establish the actual `discoveryStartedAt`, Job finish, or
-exhaustive no-run proof by themselves. Do not infer a discovery start from Pod
-creation, or call an absent Job a miss without complete collection evidence.
-The pinned image's `Renovate started` log is before configuration and platform
-initialization; it is not a discovery-start marker. Its
-`Autodiscovered repositories` log follows `getRepos`, so it supplies a conservative
-`discoveryCompletedAt` bound. If that completion is by the 15-minute deadline,
-discovery necessarily began on time. Later completion without an exact start
-remains unknown. A reviewed runner marker is needed to resolve those slots.
-Keep source material and the full slot input on the protected ledger until
-independent review and reviewed cleanup; do not commit it or print it in CI/PR
-logs. If collection, identity, timing, or outage attribution is incomplete, the
-result is inconclusive.
+The temporary `acceptance-schedule-collector-cronjob.yaml`,
+`acceptance-schedule-collector-rbac.yaml`, and
+`acceptance-schedule-collector-networkpolicy.yaml` are staged suspended and outside
+Kustomize. After the local ledger binds, activate them in a reviewed PR and
+verify the first collector Job succeeds before starting the seven-day clock.
+The collector runs at :05, :20, :35, and :50 UTC. Its dedicated ServiceAccount
+can get only the Renovate CronJob, list Jobs/Pods in `automation`, and read Pod
+logs there; it has no write verb, GitHub App key, or production cache mount.
+Its deny-all policy permits only the Kubernetes API service VIP
+`10.96.0.1:443` and Talos control-plane endpoint `10.1.0.199:6443` (for
+post-DNAT enforcement). The client connects to the VIP with the API DNS name
+for certificate validation and needs no DNS egress. Confirm these exact
+endpoints through a read-only check before activating the policy; a changed
+API address needs a reviewed update.
+
+Every successful collection records the CronJob schedule and the currently
+retained Job/Pod controller UIDs, scheduled-hour annotations, conditions, and
+timestamps before Kubernetes prunes older Jobs. It keeps immutable, timestamped
+raw logs and snapshots under `/ledger/private/schedule/` with mode `0600`
+files and `0700` directories; each log is capped at 8 MiB. Five distinct
+versions for each of 168 hourly Pods use at most 6.6 GiB, leaving room beside
+the 48 GiB report/log ceiling on the 64 GiB ledger. Oversized logs, API/list
+gaps, or a missing terminal log fail collection; resize through reviewed
+desired state before restarting the window if the cap proves too small.
+Collector Pod logs contain only counts. Raw logs can contain private repository
+or package names and must never be published.
+
+The pinned Renovate 44.167.4 [global start log](https://github.com/renovatebot/renovate/blob/44.167.4/lib/workers/global/index.ts#L145-L200)
+precedes configuration parsing and platform initialization, so it is not an
+owner-discovery start. The [autodiscovery INFO log](https://github.com/renovatebot/renovate/blob/44.167.4/lib/workers/global/autodiscover.ts#L40-L82)
+follows `platform.getRepos`; completion within 15 minutes proves discovery
+began on time. A later completion without an exact start marker is unknown.
+Compare full Job start/end intervals for overlap. A failed Job with no
+discovery marker belongs in private source material, with no invented start.
+Every slot's collection hash must bind the exhaustive Job/Pod and log snapshot;
+an exclusion file must contain the outage or maintenance interval and its
+impact on that hour. Prometheus' retained `kube_job_created` and
+`kube_pod_container_state_started` history can corroborate timing, but cannot
+replace logs or complete collection receipts. Keep the source material and
+full slot input on the protected ledger until independent review and reviewed
+cleanup. Missing collector cadence, identity, timing, or outage evidence makes
+SC-001 inconclusive.
 
 Run `python3 -I scripts/renovate-acceptance-schedule.py
 <absolute-private-slots.json>` offline after the window. Its aggregate JSON

@@ -1,0 +1,41 @@
+# Stage outside Kustomize. Namespace-scoped read access only while SC-001 runs.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: renovate-acceptance-schedule-collector
+  namespace: automation
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: renovate-acceptance-schedule-collector
+  namespace: automation
+rules:
+  - apiGroups: [batch]
+    resources: [cronjobs]
+    resourceNames: [renovate]
+    verbs: [get]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: renovate-acceptance-schedule-collector
+  namespace: automation
+subjects:
+  - kind: ServiceAccount
+    name: renovate-acceptance-schedule-collector
+    namespace: automation
+roleRef:
+  kind: Role
+  name: renovate-acceptance-schedule-collector
+  apiGroup: rbac.authorization.k8s.io
