@@ -140,6 +140,15 @@ class CheckpointTests(unittest.TestCase):
         self.assertTrue(any(name == "docker" and args[0] == "run" and "--network" in args
                             for name, args in commands))
 
+    def test_restore_readiness_uses_tcp_loopback(self):
+        result, commands, _ = self.run_case()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        probes = [args for name, args in commands
+                  if name == "docker" and args[:3] == ["exec", "container-1", "pg_isready"]]
+        self.assertEqual(len(probes), 1)
+        self.assertIn("-h", probes[0])
+        self.assertEqual(probes[0][probes[0].index("-h") + 1], "127.0.0.1")
+
     def test_multiple_source_pods_prevent_dump_and_upload(self):
         result, commands, receipt = self.run_case("two-pods")
         self.assertNotEqual(result.returncode, 0)

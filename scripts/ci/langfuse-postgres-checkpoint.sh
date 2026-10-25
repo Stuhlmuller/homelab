@@ -121,8 +121,9 @@ container="$(docker run --detach --rm --network none \
   --env POSTGRES_DB=langfuse --env POSTGRES_USER=langfuse \
   --env POSTGRES_HOST_AUTH_METHOD=trust "$image")"
 ready=false
+# The temporary init server accepts sockets before the final server starts.
 for _ in {1..60}; do
-  if docker exec "$container" pg_isready -U langfuse -d langfuse >/dev/null 2>&1; then
+  if docker exec "$container" pg_isready -h 127.0.0.1 -U langfuse -d langfuse >/dev/null 2>&1; then
     ready=true
     break
   fi
