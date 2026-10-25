@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/ci/langfuse-postgres-checkpoint.sh"
-IMAGE = re.search(r"pgvector/pgvector:pg17@sha256:[0-9a-f]{64}",
+IMAGE = re.search(r"harbor\.stinkyboi\.com/mirror/docker\.io/pgvector/pgvector:[^@\s]+@sha256:[0-9a-f]{64}",
                   (ROOT / "clusters/homelab/apps/langfuse/datastores.yaml").read_text()).group()
 
 MOCK = r'''#!/usr/bin/env python3
@@ -22,6 +22,7 @@ name = Path(sys.argv[0]).name
 args = sys.argv[1:]
 mode = os.environ.get("TEST_MODE", "good")
 image = os.environ["TEST_IMAGE"]
+runtime_image = "pgvector/pgvector:pg17@sha256:" + "0" * 64 if mode == "upstream-pod" else image
 body = b"PGDMPfixture"
 checksum = base64.b64encode(hashlib.sha256(body).digest()).decode()
 metadata = {"VersionId": "version-1", "ChecksumSHA256": checksum,
@@ -35,7 +36,7 @@ elif name == "kubectl":
         print("no" if mode == "deny-exec" and "pods/exec" in args else "yes")
     elif "get" in args and "deployment" in args:
         print(json.dumps({"metadata": {"uid": "c" * 36, "generation": 1}, "spec": {"replicas": 1,
-              "template": {"spec": {"containers": [{"name": "postgres", "image": image,
+              "template": {"spec": {"containers": [{"name": "postgres", "image": runtime_image,
               "volumeMounts": [{"name": "data", "mountPath": "/var/lib/postgresql/data"}]}],
               "volumes": [{"name": "data", "persistentVolumeClaim": {"claimName": "langfuse-postgres-data"}}]}}},
               "status": {"readyReplicas": 1, "updatedReplicas": 1, "observedGeneration": 1}}))
@@ -44,7 +45,7 @@ elif name == "kubectl":
                "ownerReferences": [{"controller": True, "kind": "ReplicaSet",
                                     "name": "langfuse-postgres-abc", "uid": "b" * 36}]},
                "status": {"phase": "Running", "containerStatuses": [{"name": "postgres", "ready": True}]},
-               "spec": {"containers": [{"name": "postgres", "image": image,
+               "spec": {"containers": [{"name": "postgres", "image": runtime_image,
                        "volumeMounts": [{"name": "data", "mountPath": "/var/lib/postgresql/data"}]}],
                         "volumes": [{"name": "data", "persistentVolumeClaim":
                                      {"claimName": "wrong-data" if mode == "wrong-pvc" else "langfuse-postgres-data"}}]}}
@@ -163,6 +164,12 @@ class CheckpointTests(unittest.TestCase):
 
     def test_wrong_data_claim_prevents_dump_and_upload(self):
         result, commands, receipt = self.run_case("wrong-pvc")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_upstream_runtime_prevents_dump_and_upload(self):
+        result, commands, receipt = self.run_case("upstream-pod")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(receipt, "")
         self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))

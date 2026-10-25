@@ -19,7 +19,7 @@ account="${BASH_REMATCH[1]}"
 [[ "$(aws --region us-east-1 s3api get-bucket-encryption --bucket "$bucket" --expected-bucket-owner "$account" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == aws:kms ]] || exit 1
 
 image="$(yq -r 'select(.kind == "Deployment" and .metadata.name == "langfuse-postgres") | .spec.template.spec.containers[] | select(.name == "postgres") | .image' clusters/homelab/apps/langfuse/datastores.yaml)"
-[[ "$image" =~ ^pgvector/pgvector:pg17@sha256:[0-9a-f]{64}$ ]] || exit 1
+[[ "$image" =~ ^harbor\.stinkyboi\.com/mirror/docker\.io/pgvector/pgvector:[^@]+@sha256:[0-9a-f]{64}$ ]] || exit 1
 [[ "$(kubectl auth can-i get deployments -n langfuse)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i get pods -n langfuse)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i get replicasets -n langfuse)" == yes ]] || exit 1
