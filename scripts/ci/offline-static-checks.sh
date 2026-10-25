@@ -374,7 +374,7 @@ yq -o=json '.' "$kiali_values" |
       | select(.name == "wait-for-prometheus")
     ] | (
       length == 1 and
-      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
       .[0].imagePullPolicy == "IfNotPresent" and
       .[0].command == ["curl"] and
       .[0].args == [
