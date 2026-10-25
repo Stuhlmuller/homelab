@@ -789,9 +789,23 @@ class PlatformMaintenance(unittest.TestCase):
         self.assertEqual(command[command.index("--bucket") + 1], target["bucket"])
         self.assertEqual(command[command.index("--expected-bucket-owner") + 1],
                          target["account_id"])
+        self.assertEqual(command.count("--no-paginate"), 1)
         self.assertTrue(run.call_args.kwargs["capture_output"])
+        with patch.object(self.module.subprocess, "run", return_value=result) as run:
+            store.call("s3api", "list-object-versions", ["--prefix", "fixed/", "--no-paginate"])
+        self.assertEqual(run.call_args.args[0].count("--no-paginate"), 1)
         with self.assertRaisesRegex(ValueError, "unreviewed platform receipt destination"):
             self.module.DurableReceipts({**target, "bucket": "another-bucket"})
+
+    def test_durable_lists_require_explicit_complete_raw_page(self):
+        store = self.module.DurableReceipts(self.module.receipt_target())
+        for response in ({"Versions": []}, {"IsTruncated": True, "Versions": []}):
+            with self.subTest(response=response), patch.object(store, "call", return_value=response):
+                with self.assertRaisesRegex(ValueError, "incomplete"):
+                    store.versions("talos-1.11.6")
+                with tempfile.TemporaryDirectory() as directory, \
+                        self.assertRaisesRegex(ValueError, "ambiguous"):
+                    store.load_one("fixed/receipt.json", Path(directory) / "receipt.json")
 
     def test_kubernetes_completion_requires_durable_stage_start(self):
         target = self.module.receipt_target()

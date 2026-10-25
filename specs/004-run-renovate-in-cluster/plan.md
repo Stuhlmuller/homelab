@@ -15,7 +15,7 @@ Move the existing Stuhlmuller Renovate GitHub App runner from its daily GitHub A
 
 **Primary Dependencies**: Renovate CLI, GitHub App REST authentication, Argo CD, Kubernetes CronJob, External Secrets, AWS SSM Parameter Store, and the existing NFS StorageClass.
 
-**Storage**: One retained nfs-default PVC for package, repository-extraction, private-package, and downloaded-tool caches. Ephemeral base directory for clones and work files; no backup of rebuildable cache. A separate protected, temporary ledger PVC records acceptance samples and is retired through GitOps after aggregate reporting.
+**Storage**: Initially one retained nfs-default PVC for package, repository-extraction, private-package, and downloaded-tool caches. Before write cutover, switch through reviewed GitOps to a static retained PVC on a dedicated, capacity-limited QNAP thick volume once its separate NFS export and NAS provisioning path are verified. Rebuild the cache from upstream; preserve the old claim for rollback until scheduled cache reuse is proven. Ephemeral base directory for clones and work files; no backup of rebuildable cache. A separate protected, temporary ledger PVC records acceptance samples and is retired through GitOps after aggregate reporting.
 
 **Testing**: Global/repository config validation; mock App-token and discovery-transition tests; Kustomize render and policy checks; Terragrunt format/validate/plan for changed units; a GitOps-deployed Renovate full dry run; scheduled-run, TRACE-level cache-hit, reviewed release-canary, PR-identity, and sampled seven-day acceptance checks.
 
@@ -27,7 +27,7 @@ Move the existing Stuhlmuller Renovate GitHub App runner from its daily GitHub A
 
 **Constraints**: One-hour GitHub App installation-token lifetime; bound each job below that lifetime; no public endpoint, cluster API credential, permanent GitHub token, plaintext secret, manual live mutation, or environment variable as a desired-state input.
 
-**Scale/Scope**: All non-archived repositories owned by Stuhlmuller, including newly owned and forked repositories; archived repositories are skipped, while missing App access to an otherwise eligible owned repository blocks cutover. Current read-only owner inventory has eight non-archived repositories, but cutover must compare the App's actual access.
+**Scale/Scope**: All non-archived repositories owned by Stuhlmuller, including newly owned and forked repositories; archived repositories are skipped, while missing App access to an otherwise eligible owned repository blocks cutover. The [2026-10-25 read-only owner inventory](dry-run-parity-receipt.md) has nine non-archived repositories; cutover must compare the App's actual access.
 
 ## Constitution Check
 

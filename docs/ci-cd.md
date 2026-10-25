@@ -211,6 +211,10 @@ checks remain fresh.
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
+- For a layout-only reconciliation, `existing_argocd_only=true` selects only
+  Argo CD Applications already registered live. The saved-plan gate rejects
+  any creation in that selection; new registrations still require their
+  separately reviewed targeted dispatch and prerequisites.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted units under the historical `IaC/bootstrap`
