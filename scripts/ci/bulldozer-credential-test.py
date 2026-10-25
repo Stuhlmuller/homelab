@@ -15,7 +15,7 @@ spec.loader.exec_module(credential)
 
 class CredentialTest(unittest.TestCase):
     def test_fixed_targets_and_validation_before_write(self):
-        key = "-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----\n"
+        key = "-----BEGIN TEST KEY-----\ntest\n-----END TEST KEY-----\n"
         calls = []
 
         def run(args, **kwargs):
