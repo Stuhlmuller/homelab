@@ -555,6 +555,31 @@ enforcer and three 32 MiB fixtures would leave only 428 MiB by requests on
 the cleared canary; workload continuity, taint tolerations and traffic
 qualification remain unproven. No node is admitted for T022 or T027.
 
+At 2026-10-25 07:32 UTC on `main` `8176edde`, a fresh read-only check found
+`acer` with 2,314 MiB unreserved by requests and 411.96 GB filesystem free;
+the workers had only 5.36, 9.67 and 9.28 GB free. PostgreSQL and the Embedded
+Gateway's distinct 10 GiB local claims therefore still require `acer`.
+Their 2,304 MiB combined request leaves about 10 MiB there. Moving the other
+1,792 MiB planning allowance to `zimaboard-1` would exceed its roughly 919
+MiB observed memory margin by 873 MiB before peaks. Splitting the Pods alone
+does not admit Enterprise.
+
+Without new hardware, one conditional retirement candidate is Langfuse plus
+Dispatcharr, while retaining the emergency Octelium fallback. Their current
+`acer` Pods request 2,816 and 1,664 MiB respectively. After declaratively
+relocating `zimaboard-2`'s Multica frontend (320 MiB), Cloudflared (64 MiB)
+and Harbor exporter (32 MiB) to `acer`, its request margin would be about
+2,282 MiB after the full 4,096 MiB Enterprise planning budget. Removing the
+four unrelated Pods from `zimaboard-2`, including Langfuse PostgreSQL, would
+leave about 428 MiB there after the 250 MiB enforcer and three 32 MiB
+fixtures. These are scheduling estimates, not observed peak or restart fit.
+Do not retire either service before independent complete restores of
+Langfuse's PostgreSQL, ClickHouse, Valkey, object store and recovery material,
+and Dispatcharr's database, files and provider credentials; retain their
+volumes and verify service/route consequences. Require measured co-peaks,
+rolling and cold restart margin, reviewed GitOps relocation, and isolated
+`zimaboard-2` taint/reboot/traffic receipts before T022 or T027 can pass.
+
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global
