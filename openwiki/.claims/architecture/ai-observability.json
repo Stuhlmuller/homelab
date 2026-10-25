@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:68e103fa9b1d9983b982f00b20b096fa454ae3603b338e487a19a51d0e00061d",
+  "pageVersion": "sha256:db193fd60bec24f41c1bec67709a3d7cbe0c5c8213b31671a5b8e0567b407311",
   "claims": [
     {
       "id": "claim_387c6dac73fc4932ade43a20ef912aef",
@@ -11,10 +11,28 @@
           "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c82596890e4140afa7852ea739251ea2",
+      "statement": "The n8n init migration lists workflow IDs and skips only absent workflows, validated workflows with a removed target node, or targets with changed inventoried model/settings; only previously active matches are republished. ID listing or present-workflow export failures, invalid JSON or node shape, duplicate target nodes, and write errors stop startup.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L93-L178",
+          "version": "repo-lines-v1:sha256:4051a2794c7d25a8d7130cd4036f43ecc397289aede3b8a6499aaab2b692ee1d:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlN2U0YTg5NzY0ZDU0YjlhYWIzZDUwYTMwZTljZDNjZjI5ZTE2NmNkYjFmZWJmZTg4Y2RiODdjZjE5YzZjMDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2YzI2ZTdjNDEyMmFlZjA0OTA0ODVkZGM3Y2Q5ZWU1ZTA4OTU4MTRiNmU5NjcxNzA5NDk2ZjczMDUwZjFjN2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQyZWE2Mjc1NDZjYjczM2NmYWZkYTliMmVkZmE1ZGQyMDc3MDljZTIzMjdhZWVjZWM5MWI0MDQ0YWY1MjlkODcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L146-L192",
+          "version": "repo-lines-v1:sha256:0489ed59320a1e920f795c2de8e84b7970028d7c66ceb7368432220aee208bbb:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllODEzNDBiY2U4NjYyYTZhOTc2OTlkNmRmMmExY2Q1MzY0ZGIwMTRiNTZhYTZjODc2ZjY4NTZmODViZDliMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwNTEzY2JkOGE2Zjk4NjA2MjczOWIwMjVkM2YyOTRjNWJmYmViYTA1N2YyNjFjMDBmNDg2NTU3NjJkN2E0MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNWQ5OGFkOTA3NTRkZjI5ODk3MjM2M2Q5NzIzMjMwMzVkMzY4NDJmODZlNjdlNWQ2MTEyOWU2NzVlMWI0ZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNjBiMGFjYzA5YWRjYjU0NmFmZmQ4MmE2NGJkNTc4ZTQ4OThjOWI2YmNkZjI0MmUzZTZmMTRjMWY5MzlmMWMifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L52-L94",
+          "version": "repo-lines-v1:sha256:de14422df70dac097c9e3244b845e03c1a521371014e87c6288923a9ff0858e5:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkZjAyOGU2MzAxNjVjYzViNmYxY2ViYzhlYTVhOGZhZThkN2M5NWVkMmNhOTkyMmY0M2IzOTlhMGY0YzFhZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NDE3NTQ5ZmQxZDA3NDliZTEwZTg0NDI0ZWMxZjcxYjYyYThhN2Y4MzhmMDc4M2MyMjdmNTQ4OGU1NDQ0YzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1OGU5YmM3MDU0MThhM2FlOGM1NTUzOGUxZWQwYjhhOTM0NDViM2FmZTQ2NGNhZjgzZTU5OGNlYjJiMGU4MjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkZDk2ODM1OTM5ODJkOGZhMjkwZjFkZDhhZjdiN2ZmMzMwODViNmFhY2Q4MjIzMGRiYzE0MmU1N2Y5OTBlMTYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:10:58.872Z"
+    "at": "2026-10-19T17:05:04.757Z"
   }
 }

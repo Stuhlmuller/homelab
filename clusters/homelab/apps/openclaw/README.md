@@ -36,7 +36,11 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=verify \
-  -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
+  -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
+# After final.json exists, prepare a separate private copy for compatibility review.
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=prepare-restore \
+  -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
 ```
 
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
@@ -67,21 +71,105 @@ archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and starts a file-locked
 worker in the reader Pod. The worker copies both source roots, checks the
 stopped-source inventory again, and writes a private result only after a full
-local restore. Do not treat a successful start as an archive receipt. Inspect
+local restore. The writer keeps hardlink lookups in private local scratch
+SQLite. Verification streams archive headers into a separate index on the same
+local scratch; restored data stays on the archive claim. Both passes clear
+Python 3.11's tar member cache. SQLite failures report only the fixed phase
+and SQLite error code, without paths or database contents. An OOM-killed reader or
+absent result leaves only a partial local archive; retain it for diagnosis
+and start a new protected run only after the
+cause is fixed. Do not treat a successful start as an archive receipt. Inspect
 the private result and worker log before dispatching `publish-archive` with the
 archive stage's SHA/run ID; the old source stays stopped and read-only while it
-runs. Publication checks the completed receipt against the observed inventory,
-copies the bundle to versioned S3, downloads it to scratch, and verifies a full
+runs. Publication uses its own current-main SHA/run ID as a fresh immutable S3
+prefix, so a failed attempt cannot overwrite an earlier completed or partial
+object. The source archive SHA/run ID stays recorded in `final.json`. Publication
+checks the completed receipt against the observed inventory, reads the bundle
+in at most 8 MiB Kubernetes exec slices, and assembles 64 MiB S3 multipart
+parts. It retries a broken or short slice up to three times and completes S3 only
+after the full SHA256 matches the source receipt. A failed publication attempts
+to abort its current multipart upload; bucket lifecycle cleans any abandoned ones.
+Publication then downloads the versioned object to scratch and verifies a full
 isolated extract in a detached worker before writing the private `final.json`
 receipt. It rechecks zero writers and original volume identities immediately
-before publication. Verify selects its original S3
+before publication. Pass the successful **publication** SHA/run ID to `verify`;
+it checks that identity in `final.json` before restoring the recorded versions.
+Verify selects its original S3
 version even after later versions or delete markers, then restores the archive
 and receipt versions it recorded. A green inventory alone does not authorize
 shutdown; the old Deployment and backup CronJob must first reach their reviewed
 stopped GitOps state. If any stage
 fails, leave old PVs, NAS data and credentials retained, inspect the private
 diagnostic in the backup bucket if published, and retry with a new run ID after fixing
-the cause. Do not reuse a partial S3 prefix.
+the cause. Never overwrite a completed S3 object version. An incomplete
+multipart upload has no object version; after fixing its cause, the same
+completed `archive_ref` can be retried through the protected workflow. The
+bucket lifecycle aborts abandoned multipart uploads.
+
+Large offsite publication needs a seven-hour AWS role session for the bounded
+six-hour protected job. Before retrying `publish-archive`, apply and verify the
+operator-owned role maximum through the
+[duration-only saved-plan gate](../../../../docs/operator-infrastructure.md#legacy-archive-session-duration-rollout);
+the workflow requests the same 25,200 seconds. Other AWS workflows retain their
+existing session duration.
+
+The tar keeps each source symlink's raw target without following it. Restore
+verification validates all archive members and parent paths before extracting
+non-link data without applying tar metadata, then restores safe file and
+directory modes. It recreates links in private scratch only after checking
+there are no archive members below a non-directory member and extracting all
+non-link data. It compares every restored path, type, file hash and raw link
+target with the stopped-source
+content digest without following links.
+Source UID, mode and mtime remain bound by the stopped inventory and rescan;
+NAS all-squash changes them in private restore. Verification never follows
+links. Some retained NAS links point to reader-Pod overlay directories outside
+both archived roots; others are dangling. External target data is not in this
+archive. T014 compatible recovery must classify those targets and prove any
+needed data is separately retained or rebuilt before acceptance. Do not
+blindly extract this tar into a live filesystem.
+
+`prepare-restore` downloads the exact versioned archive, checks free scratch
+space, and retains a verified copy at `/archive/private/rehearsal-<RUN_ID>/tree`.
+Each versioned transfer fetches the pinned S3 version in at most 128 MiB ranges
+and sends it to the reader in at most 8 MiB slices. The range response must
+match the requested version, byte interval and length; each reader slice must
+match its runner SHA-256 before append. Failed appends roll back to the last
+committed offset. The reader promotes the aggregate only after its full size
+and SHA-256 match; an incomplete transfer never becomes a restore input.
+The archive digest comes from the published final receipt. The receipt digest
+comes from a separate local download of the exact S3 version named in that
+final receipt, so same-size transport corruption also fails closed.
+The protected workflow reports fixed archive-download, receipt-download, and
+restore failure phases without exposing private transport output. Versioned
+downloads further distinguish `source-range` fetch/metadata failure,
+`reader-transfer` exec or write failure, and `finalize` full-digest or
+promotion failure. A category identifies the failed boundary, not the private
+underlying error; inspect private diagnostics before changing the transfer path.
+The one-off `resume-restore` stage is bound to the six-hour cancelled protected run
+`39988927652` and publication
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. It reads the
+existing detached worker's stable completion marker and rechecks its cached
+archive, receipt, restored database report and stopped-source identity. It
+never starts a second worker; an incomplete or failed result stays private and
+blocks recovery. See the [rollout runbook](../../../../docs/openclaw-enterprise-rollout.md)
+for the dispatch gate.
+[Protected resume `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+passed these checks on 2026-10-24 and prepared the separate private NAS scratch
+copy. It did not boot the legacy image or complete T014.
+Its private `link-classification.json` records raw targets as `contained`,
+`link-chain`, `missing-in-archive`, or `external`. Its `lexicalPath` is a hint,
+not proof that symlink components resolve there. `completed.json` records
+only extraction and database integrity; its absence means the retained copy is
+incomplete. Neither file belongs in Git or public CI logs. Absolute
+links can still point at the original reader mounts: inspect every dependency
+without following it, then mount isolated copies at the legacy paths before an
+old-image boot. The NAS scratch copy has all-squash ownership, so local SQLite
+state needs a separate UID 1000 filesystem and the parent/child bind-mount
+identity from `values.yaml`. Keep all original claims read-only and the old
+gateway at zero replicas. This preparation alone does not accept T014; prove
+the isolated gateway can start without ingress or deliveries and recheck the
+stopped production state and retained credentials first.
 
 For compatible legacy recovery after a later Enterprise failure, first stop
 the new agent through its supported API and prove its runtime is terminated.
@@ -90,6 +178,40 @@ backup schedule through a reviewed GitOps change using the retained old image,
 assistant checksum, PVs and secrets. Verify gateway readiness, a real turn and
 the scheduled-job state before declaring recovery. Never import the legacy
 archive into Enterprise.
+
+### T014 isolated legacy boot gate
+
+A read-only stopped-source review found 37 NAS symlinks. Nine absolute targets
+leave both archived roots. Six point into `/app`: `plugin-skills` links for
+`browser-automation`, `obsidian-vault-maintainer`, `wiki-maintainer`, and
+`canvas`, plus the Discord extension and npm package links to `/app`. On
+2026-10-20, the reader reported the pinned old image digest,
+`readOnlyRootFilesystem: true`, a read-only root overlay, no `/app` volume, and
+all five target directories present and nonempty. This proves that the pinned
+image supplies a baseline for those six links. The former gateway did not set
+`readOnlyRootFilesystem`, so its `/app` overlay could have held added or changed
+files that the reader cannot see. The original contents of all six targets
+remain unclassified until compared with retained evidence. The other three
+external targets are dangling in the reader; their individual dependencies
+and disposition also remain unclassified. The archive preserves each link,
+but no external target payload. Do not assume the baseline image recovers the
+gateway's exact contents or that the dangling links are harmless.
+
+Archive verification and the retained original PVCs do not pass T014. The
+reader restores into NAS scratch and does not start the old image. A rehearsal
+needs a separate writable UID 1000 copy of the local parent/state/agent mount
+layout, an isolated NAS copy, and a declared network boundary that prevents
+Discord, heartbeat and job deliveries. Keep the original claims read-only and
+the production Deployment and CronJob stopped. Flannel currently does not
+enforce the declared NetworkPolicies, and no isolated canary is admitted; a
+deny policy on a new Pod is therefore insufficient. Add and validate an
+isolated old-image boot path before claiming compatible recovery, and require
+the verified offsite archive receipt before running it. A reviewed offline
+Linux container run with `--network none` could supply the network boundary,
+but it still needs a proven container host, space for separate restored copies,
+the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run.
+Without evidence of the former writable overlay, do not claim exact compatible
+recovery from the image baseline alone.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium

@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oce-journal-operator
+  namespace: openclaw-system
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: oce-journal-operator-installation
+  namespace: openclaw-system
+rules:
+  # This GET exposes the Secret body. Keep the reviewed Installation digest exact.
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames: [occ-installation-startup-86641419e595a5c812a8c8565d5cb027]
+    verbs: [get]
+  - apiGroups: [apps]
+    resources: [deployments]
+    resourceNames: [openclaw-enterprise-api, openclaw-enterprise-worker]
+    verbs: [get]
+  - apiGroups: [apps]
+    resources: [replicasets]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: oce-journal-operator-installation
+  namespace: openclaw-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: oce-journal-operator-installation
+subjects:
+  - kind: ServiceAccount
+    name: oce-journal-operator
+    namespace: openclaw-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: oce-journal-operator-tenant
+  namespace: openclaw-agents
+rules:
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [rolebindings]
+    resourceNames:
+      - openclaw-enterprise-worker
+      - openclaw-enterprise-api-secrets
+      - openclaw-enterprise-api-configuration
+    verbs: [get]
+  # Full lists detect foreign candidates hidden by a label selector.
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: oce-journal-operator-tenant
+  namespace: openclaw-agents
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: oce-journal-operator-tenant
+subjects:
+  - kind: ServiceAccount
+    name: oce-journal-operator
+    namespace: openclaw-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: oce-journal-operator-proof
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    resourceNames: [openclaw-agents]
+    verbs: [get]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [clusterroles]
+    resourceNames:
+      - oce-openclaw-tenant-worker
+      - oce-openclaw-tenant-api
+      - oce-openclaw-tenant-configuration
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oce-journal-operator-proof
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: oce-journal-operator-proof
+subjects:
+  - kind: ServiceAccount
+    name: oce-journal-operator
+    namespace: openclaw-system

@@ -14,7 +14,7 @@ concurrency:
 jobs:
   test-build:
     name: Build And Smoke Test Fixed Runner Images
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 45
     permissions:
       contents: read
@@ -42,7 +42,7 @@ jobs:
     needs:
       - test-build
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 45
     concurrency:
       group: harbor-packages-production
@@ -125,7 +125,7 @@ jobs:
     name: Report Published Cordium Digests
     needs:
       - publish
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 5
     permissions: {}
     steps:

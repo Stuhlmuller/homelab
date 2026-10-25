@@ -159,27 +159,364 @@ deny contains msg if {
 
 deny contains msg if {
 	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
-	not approved_openclaw_legacy_operation
-	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
+	not approved_openclaw_operations
+	msg := "OpenClaw Enterprise operations require exact protected stages, permissions, and script hashes"
+}
+
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
+	not approved_openclaw_enterprise_operation
+	msg := "OpenClaw Enterprise stages require exact dispatch, current-main guard, serialized permission scope, and blocked helper hash"
+}
+
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Startup Candidate"
+	not approved_openclaw_startup
+	msg := "OpenClaw Enterprise startup requires exact-main protected create, fixed source hash, and private output"
+}
+
+approved_openclaw_startup if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
+	count(dispatch.inputs) == 1
+	dispatch.inputs.expected_sha.required == true
+	input.permissions == {}
+	input.concurrency == {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false}
+	count(input.jobs) == 2
+	static := input.jobs["static-policy"]
+	static["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	static.steps[0].name == "Verify Dispatch Commit"
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	contains(static.steps[0].run, `test "${ACTUAL_REF}" = refs/heads/main`)
+	contains(static.steps[0].run, `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`)
+	static.steps[3].name == "Run Static Checks"
+	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
+	job := input.jobs.startup
+	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.environment.name == "homelab-production"
+	job.permissions == {"contents": "read"}
+	count(job.steps) == 4
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Before Credentials", "Check Out Repository", "Install Nix", "Create Or Attest Fixed Startup Secret"]
+	verify := job.steps[0]
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == openclaw_startup_main_check
+	run := job.steps[3]
+	run.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(run.run, "\n") == openclaw_startup_private_run
+}
+
+openclaw_startup_main_check := `set -euo pipefail
+test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+openclaw_startup_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+sha256sum --check --status <<<'1ea9b290420dfbb2db5ce70331c16f664b91b6cffbb3618bb38b9d492cbf22a8  scripts/openclaw-enterprise-startup.py'
+python3 -I scripts/openclaw-enterprise-startup.py --execute --expected-sha "$EXPECTED_SHA"
+EOF
+then
+  echo "::error::Startup candidate blocked; private cluster diagnostics withheld."
+  exit 1
+fi
+echo "Reviewed startup Secret created or attested; private details withheld."`
+
+deny contains msg if {
+	object.get(input, "name", "") == "Platform Maintenance"
+	not approved_platform_maintenance
+	msg := "Platform maintenance requires exact protected stages, current-main verification, permissions, and script hash"
+}
+
+approved_platform_maintenance if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
+	count(dispatch.inputs) == 7
+	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.cleanup_run_id.required == false
+	dispatch.inputs.cleanup_run_id.type == "string"
+	dispatch.inputs.expected_sha.required == true
+	count(object.keys(input)) == 5
+	input.permissions == {}
+	input.env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}
+	count(object.keys(input.jobs)) == 2
+	static := input.jobs["static-policy"]
+	count(object.keys(static)) == 4
+	static.name == "Validate Platform Stage Source"
+	static.permissions == {"contents": "read"}
+	static["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
+	count(static.steps) == 4
+	count(object.keys(static.steps[0])) == 3
+	static.steps[0].name == "Verify Dispatch Commit"
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}"}
+	trim(static.steps[0].run, "\n") == platform_maintenance_dispatch_check
+	static.steps[1] == platform_maintenance_static_checkout
+	static.steps[2] == platform_maintenance_install_nix
+	count(object.keys(static.steps[3])) == 2
+	static.steps[3].name == "Run Static Checks"
+	trim(static.steps[3].run, "\n") == platform_maintenance_static_checks
+	job := input.jobs.maintenance
+	count(object.keys(job)) == 9
+	job.name == "Protected Platform Stage"
+	job["timeout-minutes"] == 120
+	job.needs == ["static-policy"]
+	job["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
+	job.environment.name == "homelab-production"
+	job.concurrency == {"group": "platform-maintenance-production", "cancel-in-progress": false}
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	count(job.steps) == 6
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
+	verify := job.steps[0]
+	count(object.keys(verify)) == 3
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == platform_maintenance_owner_main_check
+	job.steps[1] == platform_maintenance_private_checkout
+	job.steps[2] == platform_maintenance_install_nix
+	recheck := job.steps[3]
+	count(object.keys(recheck)) == 3
+	recheck.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(recheck.run, "\n") == platform_maintenance_main_check
+	job.steps[4] == platform_maintenance_aws_credentials
+	some run in job.steps
+	run.name == "Run Reviewed Platform Stage"
+	count(object.keys(run)) == 3
+	run.env == platform_maintenance_private_env
+	trim(run.run, "\n") == platform_maintenance_private_run
+}
+
+platform_maintenance_dispatch_check := `test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+if [ "$RUN_STAGE" = ownership-approve ]; then
+  test "$GITHUB_ACTOR_ID" = 57728706
+  test "$GITHUB_RUN_ATTEMPT" = 1
+fi`
+
+platform_maintenance_static_checks := `git fetch --no-tags origin main
+cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+nix develop --command python3 -I scripts/ci/platform-maintenance-stage-test.py`
+
+platform_maintenance_static_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 2, "persist-credentials": false}}
+platform_maintenance_private_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}}
+platform_maintenance_install_nix := {"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}}
+platform_maintenance_aws_credentials := {"name": "Configure AWS Credentials", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-platform-${{ github.run_id }}", "role-to-assume": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}", "unset-current-credentials": true}}
+platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
+
+platform_maintenance_main_check := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+platform_maintenance_owner_main_check := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+if [ "$RUN_STAGE" = ownership-approve ]; then
+  test "$GITHUB_ACTOR_ID" = 57728706
+  test "$GITHUB_RUN_ATTEMPT" = 1
+fi
+test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+platform_maintenance_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+talosctl version --client >/dev/null
+sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+bash scripts/ci/platform-maintenance-stage.sh
+EOF
+then
+  echo "::error::Platform stage blocked; private transport, receipt, and cluster diagnostics withheld."
+  exit 1
+fi
+echo "Platform stage completed; private receipts withheld."`
+
+approved_openclaw_operations if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(object.keys(workflow_events)) == 1
+	protected_workflow_run_settings
+	count(dispatch.inputs) == 5
+	dispatch.inputs.expected_sha.required == true
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore"]
+	dispatch.inputs.legacy_stage.default == "none"
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.default == "none"
+	count(input.jobs) == 4
+	approved_openclaw_legacy_operation
+	approved_openclaw_enterprise_operation
 }
 
 approved_openclaw_legacy_operation if {
-	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]
 	job := input.jobs.legacy
+	job["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
-	job.concurrency.group == "openclaw-enterprise-operations-production"
-	job.permissions == {"contents": "read", "id-token": "write"}
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
+	job["timeout-minutes"] == 360
+	job.permissions == {"actions": "read", "contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
+	count(job.steps) == 7
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name, job.steps[6].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Verify Prior Restore Run", "Verify Protected Inputs", "Configure AWS Credentials", "Run Legacy Stage"]
+	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
+	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	job.steps[1].with == {"fetch-depth": 0, "persist-credentials": false}
+	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	job.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	provenance := [step | step := job.steps[_]; step.name == "Verify Prior Restore Run"]
+	count(provenance) == 1
+	provenance[0] == job.steps[3]
+	provenance[0].env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "PRIOR_RUN_ID": "39988927652", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(provenance[0].run, "\n") == openclaw_resume_provenance_run
+	credentials := [step | step := job.steps[_]; step.name == "Configure AWS Credentials"]
+	count(credentials) == 1
+	credentials[0] == job.steps[5]
+	credentials[0]["with"]["role-duration-seconds"] == 25200
 	some step in job.steps
 	step.name == "Run Legacy Stage"
-	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
-	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	step == job.steps[6]
+	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'f433de4d705662fddc30208efd9db7a3f1fab842857c400a6f5edd1bf7059436  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, "if [[ \"$RUN_STAGE\" == resume-restore ]]; then\n  export PRIOR_RUN_ID=39988927652\nfi\n")
+	contains(step.run, concat("", [`sha256sum --check --status <<<'a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
+
+
+approved_openclaw_enterprise_operation if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(dispatch.inputs) == 5
+	dispatch.inputs.expected_sha.required == true
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.default == "none"
+	input.permissions == {}
+	count(input.jobs) == 4
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}"}
+	trim(static.steps[0].run, "\n") == openclaw_dispatch_guard
+	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
+	job := input.jobs.enterprise
+	job["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
+	job["timeout-minutes"] == 150
+	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'"
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
+	job.environment.name == "homelab-production"
+	job.permissions == {"contents": "read"}
+	count(job.steps) == 5
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Enterprise Stage", "Run Fixed Enterprise Stage"]
+	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
+	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	job.steps[1].with["persist-credentials"] == false
+	job.steps[1].with["fetch-depth"] == 0
+	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	job.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	job.steps[3].env == job.steps[0].env
+	trim(job.steps[3].run, "\n") == platform_maintenance_main_check
+	job.steps[4].env == {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[4].run, "\n") == openclaw_enterprise_stage_run
+	binding := input.jobs.binding
+	binding["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
+	binding.needs == ["static-policy"]
+	binding.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'"
+	binding.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
+	binding.environment.name == "homelab-production"
+	binding.permissions == {"contents": "read"}
+	binding["timeout-minutes"] == 30
+	count(binding.steps) == 5
+	[binding.steps[0].name, binding.steps[1].name, binding.steps[2].name, binding.steps[3].name, binding.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Binding", "Bind Reviewed Installation"]
+	binding.steps[0].env == job.steps[0].env
+	trim(binding.steps[0].run, "\n") == platform_maintenance_main_check
+	binding.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	binding.steps[1].with["persist-credentials"] == false
+	binding.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	binding.steps[2].with.enable_kvm == false
+	binding.steps[3].env == job.steps[0].env
+	trim(binding.steps[3].run, "\n") == platform_maintenance_main_check
+	binding.steps[4].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(binding.steps[4].run, "\n") == openclaw_enterprise_binding_run
+}
+
+openclaw_dispatch_guard := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
+esac
+if [[ "$ENTERPRISE_STAGE" != none ]]; then
+  test -z "$BASELINE_REF"
+  test -z "$ARCHIVE_REF"
+fi
+if [[ "$LEGACY_STAGE" == resume-restore ]]; then
+  test "$ARCHIVE_REF" = '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221'
+  test -z "$BASELINE_REF"
+fi`
+
+openclaw_resume_provenance_run := `set -euo pipefail
+if [[ "$RUN_STAGE" == resume-restore ]]; then
+  sha256sum --check --status <<<'ac9b3903723c7cede72cb01642b31cdd3a88b31c2cf2e4efe56e282d21af1555  scripts/ci/openclaw-enterprise-resume-provenance.py'
+  python3 -I scripts/ci/openclaw-enterprise-resume-provenance.py \
+    --prior-run-id "$PRIOR_RUN_ID" --archive-ref "$ARCHIVE_REF" \
+    --current-sha "$EXPECTED_SHA" \
+    --receipt "${RUNNER_TEMP}/oce-resume-provenance.json"
+fi`
+
+openclaw_enterprise_stage_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! {
+  sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+  timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
+} >"$private_log" 2>&1; then
+  echo '::error::Enterprise stage blocked; private diagnostics withheld.'
+  exit 1
+fi
+echo 'Enterprise stage passed; private receipts withheld.'`
+
+openclaw_enterprise_binding_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+chmod 600 "$private_log"
+trap 'rm -f "$private_log"' EXIT
+if ! {
+  ulimit -f 1024 &&
+  sha256sum --check --status <<<'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996  scripts/openclaw-enterprise-bind-installation.py' &&
+  test "$(jq -r '.bootstrap.serviceKeyFile // empty' scripts/config/openclaw-enterprise.json)" = /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+  test -f /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+  test -s /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+  test "$(stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json)" = "$(id -u):600" &&
+  test -n "$OCTELIUM_AUTH_TOKEN" &&
+  timeout 10m nix develop --command bash <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+python3 -I scripts/openclaw-enterprise-bind-installation.py --expected-sha "$EXPECTED_SHA" --credential-file /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json
+EOF
+} >"$private_log" 2>&1; then
+  echo '::error::Enterprise Installation binding blocked; private diagnostics withheld.'
+  exit 1
+fi
+echo 'Enterprise Installation binding verified; private receipts withheld.'`
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
 	job_name == "mirror"
@@ -235,6 +572,22 @@ deny contains msg if {
 
 workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
+protected_workflow_run_settings if {
+	not "defaults" in object.keys(input)
+	input.env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}
+	every _, job in input.jobs {
+		not "defaults" in object.keys(job)
+		not "env" in object.keys(job)
+		every step in job.steps {
+			not "shell" in object.keys(step)
+			not "working-directory" in object.keys(step)
+			env := object.get(step, "env", {})
+			not "BASH_ENV" in object.keys(env)
+			not "ENV" in object.keys(env)
+		}
+	}
+}
+
 # This checker runs only trusted base-branch code and reads a receipt-only PR
 # as bounded API data. Any shape change must also update the exact workflow hash.
 native_receipt_provenance_workflow if {
@@ -252,7 +605,7 @@ native_receipt_provenance_workflow if {
 
 native_receipt_provenance_job := {
 	"name": "Native Chainguard Receipt Provenance",
-	"runs-on": "ubuntu-24.04",
+	"runs-on": ["self-hosted", "Linux", "X64", "cordium"],
 	"timeout-minutes": 20,
 	"permissions": {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"},
 	"steps": [
@@ -274,11 +627,29 @@ base_sha="$(git rev-parse HEAD)"
 [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
 token_file="$(mktemp)"
 pulls_file="$(mktemp)"
+all_heads_file="$(mktemp)"
 heads_file="$(mktemp)"
-trap 'rm -f "$token_file" "$pulls_file" "$heads_file"' EXIT
+trap 'rm -f "$token_file" "$pulls_file" "$all_heads_file" "$heads_file"' EXIT
 printf '%s' "$GH_TOKEN" >"$token_file"
 gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
-jq -r '.[].head.sha' "$pulls_file" >"$heads_file"
+jq -r '.[].head.sha' "$pulls_file" >"$all_heads_file"
+if [[ "$GITHUB_EVENT_NAME" == pull_request_target ]]; then
+  event_head="$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")"
+  [[ "$event_head" =~ ^[0-9a-f]{40}$ ]] || exit 1
+  grep -Fxq -- "$event_head" "$all_heads_file" || exit 1
+  printf '%s\n' "$event_head" >"$heads_file"
+else
+  [[ "$GITHUB_EVENT_NAME" == push ]] || exit 1
+  while IFS= read -r head_sha; do
+    [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+    # Any unreadable or changed native state still needs verification.
+    if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py native-receipts-unchanged \
+      --base-sha "$base_sha" --head-sha "$head_sha" --token-file "$token_file"; then
+      continue
+    fi
+    printf '%s\n' "$head_sha" >>"$heads_file"
+  done <"$all_heads_file"
+fi
 pending_failed=0
 while IFS= read -r head_sha; do
   [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
@@ -490,6 +861,10 @@ private_live_output(run) if {
 	trim(run, "\n") == native_receipt_private_run
 }
 
+private_live_output(run) if {
+	trim(run, "\n") == openclaw_enterprise_binding_run
+}
+
 native_receipt_private_run := `set -euo pipefail
 umask 077
 private_log="$(mktemp)"
@@ -540,10 +915,21 @@ EOF
 then
   python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
     "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
-  echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+  phase=unclassified
+  if [[ -f "$GITHUB_STEP_SUMMARY" ]]; then
+    phase_line="$(tail -n 1 "$GITHUB_STEP_SUMMARY")"
+    if [[ "$phase_line" == "Enterprise image publication failed at phase: "* ]]; then
+      candidate="${phase_line#*phase: }"
+      case "$candidate" in
+        preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator)
+          phase="$candidate" ;;
+      esac
+    fi
+  fi
+  echo "::error::Enterprise image publication failed at phase: $phase; private transport and registry output withheld."
   exit 1
 fi
-echo "Pinned Enterprise controller/runtime pair published, signed, and fully pulled; private output withheld."`
+echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."`
 
 harbor_mirror_private_run := `set -euo pipefail
 umask 077
@@ -582,11 +968,17 @@ case "$IMAGE_SCOPE" in
   dns)
     bash scripts/ci/harbor-publish.sh mirror-dns
     ;;
+  litellm)
+    bash scripts/ci/harbor-publish.sh mirror-litellm
+    ;;
+  prometheus)
+    bash scripts/ci/harbor-publish.sh mirror-prometheus
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -609,12 +1001,14 @@ private_live_tail(tail) if {
 	lines == [
 		"then",
 		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
-		`case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)`,
+		`case "$phase" in preflight|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore)`,
 		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
 		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
 		"esac",
+		`rm -f "$OPENCLAW_RESUME_PROVENANCE"`,
 		"exit 1",
 		"fi",
+		`rm -f "$OPENCLAW_RESUME_PROVENANCE"`,
 		`echo "Legacy operation completed; private receipts withheld."`,
 	]
 }

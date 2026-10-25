@@ -8,7 +8,11 @@ Never skip a missing command or failed gate and report the stage complete.
 ## 1. Review Inputs and Read-Only Baseline
 
 ```sh
-python3 -B .specify/scripts/python/check_prerequisites.py --json
+feature_dir=specs/003-replace-openclaw-enterprise
+for required in spec.md plan.md tasks.md; do
+  test -f "${feature_dir}/${required}" || exit 1
+done
+printf 'FEATURE_DIR=%s\n' "$feature_dir"
 git diff --check
 kubectl --request-timeout=15s get nodes \
   -o custom-columns=NAME:.metadata.name,KUBELET:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage
@@ -19,6 +23,8 @@ kubectl --request-timeout=15s top nodes
 ```
 
 Expected current baseline is recorded in [research.md](research.md#r4--capacity-is-a-real-execution-gate).
+The generic prerequisite helper follows `.specify/feature.json`, which may
+select another feature; the checks above target this one explicitly.
 Refresh it before selecting actual nodes. No suitable canary or sufficient placement
 has been approved. Keep detailed Pod/policy snapshots and storage/credential
 inventories in private files; do not paste them into public logs or PRs.
@@ -55,12 +61,18 @@ override; see [the routing contract](contracts/enterprise.md#gateway-api-and-pri
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
+python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 scripts/platform-maintenance.py validate \
   --config scripts/config/platform-maintenance.json
 python3 scripts/openclaw-enterprise.py check \
   --config scripts/config/openclaw-enterprise.json
 ```
+
+The platform `validate --config` command checks only the pinned declaration.
+To validate private Talos bases and every target patch offline, also pass both
+`--control-plane-config` and `--worker-config` paths to mode-0600 files.
+Neither form proves recovery or live readiness.
 
 Expected: no unsupported upgrade hops, CNI writes, unknown live-operation inputs,
 plaintext secrets, duplicate-create retry, unsafe archive path, or bypassed
@@ -74,11 +86,11 @@ verify zero writers, create the final multi-root archive and perform an isolated
 restore. Keep both local authoritative databases, NAS files, old full archives
 and historical runtime checkpoint in the protected inventory.
 
-The read-only status helper and protected stages are implemented. This stage
-starts one reader; the offsite bucket must be applied and verified separately,
-and the legacy writer stays active. If the reader is not Ready or its retained
-mount identities differ, return it to zero replicas through GitOps before any
-archive or shutdown. Validate the offline contracts first:
+The read-only status helper and protected stages are implemented. The offsite
+bucket is applied, the reader is Ready, and the legacy writer is stopped. If the
+reader is not Ready or its retained mount identities differ, return it to zero
+replicas through GitOps before another archive attempt. Validate the offline
+contracts first:
 
 ```sh
 python3 scripts/ci/openclaw-retirement-test.py
@@ -131,6 +143,16 @@ Expected canary result: no unreviewed/drifted/bypass findings. Review ingress
 separately; this helper primarily checks egress. Repeat for affected namespaces
 and expand only after [all required traffic/lifecycle cases](contracts/platform.md#required-traffic-matrix)
 pass on actual Talos nodes.
+For Cordium and Octelium snapshots, repeat `--render` with
+`clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json` to
+compare the three source-reviewed Cordium Genesis policies with live specs.
+The fixture is not a Kustomize resource and does not approve their traffic.
+Also pass `clusters/homelab/apps/octelium/generated-networkpolicies.json`
+as another `--render` input for the four source-reviewed Octelium Genesis
+policies. It does not approve `svc-upstream` public all-port egress.
+Pass `clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json`
+as one more `--render` input for the ten source-reviewed Enterprise Genesis
+policies. This fixture does not approve their ingress traffic.
 
 Stock OCE's public TCP/443 rule intentionally fails the stricter broad-egress
 finding in this helper. Preserve that finding and the helper's strict behavior;

@@ -4,24 +4,50 @@ title: "AWS SSM Secret References"
 description: "SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume."
 tags: ["runbook", "secrets", "aws"]
 sources:
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-f19aa740c5d820d4dd28114e
+    resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-  - id: openwiki-source-4fa6e8b8348f9583e76afe30
-    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
-generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-1f0ad12bbff1986d64be6620
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-7941d9a35910fdb69c63e9c1
+    resource: repo://scripts/openclaw-enterprise-bind-installation.py
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T00:13:27.328Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # AWS SSM Secret References
@@ -41,16 +67,69 @@ Commit SSM paths, ExternalSecret contracts, and safe placeholders only. Runtime
 values stay outside git; External Secrets materializes application credentials
 after the repository-managed bootstrap secret is available.
 
-## Renovate App transfer (staged)
+## Renovate App transfer and role retirement
 
 The [Renovate runbook](../../clusters/homelab/apps/renovate/README.md) declares
-two fixed SSM placeholders for the existing GitHub App issuer and private key.
-After a reviewed, private SSM plan, apply the temporary exact-scope OIDC transfer
-role. The companion repository's protected workflow writes the existing App
-credentials to those paths; verify parameter metadata and a later
-`automation/renovate` ExternalSecret refresh without reading values. Retire the
-transfer grant through another reviewed plan before unsuspending the hourly
-CronJob. This sequence is staged source, not a completed live transfer.
+two fixed SSM parameters for the existing GitHub App issuer and private key.
+The [2026-10-19 operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records a successful companion transfer: both parameters reached version 2,
+then `automation/renovate` refreshed with `Ready=True`; the CronJob stayed
+suspended with no Job. Inspect only parameter and Secret metadata, never values.
+Current IAM source removes the temporary exact-scope OIDC writer role from
+desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, an operator applied a private, un-targeted saved plan deleting only
+that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
+a fresh full-unit plan had no changes. A later rotation needs a reviewed
+reintroduction of the exact-scope grant. The CronJob is now declared
+unsuspended on an hourly UTC schedule in full dry-run mode. Its earlier 19:00
+and 20:00 UTC Jobs each finished all eight eligible repositories with no
+reported errors. The legacy GitHub Action remains the only writer. Full App-policy parity, fault recovery,
+the old-writer workflow deletion, guarded Actions-key retirement, and cluster
+writer activation remain separate gates.
+
+## OpenClaw Enterprise model key
+
+The fresh Enterprise agent uses only
+`/homelab/openclaw-enterprise/model-api-key`. The protected
+[writer workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
+validates an owner-supplied OpenRouter key and binds the write to exact current
+`main`; it does not copy the old OpenClaw or LiteLLM values. No key has been
+supplied. The placeholder blocks activation and provider acceptance until a
+real key is transferred, projected, and tested. See the
+[canonical secret contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
+
+The dormant [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares eight retained `OnChange` ExternalSecret targets across
+`openclaw-system` and `openclaw-agents`. `occ-database` templates separate
+application and migration URLs from generated passwords; both require
+PostgreSQL `verify-full` TLS against the declared retained root CA. The admin
+and backup passwords remain in separate Secrets. Rotation needs a committed
+`generated-secret-revision` advance and consumer verification. The manifests
+are declared under an auto-sync-disabled Application but have not been synced;
+source alone proves no SSM value, projected
+Secret, issued certificate, or running database.
+
+The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
+contains non-secret startup configuration. It is separate from those eight SSM
+credentials. The protected startup workflow copies its exact bytes into a
+versioned immutable Kubernetes Secret because the stock chart mounts that
+Secret at startup. Initial creation precedes the installation ID; T041 must
+bind and attest that metadata after bootstrap before reconciliation can run.
+The [binder source](../../scripts/openclaw-enterprise-bind-installation.py)
+reads a private bootstrap-key file, verifies `GET /installation` and both Ready
+Pods, and patches only the Secret annotation with a guarded readback. Its
+[protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
+rechecks exact current `main` and pins this source, but the hosted runner has
+no declared delivery of the owner-controlled 0600 bootstrap-key file. No live
+binding is proven.
+
+## Protected Talos upgrade inputs
+
+The fixed platform upgrade stages read `OCE_CONTROLPLANE_CONFIG_B64` and
+`OCE_WORKER_CONFIG_B64` from protected workflow secrets, decode private
+role-specific Talos configs, and pass them to strict validation and ordered
+execution. `activationEnabled` remains false; accepted placement, recovery,
+and publication receipts are still required before a live upgrade.
 
 ## Harbor native receipt prerequisite
 
@@ -67,8 +146,8 @@ The Multica chart reads `POSTGRES_PASSWORD` when the built-in PostgreSQL data
 directory is initialized. On a retained, already-initialized PVC, refreshing
 `multica-secrets` does not change the existing `multica` database role
 password. The generated SSM value is declared in the committed
-`IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
-rendered into the `IaC/live/aws-ssm-parameters` OpenTofu stack, so do not
+`IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
+rendered into the `IaC/homelab/us-west-2/shared/aws-ssm-parameters` OpenTofu stack, so do not
 hand-edit
 `/homelab/multica/postgres-password`; the next apply would restore the
 repository-owned generated value.
@@ -78,7 +157,7 @@ role, and consumers move together.
 
 1. Open a reviewed PR that changes the declared rotation trigger or keeper for
    `/homelab/multica/postgres-password` in
-   `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
+   `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
    generated-parameter workflow does not have an explicit keeper yet, add one
    before rotating.
 2. regenerate the live stack, then plan and apply it so OpenTofu writes the new

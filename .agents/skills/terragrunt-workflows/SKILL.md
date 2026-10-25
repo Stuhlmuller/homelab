@@ -13,31 +13,31 @@ and only the affected source before editing. Ordinary app onboarding also uses
 
 | Concern | Edit |
 | --- | --- |
-| Unit identity, template source and output paths | `IaC/terragrunt.stack.hcl` |
-| Per-application inputs and chart pins | `IaC/stacks/<app>/stack.hcl` |
+| Unit identity, template source and output paths | `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` |
+| Per-application inputs and chart pins | `IaC/homelab/us-west-2/apps/<app>/stack.hcl` |
 | Shared Application defaults | `IaC/stack-defaults.hcl` |
-| Reusable generated unit behavior | `IaC/.catalog/units/` |
+| Reusable generated unit behavior | `IaC/terragrunt-catalog/units/` |
 | Backend, state encryption and shared inputs | `IaC/root.hcl` |
 | Kubernetes provider connection | `IaC/kubernetes-provider.hcl` |
-| Typed infrastructure resources | `IaC/modules/` or pinned catalog modules |
+| Typed infrastructure resources | `IaC/terragrunt-catalog/modules/` or pinned catalog modules |
 
-`IaC/bootstrap` and `IaC/live` are generated at their historical paths using
+Generated units under `IaC/homelab/us-west-2` use
 `no_dot_terragrunt_stack = true`; do not edit their generated `terragrunt.hcl`
 or `terragrunt.values.hcl`. Keep unit labels, literal `source`/`path` fields,
 and path identity stable: backend keys and CI's retirement parser depend on
 them. OpenTofu initialization generates local `.terraform.lock.hcl` files;
 they are ignored. Do not commit or copy provider locks. Exact provider versions
 live in module/template HCL; CI regenerates locks and checksums during init.
-`IaC/operator` remains administrator-owned rather than part of workload CI.
+`IaC/homelab/us-west-2/operator` remains administrator-owned rather than part of workload CI.
 
 ## Shared Application contract
 
 All active app and platform registrations use
-`IaC/.catalog/units/live/argocd-app`. Each app's `stack.hcl` loads shared locals
+`IaC/terragrunt-catalog/units/live/argocd-app`. Each app's `stack.hcl` loads shared locals
 from `IaC/stack-defaults.hcl` and sets `inputs.defaults = local.shared.argocd_defaults`;
-add only differing `metadata`, `spec` and `dependencies` fields. The root index
+add only differing `metadata`, `spec` and `dependencies` fields. Each app stack
 loads the app file's `inputs` with `read_terragrunt_config` as the unit's `values`.
-Keep app filenames as `stack.hcl`, not nested `terragrunt.stack.hcl` files.
+Keep app inputs in `stack.hcl` beside each app `terragrunt.stack.hcl`.
 Do not duplicate the whole Application manifest.
 
 The template derives the Application name and destination namespace from the
@@ -75,7 +75,7 @@ git diff --check
 For one generated Application, inspect only its useful rendered inputs:
 
 ```sh
-nix develop --command terragrunt --working-dir IaC/live/argocd-apps/<app> \
+nix develop --command terragrunt --working-dir IaC/homelab/us-west-2/apps/<app>/argocd \
   render --json --write=false | jq '{
     application: .inputs.manifest.metadata.name,
     namespace: .inputs.manifest.spec.destination.namespace,

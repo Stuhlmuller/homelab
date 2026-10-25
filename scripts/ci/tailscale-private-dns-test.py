@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from urllib.parse import parse_qs
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,9 +26,19 @@ class Readiness(unittest.TestCase):
         apps = 'affine argocd bazarr compass deluge dispatcharr fleet grafana harbor kiali langfuse litellm multica n8n nofx openclaw policy-bot prowlarr radarr sonarr'.split()
         self.assertEqual(set(value['hostnames']), {f'{app}.stinkyboi.com' for app in apps} | {
             'stinkyboi.com', 'cordium.stinkyboi.com', '*.cordium.stinkyboi.com', 'console.stinkyboi.com',
-            'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com'})
+            'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com',
+            'console.oce.stinkyboi.com', '*.agents.oce.stinkyboi.com'})
         self.assertEqual(set(value['retired_hostnames']), {f'{name}.stinkyboi.com' for name in (
             'octelium-transport', 'kubernetes-api-ci', 'n8n-webhook', 'policy-bot-hook')})
+        self.assertEqual(check.retirement_names(value), value['hostnames'][1:27])
+        self.assertEqual(len(check.retirement_names(value)), 26)
+        self.assertNotIn('stinkyboi.com', check.retirement_names(value))
+        self.assertFalse(set(check.retirement_names(value)) & set(value['retired_hostnames']))
+        with tempfile.TemporaryDirectory() as directory:
+            changed = Path(directory)/'inventory.json'
+            changed.write_text(json.dumps({**value, 'hostnames': value['hostnames'][:-1]}))
+            with patch.object(check, 'INVENTORY', changed), self.assertRaisesRegex(RuntimeError, 'fixed 27-name'):
+                check.inventory()
 
     def exercise(self, failure=None, dualstack_peer=False):
         service = {'metadata': {'annotations': {'tailscale.com/hostname': 'homelab-ingress'}},
@@ -91,7 +102,7 @@ class Readiness(unittest.TestCase):
         commands = self.exercise()
         self.assertEqual(commands[0], ('kubectl', '-n', 'traefik', 'get', 'service', 'traefik-private', '-o', 'json'))
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 28)
+        self.assertEqual(len(probes), 30)
         self.assertTrue(all('--connect-to' in command and '--disable' in command and '--insecure' not in command
                             for command in probes))
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
@@ -101,7 +112,7 @@ class Readiness(unittest.TestCase):
     def test_ipv4_service_does_not_publish_dualstack_peers_unsupported_ipv6(self):
         commands = self.exercise(dualstack_peer=True)
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 28)
+        self.assertEqual(len(probes), 30)
         self.assertTrue(all(command[command.index('--connect-to') + 1].endswith(':100.100.100.1:443')
                             for command in probes))
 
@@ -122,7 +133,7 @@ class Readiness(unittest.TestCase):
             verify.assert_called_once_with('a'*40)
             readiness.assert_not_called()
 
-    def test_affine_502_and_503_require_explicit_source_and_live_suspension(self):
+    def test_affine_500_502_and_503_require_explicit_source_and_live_suspension(self):
         source = {'kind':'Deployment', 'metadata':{'name':'affine'}, 'spec':{'replicas':0}}
         live = {'metadata':{'name':'affine','namespace':'affine'},'spec':{'replicas':0},'status':{'replicas':0}}
         cases = [(source, live, True), (source, {key:value for key,value in live.items() if key != 'status'}, True)]
@@ -135,7 +146,7 @@ class Readiness(unittest.TestCase):
                 for value in values:
                     changed = dict(target, **{field:value})
                     cases.append((changed if target is source else source, changed if target is live else live, False))
-        for status in (502, 503):
+        for status in (500, 502, 503):
             for desired, actual, accepted in cases:
                 with self.subTest(status=status, desired=desired, actual=actual), patch.object(check, 'run',
                         side_effect=[json.dumps(desired), json.dumps(actual)]), patch.object(check, 'probe', return_value=(status, [])), \
@@ -151,16 +162,129 @@ class Readiness(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, 'read failed'):
                         check.routes({'hostnames':['affine.stinkyboi.com']})
 
+    def test_openclaw_502_requires_explicit_source_and_live_suspension(self):
+        source = {'controllers':{'openclaw':{'replicas':0}}}
+        live = {'metadata':{'name':'openclaw','namespace':'ai'},'spec':{'replicas':0},
+                'status':{'replicas':0}}
+        empty = {'kind':'List', 'items':[
+            {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                'kubernetes.io/service-name':'openclaw'}}, 'endpoints':None}]}
+        with patch.object(check, 'run', side_effect=[json.dumps(source), json.dumps(live), json.dumps(empty)]) as run, \
+                patch.object(check, 'probe', return_value=(502, [])), contextlib.redirect_stderr(io.StringIO()):
+            check.routes({'hostnames':['openclaw.stinkyboi.com']}, '100.100.100.1')
+        self.assertEqual(run.call_args_list[0].args,
+                         ('yq', '-o=json', '.', str(ROOT/'clusters/homelab/apps/openclaw/values.yaml')))
+        self.assertEqual(run.call_args_list[1].args,
+                         ('kubectl', '-n', 'ai', 'get', 'deployment', 'openclaw', '-o', 'json'))
+        self.assertEqual(run.call_args_list[2].args,
+                         ('kubectl', '-n', 'ai', 'get', 'endpointslices', '-l',
+                          'kubernetes.io/service-name=openclaw', '-o', 'json'))
+
+        invalid_sources = (None, {}, {'controllers':None}, {'controllers':{}},
+                           {'controllers':{'openclaw':None}},
+                           *({'controllers':{'openclaw':{'replicas':value}}}
+                             for value in (1, None, '0', False)))
+        for desired in invalid_sources:
+            with self.subTest(source=desired), patch.object(check, 'run', return_value=json.dumps(desired)) as run, \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+                run.assert_called_once()
+
+        invalid_live = (
+            {**live, 'metadata':{'name':'other','namespace':'ai'}},
+            {**live, 'metadata':{'name':'openclaw','namespace':'other'}},
+            *({**live, 'spec':{'replicas':value}} for value in (1, None, '0', False)),
+            *({**live, 'status':{'replicas':value}} for value in (1, '0')),
+        )
+        for actual in invalid_live:
+            with self.subTest(live=actual), patch.object(check, 'run',
+                    side_effect=[json.dumps(source), json.dumps(actual)]), \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+
+        for endpoints in ({'kind':'List', 'items':[]},
+                          {'kind':'List', 'items':[
+                              {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                                  'kubernetes.io/service-name':'openclaw'}},
+                               'endpoints':[{'addresses':['10.0.0.1']}]}]},
+                          {'kind':'List', 'items':[
+                              {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                                  'kubernetes.io/service-name':'other'}}, 'endpoints':None}]},
+                          {'kind':'List', 'items':[{'kind':'EndpointSlice', 'metadata':None, 'endpoints':None}]},
+                          {'kind':'List', 'items':[{'kind':'EndpointSlice', 'metadata':{'namespace':'ai',
+                              'labels':None}, 'endpoints':None}]}):
+            with self.subTest(endpoints=endpoints), patch.object(check, 'run', side_effect=[
+                    json.dumps(source), json.dumps(live), json.dumps(endpoints)]), \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+
+        for responses in ([RuntimeError('source read failed')], [json.dumps(source), RuntimeError('live read failed')],
+                          [json.dumps(source), json.dumps(live), RuntimeError('endpoint read failed')]):
+            with self.subTest(failure=responses), patch.object(check, 'run', side_effect=responses), \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'read failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+
+    def test_openclaw_500_requires_suspension(self):
+        for suspended in (False, True):
+            with self.subTest(suspended=suspended), patch.object(check, 'probe', return_value=(500, [])), \
+                    patch.object(check, 'openclaw_suspended', return_value=suspended) as guard, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                if suspended:
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+                else:
+                    with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                        check.routes({'hostnames':['openclaw.stinkyboi.com']})
+                guard.assert_called_once()
+
     def test_suspension_exception_does_not_allow_other_apps_or_other_5xx(self):
-        for host in ('affine', 'n8n', 'fleet', 'harbor'):
+        for host in ('affine', 'openclaw', 'n8n', 'fleet', 'harbor'):
             for status in (500, 502, 503, 504):
-                if host == 'affine' and status in (502, 503):
+                if (host == 'affine' and status in (500, 502, 503)) or (host == 'openclaw' and status in (500, 502)):
                     continue
                 with self.subTest(host=host, status=status), patch.object(check, 'probe', return_value=(status, [])), \
-                        patch.object(check, 'affine_suspended') as suspended:
+                        patch.object(check, 'affine_suspended') as affine, \
+                        patch.object(check, 'openclaw_suspended') as openclaw:
                     with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
                         check.routes({'hostnames':[f'{host}.stinkyboi.com']})
-                    suspended.assert_not_called()
+                    affine.assert_not_called()
+                    openclaw.assert_not_called()
+
+    def test_oce_agent_probe_matches_route_and_rejects_edge_404(self):
+        name = '*.agents.oce.stinkyboi.com'
+        child = 'agent-' + '0' * 32 + '.agents.oce.stinkyboi.com'
+        for status in (200, 401, 403):
+            with self.subTest(status=status), patch.object(check, 'probe', return_value=(status, [])) as probe, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                check.routes({'hostnames':[name]}, '100.100.100.1')
+                probe.assert_called_once_with(child, '100.100.100.1', '/')
+        for status in (404, 502):
+            with self.subTest(status=status), patch.object(check, 'probe', return_value=(status, [])) as probe:
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':[name]}, '100.100.100.1')
+                probe.assert_called_once_with(child, '100.100.100.1', '/')
+        with patch.object(check, 'probe', return_value=(404, [])) as probe, contextlib.redirect_stderr(io.StringIO()):
+            check.routes({'hostnames':['*.cordium.stinkyboi.com']}, '100.100.100.1')
+            probe.assert_called_once_with('dns-preflight.cordium.stinkyboi.com', '100.100.100.1', '/')
+
+    def test_retirement_route_check_excludes_staged_oce_backends(self):
+        value = check.inventory()
+        for args, expected in ((['--check'], 29), (['--retire-private', '--check'], 27)):
+            with self.subTest(args=args), patch.object(sys, 'argv', ['check', *args]), \
+                    patch.object(check, 'mesh_addresses', return_value={'A':['100.100.100.1'], 'AAAA':[]}), \
+                    patch.object(check, 'declared_routes'), patch.object(check, 'routes') as routes:
+                check.main()
+                self.assertEqual(len(routes.call_args.args[0]['hostnames']), expected)
+                self.assertEqual(routes.call_args.args[1], '100.100.100.1')
+        with patch.object(check, 'run'), patch.object(check.socket, 'getaddrinfo',
+                return_value=[(None,None,None,None,('100.100.100.1',443))]) as dns, \
+                patch.object(check, 'routes') as routes, contextlib.redirect_stderr(io.StringIO()):
+            check.verify_private_dns(value, {'A':['100.100.100.1'], 'AAAA':[]}, '100.100.100.2')
+            self.assertEqual(dns.call_count, 29)
+            self.assertEqual(routes.call_args.args[0]['hostnames'], value['hostnames'][:27])
 
     def test_private_preflight_requires_direct_and_normal_client_dns_without_connection_override(self):
         commands = []
@@ -182,8 +306,64 @@ class Readiness(unittest.TestCase):
 
 
 class RetirementEvidence(unittest.TestCase):
+    def test_authoritative_answer_parser_requires_aa_and_valid_owner(self):
+        header = ';; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 1\n;; flags: qr aa; QUERY: 1, ANSWER: 1, AUTHORITY: 0\n'
+        answer = ';; ANSWER SECTION:\nportal.stinkyboi.com. 60 IN A 100.99.16.74\n'
+        with patch.object(check, 'run', return_value=header + answer):
+            self.assertEqual(check.public_answers('mock.ns.cloudflare.com.', 'portal.stinkyboi.com', 'A'),
+                             [('portal.stinkyboi.com', 'A', '100.99.16.74', 60)])
+            self.assertEqual(check.answers('mock.ns.cloudflare.com.', 'portal.stinkyboi.com', 'A'),
+                             [('A', '100.99.16.74', 60)])
+        nodata = header.replace('ANSWER: 1', 'ANSWER: 0')
+        with patch.object(check, 'run', return_value=nodata):
+            self.assertEqual(check.answers('mock.ns.cloudflare.com.', 'portal.stinkyboi.com', 'A'), [])
+        for response in (header.replace('qr aa', 'qr') + answer,
+                         header.replace('qr aa', 'qr aa tc') + answer,
+                         header.replace('NOERROR', 'SERVFAIL') + answer,
+                         header + answer.replace('portal.stinkyboi.com.', 'wrong.stinkyboi.com.'),
+                         header + answer.replace('60 IN A', 'invalid'), header,
+                         nodata + answer, ''):
+            with self.subTest(response=response), patch.object(check, 'run', return_value=response), \
+                    self.assertRaises(RuntimeError):
+                check.answers('mock.ns.cloudflare.com.', 'portal.stinkyboi.com', 'A')
+
+    def test_previous_ttl_accepts_authoritative_nodata_and_rejects_failed_dns(self):
+        nodata = ';; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 1\n;; flags: qr aa; QUERY: 1, ANSWER: 0, AUTHORITY: 1\n'
+        with patch.object(check, 'authoritative_servers', return_value=['mock.ns.cloudflare.com.']), \
+                patch.object(check, 'run', return_value=nodata):
+            self.assertEqual(check.previous_ttl(check.inventory()), 0)
+        for response in ('', nodata.replace('NOERROR', 'SERVFAIL'), nodata.replace('qr aa', 'qr')):
+            with self.subTest(response=response), patch.object(check, 'authoritative_servers',
+                    return_value=['mock.ns.cloudflare.com.']), patch.object(check, 'run', return_value=response), \
+                    self.assertRaises(RuntimeError):
+                check.previous_ttl(check.inventory())
+
+    def test_cloudflare_zone_nameservers_match_parent_delegation(self):
+        referral = (';; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 1\n'
+                    ';; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 2\n'
+                    ';; AUTHORITY SECTION:\n'
+                    'stinkyboi.com. 172800 IN NS ursula.ns.cloudflare.com.\n'
+                    'stinkyboi.com. 172800 IN NS armando.ns.cloudflare.com.\n')
+        with patch.object(check, 'run', return_value=referral):
+            self.assertEqual(check.authoritative_servers(),
+                             ['armando.ns.cloudflare.com.', 'ursula.ns.cloudflare.com.'])
+            check.verify_zone_nameservers(['URSULA.ns.cloudflare.com', 'armando.ns.cloudflare.com.'])
+            for names in ([], ['ursula.ns.cloudflare.com'],
+                          ['ursula.ns.cloudflare.com', 'wrong.ns.cloudflare.com'],
+                          ['ursula.ns.cloudflare.com', 'ursula.ns.cloudflare.com']):
+                with self.subTest(names=names), self.assertRaises(RuntimeError):
+                    check.verify_zone_nameservers(names)
+        for response in ('', referral.replace('NOERROR', 'SERVFAIL'),
+                         referral.replace('flags: qr;', 'flags: qr tc;'),
+                         referral.replace('AUTHORITY: 2', 'AUTHORITY: 3'),
+                         referral.replace('stinkyboi.com. 172800', 'other.com. 172800')):
+            with self.subTest(response=response), patch.object(check, 'run', return_value=response), \
+                    self.assertRaises(RuntimeError):
+                check.authoritative_servers()
+
     def evidence(self):
         value = check.inventory()
+        names = check.retirement_names(value)
         return {
             'reviewed_main_sha': 'a' * 40,
             'resolver_ip': '100.100.100.2',
@@ -193,14 +373,13 @@ class RetirementEvidence(unittest.TestCase):
                 'fleet_setup_denied': True, 'harbor_node_pulls': True,
                 'native_api': True, 'cordium_reconnect': True, 'public_callbacks': True,
             },
-            'off_tailnet': {'stinkyboi.com': 'accepted_loss',
-                            '*.cordium.stinkyboi.com': 'migrated'},
+            'off_tailnet': {name: 'migrated' for name in names},
             'previous_ttl_seconds': 300,
-            'checked_names': value['hostnames'],
+            'checked_names': names,
             'baseline_records': [
                 {'id': f'record-{index}', 'name': host, 'type': 'A',
                  'content': '100.100.100.1', 'proxied': False, 'ttl': 60}
-                for index, host in enumerate(value['hostnames'])
+                for index, host in enumerate(names)
             ],
         }
 
@@ -214,12 +393,15 @@ class RetirementEvidence(unittest.TestCase):
             ('normal_client_dns_confirmed', False), ('resolver_ip', '8.8.8.8'),
             ('previous_ttl_seconds', 0),
             ('critical_paths_confirmed', {'fleet_setup_denied': True}),
-            ('off_tailnet', {'stinkyboi.com': 'migrated'}),
-            ('checked_names', value['hostnames'][:-1]),
+            ('off_tailnet', {'*.cordium.stinkyboi.com': 'migrated'}),
+            ('off_tailnet', {**evidence['off_tailnet'], 'stinkyboi.com': 'accepted_loss'}),
+            ('checked_names', value['hostnames']),
+            ('checked_names', check.retirement_names(value)[:-1]),
         ):
             with self.subTest(key=key), self.assertRaises(RuntimeError):
                 check.validate_retirement_evidence({**evidence, key: replacement}, value, 'a' * 40)
         for record in ({**evidence['baseline_records'][0], 'name': 'mastodon.stinkyboi.com'},
+                       {**evidence['baseline_records'][0], 'name': 'stinkyboi.com'},
                        {**evidence['baseline_records'][0], 'type': 'TXT'}):
             with self.subTest(record=record), self.assertRaises(RuntimeError):
                 check.validate_retirement_evidence(
@@ -261,7 +443,7 @@ class DNS(unittest.TestCase):
             inventory = check.inventory()
             initial = {}
             for index, host in enumerate(inventory['hostnames']):
-                initial[host] = [] if empty_baseline or (missing and index == 26) else [
+                initial[host] = [] if (empty_baseline and host != 'stinkyboi.com') or (missing and index == 26) else [
                     {'id': f'a-{index}', 'name': host, 'type': 'A',
                      'content': '100.100.100.1', 'proxied': False, 'ttl': 60}]
             if not empty_baseline:
@@ -271,29 +453,52 @@ class DNS(unittest.TestCase):
                     initial[host].append({'id': ident, 'name': host, 'type': kind,
                                           'content': content, 'proxied': kind == 'CNAME', 'ttl': 60})
             initial['stinkyboi.com'].extend([
-                {'id': 'keep-txt', 'name': 'stinkyboi.com', 'type': 'TXT', 'content': 'retain'},
+                {'id': 'keep-txt', 'name': 'stinkyboi.com', 'type': 'TXT', 'content': 'dummy-private-value'},
                 {'id': 'keep-mx', 'name': 'stinkyboi.com', 'type': 'MX', 'content': 'mail.example'},
+                {'id': 'keep-caa', 'name': 'stinkyboi.com', 'type': 'CAA', 'content': 'issue letsencrypt.org'},
+                {'id': 'keep-ns', 'name': 'stinkyboi.com', 'type': 'NS', 'content': 'a.ns.cloudflare.com'},
+                {'id': 'keep-soa', 'name': 'stinkyboi.com', 'type': 'SOA', 'content': 'a.ns.cloudflare.com'},
             ])
+            initial['argocd.stinkyboi.com'].append(
+                {'id': 'keep-target-txt', 'name': 'argocd.stinkyboi.com', 'type': 'TXT', 'content': 'retain'})
             for index, host in enumerate(inventory['retired_hostnames']):
                 initial[host] = [{'id': f'legacy-{index}', 'name': host, 'type': 'CNAME',
                                   'content': 'old.cfargotunnel.com', 'proxied': True, 'ttl': 60}]
             initial['mastodon.stinkyboi.com'] = [
                 {'id': 'public', 'name': 'mastodon.stinkyboi.com', 'type': 'A', 'content': '192.0.2.10'}]
+            for index in range(110):
+                host = f'unrelated-{index}.stinkyboi.com'
+                initial[host] = [{'id': f'unrelated-{index}', 'name': host, 'type': 'A', 'content': '192.0.2.10'}]
+            if failure in ('wildcard', 'cname'):
+                initial['*.stinkyboi.com'] = [
+                    {'id': 'public-wildcard', 'name': '*.stinkyboi.com',
+                     'type': 'CNAME' if failure == 'cname' else 'A', 'content': 'public.example'}]
+            if failure == 'delegation':
+                initial['cordium.stinkyboi.com'].append(
+                    {'id': 'child-ns', 'name': 'cordium.stinkyboi.com', 'type': 'NS', 'content': 'ns.child.example'})
+            if failure == 'wildcard-delegation':
+                initial['*.stinkyboi.com'] = [
+                    {'id': 'wildcard-ns', 'name': '*.stinkyboi.com',
+                     'type': 'NS', 'content': 'ns.child.example'}]
+            if failure == 'child':
+                initial['dns-preflight.cordium.stinkyboi.com'] = [
+                    {'id': 'public-child', 'name': 'dns-preflight.cordium.stinkyboi.com',
+                     'type': 'A', 'content': '192.0.2.11'}]
             before = json.loads(json.dumps(initial))
             evidence = RetirementEvidence().evidence()
             evidence['baseline_records'] = [
-                record for host in inventory['hostnames'] for record in initial[host]
+                record for host in check.retirement_names(inventory) for record in initial[host]
                 if record['type'] in ('A', 'AAAA', 'CNAME')]
             if empty_baseline:
                 evidence['previous_ttl_seconds'] = 0
             evidence_file = base/'cutover-evidence.json'
             evidence_file.write_text(json.dumps(evidence))
             if already:
-                for host in inventory['hostnames']:
+                for host in check.retirement_names(inventory):
                     initial[host] = [record for record in initial[host]
                                      if record['type'] not in ('A', 'AAAA', 'CNAME')]
             if failure == 'drift':
-                initial['stinkyboi.com'][0]['content'] = '100.100.100.9'
+                initial['sonarr.stinkyboi.com'][0]['content'] = '100.100.100.9'
             state = base/'state.json'
             state.write_text(json.dumps(initial))
             calls = base/'calls.jsonl'
@@ -301,7 +506,7 @@ class DNS(unittest.TestCase):
             binary = base/'bin'
             binary.mkdir()
             fake = r'''
-import json, sys
+import importlib.util, json, sys
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 BASE = Path(BASE_VALUE)
@@ -314,22 +519,94 @@ elif name == 'aws':
     print('fake-secret-must-not-leak')
 elif name == 'python3':
     with (BASE/'calls.jsonl').open('a') as stream: stream.write(json.dumps(['preflight', args]) + '\n')
+    if failure in ('ttl-servfail', 'ttl-nonauthoritative') and ('--execute' in args or '--baseline-ttl' in args):
+        spec = importlib.util.spec_from_file_location('check', SOURCE_VALUE)
+        check = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(check)
+        reply = (';; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 1\n'
+                 ';; flags: qr aa; QUERY: 1, ANSWER: 0, AUTHORITY: 0\n')
+        reply = reply.replace('NOERROR', 'SERVFAIL') if failure == 'ttl-servfail' else reply.replace('qr aa', 'qr')
+        check.verify_main = lambda expected: None
+        check.authoritative_servers = lambda: ['mock.ns.cloudflare.com.']
+        check.run = lambda *command: reply
+        sys.argv = ['check'] + args[args.index('--retire-private'):]
+        try:
+            check.main()
+        except RuntimeError as error:
+            print(str(error), file=sys.stderr)
+            sys.exit(1)
+        sys.exit(2)
     if '--baseline-ttl' in args:
         print('0' if EMPTY_BASELINE else '300')
+    if '--inspect-zone' in args or '--zone-name-servers' in args:
+        spec = importlib.util.spec_from_file_location('check', SOURCE_VALUE)
+        check = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(check)
+        if '--zone-name-servers' in args:
+            check.authoritative_servers = lambda: (
+                ['wrong.ns.cloudflare.com.', 'ursula.ns.cloudflare.com.'] if failure == 'delegation-mismatch' else
+                ['ursula.ns.cloudflare.com.', 'armando.ns.cloudflare.com.'])
+        else:
+            check.authoritative_servers = lambda: ['mock.ns.cloudflare.com.']
+            check.public_answers = lambda server, host, kind: (
+                [(host, 'A')] if failure == 'authoritative' and host == 'portal.stinkyboi.com' and kind == 'A' else [])
+        try:
+            if '--zone-name-servers' in args:
+                check.verify_zone_nameservers(json.loads(args[args.index('--zone-name-servers') + 1]))
+            else:
+                check.inspect_public_zone(check.inventory(),
+                    json.loads(Path(args[args.index('--inspect-zone') + 1]).read_text()),
+                    json.loads(Path(args[args.index('--current') + 1]).read_text()))
+        except RuntimeError as error:
+            print(str(error), file=sys.stderr)
+            sys.exit(1)
     sys.exit(1 if failure == 'preflight' and '--execute' in args else 0)
 else:
     method = args[args.index('-X')+1]
     path = urlparse(args[-1])
-    with (BASE/'calls.jsonl').open('a') as stream: stream.write(json.dumps([method, path.path]) + '\n')
+    with (BASE/'calls.jsonl').open('a') as stream: stream.write(json.dumps([method, path.path, path.query]) + '\n')
     statefile = BASE/'state.json'
     state = json.loads(statefile.read_text())
     if path.path.endswith('/zones'):
-        result = [{'id':'zone','name':'stinkyboi.com'}]
+        result = [{'id':'zone','name':'stinkyboi.com',
+                   'name_servers':['ursula.ns.cloudflare.com', 'armando.ns.cloudflare.com']}]
+        if failure == 'delegation-incomplete':
+            result[0].pop('name_servers')
+        info = {'total_count': 1}
     elif method == 'GET':
-        host = parse_qs(path.query)['name'][0]
-        result = state.get(host, [])
-        if failure == 'read' and host == 'sonarr.stinkyboi.com':
-            sys.exit(22)
+        query = parse_qs(path.query)
+        if 'name' in query:
+            host = query['name'][0]
+            result = state.get(host, [])
+            if failure == 'read' and host == 'sonarr.stinkyboi.com':
+                sys.exit(22)
+            if failure == 'wrong-owner-txt' and host == 'sonarr.stinkyboi.com':
+                result = result + [{'id':'wrong-txt','name':'other.stinkyboi.com','type':'TXT','content':'retain'}]
+            if failure == 'wrong-owner' and host == 'sonarr.stinkyboi.com':
+                result = [{**record, 'name':'other.stinkyboi.com'} for record in result]
+            if failure == 'target-race' and host == 'sonarr.stinkyboi.com':
+                result = []
+            count = len(result) + (1 if failure == 'pagination' else 0)
+            info = {'total_count': count}
+        else:
+            all_records = sorted((record for records in state.values() for record in records), key=lambda record: record['id'])
+            page = int(query['page'][0])
+            result = all_records[(page - 1) * 100:page * 100]
+            if failure == 'zone-duplicate' and page == 1:
+                result[0] = dict(result[1])
+            total = len(all_records) + (1 if failure == 'zone-pagination' else 0)
+            info = {'page':page, 'per_page':100, 'count':len(result), 'total_count':total,
+                    'total_pages':(total + 99)//100}
+            if failure == 'zone-missing-info':
+                del info['total_pages']
+            if failure in ('target-content-race', 'target-proxy-race', 'target-ttl-race') and page == info['total_pages']:
+                record = state['sonarr.stinkyboi.com'][0]
+                field, replacement = {
+                    'target-content-race': ('content', '100.100.100.9'),
+                    'target-proxy-race': ('proxied', True),
+                    'target-ttl-race': ('ttl', 120),
+                }[failure]
+                record[field] = replacement
     elif method == 'DELETE':
         ident = path.path.rsplit('/',1)[1]
         if failure == 'partial' and not (BASE/'failed-once').exists():
@@ -342,15 +619,14 @@ else:
         state = {host:[record for record in records if record['id'] != ident]
                  for host, records in state.items()}
         result = {'id':ident}
+        info = {'total_count': 1}
     else:
         sys.exit(2)
     statefile.write_text(json.dumps(state))
-    length = len(result) if isinstance(result, list) else 1
-    if failure == 'pagination' and method == 'GET' and not path.path.endswith('/zones'):
-        length += 1
-    print(json.dumps({'success': True, 'result': result, 'result_info': {'total_count': length}}))
+    print(json.dumps({'success': True, 'result': result, 'result_info': info}))
 '''.replace('BASE_VALUE', repr(str(base))).replace('FAILURE_VALUE', repr(failure)).replace(
-                'EMPTY_BASELINE', repr(empty_baseline))
+                'EMPTY_BASELINE', repr(empty_baseline)).replace(
+                'SOURCE_VALUE', repr(str(ROOT/'scripts/tailscale-private-dns-check.py')))
             for name in ('git','aws','curl','python3'):
                 path = binary/name
                 path.write_text(f'#!{sys.executable}\n'+fake)
@@ -378,25 +654,36 @@ else:
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(before, after)
         self.assertEqual(baseline['previous_ttl_seconds'], 300)
-        self.assertEqual(baseline['checked_names'], check.inventory()['hostnames'])
-        self.assertEqual(len({item['name'] for item in baseline['baseline_records']}), 27)
+        names = check.retirement_names(check.inventory())
+        self.assertEqual(baseline['checked_names'], names)
+        self.assertEqual(set(baseline['off_tailnet']), set(names))
+        self.assertTrue(all(decision == '' for decision in baseline['off_tailnet'].values()))
+        self.assertEqual(len({item['name'] for item in baseline['baseline_records']}), 26)
         self.assertFalse(baseline['owner_tailnet_dns_confirmed'])
         self.assertFalse(any(call[0] in ('DELETE','PUT','POST') for call in calls))
+        queried = [parse_qs(call[2])['name'][0] for call in calls
+                   if call[0] == 'GET' and '/dns_records' in call[1] and 'name=' in call[2]]
+        self.assertEqual(queried, names)
+        self.assertEqual(sum(call[0] == 'GET' and 'page' in parse_qs(call[2]) for call in calls), 2)
         self.assertIn('DRY-RUN delete', result.stdout)
+        self.assertNotIn('dummy-private-value', result.stdout + result.stderr)
 
     def test_execute_deletes_only_exact_address_records_and_is_idempotent(self):
         result, before, after, calls, _ = self.exercise(execute=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('--execute', calls[0][1])
         names = check.inventory()
-        for host in names['hostnames']:
+        for host in check.retirement_names(names):
             self.assertFalse(any(record['type'] in ('A','AAAA','CNAME') for record in after[host]))
         for host in names['retired_hostnames'] + ['mastodon.stinkyboi.com']:
             self.assertEqual(after[host], before[host])
-        self.assertEqual(after['stinkyboi.com'], [record for record in before['stinkyboi.com']
-                                                   if record['type'] in ('TXT', 'MX')])
-        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 29)
+        self.assertEqual(after['stinkyboi.com'], before['stinkyboi.com'])
+        self.assertEqual(after['argocd.stinkyboi.com'], [record for record in before['argocd.stinkyboi.com']
+                                                          if record['type'] == 'TXT'])
+        self.assertEqual(after['unrelated-0.stinkyboi.com'], before['unrelated-0.stinkyboi.com'])
+        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 28)
         self.assertFalse(any(call[0] in ('PUT','POST') for call in calls))
+        self.assertIn('All 26 app subdomains', result.stdout)
         result, before, after, calls, _ = self.exercise(execute=True, already=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 0)
@@ -404,7 +691,7 @@ else:
     def test_missing_public_record_and_fully_retired_baseline_are_valid(self):
         result, _, after, calls, _ = self.exercise(execute=True, missing=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 28)
+        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 27)
         self.assertEqual(after['portal.stinkyboi.com'], [])
         result, _, _, calls, _ = self.exercise(execute=True, empty_baseline=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -415,7 +702,10 @@ else:
         self.assertEqual(baseline['baseline_records'], [])
 
     def test_failed_preflight_or_incomplete_or_drifted_snapshot_never_writes(self):
-        for failure in ('preflight', 'read', 'pagination', 'drift'):
+        for failure in ('preflight', 'read', 'pagination', 'drift', 'wrong-owner', 'wrong-owner-txt',
+                        'zone-pagination', 'zone-missing-info', 'zone-duplicate', 'target-race',
+                        'wildcard', 'cname', 'delegation', 'wildcard-delegation', 'child',
+                        'delegation-mismatch', 'delegation-incomplete'):
             with self.subTest(failure=failure):
                 result, _, after, calls, _ = self.exercise(execute=True, failure=failure)
                 self.assertNotEqual(result.returncode, 0)
@@ -426,9 +716,32 @@ else:
         (first, second), before, after, calls, _ = self.exercise(execute=True, failure='partial', retry=True)
         self.assertNotEqual(first.returncode, 0)
         self.assertEqual(second.returncode, 0, second.stderr)
-        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 30)
-        for host in check.inventory()['hostnames']:
+        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 29)
+        for host in check.retirement_names(check.inventory()):
             self.assertFalse(any(record['type'] in ('A','AAAA','CNAME') for record in after[host]))
+
+    def test_unexplained_authoritative_answer_blocks_before_delete(self):
+        result, _, _, calls, _ = self.exercise(execute=True, failure='authoritative', missing=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Unexpected effective public answer source', result.stderr)
+        self.assertFalse(any(call[0] == 'DELETE' for call in calls))
+
+    def test_failed_authoritative_ttl_reply_blocks_before_delete(self):
+        for failure in ('ttl-servfail', 'ttl-nonauthoritative'):
+            with self.subTest(failure=failure):
+                result, before, after, calls, _ = self.exercise(execute=True, failure=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('Incomplete authoritative DNS inspection', result.stderr)
+                self.assertEqual(after, before)
+                self.assertFalse(any(call[0] in ('DELETE', 'PUT', 'POST') for call in calls))
+
+    def test_same_id_target_edit_during_zone_scan_blocks_before_delete(self):
+        for failure in ('target-content-race', 'target-proxy-race', 'target-ttl-race'):
+            with self.subTest(failure=failure):
+                result, _, _, calls, _ = self.exercise(execute=True, failure=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('public target records changed during inspection', result.stderr)
+                self.assertFalse(any(call[0] in ('DELETE', 'PUT', 'POST') for call in calls))
 
     def test_old_publication_cli_is_disabled(self):
         result = subprocess.run(['bash', str(ROOT/'scripts/tailscale-private-dns.sh'), '--dry-run'],

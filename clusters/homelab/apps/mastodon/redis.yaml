@@ -131,6 +131,9 @@ spec:
         - name: auth
           secret:
             secretName: mastodon-datastores
+            items:
+              - key: REDIS_PASSWORD
+                path: REDIS_PASSWORD
         - name: runtime-data
           persistentVolumeClaim:
             claimName: mastodon-redis-local

@@ -12,7 +12,7 @@ verification must already have passed. No schedule, new AWS identity, or
 unattended credential mechanism is introduced.
 
 The account, region, and bucket come from
-[one committed destination file](../IaC/config/etcd-backup-storage.json), also
+[one committed destination file](../IaC/etcd-backup-storage.hcl), also
 consumed by the operator Terragrunt catalog. CLI options cannot choose another
 bucket, account, or region. The existing administrator profile selects only
 credentials. Each S3 call supplies the expected owner, and STS must confirm the

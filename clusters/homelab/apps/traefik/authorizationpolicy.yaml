@@ -45,6 +45,12 @@ spec:
       to:
         - operation:
             ports: ["9443"]
+    - from:
+        - source:
+            principals: ["cluster.local/ns/automation/sa/renovate"]
+      to:
+        - operation:
+            ports: ["9443"]
     - to:
         - operation:
             ports: ["9000"]

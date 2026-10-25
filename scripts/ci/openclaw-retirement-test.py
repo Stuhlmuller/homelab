@@ -8,6 +8,7 @@ import os
 import sqlite3
 import stat
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -122,6 +123,125 @@ class Retirement(unittest.TestCase):
         with self.assertRaises(ValueError):
             retirement.verify_archive(self.config, receipt)
 
+    def test_restore_supports_reader_tarfile_without_filter_argument(self):
+        extract = tarfile.TarFile.extract
+
+        def reader_extract(tar, member, path='', set_attrs=True, *, numeric_owner=False):
+            return extract(tar, member, path, set_attrs, numeric_owner=numeric_owner,
+                           filter='data')
+
+        with patch.object(tarfile.TarFile, 'extract', reader_extract), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
+    def test_large_archive_roundtrips_with_bounded_tar_member_cache(self):
+        retained = self.nas / 'openclaw'
+        outside = self.nas.parent / 'outside-retained-roots'
+        outside.mkdir()
+        for number in range(4000):
+            item = retained / f'entry-{number:04d}'
+            item.write_bytes(b'x')
+            os.link(item, outside / item.name)
+        os.link(retained / 'entry-0000', retained / 'hardlink')
+        (retained / 'link').symlink_to('entry-0000')
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        peaks = {'read': 0, 'write': 0}
+        original_next = tarfile.TarFile.next
+        original_addfile = tarfile.TarFile.addfile
+
+        def watched_next(tar):
+            member = original_next(tar)
+            if member is not None:
+                # Python 3.11 caches stream headers; emulate that on newer Python too.
+                if not tar.members or tar.members[-1] is not member:
+                    tar.members.append(member)
+                peaks['read'] = max(peaks['read'], len(tar.members))
+            return member
+
+        def watched_addfile(tar, member, fileobj=None):
+            peaks['write'] = max(peaks['write'], len(tar.members))
+            self.assertNotIsInstance(tar.inodes, dict)
+            return original_addfile(tar, member, fileobj)
+
+        with patch.object(tarfile.TarFile, 'next', watched_next), \
+                patch.object(tarfile.TarFile, 'addfile', watched_addfile), \
+                patch.object(tarfile.TarFile, 'getmembers',
+                          side_effect=AssertionError('tar headers cached in RAM')):
+            with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+                receipt = retirement.archive(self.config, self.status_path,
+                                             self.baseline_path, self.observed_path,
+                                             self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertFalse(list(self.scratch_root.glob('tar-inodes-*')))
+        self.assertLessEqual(peaks['read'], 1)
+        self.assertLessEqual(peaks['write'], 1)
+
+    def test_restore_member_index_stays_on_private_local_scratch(self):
+        connect = sqlite3.connect
+        seen = []
+
+        def local_index(path, *args, **kwargs):
+            if Path(path).name == 'members.sqlite':
+                seen.append(Path(path))
+                if not Path(path).resolve().is_relative_to(self.scratch_root.resolve()):
+                    raise sqlite3.OperationalError('member index on archive mount')
+            return connect(path, *args, **kwargs)
+
+        with patch.object(sqlite3, 'connect', local_index), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertTrue(seen)
+        self.assertFalse(any(path.exists() for path in seen))
+
+    def test_sqlite_failure_reports_only_phase_and_error_code(self):
+        config_path = self.scratch_root / 'config.json'
+        config_path.write_text(json.dumps({'legacyRetention': self.config}))
+        result_path = self.archive_root / 'result.json'
+        error = sqlite3.OperationalError('private path and SQLite message withheld')
+        error.sqlite_errorname = 'SQLITE_IOERR'
+        output = io.StringIO()
+        argv = ['retirement.py', 'archive', '--config', str(config_path),
+                '--status', str(self.status_path), '--baseline', str(self.baseline_path),
+                '--observed', str(self.observed_path), '--destination', str(self.archive_root),
+                '--output', str(result_path)]
+        with patch.object(sys, 'argv', argv), \
+                patch.object(retirement, 'index_bundle', side_effect=error), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), redirect_stderr(output):
+            self.assertEqual(retirement.main(), 1)
+        self.assertEqual(output.getvalue(),
+                         'Legacy retirement refused: OperationalError '
+                         'phase=member-index sqlite_errorname=SQLITE_IOERR\n')
+        self.assertFalse(result_path.exists())
+
+        error.retirement_phase = 'private path withheld'
+        error.sqlite_errorname = 'SQLITE_IOERR private path withheld'
+        output = io.StringIO()
+        with patch.object(sys, 'argv', argv), \
+                patch.object(retirement, 'config_at', side_effect=error), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), redirect_stderr(output):
+            self.assertEqual(retirement.main(), 1)
+        self.assertEqual(output.getvalue(),
+                         'Legacy retirement refused: OperationalError '
+                         'phase=archive sqlite_errorname=UNKNOWN\n')
+        self.assertFalse(result_path.exists())
+
+    def test_tree_walk_keeps_path_order_and_does_not_follow_links(self):
+        (self.nas / 'prefix').mkdir()
+        (self.nas / 'prefix' / 'child').write_bytes(b'x')
+        (self.nas / 'prefix.sibling').write_bytes(b'y')
+        (self.nas / 'external-link').symlink_to(self.local, target_is_directory=True)
+        expected = [self.nas, *sorted(self.nas.rglob('*'))]
+        self.assertEqual([path for path, _ in retirement.tree_paths(self.nas)], expected)
+
     def test_unreadable_empty_nas_file_keeps_mode_and_archive_entry(self):
         path = self.nas / 'unreadable-empty'
         path.touch()
@@ -145,6 +265,224 @@ class Retirement(unittest.TestCase):
         path.chmod(0)
         with self.assertRaises(PermissionError):
             retirement.inventory(self.config, self.status)
+
+    def test_restored_database_uses_archive_owner_not_original_source_owner(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        restored_config = dict(self.config, localUid=os.getuid() + 1)
+        with self.assertRaises(ValueError):
+            retirement.verify_read_only_database(
+                self.local / self.config['requiredLocal'][0], restored_config)
+        self.assertEqual(retirement.verify_archive(restored_config, receipt)['format'], 1)
+
+    def test_symlink_targets_are_preserved_without_following_external_data(self):
+        outside = self.archive_root / 'outside'
+        outside.mkdir()
+        sentinel = outside / 'sentinel'
+        sentinel.write_text('untouched')
+        links = {
+            'external': str(outside),
+            'absolute-contained': str(self.nas / 'unlisted-configuration'),
+            'parent-contained': '../unlisted-configuration',
+        }
+        for name, target in links.items():
+            (self.nas / 'openclaw' / name).symlink_to(target)
+        os.link(self.nas / 'unlisted-configuration', self.nas / 'openclaw' / 'hardlink')
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        with tarfile.open(receipt.parent / 'legacy.tar.gz', 'r:gz') as bundle:
+            names = set(bundle.getnames())
+            for name, target in links.items():
+                self.assertEqual(bundle.getmember(f'nas/openclaw/{name}').linkname, target)
+            self.assertTrue(any(member.islnk() for member in bundle.getmembers()))
+            self.assertNotIn('nas/openclaw/external/sentinel', names)
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertEqual(sentinel.read_text(), 'untouched')
+        self.assertEqual(list(outside.iterdir()), [sentinel])
+
+    def test_prepare_restore_keeps_private_copy_and_classifies_links(self):
+        (self.nas / 'openclaw' / 'secret').write_text('archived')
+        links = {
+            'contained-relative': '../unlisted-configuration',
+            'contained-absolute': str(self.local / self.config['requiredLocal'][0]),
+            'outside': str(self.archive_root / 'not-archived'),
+            'missing': 'absent',
+            'chain': 'contained-relative',
+            'alias': str(self.archive_root / 'outside' / 'deeper'),
+            'via-alias': 'alias/../secret',
+        }
+        for name, target in links.items():
+            (self.nas / 'openclaw' / name).symlink_to(target)
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        original = retirement.inventory(self.config)
+        destination = self.archive_root / 'rehearsal'
+        config_path = self.archive_root / 'config.json'
+        retirement.write_private(config_path, {'legacyRetention': self.config})
+        command = [sys.executable, '-I', str(SOURCE), 'prepare-restore',
+                   '--config', str(config_path), '--receipt', str(receipt),
+                   '--destination', str(destination)]
+        denied = subprocess.run(command, capture_output=True, text=True,
+                                env={key: value for key, value in os.environ.items()
+                                     if key != 'GITHUB_ACTIONS'}, check=False)
+        self.assertEqual(denied.returncode, 1)
+        self.assertFalse(destination.exists())
+        prepared = subprocess.run(command, capture_output=True, text=True,
+                                  env={**os.environ, 'GITHUB_ACTIONS': 'true'}, check=False)
+        self.assertEqual(prepared.returncode, 0, prepared.stderr)
+        self.assertIn('gateway boot remains unverified', prepared.stdout)
+        self.assertEqual(retirement.inventory(self.config), original)
+        self.assertEqual(stat.S_IMODE(destination.stat().st_mode), 0o700)
+        self.assertEqual(stat.S_IMODE((destination / 'completed.json').stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE((destination / 'tree/link-classification.json').stat().st_mode),
+                         0o600)
+        self.assertTrue((destination / 'tree/local/state/openclaw.sqlite').is_file())
+        self.assertTrue((destination / 'tree/nas/openclaw-backups/pre-2026.9.2-runtime').is_dir())
+        report = json.loads((destination / 'tree/link-classification.json').read_text())
+        classes = {Path(item['member']).name: item['class'] for item in report['links']}
+        self.assertEqual(classes, {'contained-relative': 'contained',
+                                   'contained-absolute': 'contained',
+                                   'outside': 'external', 'missing': 'missing-in-archive',
+                                   'chain': 'link-chain', 'alias': 'external',
+                                   'via-alias': 'link-chain'})
+        self.assertEqual(json.loads((destination / 'completed.json').read_text())['linkCount'],
+                         len(links))
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config, receipt, destination)
+
+    def test_prepare_restore_refuses_source_overlap_and_bad_receipt_without_marker(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        for destination in (self.local / 'rehearsal', self.nas / 'rehearsal',
+                            receipt.parent / 'rehearsal'):
+            with self.subTest(destination=destination), self.assertRaises(ValueError):
+                retirement.verify_archive(self.config, receipt, destination)
+            self.assertFalse(destination.exists())
+        alias = self.archive_root / 'archive-alias'
+        alias.symlink_to(self.archive_root, target_is_directory=True)
+        nested = receipt.parent / 'nested-rehearsal'
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config,
+                                      alias / receipt.parent.name / 'receipt.json', nested)
+        self.assertFalse(nested.exists())
+        bad = self.archive_root / 'bad-receipt'
+        bad.mkdir(mode=0o700)
+        (bad / 'legacy.tar.gz').write_bytes((receipt.parent / 'legacy.tar.gz').read_bytes())
+        (bad / 'legacy.tar.gz').chmod(0o600)
+        record = json.loads(receipt.read_text())
+        record['restoredDatabases'][self.config['requiredLocal'][0]] = '0' * 64
+        retirement.write_private(bad / 'receipt.json', record)
+        destination = self.archive_root / 'bad-rehearsal'
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config, bad / 'receipt.json', destination)
+        self.assertFalse(destination.exists())
+
+    def test_symlink_only_required_directory_restores(self):
+        required = self.nas / 'openclaw'
+        (required / 'retained').unlink()
+        (required / 'only-link').symlink_to('/missing-external-target')
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
+    def test_restore_rejects_duplicate_or_child_below_symlink(self):
+        outside = self.archive_root / 'outside'
+        outside.mkdir()
+        for unsafe in ('duplicate', 'child'):
+            with self.subTest(unsafe=unsafe):
+                bundle = self.archive_root / f'{unsafe}.tar.gz'
+                with tarfile.open(bundle, 'w:gz') as tar:
+                    for root in ('local', 'nas'):
+                        member = tarfile.TarInfo(root)
+                        member.type = tarfile.DIRTYPE
+                        tar.addfile(member)
+                    link = tarfile.TarInfo('nas/external')
+                    link.type = tarfile.SYMTYPE
+                    link.linkname = str(outside)
+                    tar.addfile(link)
+                    if unsafe == 'duplicate':
+                        tar.addfile(link)
+                    else:
+                        child = tarfile.TarInfo('nas/external/child')
+                        child.size = 1
+                        tar.addfile(child, io.BytesIO(b'x'))
+                bundle.chmod(0o600)
+                with patch.object(tarfile.TarFile, 'extract', side_effect=AssertionError('extracted')):
+                    with self.assertRaisesRegex(ValueError, 'duplicate' if unsafe == 'duplicate'
+                                                else 'unsafe member path'):
+                        retirement.verify_bundle(bundle, retirement.digest(bundle), self.config,
+                                                 self.observed['roots'])
+                self.assertEqual(list(outside.iterdir()), [])
+
+    def test_restore_rejects_hardlink_to_symlink_before_extraction(self):
+        bundle = self.archive_root / 'hardlink-fallback.tar.gz'
+        with tarfile.open(bundle, 'w:gz') as tar:
+            for root in ('local', 'nas'):
+                member = tarfile.TarInfo(root)
+                member.type = tarfile.DIRTYPE
+                tar.addfile(member)
+            source = tarfile.TarInfo('nas/source-link')
+            source.type = tarfile.SYMTYPE
+            source.linkname = 'inside'
+            tar.addfile(source)
+            alias = tarfile.TarInfo('nas/alias')
+            alias.type = tarfile.LNKTYPE
+            alias.linkname = 'nas/source-link'
+            tar.addfile(alias)
+            injected = tarfile.TarInfo('nas/alias/injected')
+            injected.size = 1
+            tar.addfile(injected, io.BytesIO(b'x'))
+        bundle.chmod(0o600)
+        with patch.object(tarfile.TarFile, 'extract', side_effect=AssertionError('extracted')):
+            with self.assertRaisesRegex(ValueError, 'unsafe hardlink'):
+                retirement.verify_bundle(bundle, retirement.digest(bundle), self.config,
+                                         self.observed['roots'])
+
+    def test_archive_rejects_omitted_or_changed_unlisted_nas_file(self):
+        original = retirement.add_tree
+        for change in ('omitted', 'changed'):
+            with self.subTest(change=change):
+                def incomplete(tar, root, label):
+                    if label != 'nas':
+                        original(tar, root, label)
+                    else:
+                        tar.add(root, arcname=label, recursive=True,
+                                filter=lambda member: None if member.name == 'nas/unlisted-configuration'
+                                else member)
+                        if change == 'changed':
+                            member = tarfile.TarInfo('nas/unlisted-configuration')
+                            member.size = len(b'changed')
+                            tar.addfile(member, io.BytesIO(b'changed'))
+
+                with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
+                     patch.object(retirement, 'add_tree', side_effect=incomplete):
+                    with self.assertRaisesRegex(ValueError,
+                                                'archive content differs from stopped source'):
+                        retirement.archive(self.config, self.status_path, self.baseline_path,
+                                           self.observed_path, self.archive_root)
+                self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
 
     def test_workflow_archive_writes_private_receipt_locator(self):
         config_path = self.archive_root / 'config.json'

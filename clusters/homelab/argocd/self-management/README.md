@@ -18,6 +18,9 @@ self-heal are part of the repository desired state, so changes to the source
 path, revision, or sync policy must still be reviewed in git instead of patched
 as permanent live mutations.
 
+After handoff, self-management also creates the scoped `openclaw-enterprise`
+AppProject. Its Applications stay disabled until that project is ready.
+
 `cmd-params-configmap.yaml` bounds sync operations to 15 minutes so a failed
 resource cannot leave an Application operation running forever.
 
@@ -25,7 +28,10 @@ Keep each named AppProject's sources, destinations, and resource allow-lists
 aligned with the Applications registered under `IaC/live/argocd-apps`.
 Ordinary applications that render no cluster resources belong in
 `homelab-workloads`. Keep platform controllers and applications that require
-audited cluster resources in `homelab`. Update the selected project manifest
+audited cluster resources in `homelab`. The Enterprise installation uses its
+own project for the exact upstream and local sources, three namespaces and
+rendered installation kinds. It does not grant Argo ownership of tenant
+workloads created by Enterprise. Update the selected project manifest
 in the same PR as any new chart repository, namespace, or resource kind. Keep
 `default-appproject.yaml` intentionally empty.
 

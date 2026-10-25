@@ -111,6 +111,7 @@ jobs:
 
       - name: Reconcile Private Kubernetes Catalog
         env:
+          GH_TOKEN: ${{ github.token }}
           OCTELIUM_CATALOG_AUTH_TOKEN: ${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}
         run: |
           private_log="$(mktemp)"

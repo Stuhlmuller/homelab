@@ -11,6 +11,8 @@ spec:
     - stinkyboi.com
     - "*.stinkyboi.com"
     - "*.cordium.stinkyboi.com"
+    - console.oce.stinkyboi.com
+    - "*.agents.oce.stinkyboi.com"
   issuerRef:
     group: cert-manager.io
     kind: ClusterIssuer

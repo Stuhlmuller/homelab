@@ -29,7 +29,7 @@ Canonical sources:
 
 Application desired state lives under `clusters/homelab/apps/<app>`; shared
 platform state lives under `clusters/homelab/platform/<service>`. Register both
-through `IaC/live/argocd-apps/<name>` and deliver runtime changes through Argo
+through `IaC/homelab/us-west-2/apps/<name>` and deliver runtime changes through Argo
 CD rather than direct cluster mutation.
 
 Human application access normally uses Octelium clientless `WEB` Services.

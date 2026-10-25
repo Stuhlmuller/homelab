@@ -364,6 +364,25 @@ def verify_pull_request(config, client, base_sha, head_sha):
     return sorted(changed)
 
 
+def native_receipts_unchanged(client, base_sha, head_sha):
+    """Skip a main-push recheck only when exact revisions have equal native receipts."""
+    require(isinstance(base_sha, str) and SHA.fullmatch(base_sha) is not None
+            and isinstance(head_sha, str) and SHA.fullmatch(head_sha) is not None,
+            "pull request revisions are invalid")
+    base_state = client.content(REPOSITORY, STATE_PATH, base_sha)
+    head_state = client.content(REPOSITORY, STATE_PATH, head_sha)
+    require(isinstance(base_state, dict) and isinstance(head_state, dict)
+            and isinstance(base_state.get("receipts"), dict)
+            and isinstance(head_state.get("receipts"), dict),
+            "image automation state is malformed")
+    base_receipts = base_state["receipts"]
+    head_receipts = head_state["receipts"]
+    native_ids = {image_id for image_id in set(base_receipts) | set(head_receipts)
+                  if isinstance(image_id, str) and image_id.startswith("chainguard-")}
+    return all((image_id in base_receipts, base_receipts.get(image_id)) ==
+               (image_id in head_receipts, head_receipts.get(image_id)) for image_id in native_ids)
+
+
 def token(path):
     if path is None:
         return None
@@ -378,7 +397,8 @@ def token(path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("import", "verify-state-change", "verify-pull-request"))
+    parser.add_argument("command", choices=("import", "verify-state-change", "verify-pull-request",
+                                            "native-receipts-unchanged"))
     parser.add_argument("--config", type=Path, default=AUTOMATION)
     parser.add_argument("--state", type=Path, default=STATE)
     parser.add_argument("--base-state", type=Path)
@@ -403,11 +423,16 @@ def main():
         changed = verify_state_change(config, read_json(args.base_state), read_json(args.state),
                                       client, args.expected_sha)
         print("Native Chainguard receipt changes verified: " + ", ".join(sorted(changed) or ["none"]))
-    else:
+    elif args.command == "verify-pull-request":
         require(args.base_sha is not None and args.head_sha is not None,
                 "verify-pull-request requires --base-sha and --head-sha")
         changed = verify_pull_request(config, client, args.base_sha, args.head_sha)
         print("Native Chainguard receipt pull request verified: " + ", ".join(changed or ["none"]))
+    else:
+        require(args.base_sha is not None and args.head_sha is not None,
+                "native-receipts-unchanged requires --base-sha and --head-sha")
+        if not native_receipts_unchanged(client, args.base_sha, args.head_sha):
+            sys.exit(1)
 
 
 if __name__ == "__main__":

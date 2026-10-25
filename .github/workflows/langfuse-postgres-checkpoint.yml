@@ -1,0 +1,140 @@
+name: Langfuse PostgreSQL Checkpoint
+
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed current main; the database and backup destination are fixed.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit to checkpoint
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: langfuse-postgres-checkpoint-production
+  cancel-in-progress: false
+
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Static Policy And Security Checks
+    runs-on: [self-hosted, Linux, X64, cordium]
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+
+  checkpoint:
+    name: Protected Langfuse PostgreSQL Checkpoint
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, cordium]
+    environment:
+      name: homelab-production
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protected Inputs
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          test -n "$AWS_APPLY_ROLE_ARN"
+          test -n "$OCTELIUM_AUTH_TOKEN"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-duration-seconds: 14400
+          role-session-name: homelab-langfuse-checkpoint-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Capture And Verify Offline Restore
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/install-kubeconfig.sh
+          bash scripts/ci/langfuse-postgres-checkpoint.sh
+          EOF
+          then
+            echo "::error::Langfuse PostgreSQL checkpoint failed; private diagnostics withheld."
+            exit 1
+          fi
+          echo "Langfuse PostgreSQL checkpoint passed; private diagnostics withheld."
+
+      - name: Publish Sanitized Checkpoint Receipt
+        run: |
+          set -euo pipefail
+          receipt="${RUNNER_TEMP}/langfuse-checkpoint-receipt"
+          trap 'rm -f "$receipt"' EXIT
+          test "$(wc -l <"$receipt")" -eq 1
+          LC_ALL=C grep -Eqx 'Verified Langfuse PostgreSQL checkpoint: key=langfuse/postgresql/[0-9a-f]{40}/[1-9][0-9]*/[1-9][0-9]*/langfuse\.dump version=[A-Za-z0-9._~+/=-]+ sha256=[0-9a-f]{64} bytes=[1-9][0-9]* tables=[1-9][0-9]*' "$receipt"
+          cat "$receipt"

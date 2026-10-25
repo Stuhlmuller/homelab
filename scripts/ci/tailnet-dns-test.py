@@ -18,6 +18,9 @@ CHART_DIGEST = "sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a3548
 IMAGE = ("harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway:1.9.0@"
          "sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4")
 CORDIUM_RULE = r"^[^.]+\.cordium\.stinkyboi\.com$"
+OCE_RULE = r"^agent-[0-9a-f]{32}\.agents\.oce\.stinkyboi\.com$"
+WILDCARD_RULES = {CORDIUM_RULE: "*.cordium.stinkyboi.com",
+                  OCE_RULE: "*.agents.oce.stinkyboi.com"}
 HOST = re.compile(r"Host\(`([^`]+)`\)")
 HOST_REGEXP = re.compile(r"HostRegexp\(`([^`]+)`\)")
 NAME = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*stinkyboi\.com")
@@ -45,7 +48,7 @@ def approved_names(values, routes, inventory, *, initial=False):
     require(isinstance(declaration, str), "private Service hostname annotation is missing")
     names = [name.strip() for name in declaration.split(",")]
     require(all(names) and len(names) == len(set(names)), "blank or duplicate private DNS name")
-    require(all(NAME.fullmatch(name) or name == "*.cordium.stinkyboi.com" for name in names),
+    require(all(NAME.fullmatch(name) or name in WILDCARD_RULES.values() for name in names),
             "private DNS name is outside the approved zone or wildcard scope")
     require(not set(names) & set(inventory["retired_hostnames"]), "retired name is republished")
 
@@ -56,15 +59,15 @@ def approved_names(values, routes, inventory, *, initial=False):
         rule = router["rule"]
         hosts = HOST.findall(rule)
         regexps = [value.replace("\\\\", "\\") for value in HOST_REGEXP.findall(rule)]
-        require(all(value == CORDIUM_RULE for value in regexps), "unreviewed private HostRegexp")
+        require(all(value in WILDCARD_RULES for value in regexps), "unreviewed private HostRegexp")
         require(hosts or regexps, "private HTTPS router has no host")
         routed.extend(hosts)
-        routed.extend("*.cordium.stinkyboi.com" for _ in regexps)
+        routed.extend(WILDCARD_RULES[value] for value in regexps)
     require(len(routed) == len(set(routed)), "duplicate private HTTPS route name")
     require(set(names) == set(routed), "private Service DNS names differ from HTTPS route names")
     if initial:
-        require(set(names) == set(inventory["hostnames"]) and len(names) == len(inventory["hostnames"]) == 27,
-                "first migration must match the fixed 27-name inventory")
+        require(set(names) == set(inventory["hostnames"]) and len(names) == len(inventory["hostnames"]),
+                "initial handoff must match the reviewed private hostname inventory")
     return set(names)
 
 
@@ -131,6 +134,12 @@ def mutation_checks(values, routes, inventory):
     require(re.fullmatch(CORDIUM_RULE, "team.cordium.stinkyboi.com") is not None
             and re.fullmatch(CORDIUM_RULE, "two.team.cordium.stinkyboi.com") is None,
             "Cordium wildcard must match one label")
+    require(re.fullmatch(OCE_RULE, "agent-" + "a" * 32 + ".agents.oce.stinkyboi.com") is not None
+            and all(re.fullmatch(OCE_RULE, name) is None for name in (
+                "agent-" + "a" * 31 + ".agents.oce.stinkyboi.com",
+                "admin.agents.oce.stinkyboi.com",
+                "agent-" + "a" * 32 + ".other.agents.oce.stinkyboi.com")),
+            "OCE wildcard must match only opaque Agent hosts")
 
 
 def rendered_contract():

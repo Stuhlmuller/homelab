@@ -24,14 +24,12 @@ sources:
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
-  - id: openwiki-source-f585f8850806deb1619ec0c5
-    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
-  - id: openwiki-source-aa5e60e5d7c743b6b7b18220
-    resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+generated: { by: "codex", at: "2026-10-19T05:01:55.414Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-19T16:49:06.466Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -165,9 +163,9 @@ Cordium-generated Workspace Pods require that selector. Of the worker nodes,
 reserved load than `zimaboard-0`; `zimaboard-2` is too small.
 The Argo CD bootstrap Helm values exclude `zimaboard-2` for all Argo CD
 components, and the Langfuse worker chart values exclude it as well. Both use
-required node affinity; the other three nodes remain eligible. Argo CD's
-controller pod anti-affinity is soft, so two replicas provide only best-effort
-node-level redundancy. These are repository desired-state constraints, not
+required node affinity; the other three nodes remain eligible. Argo CD requests
+two controller replicas, but the committed values do not guarantee that they
+land on separate nodes. These are repository desired-state constraints, not
 evidence of a completed production rollout.
 Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
@@ -238,7 +236,7 @@ with enough real memory and pod capacity for that retained fleet plus startup
 and rolling-update headroom. No hardware choice or sizing is declared yet.
 Before assigning its label, remove the stale services, set representative proxy
 requests, and validate the chosen node against measured use. The declarative
-label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
+label path is `IaC/terragrunt-catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 
 ### Temporary August 2026 recovery
 

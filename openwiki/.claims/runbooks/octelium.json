@@ -1,18 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2f158a9f67fe4976c631ba46ac4609e39e132ff436ed0d040625aa06b9a896cb",
+  "pageVersion": "sha256:271cd16bdf23b4879181225baf3bc7c3c0c9b253dc08ffd556f820362e192666",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
-      "statement": "Phase2a removes legacy public DNS writers but retains the Tunnel, native catalog and carrier rollback until mesh DNS, authenticated application, callback, CI and Cordium acceptance; Octelium's final retained role is Cordium and required control endpoints.",
+      "statement": "Phase2a retains legacy Tunnel/native catalog and carrier rollback until mesh and application acceptance; Octelium's retained role includes Cordium control endpoints and staged authenticated OpenClaw Enterprise console and legacy redirect Services.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
+          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
         },
         {
-          "resource": "repo://docs/octelium.md#L3-L20",
-          "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:615cb5ec0b77ea0e265b7e72e2ea1678cc4a4ed40b2f62d63024fa39d3c993c4"
         }
       ]
     },
@@ -25,28 +29,64 @@
           "version": "repo-lines-v1:sha256:896ef74b88bba93ad867e8df53e66e831d2a5c9b4f9ed656e8735644c102d86e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNhNTk2MjdhN2NjNzQ4ZTQ5ZGMwZjhkODUyYjFiZjU3OGU4ZjFiMmIzZjU5NDJhNDgxMjMyYWQ2ZDg2M2QzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU5OWQwYTMzYjJiNGY1MmI4ZTk5NmMwNzAxNTY0NGVmMTVhNmJiNmFkMGMxZTM5YzZhYmM0N2MxYjU3YjBjMSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L42-L52",
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L51-L61",
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         }
       ]
     },
     {
       "id": "claim_64b340417b304cf9b5cbd148af9dc5dc",
-      "statement": "The current tailnet DNS cutover deploys and signs a separate resolver, pauses for the owner to set its observed IP as restricted stinkyboi.com nameserver, and retains public app records until normal clients and application paths pass; a later fixed-27 guarded helper retires only public app address records.",
+      "statement": "The tailnet DNS cutover deploys and signs a separate resolver for 29 current approved names, then the owner sets its observed IP as the restricted stinkyboi.com nameserver. Public app records remain until normal clients and migration application paths pass; the guarded helper retires public A/AAAA/CNAME for only the fixed 26 non-apex migration names.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L9-L58",
-          "version": "repo-lines-v1:sha256:7213cbef1f7799960a9b934b5f0563aed195005ee819f1cdc168f25c1c0e576f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmN2Y2NzU4MmZlOGU1ZTE4NzIwODEwNTJlYjAxMWFjZDg4MjQ0OTBkYzZkYWE3MGE0ZmQ5MWM2YTk5MzI4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0N2VlZDEyMGQ0NDBjMjRmYzA5MjA2YWJmNzQ5MjEwOTU4ZGU5N2Q3MWZiODM0ODYxNGI3ZmNiOTNlNTljODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4OGM5NGNiMmMwZWIxMWRkNDMzNGM2MGVmNDEyZWVjODAxZTJmZjEyOTczZTM1M2NmMDJkMTgzZDI5YTY3NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExYmIzMGJjYTEzNGMzYWNhNDg5NTgxOGZlZjVlN2MwOGEzM2Q0M2Y2M2RjYjBjNzg2MGFhYjEwZmVjYjQ0OTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L8-L38",
+          "version": "repo-lines-v1:sha256:c592237f1c838a1f2a7b2d9f565fb05373be1e8d0937c43b882487bac1007c54:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmN2Y2NzU4MmZlOGU1ZTE4NzIwODEwNTJlYjAxMWFjZDg4MjQ0OTBkYzZkYWE3MGE0ZmQ5MWM2YTk5MzI4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyZTFiYTNlODExYmFiMjFlNzdiZTViNzM4YTdiNDA3ZDAxOTQ3ZjU5MThjNDVhM2MwZTcwYjE1ZDY4NTE4ODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiNGVjNzQwNjY0Njg2OTkyNWNkMzdiYmRmYzgzZTExYjI0YzQ0MjM5ZWJlZjJhYmJjMzg3Nzc2N2NlNzZmNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY0M2Y5ZGQ4YjgxMWI3NTNiN2EzYmNlZTVmMmUxMjM0NDk0ZDJiM2RjZjYyNTZlN2UwOWUzYThkNjZlZGI0YjcifQ"
         },
         {
-          "resource": "repo://docs/octelium.md#L3-L20",
-          "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L34",
+          "version": "repo-lines-v1:sha256:e946754f3b740525429184e83d01cca7127e2937ac7b15567425f9743e1ed020:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMGE5NDJhMWQ0MzEwNGQyYTg0MWQ3MWIxYmJmZTYwZmJlYjIxN2NjNDRiMTQwMzJlNDE1NmVmODEyYTA3Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d66acfb09eb477492bb0ef018c9bc4e",
+      "statement": "The staged Enterprise access reconciler applies only Namespace oce, Service console.oce, and Service openclaw.default from an exact clean current-main checkout, requires a no-change second apply and verifies authorization and redirect readback; native opaque Agent hosts route through private Traefik directly to OCE API.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-access.py",
+          "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
+        }
+      ]
+    },
+    {
+      "id": "claim_cb4a3cbde1f84a20b7611bdf9760ebe3",
+      "statement": "The source Octelium catalog stages a distinct homelab-ci-plan workload User and Policy on kubernetes-api-ci that allows reads and dry-run writes while denying live writes and subresources; merging source does not apply the catalog or issue a plan token, and offline fixtures only test declared rules.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-plan-policy-test.py",
+          "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-24T03:50:35.181Z"
   }
 }

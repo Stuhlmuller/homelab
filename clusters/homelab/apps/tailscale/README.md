@@ -26,7 +26,7 @@ rejects the operator-managed proxy Pod before it can start.
 
 ## Version
 
-`IaC/stacks/tailscale/stack.hcl` pins the upstream `tailscale-operator` Helm chart at
+`IaC/homelab/us-west-2/apps/tailscale/stack.hcl` pins the upstream `tailscale-operator` Helm chart at
 `1.102.3`. The chart updates both the operator and its managed proxy image and
 includes Tailscale security fix TS-2026-011. The two singleton proxies roll
 separately, briefly interrupting the exit-node and Istio tailnet paths. If the
@@ -45,7 +45,7 @@ private Traefik and CI moves to the operator API proxy in separate cutover
 phases. Cordium retains its restricted native Octelium Kubernetes Service.
 
 The complete reviewed policy and pre-signed CI auth keys are managed through
-the [Tailscale provider unit](../../../../IaC/modules/tailscale-access/README.md).
+the [Tailscale provider unit](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 That unit owns operator tag permissions and automatic exit-node/subnet-route
 approvals. Apply reviewed source through its saved-plan workflow; do not edit
 policy or approve devices manually to bypass a failed deployment.

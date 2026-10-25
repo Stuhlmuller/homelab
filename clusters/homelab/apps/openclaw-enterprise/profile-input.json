@@ -1,0 +1,68 @@
+{
+  "controlPlane": {
+    "releaseName": "oce",
+    "namespace": "openclaw-system",
+    "clusterName": "homelab",
+    "controllerImage": "harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2",
+    "authBaseUrl": "https://console.oce.stinkyboi.com",
+    "adminEmail": "operator@oce.example.invalid",
+    "bootstrapPasswordClaimName": "occ-bootstrap-admin-password",
+    "apiClients": [
+      {
+        "namespace": "octelium",
+        "podLabels": {
+          "app": "octelium",
+          "octelium.com/component": "svc",
+          "octelium.com/svc": "console.oce"
+        }
+      },
+      {
+        "namespace": "traefik",
+        "podLabels": {
+          "app.kubernetes.io/name": "traefik",
+          "app.kubernetes.io/instance": "traefik"
+        }
+      }
+    ],
+    "databaseCidrs": ["10.96.0.51/32"],
+    "clusterCidrs": ["10.96.0.1/32", "10.1.0.199/32"],
+    "databaseCa": {
+      "secretName": "occ-postgres-root",
+      "key": "tls.crt",
+      "mountPath": "/etc/openclaw/database-ca"
+    },
+    "dns": {
+      "namespace": "kube-system",
+      "podLabels": {"k8s-app": "kube-dns"}
+    },
+    "gatewayClassName": "envoy-gateway",
+    "gatewayApiKeySecretName": "occ-private-gateway-key",
+    "agentNativeAdminDomain": "agents.oce.stinkyboi.com",
+    "sharedCookieDomain": "oce.stinkyboi.com",
+    "gatewayTrustedProxyCidrs": [
+      "10.244.1.0/24",
+      "10.244.2.0/24",
+      "10.244.3.0/24",
+      "10.244.4.0/24"
+    ],
+    "pluginStatusProxySourceCidrs": ["10.1.0.199/32"],
+    "nodeSelector": {"oce-role": "control"},
+    "trustedProxy": {
+      "preset": "generic",
+      "cidrs": [
+        "10.244.1.0/24",
+        "10.244.2.0/24",
+        "10.244.3.0/24",
+        "10.244.4.0/24"
+      ],
+      "clientAddressHeader": "x-forwarded-for"
+    }
+  },
+  "runtime": {
+    "image": "harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1",
+    "gatewayStorageClassName": "openclaw-enterprise-agent-local",
+    "nodeSelector": {"oce-role": "agents"},
+    "gatewayNodeSelector": {"oce-role": "control"},
+    "transportSecretPrefix": "openclaw-agent-transport"
+  }
+}

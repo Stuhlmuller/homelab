@@ -25,7 +25,7 @@ cluster-wide controller.
 1. Put desired state under `clusters/homelab/platform/<service>` unless the
    service is intentionally application-scoped.
 2. Register the parent Application under
-   `IaC/live/argocd-apps/platform-<service>`.
+   `IaC/homelab/us-west-2/apps/platform-/argocd<service>`.
 3. Document downstream apps that depend on the service.
 4. Add readiness checks before dependent workloads rely on the service.
 5. Keep rollback notes close to the runbook.

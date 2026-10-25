@@ -31,7 +31,7 @@ offsite = module("offsite_backup", "etcd-offsite-backup.py")
 STATE = "attempt-state.json"
 WRITE_HEADROOM_BYTES = 65536
 POLICY = "scripts/config/etcd-offsite-schedule.json"
-DESTINATION = "IaC/config/etcd-backup-storage.json"
+DESTINATION = "IaC/etcd-backup-storage.hcl"
 SOURCES = ("scripts/etcd-offsite-schedule.py", "scripts/etcd-offsite-backup.py",
            "scripts/talos-etcd-backup.py", "scripts/talos-etcd-schedule.py", POLICY, DESTINATION)
 FAILURES = (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError)

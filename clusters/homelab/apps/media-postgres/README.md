@@ -176,7 +176,7 @@ while `acer` remains cordoned. Use two reviewed Git revisions:
    exact completed `BACKUP_ID` from the latest successful backup Job log.
 2. Change both `BACKUP_ID` and the timestamp/revision in the restore Job name,
    then change `sources[0].path` in the committed
-   `inputs.spec` block in `IaC/stacks/media-postgres/stack.hcl` to
+   `inputs.spec` block in `IaC/homelab/us-west-2/apps/media-postgres/stack.hcl` to
    `clusters/homelab/apps/media-postgres-recovery`. From `IaC/`, run
    `terragrunt stack generate`, review and merge the revision, then plan and
    apply the generated `live/argocd-apps/media-postgres` unit through the

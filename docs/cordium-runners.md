@@ -1,18 +1,20 @@
 # Cordium GitHub Actions runners
 
-The migration routes regular repository-owned workflow jobs to
-`[self-hosted, Linux, X64, cordium]`. The runner image, publication and
-credential bootstrap workflows stay on hosted runners so the pool can be
-recovered; the canary uses the isolated `cordium-canary` label. There is no
-hosted fallback for migrated jobs. The static workflow gate rejects other
-selectors, including newly added workflows. Reusable workflow callers
-delegate their runner choice to the called workflow.
+The migration routes every repository-owned job to
+`[self-hosted, Linux, X64, cordium]`, including image publication, credentials
+and bootstrap jobs. The canary uses the Cordium `cordium-canary` label. No job
+retains a hosted fallback. The static workflow gate rejects other selectors,
+including newly added workflows. Reusable workflow callers delegate runner
+selection to the called workflow; inspect that workflow before adding a caller.
+If the pool is unavailable, recover it through the reviewed operator lifecycle
+before dispatching workflows; publication and credentials also depend on it.
 
-GitHub-managed workflows are also in scope. Live inspection on 2026-10-11 found
+GitHub-managed workflows are also in scope. Live inspection on 2026-10-25 found
 `dynamic/github-code-quality/codeql` configured with standard hosted runners.
 Its selection must become `runner_type: labeled`, `runner_label: cordium` through
 the fixed reconciler in [bootstrap PR #1278](https://github.com/Stuhlmuller/homelab/pull/1278).
-Preserve its languages, configured state and AI findings setting. The legacy
+Preserve its configured languages (Go, JavaScript/TypeScript, Python and Ruby),
+configured state and disabled AI findings setting. The legacy
 dynamic code-scanning registry entry remains listed, but default setup is
 `not-configured`; keep the repository-owned advanced scan.
 
@@ -69,11 +71,11 @@ the checkout. Runner deployment and workflow cutover remain pending.
   ClickHouse quarantine check also need Docker. A Docker CLI alone is
   insufficient. Validate Docker inside Cordium's rootless Podman runtime;
   never mount a node's Docker socket.
-- Start with one job at a time. `zimaboard-1` has 3950m CPU and approximately
-  7.1 GiB allocatable memory, shared with existing workloads. Its disposable
-  local storage and existing one-active-workspace-per-user limit constrain
-  capacity. Increase limits only through reviewed ClusterConfig and resource
-  changes supported by measured headroom.
+- Start with one job at a time on Acer. The disabled pool declaration is
+  advanced separately after startup, namespace/storage isolation and capacity
+  acceptance. The [capacity follow-up](https://github.com/Stuhlmuller/homelab/pull/1656)
+  records the measured preparation; do not infer deployed capacity from it.
+  Preserve original stopped workspaces and their bound local storage.
 
 ## Acceptance and cutover
 
@@ -94,9 +96,9 @@ the checkout. Runner deployment and workflow cutover remain pending.
    checks pass on its exact head. Inspect job metadata after merge to prove
    all workflows execute in Cordium; YAML selectors alone do not prove this.
    Include generated Code Quality jobs and its configuration readback, plus all
-   bootstrap workflows added by #1278, beyond the original 33-job inventory. The
-   current selector branch covers 36 local jobs in 19 workflows, including
-   Harbor core publication, digest reporting, and compatibility validation.
+   bootstrap workflows added by #1278, beyond the original 33-job inventory. The October 25 refresh covers every local job on current main, including
+   newer operations, checkpoint, maintenance and bootstrap workflows. Repeat
+   the inventory immediately before cutover and include later startup workflows.
 
 Rollback through a reviewed commit restoring the prior hosted selectors and
 the workflow security hashes and gate. Wait for active jobs and verify

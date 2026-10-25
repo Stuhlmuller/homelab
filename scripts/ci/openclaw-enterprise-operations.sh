@@ -7,14 +7,16 @@ work=
 on_exit() {
   result=$?
   if [[ -n "$work" ]]; then rm -rf -- "$work"; fi
-  if (( result != 0 )) && [[ "${stage:-}" == publish-inventory && -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
+  if (( result != 0 )) &&
+     [[ "${stage:-}" =~ ^(inventory|publish-inventory|archive|publish-archive|verify|prepare-restore|resume-restore)$ &&
+        -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
     printf '%s\n' "$phase" >"$OPENCLAW_PHASE_FILE"
   fi
 }
 trap on_exit EXIT
 
 stage="${1:-}"
-case "$stage" in inventory | publish-inventory | archive | publish-archive | verify) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
+case "$stage" in inventory | publish-inventory | archive | publish-archive | verify | prepare-restore | resume-restore) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
 case "$stage" in
   publish-inventory)
@@ -24,10 +26,23 @@ case "$stage" in
   publish-archive)
     [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ && "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2
     ;;
-  verify) [[ "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
+  verify|prepare-restore) [[ "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ && -z "${PRIOR_RUN_ID:-}" ]] || exit 2 ;;
+  resume-restore)
+    [[ "${ARCHIVE_REF:-}" == '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221' &&
+       "${PRIOR_RUN_ID:-}" == 39988927652 &&
+       "$PRIOR_RUN_ID" != "$GITHUB_RUN_ID" &&
+       -f "${OPENCLAW_RESUME_PROVENANCE:-}" &&
+       ! -L "$OPENCLAW_RESUME_PROVENANCE" ]] || exit 2
+    jq -e --arg prior "$PRIOR_RUN_ID" --arg ref "$ARCHIVE_REF" --arg sha "$GITHUB_SHA" '
+      (keys | sort) == ["archiveRef", "currentSha", "priorRunId", "priorSourceSha"] and
+      .priorRunId == $prior and .archiveRef == $ref and .currentSha == $sha and
+      (.priorSourceSha | test("^[0-9a-f]{40}$"))
+    ' "$OPENCLAW_RESUME_PROVENANCE" >/dev/null || exit 2
+    ;;
 esac
 
-bucket="$(jq -er .bucket IaC/config/application-backup-storage.json)"
+bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
+[[ "$bucket" =~ ^homelab-application-backups-[0-9]{12}-us-east-1$ ]] || exit 1
 [[ "$(aws s3api get-bucket-versioning --bucket "$bucket" --query Status --output text)" == Enabled ]] || exit 1
 [[ "$(aws s3api get-bucket-encryption --bucket "$bucket" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == 'aws:kms' ]] || exit 1
 
@@ -44,8 +59,10 @@ reader_input=(kubectl -n ai exec -i "$pod" -c reader --)
 retirement_sha="$(sha256sum clusters/homelab/apps/openclaw/retirement/retirement.py | cut -d' ' -f1)"
 [[ "$("${reader[@]}" sha256sum /etc/openclaw-retirement/retirement.py | cut -d' ' -f1)" == "$retirement_sha" ]] || exit 1
 "${reader[@]}" sh -c 'umask 077; mkdir -p /private/legacy; chmod 700 /private/legacy; chmod g-s /private/legacy'
-"${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/config.json' <scripts/config/openclaw-enterprise.json
-"${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$work/status.json"
+if [[ "$stage" != resume-restore ]]; then
+  "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/config.json' <scripts/config/openclaw-enterprise.json
+  "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$work/status.json"
+fi
 [[ "$(kubectl -n ai get pod "$pod" -o jsonpath='{.metadata.uid}')" == "$pod_uid" ]] || exit 1
 
 require_absent_object() {
@@ -53,23 +70,26 @@ require_absent_object() {
     jq -e --arg key "$1" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null
 }
 
-restore_version() (
-  pipe_dir="$(mktemp -d)"
-  trap 'rm -rf -- "$pipe_dir"' EXIT
-  mkfifo -m 600 "$pipe_dir/body"
-  aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
-    "$pipe_dir/body" >/dev/null &
-  source_pid=$!
-  "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$3" \
-    <"$pipe_dir/body" &
-  reader_pid=$!
-  if ! wait -n -p completed_pid "$source_pid" "$reader_pid"; then
-    kill "$source_pid" "$reader_pid" 2>/dev/null || true
-    wait "$source_pid" "$reader_pid" 2>/dev/null || true
-    exit 1
+restore_version() {
+  local rc
+  [[ "$4" =~ ^[1-9][0-9]*$ && "$5" =~ ^[0-9a-f]{64}$ ]] || return 1
+  if python3 scripts/ci/openclaw-enterprise-download.py \
+    "$bucket" "$1" "$2" "$3" "$4" "$5" "$pod"; then
+    return 0
+  else
+    rc=$?
   fi
-  if [[ "$completed_pid" == "$source_pid" ]]; then wait "$reader_pid"; else wait "$source_pid"; fi
-)
+  case "$phase" in
+    publication-restore-archive|publication-restore-receipt|verification-archive-download|verification-receipt-download)
+      case "$rc" in
+        10) phase="${phase}-source-range" ;;
+        20) phase="${phase}-reader-transfer" ;;
+        30) phase="${phase}-finalize" ;;
+      esac
+      ;;
+  esac
+  return 1
+}
 
 refresh_status() {
   status_refresh_count=$((status_refresh_count + 1))
@@ -84,7 +104,21 @@ refresh_status() {
       .pods == 0 and .activeJobs == 0 and
       (.cronJobSuspended == true or .cronJobAbsent == true)))
   ' "$recheck" >/dev/null
-  "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$recheck"
+  if [[ "$stage" != resume-restore ]]; then
+    "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$recheck"
+  fi
+}
+
+validate_archive_identity() {
+  jq -e --slurpfile status "$2" '
+    .format == 1 and
+    (.inventory.claims | type) == "object" and
+    (.inventory.kubernetes.volumes | type) == "object" and
+    (.inventory.rootIdentity | type) == "object" and
+    .inventory.claims == $status[0].claims and
+    .inventory.kubernetes.volumes == $status[0].volumes and
+    .inventory.rootIdentity == $status[0].roots
+  ' "$1" >/dev/null
 }
 
 validate_baseline() {
@@ -157,22 +191,106 @@ run_inventory_worker() {
   [[ "$state" == success ]] || exit 1
 }
 
+verify_cached_restore_file() {
+  local directory="$1" name="$2" expected_size="$3" expected_sha="$4" observed
+  [[ "$expected_size" =~ ^[1-9][0-9]*$ && "$expected_sha" =~ ^[0-9a-f]{64}$ ]] || return 1
+  observed="$("${reader[@]}" sh -c '
+    set -eu
+    directory="$1"; name="$2"
+    test -d "$directory" && test ! -L "$directory" || exit 1
+    test "$(stat -c %a "$directory")" = 700
+    file="$directory/$name"
+    test -f "$file" && test ! -L "$file" || exit 1
+    test "$(stat -c %a "$file")" = 600
+    before="$(stat -c "%d:%i:%s:%Y" "$file")"
+    digest="$(sha256sum "$file" | cut -d " " -f1)"
+    after="$(stat -c "%d:%i:%s:%Y" "$file")"
+    test "$before" = "$after"
+    printf "%s:%s\n" "$(stat -c %s "$file")" "$digest"
+  ' sh "$directory" "$name")" || return 1
+  [[ "$observed" == "$expected_size:$expected_sha" ]]
+}
+
+read_prior_restore_marker() {
+  "${reader[@]}" sh -c '
+    set -eu
+    marker="$1"
+    if test ! -e "$marker" && test ! -L "$marker"; then
+      printf "pending\n"
+      exit 0
+    fi
+    test -f "$marker" && test ! -L "$marker" || exit 1
+    test "$(stat -c %a "$marker")" = 600
+    before="$(stat -c "%d:%i:%s:%Y" "$marker")"
+    test "$(stat -c %s "$marker")" = 8
+    digest="$(sha256sum "$marker" | cut -d " " -f1)"
+    after="$(stat -c "%d:%i:%s:%Y" "$marker")"
+    test "$before" = "$after"
+    success="$(printf "success\\n" | sha256sum | cut -d " " -f1)"
+    failure="$(printf "failure\\n" | sha256sum | cut -d " " -f1)"
+    if test "$digest" = "$success"; then
+      printf "success:%s\n" "$before"
+    elif test "$digest" = "$failure"; then
+      printf "failure:%s\n" "$before"
+    else
+      exit 1
+    fi
+  ' sh "/private/legacy/verify-${PRIOR_RUN_ID}.state"
+}
+
+wait_prior_restore() {
+  local state confirmed attempt
+  for ((attempt = 0; attempt < 120; attempt++)); do
+    state="$(read_prior_restore_marker)" || return 1
+    case "$state" in
+      pending) sleep 30 ;;
+      failure:*) return 1 ;;
+      success:*)
+        sleep 1
+        confirmed="$(read_prior_restore_marker)" || return 1
+        [[ "$confirmed" == "$state" ]] || return 1
+        return 0
+        ;;
+      *) return 1 ;;
+    esac
+  done
+  return 1
+}
+
+read_prior_restore_report() {
+  "${reader[@]}" sh -c '
+    set -eu
+    test -d "$1" && test ! -L "$1" && test "$(stat -c %a "$1")" = 700 || exit 1
+    for directory in "$1/tree" "$1/tree/local" "$1/tree/nas"; do
+      test -d "$directory" && test ! -L "$directory" || exit 1
+    done
+    report="$1/completed.json"
+    test -f "$report" && test ! -L "$report" && test "$(stat -c %a "$report")" = 600 || exit 1
+    cat "$report"
+  ' sh "$1"
+}
+
 verify_restored_archive() {
-  local receipt="$1" marker="/private/legacy/verify-${GITHUB_RUN_ID}.state" state attempt
+  local receipt="$1" restore_at="${2:-}" marker="/private/legacy/verify-${GITHUB_RUN_ID}.state" state attempt
   "${reader[@]}" sh -c '
     set -eu
     umask 077
-    receipt="$1"; marker="$2"
+    receipt="$1"; marker="$2"; restore_at="$3"
     test ! -e "$marker" && test ! -L "$marker"
     nohup sh -c '\''
-      if python3 /etc/openclaw-retirement/retirement.py verify-archive \
-        --config /private/legacy/config.json --receipt "$1"; then
+      if { if [ -n "$3" ]; then
+          env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py prepare-restore \
+            --config /private/legacy/config.json --receipt "$1" --destination "$3"
+        else
+          python3 /etc/openclaw-retirement/retirement.py verify-archive \
+            --config /private/legacy/config.json --receipt "$1"
+        fi; }; then
         printf "success\\n" >"$2"
       else
         printf "failure\\n" >"$2"
       fi
-    '\'' sh "$receipt" "$marker" </dev/null >"${marker%.state}.log" 2>&1 &
-  ' sh "$receipt" "$marker"
+    '\'' sh "$receipt" "$marker" "$restore_at" </dev/null >"${marker%.state}.log" 2>&1 &
+  ' sh "$receipt" "$marker" "$restore_at"
   state=pending
   for ((attempt = 0; attempt < 420; attempt++)); do
     state="$("${reader[@]}" sh -c \
@@ -243,6 +361,7 @@ case "$stage" in
     refresh_status inventory
     ;;
   archive|publish-archive)
+    phase=baseline
     baseline_id="${BASELINE_REF##*/}"
     baseline="/archive/private/baseline-${baseline_id}.json"
     archive_id="$GITHUB_RUN_ID"
@@ -252,11 +371,14 @@ case "$stage" in
       archive_sha="${ARCHIVE_REF%%/*}"
     fi
     archive_result="/private/legacy/archive-result-${archive_id}.json"
+    phase='baseline-s3-read'
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
+    phase='baseline-mounted-compare'
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
     observed="/private/legacy/baseline-${archive_id}.json"
     if [[ "$stage" == archive ]]; then run_inventory_worker; fi
+    phase='baseline-source-status'
     refresh_status stopped
     if [[ "$stage" == archive ]]; then
       "${reader[@]}" sh -c '
@@ -276,36 +398,76 @@ case "$stage" in
         kill -0 "$worker"
       ' sh "$baseline" "$observed" "$archive_result" "$archive_id"
     else
+    phase=publication-archive-result
     receipt="$("${reader[@]}" cat "$archive_result" | jq -er .receipt)"
     [[ "$receipt" =~ ^/archive/private/legacy-[0-9a-f]{64}/receipt\.json$ ]] || exit 1
+    phase=publication-source-validation
     "${reader[@]}" cat "$observed" >"$work/observed.json"
     "${reader[@]}" cat "$receipt" >"$work/receipt.json"
     validate_baseline "$work/observed.json" "$work/status.json"
     jq -e --slurpfile observed "$work/observed.json" '.format == 1 and .inventory == $observed[0] and (.sha256 | test("^[0-9a-f]{64}$"))' "$work/receipt.json" >/dev/null
-    prefix="openclaw-enterprise/legacy/${archive_sha}/${archive_id}"
+    prefix="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}"
+    phase=publication-destination-absence
     for name in legacy.tar.gz receipt.json final.json; do require_absent_object "$prefix/$name"; done
-    "${reader[@]}" cat "${receipt%/*}/legacy.tar.gz" | aws s3 cp - "s3://${bucket}/${prefix}/legacy.tar.gz" --expected-size 80000000000
-    "${reader[@]}" cat "$receipt" | aws s3 cp - "s3://${bucket}/${prefix}/receipt.json"
-    archive_version="$(aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" --query VersionId --output text)"
+    phase=publication-source-size
+    archive_size="$("${reader[@]}" stat -c %s "${receipt%/*}/legacy.tar.gz")"
+    [[ "$archive_size" =~ ^[1-9][0-9]*$ ]] || exit 1
+    phase=publication-upload
+    if python3 -I scripts/ci/openclaw-enterprise-upload.py "$bucket" "$prefix/legacy.tar.gz" \
+      "$archive_size" "$(jq -er .sha256 "$work/receipt.json")" \
+      "$pod" "${receipt%/*}/legacy.tar.gz"; then
+      :
+    else
+      case "$?" in
+        10) phase=publication-source-read ;;
+        11) phase=publication-s3-create ;;
+        12) phase=publication-s3-part ;;
+        13) phase=publication-s3-complete ;;
+        14) phase=publication-digest ;;
+      esac
+      exit 1
+    fi
+    phase=publication-archive-head
+    aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
+      --output json >"$work/archive-head.json"
+    phase=publication-archive-metadata
+    jq -e --argjson size "$archive_size" \
+      '.ContentLength == $size and .ServerSideEncryption == "aws:kms" and
+       (.VersionId | type) == "string" and .VersionId != "" and .VersionId != "None"' \
+      "$work/archive-head.json" >/dev/null
+    archive_version="$(jq -er .VersionId "$work/archive-head.json")"
+    phase=publication-receipt-upload
+    aws s3 cp "$work/receipt.json" "s3://${bucket}/${prefix}/receipt.json"
+    phase=publication-receipt-head
     receipt_version="$(aws s3api head-object --bucket "$bucket" --key "$prefix/receipt.json" --query VersionId --output text)"
-    [[ -n "$archive_version" && "$archive_version" != None && -n "$receipt_version" && "$receipt_version" != None ]] || exit 1
+    [[ -n "$receipt_version" && "$receipt_version" != None ]] || exit 1
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
+    phase=publication-restore-prepare
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
-    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
-    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
+    phase=publication-restore-archive
+    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz" \
+      "$archive_size" "$(jq -er .sha256 "$work/receipt.json")"
+    phase=publication-restore-receipt
+    receipt_bytes="$(wc -c <"$work/receipt.json" | tr -d ' ')"
+    receipt_sha="$(sha256sum "$work/receipt.json" | cut -d' ' -f1)"
+    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json" \
+      "$receipt_bytes" "$receipt_sha"
+    phase=verification
     verify_restored_archive "$restore/receipt.json"
     "${reader[@]}" cat "$restore/receipt.json" >"$work/restored-receipt.json"
     cmp "$work/receipt.json" "$work/restored-receipt.json"
     jq -n --arg sha "$archive_sha" --arg run "$archive_id" \
+      --arg publicationSha "$GITHUB_SHA" --arg publicationRun "$GITHUB_RUN_ID" \
       --arg baseline "$BASELINE_REF" --arg archiveVersion "$archive_version" \
       --arg receiptVersion "$receipt_version" --arg digest "$(jq -er .sha256 "$work/receipt.json")" \
-      '{sourceSha:$sha,runId:$run,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
+      '{sourceSha:$sha,runId:$run,publicationSha:$publicationSha,publicationRunId:$publicationRun,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
     refresh_status stopped
     aws s3 cp "$work/final.json" "s3://${bucket}/${prefix}/final.json"
     "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
     fi
     ;;
-  verify)
+  verify|prepare-restore|resume-restore)
+    phase=verification
     jq -e '.replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and (.cronJobSuspended == true or .cronJobAbsent == true)' "$work/status.json" >/dev/null
     prefix="openclaw-enterprise/legacy/${ARCHIVE_REF}"
     final_key="$prefix/final.json"
@@ -313,21 +475,85 @@ case "$stage" in
     final_version="$(aws s3api list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key" --output json |
       jq -er --arg key "$final_key" 'if .IsTruncated == false then [.Versions[]? | select(.Key == $key) | .VersionId] | last else empty end')"
     aws s3api get-object --bucket "$bucket" --key "$final_key" --version-id "$final_version" "$work/final.json" >/dev/null
-    jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and (.sourceSha + "/" + .runId) == $ref and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
+    jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and
+      (.publicationSha + "/" + .publicationRunId) == $ref and
+      (.sourceSha | test("^[0-9a-f]{40}$")) and (.runId | test("^[0-9]+$")) and
+      .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
     archive_version="$(jq -er .archiveVersion "$work/final.json")"
     receipt_version="$(jq -er .receiptVersion "$work/final.json")"
-    restore="/archive/private/offsite-${GITHUB_RUN_ID}"
-    "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
-    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
-    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
-    verify_restored_archive "$restore/receipt.json"
-    "${reader[@]}" cat "$restore/receipt.json" | jq -e --arg sha "$(jq -er .archiveSha256 "$work/final.json")" '.sha256 == $sha' >/dev/null
-    "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
+    archive_bytes="$(aws s3api head-object --bucket "$bucket" --key "$prefix/legacy.tar.gz" \
+      --version-id "$archive_version" --query ContentLength --output text)"
+    receipt_object_bytes="$(aws s3api head-object --bucket "$bucket" --key "$prefix/receipt.json" \
+      --version-id "$receipt_version" --query ContentLength --output text)"
+    aws s3api get-object --bucket "$bucket" --key "$prefix/receipt.json" \
+      --version-id "$receipt_version" "$work/receipt.json" >/dev/null
+    # Bind the reader stream to a separate download of the final receipt's exact S3 version.
+    receipt_bytes="$(wc -c <"$work/receipt.json" | tr -d ' ')"
+    receipt_sha="$(sha256sum "$work/receipt.json" | cut -d' ' -f1)"
+    archive_sha="$(jq -er .archiveSha256 "$work/final.json")"
+    [[ "$archive_bytes" =~ ^[1-9][0-9]*$ && "$archive_sha" =~ ^[0-9a-f]{64}$ &&
+       "$receipt_object_bytes" =~ ^[1-9][0-9]*$ && "$receipt_bytes" == "$receipt_object_bytes" ]] || exit 1
+    if [[ "$stage" == prepare-restore || "$stage" == resume-restore ]]; then
+      refresh_status stopped
+      validate_archive_identity "$work/receipt.json" "$recheck"
+      [[ "$(jq -er .sha256 "$work/receipt.json")" == "$archive_sha" ]] || exit 1
+      if [[ "$stage" == prepare-restore ]]; then
+        tree_bytes="$(jq -er '[.inventory.roots.local.tree.bytes, .inventory.roots.nas.tree.bytes] |
+          if all(type == "number" and . >= 0) then add else empty end' "$work/receipt.json")"
+        free_kib="$("${reader[@]}" df -Pk /archive | awk 'NR == 2 {print $4}')"
+        [[ "$archive_bytes" =~ ^[0-9]+$ && "$tree_bytes" =~ ^[0-9]+$ && "$free_kib" =~ ^[0-9]+$ ]] || exit 1
+        (( free_kib * 1024 > archive_bytes + tree_bytes + 2147483648 )) || exit 1
+      fi
+    fi
+    if [[ "$stage" == resume-restore ]]; then
+      restore="/archive/private/offsite-${PRIOR_RUN_ID}"
+      rehearsal="/archive/private/rehearsal-${PRIOR_RUN_ID}"
+      phase=verification-restore
+      wait_prior_restore
+      phase=verification-archive-download
+      verify_cached_restore_file "$restore" legacy.tar.gz "$archive_bytes" "$archive_sha"
+      phase=verification-receipt-download
+      verify_cached_restore_file "$restore" receipt.json "$receipt_bytes" "$receipt_sha"
+      phase=verification-restore
+      read_prior_restore_report "$rehearsal" |
+        jq -e --arg sha "$archive_sha" --slurpfile receipt "$work/receipt.json" '
+        .format == 1 and .archiveSha256 == $sha and
+        .restoredDatabases == $receipt[0].restoredDatabases and
+        (.linkCount | type) == "number" and .linkCount >= 0
+      ' >/dev/null
+      refresh_status stopped
+      validate_archive_identity "$work/receipt.json" "$recheck"
+      verify_cached_restore_file "$restore" legacy.tar.gz "$archive_bytes" "$archive_sha"
+      verify_cached_restore_file "$restore" receipt.json "$receipt_bytes" "$receipt_sha"
+    else
+      restore="/archive/private/offsite-${GITHUB_RUN_ID}"
+      "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
+      phase=verification-archive-download
+      restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz" \
+        "$archive_bytes" "$archive_sha"
+      phase=verification-receipt-download
+      restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json" \
+        "$receipt_bytes" "$receipt_sha"
+      phase=verification-restore
+      if [[ "$stage" == prepare-restore ]]; then
+      rehearsal="/archive/private/rehearsal-${GITHUB_RUN_ID}"
+      verify_restored_archive "$restore/receipt.json" "$rehearsal"
+      "${reader[@]}" cat "$rehearsal/completed.json" |
+        jq -e --arg sha "$(jq -er .archiveSha256 "$work/final.json")" \
+          '.format == 1 and .archiveSha256 == $sha and (.linkCount | type == "number")' >/dev/null
+      refresh_status stopped
+      validate_archive_identity "$work/receipt.json" "$recheck"
+      else
+        verify_restored_archive "$restore/receipt.json"
+      fi
+      "${reader[@]}" cat "$restore/receipt.json" | jq -e --arg sha "$(jq -er .archiveSha256 "$work/final.json")" '.sha256 == $sha' >/dev/null
+      "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
+    fi
     ;;
 esac
 
-if [[ "$stage" == archive ]]; then
-  echo 'Legacy archive worker started; protected publication remains pending'
-else
-  echo 'Legacy operation completed; private receipt retained offsite'
-fi
+case "$stage" in
+  archive) echo 'Legacy archive worker started; protected publication remains pending' ;;
+  prepare-restore|resume-restore) echo 'Private legacy restore copy prepared; gateway boot remains unverified' ;;
+  *) echo 'Legacy operation completed; private receipt retained offsite' ;;
+esac

@@ -19,15 +19,16 @@ Use this checklist before adding or changing a Terragrunt unit.
 
 ## Implementation Shape
 
-1. Reuse an existing template under `IaC/.catalog/units/...`, or add the
+1. Reuse an existing template under `IaC/terragrunt-catalog/units/...`, or add the
    smallest new one when the existing templates do not fit. Argo CD workloads
    and platform services share `live/argocd-app`; common inputs belong in the
    shared `IaC/stack-defaults.hcl`, with per-app inputs in
-   `IaC/stacks/<app>/stack.hcl`.
-2. Register the unit in `IaC/terragrunt.stack.hcl` with its historical live
+   `IaC/homelab/us-west-2/apps/<app>/stack.hcl`.
+2. Register the unit in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` with an app-local output
    path and `no_dot_terragrunt_stack = true`. For Applications, load the app
    file's `inputs` with `read_terragrunt_config` as the unit's `values`. Keep
    `source` and `path` literal so CI can identify units across revisions.
+   `IaC/root.hcl` maps each generated path to its existing backend key.
 3. Run `terragrunt stack generate` from `IaC/` before focused validation.
 4. Include the root config used by nearby units.
 5. Use a local module or pinned catalog module source.
