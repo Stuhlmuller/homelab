@@ -562,8 +562,10 @@ protected `harbor-mirror.yml` `image_scope=all` workflow on exact current
 digest and platform checks and full authenticated destination pulls before
 merging consumers. An earlier successful run covers only its unchanged bundle.
 
-The Argo source gate checks declared images and the chart render gate checks
-all chart sources, init containers and hooks. `image-rewrite` in `kube-system`
+The Argo source gate checks declared images and the render gate checks all
+chart and Kustomize sources, init containers and hooks. The
+[cutover audit ledger](harbor-argo-image-audit.md) keeps current and historical
+Pod counts separately. `image-rewrite` in `kube-system`
 has two replicas, a cert-manager-issued serving certificate and a fail-closed
 webhook scoped to `octelium`, `monitoring` and `ai`. It maps only catalog
 sources to pinned Harbor destinations, including ephemeral containers. It
