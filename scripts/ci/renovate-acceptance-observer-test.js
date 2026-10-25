@@ -604,6 +604,8 @@ test('private acceptance data binds only to initialized acer-local storage', () 
     'renovate-acceptance-ledger-platform.yaml'), 'utf8');
   const platformKustomization = fs.readFileSync(path.join(platform, 'kustomization.yaml'), 'utf8');
   const initializer = fs.readFileSync(path.join(root, 'acceptance-ledger-init-job.yaml'), 'utf8');
+  const initNetworkPolicy = fs.readFileSync(path.join(root,
+    'acceptance-ledger-init-networkpolicy.yaml'), 'utf8');
   const runner = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
   const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
   assert.match(storage, /storageClassName: renovate-acceptance-ledger-local/);
@@ -617,10 +619,21 @@ test('private acceptance data binds only to initialized acer-local storage', () 
   assert.doesNotMatch(storage, /nfs-default/);
   assert.match(kustomization, /- acceptance-ledger-pvc.yaml/);
   assert.match(platformKustomization, /- renovate-acceptance-ledger-platform.yaml/);
-  assert.match(initializer, /^  suspend: true$/m);
+  assert.match(initializer, /^  suspend: false$/m);
+  assert.match(initializer, /automountServiceAccountToken: false/);
+  assert.match(initializer, /kubernetes.io\/hostname: acer/);
+  assert.match(initializer, /claimName: renovate-acceptance-ledger/);
+  assert.doesNotMatch(initializer, /secretName:|claimName: renovate-cache/);
+  assert.match(initializer, /test -z "\$\(find \/ledger -mindepth 1 -maxdepth 1 -print -quit\)"/);
   assert.match(initializer, /chown 12021:12021 \/ledger/);
   assert.match(initializer, /chmod 0700 \/ledger/);
-  assert.doesNotMatch(kustomization, /- acceptance-ledger-init-job.yaml/);
+  assert.match(kustomization, /- acceptance-ledger-init-networkpolicy.yaml/);
+  assert.match(kustomization, /- acceptance-ledger-init-job.yaml/);
+  assert.match(initNetworkPolicy, /argocd.argoproj.io\/sync-wave: "-1"/);
+  assert.match(initNetworkPolicy, /app.kubernetes.io\/component: acceptance-ledger-init/);
+  assert.match(initNetworkPolicy, /policyTypes: \[Ingress, Egress\]/);
+  assert.match(initNetworkPolicy, /ingress: \[\]/);
+  assert.match(initNetworkPolicy, /egress: \[\]/);
   for (const filename of ['acceptance-inventory-job.yaml', 'acceptance-observer-cronjob.yaml',
     'acceptance-pr-proof-job.yaml', 'acceptance-pr-proof-cronjob.yaml']) {
     const manifest = fs.readFileSync(path.join(root, filename), 'utf8');

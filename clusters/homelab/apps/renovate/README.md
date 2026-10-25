@@ -304,22 +304,34 @@ The acceptance ledger uses a dedicated 64 GiB static Talos-local PV at
 `/var/lib/renovate-acceptance-ledger` on `acer`. The StorageClass and PV are in
 `clusters/homelab/platform/storage/renovate-acceptance-ledger-platform.yaml`;
 the earlier platform-storage phase includes them in its Kustomization.
-This phase adds the namespaced `acceptance-ledger-pvc.yaml` to Renovate's
-Kustomization after live verification of the class and PV. Renovate's
-`homelab-workloads` Argo project cannot create cluster-scoped storage. Verify
-the claim reaches `Bound` on `renovate-acceptance-ledger-local` before
-activating the ownership-init Job.
+The earlier workload phase added `acceptance-ledger-pvc.yaml` after live
+verification of the class and PV. Renovate's `homelab-workloads` Argo project
+cannot create cluster-scoped storage. Before merging this phase, verify the
+claim is `Bound` to `renovate-acceptance-ledger-local`. This phase adds the
+initializer and its deny-all NetworkPolicy; wave -1 reconciles the policy
+before the unsuspended Job runs. The Job has no Kubernetes API token.
 Every acceptance worker has
 an `acer` node selector; the PV has the same node affinity. The shared QNAP
 NFS export squashes clients to one guest identity and cannot enforce private
 ledger ownership, so it must not hold the sample, reports, review input, or
-receipts. Only after the claim binds, run the suspended
-`renovate-acceptance-ledger-init` Job through reviewed GitOps. It refuses a
-nonempty path and sets the volume root to UID/GID 12021, mode `0700`.
-Verify the PVC is bound to the local PV and the init Job succeeded before
-activating any acceptance worker. A node loss, failed poll, or missing
+receipts. The `renovate-acceptance-ledger-init` Job refuses a nonempty path
+and sets the volume root to UID/GID 12021, mode `0700`. After GitOps sync,
+verify `Complete=True`, Pod exit 0 with no restarts, and the built-in final
+`stat` assertion. If it fails, keep workers suspended and recover through
+reviewed GitOps. Verify the claim remains bound to the local PV before
+activating any worker. A node loss, failed poll, or missing
 15-minute slot makes the seven-day window inconclusive; restart from a newly
 reviewed private sample and empty ledger after the node recovers.
+
+```sh
+kubectl -n automation get pvc renovate-acceptance-ledger
+kubectl -n automation get job renovate-acceptance-ledger-init
+kubectl -n automation get pods -l app.kubernetes.io/component=acceptance-ledger-init
+```
+
+Expect a `Bound` claim, `1/1` Job completions, and one `Completed` Pod with zero
+restarts. A failed Job leaves the private ledger untouched when it is nonempty;
+inspect its events and restricted logs before a reviewed recovery change.
 
 The local PV's capacity is advisory for a hostPath. Before activation, verify
 `acer` is Ready and has at least 80 GiB free on its node filesystem. A

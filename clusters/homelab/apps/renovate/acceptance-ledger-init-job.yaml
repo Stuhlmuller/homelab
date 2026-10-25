@@ -1,4 +1,4 @@
-# Staged suspended; run once through reviewed GitOps before private review input.
+# Run once through reviewed GitOps after the dedicated ledger PVC binds.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/component: acceptance-ledger-init
     app.kubernetes.io/part-of: homelab-automation
 spec:
-  suspend: true
+  suspend: false
   activeDeadlineSeconds: 120
   backoffLimit: 0
   template:

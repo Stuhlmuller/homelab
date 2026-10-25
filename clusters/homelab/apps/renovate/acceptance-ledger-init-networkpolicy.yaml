@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-ledger-init
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate
+      app.kubernetes.io/component: acceptance-ledger-init
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []
