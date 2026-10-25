@@ -210,7 +210,7 @@ the new reviewed `main` after a concurrent merge; do not bypass its guard.
 | Prepare | Confirm source/image pairing, publish all chart-rendered images to Harbor, inventory placement and recovery access | Exact digest and current-main receipts |
 | Legacy stop | Archive inventory, verify private space, stop old gateway and scheduled writers via GitOps | Zero Pods, deliveries and uncertain writers |
 | Legacy archive | Copy all local/NAS roots offline and restore independently | Full verified archive and compatible restore |
-| Platform | Remeasure capacity; upgrade Talos, Istio and Kubernetes one stage/node at a time | Fresh etcd backup, direct access and per-hop health |
+| Platform | Remeasure capacity, activate the [maintenance path probe](../clusters/homelab/platform/maintenance-probe/README.md), then upgrade Talos, Istio and Kubernetes one stage/node at a time | Fresh etcd backup, direct access, functional DNS/storage/access/webhook/app probes and private per-node receipts |
 | Isolation | Review policies, qualify tainted Talos canary, expand one node at a time | Allowed/denied and lifecycle matrix for every node |
 | Foundation | Install shared Envoy/Gateway API, PostgreSQL/TLS, storage, secrets and private access | Health, TLS, exact image and isolated restore |
 | Enterprise | Validate hook failure paths, full-sync stock chart, reconcile inactive agent | Hook ordering, private console and source identity |
