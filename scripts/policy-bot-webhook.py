@@ -7,6 +7,7 @@ if __name__ == '__main__' and not sys.flags.isolated:
 import argparse
 import base64
 from datetime import datetime, timezone
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -22,6 +23,7 @@ PREVIOUS_URL = 'https://policy-bot-hook.stinkyboi.com/api/github/hook'
 URL = 'https://policy-bot-hook.tail67beb.ts.net/api/github/hook'
 CONFIG_PATH = '/app/hook/config'
 RECEIPT = Path.home() / '.local/state/homelab/policy-bot-webhook-cutover.json'
+ROLLBACK_RECEIPT = Path.home() / '.local/state/homelab/policy-bot-webhook-rollback.json'
 
 
 def command(*args, **kwargs):
@@ -98,15 +100,23 @@ def github_client(jwt):
             with opener.open(req, timeout=20) as response:
                 if response.status == 204:
                     return None
+                if response.status == 202:
+                    if response.read():
+                        raise RuntimeError('Unexpected GitHub accepted-response body; response withheld')
+                    return 202
                 return json.load(response)
         except urllib.error.HTTPError as error:
             raise RuntimeError(f'GitHub request failed with HTTP {error.code}; response withheld') from None
     return request
 
 
-def preflight_target():
+def preflight_target(target=URL):
+    if target == PREVIOUS_URL:
+        return preflight_previous_target()
+    if target != URL:
+        raise RuntimeError('Callback preflight target is outside the reviewed migration')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
-    for url, hook in ((URL, True), (URL.removesuffix('/api/github/hook') + '/', False)):
+    for url, hook in ((target, True), (target.removesuffix('/api/github/hook') + '/', False)):
         try:
             response = opener.open(urllib.request.Request(url, method='GET'), timeout=20)
         except urllib.error.HTTPError as error:
@@ -117,7 +127,33 @@ def preflight_target():
             request_ids = response.headers.get_all('X-Request-ID', [])
             backend = len(request_ids) == 1 and re.fullmatch(r'[0-9a-v]{20}', request_ids[0])
             if response.status != 404 or (hook and not backend) or (not hook and request_ids):
-                raise RuntimeError('Funnel callback routing preflight failed; webhook configuration unchanged')
+                raise RuntimeError('Callback routing preflight failed; webhook configuration unchanged')
+
+
+def preflight_previous_target():
+    # Use a fixed public resolver only for the retained callback when local DNS
+    # is unavailable. curl --resolve keeps the URL hostname for TLS verification.
+    host = 'policy-bot-hook.stinkyboi.com'
+    answers = command('dig', '+short', '@1.1.1.1', host, 'A').decode().splitlines()
+    try:
+        addresses = [str(ipaddress.IPv4Address(answer)) for answer in answers]
+    except ipaddress.AddressValueError:
+        raise RuntimeError('Previous callback DNS preflight failed; webhook configuration unchanged') from None
+    if not 1 <= len(addresses) <= 8 or len(set(addresses)) != len(addresses):
+        raise RuntimeError('Previous callback DNS preflight failed; webhook configuration unchanged')
+    for address in addresses:
+        for url, hook in ((PREVIOUS_URL, True), (PREVIOUS_URL.removesuffix('/api/github/hook') + '/', False)):
+            headers = command('curl', '--silent', '--show-error', '--noproxy', '*',
+                              '--connect-timeout', '5', '--max-time', '10',
+                              '--resolve', f'{host}:443:{address}', '--dump-header', '-',
+                              '--output', '/dev/null', url).decode('iso-8859-1').splitlines()
+            statuses = [line for line in headers if line.startswith('HTTP/')]
+            request_ids = [line.split(':', 1)[1].strip() for line in headers
+                           if line.lower().startswith('x-request-id:')]
+            backend = len(request_ids) == 1 and re.fullmatch(r'[0-9a-v]{20}', request_ids[0])
+            if len(statuses) != 1 or len(statuses[0].split()) < 2 or statuses[0].split()[1] != '404' \
+                    or (hook and not backend) or (not hook and request_ids):
+                raise RuntimeError('Previous callback routing preflight failed; webhook configuration unchanged')
 
 
 def timestamp(value):
@@ -177,29 +213,30 @@ def delivery_status(api, url, cutover=None, delivery_path='/app/hook/deliveries'
     return False
 
 
-def reconcile(api, execute=False, require_delivery=False, receipt_path=None):
-    receipt_path = RECEIPT if receipt_path is None else receipt_path
-    cutover = read_receipt(receipt_path)
+def reconcile(api, execute=False, require_delivery=False, receipt_path=None, rollback=False):
+    target = PREVIOUS_URL if rollback else URL
+    receipt_path = (ROLLBACK_RECEIPT if rollback else RECEIPT) if receipt_path is None else receipt_path
+    cutover = read_receipt(receipt_path, target)
     previous = api('GET', CONFIG_PATH)
     if previous.get('url') not in (PREVIOUS_URL, URL):
         raise RuntimeError('Current webhook URL is outside the reviewed migration; refusing to change it')
     print('Current callback: ' + previous['url'])
-    print('Declared callback: ' + URL)
+    print('Declared callback: ' + target)
     if execute:
-        preflight_target()
-        if previous['url'] != URL or cutover is None:
-            cutover = new_cutover(api, URL)
-        if previous['url'] != URL:
-            api('PATCH', CONFIG_PATH, {'url': URL})
+        preflight_target(target)
+        if previous['url'] != target or cutover is None:
+            cutover = new_cutover(api, target)
+        if previous['url'] != target:
+            api('PATCH', CONFIG_PATH, {'url': target})
         current = api('GET', CONFIG_PATH)
-        if current.get('url') != URL or any(current.get(key) != previous.get(key)
+        if current.get('url') != target or any(current.get(key) != previous.get(key)
                                           for key in ('content_type', 'insecure_ssl', 'secret')):
             raise RuntimeError('Webhook readback did not preserve the declared URL and existing settings')
         save_receipt(receipt_path, cutover)
         print('Verified callback URL; existing secret and delivery settings preserved')
     else:
         print('Preview only; webhook configuration unchanged')
-    delivered = delivery_status(api, URL if execute else previous['url'], cutover)
+    delivered = delivery_status(api, target if execute else previous['url'], cutover)
     if require_delivery and not delivered:
         raise RuntimeError('Successful delivery newer than this cutover is not yet verified; no event or redelivery was triggered')
     return delivered
@@ -208,9 +245,10 @@ def reconcile(api, execute=False, require_delivery=False, receipt_path=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config-file', help='Existing file-backed policy-bot.yml; otherwise read only the Kubernetes Secret into memory')
-    parser.add_argument('--execute', action='store_true', help='Apply only the fixed Funnel callback URL after exact-main checks')
+    parser.add_argument('--execute', action='store_true', help='Apply only the selected fixed callback URL after exact-main checks')
+    parser.add_argument('--rollback', action='store_true', help='Select only the previous Cloudflare callback URL')
     parser.add_argument('--expected-sha', help='Full reviewed main SHA required for execution')
-    parser.add_argument('--require-delivery', action='store_true', help='Require a successful Funnel delivery newer than the saved cutover timestamp and delivery ID; never triggers events')
+    parser.add_argument('--require-delivery', action='store_true', help='Require a successful delivery newer than the saved cutover timestamp and delivery ID; never triggers events')
     args = parser.parse_args()
     if args.execute:
         verify_reviewed_main(args.expected_sha)
@@ -218,7 +256,7 @@ def main():
     api = github_client(app_jwt(app_id, key))
     if str(api('GET', '/app').get('id')) != app_id:
         raise RuntimeError('GitHub App identity does not match the configured Policy Bot identity')
-    reconcile(api, args.execute, args.require_delivery)
+    reconcile(api, args.execute, args.require_delivery, rollback=args.rollback)
 
 
 if __name__ == '__main__':

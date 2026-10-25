@@ -22,8 +22,9 @@ Bot and CI checks to pass before merge.
 - Public GitHub webhook:
   `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel.
 
-Traefik and the retained Cloudflare route expose only the exact `/api/github/hook` callback path. Policy Bot
-retains GitHub HMAC verification; its UI and callback root stay private or denied.
+Traefik and the retained Cloudflare route expose only the exact
+`/api/github/hook` callback path. Policy Bot retains GitHub HMAC verification;
+its UI and callback root stay private or denied.
 After Funnel readiness, preview `python3 -I scripts/policy-bot-webhook.py`, then
 follow the [guarded callback cutover](../traefik/CUTOVER.md) from clean reviewed
 main. The helper changes only the fixed GitHub App webhook URL, preserving its
@@ -63,7 +64,9 @@ rendered again.
 
 ```sh
 kubectl kustomize clusters/homelab/apps/policy-bot
-kubectl -n automation get deploy/policy-bot svc/policy-bot virtualservice/policy-bot-octelium virtualservice/policy-bot-webhook-octelium externalsecret/policy-bot-config
+kubectl -n automation get deploy/policy-bot svc/policy-bot \
+  virtualservice/policy-bot-octelium \
+  virtualservice/policy-bot-webhook-octelium externalsecret/policy-bot-config
 kubectl -n traefik get deployment/traefik service/traefik-private
 kubectl -n traefik get ingress
 curl -I https://policy-bot.stinkyboi.com/
@@ -91,8 +94,48 @@ not successful callback delivery. See the [staged cutover](../traefik/CUTOVER.md
 ## Rollback
 
 Revert a failed application revision through GitOps while preserving its working
-Funnel callback registration. A transport rollback needs a separate reviewed
-route/URL change and fresh signed-delivery verification; do not restore the
-deleted public DNS writer. Keep the previous Tunnel route until replacement
-acceptance. The app is stateless; preserve its existing App credentials and
-webhook secret rather than rebuilding them for a routing rollback.
+Funnel callback registration. If Funnel cannot reach Policy Bot but the retained
+Cloudflare/Octelium callback still reaches its hook, the reviewed
+`codex/policy-bot-webhook-rollback` PR contains a fixed emergency runner. It is
+for an explicit one-time user-approved exception while the required Policy Bot
+check cannot report; it does not bypass the normal helper's exact-main guard.
+From a clean checkout of the signed PR head, use fresh full SHAs:
+
+```sh
+nix develop --command python3 -I scripts/policy-bot-webhook-emergency.py \
+  --expected-main '<fresh-main-sha>' \
+  --expected-head '<reviewed-pr-head-sha>' --rollback --execute
+```
+
+The runner verifies the open PR head, its GitHub-verified signature, and its
+current-main base before touching credentials. The helper then preflights the
+old hook and root through fixed public DNS and strict hostname-checked TLS,
+patches only the fixed previous URL, reads
+back the unchanged HMAC secret/settings, and saves a private rollback receipt.
+It does not trigger an event. After the callback readback, run the separate
+fixed [GitHub App redelivery](https://docs.github.com/en/rest/apps/webhooks#redeliver-a-delivery-for-an-app-webhook)
+command from the same reviewed checkout with fresh main/head SHAs:
+
+```sh
+nix develop --command python3 -I scripts/policy-bot-webhook-emergency.py \
+  --expected-main '<fresh-main-sha>' \
+  --expected-head '<reviewed-pr-head-sha>' --redeliver --execute
+```
+
+It checks the rollback receipt, current old URL, and #1679's unchanged head.
+It writes a private one-attempt receipt before the official POST for failed
+`check_run` delivery `3850311852634406912` (#1679 Terragrunt Gate, HTTP 500).
+If the POST response is uncertain, inspect deliveries read-only; do not retry
+the command. Verify the exact redelivery from the clean signed checkout:
+
+```sh
+nix develop --command python3 -I scripts/policy-bot-webhook-emergency.py \
+  --expected-head '<reviewed-pr-head-sha>' --verify
+```
+
+Verification requires the same GUID with a new delivery ID, matching event,
+PR #1679 head and number, the old callback URL, HTTP `2xx`, and successful
+`policy-bot: main` status on that head. It reports current main without
+requiring the unmerged PR base to remain current. Keep the previous Tunnel
+route until replacement acceptance. Preserve the App credentials and webhook
+secret. Do not restore the deleted public DNS writer.
