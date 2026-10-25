@@ -420,6 +420,38 @@ Embedded mode and must not be used for capacity admission. `zimaboard-2` still
 hosts four unrelated Pods, including single-replica `Recreate` Langfuse
 PostgreSQL; no worker satisfies the zero-foreign-Pod canary gate.
 
+At 2026-10-25 04:45 UTC on `main` `95e3b99d`, a read-only, no-new-hardware
+retirement review found no admitted replacement placement. After the proposed
+`#1583`/`#1584` Pod moves, `acer` would have about 13,971 / 15,261 MiB
+requested before Enterprise. Its initial 4,096 MiB budget needs at least
+2,806 MiB freed just to schedule. Pausing Dispatcharr, Grafana and Multica
+runtime while reconciling Crossplane's declared standby state would free
+about 3,456 MiB by requests, leaving only about 650 MiB before startup and
+restart margin. Those pauses would interrupt Plex Live TV, dashboards/alerts
+and Multica service.
+
+The [read-only Octelium off-ramp preflight](../../scripts/octelium-native-offramp-preflight.py)
+found 25/25 native twins Ready for 24 hours, but `zimaboard-0` had only about
+5 MiB conservative request margin and 969 MiB observed margin against its
+2,765 MiB rolling screen. The request calculation includes Deluge's 128 MiB
+restartable init sidecar, which the node's allocated-resource display omitted.
+Even pausing five node-bound media apps and moving Nix builder plus Harbor
+Trivy would yield only about 2,677 MiB request margin before placing Enterprise
+API/worker there. A further reviewed move of the NFS-backed NOFX backend
+could raise that to about 2,933 MiB, only 168 MiB above the native rolling
+screen **before** adding Enterprise Pods. That narrow native reserve rules out
+using `zimaboard-0` for API/worker in this candidate. If the native off-ramp
+then qualified, pausing Dispatcharr and reconciling Crossplane standby could
+leave about 2,026 MiB request margin with the initial Enterprise budget on
+`acer`. This would stop automated media downloads and Plex Live TV. It still
+needs media recovery, 24-hour whole-node peaks, placement and restart headroom,
+and direct native Pod-IP and end-to-end proof.
+Pausing Langfuse instead needs a complete PostgreSQL, ClickHouse, Valkey,
+object-store and recovery-material backup with independent restore; the
+current PostgreSQL-only checkpoint cannot authorize that pause.
+No service was paused or moved. T022, local storage and canary admission remain
+blocked; these estimates are not peak or recovery receipts.
+
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global
