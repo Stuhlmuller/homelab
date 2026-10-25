@@ -74,13 +74,19 @@ Verify the export path and allow-list from an operator workstation:
 showmount -e 10.1.0.2
 ```
 
-Expected result:
+The existing exports should appear before and after the dedicated Renovate
+setup; line and client order may vary:
 
 ```text
 Exports list on 10.1.0.2:
 /media 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 /homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
+
+After the authorized one-off QTS setup, also require `/renovate-cache` with
+exactly those four Talos node addresses. Confirm in QTS that this export uses
+the separate 20 GiB thick volume before activating its staged PV through
+GitOps. Do not change the existing exports.
 
 ## GitOps Desired State
 
@@ -126,10 +132,13 @@ most PostgreSQL data, dashboards, metrics, and other app-owned state. The
 exceptions are:
 
 - Renovate's proposed `renovate-cache-dedicated` static claim on a separate
-  20 GiB QTS thick volume and `/renovate-cache` NFS export. The manifest is
-  staged outside the live Kustomization until a reviewed NAS provisioning
-  path and export readiness exist; the current `renovate-cache` still uses
-  `nfs-default`. See `clusters/homelab/apps/renovate/README.md`.
+  20 GiB QTS thick volume and `/renovate-cache` NFS export. The PV, PVC, and
+  read-only claim probe remain outside their live Kustomizations. The owner
+  authorized one QTS setup after the staging PR merges; verify the separate
+  volume and exact export before activating the PV, then the PVC and probe,
+  through separate reviewed GitOps changes. The current `renovate-cache`
+  continues to use `nfs-default` until a later reviewed claim switch. See
+  `clusters/homelab/apps/renovate/README.md`.
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
 - `deluge-config-local`, `radarr-config-local`, and `sonarr-config-local`,

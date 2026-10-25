@@ -162,7 +162,9 @@ Kustomization in a reviewed PR and verify its cluster-scoped PV reconciles.
 Each activation PR must update `scripts/ci/renovate-cache-capacity-drill-test.py`
 to assert that phase's intended Kustomization membership and Job suspension;
 its staging assertions deliberately fail after a resource is activated.
-Renovate's `homelab-workloads` Argo project cannot own a PV. In a second
+The [`platform-storage` stack](../../../../IaC/homelab/us-west-2/apps/platform-storage/stack.hcl)
+inherits the [`homelab` AppProject](../../argocd/self-management/appproject.yaml),
+which whitelists PVs; Renovate's `homelab-workloads` project cannot own one. In a second
 reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
 `dedicated-cache-claim-probe.yaml` to Renovate's Kustomization; set the Job's
 `suspend` to `false` in that same change. The probe has no GitHub credential
