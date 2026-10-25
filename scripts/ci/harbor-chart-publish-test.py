@@ -16,6 +16,11 @@ spec.loader.exec_module(publisher)
 manifest = json.loads(publisher.MANIFEST.read_text())
 sources = json.loads(publisher.SOURCES.read_text())
 assert len(publisher.validate(manifest, sources)) == 28
+assert publisher.missing_harbor_artifact(
+    "unknown: repository mirror/helm/example not found", "example")
+assert not publisher.missing_harbor_artifact(
+    "unknown: repository mirror/helm/other not found", "example")
+assert not publisher.missing_harbor_artifact("unauthorized: authentication required", "example")
 
 with tempfile.TemporaryDirectory() as temporary:
     package = Path(temporary) / "test.tgz"

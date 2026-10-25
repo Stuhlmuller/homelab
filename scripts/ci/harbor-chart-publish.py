@@ -77,6 +77,11 @@ def run(*args, **kwargs):
     return subprocess.run(args, check=True, capture_output=True, text=True, **kwargs)
 
 
+def missing_harbor_artifact(stderr, chart):
+    return (bool(re.search(r"manifest unknown|name unknown", stderr, re.I)) or
+            f"unknown: repository mirror/helm/{chart} not found" in stderr)
+
+
 def upstream_package(row, directory, anonymous_config):
     source = directory / "source"
     source.mkdir()
@@ -115,7 +120,7 @@ def publish(row, package, directory, reader_auth, reader_helm, publisher_helm):
     probe = subprocess.run(["skopeo", "inspect", "--raw", "--authfile", str(reader_auth),
                             f"docker://{reference}"], capture_output=True, text=True)
     if probe.returncode:
-        if not re.search(r"manifest unknown|name unknown", probe.stderr, re.I):
+        if not missing_harbor_artifact(probe.stderr, row["chart"]):
             raise RuntimeError(f"Harbor lookup failed for {row['chart']} {row['version']}")
         run("helm", "push", str(package), f"oci://{DESTINATION}",
             "--registry-config", str(publisher_helm))
