@@ -214,3 +214,11 @@ Task C: T015 OpenWiki context in openwiki/runbooks/tailnet-ingress.md and openwi
 ## Phase 8: Convergence
 
 - [ ] T025 After T022–T023 verify the live cutover, update `clusters/homelab/apps/nofx/README.md` and `openwiki/apps/nofx.md` through a reviewed follow-up PR and the native OpenWiki workflow to state the verified public-record status with dated evidence; if retirement is deferred or incomplete, retain accurate pending/partial wording, per FR-010 (partial).
+
+## Phase 9: Convergence
+
+- [ ] T026 Before T018's public-callback signoff, merge the guarded
+  repository-owned retirement of unused Codex Review Helper hook `589400612`,
+  run its exact-ID deletion from clean reviewed `main`, then verify the ID and
+  callback path are absent while fresh Github Emergency Bot and Policy Bot
+  deliveries still succeed; leave the inactive n8n workflow unpublished.

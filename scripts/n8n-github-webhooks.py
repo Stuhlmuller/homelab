@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview or move the two existing homelab n8n GitHub callbacks to Funnel."""
+"""Maintain the surviving n8n callback and retire its unused helper hook."""
 import sys
 if __name__ == '__main__' and not sys.flags.isolated:
     raise SystemExit('Run with python3 -I')
@@ -16,13 +16,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('callbacks', ROOT / 'scripts/policy-bot-webhook.py')
 CALLBACKS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CALLBACKS)
-HOOKS = {
-    589400612: '7cd61c45-077f-45e4-aafe-8e06ce68fbc4',  # Codex Review Helper
-    636944763: '7d4342d3-103b-437a-a941-811a75dacb2f',  # Github Emergency Bot
-}
+EMERGENCY_HOOK = 636944763  # Github Emergency Bot
+HOOKS = {EMERGENCY_HOOK: '7d4342d3-103b-437a-a941-811a75dacb2f'}
+RETIRED_HOOK = 589400612  # Codex Review Helper
+RETIRED_PATH = '7cd61c45-077f-45e4-aafe-8e06ce68fbc4'
 HOST = 'https://n8n-webhook.tail67beb.ts.net'
 PREVIOUS_HOST = 'https://n8n-webhook.stinkyboi.com'
+RETIRED_URLS = {host + '/webhook/' + RETIRED_PATH for host in (HOST, PREVIOUS_HOST)}
 BASE = '/repos/Stuhlmuller/homelab/hooks/'
+COLLECTION = BASE.removesuffix('/') + '?per_page=100'
 RECEIPTS = Path.home() / '.local/state/homelab'
 
 
@@ -30,7 +32,50 @@ def github(method, path, body=None):
     args = ['gh', 'api', '--hostname', 'github.com', '--method', method, path]
     if body is not None:
         args += ['--input', '-']
-    return json.loads(CALLBACKS.command(*args, input=json.dumps(body).encode() if body is not None else None))
+    output = CALLBACKS.command(*args, input=json.dumps(body).encode() if body is not None else None)
+    return json.loads(output) if output.strip() else None
+
+
+def hook_inventory(api):
+    hooks = api('GET', COLLECTION)
+    if not isinstance(hooks, list) or len(hooks) >= 100:
+        raise RuntimeError('Repository hook inventory may be incomplete')
+    ids = [item.get('id') for item in hooks if isinstance(item, dict)]
+    if (len(ids) != len(hooks) or any(type(identifier) is not int or identifier <= 0 for identifier in ids)
+            or len(ids) != len(set(ids)) or any(not isinstance(item.get('config'), dict) for item in hooks)):
+        raise RuntimeError('Repository hook inventory has invalid or duplicate IDs')
+    return {item['id']: item for item in hooks}
+
+
+def require_retired_absent(api):
+    hooks = hook_inventory(api)
+    if RETIRED_HOOK in hooks or any(item['config'].get('url') in RETIRED_URLS for item in hooks.values()):
+        raise RuntimeError('Retired Codex Review Helper hook or callback path still exists')
+
+
+def retire_helper(api=github, execute=False):
+    hooks = hook_inventory(api)
+    if any(item['config'].get('url') in RETIRED_URLS for identifier, item in hooks.items() if identifier != RETIRED_HOOK):
+        raise RuntimeError('Another hook uses the retired callback path')
+    if RETIRED_HOOK not in hooks:
+        print('Codex Review Helper hook already absent')
+        return
+    endpoint = BASE + str(RETIRED_HOOK)
+    before = api('GET', endpoint)
+    if (before.get('id') != RETIRED_HOOK or before.get('name') != 'web'
+            or before.get('active') is not True or before.get('events') != ['pull_request']
+            or before.get('config', {}).get('url') not in RETIRED_URLS):
+        raise RuntimeError('Codex Review Helper hook differs from the reviewed identity, URL, activation or events')
+    if not execute:
+        print(f"Preview only; hook {RETIRED_HOOK}: {before['config']['url']} -> absent")
+        return
+    emergency = api('GET', BASE + str(EMERGENCY_HOOK))
+    api('DELETE', endpoint)
+    require_retired_absent(api)
+    current = api('GET', BASE + str(EMERGENCY_HOOK))
+    if any(current.get(key) != emergency.get(key) for key in ('id', 'name', 'active', 'events', 'config')):
+        raise RuntimeError('Surviving Emergency hook changed during retirement')
+    print(f'Hook {RETIRED_HOOK} retired; Emergency hook preserved')
 
 
 def safe_probe(url, method='GET'):
@@ -71,7 +116,7 @@ def reconcile(api=github, execute=False, require_delivery=False):
         reviewed.append((identifier, endpoint, before, url, receipt, cutover))
         print(f"Hook {identifier}: {before['config']['url']} -> {url}")
     if execute:
-        preflight()  # Both targets must pass before either hook changes.
+        preflight()
     accepted = []
     for identifier, endpoint, before, url, receipt, cutover in reviewed:
         if execute:
@@ -88,22 +133,32 @@ def reconcile(api=github, execute=False, require_delivery=False):
             CALLBACKS.save_receipt(receipt, cutover)
         accepted.append(CALLBACKS.delivery_status(api, url if execute else before['config']['url'],
                                                  cutover, endpoint + '/deliveries'))
-    print('Fixed callback URLs verified; existing secrets/events preserved' if execute else 'Preview only; callback configuration unchanged')
+    print('Emergency callback URL verified; existing secret/events preserved' if execute else 'Preview only; Emergency callback unchanged')
     if require_delivery and not all(accepted):
-        raise RuntimeError('Both hooks require a successful delivery newer than their cutover; no event or redelivery was triggered')
+        raise RuntimeError('Emergency hook requires a successful delivery newer than its cutover; no event or redelivery was triggered')
     return all(accepted)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--execute', action='store_true', help='PATCH only the two fixed callback URLs after Funnel preflight')
+    parser.add_argument('--execute', action='store_true', help='Apply the selected guarded callback change')
+    parser.add_argument('--retire-helper', action='store_true', help='Preview or retire the exact unused Codex Review Helper hook')
     parser.add_argument('--expected-sha', help='Full reviewed main SHA required for execution')
-    parser.add_argument('--require-delivery', action='store_true', help='Require fresh successful deliveries after both saved cutovers')
+    parser.add_argument('--require-delivery', action='store_true', help='Require retired helper absence and a fresh Emergency delivery')
     args = parser.parse_args()
     if args.execute:
         CALLBACKS.verify_reviewed_main(args.expected_sha)
         CALLBACKS.command('git', '-C', str(ROOT), 'cat-file', '-e', 'HEAD:scripts/n8n-github-webhooks.py')
-    reconcile(execute=args.execute, require_delivery=args.require_delivery)
+    if args.retire_helper:
+        if args.execute and RETIRED_HOOK not in hook_inventory(github):
+            retire_helper(execute=True)
+            return
+        reconcile(require_delivery=args.execute or args.require_delivery)
+        retire_helper(execute=args.execute)
+    else:
+        if args.require_delivery:
+            require_retired_absent(github)
+        reconcile(execute=args.execute, require_delivery=args.require_delivery)
 
 
 if __name__ == '__main__':
