@@ -216,6 +216,19 @@ plan_and_apply_argocd_apps() {
     return 1
   fi
 
+  # This Application auto-syncs after registration. Inspect its saved plan
+  # whenever a full or targeted run includes the Istio unit.
+  local istio_plan_file
+  istio_plan_file="$(find "$plan_dir" -path '*/istio/argocd/tfplan.json' -type f -print -quit)"
+  if [[ -n "$istio_plan_file" ]]; then
+    terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+      render --json --write=false --no-color |
+      python3 scripts/ci/istio-upgrade-gate.py authorize-apply --plan-dir "$plan_dir"
+  elif [[ "${TERRAGRUNT_ARGOCD_APP:-}" == istio ]]; then
+    echo "Selected Istio Application has no saved plan to review." >&2
+    return 1
+  fi
+
   (
     cd IaC/homelab/us-west-2/apps
     filter="$(terragrunt_argocd_app_filter)"

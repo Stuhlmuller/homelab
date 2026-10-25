@@ -34,6 +34,7 @@ python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
 python3 -I scripts/ci/platform-maintenance-credentials-test.py
+python3 -I scripts/ci/istio-upgrade-gate-test.py
 python3 -I scripts/ci/network-policy-canary-node-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/network-policy-qualification-test.py

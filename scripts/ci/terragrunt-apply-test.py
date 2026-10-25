@@ -33,6 +33,8 @@ TRAEFIK_PROJECT = {"spec": {
     "destinations": [{"namespace": "traefik", "server": "https://kubernetes.default.svc"}],
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}
+ISTIO_RENDER = {"inputs": {"manifest": json.loads(
+    (SOURCE / "fixtures/istio-application-1.27.3.json").read_text())}}
 
 # Every external operation is enumerated. Real jq evaluates the production
 # predicates; these stubs only provide inputs and verify saved-plan sequencing.
@@ -79,9 +81,22 @@ def unexpected():
 def plan(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     actions = ["delete", "create"] if config.get("replacement") else ["create"]
-    path.write_text(json.dumps({"unit": unit, "resource_changes": [
+    document = {"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
-    ] if unit == "apps" else []}))
+    ] if unit == "apps" else []}
+    if unit == "apps" and config["target"] == "istio":
+        document = istio_plan()
+    path.write_text(json.dumps(document))
+
+def istio_plan():
+    actions = ["update"] if config.get("istio_change") else ["no-op"]
+    change = {"actions": actions}
+    if actions == ["update"]:
+        change["before"] = {"manifest": config["istio_before_render"]["inputs"]["manifest"]}
+        change["after"] = {"manifest": config["istio_render"]["inputs"]["manifest"]}
+    return {"unit": "apps", "resource_changes": [
+        {"type": "kubernetes_manifest", "change": change}
+    ]}
 
 def checked(path):
     data = path.read_bytes()
@@ -169,9 +184,13 @@ elif tool == "conftest":
         Path(str(path) + ".checked").write_text(hashlib.sha256(data).hexdigest())
 elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
-    if command == ["stack", "generate"] and cwd == "IaC":
+    if command == ["--working-dir", "IaC/homelab/us-west-2/apps/istio/argocd",
+                   "render", "--json", "--write=false", "--no-color"]:
+        event("istio.render")
+        print(json.dumps(config["istio_render"]))
+    elif command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "istio"):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -221,6 +240,10 @@ elif tool == "terragrunt":
                 event("apps.plan")
                 plan(path)
                 path.with_suffix(".json").write_bytes(path.read_bytes())
+                if config.get("include_istio_plan"):
+                    istio = path.parents[2] / "istio/argocd/tfplan.json"
+                    istio.parent.mkdir(parents=True, exist_ok=True)
+                    istio.write_text(json.dumps(istio_plan()))
             elif tail == ["apply", "-no-color"]:
                 checked(path)
                 bulk_apply()
@@ -239,6 +262,7 @@ else:
 
 class TerragruntApplyTest(unittest.TestCase):
     def run_apply(self, target="langfuse", repair="false", scope="false", **overrides):
+        candidate = overrides.pop("candidate", None)
         project = json.loads(json.dumps(PROJECT))
         app_names = APPS
         crds = CRDS
@@ -260,6 +284,8 @@ class TerragruntApplyTest(unittest.TestCase):
                     "authorizationpolicies.security.istio.io"]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
                   "app_names": app_names, "crds": crds,
+                  "istio_render": ISTIO_RENDER,
+                  "istio_before_render": ISTIO_RENDER,
                   "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
@@ -268,7 +294,7 @@ class TerragruntApplyTest(unittest.TestCase):
             root = Path(tmp).resolve()
             binaries = root / "bin"
             binaries.mkdir()
-            for name in ("bash", "dirname", "find", "rm", "grep", "sort", "sed",
+            for name in ("bash", "dirname", "find", "rm", "grep", "sort", "sed", "python3",
                          "awk", "comm", "cat", "mktemp", "jq"):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, name + " is required for this offline test")
@@ -280,8 +306,12 @@ class TerragruntApplyTest(unittest.TestCase):
             scripts = root / "scripts/ci"
             scripts.mkdir(parents=True)
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
-                         "terragrunt-current-main.sh"):
+                         "terragrunt-current-main.sh", "istio-upgrade-gate.py"):
                 shutil.copyfile(SOURCE / name, scripts / name)
+            candidate_target = root / "clusters/homelab/apps/istio/upgrade-1.28.10.json"
+            candidate_target.parent.mkdir(parents=True)
+            candidate_target.write_text(json.dumps(candidate or json.loads(
+                (SOURCE.parent.parent / "clusters/homelab/apps/istio/upgrade-1.28.10.json").read_text())))
             for unit in ("homelab/us-west-2/bootstrap/argocd",
                          "homelab/us-west-2/shared/aws-ssm-parameters",
                          "homelab/us-west-2/apps/langfuse/blob-storage",
@@ -329,6 +359,43 @@ class TerragruntApplyTest(unittest.TestCase):
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_active_istio_phase_stops_before_any_argocd_apply(self):
+        candidate = json.loads((SOURCE.parent.parent / "clusters/homelab/apps/istio/upgrade-1.28.10.json").read_text())
+        candidate["activationEnabled"] = True
+        candidate["phase"] = 1
+        rendered = json.loads(json.dumps(ISTIO_RENDER))
+        rendered["inputs"]["manifest"]["spec"]["sources"][0].update(
+            repoURL="https://blob.istio.io/istio-release/charts", targetRevision="1.28.10")
+        result, events = self.run_apply(target="istio", candidate=candidate,
+                                        istio_render=rendered, istio_change=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Istio specification change needs protected post-sync health receipts", result.stderr)
+        self.assertIn("istio.render", events)
+        self.assertNotIn("apps.apply", events)
+
+    def test_changed_istio_source_with_disabled_phase_stops_before_apply(self):
+        rendered = json.loads(json.dumps(ISTIO_RENDER))
+        rendered["inputs"]["manifest"]["spec"]["sources"][0]["targetRevision"] = "1.28.10"
+        result, events = self.run_apply(target="istio", istio_render=rendered)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Istio charts must advance one ordered source at a time", result.stderr)
+        self.assertIn("istio.render", events)
+        self.assertNotIn("apps.apply", events)
+
+    def test_full_apply_allows_a_no_op_istio_registration(self):
+        result, events = self.run_apply(target="", include_istio_plan=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("istio.render", events)
+        self.assertIn("apps.apply", events)
+
+    def test_unrelated_target_does_not_consume_the_istio_gate(self):
+        rendered = json.loads(json.dumps(ISTIO_RENDER))
+        rendered["inputs"]["manifest"]["spec"]["sources"][0]["targetRevision"] = "unreviewed"
+        result, events = self.run_apply(target="nofx", istio_render=rendered)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("istio.render", events)
+        self.assertIn("apps.apply", events)
 
     def test_github_apply_checks_current_main_before_each_mutation(self):
         for target in ("langfuse", ""):
