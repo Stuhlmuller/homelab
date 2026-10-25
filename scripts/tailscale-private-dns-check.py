@@ -171,10 +171,13 @@ def openclaw_suspended():
     slices = json.loads(run("kubectl", "-n", "ai", "get", "endpointslices", "-l",
                             "kubernetes.io/service-name=openclaw", "-o", "json"))
     items = slices.get("items") if isinstance(slices, dict) else None
-    return (isinstance(slices, dict) and slices.get("kind") == "EndpointSliceList"
+    return (isinstance(slices, dict) and slices.get("kind") == "List"
             and isinstance(items, list) and bool(items)
-            and all(isinstance(item, dict) and item.get("metadata", {}).get("labels", {}).get(
-                "kubernetes.io/service-name") == "openclaw" and item.get("endpoints") == [] for item in items))
+            and all(isinstance(item, dict) and isinstance(item.get("metadata"), dict)
+                    and item.get("kind") == "EndpointSlice" and item["metadata"].get("namespace") == "ai"
+                    and isinstance(item["metadata"].get("labels"), dict)
+                    and item["metadata"]["labels"].get("kubernetes.io/service-name") == "openclaw"
+                    and item.get("endpoints") in (None, []) for item in items))
 
 
 def routes(value, address=None):

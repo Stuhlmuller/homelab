@@ -166,8 +166,9 @@ class Readiness(unittest.TestCase):
         source = {'controllers':{'openclaw':{'replicas':0}}}
         live = {'metadata':{'name':'openclaw','namespace':'ai'},'spec':{'replicas':0},
                 'status':{'replicas':0}}
-        empty = {'kind':'EndpointSliceList', 'items':[
-            {'metadata':{'labels':{'kubernetes.io/service-name':'openclaw'}}, 'endpoints':[]}]}
+        empty = {'kind':'List', 'items':[
+            {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                'kubernetes.io/service-name':'openclaw'}}, 'endpoints':None}]}
         with patch.object(check, 'run', side_effect=[json.dumps(source), json.dumps(live), json.dumps(empty)]) as run, \
                 patch.object(check, 'probe', return_value=(502, [])), contextlib.redirect_stderr(io.StringIO()):
             check.routes({'hostnames':['openclaw.stinkyboi.com']}, '100.100.100.1')
@@ -203,12 +204,17 @@ class Readiness(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
                     check.routes({'hostnames':['openclaw.stinkyboi.com']})
 
-        for endpoints in ({'kind':'EndpointSliceList', 'items':[]},
-                          {'kind':'EndpointSliceList', 'items':[
-                              {'metadata':{'labels':{'kubernetes.io/service-name':'openclaw'}},
+        for endpoints in ({'kind':'List', 'items':[]},
+                          {'kind':'List', 'items':[
+                              {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                                  'kubernetes.io/service-name':'openclaw'}},
                                'endpoints':[{'addresses':['10.0.0.1']}]}]},
-                          {'kind':'EndpointSliceList', 'items':[
-                              {'metadata':{'labels':{'kubernetes.io/service-name':'other'}}, 'endpoints':[]}]}):
+                          {'kind':'List', 'items':[
+                              {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                                  'kubernetes.io/service-name':'other'}}, 'endpoints':None}]},
+                          {'kind':'List', 'items':[{'kind':'EndpointSlice', 'metadata':None, 'endpoints':None}]},
+                          {'kind':'List', 'items':[{'kind':'EndpointSlice', 'metadata':{'namespace':'ai',
+                              'labels':None}, 'endpoints':None}]}):
             with self.subTest(endpoints=endpoints), patch.object(check, 'run', side_effect=[
                     json.dumps(source), json.dumps(live), json.dumps(endpoints)]), \
                     patch.object(check, 'probe', return_value=(502, [])):
