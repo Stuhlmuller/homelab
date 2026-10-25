@@ -86,14 +86,18 @@ the failed Job remains. Inspect its private log, exact Job and Pod UIDs, and
 the startup Secret read-only first. The protected `cleanup-failed-bind` lane
 accepts the original source SHA, run ID, attempt, Job UID, and Pod UID. It
 requires a terminal Failed Job with one failed Pod, unchanged ancestor source
-and candidate bytes, the Pod-template Secret witness still at the same UID and
-resource version without an Installation ID, retained PVC/PV identities, and
+and candidate bytes, the exact immutable mounted ConfigMap and stable current
+UID/resource version, the Pod-template Secret witness still at the same UID
+and resource version without an Installation ID, retained PVC/PV identities, and
 disabled activation. A still-running Job with an expired readiness receipt is
 not eligible. It rechecks exact current `main` beside one foreground REST
 DELETE guarded by Job UID and resource version. If the response is lost it
 reads the Job and Pod back; it never repeats the DELETE. Completion requires
 both gone with the Secret and retained storage unchanged. The production
 workflow serializes cleanup with binding and exposes no private logs.
+The Job pins the ConfigMap name and content receipt, not its historical UID;
+cleanup verifies exact immutable bytes and current identity before and after
+deletion. It does not claim the ConfigMap UID was unchanged since Job creation.
 
 Use the reviewed [operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
 with `enterprise_stage=cleanup-failed-bind`, the current `expected_sha`, and

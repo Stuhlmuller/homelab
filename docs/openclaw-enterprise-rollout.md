@@ -71,8 +71,11 @@ Job fails and blocks later dispatches. Review its private failure evidence
 read-only. The fixed `cleanup-failed-bind` lane takes the failed source SHA,
 run ID, attempt, Job UID and Pod UID. It requires identical historical
 binding code/config and candidate bytes, a terminal Failed Job with one
-failed Pod, an unchanged unbound startup Secret at its pre-Job UID/resource
-version, disabled activation, and retained bootstrap/journal PVC/PV identities.
+failed Pod, the exact immutable mounted ConfigMap with stable current
+UID/resource version, an unchanged unbound startup Secret at its pre-Job
+UID/resource version, disabled activation, and retained bootstrap/journal
+PVC/PV identities. The Job records the ConfigMap name and content receipt,
+not a historical ConfigMap UID; cleanup does not claim historical UID continuity.
 It rechecks current `main` beside one UID/resourceVersion-preconditioned
 foreground Job DELETE. On a lost response it reads back; it never retries
 the write blindly. It passes only after the Job and Pod are gone and the

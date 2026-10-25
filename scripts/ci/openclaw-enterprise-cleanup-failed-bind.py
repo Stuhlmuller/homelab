@@ -91,6 +91,30 @@ def prove_secret(operator, baseline):
             "startup Secret was bound, replaced or changed")
 
 
+def prove_projection(projection):
+    expected = projection["metadata"]
+    configmap = journal.kubectl_json("-n", expected["namespace"], "get",
+                                     "configmap", expected["name"], "-o=json")
+    metadata = configmap.get("metadata", {}) if isinstance(configmap, dict) else {}
+    uid = metadata.get("uid") if isinstance(metadata, dict) else None
+    version = metadata.get("resourceVersion") if isinstance(metadata, dict) else None
+    require(isinstance(configmap, dict) and
+            configmap.get("kind") == "ConfigMap" and
+            isinstance(metadata, dict) and
+            metadata.get("name") == expected["name"] and
+            metadata.get("namespace") == expected["namespace"] and
+            metadata.get("labels") == expected["labels"] and
+            isinstance(uid, str) and UID.fullmatch(uid) and
+            isinstance(version, str) and RV.fullmatch(version) and
+            not metadata.get("ownerReferences") and
+            not metadata.get("deletionTimestamp") and
+            configmap.get("immutable") is True and
+            configmap.get("data") == projection["data"] and
+            not configmap.get("binaryData"),
+            "mounted operator source projection differs from reviewed source")
+    return uid, version
+
+
 def prove_retained_storage(operator):
     journal.prove_claims(operator)
     namespace = operator["namespace"]
@@ -154,10 +178,11 @@ def prove_pod(pod, intended, job_uid, pod_uid, operator):
     annotations = metadata.get("annotations") if isinstance(metadata, dict) else None
     containers = actual.get("containers") if isinstance(actual, dict) else None
     states = status.get("containerStatuses") if isinstance(status, dict) else None
-    terminated = (states[0].get("state", {}).get("terminated")
+    state = (states[0].get("state")
                   if isinstance(states, list) and len(states) == 1 and
                   isinstance(states[0], dict) and
                   isinstance(states[0].get("state"), dict) else None)
+    terminated = state.get("terminated") if isinstance(state, dict) else None
     require(isinstance(metadata, dict) and metadata.get("uid") == pod_uid and
             metadata.get("namespace") == operator["namespace"] and
             isinstance(metadata.get("name"), str) and
@@ -202,6 +227,7 @@ def prove_pod(pod, intended, job_uid, pod_uid, operator):
             isinstance(status, dict) and status.get("phase") == "Failed" and
             isinstance(states, list) and len(states) == 1 and
             states[0].get("name") == "operator" and
+            isinstance(state, dict) and set(state) == {"terminated"} and
             isinstance(terminated, dict) and
             type(terminated.get("exitCode")) is int and
             terminated["exitCode"] != 0,
@@ -276,6 +302,7 @@ def prove_predelete(source_sha, run_id, attempt, job_uid, pod_uid,
     intended = journal.build_job("bind-installation", source_sha, run_id, operator,
                                  projection, attempt, baseline=baseline)
     job_rv = prove_failed_job(target, intended, job_uid)
+    projection_id = prove_projection(projection)
     pods = journal.kubectl_json("-n", namespace, "get", "pods", "-o=json")
     matches = matching_pods(pods.get("items") if isinstance(pods, dict) else None,
                             name, job_uid)
@@ -295,7 +322,7 @@ def prove_predelete(source_sha, run_id, attempt, job_uid, pod_uid,
     prove_pod(matches[0], intended, job_uid, pod_uid, operator)
     prove_secret(operator, baseline)
     storage = prove_retained_storage(operator)
-    return name, job_rv, baseline, storage
+    return name, job_rv, baseline, storage, projection, projection_id
 
 
 def delete_once(namespace, name, job_uid, job_rv, expected, environ):
@@ -344,6 +371,7 @@ def delete_once(namespace, name, job_uid, job_rv, expected, environ):
 
 
 def observe_deletion(namespace, name, job_uid, pod_uid, operator, baseline, storage,
+                     projection, projection_id,
                      *, uncertain):
     for _ in range(30):
         jobs = journal.kubectl_json("-n", namespace, "get", "jobs", "-o=json")
@@ -363,6 +391,8 @@ def observe_deletion(namespace, name, job_uid, pod_uid, operator, baseline, stor
         require(all(pod.get("metadata", {}).get("uid") == pod_uid for pod in matches),
                 "failed binding Pod was replaced during deletion")
         prove_secret(operator, baseline)
+        require(prove_projection(projection) == projection_id,
+                "mounted operator source projection changed during deletion")
         require(prove_retained_storage(operator) == storage,
                 "retained volume or claim changed during deletion")
         if not named and not matches:
@@ -388,19 +418,21 @@ def main(argv=None, environ=None):
         config = json.loads(journal.CONFIG.read_text())
         operator = journal.contract(config, "bind-installation", expected)
         journal.prove_image_source(operator, expected)
-        _, first_job_rv, first_baseline, first_storage = prove_predelete(
+        (_, first_job_rv, first_baseline, first_storage,
+         _, first_projection_id) = prove_predelete(
             source_sha, run_id, attempt, job_uid, pod_uid, config, operator)
         # A second complete read closes the proof-to-delete interval. The
         # Kubernetes preconditions close the final Job identity/version race.
-        name, job_rv, baseline, storage = prove_predelete(
+        name, job_rv, baseline, storage, projection, projection_id = prove_predelete(
             source_sha, run_id, attempt, job_uid, pod_uid, config, operator)
         require(job_rv == first_job_rv and baseline == first_baseline and
-                storage == first_storage,
+                storage == first_storage and projection_id == first_projection_id,
                 "failed binding state changed between checks")
         accepted = delete_once(operator["namespace"], name, job_uid, job_rv,
                                expected, environ)
         observe_deletion(operator["namespace"], name, job_uid, pod_uid,
-                         operator, baseline, storage, uncertain=not accepted)
+                         operator, baseline, storage, projection, projection_id,
+                         uncertain=not accepted)
     except (journal.Blocked, OSError, ValueError, KeyError, TypeError, AttributeError,
             subprocess.SubprocessError):
         print("Failed binding cleanup blocked; private diagnostics withheld", file=sys.stderr)

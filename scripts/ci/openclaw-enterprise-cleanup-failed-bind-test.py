@@ -92,14 +92,17 @@ class Cleanup(unittest.TestCase):
         with mock.patch.object(cleanup.journal, "kubectl_json", side_effect=read), \
              mock.patch.object(cleanup.journal, "config_projection",
                                return_value=fixtures.projection(config)), \
+             mock.patch.object(cleanup, "prove_projection",
+                               return_value=(JOB_UID, "99")) as projection_proof, \
              mock.patch.object(cleanup, "prove_secret") as secret_proof, \
              mock.patch.object(cleanup, "prove_retained_storage", return_value="storage"):
             observed = cleanup.prove_predelete(SHA, "12345", "1", JOB_UID, POD_UID,
                                                 config, operator)
         self.assertEqual(observed, (intended["metadata"]["name"], "202",
                                     intended["spec"]["template"]["metadata"]["annotations"],
-                                    "storage"))
+                                    "storage", fixtures.projection(config), (JOB_UID, "99")))
         secret_proof.assert_called_once()
+        projection_proof.assert_called_once_with(fixtures.projection(config))
 
     def test_active_stale_or_foreign_binding_cannot_be_removed(self):
         operator, intended, actual, pod, _ = failed_objects()
@@ -107,7 +110,9 @@ class Cleanup(unittest.TestCase):
         for change in ("running", "no_failed_condition", "ready_expired_running",
                        "wrong_job_uid", "wrong_pod_uid", "foreign_pod", "no_pod",
                        "missing_witness", "changed_witness", "foreign_image",
-                       "other_active_job", "pod_deleting", "job_deleting"):
+                       "other_active_job", "pod_deleting", "job_deleting",
+                       "running_and_terminated", "waiting_and_terminated",
+                       "only_running", "only_waiting"):
             job = copy.deepcopy(actual)
             candidate = copy.deepcopy(pod)
             pods = [candidate]
@@ -141,18 +146,69 @@ class Cleanup(unittest.TestCase):
                 candidate["metadata"]["deletionTimestamp"] = "now"
             elif change == "job_deleting":
                 job["metadata"]["deletionTimestamp"] = "now"
+            elif change in ("running_and_terminated", "waiting_and_terminated",
+                            "only_running", "only_waiting"):
+                state = candidate["status"]["containerStatuses"][0]["state"]
+                branch = "running" if "running" in change else "waiting"
+                state[branch] = {"startedAt": "now"} if branch == "running" else {
+                    "reason": "ContainerCreating"}
+                if change.startswith("only_"):
+                    del state["terminated"]
             def read(*args):
                 return {"items": jobs if args[2] == "jobs" else pods}
             with self.subTest(change=change), \
                  mock.patch.object(cleanup.journal, "kubectl_json", side_effect=read), \
                  mock.patch.object(cleanup.journal, "config_projection",
                                    return_value=fixtures.projection(fixtures.ready_operator())), \
+                 mock.patch.object(cleanup, "prove_projection", return_value=(JOB_UID, "99")), \
                  mock.patch.object(cleanup, "prove_secret"), \
                  mock.patch.object(cleanup, "prove_retained_storage", return_value="storage"), \
                  self.assertRaises(cleanup.journal.Blocked):
                 cleanup.prove_predelete(SHA, "12345", "1", JOB_UID, POD_UID,
                                         fixtures.ready_operator(), operator)
         self.assertEqual(baseline[cleanup.journal.BINDING_VERSION], "100")
+
+    def test_live_immutable_projection_must_match_mounted_source(self):
+        projection = {"metadata": {"name": "oce-journal-config-" + SHA,
+                                   "namespace": "openclaw-system",
+                                   "labels": {"app.kubernetes.io/name":
+                                              "oce-journal-operator-config",
+                                              "homelab.stuhlmuller.dev/source-sha": SHA}},
+                      "data": {"openclaw-enterprise.json": "{}",
+                               "receipt.json": "{}"}}
+        current = {"kind": "ConfigMap", "immutable": True,
+                   "metadata": {**projection["metadata"], "uid": JOB_UID,
+                                "resourceVersion": "99"},
+                   "data": copy.deepcopy(projection["data"])}
+        with mock.patch.object(cleanup.journal, "kubectl_json", return_value=current) as read:
+            self.assertEqual(cleanup.prove_projection(projection), (JOB_UID, "99"))
+        self.assertEqual(read.call_args.args,
+                         ("-n", "openclaw-system", "get", "configmap",
+                          "oce-journal-config-" + SHA, "-o=json"))
+        for change in ("missing", "data", "immutable", "name", "namespace",
+                       "labels", "uid", "resource_version", "owner", "deleting",
+                       "binary_data"):
+            altered = copy.deepcopy(current)
+            if change == "missing":
+                altered = {}
+            elif change == "data":
+                altered["data"]["receipt.json"] = "foreign"
+            elif change == "immutable":
+                altered["immutable"] = False
+            elif change in ("name", "namespace", "labels", "uid"):
+                altered["metadata"][change] = "foreign"
+            elif change == "resource_version":
+                altered["metadata"]["resourceVersion"] = "0"
+            elif change == "owner":
+                altered["metadata"]["ownerReferences"] = [{"uid": JOB_UID}]
+            elif change == "deleting":
+                altered["metadata"]["deletionTimestamp"] = "now"
+            else:
+                altered["binaryData"] = {"extra": "Zm9yZWlnbg=="}
+            with self.subTest(change=change), \
+                 mock.patch.object(cleanup.journal, "kubectl_json", return_value=altered), \
+                 self.assertRaises(cleanup.journal.Blocked):
+                cleanup.prove_projection(projection)
 
     def test_secret_must_remain_unbound_at_pre_job_resource_version(self):
         operator, intended, _, _, original = failed_objects()
@@ -276,17 +332,33 @@ class Cleanup(unittest.TestCase):
             return {"items": [current[1]] if current[1] else []}
         with mock.patch.object(cleanup.journal, "kubectl_json", side_effect=read), \
              mock.patch.object(cleanup, "prove_secret"), \
+             mock.patch.object(cleanup, "prove_projection", return_value=(JOB_UID, "99")), \
              mock.patch.object(cleanup, "prove_retained_storage", return_value="storage"), \
              mock.patch.object(cleanup.time, "sleep"):
             cleanup.observe_deletion(operator["namespace"], name, JOB_UID, POD_UID,
-                                     operator, {}, "storage", uncertain=True)
+                                     operator, {}, "storage", {}, (JOB_UID, "99"),
+                                     uncertain=True)
         with mock.patch.object(cleanup.journal, "kubectl_json",
                                side_effect=[{"items": [actual]}, {"items": [pod]}]), \
              mock.patch.object(cleanup, "prove_secret"), \
+             mock.patch.object(cleanup, "prove_projection", return_value=(JOB_UID, "99")), \
              mock.patch.object(cleanup, "prove_retained_storage", return_value="storage"), \
              self.assertRaisesRegex(cleanup.journal.Blocked, "uncertain"):
             cleanup.observe_deletion(operator["namespace"], name, JOB_UID, POD_UID,
-                                     operator, {}, "storage", uncertain=True)
+                                     operator, {}, "storage", {}, (JOB_UID, "99"),
+                                     uncertain=True)
+
+    def test_postdelete_projection_replacement_blocks_completion(self):
+        operator, intended, _, _, _ = failed_objects()
+        name = intended["metadata"]["name"]
+        with mock.patch.object(cleanup.journal, "kubectl_json",
+                               side_effect=[{"items": []}, {"items": []}]), \
+             mock.patch.object(cleanup, "prove_secret"), \
+             mock.patch.object(cleanup, "prove_projection", return_value=(POD_UID, "100")), \
+             self.assertRaisesRegex(cleanup.journal.Blocked, "projection changed"):
+            cleanup.observe_deletion(operator["namespace"], name, JOB_UID, POD_UID,
+                                     operator, {}, "storage", {}, (JOB_UID, "99"),
+                                     uncertain=False)
 
     def test_changed_second_snapshot_blocks_delete_and_public_output_is_generic(self):
         operator, _, _, _, _ = failed_objects()
@@ -298,7 +370,8 @@ class Cleanup(unittest.TestCase):
              mock.patch.object(cleanup.journal, "contract", return_value=operator), \
              mock.patch.object(cleanup.journal, "prove_image_source"), \
              mock.patch.object(cleanup, "prove_predelete", side_effect=[
-                 ("job", "202", {}, "storage"), ("job", "203", {}, "storage")]), \
+                 ("job", "202", {}, "storage", {}, (JOB_UID, "99")),
+                 ("job", "203", {}, "storage", {}, (JOB_UID, "99"))]), \
              mock.patch.object(cleanup, "delete_once") as write, \
              redirect_stderr(err):
             result = cleanup.main(cleanup_shas, {"EXPECTED_SHA": SHA})

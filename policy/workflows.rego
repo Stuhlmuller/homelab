@@ -572,7 +572,7 @@ trap 'rm -f "$private_log"' EXIT
 if ! {
   ulimit -f 1024 &&
   sha256sum --check --status <<<'bf5bed5a0b810ff7d50a6869b071287b7d38594254e3f0775cc6acc4041d2e65  scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh' &&
-  sha256sum --check --status <<<'ff9ea086848b0039dd0113d0eb07be490d6f4ffe347a4a8b439a35d757d7fd96  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
+  sha256sum --check --status <<<'b343351ab9b15a87875045b8df082e21aad181362133c35479dc6bf4ca1faa2a  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
   sha256sum --check --status <<<'3fe456e1e8db5efb2b060d5239d8221444b8afc62f3a0b1ea667f131cdfd26cc  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   timeout 15m nix develop --command bash scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh
 } >"$private_log" 2>&1; then
