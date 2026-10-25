@@ -32,13 +32,33 @@ if name == "gh":
     print("b" * 40 if mode == "main-advanced" else os.environ["GITHUB_SHA"])
 elif name == "kubectl":
     if args[:2] == ["auth", "can-i"]:
-        print("no" if mode == "deny-exec" and "pods/exec" in args else "yes")
+        print("no" if (mode == "deny-exec" and "pods/exec" in args) or
+              (mode == "deny-pv" and "persistentvolumes" in args) else "yes")
     elif "get" in args and "deployment" in args:
         print(json.dumps({"metadata": {"uid": "c" * 36, "generation": 1}, "spec": {"replicas": 1,
               "template": {"spec": {"containers": [{"name": "postgres", "image": image,
               "volumeMounts": [{"name": "data", "mountPath": "/var/lib/postgresql/data"}]}],
               "volumes": [{"name": "data", "persistentVolumeClaim": {"claimName": "langfuse-postgres-data"}}]}}},
               "status": {"readyReplicas": 1, "updatedReplicas": 1, "observedGeneration": 1}}))
+    elif "get" in args and "pvc" in args:
+        claim_uid = "f" * 36 if mode == "claim-replaced" and Path(os.environ["TEST_DUMPED"]).exists() else "e" * 36
+        print(json.dumps({"kind": "PersistentVolumeClaim",
+              "metadata": {"namespace": "langfuse", "name": "langfuse-postgres-data", "uid": claim_uid,
+                           "deletionTimestamp": "2026-10-24T00:00:00Z" if mode == "pvc-deleting" else None},
+              "spec": {"storageClassName": "nfs-default", "accessModes": ["ReadWriteOnce"],
+                       "volumeName": "pvc-wrong" if mode == "wrong-pv-name" else "pvc-" + claim_uid},
+              "status": {"phase": "Bound"}}))
+    elif "get" in args and "pv" in args:
+        print(json.dumps({"kind": "PersistentVolume",
+              "metadata": {"name": "pvc-" + "e" * 36, "uid": "1" * 36,
+                           "deletionTimestamp": "2026-10-24T00:00:00Z" if mode == "pv-deleting" else None},
+              "spec": {"storageClassName": "nfs-default", "persistentVolumeReclaimPolicy": "Retain",
+                       "nfs": {"server": "10.1.0.2", "path": "/homelab/wrong-export"
+                               if mode == "wrong-nfs-path" else
+                               "/homelab/langfuse-langfuse-postgres-data-pvc-" + "e" * 36},
+                       "claimRef": {"namespace": "langfuse", "name": "langfuse-postgres-data",
+                                    "uid": "2" * 36 if mode == "wrong-pv-owner" else "e" * 36}},
+              "status": {"phase": "Bound"}}))
     elif "get" in args and "pods" in args:
         pod = {"metadata": {"name": "langfuse-postgres-abc", "uid": "a" * 36,
                "ownerReferences": [{"controller": True, "kind": "ReplicaSet",
@@ -48,13 +68,17 @@ elif name == "kubectl":
                        "volumeMounts": [{"name": "data", "mountPath": "/var/lib/postgresql/data"}]}],
                         "volumes": [{"name": "data", "persistentVolumeClaim":
                                      {"claimName": "wrong-data" if mode == "wrong-pvc" else "langfuse-postgres-data"}}]}}
-        print(json.dumps({"items": [pod, pod] if mode == "two-pods" else [pod]}))
+        print(json.dumps({"kind": "PodList", "metadata": {
+            "resourceVersion": "0" if mode == "zero-list-version" else "12345",
+            "continue": "next-page" if mode == "partial-pod-list" else ""},
+            "items": [pod, pod] if mode == "two-pods" else [pod]}))
     elif "get" in args and "replicaset" in args:
         print(json.dumps({"metadata": {"uid": "b" * 36,
               "ownerReferences": [{"controller": True, "kind": "Deployment",
                                    "name": "langfuse-postgres",
                                    "uid": "d" * 36 if mode == "wrong-owner" else "c" * 36}]}}))
     elif "exec" in args and "pg_dump" in args:
+        Path(os.environ["TEST_DUMPED"]).touch()
         sys.stdout.buffer.write(body)
     elif "exec" in args and "psql" in args:
         print("14284467")
@@ -101,7 +125,7 @@ else:
 
 
 class CheckpointTests(unittest.TestCase):
-    def run_case(self, mode="good", expected_sha=None):
+    def run_case(self, mode="good", expected_sha=None, expected_pvc_uid=None, expected_pv_uid=None):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp)
             for name in ("gh", "kubectl", "aws", "docker"):
@@ -117,12 +141,15 @@ class CheckpointTests(unittest.TestCase):
                 "GITHUB_REF": "refs/heads/main",
                 "GITHUB_SHA": sha,
                 "EXPECTED_SHA": expected_sha or sha,
+                "EXPECTED_PVC_UID": expected_pvc_uid or "e" * 36,
+                "EXPECTED_PV_UID": expected_pv_uid or "1" * 36,
                 "GITHUB_RUN_ID": "123",
                 "GITHUB_RUN_ATTEMPT": "1",
                 "RUNNER_TEMP": temp,
                 "TEST_IMAGE": IMAGE,
                 "TEST_MODE": mode,
                 "TEST_LOG": str(log),
+                "TEST_DUMPED": str(path / "dumped"),
             }
             result = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
                                     capture_output=True, text=True, timeout=30)
@@ -135,6 +162,8 @@ class CheckpointTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("version=version-1", receipt)
         self.assertIn("tables=8", receipt)
+        self.assertIn("pvc_uid=" + "e" * 36, receipt)
+        self.assertIn("pv=pvc-" + "e" * 36 + " pv_uid=" + "1" * 36, receipt)
         self.assertTrue(any(name == "aws" and "--if-none-match" in args
                             for name, args in commands))
         self.assertTrue(any(name == "docker" and args[0] == "run" and "--network" in args
@@ -160,6 +189,55 @@ class CheckpointTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(receipt, "")
         self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_missing_pv_read_right_prevents_dump_and_upload(self):
+        result, commands, receipt = self.run_case("deny-pv")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_wrong_pv_claim_uid_prevents_dump_and_upload(self):
+        result, commands, receipt = self.run_case("wrong-pv-owner")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_wrong_nfs_export_prevents_dump_and_upload(self):
+        result, commands, receipt = self.run_case("wrong-nfs-path")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_wrong_pv_name_or_deleting_binding_prevents_dump_and_upload(self):
+        for mode in ("wrong-pv-name", "pvc-deleting", "pv-deleting"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_wrong_expected_source_identity_prevents_dump_and_upload(self):
+        for expected in ({"expected_pvc_uid": "3" * 36}, {"expected_pv_uid": "4" * 36}):
+            with self.subTest(expected=expected):
+                result, commands, receipt = self.run_case(**expected)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_replaced_claim_after_dump_prevents_upload(self):
+        result, commands, receipt = self.run_case("claim-replaced")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertTrue(any("pg_dump" in args for _, args in commands))
+        self.assertFalse(any("put-object" in args for _, args in commands))
+
+    def test_partial_or_unversioned_pod_list_prevents_dump_and_upload(self):
+        for mode in ("partial-pod-list", "zero-list-version"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
 
     def test_wrong_data_claim_prevents_dump_and_upload(self):
         result, commands, receipt = self.run_case("wrong-pvc")
