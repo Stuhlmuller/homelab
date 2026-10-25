@@ -218,7 +218,8 @@ the retained install is 2026.5.22. The
 [offline cache builder](../../../../scripts/openclaw-discord-offline-cache.py)
 pins the legacy image digest and the npm tarball integrity, installs the exact
 package in a disposable state, then tests a fresh state with `--network none`
-using only an archive round-trip of npm's content cache. The fresh pinned CLI
+using only an archive round-trip of npm's content cache. The warm home and state
+are removed from the Docker bind mount before that test. The fresh pinned CLI
 creates its own SQLite install record and must report the expected global npm
 origin, spec and version. It also requires the online and offline npm project
 lockfiles to agree. Its output is a private-transfer contract:

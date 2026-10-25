@@ -153,7 +153,13 @@ def build(output_dir, root):
             # npm logs and notifier files are intentionally excluded from the closure.
             archive_cache(work / "warm-home" / ".npm" / "_cacache", artifact)
             restore_cache_archive(artifact, work / "offline-home" / ".npm")
-            # The second state is fresh: no SQLite record or installed tree is copied.
+            # The bind mount cannot expose the warm install to the offline container.
+            for name in ("warm-state", "warm-home"):
+                shutil.rmtree(work / name)
+            if any((work / name).exists() for name in ("warm-state", "warm-home")):
+                raise ValueError("warm OpenClaw state remains before offline proof")
+            if any((work / "offline-state").iterdir()):
+                raise ValueError("offline OpenClaw state is not fresh")
             container(work, "offline-state", "offline-home", install, offline=True)
             report = container(
                 work, "offline-state", "offline-home",
