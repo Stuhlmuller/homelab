@@ -153,7 +153,7 @@ class PlacementTests(unittest.TestCase):
                     self.key, self.record = key, record
 
             store = Store("bucket")
-            identities = iter((("node-uid", "boot-id"), ("node-uid", "boot-id")))
+            identities = iter((("node-uid", "boot-id"),) * 4)
             with patch.dict(SUT["PLATFORM"], {
                     "require_reviewed_execution_config": lambda *_: None,
                     "validate_config": lambda *_: config,
@@ -181,13 +181,20 @@ class PlacementTests(unittest.TestCase):
                 SUT["execute"](args)
                 self.assertEqual(events[-1], "write")
                 self.assertEqual(store.record["sourceSha"], SHA)
+                self.assertEqual(store.record["placementRunId"], "456")
+                self.assertIn(f"/{SHA}/placement/456.json", store.key)
                 self.assertEqual(store.record["baselineCaptureSha256"], "0" * 64)
                 self.assertTrue(output.exists())
+                output.unlink()
+                with patch.dict(os.environ, {"GITHUB_RUN_ID": "457"}):
+                    SUT["execute"](args)
+                self.assertIn(f"/{SHA}/placement/457.json", store.key)
+                self.assertEqual(events.count("write"), 2)
                 output.unlink()
                 args.baseline_source_sha = "b" * 40
                 with self.assertRaisesRegex(ValueError, "exact current main"):
                     SUT["execute"](args)
-                self.assertEqual(events.count("write"), 1)
+                self.assertEqual(events.count("write"), 2)
 
     def test_admission_remeasures_spike_and_binds_original_capture(self):
         capture = baseline()
@@ -195,6 +202,7 @@ class PlacementTests(unittest.TestCase):
         timestamp = SUT["fresh"](capture["completedAt"], 3600).strftime(
             "%Y-%m-%dT%H:%M:%SZ")
         receipt = {"format": 1, "verified": True, "sourceSha": SHA,
+                   "placementRunId": "456",
                    "node": NODE, "canaryNode": NODE, "nodeUid": "node-uid",
                    "bootID": "boot-id", "measured": True,
                    "isolatedTaint": config["canary"]["taint"],
@@ -203,6 +211,7 @@ class PlacementTests(unittest.TestCase):
                    "baselineRunId": "123", "baselineCapturedAt": timestamp,
                    "baselineCaptureSha256": "0" * 64,
                    "baselineCaptureVersionId": "version-1"}
+        remote = {"receipt": receipt}
         metric = {"kind": "NodeMetrics", "metadata": {"name": NODE},
                   "timestamp": now(), "usage": {"memory": "400Mi", "cpu": "150m"}}
         summary = {"node": {"nodeName": NODE, "fs": {"time": now(),
@@ -218,16 +227,20 @@ class PlacementTests(unittest.TestCase):
             def check(self):
                 pass
 
-            def version(self, _key, required):
+            def version(self, key, required):
                 assert required
-                return "version-1"
+                return "version-2" if key.endswith("/457.json") else "version-1"
+
+            def read(self, _key, _limit):
+                return json.dumps(remote["receipt"]).encode()
 
             def write_once(self, *_):
                 raise AssertionError("read-only admission must not write a placement receipt")
 
         with tempfile.TemporaryDirectory() as directory:
             args = argparse.Namespace(config=SUT["CONFIG"], expected_sha=SHA,
-                                      bucket="bucket",
+                                      bucket="bucket", placement_run_id="456",
+                                      placement_version_id="version-1",
                                       check_placement=Path(directory) / "placement.json")
 
             def kube_json(*arguments):
@@ -260,6 +273,30 @@ class PlacementTests(unittest.TestCase):
                         "read_baseline": lambda *_: (capture, "0" * 64, "version-1")}):
                 SUT["check"](args)
                 self.assertFalse(args.check_placement.exists())
+                receipt["capturedAt"] = (datetime.now(timezone.utc) -
+                                         timedelta(minutes=31)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                receipt["baselineCapturedAt"] = (datetime.now(timezone.utc) -
+                                                 timedelta(minutes=40)).strftime(
+                                                     "%Y-%m-%dT%H:%M:%SZ")
+                with self.assertRaisesRegex(ValueError, "stale"):
+                    SUT["check"](args)
+                receipt.update(placementRunId="457", capturedAt=timestamp,
+                               baselineCapturedAt=timestamp)
+                args.placement_run_id = "457"
+                args.placement_version_id = "version-2"
+                SUT["check"](args)
+                remote["receipt"] = receipt | {"nodeUid": "forged"}
+                with self.assertRaisesRegex(ValueError, "selected placement"):
+                    SUT["check"](args)
+                remote["receipt"] = receipt
+                args.placement_run_id = "999"
+                with self.assertRaisesRegex(ValueError, "selected placement"):
+                    SUT["check"](args)
+                args.placement_run_id = "457"
+                args.placement_version_id = "forged-version"
+                with self.assertRaisesRegex(ValueError, "selected placement"):
+                    SUT["check"](args)
+                args.placement_version_id = "version-2"
                 metric["usage"]["memory"] = "600Mi"
                 with self.assertRaisesRegex(ValueError, "headroom"):
                     SUT["check"](args)

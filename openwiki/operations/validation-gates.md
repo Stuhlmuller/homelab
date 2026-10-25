@@ -1900,7 +1900,10 @@ was performed.
 Before `owned-cleanup` can touch the firewall, the protected stage reads the
 approved `firewall-ownership/<capture-run-id>.json` under the private
 `openclaw-enterprise/platform/receipts/<source-sha>/` prefix, then follows its
-`evidenceSourceSha` to the original `receipts/<evidence-sha>/placement.json`.
+`evidenceSourceSha`, `placementRunId`, and `placementVersionId` to the selected
+`receipts/<evidence-sha>/placement/<placement-run-id>.json`. Capture first
+verifies the successful admission run that selected this exact version; approval,
+cleanup, and release keep the same selection.
 Each exact key must
 have an untruncated listing with exactly one latest S3 version and no delete
 markers; a version-pinned metadata read must show KMS encryption, a 1-byte to
@@ -1928,7 +1931,10 @@ rules that out or a reviewed repository-owned isolation path is added. See
 the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
 The staged protected `canary-admit` path remains dormant until the protected
-`placement` stage writes a verified current-main receipt. Placement binds a
+`placement` stage writes a verified current-main, run-scoped receipt. A new
+placement run can refresh expired evidence on unchanged `main` while the old
+receipt remains immutable. Admission takes the selected placement run ID and
+checks its exact S3 version. Placement binds a
 reviewed, less-than-one-hour-old versioned firewall capture to fresh Node and
 system Pod identities, requested resources, metrics and node filesystem
 headroom; it keeps platform activation disabled. Admission rejects placement
@@ -1942,7 +1948,17 @@ Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
 then the selector label. A complete cluster-wide selector inventory must show
 no labeled Node before mutation and again just before labeling; if another
 Node appears after the patch, admission removes its own label and retains the
-taint. `canary-release` requires the reviewed cleanup receipt
+taint. If the Node patch succeeds but the final admission receipt cannot be
+uploaded, owner-only protected `canary-admit-recover` loads the immutable
+attempt and exact placement version, refuses a final admission receipt, then
+runs a UID-owned privileged host probe. It requires an empty live IPv4/IPv6/ipset
+kube-router snapshot, deleted probe Pod, absent enforcer/fixtures, matching
+Node UID/boot and system Pods, and no other selected Node. It removes only the
+owned label/taint with resource-version and UID tests. This rollback remains
+available after placement expiry under the original current-main SHA. An
+orphaned probe has token/UID-bound `firewall-baseline-recover` cleanup using
+the recovery run and admission IDs.
+`canary-release` requires the reviewed cleanup receipt
 and an empty owned firewall. It removes the label, waits until cleanup
 DaemonSet Pods are gone cluster-wide, then rechecks the complete canary-node
 Pod inventory against reviewed system Pod UIDs before removing the taint. A

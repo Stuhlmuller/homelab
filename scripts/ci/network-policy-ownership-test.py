@@ -19,6 +19,8 @@ FIXTURE = runpy.run_path(str(ROOT / "scripts/ci/network-policy-cleanup-test.py")
 SHA = "a" * 40
 EVIDENCE_SHA = "b" * 40
 NODE = "zimaboard-1"
+PLACEMENT_RUN = "5"
+ADMISSION_RUN = "6"
 
 
 def qualification():
@@ -37,13 +39,30 @@ def qualification():
 
 class MemoryStore:
     def __init__(self):
+        self.placement_key = (f"{SUT['PREFIX']}/receipts/{EVIDENCE_SHA}/placement/"
+                              f"{PLACEMENT_RUN}.json")
         self.records = {
-            f"{SUT['PREFIX']}/receipts/{EVIDENCE_SHA}/placement.json": {
+            self.placement_key: {
                 "format": 1, "verified": True, "sourceSha": EVIDENCE_SHA, "node": NODE,
                 "nodeUid": "node-uid", "bootID": "boot-id", "firewallBaselineEmpty": True,
+                "placementRunId": PLACEMENT_RUN,
+            },
+            f"{SUT['PREFIX']}/{EVIDENCE_SHA}/{ADMISSION_RUN}/canary-admit.json": {
+                "format": 1, "stage": "canary-admit", "status": "verified",
+                "verified": True, "sourceSha": EVIDENCE_SHA, "runId": ADMISSION_RUN,
+                "node": NODE, "nodeUid": "node-uid", "bootID": "boot-id",
+                "placementRunId": PLACEMENT_RUN, "placementVersionId": "v1",
             },
             f"{SUT['PREFIX']}/{EVIDENCE_SHA}/7/qualification.json": qualification(),
         }
+        self.versions = {self.placement_key: "v1"}
+
+    def version(self, key, required):
+        if required:
+            return self.versions[key]
+        if key in self.records:
+            raise ValueError("duplicate private receipt")
+        return None
 
     def read(self, key, _limit):
         return (json.dumps(self.records[key], sort_keys=True) + "\n").encode()
@@ -75,7 +94,7 @@ class FirewallOwnershipTests(unittest.TestCase):
         self.addCleanup(self.patches.stop)
 
     def test_capture_and_approval_pin_full_snapshot_and_probe(self):
-        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", self.config)
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
         candidate = self.store.records[f"{SUT['PREFIX']}/{SHA}/8/firewall-capture.json"]
         self.assertFalse(candidate["verified"])
         self.assertEqual(candidate["snapshot"], self.state)
@@ -89,13 +108,50 @@ class FirewallOwnershipTests(unittest.TestCase):
         self.assertEqual(receipt["bootID"], "boot-id")
         self.assertEqual(receipt["evidenceSourceSha"], EVIDENCE_SHA)
         self.assertEqual(receipt["snapshotSha256"], candidate["snapshotSha256"])
+        for field, value in (("admissionRunId", ADMISSION_RUN),
+                             ("placementRunId", PLACEMENT_RUN),
+                             ("placementVersionId", "v1")):
+            self.assertEqual(candidate[field], value)
+            self.assertEqual(receipt[field], value)
+
+    def test_capture_rejects_forged_admission_and_stale_version(self):
+        admission_key = f"{SUT['PREFIX']}/{EVIDENCE_SHA}/{ADMISSION_RUN}/canary-admit.json"
+        admission = self.store.records[admission_key]
+        for field, value, error in (("stage", "placement", "selected canary admission"),
+                                    ("sourceSha", SHA, "selected canary admission"),
+                                    ("nodeUid", "other", "pre-enable placement"),
+                                    ("placementVersionId", "v2", "placement version")):
+            with self.subTest(field=field):
+                original = admission[field]
+                admission[field] = value
+                with self.assertRaisesRegex(ValueError, error):
+                    SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7",
+                                   ADMISSION_RUN, self.config)
+                admission[field] = original
+        self.assertNotIn(f"{SUT['PREFIX']}/{SHA}/8/firewall-capture.json",
+                         self.store.records)
+
+    def test_approval_rejects_stale_or_forged_placement_selection(self):
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
+        capture_key = f"{SUT['PREFIX']}/{SHA}/8/firewall-capture.json"
+        capture = self.store.records[capture_key]
+        reviewed_sha = capture["snapshotSha256"]
+        receipt_key = f"{SUT['PREFIX']}/receipts/{SHA}/firewall-ownership/8.json"
+        capture["placementVersionId"] = "forged-version"
+        with self.assertRaisesRegex(ValueError, "capture differs from reviewed placement"):
+            SUT["approve"](self.store, SHA, "8", reviewed_sha, self.config)
+        capture["placementVersionId"] = "v1"
+        self.store.versions[self.store.placement_key] = "v2"
+        with self.assertRaisesRegex(ValueError, "placement version"):
+            SUT["approve"](self.store, SHA, "8", reviewed_sha, self.config)
+        self.assertNotIn(receipt_key, self.store.records)
 
     def test_capture_refuses_missing_baseline_or_failed_probe(self):
-        placement_key = f"{SUT['PREFIX']}/receipts/{EVIDENCE_SHA}/placement.json"
+        placement_key = self.store.placement_key
         probe_key = f"{SUT['PREFIX']}/{EVIDENCE_SHA}/7/qualification.json"
         self.store.records[placement_key]["firewallBaselineEmpty"] = False
         with self.assertRaisesRegex(ValueError, "pre-enable placement"):
-            SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", self.config)
+            SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
         self.store.records[placement_key]["firewallBaselineEmpty"] = True
         for field, value in (("result", "traffic-probe-failed"),
                              ("nodeUid", "other"), ("cases", []),
@@ -104,11 +160,11 @@ class FirewallOwnershipTests(unittest.TestCase):
                 old = self.store.records[probe_key][field]
                 self.store.records[probe_key][field] = value
                 with self.assertRaisesRegex(ValueError, "canary traffic probe"):
-                    SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", self.config)
+                    SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
                 self.store.records[probe_key][field] = old
 
     def test_approval_refuses_unreviewed_hash_and_live_drift(self):
-        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", self.config)
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
         candidate = self.store.records[f"{SUT['PREFIX']}/{SHA}/8/firewall-capture.json"]
         expected = candidate["snapshotSha256"]
         with self.assertRaisesRegex(ValueError, "capture is missing or differs"):
@@ -120,7 +176,7 @@ class FirewallOwnershipTests(unittest.TestCase):
                          self.store.records)
 
     def test_interrupted_cleanup_can_review_new_partial_snapshot(self):
-        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", self.config)
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
         first = self.store.records[f"{SUT['PREFIX']}/{SHA}/8/firewall-capture.json"]
         SUT["approve"](self.store, SHA, "8", first["snapshotSha256"], self.config)
         first_receipt = self.store.records[
@@ -128,23 +184,24 @@ class FirewallOwnershipTests(unittest.TestCase):
         jump = self.cleanup["top_jump_comment"]("INPUT", "KUBE-ROUTER-INPUT")
         self.state = {**self.state, "nft": self.state["nft"].replace(
             f'-A INPUT -m comment --comment "{jump}" -j KUBE-ROUTER-INPUT\n', "")}
+        placement = self.store.records[self.store.placement_key]
         with self.assertRaisesRegex(ValueError, "ownership snapshot"):
-            self.cleanup["require_ownership"](first_receipt,
-                {"nodeUid": "node-uid", "bootID": "boot-id"}, self.state, SHA, NODE)
-        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "9", "7", self.config)
+            self.cleanup["require_ownership"](first_receipt, placement,
+                                               self.state, SHA, NODE)
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "9", "7", ADMISSION_RUN, self.config)
         second = self.store.records[f"{SUT['PREFIX']}/{SHA}/9/firewall-capture.json"]
         SUT["approve"](self.store, SHA, "9", second["snapshotSha256"], self.config)
         second_receipt = self.store.records[
             f"{SUT['PREFIX']}/receipts/{SHA}/firewall-ownership/9.json"]
-        self.cleanup["require_ownership"](second_receipt,
-            {"nodeUid": "node-uid", "bootID": "boot-id"}, self.state, SHA, NODE)
+        self.cleanup["require_ownership"](second_receipt, placement,
+                                          self.state, SHA, NODE)
         self.assertNotEqual(first_receipt["snapshotSha256"], second_receipt["snapshotSha256"])
 
     def test_all_objects_removed_can_be_reviewed_as_noop(self):
         empty = self.state["legacy"]
         self.state = {"backend": "nft", "nft": empty, "legacy": empty,
                       "ip6nft": empty, "ip6legacy": empty, "ipset": "\n"}
-        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "9", "7", self.config)
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "9", "7", ADMISSION_RUN, self.config)
         candidate = self.store.records[f"{SUT['PREFIX']}/{SHA}/9/firewall-capture.json"]
         self.assertEqual((candidate["ownedChains"], candidate["ownedSets"]), (0, 0))
         SUT["approve"](self.store, SHA, "9", candidate["snapshotSha256"], self.config)
@@ -153,7 +210,7 @@ class FirewallOwnershipTests(unittest.TestCase):
         self.assertEqual(receipt["snapshotSha256"], candidate["snapshotSha256"])
 
     def test_approval_refuses_changed_capture_or_probe(self):
-        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", self.config)
+        SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
         key = f"{SUT['PREFIX']}/{SHA}/8/firewall-capture.json"
         expected = self.store.records[key]["snapshotSha256"]
         self.store.records[key]["snapshot"]["ipset"] += "add KUBE-SRC-CCCCCCCCCCCCCCCC 10.0.0.2\n"
