@@ -266,9 +266,9 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. No required
-  reviewers. PR code executes automatically with live write-capable identities;
-  the same-repository workflow trust check remains required.
+- `homelab-plan`: used by same-repository pull request plans. It requires
+  `rstuhlmuller` review before releasing plan credentials; the same-repository
+  workflow trust check remains required.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
   No required reviewers; allow only the exact `main` branch (no tags).
 
@@ -280,9 +280,14 @@ roll back approval behavior, retaining the exact `main` production allowlist.
 
 `OCTELIUM_CI_AUTH_TOKEN` currently holds the same `homelab-ci` credential in
 both environments. The staged `homelab-ci-plan` User and Policy allow a
-separate plan token after the catalog is applied. Keep the shared credential
-until that token has been published and verified. Entra uses separate
-operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
+separate plan token after the three-resource plan catalog is applied with
+`scripts/octelium-ci-plan-catalog.sh --execute` from current `main`. The private
+Kubernetes catalog dispatch does not select these plan resources. Keep the
+shared credential until the separate token has been published and verified.
+The credential helper checks live read and dry-run access and denied real
+writes and subresources before publishing the new plan token. Entra uses
+separate operator-managed GitHub OIDC identities, with no
+`AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
 automatically for same-repository PRs and production credentials only to

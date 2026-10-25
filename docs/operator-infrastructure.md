@@ -371,8 +371,42 @@ scripts/aws-plan-role-configure.sh --execute
 ```
 
 The helper reads the exact role ARN from operator state, rejects any other
-role, and verifies the GitHub variable after writing it. Publish and verify
-the separate Octelium plan credential before the workflow cutover. The cutover
+role, and verifies the GitHub variable after writing it. The private
+Kubernetes catalog workflow deliberately excludes the plan User, Policy, and
+public `kubernetes-api-ci` Service. Apply those three resources from a clean
+checkout at the exact current `main` commit with an authenticated Octelium
+admin session:
+
+```sh
+scripts/octelium-ci-plan-catalog.sh
+scripts/octelium-ci-plan-catalog.sh --execute
+```
+
+The first command previews the fixed resource selection. The execute path
+rejects unrelated drift in existing plan resources or the public Service,
+reads back all three resources, and requires the second apply to have no
+changes. It does not issue a credential. Then publish the separate token with
+the exact plan identity:
+
+```sh
+scripts/octelium-ci-credential.sh --dry-run --skip-catalog \
+  --credential-name homelab-ci-plan --user homelab-ci-plan \
+  --policy homelab-ci-kubernetes-api-plan-access \
+  --secret-name OCTELIUM_CI_PLAN_AUTH_TOKEN --env homelab-plan
+scripts/octelium-ci-credential.sh --skip-catalog \
+  --credential-name homelab-ci-plan --user homelab-ci-plan \
+  --policy homelab-ci-kubernetes-api-plan-access \
+  --secret-name OCTELIUM_CI_PLAN_AUTH_TOKEN --env homelab-plan
+```
+
+The helper refuses to send any plan identity field to production. Before
+publishing the token, it verifies a Kubernetes read, an upstream dry-run PATCH,
+and denials for a real PATCH and a subresource GET. Both PATCH probes contain
+only a failing JSON Patch UID test against a random ConfigMap, so they cannot
+persist a change even if policy enforcement fails. The token and API responses
+stay out of logs. If an existing plan credential rotates but verification
+fails, repair the policy or transport through the declared source and rerun the
+same command; the old GitHub secret may be stale until that succeeds. The cutover
 PR must switch the workflow to `AWS_PLAN_ROLE_TO_ASSUME_HOMELAB` and remove
 `homelab-plan` from `Github-TF-State` trust after the new plan path passes.
 Its deleted-unit test must also cover a removed unit outside the plan role's

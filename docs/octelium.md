@@ -86,7 +86,9 @@ They create:
   the Kubernetes API Service.
 - Staged Policy `homelab-ci-kubernetes-api-plan-access` and User
   `homelab-ci-plan` for reads and dry-run writes. Merging their catalog source
-  does not apply them or replace the current shared plan token.
+  does not apply them or replace the current shared plan token. Follow the
+  [focused activation path](operator-infrastructure.md#dedicated-pull-request-plan-role)
+  before issuing the separate plan credential.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,

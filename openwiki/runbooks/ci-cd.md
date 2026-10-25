@@ -129,7 +129,13 @@ lookup stops the write. These source guards await a live apply run.
 The Octelium catalog stages a separate `homelab-ci-plan` User and a
 read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
 applies the catalog nor issues a plan token; the PR plan still reads its
-environment secret.
+environment secret. The private Kubernetes catalog workflow excludes these
+resources. Run the [focused catalog script](../../scripts/octelium-ci-plan-catalog.sh)
+in preview mode, then with `--execute` from a clean checkout at current
+`main` with an authenticated Octelium admin session. It applies only the plan
+User, Policy, and public Service binding. The plan credential helper then
+verifies live reads, dry-run access, and safe write/subresource denials before
+publishing the new token to the protected plan environment.
 
 The operator catalog also stages `Github-TF-Plan`, trusted only by
 `homelab-plan`. Keep the current `Github-TF-State` role and shared Octelium
