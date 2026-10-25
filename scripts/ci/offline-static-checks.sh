@@ -1636,20 +1636,7 @@ yq -o=json '.' "$cert_manager_values" \
       .startupapicheck.image.digest
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
-tag_only_images="$(
-  {
-    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
-    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } \
-    | rg -v '@sha256:' \
-    || true
-)"
-
-if [[ -n "$tag_only_images" ]]; then
-  echo "Container images must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
-  exit 1
-fi
+python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
