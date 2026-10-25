@@ -115,6 +115,17 @@ def restore_cache_archive(artifact, destination):
                 raise ValueError("unexpected npm cache archive entry")
 
 
+def project_lock(state):
+    locks = list(state.glob("npm/projects/*/package-lock.json"))
+    if len(locks) != 1:
+        raise ValueError("expected exactly one managed Discord npm project lockfile")
+    lock = json.loads(locks[0].read_text())
+    package = lock["packages"]["node_modules/@openclaw/discord"]
+    if (package.get("version"), package.get("integrity")) != ("2026.9.5", INTEGRITY):
+        raise ValueError("managed npm project lockfile package integrity mismatch")
+    return lock
+
+
 def build(output_dir, root):
     check_image_contract(root)
     if output_dir.exists():
@@ -137,6 +148,7 @@ def build(output_dir, root):
 
             install = f"openclaw plugins install npm:{SPEC} --pin --force --accept-capabilities"
             container(work, "warm-state", "warm-home", install, offline=False)
+            warm_lock = project_lock(work / "warm-state")
             artifact = output_dir / "npm-cache.tar"
             # npm logs and notifier files are intentionally excluded from the closure.
             archive_cache(work / "warm-home" / ".npm" / "_cacache", artifact)
@@ -149,6 +161,13 @@ def build(output_dir, root):
                 offline=True,
             )
             check_inspect(json.loads(report.stdout), work)
+            if project_lock(work / "offline-state") != warm_lock:
+                raise ValueError("offline managed npm dependency tree differs from warm install")
+
+            lock_bytes = (json.dumps(warm_lock, indent=2, sort_keys=True) + "\n").encode()
+            lock_path = output_dir / "dependency-lock.json"
+            lock_path.write_bytes(lock_bytes)
+            os.chmod(lock_path, 0o600)
 
             with artifact.open("rb") as content:
                 digest = hashlib.file_digest(content, "sha256").hexdigest()
@@ -159,6 +178,7 @@ def build(output_dir, root):
                 "package": SPEC,
                 "npm_integrity": INTEGRITY,
                 "cache_sha256": digest,
+                "dependency_lock_sha256": hashlib.sha256(lock_bytes).hexdigest(),
                 "validation": "fresh-state-network-none-install-and-runtime-inspect",
             }
             (output_dir / "manifest.json").write_text(

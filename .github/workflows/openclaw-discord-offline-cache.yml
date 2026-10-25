@@ -29,4 +29,5 @@ jobs:
           trap 'rm -rf "$output"' EXIT
           python3 -I scripts/openclaw-discord-offline-cache.py --output-dir "$output"
           test -s "$output/npm-cache.tar"
+          test -s "$output/dependency-lock.json"
           test -s "$output/manifest.json"
