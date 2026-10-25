@@ -395,6 +395,14 @@ def check():
     paths = manifest_paths()
     documents = yaml_documents(paths)
     images, digests = declared_images(documents)
+    cluster_paths = [path for path in paths if path.is_relative_to(ROOT / "clusters")]
+    cluster_docs = yaml_documents(cluster_paths) if cluster_paths else []
+    cluster_images = declared_images(cluster_docs)[0] | embedded_yaml_images(cluster_docs)
+    public_cluster_images = sorted(image for image in cluster_images
+                                   if not image.startswith("harbor.stinkyboi.com/"))
+    unpinned_cluster_images = sorted(image for image in cluster_images
+                                     if image.startswith("harbor.stinkyboi.com/")
+                                     and "@sha256:" not in image)
     declared_native = native_references_by_path(paths)
     # Direct Harbor mirror references must retain the reviewed digest. Upstream
     # provenance refs may use a reviewed tag because Talos resolves them through
@@ -408,6 +416,8 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
+    errors.extend("Non-Harbor Argo image: " + image for image in public_cluster_images)
+    errors.extend("Unpinned Argo image: " + image for image in unpinned_cluster_images)
     errors.extend(receipt_errors(declared_native))
     errors.extend(ownership_errors())
     scope_counts = {}
