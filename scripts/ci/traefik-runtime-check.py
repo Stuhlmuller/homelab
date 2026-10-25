@@ -202,7 +202,8 @@ try:
         assert request('fleet.stinkyboi.com',path)[0] == 200
         checks += 1
     for host, allowed in [('n8n-webhook.tail67beb.ts.net', ('/webhook','/webhook/one','/webhook-test/test','/webhook-waiting/wait')),
-                          ('policy-bot-hook.tail67beb.ts.net', ('/api/github/hook',))]:
+                          ('policy-bot-hook.tail67beb.ts.net', ('/api/github/hook',)),
+                          ('bulldozer-hook.tail67beb.ts.net', ('/api/github/hook',))]:
         for path in allowed:
             status,body = request(host,path,entry='funnel',headers=('X-Forwarded-Proto: https',))
             assert status == 200, (host,path,status,body)
