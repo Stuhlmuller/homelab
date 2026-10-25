@@ -13,6 +13,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "IaC/langfuse-blob-storage.hcl"
+VALUES = ROOT / "clusters/homelab/apps/langfuse/values.yaml"
 
 
 class InventoryBlocked(Exception):
@@ -31,6 +32,10 @@ def declared_bucket():
             values["region"] != "us-west-2" or
             values["bucket"] != f'homelab-langfuse-{values["account_id"]}-{values["region"]}'):
         raise InventoryBlocked("bucket declaration changed")
+    workload_buckets = re.findall(r"^\s*bucket:\s*(homelab-langfuse-[a-z0-9-]+)\s*$",
+                                  VALUES.read_text(), re.M)
+    if workload_buckets != [values["bucket"]]:
+        raise InventoryBlocked("Langfuse workload bucket differs from infrastructure")
     return values
 
 

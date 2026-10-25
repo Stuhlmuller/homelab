@@ -14,6 +14,11 @@ SPEC.loader.exec_module(SUT)
 
 
 class InventoryTests(unittest.TestCase):
+    def test_bucket_matches_infrastructure_and_workload(self):
+        values = SUT.declared_bucket()
+        self.assertEqual(values["bucket"],
+                         f'homelab-langfuse-{values["account_id"]}-{values["region"]}')
+
     def test_all_pages_and_exact_versions_are_checked(self):
         calls = []
 

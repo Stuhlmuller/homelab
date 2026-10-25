@@ -105,7 +105,7 @@ jobs:
           private_log="$(mktemp)"
           inventory="${RUNNER_TEMP}/langfuse-raw-versions.json"
           trap 'rm -f "$private_log" "$inventory"' EXIT
-          sha256sum --check --status <<<'f810ad538fd4e68f072c613c1d0a5a4e590bc84e275edc3cac6fb749c21081cd  scripts/ci/langfuse-raw-version-inventory.py'
+          sha256sum --check --status <<<'80b1341574b981bfdd0e3a8252389773a7f1bb272fc4a46f27939c8deae0df4a  scripts/ci/langfuse-raw-version-inventory.py'
           if ! nix develop --command python3 -I scripts/ci/langfuse-raw-version-inventory.py --output "$inventory" >"$private_log" 2>&1; then
             echo '::error::Langfuse raw-version inventory failed; private diagnostics withheld.'
             exit 1
