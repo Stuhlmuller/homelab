@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cf0879e8eeb758c5c7f59d89ebc025009eb830f5f96242e8183807c058f0e3e7",
+  "pageVersion": "sha256:dea5fd1bbc6df44b320ab6185ffd56d8f9e6af2648ead311aae133ad784fdea6",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
+          "version": "repo-file-v1:sha256:f92eee76d472759eb9c75c55e49ed3e1100f8de6e949a85fa44636fc1dc88c89"
         }
       ]
     },
@@ -64,11 +64,11 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
+          "version": "repo-file-v1:sha256:f92eee76d472759eb9c75c55e49ed3e1100f8de6e949a85fa44636fc1dc88c89"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ba96d393e96eef109996906f46deba7d5ace54d237d9d4477667ea9f224f03c9"
+          "version": "repo-file-v1:sha256:cf90c1cd7a4f03a13f1de7d889f5a0183591a82eca47b4b6f2dfb5f26b6dc844"
         }
       ]
     },
@@ -82,7 +82,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:82d41263cc122fda34f19c95f33e350857f4087edf78a6c646ac44d6ec018c07"
+          "version": "repo-file-v1:sha256:82a83a210a51d95cf33680f4dddd7138e31324e7a118e7c66f6d62b3f9a62034"
         }
       ]
     },
@@ -123,7 +123,7 @@
       "statement": "The fixed private Octelium catalog helper rechecks the GitHub main commit before each of its two writes, fails closed on a missing or advanced main SHA, and requires the second write to report no changes. Offline tests prove both stale-SHA stop points and lookup failure; live dispatch remains unverified.",
       "evidence": [
         {
-          "resource": "repo://docs/ci-cd.md#L50-L55",
+          "resource": "repo://docs/ci-cd.md#L52-L57",
           "version": "repo-lines-v1:sha256:c9c204f058273d04a04350bccdc64d6e83488a2e77b5988ad62f96f0f1cd9a78:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODFiNDc3MjdiYzk0NmNlZmFkNzVhMDg0Y2Y0ZjA0OThiMmJjZGE2MjE3NjJiZTBhYjJmN2M4YWUzYTVmODNkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGYyY2Y5YzQ4NDI2YzhjNTU0ODljYWY1M2Q0YzBhYzg1YjBmYzI2MThiZDRjMDE0ZDM4ZDM5YjU2NmYxMzA5ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGI3YjcyNDUwYWJhMjg2ZjE4NWNhOTI3MDk2MTgyMGZiNzFlMzNiYmQwNTEyZGVmYTdjOTc3ODdkNTNlYTU2NSJ9"
         },
         {
@@ -156,15 +156,15 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
+          "version": "repo-file-v1:sha256:f92eee76d472759eb9c75c55e49ed3e1100f8de6e949a85fa44636fc1dc88c89"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
           "version": "repo-lines-v1:sha256:493feb0893ed1fab5d88d3a8cfa4d5c01c53a1c4e4e35398ab5919bd943d8baf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxYjIyMTNiMTc1NmVhMjViMjhkNDI0NmZmMWM1YTM2MGU4N2Y0NmEzYjJjN2JlYzllYjNmNmIxODE2Mjc2ZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MWViYTc5NjRlNDFkMGFiMzQzNzcyNTNjNmVjM2Q1MThkOTQ4MWU2ZTI0NmU2MmU0MjVhMDgwMjgyNzdjYmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5NDNlOGFjZGYwNjQyZTY0Njc0NTUyYTI5MGVlZTNhZmUzY2Q0NDRjZmRmYjkxNmQ0Y2MxMTE0OWQ0YjJjYzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjZWUzOGE2NTQyM2UwMWM2N2M3YjRlMzgwMGI5OTVmNDk5YmE2YjIyMjI4OGQzMGQ0MGM1ZTk0ZjBlZjNiZWIifQ"
         },
         {
-          "resource": "repo://scripts/ci/terragrunt-plan.sh#L190-L215",
-          "version": "repo-lines-v1:sha256:1ab75ac1ca361cc8dfa009f3e3c8997a10227b64c4154e601b97ef017cee9fc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNjlhOGI3MTllZTdiMTJkNTQwZjlhZGE1MjY4MzQ5MmUxMjc1MjNiMWQxNGFlY2U0ZTBmNWMxNGI2MGRiMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0OTNkMGI4NTYwOTczM2NlM2ZjYjQxODc3YmRkMTJjOTE5NDhhM2YzNDI5YzgyNzE1NjMzMjlhYjAxZDJjNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZjVhNmIwYTA1M2JiZWQ5MjMzZDQ2MTQ1ZTg2ZjRkNzE4MGRmMTc2M2ZkNDkwMjNiOTY5Y2M1ODA1MmY1MWEifQ"
+          "resource": "repo://scripts/ci/terragrunt-plan.sh#L189-L214",
+          "version": "repo-lines-v1:sha256:5d3d1a36cade542380d5dabb575cdb7859901c84657cc6c66ee2b97e3612ce20:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhNjlhOGI3MTllZTdiMTJkNTQwZjlhZGE1MjY4MzQ5MmUxMjc1MjNiMWQxNGFlY2U0ZTBmNWMxNGI2MGRiMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0OTNkMGI4NTYwOTczM2NlM2ZjYjQxODc3YmRkMTJjOTE5NDhhM2YzNDI5YzgyNzE1NjMzMjlhYjAxZDJjNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZjVhNmIwYTA1M2JiZWQ5MjMzZDQ2MTQ1ZTg2ZjRkNzE4MGRmMTc2M2ZkNDkwMjNiOTY5Y2M1ODA1MmY1MWEifQ"
         }
       ]
     },
@@ -205,8 +205,8 @@
       "statement": "The Enterprise operations workflow retains legacy stages and fixed binding, full-sync, reconcile, stop, verification, restore, and acceptance selections under exact-current-main guards and a shared protected queue. The full-sync helper also rejects current-main drift after the final Argo sync and health readback, with a forced-race regression fixture. Binding still lacks hosted delivery of the owner-controlled 0600 key; full-sync is blocked by the unselected phase; reconcile, stop, and verification dispatch source-bound one-shot Jobs only after a disabled-by-default gate is enabled, while restore and acceptance remain separately blocked. No Enterprise stage has passed live acceptance.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L202-L276",
-          "version": "repo-lines-v1:sha256:81e53e968943b24e2de4e61d7e157aa651ddaafa22b2c16b366e1343d0c5ad59:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkODM0NjZmMDIwNTZjMDMyMWZkM2MzZTM5MzllOGRjYTg3YmY0MjczOTlhY2ZjYWZjYjM4NjI2MjAxZmFjOGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjZmM2YWYxNzhlNTVjNjZhODhhMGY5NDg0OGMwNzNmYWYyYjMwZDc0OWRmNGRkNzlmOWNhZDA4YzVhMmFkMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNzgwOWM5MjEwNmI3ZTI1NmM1ZGU0YTZlZWZjNmZmYWU5NDU4NjBmN2MwMDhjOThmYTU5NWJlYzlmY2Y3MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzZGQwZjE5YTJmYjhlZmU1ZmM5NDc4YzQyNzNhMTYxNDMwYmYxMTIwZDdjNjRiZWY4ZmZkZDlkOGE5ZDA1Y2EifQ"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:37c0308c5b6e9e228ad6ab64d1c110f91c7bc31f595171d4a4f38321b6c58ebf"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L53",
@@ -222,11 +222,11 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L200-L389",
-          "version": "repo-lines-v1:sha256:1f9211b9b8ee46da82e15710cc6389ec325244a51d7b5202f1999eb373115c55:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZWVmOTliYjg5NTU0NTE0ZTMyMTU3MTk0NzY3YzMyYTM1YWMxNjRhODQwMDY4OGU2MmRlMDI4NzFhNDA3Y2JiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJiMzA4NjZlMWJjYzVhYjc2ZTNlZjU5MDEyZDBhZDM5YTY4N2FiZTAwMjNiNDM4YWNiMTEzMGExODgyNWU4MTkzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2OWIzNjY5YjdhYmNjMzBhM2RlYWMzNjgyN2UyMDcyMzgwYmQwOThmOTllNjkwODQzNzVmZDM4OWZkMTcxZDBhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNjhlY2ZmODM4ZjU0ZjUzZTRhNDNiYjNiNDY5YmExODZmZmUxOTBiYTlmYzU0MWZjZmIzNjJiMzcyY2NhMjkzIn0"
+          "version": "repo-lines-v1:sha256:fadc9a93349452fe5f324553215bc74b73383f202bc9efc3ef25abd41425ae53:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4NTYwNmI0MjA1MzUwM2NkOTNkZTExMjM2MDBlMmM4NTE5YTNlZTg5MmNlYjJhOTRmNWZhOTRhMDlhMGQzZDdkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4MTdlOTVmYmFiNjAwYjU4ZWE4ODIyOTY1NWFhOTgzNDFlMDQ3ZWFmYWEzMTNiYjM5MjdlNjkxYjQ0ODg0MGZjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4MGZiYjM4YzM3YmE5ZGIxY2E2YTMyNzc3NjYzZDY0YzhlMzg4MTY3OWIxM2VlYThjMzQxZDE3NWM4YmY2ZGVmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4MjEwZGRiZTQzOGE1MWEyNDhhYzNiM2MxNmNlOWQ5MGE3Mjk4ZWY0NGUwN2U0MTY3OGFlYzZiNTMzYWUwYWMwIn0"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L1-L46",
-          "version": "repo-lines-v1:sha256:9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "version": "repo-lines-v1:sha256:a3e91bb8744d3de65dae25fc696f118ee948996444dfb63ae241d93495ee59ca:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiYzA3NmM5YzhjM2M2YWEyNjk2Y2JlNDJlZTZjMGZjMjNmNjMyZDBmNzJkYTJjZTFjZDZmMjUzN2JiODc2MmIifQ"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -239,7 +239,7 @@
       "statement": "The protected production apply rejects a stale main dispatch and rechecks current main before direct writes, each Terragrunt apply unit, and each bootstrap self-management manifest; unavailable main also blocks the write.",
       "evidence": [
         {
-          "resource": "repo://IaC/root.hcl#L41-L46",
+          "resource": "repo://IaC/root.hcl#L47-L52",
           "version": "repo-lines-v1:sha256:1be7d5f63b35894393624ea6dfad0fd1c183e1ffc54ae3d2614a0b4997ef7d7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmI4YjM0NWU1MjQyNzZhZTFlMjdkNzVkMjYyY2RkZDkyMDNkZTY0MzM4YjllMWFlNGE5NGQ2MTAyODBkMTJjNSJ9"
         },
         {
@@ -247,11 +247,11 @@
           "version": "repo-lines-v1:sha256:f55e5e9832c0f18fa6d6c37d9260e374db92575ee477f7f8645ce0a545b5230e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzMmJkMTk3MjA2NWYzNzZlYTkxOWIxNzdhNzQzMzM1ZmY1ZTZkZDQ0ODlmZjM2OTNiYTY4MWRiOTRlNWY0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3YmQ4ODE2NDY4NjJjOWFiY2NjNTMxYmNlMjQyYjMzN2IxNWVhZGVmNjliZDA5MGE4ODM4MWFkZDQ5NjA1N2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOTk5MDMwN2QyNGRhY2Y5Yjc5OTEzZWI3YmJjNTZlY2IzOTFiOTdiMjg1ZGNiODgxZjFiNzFhY2I1ZGVhZTQifQ"
         },
         {
-          "resource": "repo://docs/ci-cd.md#L31-L47",
+          "resource": "repo://docs/ci-cd.md#L33-L49",
           "version": "repo-lines-v1:sha256:1e634336299c6827444ac6346abcce50fc15eb1a2f509a2f9cba7000602e7583:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MTMzMTBjMzZmMjkyNTczZTE3OTM5MmNjZTQ2ODgyOTQ4MjYyMTg0M2NkYjY4NGE4OTcxZDY1YzAyZDgwZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjMjIzM2QyYmI5MjAzNzUyNTJkYzEyOTliNGIyNjljMmI3MWQ0MTZhYWVjMTYxNGU1ZmNhNzM4MGZkMDE0ZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MzE1MWUzNWM1YmQ4NDA3YmUxZjQxYWJlZjczNjYwODQwM2NmMjQ0YmJlY2NhNWY0ZjIyNjhjYjJmN2FlMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkNmI1OTljNzYxOTNjMzY0YWQ5MzJmNzM3YTQ2YmE2ZDM0MzY3YTE0YjkwYjY5YTExMTMwMDBmNjk3YTk3OTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/terragrunt-apply.sh#L36-L38",
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L37-L39",
           "version": "repo-lines-v1:sha256:8714ab914a4dbcbf6385e70a359a275459e451b3061965a462657a53ed5419e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTFjZmZkYjBiZThiODJhMWRlNjFiZTg4YmNmNjA0OTM4M2UxZmJjYjk4NTQ4NDllNGUwMzAzMjc1ZjMxZWRiNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGMyZGQzNjEzMDA3NzVmNzdjZGU0ZTQ3NWI0YzUzMmE1YjM4YzI1NjU2MDFkNWIxYTRjZTY5NDhjMDQ4NjBhMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzM3Mjg2YjM5NjlhNjliZmNhMzg0MjRlNGUwZTMzODQzNWIxYWZhYjJmZGM0ZjIwODQxN2QyYTBmNjEzMzVkNSJ9"
         },
         {
@@ -278,7 +278,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -291,7 +291,7 @@
       "statement": "The Platform Maintenance source policy accepts only manual workflow_dispatch, requires explicit empty workflow permissions, and fixes both jobs' commands, actions, settings, and private credential mapping. A shared run-setting rule rejects defaults, environment overrides, custom shells and shell-prelude variables. Live maintenance readiness remains gated by separate private evidence.",
       "evidence": [
         {
-          "resource": "repo://docs/ci-cd.md#L105-L119",
+          "resource": "repo://docs/ci-cd.md#L107-L121",
           "version": "repo-lines-v1:sha256:aaeb48c6c4815f846b0627a971dfd814e19cd33725e5606c0f5873254db0a2b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiZjgzNzA0M2UxZGI4YjYzZGVjZDdjNDdlZmYyODI3MjU4MmJkNjJiZGVhYTEwNjgwYzk0OWI2OWIzOWUwZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0YTBjMTlkY2I5ODViNzg1NGYzYTkwNDg5NWM0NDM0YzRlNWRlZGQxZGRmNDU5MGJjNWUwNDVmNzFjZGFmZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1M2U4NTg3OTE3YjNjOTE5YzRmZDg1ODdmM2M1ZjMwODc3MTU4N2RkMTI4MThmY2VmYjgxYWYwMGRkODM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5ZmYxNjliZDJlOWQyODVlNjQzYWIwN2ZmMjAwODM1ODgxZTU3MjcyMmUwY2I3YThmNzJlNDc4OGMxZmVlMWIifQ"
         },
         {
@@ -314,11 +314,11 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
+          "version": "repo-file-v1:sha256:f92eee76d472759eb9c75c55e49ed3e1100f8de6e949a85fa44636fc1dc88c89"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:c344fbb89500ccaab008614a28480fcdb1e63a7a27d07ca5cd3a60fe71352ac1"
+          "version": "repo-file-v1:sha256:453923433f869dba95174dfe78ea7f06ad8e37a7999a431d7ada4646c1211042"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
@@ -339,7 +339,7 @@
           "version": "repo-lines-v1:sha256:f13433ae9373cb1e6a201408a326b0eccf2c7ce0e38c224509b0d22e8b94daa4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViZTk1MzlkZjgyOWVhYzM4YTlkMzNiODk2NjIxOTEzYjdhYmQ5ZTA3ZThlZDhjMzdmMjhkYWJkMjQwYzI0ODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L84-L100",
+          "resource": "repo://docs/harbor-image-mirroring.md#L100-L116",
           "version": "repo-lines-v1:sha256:374109d8eff058b90a27c16d9c15c296545f84596324ce865f40ff7fb01329e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
         },
         {
@@ -354,11 +354,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:026daf83ba1171ae5cbb7bee2b109c3f2f11f6aef0b5a1f2970cc70f035731f0"
+          "version": "repo-file-v1:sha256:37c0308c5b6e9e228ad6ab64d1c110f91c7bc31f595171d4a4f38321b6c58ebf"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:960b4cfac84dbc289fcccdad140083fa6f45676ba15dfdab68cf1276f302618e"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -372,7 +372,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:960b4cfac84dbc289fcccdad140083fa6f45676ba15dfdab68cf1276f302618e"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -386,7 +386,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:026daf83ba1171ae5cbb7bee2b109c3f2f11f6aef0b5a1f2970cc70f035731f0"
+          "version": "repo-file-v1:sha256:37c0308c5b6e9e228ad6ab64d1c110f91c7bc31f595171d4a4f38321b6c58ebf"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
@@ -394,7 +394,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:960b4cfac84dbc289fcccdad140083fa6f45676ba15dfdab68cf1276f302618e"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -405,6 +405,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T06:41:51.112Z"
   }
 }

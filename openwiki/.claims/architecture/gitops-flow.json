@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a91ef0d2b761dd05eb17f701df8278023d92501e1b72536cc65f488c75f8e997",
+  "pageVersion": "sha256:0543fdd178d058dc3c14e18875a9eda4a2233ff42ada3f5fb1344a6fc06b05ea",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
       "statement": "The Tailscale ingress foundation registers Traefik through Argo CD while the operator-only Tailscale unit owns full-policy adoption and three scoped CI auth keys with committed rotation generations; Tailnet Lock remains enabled and dormant federated identities stay protected until final migration retirement.",
       "evidence": [
+        {
+          "resource": "repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl",
+          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+        },
         {
           "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md",
           "version": "repo-file-v1:sha256:6737df409a10ba2e69d3e6e19128734679d28d48a78b31514107ad16dc574184"
@@ -13,10 +17,6 @@
         {
           "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf",
           "version": "repo-file-v1:sha256:a252bd4eb32ef86b5c10c3d33be6db8357b054e3e03f990e6d7387154f3d0512"
-        },
-        {
-          "resource": "repo://IaC/traefik/stack.hcl",
-          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
         }
       ]
     },
@@ -25,8 +25,8 @@
       "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L139",
-          "version": "repo-lines-v1:sha256:f5cbe033b6aa181782f292c8b2c960dafe9c5e8e0e386287719f34e74621c2ca:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L140",
+          "version": "repo-lines-v1:sha256:87eee066b9d9d5530f82ce0dd1aac21706f72a062ad4188ea9df44f55fc9769b:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -39,12 +39,12 @@
       "statement": "The tailnet-dns Terragrunt Application depends on Tailscale and Traefik and lets Argo reconcile a stateless CoreDNS/k8s_gateway chart from repository values; public address retirement remains a separate guarded later step after owner DNS handoff.",
       "evidence": [
         {
-          "resource": "repo://IaC/tailnet-dns/stack.hcl#L5-L39",
-          "version": "repo-lines-v1:sha256:20609c02c260767c326070e2292d8c534ee94f031b32d6715cf219e9ded79b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+          "resource": "repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl",
+          "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
         },
         {
-          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L25-L79",
-          "version": "repo-lines-v1:sha256:5755be72aae998850c39cd9b9d5fda64bb9cbe29d98f75f754362d40ac998028:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0OGUyY2NiMzAzOTAwNTZiMmFhNTg0ZTllNGJhM2E2ODAzZjcwZDZkMjNhMjhhNjU3ODY4MjhlYjdiNmI0NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3NWE5ZTM5NGZkOWMyOWNlYmViOGViMDkxYmJiYTBhNzRiOTYyMTYyMDg1ODdjZDcxMTlmNDQxODIyNTcyYzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmM2UzNWFjZmU0NmM0Nzk1NTQ0MWJjYmZmM2VjYmNiOTZhMTY0ZTAyMzY5ZTY4YWIwOGVkNDVlNTg1YWM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
         }
       ]
     },
@@ -53,8 +53,8 @@
       "statement": "Feature 005 selects only the 26 non-apex names from the fixed first 27 migration entries for public A/AAAA/CNAME retirement; the private resolver serves all 29 current approved names, and the public apex, mail, certificate validation, and unrelated names are preserved.",
       "evidence": [
         {
-          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L34",
-          "version": "repo-lines-v1:sha256:e946754f3b740525429184e83d01cca7127e2937ac7b15567425f9743e1ed020:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMGE5NDJhMWQ0MzEwNGQyYTg0MWQ3MWIxYmJmZTYwZmJlYjIxN2NjNDRiMTQwMzJlNDE1NmVmODEyYTA3Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L37",
+          "version": "repo-lines-v1:sha256:7be042d276d13bf88979ce6ca4a6320e49cbb242eed45eca04dff648aa15b3b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkYTE0MDE1ZGQyYjBkOGUyOTk0NzkxYjEzMTVkYWMwZWVkMWZiMThjMGIzZTRmNjNjNDA3NzRkYzc2ZWFhNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
         },
         {
           "resource": "repo://specs/005-retire-public-app-dns/data-model.md#L3-L25",
@@ -67,20 +67,20 @@
       "statement": "The protected production Terragrunt path verifies current main before direct state writes and through a root before_hook for each apply unit; the bootstrap after_hook repeats the guard before each Argo CD self-management manifest write, so stale or unreadable main stops a later write.",
       "evidence": [
         {
-          "resource": "repo://IaC/root.hcl#L41-L46",
-          "version": "repo-lines-v1:sha256:1be7d5f63b35894393624ea6dfad0fd1c183e1ffc54ae3d2614a0b4997ef7d7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmI4YjM0NWU1MjQyNzZhZTFlMjdkNzVkMjYyY2RkZDkyMDNkZTY0MzM4YjllMWFlNGE5NGQ2MTAyODBkMTJjNSJ9"
+          "resource": "repo://IaC/root.hcl",
+          "version": "repo-file-v1:sha256:e242129a2075ae1ddc0fa16ff32ff8f5e5948bfaf9373eedd4a7a8a4b53bd300"
         },
         {
-          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L50-L69",
-          "version": "repo-lines-v1:sha256:699f9c904000f3994346e3d2686fdbdeb41a0af31b3fb7c62c9626aae6c53073:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNjE2MWZiZmU1YjM2ZTA4MGFhOThlMGI4MDQzNGIyZjUzNDczN2EzMzEyYmVhYWNkYjkxMjU5OGYxZDUwZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYjlhOTkxNDk3ODc0MzE3MTQzNDBmZmU0MDQ4MTYyMzk4ZWVhOWRmZjVkNjU5MjYxYmY4MmNkODNmMjFjZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOTk5MDMwN2QyNGRhY2Y5Yjc5OTEzZWI3YmJjNTZlY2IzOTFiOTdiMjg1ZGNiODgxZjFiNzFhY2I1ZGVhZTQifQ"
+          "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:ef29114b4d22deefb91c6d774a9a0138ac897ebc5aeeeece905c8edf16c8393b"
         },
         {
-          "resource": "repo://scripts/ci/terragrunt-apply.sh#L198-L222",
-          "version": "repo-lines-v1:sha256:ccdce2aad38554c029fe09303c77320d79b6f6c5d930c8431d8ae14af58724a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmMTU3MzA1NzJlYjM3OWY2MzMxZTJjZDI4YTdjYmQxNDg5N2NiYjE4MWFkYmI1MTQzMmU0Yzg0NDc2ZmIwMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxY2Q2NjI1M2I3N2ZmM2NjNjc2MzczY2E4MTdhNTVmZjllMmI3NWQwZGU4YWFhMzlmOGJlMTZiNGMwM2VhMjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZWUyNjhmYmM0MzhmYTQ1ZDVjZGY0NTVlMDM4YWM4MmE5MmZiZDUxNzUxMmFlNDQ1ZWQ2MTc5Y2VlZDkwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYWZiZjM1NWQxOGZlMzlhYzNkY2RmNzY1ZmUyNTY4NmQ2YjIyYzE3MDNjNDA0Y2ZlZjMyY2ZiYjE5MmU5YTkifQ"
+          "resource": "repo://scripts/ci/terragrunt-apply.sh",
+          "version": "repo-file-v1:sha256:ce5064d1617afe1ea449ecb8042a2384d1402911eba5c46ae4741925c8dd52de"
         },
         {
-          "resource": "repo://scripts/ci/terragrunt-current-main.sh#L4-L22",
-          "version": "repo-lines-v1:sha256:91b4f9f45840e62745f0e55757df7c294c3510d202ed64cd949e65f074ff357c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3OTNkMTg0NTU1MmIzYTEzN2U5Yzc4OTdkYzc4YjE1ZGU0NzQzZjNmMTUzODlkYWVhMzE1OTE3MWEwYmRkNzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NjlkMjM3Y2Q0MjBiOWQzOGI5ODFhMGE0ZjY3NzAxOTBhNGE4M2RjYTFmZTU2YzRmNWJhMWUyY2JjMGVmNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmODE3ZTVlNWZkNzRjMWFmMWQ1MDBjNjFhZjhiNDM1ZTE5ZTU2MjNlMDdhYzljMTBjZjZhYTgyODgzYmE5NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/terragrunt-current-main.sh",
+          "version": "repo-file-v1:sha256:cc8ec5393c389b59cdbc685a0467924a43efcba0cc90d4018c340e5a040d15e1"
         }
       ]
     },
@@ -89,11 +89,11 @@
       "statement": "The OpenClaw Enterprise AppProject is in Argo CD self-management, while its foundation and chart Applications are declared in Terragrunt and require a later protected apply; both disable automatic sync, pruning, self-heal, and retries.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl",
           "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
-          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
           "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
         },
         {
@@ -105,6 +105,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:18:26.448Z"
+    "at": "2026-10-25T06:21:14.425Z"
   }
 }

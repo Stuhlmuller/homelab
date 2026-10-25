@@ -38,7 +38,7 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
@@ -65,7 +65,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T06:41:51.112Z
 ---
 
 # Storage And State

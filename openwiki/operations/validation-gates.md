@@ -140,11 +140,11 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
@@ -360,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-25T06:30:24.097Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T06:41:51.112Z
 ---
 
 # Validation Gates
@@ -634,10 +634,11 @@ and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-legacy OpenClaw HTTP 502 only when each reviewed declaration and live
-Deployment specify zero replicas and no live replicas remain. Other application
-5xx responses fail. These stopped-app exceptions check routing, not runtime
-health. Deployed Traefik routes and TLS must match the reviewed checkout.
+legacy OpenClaw HTTP 500 or 502 only when each reviewed declaration and live
+Deployment specify zero replicas and no live replicas remain; OpenClaw also
+requires no EndpointSlice endpoints. Other application 5xx responses fail.
+These stopped-app exceptions check routing, not runtime health. Deployed
+Traefik routes and TLS must match the reviewed checkout.
 `--retire-private --check` probes the original 27 migration routes; bare
 `--check` also probes the two staged Enterprise routes. Its Agent probe uses an
 `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's router and
@@ -1748,10 +1749,10 @@ The Enterprise model-credential workflow is protected by exact current-`main`
 source checks and validates an owner-supplied OpenRouter key before writing only
 `/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
 The stopped legacy inventory, off-NAS archive publication and separate
-multi-root restore verification are complete. The 214-image catalog passed
+multi-root restore verification are complete. The earlier 214-image catalog passed
 protected `all` publication and authenticated pulls in
 [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
-The isolated canary, platform upgrades, compatible legacy boot and new-state
+The current catalog lists 215 images and needs a fresh complete receipt. The isolated canary, platform upgrades, compatible legacy boot and new-state
 restore remain acceptance gates. Source-only static
 checks do not activate the agent.
 
@@ -1863,8 +1864,9 @@ ownership-limited cleanup. The protected workflow wires fixed upgrade stages
 to that executor with a pinned helper hash and bounded private results. Its
 execute path also binds canonical platform inputs to the exact dispatched
 commit, rejecting a runner-local override before an upgrade. The activation
-flag and canary node remain unset. The full-catalog publication receipt
-passed; current-SHA recovery receipts, five-tag Harbor lock and an isolated
+flag and canary node remain unset. The earlier 214-image catalog has a
+protected receipt; the current 215-image catalog needs a fresh complete receipt.
+Current-SHA recovery receipts, five-tag Harbor lock and an isolated
 canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 The static registration fixture accepts only five exact policy/canary GitOps
@@ -2402,8 +2404,9 @@ not establish successful private image publication.
 The fixed Harbor 2.15.4 scope must contain exactly the nine digests from the
 reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
 selected-image pull verification. A successful scoped run proves only those nine
-components. The revised LiteLLM catalog later passed protected `all` run
-`40011909180` for full-catalog acceptance.
+components. The revised LiteLLM catalog passed protected `all` run
+`40011909180` for the earlier 214-image revision; the current 215-image catalog
+needs a fresh complete receipt.
 
 The fixed LiteLLM scope selects the one reviewed Linux amd64 child digest
 from the repeated-descriptor index. The consumer source now pins that child and
@@ -2414,7 +2417,8 @@ Harbor pull. Exact-main protected
 [run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
 passed the one-image publication receipt; local fixtures alone cannot prove
 that live result, and the scoped run alone did not clear full-catalog coverage.
-The later protected `all` run `40011909180` passed all 214 catalog images.
+The later protected `all` run `40011909180` passed all 214 images in that
+revision. The current 215-image catalog needs a fresh complete receipt.
 
 The fixed Prometheus qualification scope selects one exact digest already in
 the full catalog. Inventory and publisher fixtures reject missing, altered,
@@ -2424,7 +2428,8 @@ allow only fixed public blob/manifest write-stage categories when the private
 diagnostic matches, retain `server-error` for HTTP 5xx, and leave unknown
 copy errors terminal as `command-failed`. These source checks do not pass T004:
 full run [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
-failed at this Prometheus image, and no complete catalog receipt exists.
+failed at this Prometheus image. A later run passed the earlier 214-image
+catalog, but current 215-image coverage remains unverified.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image

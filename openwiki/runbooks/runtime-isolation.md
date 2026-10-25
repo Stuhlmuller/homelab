@@ -48,6 +48,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
+    resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
   - id: openwiki-source-1d91dece74882a3fae04c364
@@ -60,10 +62,10 @@ sources:
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-25T06:21:14.425Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T06:41:51.112Z
 ---
 
 # Runtime Isolation
@@ -122,9 +124,11 @@ broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
 limited capacity, system DaemonSets, and a live backup workload.
 
-The reviewed 214-image catalog passed protected publication and authenticated
+The earlier 214-image catalog passed protected publication and authenticated
 Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
-Before activation, finish policy owner/render review, then admit an isolated
+The current catalog lists 215 images; that historical receipt does not qualify
+the added image. Before activation, require a fresh complete publication receipt,
+finish policy owner/render review, then admit an isolated
 tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
 stateful workloads. The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
