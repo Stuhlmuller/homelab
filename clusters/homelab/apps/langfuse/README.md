@@ -95,7 +95,8 @@ gh workflow run langfuse-raw-version-inventory.yml -R Stuhlmuller/homelab \
   --ref main -f expected_sha="$main_sha"
 ```
 
-The protected CI role needs `s3:ListBucketVersions` on the bucket,
+The protected CI role needs `s3:GetBucketVersioning`,
+`s3:GetEncryptionConfiguration` and `s3:ListBucketVersions` on the bucket,
 `s3:GetObjectVersion` on its objects, and `kms:Decrypt` for their KMS key.
 The application IAM user intentionally
 has neither; do not widen its runtime credential for backup. A denied read,
