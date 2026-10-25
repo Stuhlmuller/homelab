@@ -103,6 +103,8 @@ Its optional IAM role has an exact protected GitHub environment subject,
 repository ID, reserved workflow name and `main` ref. An identity permissions
 boundary and matching inline policy allow reads and writes only below
 `openclaw-enterprise/new/`, with S3-mediated use of the bucket's KMS key. The
+write grant rejects a caller-supplied SSE-S3 override; an absent header uses
+the bucket's SSE-KMS default, including for multipart parts. The
 legacy archive stays under `openclaw-enterprise/legacy/`; neither the new role
 nor its boundary grants deletion, lifecycle changes or legacy reads. The bucket
 still retains all completed versions. No workflow assumes the new role, and

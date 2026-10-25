@@ -204,10 +204,21 @@ locals {
         }
       },
       {
-        Sid      = "PublishAndVerifyRecoveryObjects"
+        Sid      = "ReadRecoveryObjects"
         Effect   = "Allow"
-        Action   = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion"]
+        Action   = ["s3:GetObject", "s3:GetObjectVersion"]
         Resource = "${local.bucket_arn}/${var.publisher.object_prefix}*"
+      },
+      {
+        Sid      = "PublishKmsRecoveryObjects"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${local.bucket_arn}/${var.publisher.object_prefix}*"
+        # An absent header uses the bucket's SSE-KMS default; a caller may not
+        # override it with SSE-S3. Multipart part requests omit this header.
+        Condition = {
+          StringEqualsIfExists = { "s3:x-amz-server-side-encryption" = "aws:kms" }
+        }
       },
       {
         Sid      = "UseOnlyBucketS3Key"

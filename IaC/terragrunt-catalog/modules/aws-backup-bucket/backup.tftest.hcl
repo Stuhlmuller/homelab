@@ -146,10 +146,19 @@ run "scopes_optional_enterprise_publisher" {
           } }
         },
         {
-          Sid      = "PublishAndVerifyRecoveryObjects"
+          Sid      = "ReadRecoveryObjects"
           Effect   = "Allow"
-          Action   = ["s3:PutObject", "s3:GetObject", "s3:GetObjectVersion"]
+          Action   = ["s3:GetObject", "s3:GetObjectVersion"]
           Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/new/*"
+        },
+        {
+          Sid      = "PublishKmsRecoveryObjects"
+          Effect   = "Allow"
+          Action   = ["s3:PutObject"]
+          Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/new/*"
+          Condition = { StringEqualsIfExists = {
+            "s3:x-amz-server-side-encryption" = "aws:kms"
+          } }
         },
         {
           Sid      = "UseOnlyBucketS3Key"
