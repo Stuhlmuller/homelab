@@ -36,6 +36,7 @@ class Lifecycle(unittest.TestCase):
         deleted = [False]
         expired = [False]
         clock = [0]
+        declared_node = json.loads((runner.ROOT / ".cordium/runner-pool.json").read_text())["worker_node"]
 
         def command(arguments, **kwargs):
             args = arguments[5:]
@@ -93,7 +94,7 @@ class Lifecycle(unittest.TestCase):
             if args[1] == "pods":
                 if deleted[0] and not pod_retained:
                     return b'{"items":[]}'
-                return json.dumps({"items": [{"spec": {"nodeName": "other-worker" if wrong_node else "zimaboard-1", "automountServiceAccountToken": mounted_token, "hostNetwork": host_namespace}}]}).encode()
+                return json.dumps({"items": [{"spec": {"nodeName": "other-worker" if wrong_node else declared_node, "automountServiceAccountToken": mounted_token, "hostNetwork": host_namespace}}]}).encode()
             if args[1] == "persistentvolumeclaim":
                 self.assertEqual(args[2], "ws-" + UID)
                 return b'{}' if pvc_retained else b""
