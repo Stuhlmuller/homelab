@@ -2,8 +2,8 @@
 
 Fleet Free runs at `https://fleet.stinkyboi.com` in namespace `fleet`, with
 one Fleet server, dedicated MySQL 8.4 and Redis 7.2. Images are digest-pinned.
-Registration inputs live in `IaC/fleet/stack.hcl`, indexed by
-`IaC/terragrunt.stack.hcl`; Argo CD follows `main`.
+Registration inputs live in `IaC/homelab/us-west-2/apps/fleet/stack.hcl`, indexed by
+`IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl`; Argo CD follows `main`.
 No Fleet Premium license or subscription is provisioned.
 
 The [Google Mac login runbook](GOOGLE-LOGIN.md) owns Google Workspace login,

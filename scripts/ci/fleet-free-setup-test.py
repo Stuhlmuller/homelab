@@ -1111,13 +1111,13 @@ class CredentialExportTest(unittest.TestCase):
         self.assertIn("Microsoft Authenticator", content)
         self.assertEqual(stat.S_IMODE(self.destination.stat().st_mode), 0o600)
         process.assert_called_once()
-        self.assertIn("IaC/live/azuread-applications/fleet-pilot-user", str(process.call_args))
+        self.assertIn("IaC/homelab/us-west-2/apps/fleet/pilot-user", str(process.call_args))
 
     def test_stuhlmuller_pilot_requires_explicit_selection(self):
         self.values["user_principal_name"]["value"] = "rodman.mac@stuhlmuller.net"
         status, process = self.run_export(pilot="stuhlmuller")
         self.assertEqual(status, 0)
-        self.assertIn("IaC/operator/entra-stuhlmuller-pilot-user", str(process.call_args))
+        self.assertIn("IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user", str(process.call_args))
 
     def test_existing_file_is_preserved_without_reading_credentials(self):
         self.destination.write_text("existing content")

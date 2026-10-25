@@ -17,8 +17,8 @@ real_yaml_documents = check.yaml_documents
 with tempfile.TemporaryDirectory() as directory:
     original_root = check.ROOT
     check.ROOT = Path(directory)
-    stack = check.ROOT / "IaC/terragrunt.stack.hcl"
-    stack.parent.mkdir()
+    stack = check.ROOT / "IaC/homelab/us-west-2/apps/example/stack.hcl"
+    stack.parent.mkdir(parents=True)
     bootstrap = check.ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
     bootstrap.parent.mkdir(parents=True)
     bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory() as directory:
     source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
     stack.write_text('locals { defaults = { project = "homelab" } }\n'
                      'unit "app" { values = { defaults = local.defaults, spec = { sources = [' + source + '] } } }')
-    expected = {"source": "IaC/terragrunt.stack.hcl", "repoURL": "https://charts.example.invalid",
+    expected = {"source": "IaC/homelab/us-west-2/apps/example/stack.hcl", "repoURL": "https://charts.example.invalid",
                 "chart": "example", "targetRevision": "2.0.0"}
     assert expected in check.chart_sources()
     stack.write_text(stack.read_text().replace('"2.0.0"', '"2.1.0"'))
@@ -45,8 +45,8 @@ with tempfile.TemporaryDirectory() as directory:
 with tempfile.TemporaryDirectory() as directory:
     original_root = check.ROOT
     check.ROOT = Path(directory)
-    stack = check.ROOT / "IaC/terragrunt.stack.hcl"
-    stack.parent.mkdir()
+    stack = check.ROOT / "IaC/homelab/us-west-2/apps/example/stack.hcl"
+    stack.parent.mkdir(parents=True)
     stack.write_text('unit "app" { values = read_terragrunt_config("app/stack.hcl").inputs }')
     bootstrap = check.ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
     bootstrap.parent.mkdir(parents=True)
@@ -54,18 +54,18 @@ with tempfile.TemporaryDirectory() as directory:
                          'chart = "argo-cd"\nchart_version = "1.0.0"\n')
     source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
     for app in ("beta", "alpha"):
-        path = check.ROOT / f"IaC/{app}/stack.hcl"
+        path = check.ROOT / f"IaC/homelab/us-west-2/apps/{app}/stack.hcl"
         path.parent.mkdir(parents=True)
         path.write_text('inputs = { defaults = local.defaults, spec = { sources = [' + source + '] } }')
-    expected = [{"source": f"IaC/{app}/stack.hcl", "repoURL": "https://charts.example.invalid",
+    expected = [{"source": f"IaC/homelab/us-west-2/apps/{app}/stack.hcl", "repoURL": "https://charts.example.invalid",
                  "chart": "example", "targetRevision": "2.0.0"} for app in ("alpha", "beta")]
-    for ignored in ("IaC/live/argocd-apps/alpha/stack.hcl",
-                    "IaC/alpha/.terragrunt-cache/generated/stack.hcl"):
+    for ignored in ("IaC/homelab/us-west-2/apps/alpha/argocd/stack.hcl",
+                    "IaC/homelab/us-west-2/apps/alpha/.terragrunt-cache/generated/stack.hcl"):
         path = check.ROOT / ignored
         path.parent.mkdir(parents=True)
         path.write_text('inputs = { spec = { sources = [' + source + '] } }')
     assert [item for item in check.chart_sources() if item["chart"] == "example"] == expected
-    alpha = check.ROOT / "IaC/alpha/stack.hcl"
+    alpha = check.ROOT / "IaC/homelab/us-west-2/apps/alpha/stack.hcl"
     alpha.write_text(alpha.read_text().replace('"2.0.0"', '"2.1.0"'))
     assert expected[0] not in check.chart_sources()
     assert {**expected[0], "targetRevision": "2.1.0"} in check.chart_sources()
@@ -77,7 +77,7 @@ with tempfile.TemporaryDirectory() as directory:
         try:
             check.chart_sources()
         except SystemExit as error:
-            assert "IaC/alpha/stack.hcl" in str(error)
+            assert "IaC/homelab/us-west-2/apps/alpha/stack.hcl" in str(error)
             assert "literal repoURL, chart and targetRevision" in str(error)
         else:
             raise AssertionError(f"A nonliteral split-stack {field} passed")

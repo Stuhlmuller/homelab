@@ -1,9 +1,11 @@
+<!-- markdownlint-disable MD013 -->
+
 # Argo CD Bootstrap Runbook
 
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
 
 This runbook bootstraps Argo CD into the Talos-backed homelab cluster using the
-repository-owned Terragrunt stack at `IaC/bootstrap/argocd`.
+repository-owned Terragrunt stack at `IaC/homelab/us-west-2/bootstrap/argocd`.
 
 ## Preconditions
 
@@ -47,13 +49,13 @@ Create these AWS Systems Manager Parameter Store entries before rollout:
 Store `/homelab/argocd/oidc/client-secret` as a SecureString. The other values
 may be String or SecureString depending on local policy. Dex startup uses the
 literal Microsoft Entra issuer committed in
-`IaC/bootstrap/argocd/terragrunt.hcl`; the SSM issuer path is kept as a
+`IaC/homelab/us-west-2/bootstrap/argocd/terragrunt.hcl`; the SSM issuer path is kept as a
 compatibility copy for the generated `argocd-oidc-sso` Secret. Do not reset it
 to `REPLACE_ME`, because Dex provider discovery fails before it can serve OIDC
 login when the issuer is a placeholder.
 
 The browser-facing Argo CD URL is committed as non-secret desired state in
-`IaC/bootstrap/argocd/terragrunt.hcl`, not stored in Parameter Store. This
+`IaC/homelab/us-west-2/bootstrap/argocd/terragrunt.hcl`, not stored in Parameter Store. This
 change does not create an ingress or DNS record. Register
 `https://argocd.stinkyboi.com/api/dex/callback` with the IdP; Argo CD derives
 that Dex connector callback from the configured `url`.
@@ -158,7 +160,7 @@ Expected OIDC result:
 - The generated Kubernetes Secret is labeled as part of Argo CD.
 
 If `argocd-oidc-sso` reports `ClusterSecretStore "aws-ssm" is not ready`, wait
-for the `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` stack to
+for the `IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth` stack to
 create the `external-secrets/aws-ssm-auth` Secret. The ExternalSecret uses
 `refreshPolicy: OnChange`; if only SSM values changed, make a repo-owned
 metadata or spec change and let Argo CD sync it rather than patching the live
@@ -194,7 +196,7 @@ Missing CRDs:
 
 1. Check the Helm release and pods:
    `kubectl -n argocd get pods` and `kubectl -n argocd get crd | grep argoproj`.
-2. Re-run `terragrunt plan` from `IaC/bootstrap/argocd`.
+2. Re-run `terragrunt plan` from `IaC/homelab/us-west-2/bootstrap/argocd`.
 3. Fix Helm install failures before retrying Application registration.
 
 Bad repository path or target revision:

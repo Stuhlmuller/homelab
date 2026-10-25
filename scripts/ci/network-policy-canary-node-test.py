@@ -151,9 +151,9 @@ class CanaryNodeTests(unittest.TestCase):
 
     def test_release_accepts_invariant_history_with_fresh_receipts(self):
         manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
-        application = "IaC/platform-network-policy/stack.hcl"
+        application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
         canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
-        canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+        canary_application = "IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in (manifest, application, canary_manifest, canary_application):

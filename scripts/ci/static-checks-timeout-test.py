@@ -14,7 +14,7 @@ class Timeout(unittest.TestCase):
     def test_ci_override_and_local_preservation(self):
         with tempfile.TemporaryDirectory(prefix="static-timeout-") as folder:
             root = Path(folder)
-            for name in ("scripts/ci", "IaC/operator/github-actions-role-policy",
+            for name in ("scripts/ci", "IaC/homelab/us-west-2/operator/github-actions-role-policy",
                          "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy",
                          "IaC/terragrunt-catalog/units/live/aws-ssm-parameters", "bin"):
                 (root / name).mkdir(parents=True)

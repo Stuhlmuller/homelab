@@ -1,6 +1,6 @@
 # Held Istio 1.28.10 hop
 
-The live-owned `IaC/istio/stack.hcl` stays at Istio 1.27.3 with its existing
+The live-owned `IaC/homelab/us-west-2/apps/istio/stack.hcl` stays at Istio 1.27.3 with its existing
 auto-sync and self-heal behavior. This directory's
 [`upgrade-1.28.10.json`](upgrade-1.28.10.json) records a **disabled** candidate
 for the first adjacent hop. It is not included in `kustomization.yaml` or the

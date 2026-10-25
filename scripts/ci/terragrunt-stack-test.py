@@ -40,6 +40,11 @@ class StackSelectionTest(unittest.TestCase):
         self.root = Path(temporary.name)
         (self.root / "IaC").mkdir()
         (self.root / "IaC/root.hcl").write_text("inputs = {}\n")
+        for name in ("homelab/account.hcl", "homelab/us-west-2/region.hcl"):
+            source = ROOT / "IaC" / name
+            target = self.root / "IaC" / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
         self.stack = self.root / "IaC/terragrunt.stack.hcl"
         self.locals = 'locals { argocd_defaults = { project = "homelab" } }\n'
         self.apps = unit("kept") + unit("retired")
@@ -103,6 +108,30 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
         self.shell("! terragrunt_azuread_stack_changed", head)
 
+    def test_layout_move_keeps_all_owned_state_and_later_retirement(self):
+        for app, unit_path in (("kept", "argocd"), ("retired", "argocd"),
+                               ("identity", "azuread")):
+            stack = self.root / "IaC/homelab/us-west-2/apps" / app / "terragrunt.stack.hcl"
+            stack.parent.mkdir(parents=True)
+            stack.write_text(f'unit "{app}" {{\n  path = "{unit_path}"\n}}\n')
+        operator = self.root / "IaC/homelab/us-west-2/operator/terragrunt.stack.hcl"
+        operator.parent.mkdir(parents=True)
+        operator.write_text('unit "operator" {\n  path = "operator"\n}\n')
+        self.stack.unlink()
+        moved = self.commit()
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", moved), "")
+        self.assertEqual(set(self.shell("terragrunt_stack_unit_paths_at_ref HEAD", moved).splitlines()),
+                         set(self.shell(f"terragrunt_stack_unit_paths_at_ref {self.base}", moved).splitlines()))
+        (self.root / "IaC/homelab/us-west-2/apps/retired/terragrunt.stack.hcl").unlink()
+        removed = self.commit()
+        self.base = moved
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", removed),
+                         "IaC/live/argocd-apps/retired")
+        for stack in (self.root / "IaC/homelab/us-west-2").rglob("terragrunt.stack.hcl"):
+            stack.unlink()
+        empty = self.commit()
+        self.shell("! terragrunt_stack_unit_paths_at_ref HEAD", empty)
+
     def test_app_config_changes_select_apps_without_azure_or_retirement(self):
         self.separate_app_configs()
         self.base = self.commit()
@@ -115,7 +144,7 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
         self.shell("! terragrunt_azuread_stack_changed", head)
         self.assertEqual(self.shell("terragrunt_azuread_changed_filter true", head),
-                         "IaC/live/azuread-applications/* | [main...HEAD]")
+                         "*/azuread | [main...HEAD]")
 
     def test_shared_defaults_file_changes_select_apps_without_azure_or_retirement(self):
         self.separate_app_configs()
@@ -186,6 +215,12 @@ class SharedAppTemplateTest(unittest.TestCase):
         cls.temporary = tempfile.TemporaryDirectory()
         cls.root = Path(cls.temporary.name).resolve() / "IaC"
         cls.root.mkdir()
+        run("git", "init", "-q", cwd=cls.root.parent)
+        for name in ("homelab/account.hcl", "homelab/us-west-2/region.hcl"):
+            source = ROOT / "IaC" / name
+            target = cls.root / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
         cls.addClassCleanup(cls.temporary.cleanup)
         # Keep real backend key derivation; render does not initialize the backend.
         shutil.copyfile(ROOT / "IaC/root.hcl", cls.root / "root.hcl")
@@ -216,20 +251,27 @@ class SharedAppTemplateTest(unittest.TestCase):
     }'''
         for name, inputs in (("sparse-app", "defaults = local.shared.argocd_defaults"),
                              ("override-app", overrides)):
-            path = cls.root / name / "stack.hcl"
+            path = cls.root / "homelab/us-west-2/apps" / name / "stack.hcl"
             path.parent.mkdir(parents=True)
             path.write_text('''locals {
   shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
 }
 inputs = {
 ''' + inputs + "\n}\n")
-        (cls.root / "terragrunt.stack.hcl").write_text(
-            unit("sparse-app", config=True) + unit("override-app", config=True))
+        for name in ("sparse-app", "override-app"):
+            (cls.root / "homelab/us-west-2/apps" / name / "terragrunt.stack.hcl").write_text(f'''unit "{name}" {{
+  source = "${{dirname(find_in_parent_folders("root.hcl"))}}/terragrunt-catalog/units/live/argocd-app"
+  path = "argocd"
+  no_dot_terragrunt_stack = true
+  values = read_terragrunt_config("${{get_terragrunt_dir()}}/stack.hcl").inputs
+}}
+''')
         run("terragrunt", "--log-disable", "stack", "generate", cwd=cls.root)
 
     def test_repeat_generation_and_clean_preserve_source_configs(self):
-        paths = [self.root / "terragrunt.stack.hcl", self.root / "stack-defaults.hcl",
-                 *self.root.glob("*/stack.hcl")]
+        paths = [self.root / "stack-defaults.hcl",
+                 *self.root.glob("homelab/us-west-2/apps/*/stack.hcl"),
+                 *self.root.glob("homelab/us-west-2/apps/*/terragrunt.stack.hcl")]
         before = {path: path.read_bytes() for path in paths}
         run("terragrunt", "--log-disable", "stack", "generate", cwd=self.root)
         run("terragrunt", "--log-disable", "stack", "generate", "--source-update", cwd=self.root)
@@ -241,7 +283,7 @@ inputs = {
     def render(self, name):
         return json.loads(run("terragrunt", "--log-disable", "render", "--json",
                               "--write=false", "--no-color",
-                              cwd=self.root / "live/argocd-apps" / name))
+                              cwd=self.root / "homelab/us-west-2/apps" / name / "argocd"))
 
     def test_sparse_app_inherits_a_complete_application_and_stable_state_path(self):
         rendered = self.render("sparse-app")
@@ -265,7 +307,7 @@ inputs = {
         })
         self.assertEqual(rendered["remote_state"]["config"]["key"],
                          "IaC/homelab/live/argocd-apps/sparse-app/terraform.tfstate")
-        self.assertFalse((self.root / ".terragrunt-stack/live/argocd-apps/sparse-app").exists())
+        self.assertFalse((self.root / "homelab/us-west-2/apps/sparse-app/.terragrunt-stack").exists())
 
     def test_overrides_preserve_siblings_and_replace_lists(self):
         rendered = self.render("override-app")
@@ -289,7 +331,7 @@ inputs = {
         self.assertEqual(manifest["spec"]["ignoreDifferences"],
                          [{"kind": "Secret", "jsonPointers": ["/data"]}])
         self.assertEqual(rendered["dependencies"]["paths"],
-                         [str(self.root / "live/argocd-apps/override-app/../sparse-app")])
+                         [str(self.root / "homelab/us-west-2/apps/override-app/argocd/../../sparse-app/argocd")])
 
 
 if __name__ == "__main__":
