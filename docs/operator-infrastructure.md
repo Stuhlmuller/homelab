@@ -80,12 +80,24 @@ or prove offsite recovery; those verification steps remain separate.
 attaches one managed policy. Trust is limited to the protected plan and
 production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
-The permission grant is limited to the ten exact managed-policy slots
+The managed permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
 current runtime-secret key. This metadata-only grant adds no cryptographic or
 key-administration actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
+
+The same operator unit declares a separate inline policy for the protected
+Langfuse raw-version inventory. It grants bucket versioning and encryption
+inspection, version listing, and exact-version reads only for the bucket named
+in `IaC/langfuse-blob-storage.hcl`. KMS decrypt is limited to the regional
+S3 key resolved from `alias/aws/s3`, called through S3 with that bucket's
+encryption context. The bucket-owner precondition rejects a mismatched account
+or region. This source change grants no live permission until an administrator
+reviews and applies a saved plan for the operator unit. The trust-only rollout
+below targets only the role and does not apply this inventory policy. Historical
+objects encrypted with a different key or context require a separately reviewed
+grant before the protected inventory can pass.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and applies an operator-owned

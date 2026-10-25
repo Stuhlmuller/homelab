@@ -43,6 +43,16 @@ variable "kms_key_id" {
   }
 }
 
+variable "langfuse_bucket_name" {
+  description = "Exact committed Langfuse raw-object bucket whose versions the protected runner may inspect."
+  type        = string
+
+  validation {
+    condition     = can(regex("^homelab-langfuse-[0-9]{12}-[a-z0-9-]+$", var.langfuse_bucket_name))
+    error_message = "langfuse_bucket_name must name the dedicated account- and region-bound Langfuse bucket."
+  }
+}
+
 variable "parameter_reader_group_name" {
   description = "Exact IAM group that receives the managed SSM parameter reader policies."
   type        = string

@@ -6,6 +6,10 @@ data "aws_kms_alias" "runtime_secret" {
   name = var.kms_key_id
 }
 
+data "aws_kms_alias" "langfuse_s3" {
+  name = "alias/aws/s3"
+}
+
 data "aws_iam_openid_connect_provider" "github_actions" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -17,6 +21,47 @@ locals {
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/${var.parameter_reader_policy_name_prefix}${format("%02d", index)}"
   ]
   langfuse_blob_storage_user_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
+  langfuse_bucket_arn            = "arn:${data.aws_partition.current.partition}:s3:::${var.langfuse_bucket_name}"
+}
+
+data "aws_iam_policy_document" "langfuse_raw_inventory" {
+  statement {
+    sid    = "InspectLangfuseRawBucket"
+    effect = "Allow"
+    actions = [
+      "s3:GetBucketVersioning",
+      "s3:GetEncryptionConfiguration",
+      "s3:ListBucketVersions",
+    ]
+    resources = [local.langfuse_bucket_arn]
+  }
+
+  statement {
+    sid       = "ReadLangfuseRawVersions"
+    effect    = "Allow"
+    actions   = ["s3:GetObjectVersion"]
+    resources = ["${local.langfuse_bucket_arn}/*"]
+  }
+
+  statement {
+    sid       = "DecryptLangfuseRawVersions"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = [data.aws_kms_alias.langfuse_s3.target_key_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.${var.aws_region}.amazonaws.com"]
+    }
+
+    # S3 Bucket Keys use the bucket ARN as their KMS encryption context.
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:s3:arn"
+      values   = [local.langfuse_bucket_arn]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "parameter_reader_administration" {
@@ -206,6 +251,19 @@ resource "aws_iam_role" "github_actions" {
 resource "aws_iam_role_policy_attachment" "parameter_reader_administration" {
   role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.parameter_reader_administration.arn
+}
+
+resource "aws_iam_role_policy" "langfuse_raw_inventory" {
+  name   = "langfuse-raw-version-inventory"
+  role   = aws_iam_role.github_actions.id
+  policy = data.aws_iam_policy_document.langfuse_raw_inventory.json
+
+  lifecycle {
+    precondition {
+      condition     = var.langfuse_bucket_name == "homelab-langfuse-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+      error_message = "The raw-version inventory grant must match the declared Langfuse bucket owner and region."
+    }
+  }
 }
 
 resource "aws_iam_policy" "external_secrets_boundary" {

@@ -19,6 +19,11 @@ override_data {
 }
 
 override_data {
+  target = data.aws_kms_alias.langfuse_s3
+  values = { target_key_arn = "arn:aws:kms:us-west-2:123456789012:key/langfuse-s3-test" }
+}
+
+override_data {
   target = data.aws_iam_openid_connect_provider.github_actions
   values = { arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
 }
@@ -29,6 +34,7 @@ variables {
   external_secrets_boundary_policy_name = "test"
   external_secrets_user_name            = "test"
   kms_key_id                            = "alias/test"
+  langfuse_bucket_name                  = "homelab-langfuse-123456789012-us-west-2"
   parameter_reader_group_name           = "test-readers"
   parameter_reader_policy_name_prefix   = "test-reader-"
   policy_name                           = "test-policy"
@@ -104,6 +110,72 @@ run "apply_role_reads_only_langfuse_blob_storage_identity" {
     }]
     error_message = "The apply role may read only the exact Langfuse S3 user's metadata; it must not gain wildcard or IAM write, tag, rotation, or other-user access."
   }
+}
+
+run "apply_role_reads_only_exact_langfuse_raw_versions" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [aws_iam_role_policy.langfuse_raw_inventory]
+  }
+
+  assert {
+    condition = (
+      aws_iam_role.github_actions.name == "test-apply" &&
+      aws_iam_role_policy.langfuse_raw_inventory.name == "langfuse-raw-version-inventory" &&
+      [for statement in jsondecode(aws_iam_role_policy.langfuse_raw_inventory.policy).Statement : {
+        Sid       = statement.Sid
+        Effect    = statement.Effect
+        Actions   = toset(flatten([statement.Action]))
+        Resources = toset(flatten([statement.Resource]))
+        Condition = try(statement.Condition, {})
+        }] == [
+        {
+          Sid       = "InspectLangfuseRawBucket"
+          Effect    = "Allow"
+          Actions   = toset(["s3:GetBucketVersioning", "s3:GetEncryptionConfiguration", "s3:ListBucketVersions"])
+          Resources = toset(["arn:aws:s3:::homelab-langfuse-123456789012-us-west-2"])
+          Condition = {}
+        },
+        {
+          Sid       = "ReadLangfuseRawVersions"
+          Effect    = "Allow"
+          Actions   = toset(["s3:GetObjectVersion"])
+          Resources = toset(["arn:aws:s3:::homelab-langfuse-123456789012-us-west-2/*"])
+          Condition = {}
+        },
+        {
+          Sid       = "DecryptLangfuseRawVersions"
+          Effect    = "Allow"
+          Actions   = toset(["kms:Decrypt"])
+          Resources = toset(["arn:aws:kms:us-west-2:123456789012:key/langfuse-s3-test"])
+          Condition = {
+            StringEquals = {
+              "kms:ViaService"                   = "s3.us-west-2.amazonaws.com"
+              "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::homelab-langfuse-123456789012-us-west-2"
+            }
+          }
+        },
+      ]
+    )
+    error_message = "The protected inventory role may read only exact Langfuse versions and decrypt only through S3 for that bucket."
+  }
+}
+
+run "rejects_other_langfuse_bucket_owner" {
+  command = plan
+
+  variables {
+    langfuse_bucket_name = "homelab-langfuse-999999999999-us-west-2"
+  }
+
+  plan_options {
+    refresh = false
+    target  = [aws_iam_role_policy.langfuse_raw_inventory]
+  }
+
+  expect_failures = [aws_iam_role_policy.langfuse_raw_inventory]
 }
 
 run "operator_role_excludes_companion_renovate" {
