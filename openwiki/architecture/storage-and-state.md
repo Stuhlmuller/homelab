@@ -452,6 +452,20 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
+The protected, manual [PostgreSQL checkpoint workflow](
+../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
+now requires independently inspected source PVC/PV UIDs and verifies the Bound,
+retained NFS volume before a versioned readback and network-isolated restore.
+The [2026-10-25 run](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316)
+restored 75 tables using the older workflow; it lacks source-volume identity
+and does not qualify the pending move. A fresh receipt matching the still-bound
+PVC/PV is required before placement changes. This covers PostgreSQL only;
+ClickHouse, Valkey, raw objects, secrets, and whole-service recovery remain
+separate. The draft PostgreSQL change pins its `Recreate` Deployment to `acer`
+with the existing NFS claim. The rollout stops the old Pod before remounting on
+`acer`, interrupts database access, and requires current capacity, claim-binding,
+and post-move ingestion checks. It has not run. See the
+[Langfuse move runbook](../../clusters/homelab/apps/langfuse/README.md#postgresql-move-off-zimaboard-2).
 The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
 and permanently detaches them without deleting their files. Repeated merge
 failures caused shared-NAS metadata pressure; application tables remain attached.
