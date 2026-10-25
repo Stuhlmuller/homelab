@@ -266,20 +266,28 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. No required
-  reviewers. PR code executes automatically with live write-capable identities;
-  the same-repository workflow trust check remains required.
+- `homelab-plan`: used by same-repository pull request plans. It has no
+  required reviewers; the same-repository workflow trust check remains
+  required before credentials are released automatically.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
   No required reviewers; allow only the exact `main` branch (no tags).
 
 The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
 in [github-iac](https://github.com/Stuhlmuller/github-iac). Apply its documented
 environment-only saved plan; the ruleset-only deployment workflow does not
-reconcile environments. Restore reviewers through HCL and a saved plan to
-roll back approval behavior, retaining the exact `main` production allowlist.
+reconcile environments. Change approval behavior through HCL and a saved plan,
+retaining the exact `main` production allowlist.
 
-Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
-operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
+`OCTELIUM_CI_AUTH_TOKEN` currently holds the same `homelab-ci` credential in
+both environments. The staged `homelab-ci-plan` User and Policy allow a
+separate plan token after the three-resource plan catalog is applied with
+`scripts/octelium-ci-plan-catalog.sh --execute` from current `main`. The private
+Kubernetes catalog dispatch does not select these plan resources. Keep the
+shared credential until the separate token has been published and verified.
+The credential helper checks live read and dry-run access and denied real
+writes and subresources before publishing the new plan token. Entra uses
+separate operator-managed GitHub OIDC identities, with no
+`AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
 automatically for same-repository PRs and production credentials only to
@@ -305,6 +313,7 @@ has been configured:
 | Variable | Environment | Purpose |
 | --- | --- | --- |
 | `AWS_ROLE_TO_ASSUME_HOMELAB` | repository, `homelab-plan`, or `homelab-production` | AWS role used by trusted PR plans and protected post-merge applies. |
+| `AWS_PLAN_ROLE_TO_ASSUME_HOMELAB` | `homelab-plan`, after operator role rollout | Staged plan role ARN; the workflow does not consume it until the cutover PR. |
 | `AZUREAD_CLIENT_ID` | both environments, distinct per environment | Entra OIDC application selector; published from Terraform outputs as an environment secret to mask its value. |
 | `AZUREAD_TENANT_ID` | both environments | Existing Entra tenant selector, published with the client ID. |
 
@@ -618,6 +627,22 @@ state encryption access to `alias/homelab-opentofu` in the state region
 `kms:DescribeKey`, `kms:Encrypt`, `kms:GenerateDataKey`, and
 `kms:ReEncrypt*`.
 
+The operator unit also declares `Github-TF-Plan`, trusted only by
+`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads only PR-planned
+state families, backup-bucket metadata, and the nine generated SSO parameters
+needed by AzureAD plans. `s3:ListBucket` on the state bucket is unconditional
+so a missing new unit state returns 404 to OpenTofu's `HeadObject`; it exposes
+all state object key names, while `s3:GetObject` still limits state contents to
+the four PR-planned families. The allowed AzureAD state itself contains SSO
+credentials. Same-repository writers can run PR code with this read scope;
+repository write access and the workflow's same-repository check are the gate.
+The runtime-secret KMS grant decrypts those parameters only through SSM. It has
+no AWS resource-write grant. The plan workflow still uses `Github-TF-State`;
+apply the new role with a reviewed operator saved plan, publish its ARN with
+`scripts/aws-plan-role-configure.sh`, and switch the workflow in a separate PR.
+The [operator runbook](operator-infrastructure.md#dedicated-pull-request-plan-role)
+gives the rollout order.
+
 The role trust and additive IAM grant required to manage the chunked SSM reader
 policies are declared in `IaC/homelab/us-west-2/operator/github-actions-role-policy`. The unit is
 deliberately outside the GitHub workflow traversal: an automation role must not
@@ -635,6 +660,7 @@ administrator-authenticated un-targeted plan after backend-free validation:
 
 ```sh
 aws sso login --profile <administrator-profile>
+terragrunt --working-dir IaC/homelab/us-west-2/operator stack generate
 cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color

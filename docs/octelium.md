@@ -84,6 +84,11 @@ They create:
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the
   `homelab-ci` workload User to create an Octelium client session and access
   the Kubernetes API Service.
+- Staged Policy `homelab-ci-kubernetes-api-plan-access` and User
+  `homelab-ci-plan` for reads and dry-run writes. Merging their catalog source
+  does not apply them or replace the current shared plan token. Follow the
+  [focused activation path](operator-infrastructure.md#dedicated-pull-request-plan-role)
+  before issuing the separate plan credential.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,
@@ -881,7 +886,9 @@ kubectl --request-timeout=15s version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
-this clientless workload credential. The upstream kubeconfig lives only in the
+the current shared clientless workload credential. The separate plan Policy
+becomes active only after a reviewed catalog apply and dedicated token rollout.
+The upstream kubeconfig lives only in the
 Octelium Secret `homelab-ci-kubeconfig`, created with
 `scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`. GitHub Actions
 uses the access token as the public Service bearer credential, avoiding the

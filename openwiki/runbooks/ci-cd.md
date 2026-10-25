@@ -1,7 +1,7 @@
 ---
 type: runbook
 title: "CI/CD"
-description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
+description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment access, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
 sources:
   - id: openwiki-source-28a7f340da431caf1c218c7d
@@ -129,7 +129,24 @@ lookup stops the write. These source guards await a live apply run.
 The Octelium catalog stages a separate `homelab-ci-plan` User and a
 read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
 applies the catalog nor issues a plan token; the PR plan still reads its
-environment secret.
+environment secret. The private Kubernetes catalog workflow excludes these
+resources. Run the [focused catalog script](../../scripts/octelium-ci-plan-catalog.sh)
+in preview mode, then with `--execute` from a clean checkout at current
+`main` with an authenticated Octelium admin session. It applies only the plan
+User, Policy, and public Service binding. The plan credential helper then
+verifies live reads, dry-run access, and safe write/subresource denials before
+publishing the new token to the plan environment.
+
+The operator catalog also stages `Github-TF-Plan`, trusted only by
+`homelab-plan`. It reads AzureAD state containing SSO credentials, so
+same-repository write access and the workflow's same-repository check are the
+gate for automatic PR plans. Keep the current `Github-TF-State` role and shared
+Octelium token in the plan workflow during staging. Review and apply the full
+operator saved plan, accepting only the new role and inline policy; preview and
+execute `scripts/aws-plan-role-configure.sh` to publish its exact ARN. Publish
+and verify a separate Octelium plan token before a later workflow cutover PR.
+The staged source has not created the role or
+changed live credentials; follow the [operator rollout](../../docs/operator-infrastructure.md#dedicated-pull-request-plan-role).
 
 The separate Octelium Private Kubernetes Apply dispatch verifies the selected
 `main` commit before the protected job. Its fixed helper rechecks current `main`
@@ -162,9 +179,11 @@ still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
 
 Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
-`14700233` still requires the seven documented checks. `homelab-plan` has no
-environment protection rules; `homelab-production` has its branch policy and
-no required reviewer. The older October 6 reviewer snapshot is superseded.
+`14700233` still requires the seven documented checks. Read-only inspection on
+2026-10-25 found no `homelab-plan` protection rules; `homelab-production` has
+its branch policy and no required reviewer. The October 25 reviewer apply was
+superseded by [github-iac PR #120](https://github.com/Stuhlmuller/github-iac/pull/120),
+which removed the plan reviewer from desired state.
 Re-read live settings before changing environment or branch protections.
 
 NOFX image builds, OpenClaw native configuration checks, and Image automation

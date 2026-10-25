@@ -3,9 +3,11 @@ include "root" {
 }
 
 locals {
-  root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  aws_region  = local.root_config.locals.aws_region
-  kms_key_id  = local.root_config.locals.runtime_kms_key_id
+  root_config   = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region    = local.root_config.locals.aws_region
+  kms_key_id    = local.root_config.locals.runtime_kms_key_id
+  state_region  = local.root_config.locals.state_region
+  backup_bucket = read_terragrunt_config("${get_repo_root()}/IaC/application-backup-storage.hcl").inputs.bucket
 }
 
 terraform {
@@ -19,11 +21,20 @@ generate "aws_provider" {
 provider "aws" {
   region = "${local.aws_region}"
 }
+
+provider "aws" {
+  alias  = "state"
+  region = "${local.state_region}"
+}
 EOF
 }
 
 inputs = {
-  apply_role_name = "Github-TF-State"
+  apply_role_name    = "Github-TF-State"
+  plan_role_name     = "Github-TF-Plan"
+  state_bucket_name  = local.root_config.remote_state.config.bucket
+  state_kms_key_id   = local.root_config.locals.kms_key_id
+  backup_bucket_name = local.backup_bucket
 
   # checkov:skip=CKV_SECRET_6: These are public IAM resource names, not credential material.
   external_secrets_boundary_policy_name = "homelab-external-secrets-ssm-boundary"

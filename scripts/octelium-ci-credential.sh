@@ -191,6 +191,24 @@ validate_name "$credential_name" "--credential-name"
 validate_name "$user_name" "--user"
 validate_name "$policy_name" "--policy"
 validate_name "$secret_name" "--secret-name"
+if [[ "$credential_name" == "homelab-ci-plan" ||
+  "$user_name" == "homelab-ci-plan" ||
+  "$policy_name" == "homelab-ci-kubernetes-api-plan-access" ||
+  "$secret_name" == "OCTELIUM_CI_PLAN_AUTH_TOKEN" ]]; then
+  if [[ "${#environments[@]}" -ne 1 || "${environments[0]}" != "homelab-plan" ||
+    "$credential_name" != "homelab-ci-plan" ||
+    "$user_name" != "homelab-ci-plan" ||
+    "$policy_name" != "homelab-ci-kubernetes-api-plan-access" ||
+    "$secret_name" != "OCTELIUM_CI_PLAN_AUTH_TOKEN" ]]; then
+    echo "error: the dedicated plan credential, User, Policy, and secret require homelab-plan only" >&2
+    exit 1
+  fi
+  require_command curl
+  [[ -f scripts/ci/octelium-plan-token-verify.sh ]] || {
+    echo 'error: plan token verifier is missing' >&2
+    exit 1
+  }
+fi
 for env_name in "${environments[@]}"; do
   validate_name "$env_name" "--env"
 done
@@ -492,6 +510,10 @@ credential_token="$(
 if [[ -z "$credential_token" ]]; then
   echo "error: could not extract the generated credential token from octeliumctl JSON output" >&2
   exit 1
+fi
+
+if [[ "$credential_name" == "homelab-ci-plan" ]]; then
+  printf '%s' "$credential_token" | bash scripts/ci/octelium-plan-token-verify.sh
 fi
 
 set_github_environment_secret() {

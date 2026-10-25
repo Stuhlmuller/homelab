@@ -551,12 +551,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`. Only `homelab-plan` requires reviewer approval.
-  The production environment
-  permits only `main` and releases credentials without another approval;
-  main-only diagnostics also use production. Approve a pull request plan only
-  after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
-  identity. Repository Actions policy rejects mutable action tags, and the
+  `homelab-production`. Neither environment requires reviewer approval;
+  same-repository PR plans receive their plan credentials automatically.
+  The production environment permits only `main` and releases credentials
+  without another approval; main-only diagnostics also use production.
+  Repository write access and the workflow's same-repository check gate PR
+  access to the environment-bound AWS OIDC identity. Repository Actions policy
+  rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
   always-on checks and no force pushes. The CI connector does not pass Octelium
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
@@ -652,6 +653,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [Continuous Improvement](../operations/continuous-improvement.md).
+- A separate `Github-TF-Plan` role is staged in the operator unit for the
+  `Stuhlmuller/homelab:homelab-plan` OIDC subject. It can list state object
+  names and read contents only for the four PR-planned families, with no AWS
+  resource-write grant. AzureAD state contains SSO credentials; automatic
+  same-repository PR plans make repository write access the credential gate.
+  The plan workflow still uses `Github-TF-State` until a separate credential cutover;
+  see the [operator rollout](../../docs/operator-infrastructure.md#dedicated-pull-request-plan-role).
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,

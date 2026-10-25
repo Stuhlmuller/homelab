@@ -80,6 +80,17 @@ or prove offsite recovery; those verification steps remain separate.
 attaches one managed policy. Trust is limited to the protected plan and
 production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
+The unit also declares `Github-TF-Plan`, trusted only by
+`Stuhlmuller/homelab:homelab-plan`. Its inline policy reads state only for
+Argo CD bootstrap, Argo CD and AzureAD application registrations, and the
+application-backup bucket unit. It cannot read the excluded Langfuse key,
+Kubernetes Secret, or SSM generation state. It can inspect backup-bucket
+metadata and use the state KMS key for encrypted state and local plans.
+AzureAD state contains SSO credentials, so the plan environment's reviewer
+gate remains essential. The runtime-secret KMS key permits only the nine
+generated Grafana and Octelium SSO parameters through SSM. The role has no
+AWS resource-write or backup-object-read grant. The plan workflow still uses
+`Github-TF-State` until a separate cutover PR.
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
@@ -284,9 +295,8 @@ the GitHub Actions apply role to change its own maximum.
 set -euo pipefail
 operator_profile="<administrator-profile>"
 aws sso login --profile "$operator_profile"
-cd IaC
-terragrunt stack generate
-cd operator/github-actions-role-policy
+terragrunt --working-dir IaC/homelab/us-west-2/operator stack generate
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 terragrunt --log-disable run --no-auto-init -- test -no-color
@@ -342,6 +352,68 @@ user require an un-targeted operator plan. Import
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
 
+### Dedicated pull-request plan role
+
+The PR plan environment starts same-repository jobs without reviewer approval.
+Its AzureAD state read scope includes SSO credentials; repository write access
+and the workflow's same-repository check are the gate. Use the
+administrator-authenticated full-unit saved-plan path in
+[`ci-cd.md`](ci-cd.md#aws-setup). Expect only
+`aws_iam_role.github_actions_plan` and
+`aws_iam_role_policy.github_actions_plan` creations; stop on unrelated changes.
+The role can list every state object key name so OpenTofu sees 404 for a
+missing new unit state; object contents remain readable only in the four
+PR-planned state families.
+After applying the reviewed plan, publish its ARN to the `homelab-plan` GitHub
+environment with:
+
+```sh
+scripts/aws-plan-role-configure.sh
+scripts/aws-plan-role-configure.sh --execute
+```
+
+The helper reads the exact role ARN from operator state, rejects any other
+role, and verifies the GitHub variable after writing it. The private
+Kubernetes catalog workflow deliberately excludes the plan User, Policy, and
+public `kubernetes-api-ci` Service. Apply those three resources from a clean
+checkout at the exact current `main` commit with an authenticated Octelium
+admin session:
+
+```sh
+scripts/octelium-ci-plan-catalog.sh
+scripts/octelium-ci-plan-catalog.sh --execute
+```
+
+The first command previews the fixed resource selection. The execute path
+rejects unrelated drift in existing plan resources or the public Service,
+reads back all three resources, and requires the second apply to have no
+changes. It does not issue a credential. Then publish the separate token with
+the exact plan identity:
+
+```sh
+scripts/octelium-ci-credential.sh --dry-run --skip-catalog \
+  --credential-name homelab-ci-plan --user homelab-ci-plan \
+  --policy homelab-ci-kubernetes-api-plan-access \
+  --secret-name OCTELIUM_CI_PLAN_AUTH_TOKEN --env homelab-plan
+scripts/octelium-ci-credential.sh --skip-catalog \
+  --credential-name homelab-ci-plan --user homelab-ci-plan \
+  --policy homelab-ci-kubernetes-api-plan-access \
+  --secret-name OCTELIUM_CI_PLAN_AUTH_TOKEN --env homelab-plan
+```
+
+The helper refuses to send any plan identity field to production. Before
+publishing the token, it verifies a Kubernetes read, an upstream dry-run PATCH,
+and denials for a real PATCH and a subresource GET. Both PATCH probes contain
+only a failing JSON Patch UID test against a random ConfigMap, so they cannot
+persist a change even if policy enforcement fails. The token and API responses
+stay out of logs. If an existing plan credential rotates but verification
+fails, repair the policy or transport through the declared source and rerun the
+same command; the old GitHub secret may be stale until that succeeds. The cutover
+PR must switch the workflow to `AWS_PLAN_ROLE_TO_ASSUME_HOMELAB` and remove
+`homelab-plan` from `Github-TF-State` trust after the new plan path passes.
+Its deleted-unit test must also cover a removed unit outside the plan role's
+state allowlist; that PR must fail closed rather than read excluded state.
+
 ### Renovate App credential transfer and role retirement
 
 The one-time transfer uses the temporary
@@ -368,9 +440,8 @@ policy being created; stop on unrelated changes. Review the private plan
 before applying the saved bytes. Do not attach it to a public PR.
 
 ```sh
-cd IaC
-terragrunt stack generate
-cd operator/github-actions-role-policy
+terragrunt --working-dir IaC/homelab/us-west-2/operator stack generate
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 terragrunt --log-disable run --no-auto-init -- test -no-color

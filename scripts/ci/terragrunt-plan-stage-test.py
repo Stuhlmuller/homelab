@@ -23,6 +23,39 @@ MARKERS = {
 
 
 class PrivatePlanStageTest(unittest.TestCase):
+    def test_staged_plan_octelium_identity_never_targets_production(self):
+        helper = HELPER.parents[2] / "scripts/octelium-ci-credential.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            bin_dir = Path(tmp)
+            calls = bin_dir / "calls"
+            for name in ("octeliumctl", "gh"):
+                fake = bin_dir / name
+                fake.write_text("#!/bin/sh\nprintf '%s\\n' \"$0 $*\" >>\"$TEST_CALLS\"\nexit 71\n")
+                fake.chmod(0o755)
+            environment = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}",
+                           "TEST_CALLS": str(calls)}
+            plan = ["--credential-name", "homelab-ci-plan", "--user", "homelab-ci-plan",
+                    "--policy", "homelab-ci-kubernetes-api-plan-access",
+                    "--secret-name", "OCTELIUM_CI_PLAN_AUTH_TOKEN"]
+            for flags in (plan, plan + ["--env", "homelab-production"],
+                          plan + ["--env", "homelab-plan", "--env", "homelab-production"],
+                          plan[:-2] + ["--secret-name", "OCTELIUM_CI_AUTH_TOKEN",
+                                       "--env", "homelab-plan"]):
+                with self.subTest(flags=flags):
+                    result = subprocess.run(["bash", str(helper), *flags],
+                                            cwd=HELPER.parents[2], env=environment,
+                                            capture_output=True, text=True, timeout=5)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("dedicated plan credential", result.stderr)
+                    self.assertFalse(calls.exists(), "credential helper reached a live action")
+            result = subprocess.run(["bash", str(helper), "--dry-run", "--skip-catalog",
+                                     *plan, "--env", "homelab-plan"], cwd=HELPER.parents[2],
+                                    env=environment, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("secret OCTELIUM_CI_PLAN_AUTH_TOKEN in environments: homelab-plan",
+                          result.stdout)
+            self.assertFalse(calls.exists())
+
     def assert_stage(self, private_output, stage, reason="unknown", *,
                      azuread_report=None, azuread_unit=None):
         environment = dict(os.environ)
