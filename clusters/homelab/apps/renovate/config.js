@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 
 const issuerPath = '/var/run/secrets/renovate/issuer-id';
 const privateKeyPath = '/var/run/secrets/renovate/private-key';
+const harborPasswordPath = '/var/run/secrets/renovate-harbor/password';
 const api = 'https://api.github.com';
 const owner = 'Stuhlmuller';
 
@@ -77,6 +78,16 @@ async function installationToken() {
 }
 
 module.exports = async function config() {
+  let harborPassword;
+  try {
+    harborPassword = fs.readFileSync(harborPasswordPath, 'utf8').trim();
+  } catch {
+    throw new Error('Renovate Harbor pull credential file is unreadable');
+  }
+  if (!harborPassword) {
+    throw new Error('Renovate Harbor pull credential file is empty');
+  }
+
   const probe = `/cache/renovate/.storage-probe-${crypto.randomUUID()}`;
   try {
     fs.writeFileSync(probe, Buffer.alloc(4096), { flush: true });
@@ -112,6 +123,13 @@ module.exports = async function config() {
     cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
+    hostRules: [{
+      hostType: 'docker',
+      matchHost: 'https://harbor.stinkyboi.com',
+      username: 'robot$homelab+pull',
+      password: harborPassword,
+      allowInternal: true,
+    }],
     dryRun: 'full',
   };
 };

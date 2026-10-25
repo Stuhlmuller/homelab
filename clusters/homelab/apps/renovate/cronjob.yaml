@@ -69,6 +69,9 @@ spec:
                 - name: github-app
                   mountPath: /var/run/secrets/renovate
                   readOnly: true
+                - name: harbor-pull
+                  mountPath: /var/run/secrets/renovate-harbor
+                  readOnly: true
                 - name: cache
                   mountPath: /cache/renovate
                 - name: tmp
@@ -86,6 +89,13 @@ spec:
                     path: issuer-id
                   - key: private-key
                     path: private-key
+            - name: harbor-pull
+              secret:
+                secretName: renovate-harbor-pull
+                defaultMode: 0440
+                items:
+                  - key: password
+                    path: password
             - name: cache
               persistentVolumeClaim:
                 claimName: renovate-cache

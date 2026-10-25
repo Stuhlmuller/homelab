@@ -82,12 +82,25 @@ On 2026-10-19, destination ztunnel rejected the first dry-run Pod's default
 service identity at the shared private listener before Harbor received traffic.
 The dedicated `renovate` ServiceAccount mounts no Kubernetes token; Istio allows
 only its identity to the registry listener on port 9443. That listener exposes
-only OCI and token paths. No Harbor credential is configured, matching the old
-runner; anonymous lookups can see the public `mirror` project but not private
-projects. In dry-run verification, distinguish a transport failure from an
-expected authentication denial. Hold writer cutover if an eligible private
-package requires a credential. Revert this route change through GitOps if it
-breaks registry access.
+only OCI and token paths. The separate `renovate-harbor-pull` ExternalSecret
+reads `/homelab/renovate/harbor-pull-password`, a generated SSM copy of the
+existing project-scoped Harbor pull robot password. The CronJob mounts its
+target Secret as a read-only file outside the cache. `config.js` grants Docker
+access only to the canonical HTTPS Harbor host with `robot$homelab+pull`; it grants no
+push permission. The legacy Action had no Harbor credential. The 2026-10-25
+04:00 and 05:00 dry runs each finished the owner inventory but reported the
+same private-Harbor digest lookup warnings. This change needs a fresh scheduled
+dry run before private registry parity can pass.
+
+Stage and apply the protected private saved plan for the SSM copy, then verify
+`renovate-harbor-pull` is `Ready=True` before merging the CronJob consumer.
+Before the next scheduled Job, verify the ExternalSecret is still ready and
+its target Secret exists without reading its value. Require the Job to
+finish, keep full dry-run mode, and confirm the private Harbor lookup warnings
+clear in restricted logs. If the Secret is not ready or the warnings persist,
+keep writer cutover blocked and revert the credential mount and host rule
+through a reviewed GitOps change. Distinguish registry transport failures from
+authentication denials; neither is a successful private-package lookup.
 
 ### Cache failure and recovery
 

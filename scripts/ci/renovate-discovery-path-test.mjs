@@ -62,6 +62,7 @@ async function configuredRunner() {
         readFileSync(file) {
           if (file === '/var/run/secrets/renovate/issuer-id') return 'Iv1.fixture';
           if (file === '/var/run/secrets/renovate/private-key') return key;
+          if (file === '/var/run/secrets/renovate-harbor/password') return 'fixture-harbor-password';
           throw new Error('Unexpected credential path');
         },
         writeFileSync(file, bytes, settings) {

@@ -16,6 +16,7 @@ function load(options = {}) {
   const cacheUnlinks = [];
   const issuer = options.issuer ?? 'Iv1.example';
   const key = options.key ?? pem;
+  const harborPassword = options.harborPassword ?? 'fixture-harbor-password';
   const installation = options.installation ?? {
     id: 42,
     account: { login: 'Stuhlmuller' },
@@ -34,6 +35,10 @@ function load(options = {}) {
           readFileSync(file) {
             if (file === '/var/run/secrets/renovate/issuer-id') return issuer;
             if (file === '/var/run/secrets/renovate/private-key') return key;
+            if (file === '/var/run/secrets/renovate-harbor/password') {
+              if (options.harborReadError) throw new Error('fixture-harbor-password must stay private');
+              return harborPassword;
+            }
             throw new Error('unexpected credential path');
           },
           writeFileSync(file, bytes, settings) {
@@ -103,6 +108,26 @@ test('mints a signed installation token and preserves the current global policy'
   assert.equal(resolved.baseDir, '/tmp/renovate');
   assert.equal(resolved.repositoryCache, 'enabled');
   assert.equal(resolved.cachePrivatePackages, true);
+  assert.equal(resolved.hostRules.length, 1);
+  assert.equal(resolved.hostRules[0].hostType, 'docker');
+  assert.equal(resolved.hostRules[0].matchHost, 'https://harbor.stinkyboi.com');
+  assert.equal(resolved.hostRules[0].username, 'robot$homelab+pull');
+  assert.equal(resolved.hostRules[0].password, 'fixture-harbor-password');
+  assert.equal(resolved.hostRules[0].allowInternal, true);
+  assert.doesNotMatch(JSON.stringify(calls), /fixture-harbor-password/);
+});
+
+test('fails before cache or GitHub access when Harbor reader file is missing or empty', async () => {
+  for (const options of [{ harborReadError: true }, { harborPassword: '' }]) {
+    const { config, calls, cacheWrites } = load(options);
+    await assert.rejects(config(), (error) => {
+      assert.match(error.message, /Harbor pull credential file is (unreadable|empty)/);
+      assert.doesNotMatch(error.message, /fixture-harbor-password/);
+      return true;
+    });
+    assert.equal(calls.length, 0);
+    assert.equal(cacheWrites.length, 0);
+  }
 });
 
 test('fails closed for missing credentials and invalid signing keys', async () => {
@@ -182,4 +207,11 @@ test('keeps Renovate cache refresh defaults and mounts credentials outside the P
   assert.match(cronjob, /- name: cache\n\s+persistentVolumeClaim:\n\s+claimName: renovate-cache\n/);
   assert.match(cronjob, /- name: github-app\n\s+mountPath: \/var\/run\/secrets\/renovate\n\s+readOnly: true\n/);
   assert.match(cronjob, /- name: github-app\n\s+secret:\n\s+secretName: renovate\n/);
+  assert.match(cronjob, /- name: harbor-pull\n\s+mountPath: \/var\/run\/secrets\/renovate-harbor\n\s+readOnly: true\n/);
+  assert.match(cronjob, /- name: harbor-pull\n\s+secret:\n\s+secretName: renovate-harbor-pull\n\s+defaultMode: 0440\n\s+items:\n\s+- key: password\n\s+path: password\n/);
+  const harborExternalSecret = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/harbor-pull-externalsecret.yaml'), 'utf8');
+  assert.match(harborExternalSecret, /name: renovate-harbor-pull/);
+  assert.match(harborExternalSecret, /key: \/homelab\/renovate\/harbor-pull-password/);
+  const ssmCatalog = fs.readFileSync(path.resolve(__dirname, '../../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl'), 'utf8');
+  assert.match(ssmCatalog, /"\/homelab\/renovate\/harbor-pull-password" = \{\n\s+description = [^\n]+\n\s+generated = \{\n\s+source_parameter = "\/homelab\/harbor\/robot-pull-password"/);
 });
