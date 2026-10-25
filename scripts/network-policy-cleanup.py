@@ -129,7 +129,7 @@ def require_reviewed_node_pods(node_name, placement, cleanup_pod, daemonset_uid)
                      any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
                          owner.get("controller") is True and
                          isinstance(owner.get("name"), str) and owner["name"] and
-                         (owner["name"] == "ztunnel" if identity[0] == "istio-system"
+                         (owner["name"] in {"ztunnel", "istio-cni-node"} if identity[0] == "istio-system"
                           else owner["name"] not in {ENFORCER, CLEANUP})
                          for owner in owners))
         if not valid:
