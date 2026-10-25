@@ -74,6 +74,17 @@ Pod Security, service accounts, Istio authorization, and workload security
 contexts are enforced desired state. Existing `NetworkPolicy` objects remain
 intent-only while Flannel is the sole active CNI and the staged firewall-only
 kube-router Application selects no node.
+The protected [`firewall-baseline` stage](../../scripts/ci/platform-maintenance-stage.sh)
+uses a fixed, digest-pinned Pod on `zimaboard-2` before enforcement. It reuses
+the [cleanup snapshot parser](../../scripts/network-policy-cleanup.py) to require
+no kube-router objects in IPv4, IPv6, or ipset, saves the full snapshot
+privately, and confirms the Pod is absent before a placement can be admitted.
+An orphaned probe has a protected, UID-bound `firewall-baseline-recover` stage
+using the original private ownership marker.
+The capture does not create or authorize `placement.json`; rules can change
+after capture, so placement needs separate review and current live checks.
+The [network-policy runbook](../../clusters/homelab/platform/network-policy/README.md)
+describes the Node identity and separate placement review gates.
 Most existing non-privileged namespaces declare baseline Pod Security. The
 unsynced Enterprise foundation declares restricted enforcement for both
 `openclaw-system` and `openclaw-agents`; this is source intent, not live

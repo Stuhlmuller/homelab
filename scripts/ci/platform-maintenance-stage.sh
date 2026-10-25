@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|firewall-baseline|firewall-baseline-recover|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -18,7 +18,7 @@ config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
 if [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
-elif [[ "$stage" != inspect ]]; then
+elif [[ "$stage" != inspect && "$stage" != firewall-baseline && "$stage" != firewall-baseline-recover ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
 
@@ -118,6 +118,63 @@ case "$stage" in
     python3 -I scripts/platform-maintenance.py inspect --config "$config" \
       --talosconfig "$work/talosconfig" --output "$work/inspect.json"
     retain_result "$work/inspect.json" inspect
+    ;;
+  firewall-baseline)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
+    bash scripts/ci/install-kubeconfig.sh
+    kubectl auth can-i create pods -n kube-system --quiet
+    kubectl auth can-i create pods/exec -n kube-system --quiet
+    kubectl auth can-i delete pods -n kube-system --quiet
+    kubectl auth can-i get pods -n kube-system --quiet
+    kubectl auth can-i list pods --all-namespaces --quiet
+    kubectl auth can-i get nodes --quiet
+    kubectl auth can-i list nodes --quiet
+    pod_token="$(openssl rand -hex 24)"
+    jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      --arg podToken "$pod_token" \
+      '{format: 1, stage: "firewall-baseline", status: "attempted", verified: false,
+        sourceSha: $sourceSha, runId: $runId, node: "zimaboard-2",
+        podToken: $podToken}' >"$work/baseline-attempt.json"
+    chmod 600 "$work/baseline-attempt.json"
+    retain_result "$work/baseline-attempt.json" baseline-attempt
+    if ! python3 -I scripts/network-policy-firewall-baseline.py --config "$config" \
+      --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+      --attempt "$work/baseline-attempt.json" --output "$work/baseline.json"; then
+      if [[ -f "$work/baseline.json" && ! -L "$work/baseline.json" ]]; then
+        retain_result "$work/baseline.json" baseline-interrupted
+      fi
+      exit 1
+    fi
+    retain_result "$work/baseline.json" baseline
+    ;;
+  firewall-baseline-recover)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
+    [[ "${BASELINE_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$ &&
+       "${BASELINE_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
+    bash scripts/ci/install-kubeconfig.sh
+    kubectl auth can-i delete pods -n kube-system --quiet
+    kubectl auth can-i get pods -n kube-system --quiet
+    load_receipt "openclaw-enterprise/platform/${BASELINE_SOURCE_SHA}/${BASELINE_RUN_ID}/baseline-attempt.json" \
+      "$work/baseline-attempt.json"
+    jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      --arg baselineSourceSha "$BASELINE_SOURCE_SHA" --arg baselineRunId "$BASELINE_RUN_ID" \
+      '{format: 1, stage: "firewall-baseline-recover", status: "attempted",
+        verified: false, sourceSha: $sourceSha, runId: $runId,
+        baselineSourceSha: $baselineSourceSha, baselineRunId: $baselineRunId}' \
+      >"$work/baseline-recover-attempt.json"
+    chmod 600 "$work/baseline-recover-attempt.json"
+    retain_result "$work/baseline-recover-attempt.json" baseline-recover-attempt
+    if ! python3 -I scripts/network-policy-firewall-baseline.py recover --config "$config" \
+      --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+      --attempt "$work/baseline-attempt.json" \
+      --baseline-source-sha "$BASELINE_SOURCE_SHA" --baseline-run-id "$BASELINE_RUN_ID" \
+      --output "$work/baseline-recover.json"; then
+      if [[ -f "$work/baseline-recover.json" && ! -L "$work/baseline-recover.json" ]]; then
+        retain_result "$work/baseline-recover.json" baseline-recover-interrupted
+      fi
+      exit 1
+    fi
+    retain_result "$work/baseline-recover.json" baseline-recover
     ;;
   canary-admit|canary-release)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
