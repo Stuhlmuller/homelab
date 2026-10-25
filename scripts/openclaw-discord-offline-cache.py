@@ -219,6 +219,10 @@ def main():
         build(args.output_dir.resolve(), root)
     except (ValueError, subprocess.CalledProcessError) as error:
         print(f"offline Discord cache build failed: {error}", file=sys.stderr)
+        if isinstance(error, subprocess.CalledProcessError):
+            for output in (error.stdout, error.stderr):
+                if output:
+                    print(output, file=sys.stderr, end="" if output.endswith("\n") else "\n")
         return 1
     return 0
 

@@ -2,10 +2,15 @@
 """Check exact npm integrity across supported npm --json result shapes."""
 
 from copy import deepcopy
+from contextlib import redirect_stderr
+from io import StringIO
 import json
 from pathlib import Path
 import runpy
+import subprocess
+import sys
 import unittest
+from unittest.mock import Mock, patch
 
 
 SUT = runpy.run_path(str(Path(__file__).resolve().parents[2] /
@@ -14,6 +19,18 @@ INTEGRITY = SUT["INTEGRITY"]
 
 
 class RegistryIntegrity(unittest.TestCase):
+    def test_captured_subprocess_failure_is_reported(self):
+        failure = subprocess.CalledProcessError(
+            1, ["docker", "pull"], output="pull output\n", stderr="pull error\n")
+        message = StringIO()
+        main = SUT["main"]
+        with patch.object(sys, "argv", ["offline-cache", "--output-dir", "/tmp/unneeded"]), \
+                patch.dict(main.__globals__, {"build": Mock(side_effect=failure)}), \
+                redirect_stderr(message):
+            self.assertEqual(main(), 1)
+        self.assertIn("pull output\n", message.getvalue())
+        self.assertIn("pull error\n", message.getvalue())
+
     def test_exact_scalar_or_singleton_array(self):
         for result in (INTEGRITY, [INTEGRITY]):
             with self.subTest(result=result):
