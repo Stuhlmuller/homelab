@@ -1,0 +1,66 @@
+# Staged suspended; run once through reviewed GitOps before private review input.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-acceptance-ledger-init
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV_K8S_23=Only the one-shot ownership initializer runs as root; acceptance workers run as UID 12021.
+    checkov.io/skip2: CKV_K8S_37=The initializer receives only CHOWN and FOWNER for its dedicated local volume.
+    checkov.io/skip3: CKV_K8S_25=The initializer receives only CHOWN and FOWNER for its dedicated local volume.
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-ledger-init
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  activeDeadlineSeconds: 120
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate
+        app.kubernetes.io/component: acceptance-ledger-init
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: renovate
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: init
+          image: docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          imagePullPolicy: IfNotPresent
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              test -d /ledger
+              test -z "$(find /ledger -mindepth 1 -maxdepth 1 -print -quit)"
+              chmod 0700 /ledger
+              chown 12021:12021 /ledger
+              test "$(stat -c '%u:%g:%a' /ledger)" = '12021:12021:700'
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 32Mi}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              add: [CHOWN, FOWNER]
+              drop: [ALL]
+          volumeMounts:
+            - name: ledger
+              mountPath: /ledger
+      volumes:
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: renovate-acceptance-ledger
