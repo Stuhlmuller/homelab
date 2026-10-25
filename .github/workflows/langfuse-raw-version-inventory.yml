@@ -1,0 +1,116 @@
+name: Langfuse Raw Version Inventory
+
+# checkov:skip=CKV_GHA_7: expected_sha binds the fixed read-only bucket inventory to current main.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit to inspect
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: langfuse-raw-version-inventory-production
+  cancel-in-progress: false
+
+jobs:
+  static-policy:
+    name: Static Policy And Security Checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+
+  inventory:
+    name: Protected Raw Object Version Inventory
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Before Credentials
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-duration-seconds: 7200
+          role-session-name: homelab-langfuse-raw-inventory-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Inventory Private Versions
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          inventory="${RUNNER_TEMP}/langfuse-raw-versions.json"
+          trap 'rm -f "$private_log" "$inventory"' EXIT
+          sha256sum --check --status <<<'f810ad538fd4e68f072c613c1d0a5a4e590bc84e275edc3cac6fb749c21081cd  scripts/ci/langfuse-raw-version-inventory.py'
+          if ! nix develop --command python3 -I scripts/ci/langfuse-raw-version-inventory.py --output "$inventory" >"$private_log" 2>&1; then
+            echo '::error::Langfuse raw-version inventory failed; private diagnostics withheld.'
+            exit 1
+          fi
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+          test "$(wc -l <"$private_log")" -eq 1
+          LC_ALL=C grep -Eqx 'Langfuse raw versions inventoried: objects=[0-9]+ delete_markers=[0-9]+ bytes=[0-9]+ sha256=[0-9a-f]{64}' "$private_log"
+          cat "$private_log"

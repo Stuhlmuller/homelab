@@ -73,6 +73,42 @@ Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
 startup and ingestion. Keep the existing PVC and require a separate reviewed
 cutover and rollback before moving the database.
 
+## Raw-object version inventory before retirement
+
+The protected, read-only
+[`Langfuse Raw Version Inventory`](../../../../.github/workflows/langfuse-raw-version-inventory.yml)
+workflow lists every version and delete marker in the dedicated raw-object
+bucket with explicit S3 page markers. It checks each object version through
+`HeadObject` by exact version ID, size and KMS encryption, then reads at most
+one byte of that version to prove decrypt access. The exact keys and
+version IDs stay in a temporary mode-0600 manifest on the runner; the public
+receipt contains only object count, delete-marker count, total bytes and the
+manifest SHA-256. The manifest is deleted at job exit. This is a sizing and
+read-permission check, not a retained backup or a consistent capture while
+Langfuse is writing.
+
+Dispatch only from exact current `main` through `homelab-production`:
+
+```sh
+main_sha="$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+gh workflow run langfuse-raw-version-inventory.yml -R Stuhlmuller/homelab \
+  --ref main -f expected_sha="$main_sha"
+```
+
+The protected CI role needs `s3:ListBucketVersions` on the bucket,
+`s3:GetObjectVersion` on its objects, and `kms:Decrypt` for their KMS key.
+The application IAM user intentionally
+has neither; do not widen its runtime credential for backup. A denied read,
+incomplete page, changed version, unexpected encryption, or stale main fails
+without a recovery claim. Before suspension, a separate reviewed workflow must
+stop and verify all writers, capture PostgreSQL, ClickHouse and Valkey with one
+source-identity window, copy exact raw-object versions to independent storage,
+and restore every component with private encryption/salt material. Split the
+capture into bounded components: the measured ClickHouse active parts plus raw
+S3 versions already exceed the generic publisher's 5 GiB whole-set limit.
+Decide whether queued work may be lost before stopping the worker. Retain all
+current PVCs and the raw bucket until an independent full restore passes.
+
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
