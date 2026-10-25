@@ -110,7 +110,8 @@ def evaluate(document, root):
     seen_pods = set()
     intervals = []
     counts = {"planned": 168, "excluded": 0, "timely": 0, "late": 0,
-              "missing": 0, "failed": 0, "duplicateCycles": 0, "overlaps": 0}
+              "missing": 0, "unknown": 0, "failed": 0,
+              "duplicateCycles": 0, "overlaps": 0}
 
     for slot in slots:
         if not isinstance(slot, dict) or not {"slotAt", "collectedAt", "collection", "runs"} <= set(slot) \
@@ -157,10 +158,13 @@ def evaluate(document, root):
             counts["duplicateCycles"] += len(runs) - 1
         if not runs and exclusion is None:
             counts["missing"] += 1
-        starts = []
+        proved_starts = []
+        unknown_start = False
         for run in runs:
-            if not isinstance(run, dict) or set(run) != {
-                    "jobUid", "podUid", "discoveryStartedAt", "finishedAt", "phase"}:
+            mandatory = {"jobUid", "podUid", "jobStartedAt", "finishedAt", "phase"}
+            allowed = mandatory | {"discoveryStartedAt", "discoveryCompletedAt"}
+            if (not isinstance(run, dict) or not mandatory <= set(run)
+                    or set(run) - allowed):
                 raise EvidenceError("invalid-run")
             job, pod = run["jobUid"], run["podUid"]
             if (not isinstance(job, str) or not job or not isinstance(pod, str) or not pod
@@ -168,18 +172,34 @@ def evaluate(document, root):
                 raise EvidenceError("duplicate-or-missing-identity")
             seen_jobs.add(job)
             seen_pods.add(pod)
-            began, finished = utc(run["discoveryStartedAt"]), utc(run["finishedAt"])
+            began, finished = utc(run["jobStartedAt"]), utc(run["finishedAt"])
             if (began < slot_at or finished <= began or finished > collected_at
                     or not isinstance(run["phase"], str)
                     or run["phase"] not in {"succeeded", "failed"}):
                 raise EvidenceError("invalid-run-interval")
+            discovery_started = utc(run["discoveryStartedAt"]) \
+                if "discoveryStartedAt" in run else None
+            discovery_completed = utc(run["discoveryCompletedAt"]) \
+                if "discoveryCompletedAt" in run else None
+            if ((discovery_started and not began <= discovery_started <= finished)
+                    or (discovery_completed and not began <= discovery_completed <= finished)
+                    or (discovery_started and discovery_completed
+                        and discovery_started > discovery_completed)):
+                raise EvidenceError("invalid-discovery-interval")
             intervals.append((began, finished))
             if exclusion is None:
                 if run["phase"] == "failed":
                     counts["failed"] += 1
-                starts.append(began)
-        if starts:
-            if min(starts) <= slot_at + DEADLINE:
+                if discovery_started:
+                    proved_starts.append(discovery_started)
+                elif discovery_completed and discovery_completed <= slot_at + DEADLINE:
+                    proved_starts.append(discovery_completed)
+                else:
+                    unknown_start = True
+        if unknown_start:
+            counts["unknown"] += 1
+        elif proved_starts:
+            if min(proved_starts) <= slot_at + DEADLINE:
                 counts["timely"] += 1
             else:
                 counts["late"] += 1
@@ -197,7 +217,7 @@ def evaluate(document, root):
     counts["denominator"] = denominator
     counts["ratePercentFloor"] = counts["timely"] * 10000 // denominator / 100 \
         if denominator else None
-    if not denominator or counts["failed"]:
+    if not denominator or counts["failed"] or counts["unknown"]:
         counts["status"] = "inconclusive"
     elif (counts["timely"] * 100 < denominator * 95 or counts["overlaps"]
           or counts["duplicateCycles"]):
