@@ -27,8 +27,8 @@ source_line = next(line.strip() for line in base.splitlines()
 program = source_line.split("awk '", 1)[1].split("' /proc/self/mountinfo", 1)[0]
 
 
-def parsed(mountinfo):
-    result = subprocess.run(["awk", program], input=mountinfo, text=True,
+def parsed(mountinfo, awk_program=program):
+    result = subprocess.run(["awk", awk_program], input=mountinfo, text=True,
                             capture_output=True, check=True)
     return result.stdout.strip()
 
@@ -43,6 +43,23 @@ for wrong in (
     2 * (prefix + "nfs 10.1.0.2:/renovate-cache rw,vers=3\n"),
 ):
     assert parsed(wrong) != "nfs 10.1.0.2:/renovate-cache"
+
+probe = (app / "dedicated-cache-claim-probe.yaml").read_text()
+probe_program = re.search(r"source=\$\(\n\s*awk '(.*?)' /proc/self/mountinfo",
+                          probe, re.DOTALL).group(1)
+assert parsed(prefix + "nfs 10.1.0.2:/renovate-cache ro,vers=3\n", probe_program) == (
+    "nfs 10.1.0.2:/renovate-cache")
+for wrong in (
+    prefix + "nfs 10.1.0.2:/homelab ro,vers=3\n",
+    prefix + "nfs4 10.1.0.2:/renovate-cache ro,vers=4\n",
+    2 * (prefix + "nfs 10.1.0.2:/renovate-cache ro,vers=3\n"),
+):
+    assert parsed(wrong, probe_program) != "nfs 10.1.0.2:/renovate-cache"
+assert probe.count("kind: Job") == 1 and probe.count("kind: NetworkPolicy") == 1
+assert "  suspend: true" in probe and "automountServiceAccountToken: false" in probe
+assert probe.count("readOnly: true") == 2 and "*,ro,*" in probe
+assert "16777216" in probe and "25165824" in probe
+assert "dedicated-cache-claim-probe.yaml" not in (app / "kustomization.yaml").read_text()
 
 assert re.search(r'\[ "\$source" = \'nfs 10\.1\.0\.2:/renovate-cache\' \]', base)
 assert "16777216" in base and "25165824" in base
