@@ -1,0 +1,25 @@
+# Stage outside Kustomize with the collector. Match both service VIP and post-DNAT API endpoint.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-schedule-collector
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate-acceptance-schedule-collector
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.1/32
+      ports:
+        - protocol: TCP
+          port: 443
+    - to:
+        - ipBlock:
+            cidr: 10.1.0.199/32
+      ports:
+        - protocol: TCP
+          port: 6443
