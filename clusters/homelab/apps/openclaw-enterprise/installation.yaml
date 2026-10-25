@@ -1,0 +1,84 @@
+occ:
+  cluster: homelab
+backend: []
+presets:
+  includeDefaults: true
+drivers:
+  plugin:
+    id: occ-plugin
+    configuration: {}
+  configuration:
+    id: config-kubernetes
+    configuration:
+      authentication:
+        mode: inCluster
+  iam:
+    id: native-iam
+    configuration: {}
+  compute:
+    id: compute-kubernetes
+    configuration:
+      authentication:
+        mode: inCluster
+      images:
+        gateway: harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1
+        agent: harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1
+        requireImmutableDigest: true
+      resources:
+        gateway:
+          requests:
+            cpu: "100m"
+            memory: "1792Mi"
+          limits:
+            cpu: "4"
+            memory: "3Gi"
+        agent:
+          requests:
+            cpu: "100m"
+            memory: "768Mi"
+          limits:
+            cpu: "4"
+            memory: "6Gi"
+        namespace:
+          quota:
+            pods: "10"
+          containerDefaults:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "4"
+              memory: "2Gi"
+      network:
+        dns:
+          namespace: kube-system
+          podLabels:
+            k8s-app: kube-dns
+        gatewayPort: 8080
+        gatewayTrustedProxyCidrs:
+          - 10.244.1.0/24
+          - 10.244.2.0/24
+          - 10.244.3.0/24
+          - 10.244.4.0/24
+        pluginStatusProxySourceCidrs:
+          - 10.1.0.199/32
+      gatewayRouting:
+        gatewayName: oce-private-gateway
+        gatewayNamespace: openclaw-system
+        envoyNamespace: envoy-gateway-system
+      servicePrincipalCredentials:
+        mode: projectedServiceAccountToken
+        audience: openclaw-enterprise
+        expirationSeconds: 900
+      runtime:
+        gatewayStorageClassName: openclaw-enterprise-agent-local
+        nodeSelector:
+          oce-role: agents
+        gatewayNodeSelector:
+          oce-role: control
+        transportSecretPrefix: openclaw-agent-transport
+  secret:
+    id: secret-kubernetes
+    configuration:
+      authentication:
+        mode: inCluster

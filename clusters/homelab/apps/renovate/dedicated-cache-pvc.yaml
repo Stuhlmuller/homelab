@@ -1,0 +1,22 @@
+# Staged only: add to the Renovate Kustomization after the platform PV is reconciled.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: renovate-cache-dedicated
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/part-of: homelab-automation
+    homelab.stuhlmuller.dev/storage-backend: qnap-renovate-cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: renovate-cache-qnap-static
+  volumeMode: Filesystem
+  volumeName: renovate-cache-dedicated

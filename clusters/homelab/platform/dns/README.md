@@ -7,6 +7,13 @@ settings, and DNS Service address `10.96.0.10`.
 Argo CD pruning is disabled, and each resource also retains
 `Prune=false,Delete=false` protection.
 
+Nine [repository-owned DNS egress policies](../../../../docs/evidence/openclaw-enterprise-policy-review.json)
+select CoreDNS Pods by `kube-system` and `k8s-app=kube-dns`; six were narrowed in
+the Enterprise policy review. Keep that Pod label and the `kube-dns` Service
+selector aligned with all nine policies. Before enabling
+firewall-only kube-router, prove Service DNS over TCP and UDP 53 from affected
+workloads on the isolated canary; source rendering alone cannot prove it.
+
 The manifests follow the
 [pinned Talos templates](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/internal/k8stemplates/coredns.go),
 with the current homelab image, Service address, and Kubernetes defaults made

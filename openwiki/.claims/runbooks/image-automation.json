@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:6d2013cd617e4441cfa8961e467c5a4d50312fe2e0c8436af6e1a439eaf918e0",
+  "claims": [
+    {
+      "id": "claim_c09597f0709549db8d51b46c8c17e590",
+      "statement": "Renovate is the repository image-update path and all committed container images require digest pins; its hourly in-cluster CronJob is unsuspended in full dry-run mode while the legacy GitHub Action remains the only PR writer until reviewed cutover.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L11-L17",
+          "version": "repo-lines-v1:sha256:172dcb36b2cc12899b2596805ec0cf48cd4ef0173f5c3c34a2f3df924366c51d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWU5MWU1MWNlNTM4ZWYxMjBlZTIwY2JkZjk0MTU4YmFjZTFjYzExNzkwNmY4NjRmZWQyZDk0ZTM3MTEwY2IyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzYxZWFmZTUyOTNkM2RmOWE3NjU0OTNmOWE1ZjlhYzU0NTFlYWJmZjk3NTdjZGY1NmIwYmQ3ODg2NmM3ZDYzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTRmYTA1NTg3MDNmZmNjMGRjMmUzNmQ0Mjk5YTAyMTdmNzQ2OTZmZjdiNzdiMzFkYzBjMjllMTU4Mzc0NDI5YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWQ3YjE1YTAzM2ZkMTljNWMzYWI3M2VhNWEwNDQwMDdhMzY1NTJhM2Y4ZjgwOWU2YzFlODE3YjU3NjU3NzMwNiJ9"
+        },
+        {
+          "resource": "repo://docs/image-automation.md#L3-L19",
+          "version": "repo-lines-v1:sha256:059fc1a84ca39c0db925e2a40852da165c4fc7222c3d99b2a7c1a8d5d0ee0de5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0NDA3NmQ2YWJkNjQ4MGVjOTNjNWI2YjlmNzA4MTYzMjhkZTA3Njg1MWI3ODAwYzEwNjg1OTdmYmMyNDg2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5NDMwNzFmNDBhNDI1ZTc3ZDg0MGVlMjY2N2I5MDM1NDZjY2VlZTk3Mzk5NmYzZDdiZmUyZTc3MjhmOThjYzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MDBiMWJjOGUzYjhlNjczYzRmNmY0MjViOTM3OTA4OWFlZDA5M2U2OTRhZDI0OWYxYzQ2YTg0NTM0MDg3YjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-19T22:53:09.781Z"
+  }
+}

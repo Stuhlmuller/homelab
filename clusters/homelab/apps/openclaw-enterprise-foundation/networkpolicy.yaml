@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-system-default-deny-ingress
+  namespace: openclaw-system
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: occ-postgres-ingress
+  namespace: openclaw-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: occ-postgres
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: openclaw-enterprise
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values: [api, worker, initialization]
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: occ-postgres-backup
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: occ-postgres-restore-drill-isolation
+  namespace: openclaw-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: occ-postgres-restore-drill
+  policyTypes: [Ingress, Egress]

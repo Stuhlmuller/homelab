@@ -1,0 +1,371 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-cloudman",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "cloudman",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-clusterman",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "clusterman",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-collector",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "collector",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-logstore",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "logstore",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-metricstore",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "metricstore",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-nocturne",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "nocturne",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-policyportal",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "policyportal",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-rscserver",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component-type": "cluster"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {},
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component": "genesis"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "rscserver",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-rscstore",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "rscstore",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "octeliumee-secretman",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component": "rscserver",
+                    "octelium.com/component-type": "cluster"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "octeliumee",
+            "octelium.com/component": "secretman",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    }
+  ],
+  "kind": "List"
+}

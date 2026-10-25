@@ -212,6 +212,33 @@ class ReceiptImportTests(unittest.TestCase):
                 base_sha, head_sha,
             )
 
+    def test_main_push_skips_only_equal_native_receipts_at_exact_revisions(self):
+        base_sha, head_sha = SHA, "c" * 40
+        base = {"schema_version": 1, "receipts": {"chainguard-python": {"receipt": "same"}},
+                "applications": {"example": "old"}}
+        head = copy.deepcopy(base)
+        head["applications"]["example"] = "new"
+        self.assertTrue(IMPORT.native_receipts_unchanged(
+            self.api({base_sha: base, head_sha: head}), base_sha, head_sha))
+        head["receipts"]["chainguard-python"] = {"receipt": "changed"}
+        self.assertFalse(IMPORT.native_receipts_unchanged(
+            self.api({base_sha: base, head_sha: head}), base_sha, head_sha))
+        head = copy.deepcopy(base)
+        head["receipts"]["chainguard-unknown"] = {"receipt": "unmanaged"}
+        self.assertFalse(IMPORT.native_receipts_unchanged(
+            self.api({base_sha: base, head_sha: head}), base_sha, head_sha))
+        head = copy.deepcopy(base)
+        head["receipts"]["chainguard-empty"] = None
+        self.assertFalse(IMPORT.native_receipts_unchanged(
+            self.api({base_sha: base, head_sha: head}), base_sha, head_sha))
+        head["receipts"] = None
+        with self.assertRaises(IMPORT.ImportError):
+            IMPORT.native_receipts_unchanged(
+                self.api({base_sha: base, head_sha: head}), base_sha, head_sha)
+        with self.assertRaises(IMPORT.ImportError):
+            IMPORT.native_receipts_unchanged(
+                self.api({base_sha: base, head_sha: base}), "not-a-sha", head_sha)
+
     def test_native_receipt_cannot_be_deleted_or_preseeded(self):
         receipts, provenance = IMPORT.verify_artifact(self.api(), IMPORT.REPOSITORY, RUN_ID, SHA, self.plans)
         imported = IMPORT.imported_state({"schema_version": 1, "receipts": {}}, receipts, provenance)

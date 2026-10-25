@@ -10,15 +10,37 @@ not patch Enterprise behavior or restore the legacy assistant into it.
 and images, installation phase, logical Namespace/agent names, private origins,
 storage class, native model configuration, credential references, and
 `activationEnabled`. It contains no secret values or operator shell inputs.
-The source-to-image pairing policy and image repository names are fixed in T003;
-their digest fields stay null and activation stays false until T004 builds or
-identifies the matching published pair and records its immutable receipts.
+The source-to-image pairing policy and image repository names are fixed in T003.
+Protected [publisher `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867)
+signed and fully pulled the paired controller/runtime and CLI images; their
+verified digests are pinned in source. The CLI build pins the Go 1.27.1
+toolchain and exact Linux amd64 binary hash from `cmd/occ`, then packages it
+with the same source revision. Protected [full mirror `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+verified the 214-image platform catalog. The journal operator image was also
+published, but its digest remains unselected because the Installation and
+values changed after that build; exact-source rebuild is required before use.
+Activation remains false.
 
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
-Sandbox, optional broker/collector, or configured Codex Harness. The provider is
-`openai`; model ID and dedicated model credential are explicit activation inputs.
-Do not copy the example model or reuse old app credentials. Deployment includes a
-real billable provider probe; no deployment occurs without those configured inputs.
+Sandbox, optional broker/collector, or configured Codex Harness. The pinned OCE
+Kubernetes driver does not accept `openrouter` as a Harness provider. Use its
+supported `openai` transport with `baseUrl: https://openrouter.ai/api/v1`,
+`api: openai-completions`, and model ID `openrouter/free`. OCE's model reference
+is `openai/openrouter/free`; the wire request to OpenRouter uses `openrouter/free`.
+The first slash selects OCE's provider; raw `openrouter/free` would select the
+unsupported `openrouter` provider. Test this mapping before writing a Configuration.
+Do not copy the example model or reuse old app credentials. The dedicated
+OpenRouter key must be registered as an Agent `harnessAuth` OCC Secret; direct
+Configuration secret binding or an ExternalSecret model mount is unsupported.
+OCE projects it as `OPENAI_API_KEY` only into this agent. Foundation,
+Configuration and stopped Agent creation may proceed without the key. An
+Agent deploy requires a bound Secret and runs a real provider probe; never
+use it in the inactive phase.
+The initial managed Configuration follows the pinned first-Agent helper:
+OpenRouter uses the `openai` transport, `openrouter/free` wire model,
+`OPENAI_API_KEY` env credential reference and narrow model secret provider;
+tools are denied. Native `controlUi` starts disabled, with no localhost browser
+origins. The origin is `null` in committed desired state until T048 returns it.
 
 Planned `scripts/openclaw-enterprise.py` commands are `check`, `reconcile`, and
 `verify`, each accepting `--config PATH`. `reconcile` also requires the protected
@@ -26,19 +48,80 @@ workflow's `--expected-sha SHA` and a mounted credential-file path. Read-only
 commands never create an agent, deploy a revision, or send a model request.
 Acceptance probes are separate declared tests, not implicit in read-only `verify`.
 
+At pinned source `33bb745`, `GET /installation` exposes identity and optional
+capabilities, but no selected Compute, Configuration, Secret, IAM or Sandbox
+Driver identities/settings. `occ installation get` reads that same operation;
+`installation deployment-inventory` only reports namespace/agent deployment
+state. These reads cannot establish the intended Driver selection. The
+repository-owned proof below instead binds the reviewed startup bytes to the
+current controller workloads; without it, `check` and `reconcile` fail closed
+before any API mutation. Capability support for Embedded is not that proof.
+
+The chart provides a read-only Kubernetes proof path. T039 must declare the
+exact reviewed `installation.yaml` bytes in source. A protected, exact-main,
+repository-owned stage creates and re-reads a dedicated, version-named Opaque
+Secret `occ-installation-startup-<first 32 SHA-256 hex characters>` with
+`immutable: true` before Application registration; a raw Secret manifest is
+forbidden by repository policy. T039 must
+pair `installation.secretName` with `controlPlane.installationChecksum` set to
+that full digest. After bootstrap, a protected T041 path sets and verifies the Secret's
+`openclaw.dev/installation-id` annotation must equal `GET /installation`.
+Before reconciliation, a protected reader must compare the Secret's exact
+decoded bytes with the reviewed source and check both current, Ready API and
+worker Pods: Deployment/ReplicaSet ownership, pinned controller image, exact
+startup volume/key/path, checksum, and Pod creation after the immutable Secret.
+Read the Secret and workload identities again after the Installation API read;
+any changed UID, resource version or Pod identity blocks. Do not log the Secret
+or candidate bytes. An immutable Secret must use a new name on rotation so an
+old Pod cannot silently retain a deleted Secret mount.
+
+`scripts/openclaw-enterprise.py check` gathers scoped Kubernetes snapshots
+around `GET /installation` and applies the attestation. With a protected
+credential file, exact main SHA and durable journal, `reconcile` can POST the
+logical `claw` Namespace with `existingNamespace: openclaw-agents` after exact
+Namespace, Pod Security, NetworkPolicy and RBAC preflight. It verifies the
+ready API object and Kubernetes ownership before journaling its ID. With
+`activationEnabled: false`, it creates or adopts one owned Agent Configuration
+and one stopped Embedded Agent. `verify` reads their exact IDs, generation,
+values, and stopped state without deploying or sending inference. A failed
+`reconcile` can have made partial changes; preserve the journal for recovery.
+`scripts/openclaw-enterprise-bind-installation.py` implements the post-bootstrap
+annotation write as a source-only protected entrypoint. It requires exact-main
+review, a private bootstrap key, two stable Ready-Pod proofs around the first
+Installation API read, UID/resource-version JSON Patch tests, and a second
+Installation API read with exact Secret readback. Its protected invocation and
+the credential/deployment workflow remain pending.
+The source-only active reconciler is gated by committed
+`activationEnabled: false`; its tested API path does not register or deploy an
+agent until a later reviewed config and exact-main workflow enable it.
+Before any active write, the full Agent read must show no plugins, approvers,
+repository access or bindings, or credential sources. Verify the same absence
+in the admitted revision snapshot; an unreadable saved-settings variant blocks.
+
+After a blocked `reconcile`, inspect the protected journal's `namespaceId`,
+`GET /namespaces/:id`, and the owned `openclaw-agents` Namespace/NetworkPolicies
+with read-only Kubernetes access. Retry only with the same journal and exact
+source identity: an unknown POST result is recovered by exact list/GET and
+Kubernetes ownership reads without reposting. A confirmed 401/403 admission
+rejection clears the pending create only after a fresh list shows no logical
+Namespace. Keep `activationEnabled: false` during rollback; preserve the
+journal and add a reviewed repository-owned deletion path before removing the
+logical Namespace. Never delete the pre-existing physical `openclaw-agents`
+Namespace to undo this step.
+
 Use these actual upstream operations:
 
 | Purpose | Supported operation and invariant |
 | --- | --- |
-| Installation | `GET /installation`; compare selected Drivers/configuration |
+| Installation | `GET /installation` for identity/capabilities only; selected Driver comparison requires separate reviewed proof before mutation |
 | Namespace | `GET/POST /namespaces`; create `name: claw`, `existingNamespace: openclaw-agents` only after prepared namespace/RBAC are ready |
-| Secrets | Namespace Secret collection GET/POST, exact PATCH; values supplied privately, never echoed |
+| Secrets | Namespace Secret collection GET/POST; values supplied from an SSM-versioned 0600 private file, never echoed; changed versions block until reviewed rotation |
 | Configuration | Namespace Configuration POST and exact GET/PATCH; updates use `expectedGeneration`, replacing the complete desired `values` |
-| Agent | Agent collection/exact GET and `occ agent create --file`; bind only one logical Claw |
+| Agent | Agent collection/exact GET, POST create and PATCH `harnessAuth`; bind only one logical Claw |
 | Runtime transport | `POST /namespaces/:ns/agents/:agent/runtime-credentials`; track its resulting state |
-| Deploy | `occ agent deploy ID`; persist returned revision; inspect exact deployment and revision list before retry |
-| Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state and runtime termination |
-| Native UI | `GET /namespaces/:ns/agents/:agent/native-admin`; use returned `data.origin` |
+| Deploy | `POST /namespaces/:ns/agents/:agent/deploy`; persist returned revision; paginate revision history and inspect exact deployment before retry |
+| Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state, API runtime termination and an unfiltered empty tenant Pod list |
+| Native UI | `GET /namespaces/:ns/agents/:agent/native-admin` requires a human session with exact Agent `administer`; service keys cannot inspect it. T048 records returned `data.origin` through authenticated human-session acceptance, outside the service-key reconciler. |
 | IAM | Exact role/grant tuples; agent ServicePrincipal gets `operate` on its own model Secret, never installation administration |
 
 The repository reconciler runs serially and stores server IDs/generations in a
@@ -49,10 +132,54 @@ through API GET before journal adoption. Ambiguous or foreign candidates fail.
 After a lost deploy response, inspect matching revisions before deploying again.
 Do not use the Dedicated-only provisioning endpoint for Embedded.
 
+The protected model-credential file is JSON with exactly `parameter`, `version`
+and `key`: parameter must equal
+`/homelab/openclaw-enterprise/model-api-key`, version is the positive SSM
+parameter version, and key differs from the bootstrap service key. The
+reconciler checks the file and parent modes, never stores a key or key digest
+in its journal, and rejects a changed version until a separate rotation path
+is reviewed. An uncertain Secret create is recovered only by a unique
+journaled name, collection read and exact metadata; an uncertain deploy is
+recovered only from complete paginated revision history and exact revision
+readback. Neither response triggers a blind duplicate POST. Stop is a
+separate exact-main command for a journaled revision; an Agent with no
+journaled revision cannot prove an untracked runtime absent. A 202 is pending
+work, not termination proof.
+
 Test duplicate names, foreign ownership, changed input on retry, lost responses,
 worker restart, generation conflicts, permission revocation and partial grants.
 A second run must preserve the same IDs and grants without redeployment unless
 configuration actually changed.
+
+The pinned native-admin status handler returns `data.origin` with a derived
+target even when the first active revision reports `unsupported` because its
+native UI is disabled. An authorized owner must review that non-secret value
+and commit it as `privateOrigins.nativeOrigin`. The accepted shape is the exact
+`https://agent-<32 lowercase hex>.agents.oce.stinkyboi.com` origin, with its
+host hash bound to the journaled Installation, Namespace, and Agent IDs. Final
+automated active reconciliation and verification remain blocked while it is
+`null`.
+The source-only reconciler checks the first running revision and grants, then
+CAS-updates the saved Configuration from generation 1 to 2. It journals the
+first revision before admitting one second revision. Lost deployment responses
+are recovered only from one exact new revision at the reviewed Configuration
+generation; an absent or foreign result blocks reposting. Read-only verify
+checks both immutable revisions and the selected second deployment without
+sending inference. T041 remains open for protected live proof. The GitHub
+runner also lacks a declared persistent
+`/private/openclaw-enterprise/journal.json` volume; T043 keeps reconcile and
+recovery stages disabled until an in-cluster durable mount is declared and
+verified. The separate full-sync stage uses no journal and requires a reviewed
+installation phase before Argo can sync. The source-built `occ` CLI digest is
+pinned under T004; this reconciler uses the pinned public HTTP Agent routes and
+never executes an ambient binary.
+
+Pinned source: [first-Agent Configuration builder](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/first-agent.mjs),
+[Agent create/deploy/stop API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md),
+[route schemas](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/routes.ts),
+[native-admin host derivation](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/gateway/native-admin-host.mjs),
+[native-admin human-session and response handler](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/http/native-admin.ts),
+and [native-admin operator contract](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agent-native-admin.md).
 
 ## Installation and Upgrades
 
@@ -167,6 +294,11 @@ Both browser paths terminate at OCE API, which checks exact-agent permission
 before forwarding through private Envoy. No direct browser route to private Envoy
 or the gateway. Private DNS and browser-trusted certificates must be verified
 end-to-end; do not publish wildcard ingress to make an origin resolve.
+
+The stock chart renders destination-free TCP 5432 and 443 egress when
+`database.cidrs` or `cluster.cidrs` is empty. Kubernetes treats an empty `to`
+field as all destinations. Supply reviewed nonempty lists, assert the rendered
+policy, and qualify Service DNAT behavior on the Talos canary before install.
 
 ## Legacy Shutdown and New Recovery
 

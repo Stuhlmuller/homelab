@@ -69,7 +69,8 @@ spec:
               cpu: 25m
               memory: 128Mi
             limits:
-              cpu: 250m
+              # Offline archive compression is throttled at 250m on the retained 30 GiB state.
+              cpu: 1000m
               memory: 512Mi
           readinessProbe:
             exec:
@@ -99,6 +100,9 @@ spec:
               mountPath: /archive
             - name: private
               mountPath: /private
+            # SQLite needs writable temporary space during independent archive restore.
+            - name: private
+              mountPath: /tmp
             - name: scripts
               mountPath: /etc/openclaw-assistant
               readOnly: true

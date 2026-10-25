@@ -8,20 +8,38 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-9824f110ded8ce152ef180f9
+    resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
-  - id: openwiki-source-77d110fdd1547564be86e611
-    resource: repo://IaC/modules/tailscale-access/main.tf
-  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/modules/tailscale-access/README.md
-  - id: openwiki-source-612eb02105d61c48b6ba59bd
-    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
-  - id: openwiki-source-da61504fb6ba4ceba279edb0
-    resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-c4a1630a18962f8a58f367ec
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
+  - id: openwiki-source-39e11b90e7410131b2dc0a6e
+    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
+  - id: openwiki-source-5edf712b7916c34ad7d2c410
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
+  - id: openwiki-source-13b48922f1b929b52f4a0233
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-f5339d55c401403e74eef9ec
+    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+  - id: openwiki-source-c7293ec8244333b0db0a401c
+    resource: repo://specs/005-retire-public-app-dns/data-model.md
+generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-20T19:18:26.448Z
 ---
 
 # GitOps Flow
@@ -48,7 +66,13 @@ revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
 
-`IaC/operator` is the deliberate exception to workflow-driven apply. It owns
+The protected production apply checks the current `main` commit before each
+state write. The root Terragrunt `before_hook` repeats the check for every unit
+in a multi-unit apply; the bootstrap `after_hook` checks before each Argo CD
+self-management manifest write. A later unit stops if `main` advances while the
+workflow runs. These source guards await a live apply run.
+
+`IaC/homelab/us-west-2/operator` is the deliberate exception to workflow-driven apply. It owns
 bootstrap permissions that the GitHub OIDC role must never change for itself;
 an administrator still uses reviewed Terragrunt/OpenTofu desired state and the
 shared remote backend to apply those units.
@@ -119,7 +143,7 @@ Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
 fixed publisher; committed generation changes drive 60-day rotation of keys
 with 90-day expiry. The three unused federated identities remain protected until
 the final migration retirement, after signed-key CI acceptance.
-Follow its [private saved-plan runbook](../../IaC/modules/tailscale-access/README.md).
+Follow its [private saved-plan runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
@@ -131,9 +155,13 @@ does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
-writes remain behind the guarded 27-name retirement command after the separate
-`tailnet-dns` Application is Synced/Healthy, its Tailscale DNS proxy is signed,
-and the owner has set its observed IP as a restricted tailnet nameserver.
+writes remain behind the guarded [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
+for the 26 approved non-apex names from the original migration set. The
+resolver serves all 29 current private names, including two later staged
+Enterprise names. The cutover preserves the public apex, mail, certificate
+validation, and unrelated public names. It follows the separate
+`tailnet-dns` Application reaching Synced/Healthy, signing its Tailscale DNS
+proxy, and the owner setting its observed IP as a restricted tailnet nameserver.
 The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
 stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,
 old native catalog, credentials, and CI transport through their separate
@@ -145,15 +173,15 @@ does not claim that traffic has moved or old native Services have been retired.
 | Concern | Path |
 | --- | --- |
 | Root Terragrunt settings | `IaC/root.hcl` |
-| Terragrunt unit index | `IaC/terragrunt.stack.hcl` |
-| Per-application stack inputs | `IaC/stacks/<app>/stack.hcl` |
+| Terragrunt unit index | `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` |
+| Per-application stack inputs | `IaC/homelab/us-west-2/apps/<app>/stack.hcl` |
 | Shared Application defaults | `IaC/stack-defaults.hcl` |
-| Terragrunt unit templates | `IaC/.catalog/units` |
-| Generated Argo CD bootstrap unit | `IaC/bootstrap/argocd` |
-| Operator AWS apply-role policy | `IaC/operator/github-actions-role-policy` |
-| Entra custom-domain pilot | `IaC/operator/entra-stuhlmuller-domain` + `IaC/operator/entra-stuhlmuller-pilot-user` |
-| Generated Argo CD app registrations | `IaC/live/argocd-apps/<app>` |
-| Argo CD Application module | `IaC/modules/argocd-application-kubernetes` |
+| Terragrunt unit templates | `IaC/terragrunt-catalog/units` |
+| Generated Argo CD bootstrap unit | `IaC/homelab/us-west-2/bootstrap/argocd` |
+| Operator AWS apply-role policy | `IaC/homelab/us-west-2/operator/github-actions-role-policy` |
+| Entra custom-domain pilot | `IaC/homelab/us-west-2/operator/entra-stuhlmuller-domain` + `IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user` |
+| Generated Argo CD app registrations | `IaC/homelab/us-west-2/apps/<app>/argocd` |
+| Argo CD Application module | `IaC/terragrunt-catalog/modules/argocd-application-kubernetes` |
 | App desired state | `clusters/homelab/apps/<app>` |
 | Platform desired state | `clusters/homelab/platform/<service>` |
 | Self-management app source | `clusters/homelab/argocd/self-management` |
@@ -164,12 +192,11 @@ See [Argo CD Bootstrap](../runbooks/argocd-bootstrap.md), [Argo CD App Onboardin
 ## Registration Pattern
 
 Argo CD Applications are registered through the shared Terragrunt unit template
-at `IaC/.catalog/units/live/argocd-app` and per-app inputs in
-`IaC/stacks/<app>/stack.hcl`. The root `IaC/terragrunt.stack.hcl` retains explicit
+at `IaC/terragrunt-catalog/units/live/argocd-app` and per-app inputs in
+`IaC/homelab/us-west-2/apps/<app>/stack.hcl`. Each `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` declares explicit
 unit identities, template sources, and output paths, loading each app's inputs
-as its unit `values`. The generated units keep the historical
-`IaC/live/...` paths so S3 backend keys remain stable. The template sources the
-repository-local `IaC/modules/argocd-application-kubernetes` module and passes a
+as its unit `values`. The generated paths change; `IaC/root.hcl` maps them to their historical S3 backend keys. The template sources the
+repository-local `IaC/terragrunt-catalog/modules/argocd-application-kubernetes` module and passes a
 raw CRD-shaped `manifest`, so Application fields use their native names such as
 `repoURL`, `targetRevision`, and `syncPolicy`. For Git-backed sources that point
 at this repository, set `targetRevision` to `main` unless a temporary
@@ -181,6 +208,12 @@ repository, and revision. Each active app file loads those locals and passes
 exceptions and dependencies. The template derives the
 name, default namespace, and ordinary app source from the unit directory name.
 Map merging preserves inherited sync settings; lists replace rather than append.
+OpenClaw Enterprise has a scoped AppProject in the self-managed Argo CD source.
+That project can reconcile after merge, but the two Terragrunt-declared
+Applications are created only by a later protected apply. Both Applications
+disable automatic sync, pruning, self-heal, and retries. Registration alone does
+not establish foundation readiness; complete sync waits for storage, secret,
+capacity, and network-policy checks.
 See the [registration example](../../docs/argocd-app-onboarding.md#register-with-shared-defaults)
 and [Helm Chart Organization](../patterns/helm-chart-organization.md). Bootstrap, self-management,
 and child-Application lifecycles keep their existing owners. The latter include
@@ -235,7 +268,7 @@ upstream Application registered, synced, and healthy, or an exception is
 recorded in `docs/validation-runbook.md`.
 
 Langfuse adds a secret-bearing sibling AWS unit,
-`IaC/live/langfuse-blob-storage`. Application-only filters do not execute it.
+`IaC/homelab/us-west-2/apps/langfuse/blob-storage`. Application-only filters do not execute it.
 The protected full apply and targeted `argocd_app=langfuse` dispatch reuse the
 same ordered shared-SSM and S3 plan/Conftest/saved-plan apply blocks before
 registration. Both secret-bearing units remain excluded from PR plans. The

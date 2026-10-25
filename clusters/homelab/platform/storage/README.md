@@ -2,8 +2,9 @@
 
 This path owns the dynamic provisioners for the homelab cluster.
 The parent `platform-storage` Application is registered by the Terragrunt unit
-at `IaC/live/argocd-apps/platform-storage` and is automated by default. Its
-child Applications install upstream Helm charts into dedicated namespaces:
+at `IaC/homelab/us-west-2/apps/platform-storage/stack.hcl` and is automated by
+default. Its child Applications install upstream Helm charts into dedicated
+namespaces:
 
 - `nfs-subdir-external-provisioner` creates the default `nfs-default`
   StorageClass for durable shared storage.
@@ -28,3 +29,8 @@ is not enabled on Acer by this change; existing PV node affinity stays on the
 original worker. Controller reservations, Pod user namespaces, node sysctls and
 schedulable headroom must pass before any workspace placement changes. See
 [the source fix and acceptance limits](../../../../builds/cordium-nocturne/README.md).
+
+The staged `renovate-cache-pv.yaml` declares only the cluster-scoped PV for a
+separate QNAP cache volume. It stays outside this Kustomization until the
+isolated export exists. Renovate's namespaced Argo project owns the matching
+PVC and a read-only capacity probe after this platform PV reconciles.

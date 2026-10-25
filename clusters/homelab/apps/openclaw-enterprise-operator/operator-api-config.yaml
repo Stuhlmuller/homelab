@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oce-journal-operator-kubeconfig
+  namespace: openclaw-system
+data:
+  config: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+      - name: homelab
+        cluster:
+          server: https://10.1.0.199:6443
+          certificate-authority: /var/run/oce-operator-api/ca.crt
+    users:
+      - name: operator
+        user:
+          tokenFile: /var/run/oce-operator-api/token
+    contexts:
+      - name: homelab
+        context:
+          cluster: homelab
+          user: operator
+          namespace: openclaw-system
+    current-context: homelab

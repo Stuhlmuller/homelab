@@ -38,7 +38,7 @@ spec:
             - key: kubernetes.io/hostname
               operator: In
               values:
-                - zimaboard-0
+                - zimaboard-1
   persistentVolumeReclaimPolicy: Retain
   storageClassName: mastodon-postgres-local
   volumeMode: Filesystem
@@ -105,7 +105,7 @@ spec:
             - key: kubernetes.io/hostname
               operator: In
               values:
-                - zimaboard-0
+                - zimaboard-1
   persistentVolumeReclaimPolicy: Retain
   storageClassName: mastodon-redis-local
   volumeMode: Filesystem

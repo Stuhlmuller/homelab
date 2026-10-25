@@ -1,25 +1,26 @@
 # Mastodon
 
-Preparation for the requested Mastodon server for stinkyboi.com. This directory
-owns PostgreSQL, Redis, retained storage, web, Sidekiq, streaming, and a schema
-migration Job. The shared Terragrunt stack declares its Application at
-`IaC/live/argocd-apps/mastodon`; the draft has not been merged or applied, and
-no server or public route is deployed. The declared Istio route sends streaming requests to port
-4000 and remaining subdomain requests to Puma on port 3000. STRICT mTLS and
-default-deny authorization admit only the shared gateway and Mastodon service
-account; NetworkPolicy separately limits ingress and federation egress. This
-The shared cloudflared configuration declares its native public route;
-`mastodon-public-dns.yml` publishes only the instance hostname after rollout
-readiness. Neither has been applied yet. The website and account identities both use `mastodon.stinkyboi.com`. This
-preserves the private apex portal and makes federation discovery independent
-of private apex DNS. The default administrator is `rodman`, using the existing
-repository owner address `rodman@stuhlmuller.net`. No account has been created. Google Workspace SMTP defaults use `smtp.gmail.com:587`, the existing owner
-login, and that same sender address. Its protected password is still a
-placeholder; the Rails launcher rejects activation until it is injected.
+Mastodon server for stinkyboi.com. This directory owns PostgreSQL, Redis,
+retained storage, web, Sidekiq, streaming, and schema migration. The shared
+Terragrunt stack declares its Application at `IaC/live/argocd-apps/mastodon`;
+registration and public activation follow the gates below.
+
+The Istio route sends streaming requests to port 4000 and remaining instance
+requests to Puma on port 3000. STRICT mTLS and default-deny authorization admit
+only the shared gateway and Mastodon service account. NetworkPolicy separately
+declares ingress and federation-egress intent. The shared cloudflared route and
+`mastodon-public-dns.yml` provide public transport and publish the instance
+hostname after rollout readiness.
+
+Website and account identities both use `mastodon.stinkyboi.com`, preserving
+the private apex portal and independent federation discovery. Owner bootstrap
+creates `rodman` with `rodman@stuhlmuller.net`. Google Workspace SMTP uses
+`smtp.gmail.com:587`, the same login and sender address. Inject the protected
+SMTP credential before registration; the Rails launcher rejects placeholders.
 
 ## Storage and credentials
 
-PostgreSQL 18 and Redis 7.4 use separate retained local volumes on `zimaboard-0`,
+PostgreSQL 18 and Redis 7.4 use separate retained local volumes on `zimaboard-1`,
 following the existing media PostgreSQL pattern. QNAP NFS stalls documented in
 `docs/storage-nfs.md` make it unsuitable for the active database. Redis keeps
 Sidekiq queues with AOF and `appendfsync everysec`, allowing up to one second of
@@ -27,30 +28,53 @@ queue loss after an abrupt host failure.
 
 The local claims request 3 GiB and 1 GiB. These are descriptive capacities:
 `hostPath` does not enforce quotas. Before registration, recheck node memory,
-filesystem headroom, and image download space. The node had approximately
-7.2 GiB free disk and 2.3 GiB available memory on 2026-10-11. Grow or move storage
-before consuming that headroom. A node reset or disk failure loses local data.
+filesystem headroom, and image download space. The 2026-10-18 preflight found
+approximately 11.8 GiB free disk, 2.4 GiB available memory, and 4.25 GiB of
+unreserved memory on `zimaboard-1`. PostgreSQL (256 MiB), Redis (64 MiB), and
+the backup Job (64 MiB) reserve 384 MiB together. Redis retains its 512 MiB
+limit; verify actual memory use after startup.
 
-The 2026-10-17 preflight found 421 MiB of unreserved memory on `zimaboard-0`.
-PostgreSQL (256 MiB), Redis (64 MiB), and the backup Job (64 MiB) reserve
-384 MiB together. Redis retains its 512 MiB limit; verify its actual memory use
-and recheck this scheduling budget before registration or adding workloads.
+The original `zimaboard-0` placement had only 5 MiB of unreserved memory at
+that preflight. Initial placement moved before any Mastodon Application or
+local volumes existed; the backup Job follows the same node for its database
+Unix socket. Do not retarget a bound local volume by editing affinity: use an
+explicit backup and restore. A node reset or disk failure loses local data.
+Grow or move storage before consuming its headroom.
 
 A bounded root init container changes only the mounted directory's ownership;
 PostgreSQL and Redis run as UID/GID 65534. PostgreSQL initializes `pg_trgm` and
-`unaccent`, then removes superuser privileges from the application role.
+`unaccent`. PostgreSQL 18 protects the bootstrap role `mastodon` from demotion;
+its administrator credential stays in the datastore Secret and PostgreSQL Pod.
+A wave-0 database-role hook provisions the separate `mastodon_app` role with
+its own generated password and no superuser, role-creation, database-creation,
+replication, or RLS-bypass privileges. It uses the local database socket, keeps
+system-catalog ownership intact, and never resets the data directory. Unexpected
+bootstrap-owned application objects stop the hook for a reviewed ownership
+migration rather than silently changing existing data.
 
 Terragrunt generates `/homelab/mastodon/postgres-password` and
-`/homelab/mastodon/redis-password` in encrypted state/SSM. The ExternalSecret
-mounts the credentials as files. Its namespace policy permits only the
+`/homelab/mastodon/redis-password` in encrypted state/SSM. The separate
+`/homelab/mastodon/postgres-app-password` supplies `mastodon_app`; only that
+PostgreSQL credential enters application configuration. Redis mounts only its
+own password key. The ExternalSecrets mount credentials as files. Its namespace policy permits only the
 Mastodon prefix. Rotation needs a declared ExternalSecret revision and workload
 restart through GitOps, plus database/Redis password coordination.
 
 ## Server configuration
 
 The official 4.7.3 image serves compiled static files and media through Puma;
-streaming runs separately on port 4000. Schema preparation runs in wave 1, owner bootstrap in wave 2, and the
-Deployments start in wave 3. Web and Sidekiq mount the retained media
+streaming runs separately on port 4000. The image's private application directory
+requires its native UID/GID 991; application containers use those IDs with
+supplementary filesystem group 65534 for shared volumes. The datastore and
+backup containers retain UID/GID 65534. The service account, config, secrets
+and storage precede PostgreSQL in wave -2. PostgreSQL rolls in wave -1 before
+database-role provisioning in wave 0, schema preparation in wave 1, owner
+bootstrap in wave 2, and the Deployments start in wave 3. Web, Sidekiq, streaming
+and migration/owner Jobs select Acer for memory headroom. PostgreSQL and Redis
+retain local data on `zimaboard-1`; backups run there to reach the local database
+socket and write dumps to NFS. Migration Secret
+projection requires the `runtime-v2` key, rendered atomically with the app-role
+credentials; an old Ready status cannot let the hook mount v1 credentials. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
 small homelab. Sidekiq startup/readiness checks use the upstream job-processing
@@ -82,6 +106,15 @@ then send and receive a real email. Failed delivery is an activation failure.
 The workflow is also the password-rotation path; preserve the prior protected
 credential until the new value works, so it can be restored through this path.
 
+The first 2026-10-18 rollout confirmed PostgreSQL 18 rejects demoting its
+bootstrap superuser, and the upstream application directory rejects UID 65534.
+The database still had zero application tables. The role split and native-image
+UID fix preserve that cluster; the PostgreSQL regression test verifies password
+authentication, limited privileges, repeat preservation, catalog ownership and
+fail-closed handling of unexpected existing data. It runs in the offline gate;
+`--pg-bin /path/to/postgresql-18/bin` selects a PostgreSQL 18 installation for
+the protected-bootstrap regression.
+
 ## Initial owner
 
 The wave-2 `mastodon-owner-bootstrap` hook uses the upstream account-creation
@@ -110,15 +143,17 @@ and backups share a NAS and do not protect against NAS loss.
 
 Before acceptance, prove a successful scheduled backup and restore the newest
 dump into an isolated PostgreSQL instance. Verify tables, accounts, and media
-references before trusting the restore. Recreate the non-superuser role and
-extensions from `initdb-configmap.yaml`; restore with `pg_restore --no-owner`
-into the initialized `mastodon` database. Stop application writes through
+references before trusting the restore. Initialize the extensions and limited application role from
+`initdb-configmap.yaml`; restore with
+`pg_restore --no-owner --no-comments --role=mastodon_app` into the initialized
+`mastodon` database. The bootstrap administrator owns the extensions; their
+comments are omitted rather than granting the application administrator rights. Stop application writes through
 repository-owned desired state before a production restore. Never overwrite an
 active writer's database. Preserve local claims until recovery is verified.
 
 ## Application registration
 
-`IaC/stacks/mastodon/stack.hcl` uses the shared Application template, source
+`IaC/homelab/us-west-2/apps/mastodon/stack.hcl` uses the shared Application template, source
 revision `main`, and the existing `homelab` AppProject because its retained
 local storage needs PersistentVolume and StorageClass permissions. The project
 allows the Mastodon namespace explicitly. Dependencies order registrations;

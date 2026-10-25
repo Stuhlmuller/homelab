@@ -1,0 +1,249 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "ws-main",
+        "namespace": "cordium"
+      },
+      "spec": {
+        "egress": [
+          {
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "0.0.0.0/0",
+                  "except": [
+                    "10.0.0.0/8",
+                    "172.16.0.0/12",
+                    "192.168.0.0/16",
+                    "100.64.0.0/10",
+                    "169.254.0.0/16"
+                  ]
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "::/0",
+                  "except": [
+                    "fc00::/7"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component": "ingress-dataplane",
+                    "octelium.com/component-type": "cluster"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component": "workspace-registry",
+                    "octelium.com/component-type": "cluster"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 53,
+                "protocol": "TCP"
+              },
+              {
+                "port": 53,
+                "protocol": "UDP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {},
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "kube-dns"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {},
+                "podSelector": {
+                  "matchLabels": {
+                    "k8s-app": "coredns"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component-type": "cluster"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {},
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component": "genesis"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              },
+              {
+                "port": 2022,
+                "protocol": "TCP"
+              },
+              {
+                "port": 45000,
+                "protocol": "UDP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/component": "workspace",
+            "octelium.com/component-type": "user"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "cordium-nocturne",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "cordium",
+            "octelium.com/component": "nocturne",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "cordium-rscserver",
+        "namespace": "octelium"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component-type": "cluster"
+                  }
+                }
+              },
+              {
+                "namespaceSelector": {},
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "octelium",
+                    "octelium.com/component": "genesis"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8080,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "app": "octelium",
+            "octelium.com/app": "cordium",
+            "octelium.com/component": "rscserver",
+            "octelium.com/component-type": "cluster"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    }
+  ],
+  "kind": "List"
+}

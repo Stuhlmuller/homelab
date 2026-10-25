@@ -3,7 +3,7 @@
 ## Current contract
 
 The controller source is staged with zero replicas; its stack is not registered
-in `IaC/terragrunt.stack.hcl`. Read-only checks on 2026-10-10 confirmed that its
+in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`. Read-only checks on 2026-10-10 confirmed that its
 Argo CD Application and Deployment are absent. Register the stack through the
 normal Terragrunt workflow before treating the controller as deployed.
 Enrollment is generated from

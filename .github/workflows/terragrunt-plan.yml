@@ -38,6 +38,10 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
+          changed_paths="$(git diff --name-only "origin/${BASE_REF}...HEAD")" || {
+            echo "::error::Unable to determine live Terragrunt plan scope." >&2
+            exit 1
+          }
           requires_live_plan=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
@@ -48,7 +52,7 @@ jobs:
                 requires_live_plan=true
                 ;;
             esac
-          done < <(git diff --name-only "origin/${BASE_REF}...HEAD")
+          done <<<"${changed_paths}"
 
           echo "requires-live-plan=${requires_live_plan}" >>"${GITHUB_OUTPUT}"
           if [ "${requires_live_plan}" = "true" ]; then

@@ -12,6 +12,15 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: openclaw-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oce-journal-operator
+      ports:
+        - {protocol: TCP, port: 8443}
+    - from:
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: tailscale
       ports:
         - {protocol: TCP, port: 8000}
@@ -67,6 +76,12 @@ spec:
         - ipBlock: {cidr: 10.244.2.0/32}
         - ipBlock: {cidr: 10.244.3.0/32}
         - ipBlock: {cidr: 10.244.4.0/32}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: automation
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: renovate
       ports:
         - {protocol: TCP, port: 9443}
     - from:

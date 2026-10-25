@@ -2,8 +2,9 @@
 
 ## Target and delivery gates
 
-Applications pull only from `harbor.stinkyboi.com`. Use public Chainguard
-images where the actual application and runtime contract are compatible;
+The target is for applications to pull only from `harbor.stinkyboi.com`; the
+full catalog publication and consuming-reference cutover remain pending. Use
+public Chainguard images where the application and runtime contracts permit;
 retain digest-pinned Harbor copies for unavailable equivalents. Public sources
 remain recorded in the publication catalog, never as a reason to allow public
 registry access from application pods.
@@ -94,38 +95,24 @@ All four Flannel and ztunnel DaemonSet instances were Ready. That proves only
 dataplane availability: it does not make Kubernetes `NetworkPolicy` enforcing
 or add a default outbound deny.
 
-Gateway API CRDs and a `GatewayClass` are absent. The existing Istio
-`networking.istio.io` Gateway resources use the legacy API and cannot establish
-the Gateway API egress-gateway path. No NRI configuration or
-`kube-network-policies` deployment exists.
+Gateway API CRDs and a `GatewayClass` were absent at this audit. The existing
+Istio `networking.istio.io` Gateway resources use the legacy API. Envoy Gateway
+and firewall-only kube-router sources are now staged, but their Argo
+Applications have automatic sync disabled and no canary node is selected.
 
 No egress enforcement was activated. `zimaboard-2` is not a safe canary: it
 has no dedicated taint or isolation, about 1.28 GiB capacity, system DaemonSets
 and a live backup workload.
 
-Declare and validate these prerequisites before activation: supported Gateway
-API CRDs and `GatewayClass` for the pinned Istio release; a repository-owned
-NRI and policy-enforcing dataplane; and a capacity-isolated canary node. Then
-render the exact destination policies, run the private inventory audit, and
-prove both allowed traffic and denied bypasses through the GitOps rollout.
-
-The source-only [NRI fragment](../.talos/patches/nri-containerd.yaml) prepares
-an isolated CRI configuration part, but no node has received it and no NRI
-plugin or policy-enforcing dataplane is deployed. It has no rollout helper or
-node target. The offline gate proves strict machine-config validity only; a
-future canary must reject a pre-existing `30-nri.part`, read the rendered CRI
-configuration and NRI socket, and restore a complete desired machine config
-without that owned entry before treating rollback as complete. Apply only with
-a dedicated tainted canary worker and readback contract; enabling the runtime
-socket on a shared worker would create a privileged control path before those
-safeguards exist.
-
-A complete rollout needs a repository-owned policy-enforcing dataplane plus
-Istio egress waypoints/gateways and narrow destination policies. Do not activate
-an enforcing engine before reviewing all existing placeholder policies: they
-would become effective immediately and can interrupt controllers, storage,
-webhooks and recovery traffic. Pin the supported Istio version and render its
-actual CRDs/charts before selecting current-documentation features.
+Before activation, publish and verify the pinned images, complete the Talos,
+Kubernetes and Istio upgrade ladder, review every rendered and generated
+NetworkPolicy, and admit a dedicated tainted canary with measured capacity.
+Then qualify allowed and denied traffic and firewall lifecycle behavior through
+the [GitOps-owned canary](../clusters/homelab/platform/network-policy/README.md).
+The old source-only NRI fragment is not part of this kube-router path. Do not
+activate the staged DaemonSet on a shared worker: existing placeholder policies
+would become effective and could interrupt controllers, storage, webhooks and
+recovery traffic.
 
 Build each allowlist from its workload configuration and verified traffic:
 DNS, Kubernetes API for controllers, declared in-cluster services, QNAP NFS,
@@ -138,7 +125,7 @@ be declared isolated solely by enrolling ordinary TCP workloads in Istio.
 The NOFX frontend has no service-account token, probes its local `/health`
 endpoint in-container, and permits only CoreDNS TCP/UDP 53 plus its backend on
 TCP 8080/15008. Its declared policy contains no Harbor or public-registry
-egress. It is not enforced until the NRI enforcer canary proves the same allow
+egress. It is not enforced until the kube-router canary proves the same allow
 and deny paths. The backend admits ambient TCP 15008; its Istio
 AuthorizationPolicy still limits the decrypted request to the frontend identity.
 
@@ -148,15 +135,18 @@ controller/webhook calls, storage mounts and the human/CI recovery route.
 Roll back through the owning GitOps application and reviewed Talos config;
 never repair a deny rule with manual cluster mutation.
 
-Before an NRI or egress-gateway canary, compare private, read-only Pod and
+Before a policy or egress-gateway canary, compare private, read-only Pod and
 NetworkPolicy snapshots with every rendered policy source by using
 `scripts/network-policy-inventory.py`. Include chart renders and generated
 Octelium policies in `--render`; repository YAML alone is insufficient. The
 JSON review file records the exact `sha256` fingerprints emitted by the audit.
-Run it with `--fail-on-findings` for the candidate namespace. It refuses
-wildcard or ranged CIDR/port egress, peer selectors or IP blocks that reach all
-other active Pods, unresolved namespace selectors, drifted, unowned and
-unreviewed egress, plus unisolated, host-network, privileged,
+Fingerprints cover ingress and egress rules; refresh private reviews made with
+an older inventory version. Run it with `--fail-on-findings` for the candidate
+namespace. It refuses live-only, drifted, or source-only policies, including
+ingress-only generated policies. It also refuses
+ wildcard or ranged CIDR/port egress, peer selectors or IP blocks that reach all
+other active Pods, unresolved namespace selectors, unreviewed egress, plus
+unisolated, host-network, privileged,
 NET_ADMIN/NET_RAW/SYS_ADMIN and init-container workloads that require a
 separate control-path review. The utility never calls Kubernetes and snapshot
 files must remain private.
@@ -217,33 +207,23 @@ behavior, not Harbor publication or a signature accessory.
 
 ## Policy-enforcing dataplane prerequisite
 
-`scripts/ci/network-policy-enforcement-check.py` is a CI-only, disposable
-dual-stack Kind proof. Its public Kind, CNI, enforcer and Python images are test
-fixtures, never homelab workload or node inputs. Passing it proves strict NRI
-enforcement behavior only; production still needs the reviewed Harbor image,
-dedicated worker, active NRI readback and application-specific egress canary.
+The [repository-owned enforcer](../clusters/homelab/platform/network-policy/README.md)
+pins kube-router 2.11.1 with only its iptables firewall enabled. Flannel stays
+the CNI and kube-proxy stays the service proxy. The Argo Application is dormant
+and its node selector matches no node. The separate canary fixture Application
+is empty by default; registration does not create probe Pods or policies.
 
-The current Kubernetes SIG Network userspace enforcer release is v1.1.2
-(2026-09-28). Its reviewed index is cataloged for Harbor publication, including
-Linux amd64/arm64/s390x and source attestations; no DaemonSet is activated here.
-Flannel continues to supply networking. The enforcer supplies L3/L4 boundaries
-needed to prevent bypass of Istio egress waypoints/gateways.
-
-Read-only inspection of worker 10.1.0.200 on 2026-10-11 found no
-`/var/run/nri` socket directory and no explicit NRI stanza in its effective CRI
-configuration. Verify all nodes and add the supported repository-owned Talos
-NRI configuration before relying on runtime-synchronous Pod IP discovery.
-The enforcer can fall back to API discovery if NRI initialization fails; that
-fallback is not proof that startup traffic is isolated. Require a live socket,
-plugin registration and negative startup/bypass tests.
-
-Use explicit `--fail-open=false`, `--strict-mode=true` and a non-conflicting
-NFQUEUE ID. Review every existing NetworkPolicy before activation: placeholders
-become enforced together. Start with a reviewed worker canary, preserve host/API,
-DNS, mesh HBONE, webhook and storage paths, then verify allowed traffic and denied
-direct IP/alternate-port/IPv6/gateway bypass before expanding. Runtime and Istio
-policy acceptance remain unproved; publication alone does not enforce egress.
-
-Sources: [v1.1.2 release](https://github.com/kubernetes-sigs/kube-network-policies/releases/tag/v1.1.2),
-[enforcer](https://kube-network-policies.sigs.k8s.io/) and
-[Istio ambient egress](https://istio.io/latest/docs/ambient/usage/egress-gateway/).
+The [read-only policy review](evidence/openclaw-enterprise-policy-review.json)
+still records generated-policy ownership gaps and broad egress rules. Qualify
+DNS, API, mesh HBONE, webhooks, NFS, host-network and VPN paths plus denied
+direct IP, alternate-port and IPv6 traffic on the isolated canary before
+expanding enforcement. Prove restart, API-loss, IP-reuse and cold-reboot
+behavior; a one-shot probe is insufficient. Cleanup is a separate guarded
+GitOps stage because deleting the DaemonSet can leave iptables/ipset rules.
+Stock Enterprise's required public TCP/443 access remains a broad-egress
+finding: Kubernetes NetworkPolicy cannot turn that into an FQDN allowlist.
+Pinned Cordium `ws-main` and Octelium `svc-upstream` generators also allow
+public IPv4/IPv6 egress on every port; an additional NetworkPolicy cannot
+narrow those allows. Correct the generators and qualify their traffic on the
+isolated canary before enforcement.
+Publication and offline fixture tests alone do not establish live isolation.

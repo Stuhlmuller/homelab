@@ -75,7 +75,43 @@ terragrunt_stack_unit_paths() {
 }
 
 terragrunt_stack_unit_paths_at_ref() {
-  terragrunt_stack_units_at_ref "$1" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
+  local ref="$1"
+  local stack_file
+  local unit_path
+  local app
+  local stack_files
+
+  if git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
+    terragrunt_stack_units_at_ref "$ref" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
+    return
+  fi
+
+  if ! stack_files="$(git ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2 | grep '/terragrunt.stack.hcl$')" ||
+    [[ -z "$stack_files" ]]; then
+    echo "No Terragrunt stacks found at ${ref}; refusing deleted-unit detection." >&2
+    return 1
+  fi
+
+  while IFS= read -r stack_file; do
+    while IFS= read -r unit_path; do
+      case "$stack_file:$unit_path" in
+        */apps/*/terragrunt.stack.hcl:argocd)
+          app="${stack_file#IaC/homelab/us-west-2/apps/}"
+          printf 'IaC/live/argocd-apps/%s\n' "${app%/terragrunt.stack.hcl}"
+          ;;
+        */apps/*/terragrunt.stack.hcl:azuread)
+          app="${stack_file#IaC/homelab/us-west-2/apps/}"
+          printf 'IaC/live/azuread-applications/%s\n' "${app%/terragrunt.stack.hcl}"
+          ;;
+        */apps/fleet/terragrunt.stack.hcl:pilot-user) printf 'IaC/live/azuread-applications/fleet-pilot-user\n' ;;
+        */apps/langfuse/terragrunt.stack.hcl:blob-storage) printf 'IaC/live/langfuse-blob-storage\n' ;;
+        */shared/terragrunt.stack.hcl:*) printf 'IaC/live/%s\n' "$unit_path" ;;
+        */bootstrap/terragrunt.stack.hcl:*) printf 'IaC/bootstrap/%s\n' "$unit_path" ;;
+        */operator/terragrunt.stack.hcl:*) printf 'IaC/operator/%s\n' "$unit_path" ;;
+        *) echo "Unknown Terragrunt unit in ${stack_file}: ${unit_path}" >&2; return 1 ;;
+      esac
+    done < <(git show "${ref}:${stack_file}" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#\1#p')
+  done <<<"$stack_files"
 }
 
 terragrunt_azuread_stack_changed() {
@@ -99,15 +135,27 @@ terragrunt_azuread_stack_changed() {
   fi
 
   if ! git diff --quiet "$base_sha" "$head_sha" -- \
-    IaC/live/azuread-applications \
-    IaC/.catalog/units/live/azuread-applications \
-    IaC/modules/azuread-saml-application \
-    IaC/modules/azuread-family-user; then
+    IaC/homelab/account.hcl \
+    IaC/homelab/us-west-2/region.hcl \
+    IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl \
+    IaC/homelab/us-west-2/apps/fleet/azuread \
+    IaC/homelab/us-west-2/apps/grafana/terragrunt.stack.hcl \
+    IaC/homelab/us-west-2/apps/grafana/azuread \
+    IaC/homelab/us-west-2/apps/octelium/terragrunt.stack.hcl \
+    IaC/homelab/us-west-2/apps/octelium/azuread \
+    IaC/terragrunt-catalog/units/live/azuread-applications \
+    IaC/terragrunt-catalog/modules/azuread-saml-application \
+    IaC/terragrunt-catalog/modules/azuread-family-user; then
     return 0
   fi
 
-  if ! base_stack_units="$(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/')" ||
-    ! head_stack_units="$(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/')"; then
+  if git cat-file -e "${base_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null &&
+    git cat-file -e "${head_sha}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
+    [[ "$(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/')" != "$(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/')" ]] && return 0
+  fi
+
+  if ! base_stack_units="$(terragrunt_stack_unit_paths_at_ref "$base_sha" | grep '^IaC/live/azuread-applications/' || true)" ||
+    ! head_stack_units="$(terragrunt_stack_unit_paths_at_ref "$head_sha" | grep '^IaC/live/azuread-applications/' || true)"; then
     return 0
   fi
 
@@ -149,9 +197,24 @@ terragrunt_azuread_changed_filter() {
 
   if terragrunt_azuread_stack_changed ||
     { [[ "$include_plan_inputs" == "true" ]] && terragrunt_azuread_plan_inputs_changed; }; then
-    printf '*\n'
+    printf '*/azuread\n'
   else
-    printf 'IaC/live/azuread-applications/* | [main...HEAD]\n'
+    printf '*/azuread | [main...HEAD]\n'
+  fi
+}
+
+terragrunt_azuread_pilot_filter() {
+  local suffix=' | [main...HEAD]'
+  if terragrunt_azuread_stack_changed; then suffix=''; fi
+  printf 'fleet/pilot-user%s\n' "$suffix"
+}
+
+terragrunt_argocd_changed_filter() {
+  local include_plan_inputs="${1:-false}"
+  if terragrunt_stack_changed 'IaC/homelab/us-west-2/apps' "$include_plan_inputs"; then
+    printf '*/argocd\n'
+  else
+    printf '*/argocd | [main...HEAD]\n'
   fi
 }
 
@@ -163,10 +226,11 @@ terragrunt_stack_changed() {
   local repo_root
   local paths=(
     IaC/terragrunt.stack.hcl
+    IaC/homelab/us-west-2
     IaC/stack-defaults.hcl
-    IaC/stacks
-    IaC/.catalog
-    IaC/modules
+    IaC/
+    IaC/terragrunt-catalog
+    IaC/terragrunt-catalog/modules
     IaC/root.hcl
     IaC/kubernetes-provider.hcl
   )
@@ -225,16 +289,16 @@ terragrunt_argocd_app_filter() {
   local unit="${TERRAGRUNT_ARGOCD_APP:-}"
 
   if [[ -z "$unit" ]]; then
-    terragrunt_changed_filter 'IaC/live/argocd-apps/*'
+    terragrunt_argocd_changed_filter
     return
   fi
 
-  if [[ ! "$unit" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ || ! -f "${unit}/terragrunt.hcl" ]]; then
+  if [[ ! "$unit" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ || ! -f "${unit}/argocd/terragrunt.hcl" ]]; then
     echo "Unknown Argo CD Application unit: ${unit}" >&2
     return 1
   fi
 
-  printf '%s\n' "$unit"
+  printf '%s/argocd\n' "$unit"
 }
 
 terragrunt_argocd_app_state_repair_unit() {
@@ -380,6 +444,7 @@ terragrunt_create_deleted_unit_destroy_stack() {
 
   mkdir -p "$destination"
   git archive "$head_ref" | tar -x -C "$destination"
+  git -C "$destination" init -q
 
   fake_unit_dir="${destination}/${unit_dir}"
   mkdir -p "$fake_unit_dir"

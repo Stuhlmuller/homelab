@@ -125,6 +125,50 @@ class PrivatePlanStageTest(unittest.TestCase):
         self.assertIn('--report-format json', runner)
         self.assertIn('"${azuread_report_args[@]}" -- plan -lock=false -out plan.out -no-color', runner)
 
+    def test_changed_azuread_inputs_never_skip_for_missing_credentials(self):
+        runner = PLAN_RUNNER.read_text()
+        section = runner.split('echo "::group::AzureAD application registration plan"\n', 1)[1]
+        section = section.split('\necho "::endgroup::"', 1)[0]
+        for stack_changed, inputs_changed, expected_code in (
+            (True, False, 1), (False, True, 1), (False, False, 0)
+        ):
+            with self.subTest(stack_changed=stack_changed, inputs_changed=inputs_changed):
+                script = ('set -euo pipefail\n'
+                          'azuread_credentials_available() { return 1; }\n'
+                          f'terragrunt_azuread_stack_changed() {{ return {0 if stack_changed else 1}; }}\n'
+                          f'terragrunt_azuread_plan_inputs_changed() {{ return {0 if inputs_changed else 1}; }}\n'
+                          + section)
+                result = subprocess.run(["bash", "-c", script], text=True,
+                                        capture_output=True, timeout=5, check=False)
+                self.assertEqual(result.returncode, expected_code, result.stderr)
+                self.assertEqual("Skipping AzureAD" in result.stdout, expected_code == 0)
+                if expected_code:
+                    self.assertIn("AzureAD credentials are required", result.stderr)
+
+    def test_scope_diff_failure_cannot_skip_live_plan(self):
+        workflow = WORKFLOW.read_text()
+        scope = textwrap.dedent(workflow.split(
+            "      - name: Detect Live Terragrunt Plan Scope\n", 1)[1]
+            .split("\n      - name: Install Nix\n", 1)[0]
+            .split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            (root / "README.md").write_text("fixture\n")
+            subprocess.run(["git", "add", "README.md"], cwd=root, check=True)
+            subprocess.run(["git", "-c", "user.name=Fixture",
+                            "-c", "user.email=fixture@example.invalid",
+                            "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"],
+                           cwd=root, check=True)
+            output = root / "github-output"
+            result = subprocess.run(["bash", "-euo", "pipefail", "-c", scope],
+                                    cwd=root, capture_output=True, text=True,
+                                    env={**os.environ, "BASE_REF": "main",
+                                         "GITHUB_OUTPUT": str(output)}, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
+            self.assertFalse(output.exists())
+
     def test_workflow_tail_executes_only_the_verified_helper(self):
         # Execute the actual failure tail; no Nix, credentials, or live commands.
         workflow = WORKFLOW.read_text()

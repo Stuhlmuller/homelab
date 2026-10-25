@@ -76,7 +76,7 @@ service:
       tailscale.com/hostname: homelab-ingress
       tailscale.com/tags: tag:homelab-ingress
       homelab.rst.io/access-plane: tailscale
-      coredns.io/hostname: stinkyboi.com,affine.stinkyboi.com,argocd.stinkyboi.com,bazarr.stinkyboi.com,compass.stinkyboi.com,deluge.stinkyboi.com,dispatcharr.stinkyboi.com,fleet.stinkyboi.com,grafana.stinkyboi.com,harbor.stinkyboi.com,kiali.stinkyboi.com,langfuse.stinkyboi.com,litellm.stinkyboi.com,multica.stinkyboi.com,n8n.stinkyboi.com,nofx.stinkyboi.com,openclaw.stinkyboi.com,policy-bot.stinkyboi.com,prowlarr.stinkyboi.com,radarr.stinkyboi.com,sonarr.stinkyboi.com,cordium.stinkyboi.com,*.cordium.stinkyboi.com,console.stinkyboi.com,octelium.stinkyboi.com,octelium-api.stinkyboi.com,portal.stinkyboi.com
+      coredns.io/hostname: stinkyboi.com,affine.stinkyboi.com,argocd.stinkyboi.com,bazarr.stinkyboi.com,compass.stinkyboi.com,deluge.stinkyboi.com,dispatcharr.stinkyboi.com,fleet.stinkyboi.com,grafana.stinkyboi.com,harbor.stinkyboi.com,kiali.stinkyboi.com,langfuse.stinkyboi.com,litellm.stinkyboi.com,multica.stinkyboi.com,n8n.stinkyboi.com,nofx.stinkyboi.com,openclaw.stinkyboi.com,policy-bot.stinkyboi.com,prowlarr.stinkyboi.com,radarr.stinkyboi.com,sonarr.stinkyboi.com,cordium.stinkyboi.com,*.cordium.stinkyboi.com,console.stinkyboi.com,octelium.stinkyboi.com,octelium-api.stinkyboi.com,portal.stinkyboi.com,console.oce.stinkyboi.com,*.agents.oce.stinkyboi.com
     ports:
       http: {port: 80, targetPort: 8000}
       https: {port: 443, targetPort: 8443}

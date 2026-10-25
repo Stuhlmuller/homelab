@@ -67,7 +67,7 @@ for version in (1, 2):
     (folder/'tls.yaml').write_text(json.dumps(tls))
     subprocess.run(['openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
                     '-set_serial', str(version), '-subj', '/CN=*.stinkyboi.com',
-                    '-addext', 'subjectAltName=DNS:stinkyboi.com,DNS:*.stinkyboi.com,DNS:*.cordium.stinkyboi.com',
+                    '-addext', 'subjectAltName=DNS:stinkyboi.com,DNS:*.stinkyboi.com,DNS:*.cordium.stinkyboi.com,DNS:console.oce.stinkyboi.com,DNS:*.agents.oce.stinkyboi.com',
                     '-keyout', str(folder/'tls.key'), '-out', str(folder/'tls.crt')], check=True,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 shutil.copyfile(DYNAMIC/'..version1'/'tls.crt', HERE/'backend.crt')
@@ -162,7 +162,9 @@ try:
         if route['entryPoints'] != ['websecure']:
             continue
         hosts = {'cordium': 'cordium.stinkyboi.com', 'octelium-cluster': 'stinkyboi.com',
-                 'octelium-alias': 'octelium.stinkyboi.com', 'octelium-console': 'console.stinkyboi.com'}
+                 'octelium-alias': 'octelium.stinkyboi.com', 'octelium-console': 'console.stinkyboi.com',
+                 'oce-console': 'console.oce.stinkyboi.com',
+                 'oce-native-admin': 'agent-' + 'a'*32 + '.agents.oce.stinkyboi.com'}
         host = hosts.get(name, name+'.stinkyboi.com')
         status, body = request(host)
         assert status == 200, (name,status,body)
@@ -178,6 +180,11 @@ try:
     for host in ('workspace.cordium.stinkyboi.com', 'portal.stinkyboi.com'):
         status,body = request(host)
         assert status == 200, (host,status,body)
+        checks += 1
+    for host in ('admin.agents.oce.stinkyboi.com',
+                 'agent-' + 'a'*31 + '.agents.oce.stinkyboi.com',
+                 'agent-' + 'a'*32 + '.other.agents.oce.stinkyboi.com'):
+        assert request(host)[0] == 404, host
         checks += 1
     for base in ('/setup', '/api/setup', '/api/v1/setup'):
         for suffix in ('', '/', '/anything'):
@@ -236,6 +243,8 @@ try:
     for name in ('multica', 'openclaw', 'cordium'):
         assert request(name+'.stinkyboi.com','/ws',websocket=True)[0] == 101
         checks += 1
+    assert request('agent-' + 'a'*32 + '.agents.oce.stinkyboi.com', '/ws', websocket=True)[0] == 101
+    checks += 1
     assert request('fleet.stinkyboi.com',entry='web')[0] in (301,308)
     checks += 1
     assert cert_digest() == expected_cert(1)

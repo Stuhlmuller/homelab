@@ -38,7 +38,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def request(method, path, body=None, token=None, content_type="application/json", accepted_status=200):
+def request(method, path, body=None, token=None, content_type="application/json", accepted_status=200,
+            timeout=60):
     headers = {"Accept": "application/json", "User-Agent": "Fleet-Apple-Setup/1.0"}
     data = body if isinstance(body, bytes) else json.dumps(body).encode() if body is not None else None
     if data is not None:
@@ -48,7 +49,7 @@ def request(method, path, body=None, token=None, content_type="application/json"
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     try:
         with opener.open(urllib.request.Request(
-                FLEET_URL + path, data=data, headers=headers, method=method), timeout=60) as response:
+                FLEET_URL + path, data=data, headers=headers, method=method), timeout=timeout) as response:
             raw = response.read(MAX_RESPONSE + 1)
             if response.status != accepted_status or len(raw) > MAX_RESPONSE:
                 raise DownloadError("Fleet API returned an invalid or oversized response")
