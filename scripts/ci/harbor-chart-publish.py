@@ -84,7 +84,12 @@ def upstream_package(row, directory, anonymous_config):
         run("git", "init", "-q", str(checkout))
         run("git", "-C", str(checkout), "fetch", "--depth=1", row["repository"], row["revision"])
         run("git", "-C", str(checkout), "checkout", "-q", "FETCH_HEAD")
-        run("helm", "package", str(checkout / row["path"]), "--destination", str(source))
+        chart_path = checkout / row["path"]
+        # Helm archives source mtimes; normalize Git checkout times for a stable reviewed hash.
+        for path in sorted(chart_path.rglob("*"), key=lambda item: len(item.parts), reverse=True):
+            os.utime(path, (0, 0), follow_symlinks=False)
+        os.utime(chart_path, (0, 0))
+        run("helm", "package", str(chart_path), "--destination", str(source))
     elif row["repository"].startswith("https://"):
         run("helm", "pull", row["chart"], "--repo", row["repository"],
             "--version", row["version"], "--destination", str(source),

@@ -133,7 +133,7 @@
       "repository": "https://github.com/rancher/local-path-provisioner.git",
       "revision": "5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0",
       "path": "deploy/chart/local-path-provisioner",
-      "sha256": "eed2dd77900d2b9be7762058830af818f8adcbe58df44cb3a62b19ef1caae814"
+      "sha256": "77136a45b6381468f6760716a35eed03bf42bebef95d3dfcc141850995dd7a44"
     },
     {
       "chart": "metrics-server",
