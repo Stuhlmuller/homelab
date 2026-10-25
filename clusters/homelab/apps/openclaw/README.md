@@ -213,6 +213,21 @@ the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run
 Without evidence of the former writable overlay, do not claim exact compatible
 recovery from the image baseline alone.
 
+The 2026.9.5 image does not contain the matching external Discord package;
+the retained install is 2026.5.22. The
+[offline cache builder](../../../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image digest and the npm tarball integrity, installs the exact
+package in a disposable state, then tests a fresh state with `--network none`
+using only an archive round-trip of npm's content cache. The fresh pinned CLI
+creates its own SQLite install record and must report the expected global npm
+origin, spec and version. Its output is a private-transfer contract:
+`npm-cache.tar` and `manifest.json` with the archive SHA-256. It contains no
+retained OpenClaw state, credentials, or install records. The
+[CI check](../../../../.github/workflows/openclaw-discord-offline-cache.yml)
+builds and tests but discards that output. A later reviewed operation must
+publish the pair privately, check the manifest SHA-256 on download, and prove
+the isolated restored boot; this preparatory check does not pass T014.
+
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Configuration and workspace remain on the `openclaw` NAS PVC.
