@@ -469,29 +469,34 @@ ephemeral `/tmp`; the next poll uses a new Pod. It uses the dedicated no-token
 `renovate` ServiceAccount and Pod-local registry route; it has no Kubernetes API
 token or inbound Service.
 
-The separate `acceptance-report-job.yaml` is also suspended and omitted from
-Kustomize. A reviewed GitOps change is required to run it. It uses Renovate
-44.167.4's experimental `reportType: file` in a full dry run with the same
-committed runner policy and a token from the dedicated read-only App. That App's
-actual grants, private-repository coverage, and expected Administration API
-denial need live verification before activation. Its base and package
-cache are Pod-local `/tmp`; it never mounts `renovate-cache`. The pinned report
-contains actual extracted `packageFiles` and lookup updates, plus branch
-results such as `prNo`, `result`, and `prBlockedBy`. The Pod UID names its raw
-report and private Renovate log under `/ledger/private/reports`. A successful
-scan verifies the report shape, file permissions, and SHA-256, then creates an
-exclusive, timestamped hash receipt. A failed scan, missing report, or malformed
-report creates no success receipt. Pod logs show aggregate counts only; the raw
-report and diagnostic log may contain private package or repository details.
-The report Job mounts only the dedicated acceptance App key, not the writer key.
+`acceptance-primary-report-patch.yaml` is staged outside Kustomize. After the
+private ledger claim is Bound, a reviewed GitOps change can add this patch to
+the existing hourly CronJob. It runs Renovate once, with the same production
+App token, cache, and dry-run or writer policy, and adds pinned Renovate
+44.167.4's experimental `reportType: file`. The report contains extracted
+`packageFiles`, lookup updates, and branch results such as `prNo`, `result`,
+and `prBlockedBy`. The wrapper sets umask `077`, captures bounded private
+logs and the report under a Pod UID, then seals a hash receipt only after
+Renovate exits successfully. A failed run, missing report, or malformed report
+creates no success receipt. Pod logs show aggregate counts or a safe failure
+class; raw reports and diagnostics stay on the local protected ledger, never
+in public output. The existing writer key remains mounted only as a Secret
+file and is not copied to the ledger. The local ledger volume constrains the
+hourly Pod to `acer`. Before starting the seven-day window, verify memory
+headroom and two report-enabled scheduled Jobs on that node, including
+completion before the 40-minute deadline, no restarts or MemoryPressure, and
+the expected hourly alerts. If this preflight fails, remove the patch through
+a reviewed PR, verify Argo CD sync to that main commit, and let existing Jobs
+drain before the next ordinary hourly scan. Keep the ledger for diagnosis.
 
 The report is a candidate extraction and policy-outcome source, not a verified
 acceptance sample. Its API is experimental. The inventory Job still reads the
 repository cache; private review input supplies source visibility and policy
-evidence. The report and PR proof CronJobs are staged suspended at :10 and :55
-each hour, respectively. Their one-shot Job variants remain omitted and
-suspended. A reviewed GitOps change must activate the recurring pair only
-after the sample, App grants, report capacity, and private review are checked.
+evidence. There is no separate hourly report scan: the staged PR proof CronJob
+at :55 reads only a successfully sealed primary-run report. Its one-shot Job
+variant remains omitted and suspended. A reviewed GitOps change must activate
+the primary report patch and PR proof CronJob only after the sample, App grants,
+ledger capacity, and private review are checked.
 The proof worker binds an exact sampled package, file, and version to a sealed
 report. A single `not-scheduled` or `needs-pr-approval` branch result becomes a
 private policy-deferral receipt timestamped at report completion. Other branch
@@ -515,8 +520,8 @@ file patches, then writes the hashed outcome receipt to the
 ledger; Pod logs contain counts only. Reads more than four hours after the
 last-absent bound, missing patches, and ambiguous PR matches remain unknown.
 PR `created_at` is retained only as context. A proposal bound after four
-hours remains a late outcome. The seven-day window needs reviewed activation
-of both recurring CronJobs and enough protected ledger capacity for all scans.
+hours remains a late outcome. The seven-day window needs enough protected
+ledger capacity for the primary reports and PR proof receipts.
 
 Before starting this CronJob, freeze a private inventory from the pinned
 Renovate image's actual repository-extraction cache. Full dry-run skips cache
@@ -698,9 +703,12 @@ Preregister the seven-day window after sample review. Its first healthy poll
 establishes the baseline; a failed start requires a new reviewed window.
 Keep the observer suspended if the inventory, a datasource, private-source
 access, or the pinned image's datasource API fails validation. After the
-seven-day window, suspend and drain the observer, inventory, report, PR-proof,
-and schedule-collector writers through reviewed GitOps; verify none of their
-Jobs or Pods remains pending or active. Activate the staged read-only
+seven-day window, remove the primary report patch through reviewed GitOps and
+verify the hourly writer uses its original config and no ledger mount. Drain
+all report-enabled Jobs before touching the ledger. Suspend and drain the
+observer, inventory, PR-proof, and schedule-collector acceptance writers;
+verify none of their Jobs or Pods remains pending or active. Activate the
+staged read-only
 `acceptance-source-review-job.yaml` only after that freeze. Activate the staged
 `acceptance-final-report-job.yaml` through a separate reviewed change after
 source replay and writer drainage. Verify the pre-reconciled deny-all
@@ -740,8 +748,8 @@ reviewed exact-path storage cleanup on `acer` and verify
 `/var/lib/renovate-acceptance-ledger` has no retained files before closing
 T035. This later hostPath cleanup also removes the Job's digest marker; the
 Job itself never touches the backing path directly.
-Remove the suspended report and proof CronJobs, one-shot Job manifests,
-inventory Job, and acceptance scripts through the same reviewed GitOps change.
+Remove the suspended proof CronJob, one-shot Job manifests, inventory Job,
+report patch, and acceptance scripts through the same reviewed GitOps change.
 Prune the acceptance ExternalSecret and target `renovate-acceptance` Secret
 through reviewed desired state and verify both absent. Obtain explicit owner
 authorization/handoff before deleting the dedicated acceptance App in GitHub

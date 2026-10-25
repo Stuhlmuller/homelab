@@ -10,9 +10,8 @@ const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
 const runner = require(path.join(root, 'acceptance-report-runner.js'));
 const uid = '12345678-1234-1234-1234-123456789abc';
 
-function reportConfig(realStorage = false) {
+function reportConfig(realStorage = false, dryRun = 'full') {
   const source = fs.readFileSync(path.join(root, 'acceptance-report-config.js'), 'utf8');
-  let requested;
   const fileSystem = {
     readFileSync(file) {
       if (file === '/var/run/podinfo/uid') return `${uid}\n`;
@@ -37,56 +36,47 @@ function reportConfig(realStorage = false) {
     require(name) {
       if (name === 'node:fs') return fileSystem;
       if (name === 'node:path') return path;
-      if (name === './acceptance-observer.js') return {
-        async readToken(permissions) { requested = permissions; return 'ghs_read'; },
-      };
-      if (name === './runner-config.js') return {
-        renovatePolicy(token) { return { token, cacheDir: '/cache/renovate', repositoryCache: 'enabled' }; },
-      };
+      if (name === './runner-config.js') return async () => ({
+        token: 'ghs_writer', cacheDir: '/cache/renovate', repositoryCache: 'enabled',
+        cachePrivatePackages: true, ...(dryRun === null ? {} : { dryRun }),
+      });
       throw new Error(`unexpected import: ${name}`);
     },
   };
   vm.runInNewContext(source, context);
-  return { config: module.exports, permissions: () => requested };
+  return { config: module.exports };
 }
 
-test('report scan uses only read grants and a per-Pod private path, without the production cache', async () => {
-  const { config, permissions } = reportConfig();
+test('one primary scan reports to a per-Pod path without changing its token, cache, or write mode', async () => {
+  const { config } = reportConfig();
   const value = await config();
-  assert.equal(value.token, 'ghs_read');
+  assert.equal(value.token, 'ghs_writer');
   assert.equal(value.reportType, 'file');
   assert.equal(value.reportPath, `/report-output/${uid}.json`);
-  assert.equal(value.baseDir, '/tmp/renovate-report/base');
-  assert.equal(value.cacheDir, '/tmp/renovate-report/cache');
-  assert.equal(value.repositoryCache, 'disabled');
-  assert.equal(value.cachePrivatePackages, false);
+  assert.equal(value.cacheDir, '/cache/renovate');
+  assert.equal(value.repositoryCache, 'enabled');
+  assert.equal(value.cachePrivatePackages, true);
   assert.equal(value.dryRun, 'full');
-  assert.deepEqual(JSON.parse(JSON.stringify(permissions())), {
-    checks: 'read', contents: 'read', issues: 'read', members: 'read',
-    metadata: 'read', pull_requests: 'read', statuses: 'read',
-    vulnerability_alerts: 'read',
-  });
+  const writeEnabled = await reportConfig(false, null).config();
+  assert.equal(writeEnabled.dryRun, undefined);
+  assert.equal(writeEnabled.token, 'ghs_writer');
+  assert.equal(writeEnabled.cacheDir, '/cache/renovate');
   assert.throws(() => config.reportPaths('../escape'), /invalid-pod-uid/);
   assert.throws(() => config.reportScratchPath('../escape'), /invalid-pod-uid/);
-  const manifest = fs.readFileSync(path.join(root, 'acceptance-report-job.yaml'), 'utf8');
   const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
-  assert.match(manifest, /^  suspend: true$/m);
-  assert.match(manifest, /fieldPath: metadata.uid/);
-  assert.match(manifest, /automountServiceAccountToken: false/);
-  assert.doesNotMatch(manifest, /claimName: renovate-cache/);
-  assert.match(manifest, /mountPath: \/report-output/);
-  assert.match(manifest, /medium: Memory\n\s+sizeLimit: 128Mi/);
-  assert.doesNotMatch(kustomization, /- acceptance-report-job.yaml/);
-  const cron = fs.readFileSync(path.join(root, 'acceptance-report-cronjob.yaml'), 'utf8');
-  assert.match(kustomization, /- acceptance-report-cronjob.yaml/);
-  assert.match(cron, /kind: CronJob/);
-  assert.match(cron, /^  schedule: "10 \* \* \* \*"$/m);
-  assert.match(cron, /^  suspend: true$/m);
-  assert.match(cron, /secretName: renovate-acceptance/);
-  assert.match(cron, /mountPath: \/var\/run\/secrets\/renovate-acceptance/);
-  assert.doesNotMatch(cron, /claimName: renovate-cache|secretName: renovate\n/);
-  assert.match(cron, /mountPath: \/report-output/);
-  assert.match(cron, /medium: Memory\n\s+sizeLimit: 128Mi/);
+  const cron = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
+  const patch = fs.readFileSync(path.join(root, 'acceptance-primary-report-patch.yaml'), 'utf8');
+  assert.equal((kustomization.match(/- cronjob\.yaml/g) || []).length, 1);
+  assert.doesNotMatch(kustomization, /acceptance-primary-report-patch/);
+  assert.match(cron, /^  schedule: "0 \* \* \* \*"$/m);
+  assert.match(cron, /secretName: renovate\n/);
+  assert.match(cron, /claimName: renovate-cache\n/);
+  assert.match(patch, /acceptance-report-runner\.js/);
+  assert.match(patch, /claimName: renovate-acceptance-ledger/);
+  assert.match(patch, /medium: Memory\n\s+sizeLimit: 128Mi/);
+  assert.doesNotMatch(patch, /secretName: renovate-acceptance|schedule:/);
+  assert.equal(fs.existsSync(path.join(root, 'acceptance-report-cronjob.yaml')), false);
+  assert.equal(fs.existsSync(path.join(root, 'acceptance-report-job.yaml')), false);
 });
 
 test('a pinned-shape report is sealed once with private files and matching hashes', () => {
@@ -109,7 +99,7 @@ test('a pinned-shape report is sealed once with private files and matching hashe
     const counts = runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z', path.join(root, 'config.js'));
     assert.deepEqual(counts, { repositories: 1, packageFiles: 1, dependencies: 1, branches: 3 });
     const receipt = JSON.parse(fs.readFileSync(paths.receipt, 'utf8'));
-    const manifest = fs.readFileSync(path.join(root, 'acceptance-report-job.yaml'), 'utf8');
+    const manifest = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
     assert.equal(receipt.image, manifest.match(/^\s+image: (\S+)$/m)?.[1]);
     assert.equal(receipt.report.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
     assert.equal(receipt.policySha256, crypto.createHash('sha256').update(

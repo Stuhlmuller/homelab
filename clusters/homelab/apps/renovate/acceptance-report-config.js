@@ -1,21 +1,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { readToken } = require('./acceptance-observer.js');
-const { renovatePolicy } = require('./runner-config.js');
+const runnerConfig = require('./runner-config.js');
 
 const privateDir = '/ledger/private';
 const scratchDir = '/report-output';
 const uidFile = '/var/run/podinfo/uid';
-const readPermissions = Object.freeze({
-  checks: 'read',
-  contents: 'read',
-  issues: 'read',
-  members: 'read',
-  metadata: 'read',
-  pull_requests: 'read',
-  statuses: 'read',
-  vulnerability_alerts: 'read',
-});
 
 function podUid() {
   const uid = fs.readFileSync(uidFile, 'utf8').trim();
@@ -66,14 +55,8 @@ function prepare(paths) {
 async function config() {
   const paths = reportPaths(podUid());
   prepare(paths);
-  const token = await readToken(readPermissions);
   return {
-    ...renovatePolicy(token),
-    baseDir: '/tmp/renovate-report/base',
-    cacheDir: '/tmp/renovate-report/cache',
-    repositoryCache: 'disabled',
-    cachePrivatePackages: false,
-    dryRun: 'full',
+    ...await runnerConfig(),
     reportType: 'file',
     // The 128 MiB memory-backed volume hard-limits the raw report before it
     // can be copied to the private ledger and sealed by the wrapper.
@@ -85,5 +68,4 @@ config.podUid = podUid;
 config.reportPaths = reportPaths;
 config.reportScratchPath = reportScratchPath;
 config.prepare = prepare;
-config.readPermissions = readPermissions;
 module.exports = config;

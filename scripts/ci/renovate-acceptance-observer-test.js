@@ -622,8 +622,7 @@ test('private acceptance data binds only to initialized acer-local storage', () 
   assert.match(initializer, /chmod 0700 \/ledger/);
   assert.doesNotMatch(kustomization, /- acceptance-ledger-init-job.yaml/);
   for (const filename of ['acceptance-inventory-job.yaml', 'acceptance-observer-cronjob.yaml',
-    'acceptance-report-job.yaml', 'acceptance-pr-proof-job.yaml',
-    'acceptance-report-cronjob.yaml', 'acceptance-pr-proof-cronjob.yaml']) {
+    'acceptance-pr-proof-job.yaml', 'acceptance-pr-proof-cronjob.yaml']) {
     const manifest = fs.readFileSync(path.join(root, filename), 'utf8');
     assert.match(manifest, /kubernetes.io\/hostname: acer/, filename);
     assert.match(manifest, /claimName: renovate-acceptance-ledger/, filename);

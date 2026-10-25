@@ -7,8 +7,7 @@ import unittest
 APP = Path(__file__).resolve().parents[2] / 'clusters/homelab/apps/renovate'
 CREDENTIALED = {
     'acceptance-observer-cronjob.yaml', 'acceptance-inventory-job.yaml',
-    'acceptance-report-job.yaml', 'acceptance-pr-proof-job.yaml',
-    'acceptance-report-cronjob.yaml', 'acceptance-pr-proof-cronjob.yaml',
+    'acceptance-pr-proof-job.yaml', 'acceptance-pr-proof-cronjob.yaml',
 }
 
 
