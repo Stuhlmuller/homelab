@@ -179,24 +179,32 @@ class PublicationTests(unittest.TestCase):
                     self.prepare()
 
     def test_paired_sets_require_matching_capture_fence(self):
-        self.make_source('multica')
-        with self.assertRaises(ValueError):
-            self.prepare('multica')
-        capture = {'captured_at': self.source.name, 'writers_fenced': True,
-                   'approved_fence_reference': 'fixture-only-fence'}
-        for fenced in (False, True):
-            capture['writers_fenced'] = fenced
-            (self.source / 'capture.json').write_text(json.dumps(capture))
-            (self.source / 'SHA256SUMS').write_text(''.join(
-                f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
-                for name in APP.CONTRACTS['multica']))
-            if not fenced:
-                with self.assertRaises(ValueError):
-                    self.prepare('multica')
-            else:
-                prepared = self.prepare('multica')
+        for app in ('multica', 'dispatcharr'):
+            self.make_source(app)
+            with self.assertRaises(ValueError):
+                self.prepare(app)
+            capture = {'captured_at': self.source.name, 'writers_fenced': True,
+                       'approved_fence_reference': 'fixture-only-fence'}
+            for fenced in (False, True):
+                capture['writers_fenced'] = fenced
+                (self.source / 'capture.json').write_text(json.dumps(capture))
+                (self.source / 'SHA256SUMS').write_text(''.join(
+                    f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
+                    for name in APP.CONTRACTS[app]))
+                if not fenced:
+                    with self.assertRaises(ValueError):
+                        self.prepare(app)
+                    continue
+                prepared = self.prepare(app)
                 APP.publish(prepared, self.workspace, self.aws)
-                self.assertEqual(len(self.aws.objects), 5)
+                restored = APP.retrieve(app, prepared.name, self.workspace, self.aws)
+                self.assertEqual(set(APP.CONTRACTS[app]), set(json.loads(
+                    (restored / 'complete.json').read_text())['objects']))
+                self.assertFalse(json.loads((restored / 'retrieval.json').read_text())['application_restore_tested'])
+            if app == 'dispatcharr':
+                (self.source / 'data.tar').unlink()
+                with self.assertRaises(OSError):
+                    self.prepare(app)
 
     def test_all_six_media_databases_required(self):
         self.make_source('media-postgres')
