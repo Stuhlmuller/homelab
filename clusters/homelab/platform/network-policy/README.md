@@ -115,7 +115,9 @@ path now remeasures the admitted Node immediately before each targeted
 enforcer/fixture activation and writes a private, immutable capacity receipt
 under the activation `main` SHA and apply run ID. It keeps the full 704Mi peak
 memory reservation plus 128Mi margin in both phases; the fixture check accounts
-for the already-running enforcer from one kubelet summary. Full or differently
+for the already-running enforcer from one kubelet summary. It credits at most
+the enforcer's 250m CPU request, keeping any excess measured use in the Node
+budget because the enforcer has no CPU limit. Full or differently
 targeted applies cannot activate either Application. The last measured
 `zimaboard-2` headroom fails this gate, so do not enable the rollout until a new read-only
 measurement passes and the fixture image mirror is ready. Then merge one

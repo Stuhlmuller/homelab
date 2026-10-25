@@ -1946,9 +1946,10 @@ activation. It verifies the selected immutable admission and placement S3
 versions, current Node UID/boot, owned taint/label, exact system Pod inventory,
 fresh metrics and node filesystem, then stores a private capacity receipt under
 the exact activation `main` SHA and apply run ID. The fixture phase subtracts
-only the Ready enforcer Pod's measured kubelet usage and still reserves the full
-704Mi runtime limit plus 128Mi margin. The last `zimaboard-2` measurement
-cannot pass.
+the Ready enforcer Pod's measured memory and at most its 250m CPU request;
+excess CPU use stays in the Node budget because the Pod has no CPU limit. It
+still reserves the full 704Mi runtime memory limit plus 128Mi margin. The last
+`zimaboard-2` measurement cannot pass.
 The enforcer phase first rejects insufficient capacity, then uses the pinned
 protected host probe to prove kube-router chains and sets are still empty. It
 deletes that token/UID-matched Pod, verifies its private capture and repeats

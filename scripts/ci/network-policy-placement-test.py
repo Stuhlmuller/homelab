@@ -156,9 +156,9 @@ class PlacementTests(unittest.TestCase):
                              "memory": {"time": now(), "workingSetBytes": 100 * SUT["MIB"]},
                              "cpu": {"time": now(), "usageNanoCores": 100000000}}]}
 
-        def run(fs=summary, metric=metrics, candidate=enforcer):
+        def run(fs=summary, metric=metrics, candidate=enforcer, available_node=node):
             with patch.dict(SUT["CLEANUP"], {
-                    "kubernetes_json": lambda *args: node if args[:2] == ("get", "node") else listing,
+                    "kubernetes_json": lambda *args: available_node if args[:2] == ("get", "node") else listing,
                     "complete_items": lambda value, _: value["items"],
                     "command": lambda *args: json.dumps(
                         metric if "metrics.k8s.io" in args[-1] else fs),
@@ -169,6 +169,14 @@ class PlacementTests(unittest.TestCase):
         self.assertEqual(receipt["observedMemoryBytes"], 400 * SUT["MIB"])
         self.assertEqual(receipt["plannedMemoryLimitBytes"], 704 * SUT["MIB"])
         self.assertTrue(receipt["enforcerAlreadyPresent"])
+        busy_node = copy.deepcopy(node)
+        busy_node["status"]["allocatable"]["cpu"] = "1000m"
+        busy_summary = copy.deepcopy(summary)
+        busy_summary["node"]["cpu"]["usageNanoCores"] = 950000000
+        busy_summary["pods"][0]["cpu"]["usageNanoCores"] = 800000000
+        with self.assertRaisesRegex(ValueError, "headroom"):
+            run(busy_summary, metrics | {"usage": {"memory": "500Mi", "cpu": "950m"}},
+                available_node=busy_node)
         changed = copy.deepcopy(summary)
         changed["node"]["memory"]["workingSetBytes"] = 600 * SUT["MIB"]
         with self.assertRaisesRegex(ValueError, "headroom"):

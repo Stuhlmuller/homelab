@@ -218,7 +218,8 @@ def capacity(capture, enforcer=None):
         observed_enforcer_memory = pod_memory_bytes
         observed_enforcer_cpu = (pod_cpu_nanos + 999999) // 1000000
         observed_memory = node_memory_bytes - pod_memory_bytes
-        observed_cpu = (node_cpu_nanos - pod_cpu_nanos + 999999) // 1000000
+        credited_cpu_nanos = min(pod_cpu_nanos, enforcer_requests[1] * 1000000)
+        observed_cpu = (node_cpu_nanos - credited_cpu_nanos + 999999) // 1000000
     if (memory - used_requests[0] - remaining_memory_request < MEMORY_MARGIN or
             memory - observed_memory - PLANNED_MEMORY_LIMIT < MEMORY_MARGIN or
             cpu - used_requests[1] - remaining_cpu_request < CPU_MARGIN or
