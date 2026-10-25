@@ -181,7 +181,7 @@ def chart_sources():
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
     enterprise = ROOT / "IaC/openclaw-enterprise/stack.hcl"
-    if enterprise.exists():
+    if enterprise.exists() and not re.search(r'\bchart\s*=', enterprise.read_text()):
         match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'
                           r'targetRevision\s*=\s*"([^"]+)"\s*helm\s*=', enterprise.read_text())
         if not match:

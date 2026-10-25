@@ -48,6 +48,12 @@ with tempfile.TemporaryDirectory() as directory:
     assert {"source": "IaC/openclaw-enterprise/stack.hcl",
             "repoURL": "https://github.com/openclaw/openclaw-enterprise.git",
             "chart": "git:deploy/helm/openclaw-enterprise", "targetRevision": 'a' * 40} in check.chart_sources()
+    enterprise.write_text('sources = [{ repoURL = "harbor.stinkyboi.com/mirror/helm" '
+                          'chart = "openclaw-enterprise" targetRevision = "0.1.0" '
+                          'helm = { releaseName = "oce" } }]')
+    assert {"source": "IaC/openclaw-enterprise/stack.hcl",
+            "repoURL": "harbor.stinkyboi.com/mirror/helm",
+            "chart": "openclaw-enterprise", "targetRevision": "0.1.0"} in check.chart_sources()
     check.ROOT = original_root
 
 # App inputs retain their own provenance, even when apps share a chart/version.
