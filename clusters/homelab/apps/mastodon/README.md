@@ -138,8 +138,10 @@ refusal, and error containment. Actual Rails persistence is verified after rollo
 
 ## Browser acceptance
 
-Public browser acceptance on 2026-10-25 verified owner sign-in, Home navigation,
-and private-post read-back. The pinned 4.7.3 admin dashboard also loads, but emits
+Public acceptance on 2026-10-25 verified HTTPS/API and ActivityPub metadata,
+browser owner sign-in and Home navigation, private-post/media read-back,
+authenticated public WebSocket delivery, and native remote-account resolution.
+Anonymous API requests cannot read the private test posts. The pinned 4.7.3 admin dashboard loads, but emits
 a React Router `Invariant failed` error from `react-router-dom-C1dtKQUg.js`.
 Client-side dashboard widgets remain an open validation finding; inspect that
 bundle and its router context before treating those widgets as verified.
@@ -297,10 +299,19 @@ this execution-path evidence does not clear the SQLite or libxml2 findings.
 Exact ELF dynamic dependencies show no direct SQLite linkage from the database
 binary or declared pg_trgm/unaccent extensions. The database does link libxml2.
 Database ingress is limited to Mastodon pods with the declared Istio principal
-and NetworkPolicy; the application role loses superuser privileges after the
-required extensions are installed. Do not expose a public SQL endpoint or
+and NetworkPolicy; the application uses the separate limited `mastodon_app`
+role. The bootstrap administrator remains private to datastore-local Jobs.
+Do not expose a public SQL endpoint or
 interpret isolation as a package fix. Verify loaded libraries and app behavior
 on the actual workload before public acceptance.
+
+Read-only live checks on 2026-10-25 confirmed PostgreSQL 18.6 runs directly as
+`postgres`, the bootstrap administrator retains OID 10, and `mastodon_app` has
+none of the five elevated role flags. The server maps libxml2 and zlib, with no
+SQLite mapping; the application schema has no XML columns. These checks retain
+the installed-package findings, including the loaded libxml2 finding.
+Puma maps the JSON 2.21.2 parser/generator, and streaming uses
+`TRUSTED_PROXY_IP=loopback,uniquelocal` on the actual workload.
 
 Debian's [zlib advisory](https://security-tracker.debian.org/tracker/CVE-2023-45853)
 records that Bookworm does not build the affected contrib/minizip code from
