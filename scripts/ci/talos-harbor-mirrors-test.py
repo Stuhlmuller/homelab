@@ -450,7 +450,8 @@ class RolloutTest(unittest.TestCase):
                          "fresh-boot", "pending-config", "try-without-persistent", "config-read-error",
                          "duplicate-config", "missing-active", "missing-reader-auth", "existing-reader-auth",
                          "missing-private-route", "wrong-private-route",
-                         "bootstrap-cycle", "direct-bootstrap-cycle", "live-bootstrap-drift"):
+                         "bootstrap-cycle", "implicit-docker-cycle", "mirror-port-cycle",
+                         "direct-bootstrap-cycle", "direct-bootstrap-port-cycle", "live-bootstrap-drift"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 base = Path(temporary).resolve()
                 root = base / "repo"
@@ -458,9 +459,13 @@ class RolloutTest(unittest.TestCase):
                 (root / ".talos/patches").mkdir(parents=True)
                 traefik = root / "clusters/homelab/apps/traefik"
                 traefik.mkdir(parents=True)
-                repository = ("docker.io/library/traefik" if scenario == "bootstrap-cycle" else
-                              "harbor.stinkyboi.com/library/traefik" if scenario == "direct-bootstrap-cycle" else
-                              "registry.example.test/traefik")
+                repository = {
+                    "bootstrap-cycle": "docker.io/library/traefik",
+                    "implicit-docker-cycle": "library/traefik",
+                    "mirror-port-cycle": "docker.io:443/library/traefik",
+                    "direct-bootstrap-cycle": "harbor.stinkyboi.com/library/traefik",
+                    "direct-bootstrap-port-cycle": "harbor.stinkyboi.com:443/library/traefik",
+                }.get(scenario, "registry.example.test/traefik")
                 (traefik / "values.yaml").write_text(json.dumps({
                     "service": {"registry": {"controller": "traefik"}},
                     "controllers": {"traefik": {"containers": {"app": {
@@ -666,7 +671,8 @@ class RolloutTest(unittest.TestCase):
                         with self.assertRaisesRegex(RuntimeError, "exact private Harbor hostname mapping"):
                             rollout.reconcile("10.1.0.202", True, SHA, False, config_argument,
                                               registry_auth_file=registry_auth_file)
-                    elif scenario in ("bootstrap-cycle", "direct-bootstrap-cycle"):
+                    elif scenario in ("bootstrap-cycle", "implicit-docker-cycle", "mirror-port-cycle",
+                                      "direct-bootstrap-cycle", "direct-bootstrap-port-cycle"):
                         with self.assertRaisesRegex(RuntimeError, "own Harbor registry route"):
                             rollout.reconcile("10.1.0.202", True, SHA, False, config_argument,
                                               registry_auth_file=registry_auth_file)
@@ -691,7 +697,8 @@ class RolloutTest(unittest.TestCase):
                     self.assertFalse(any(call[:2] == ("git", "merge-base") for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
-                if scenario in ("bootstrap-cycle", "direct-bootstrap-cycle", "live-bootstrap-drift"):
+                if scenario in ("bootstrap-cycle", "implicit-docker-cycle", "mirror-port-cycle",
+                                "direct-bootstrap-cycle", "direct-bootstrap-port-cycle", "live-bootstrap-drift"):
                     self.assertFalse(any("apply-config" in command for command in calls))
                 self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"))
                 self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"))

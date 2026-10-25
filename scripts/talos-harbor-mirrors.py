@@ -259,7 +259,13 @@ def require_independent_registry_bootstrap(mirrors):
         if (not isinstance(repository, str) or "/" not in repository or
                 not isinstance(tag, str) or "@sha256:" not in tag):
             raise ValueError
-        host = repository.split("/", 1)[0]
+        authority = repository.split("/", 1)[0]
+        host, separator, port = authority.partition(":")
+        host = host.lower().rstrip(".")
+        if (not host or (separator and (not port.isdecimal() or not 1 <= int(port) <= 65535))):
+            raise ValueError
+        if not separator and "." not in host and host != "localhost":
+            host = "docker.io"
     except (KeyError, TypeError, AttributeError, ValueError) as error:
         raise RuntimeError("Traefik bootstrap source is invalid") from error
     if host == REGISTRY_HOST or host in mirrors:
