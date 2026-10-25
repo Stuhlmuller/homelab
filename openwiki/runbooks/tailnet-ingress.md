@@ -252,6 +252,16 @@ Istio rejects unrelated authenticated mesh principals; unmeshed intra-cluster
 callers still require application authentication. Registry source-IP restrictions
 have a trusted node-local bypass. Do not claim full east-west isolation.
 
+After kube-router reaches Traefik's node, the protected `traefik-qualify` stage
+uses temporary Harbor Pods with matched and unmatched signer labels against the
+same Ready Traefik Pod IP. The matched Pod must reach Harbor's private `/v2/`
+challenge before and after the unmatched Pod reaches allowed HBONE port 15008
+but fails to connect to private TLS port 8443; the runner
+rejects source egress denial, policy drift, and Pod/node replacement. Add the
+dormant fixture through Harbor GitOps only after firewall readiness, then remove
+it through GitOps. Keep tailnet, native Octelium, Funnel and Harbor user-path
+checks as separate acceptance receipts.
+
 During the staged CoreDNS switch, Traefik also permits only the retained
 `cluster.local/ns/octelium-client/sa/octelium-client` principal on private TLS
 port 8443. The intended NetworkPolicy peer requires its exact namespace and

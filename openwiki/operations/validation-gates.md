@@ -671,6 +671,18 @@ enforcing dataplane; require the isolated canary before activation.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
+After enforcement expands to Traefik's node, the protected `traefik-qualify`
+stage checks two temporary GitOps-owned, unmeshed Harbor Pods against the same
+Ready Traefik Pod IP. A signer-labeled positive control must receive the Harbor
+`/v2/` challenge before and after an unselected Pod reaches the permitted
+HBONE port 15008 but fails to connect to private TLS port 8443. The
+runner rejects source-side egress denial, policy drift and Pod or node identity
+changes; its bounded receipt stays private. The probe file remains outside
+Harbor's active Kustomize until a reviewed activation PR and leaves via a
+reviewed removal PR. This direct boundary test does not replace the tailnet,
+Octelium, Funnel and Harbor user-path receipts in the
+[Traefik runbook](../../clusters/homelab/apps/traefik/README.md).
+
 The offline static gate renders all nine DNS egress policies and requires their
 TCP/UDP port 53 peers to select only `kube-system` Pods labeled
 `k8s-app=kube-dns`. It also checks that the `kube-dns` Service selector and

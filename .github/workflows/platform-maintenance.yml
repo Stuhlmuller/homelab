@@ -12,7 +12,7 @@ on:
         description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-release, qualify, traefik-qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
       baseline_source_sha:
         description: Firewall-baseline main SHA, required for placement or recovery
         required: false
@@ -191,7 +191,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'dd0ce17cc573acff38974b0dca233a8708adbf2ae988578837adce27823acddb  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'e6a6407cc059ed22d644b93562e604f0d3358b9f3b3cfd0d29403c770c37c297  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then

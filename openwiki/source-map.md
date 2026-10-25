@@ -153,7 +153,7 @@ desired state.
 | `docs/image-automation.md` | [Image Automation](runbooks/image-automation.md) |
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
-| `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
+| `clusters/homelab/apps/traefik/README.md`, `routes.yaml`, and `scripts/traefik-network-policy-qualification.py` | [Staged mesh ingress, callbacks, and the protected private-listener probe](runbooks/tailnet-ingress.md) |
 | `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
