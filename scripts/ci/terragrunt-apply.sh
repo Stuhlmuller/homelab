@@ -355,6 +355,7 @@ if [[ -n "$repair_argocd_app_state_unit" ]]; then
 fi
 
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+  (cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter) >/dev/null
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
   elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "renovate" ]]; then

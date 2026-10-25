@@ -599,6 +599,12 @@ else:
         self.assertNotIn("ssm.apply", events)
         self.assertNotIn("apps.plan", events)
 
+    def test_renovate_target_missing_unit_stops_before_ssm(self):
+        result, events = self.run_apply(target="renovate", missing_target="renovate")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events, ["generate"])
+        self.assertIn("Unknown Argo CD Application unit: renovate", result.stderr)
+
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
         for target, access_app in (("fleet", "traefik"), ("mastodon", "octelium-public")):
             app_names = [*APPS, *([access_app] if access_app else [])]
