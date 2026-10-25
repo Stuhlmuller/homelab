@@ -254,6 +254,12 @@ path, without hand-editing generated state.
   encrypted off-node destination, then either prove a consistent online snapshot
   or serialize stop, capture, new-revision deployment and failure recovery in a
   durable journal. Keep ordinary unchanged-input reconciliation idempotent.
+  The operator journal and Agent gateway-state claims are in different
+  namespaces, so one Pod cannot mount both; OCC Secret reads omit value bytes.
+  Coordinate namespace-local state and exact tenant Kubernetes Secret capture,
+  then publish one immutable completed set. GitHub OIDC publisher identity does
+  not authenticate the scheduled in-cluster Job; declare that credential or
+  protected publication boundary before T051.
 - Talos A/B fallback applies only to the immediately prior verified compatible
   image. Kubernetes has no automatic downgrade path; stop and use reviewed
   forward repair or separately declared disaster recovery.

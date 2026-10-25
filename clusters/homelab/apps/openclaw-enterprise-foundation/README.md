@@ -71,6 +71,23 @@ The [pinned upstream recovery guide](https://github.com/openclaw/openclaw-enterp
 provides no general OCC backup/restore command and rejects live SQLite copies
 or PVC persistence as verified backups. A complete online capture needs a
 separately reviewed, coordinated database/storage snapshot and restore proof.
+The retained operator [journal claim](../openclaw-enterprise-operator/journal.yaml)
+belongs to `openclaw-system`, while the pinned Compute Driver would create the
+Agent's [gateway-state claim](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L31-L54)
+in `openclaw-agents`. [PVC mounts stay in the Pod's namespace](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#claims-as-volumes);
+one ordinary backup Pod cannot mount both claims. Coordinate the two sources and verify
+their UIDs before publishing one completed set.
+
+The pinned [Kubernetes Secret Driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-secret.md#L136-L143)
+never returns value bytes through the OCC API; capture the tenant's exact
+Kubernetes Secret objects through reviewed namespace-scoped access, including
+the Compute Driver's [generated transport and gateway credentials](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L220-L246).
+
+Draft [publisher PR #1684](https://github.com/Stuhlmuller/homelab/pull/1684)
+binds its S3 role to GitHub Actions OIDC, so it cannot authenticate a CronJob;
+T051 still needs declared in-cluster credential delivery or a protected
+publication stage after coordinated capture.
+
 `restore-drill.yaml` is
 deliberately outside the Kustomization; T045 must run it in isolation against
 a complete set and verify the result. Its

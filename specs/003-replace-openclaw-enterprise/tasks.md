@@ -182,9 +182,11 @@ and complete recovery, then observe 24 hours before obsolete resources are remov
 
 - [X] T050 [P] [US4] Add `scripts/ci/openclaw-enterprise-recovery-test.py` for agent-stop-before-control-plane ordering, interrupted/unknown runtime termination, preservation of failed/new state, compatible legacy restore, owned-PVC retention and blocked enforcement removal; ensure failed recovery never resumes uncertain writers or deletes archives.
 - [ ] T051 [P] [US4] Before scheduling, prove a complete identity-checked
-  recovery-material producer and encrypted off-node destination. Prove either a
-  consistent online snapshot or a journaled supported stop, capture, and
-  new-revision deployment with failure recovery; preserve ordinary no-change
+  recovery-material producer across the operator/Agent namespaces, exact tenant
+  Secret values, and an encrypted off-node destination with a declared publisher
+  credential path. Prove either a consistent online snapshot or a journaled
+  supported stop, capture, and new-revision deployment with failure recovery;
+  preserve ordinary no-change
   reconciliation. Add `clusters/homelab/apps/openclaw-enterprise-foundation/backup-cronjob.yaml`
   using the verified T036 path; declare schedule, retention, resource
   reservations and failure reporting, wire it into foundation
