@@ -549,6 +549,31 @@ enable the private hostname route and any separately reviewed strict mirrors.
 Cached restarts do not prove cold bootstrap. This change has no image-cache
 deletion or workload restart path.
 
+### Traefik bootstrap image
+
+Traefik serves this private node route. On October 25, 2026, changing its only
+Pod to a Harbor image before caching that image left `traefik-registry` without
+a ready endpoint; node pulls failed at `10.96.0.50:443` with connection refused.
+[Recovery PR #1679](https://github.com/Stuhlmuller/homelab/pull/1679) restores
+Traefik's reviewed upstream digest. Once it reconciles and the route is healthy,
+cache the exact Harbor Traefik image on all four nodes from clean reviewed
+`main` before a separate protected Traefik consumer PR:
+
+```sh
+for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --talosctl /path/to/talosctl-1.11.3 \
+    --talosconfig /path/to/private/talosconfig \
+    --prepull-traefik-runtime --execute \
+    --expected-sha '<reviewed-main-sha>'
+done
+```
+
+Repeat without `--execute` immediately before the Traefik merge. Each node
+must report the reviewed Harbor reference as cached. A missing cache alias or
+unavailable route blocks the cutover. Keep the upstream image in Git history
+for cold-bootstrap recovery.
+
 ## Initial secret plan scope
 
 The repository configures public-mirror publisher bootstrap with

@@ -687,6 +687,35 @@ class RolloutTest(unittest.TestCase):
 
 
 class RegistryPrepullTest(unittest.TestCase):
+    def test_traefik_pre_pull_requires_reviewed_main_and_cache(self):
+        source = "docker.io/library/traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c"
+        target = "harbor.stinkyboi.com/mirror/" + source
+        alias = target.replace(":v3.7.14@", "@")
+        for mode in ("dry", "execute", "missing-after-pull", "cached"):
+            with self.subTest(mode=mode):
+                cached = {alias} if mode == "cached" else set()
+                pulls = []
+
+                def run(*command, binary=False):
+                    if command[-2:] == ("image", "list"):
+                        return "NODE IMAGE DIGEST SIZE CREATED\n" + "\n".join(
+                            f"acer {image} sha256:abc 1MB now" for image in cached)
+                    if command[-2] == "pull":
+                        pulls.append(command[-1])
+                        if mode != "missing-after-pull":
+                            cached.add(alias)
+                        return ""
+                    raise AssertionError(command)
+
+                with patch.object(rollout, "run", run), patch.object(rollout, "verify_main") as verify:
+                    if mode == "missing-after-pull":
+                        with self.assertRaises(RuntimeError):
+                            rollout.prepull_traefik_runtime("10.1.0.199", True, SHA, Path("/private/talosconfig"))
+                    else:
+                        rollout.prepull_traefik_runtime("10.1.0.199", mode != "dry", SHA, Path("/private/talosconfig"))
+                    self.assertEqual(verify.call_count, int(mode != "dry"))
+                self.assertEqual(pulls, [target] if mode in ("execute", "missing-after-pull") else [])
+
     def test_active_harbor_pre_pull_requires_nine_verified_targets(self):
         aliases = set()
         pulls = []

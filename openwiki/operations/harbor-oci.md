@@ -240,6 +240,14 @@ The host-only patch resolves `harbor.stinkyboi.com` there on Talos while retaini
 hostname-valid TLS. Cluster Service routing is required, so cold bootstrap
 still needs upstream images before Kubernetes networking and Harbor are ready.
 
+The October 25 Argo image cutover showed the same dependency at runtime:
+Traefik's Harbor image could not pull after its sole Pod stopped serving this
+route, and nodes received connection refused from `10.96.0.50:443`.
+[The recovery PR](https://github.com/Stuhlmuller/homelab/pull/1679) restores
+Traefik's upstream digest. The [declared pre-pull](../../docs/harbor-image-mirroring.md#traefik-bootstrap-image)
+must cache its reviewed Harbor image on every node before a later protected
+Traefik self-cutover; cold bootstrap keeps the upstream recovery path.
+
 [`talos-harbor-mirrors.py --registry-host-only`](../../scripts/talos-harbor-mirrors.py)
 preserves the live registry configuration and unrelated hosts. It defaults to
 strict validation, uses the matching Talos executable, and requires exact reviewed
