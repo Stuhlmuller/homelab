@@ -75,6 +75,18 @@ def main():
             application('CREATE TABLE preserved(id integer PRIMARY KEY); INSERT INTO preserved VALUES (7)')
             reconcile()
             assert application('SELECT id FROM preserved').stdout.strip() == '7'
+            dump = root / 'backup.dump'
+            run('pg_dump', '-h', socket, '-U', 'mastodon', '-d', 'mastodon', '-Fc', '-f', dump)
+            run('createdb', '-h', socket, '-U', 'mastodon', '-O', 'mastodon_app', 'restored')
+            run('psql', '-X', '-h', socket, '-U', 'mastodon', '-d', 'restored',
+                '-v', 'ON_ERROR_STOP=1', '-f', initial)
+            run('psql', '-X', '-h', socket, '-U', 'mastodon', '-d', 'restored',
+                '-v', 'ON_ERROR_STOP=1', '-c', 'ALTER SCHEMA public OWNER TO mastodon_app')
+            run('pg_restore', '--exit-on-error', '--no-owner', '--no-comments', '--role=mastodon_app',
+                '-h', socket, '-U', 'mastodon', '-d', 'restored', dump)
+            restored = run('psql', '-X', '-h', socket, '-U', 'mastodon', '-d', 'restored',
+                           '-At', '-v', 'ON_ERROR_STOP=1', '-c', 'SELECT id FROM preserved')
+            assert restored.stdout.strip() == '7'
             assert admin("SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='pg_catalog.pg_class'::regclass") == 'mastodon'
             assert reconcile(check=False, database='postgres').returncode
             admin('CREATE TABLE unexpected_bootstrap_data(id integer); INSERT INTO unexpected_bootstrap_data VALUES (8)')

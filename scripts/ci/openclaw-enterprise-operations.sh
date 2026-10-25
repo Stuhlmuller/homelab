@@ -8,7 +8,7 @@ on_exit() {
   result=$?
   if [[ -n "$work" ]]; then rm -rf -- "$work"; fi
   if (( result != 0 )) &&
-     [[ "${stage:-}" =~ ^(inventory|publish-inventory|archive|publish-archive|verify|prepare-restore|resume-restore|network-preflight)$ &&
+     [[ "${stage:-}" =~ ^(inventory|publish-inventory|archive|publish-archive|verify|prepare-restore|resume-restore|network-preflight|publish-discord-cache|transfer-discord-cache)$ &&
         -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
     printf '%s\n' "$phase" >"$OPENCLAW_PHASE_FILE"
   fi
@@ -16,7 +16,7 @@ on_exit() {
 trap on_exit EXIT
 
 stage="${1:-}"
-case "$stage" in inventory | publish-inventory | archive | publish-archive | verify | prepare-restore | resume-restore | network-preflight) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
+case "$stage" in inventory | publish-inventory | archive | publish-archive | verify | prepare-restore | resume-restore | network-preflight | publish-discord-cache | transfer-discord-cache) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
 case "$stage" in
   network-preflight)
@@ -42,11 +42,20 @@ case "$stage" in
       (.priorSourceSha | test("^[0-9a-f]{40}$"))
     ' "$OPENCLAW_RESUME_PROVENANCE" >/dev/null || exit 2
     ;;
+  publish-discord-cache)
+    [[ -z "${BASELINE_REF:-}" && -z "${ARCHIVE_REF:-}" && -z "${CACHE_REF:-}" ]] || exit 2
+    ;;
+  transfer-discord-cache)
+    [[ "${CACHE_REF:-}" =~ ^[0-9a-f]{40}/[1-9][0-9]*$ &&
+       -z "${BASELINE_REF:-}" && -z "${ARCHIVE_REF:-}" ]] || exit 2
+    ;;
 esac
 
 if [[ "$stage" == network-preflight ]]; then
   # The capability probe uses only read-only Kubernetes calls and a disposable process namespace.
+  phase=network-current-main
   bash scripts/ci/terragrunt-current-main.sh
+  phase=network-stopped-reader
   work="$(mktemp -d)"
   python3 -I scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/status.json"
   jq -e '.replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and
@@ -67,12 +76,14 @@ if [[ "$stage" == network-preflight ]]; then
     ([.status.containerStatuses[] | select(.name == "reader" and
       .imageID == ("ghcr.io/openclaw/openclaw@" + ($status[0].image | split("@") | last)))] | length) == 1
   ' "$work/pod.json" >/dev/null
+  phase=network-namespace
   proof="$(timeout 45s kubectl -n ai exec -i "$pod" -c reader -- sh -ec '
     test "$(id -u)" = 1000
     export PARENT_NETNS="$(readlink /proc/self/ns/net)" PARENT_UID="$(id -u)"
     exec unshare --user --map-current-user --net -- python3 -
   ' <scripts/ci/openclaw-legacy-netns-preflight.py)"
   [[ "$proof" == LEGACY_NETNS_CAPABILITY_OK ]] || exit 1
+  phase=network-postcheck
   python3 -I scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/after.json"
   jq -e --slurpfile before "$work/status.json" '
     .readerPodUid == $before[0].readerPodUid and .claims == $before[0].claims and
@@ -350,6 +361,24 @@ verify_restored_archive() {
 }
 
 case "$stage" in
+  publish-discord-cache)
+    phase=cache-build
+    python3 -I scripts/openclaw-discord-offline-cache.py \
+      --output-dir "$work/discord-cache" >/dev/null
+    refresh_status stopped
+    phase=cache-publication
+    [[ "$GITHUB_SHA" == "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" ]] || exit 1
+    python3 -I scripts/ci/openclaw-discord-cache-publication.py publish "$bucket" \
+      "${GITHUB_SHA}/${GITHUB_RUN_ID}" --directory "$work/discord-cache"
+    ;;
+  transfer-discord-cache)
+    refresh_status stopped
+    phase=cache-transfer
+    [[ "$GITHUB_SHA" == "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" ]] || exit 1
+    python3 -I scripts/ci/openclaw-discord-cache-publication.py transfer "$bucket" \
+      "$CACHE_REF" --reader-pod "$pod" --reader-uid "$pod_uid"
+    refresh_status stopped
+    ;;
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
     baseline_result="/private/legacy/baseline-${GITHUB_RUN_ID}.json"
@@ -599,5 +628,6 @@ esac
 case "$stage" in
   archive) echo 'Legacy archive worker started; protected publication remains pending' ;;
   prepare-restore|resume-restore) echo 'Private legacy restore copy prepared; gateway boot remains unverified' ;;
+  publish-discord-cache|transfer-discord-cache) echo 'Public Discord cache retained in private scratch; legacy gateway boot remains unverified' ;;
   *) echo 'Legacy operation completed; private receipt retained offsite' ;;
 esac

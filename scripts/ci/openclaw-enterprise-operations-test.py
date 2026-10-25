@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 UPLOAD = ROOT / 'scripts/ci/openclaw-enterprise-upload.py'
 DOWNLOAD = ROOT / 'scripts/ci/openclaw-enterprise-download.py'
+DISCORD_BUILDER = ROOT / 'scripts/openclaw-discord-offline-cache.py'
+DISCORD_PUBLICATION = ROOT / 'scripts/ci/openclaw-discord-cache-publication.py'
 ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
 JOURNAL_OPERATOR = ROOT / 'scripts/ci/openclaw-enterprise-journal-operator.py'
 BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
@@ -277,7 +279,7 @@ sys.stdout.buffer.write(chunk)
         guard = textwrap.dedent(dispatch.group(1))
         base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
                 'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
-                'BASELINE_REF': '', 'ARCHIVE_REF': '', 'PRIOR_RUN_ID': ''}
+                'BASELINE_REF': '', 'ARCHIVE_REF': '', 'CACHE_REF': '', 'PRIOR_RUN_ID': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
             ('none', 'bind-installation', '', True),
@@ -445,6 +447,10 @@ sys.stdout.buffer.write(chunk)
             WORKFLOW.read_text(),
         )
         self.assertEqual(download_pins, [hashlib.sha256(DOWNLOAD.read_bytes()).hexdigest()])
+        for path in (DISCORD_BUILDER, DISCORD_PUBLICATION):
+            pattern = rf"sha256sum --check --status <<<'([0-9a-f]{{64}})  {re.escape(path.relative_to(ROOT).as_posix())}'"
+            pins = re.findall(pattern, WORKFLOW.read_text())
+            self.assertEqual(pins, [hashlib.sha256(path.read_bytes()).hexdigest()])
 
     def test_inventory_worker_finishes_without_exec_stream_and_records_failure_privately(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -729,6 +735,9 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             ('prepare-restore', {}), ('prepare-restore', {'ARCHIVE_REF': '../secret'}),
             ('network-preflight', {'BASELINE_REF': 'a' * 40 + '/123'}),
             ('network-preflight', {'ARCHIVE_REF': 'a' * 40 + '/123'}),
+            ('publish-discord-cache', {'CACHE_REF': 'a' * 40 + '/123'}),
+            ('transfer-discord-cache', {}),
+            ('transfer-discord-cache', {'CACHE_REF': '../private'}),
         ):
             with self.subTest(stage=stage, extra=extra):
                 result = subprocess.run(['bash', str(SCRIPT), stage], cwd=ROOT,
@@ -760,7 +769,9 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             self.assertEqual(result.returncode, 2)
             self.assertFalse(phase.exists())
             workflow = WORKFLOW.read_text()
-            self.assertIn('preflight|baseline|baseline-s3-read|baseline-mounted-compare|'
+            self.assertIn('preflight|network-access|network-source|network-current-main|'
+                          'network-stopped-reader|network-namespace|network-postcheck|'
+                          'baseline|baseline-s3-read|baseline-mounted-compare|'
                           'baseline-source-status|publication|publication-lookup|'
                           'publication-lookup-denied|publication-lookup-failed|'
                           'publication-lookup-response|publication-archive-result|'
@@ -776,7 +787,7 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
                          'verification-archive-download', 'verification-receipt-download'):
                 for category in ('source-range', 'reader-transfer', 'finalize'):
                     self.assertIn(f'|{base}-{category}|', workflow)
-            self.assertIn('|verification-restore)', workflow)
+            self.assertIn('|verification-restore|cache-build|cache-publication|cache-transfer)', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
@@ -812,6 +823,68 @@ false
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(phase.read_text(), 'preflight\n')
+
+    def test_network_preflight_phases_mask_private_runner_output(self):
+        source = SCRIPT.read_text()
+        block = source.split('if [[ "$stage" == network-preflight ]]; then\n', 1)[1].split(
+            '\nfi\n', 1)[0]
+        boundaries = (
+            ('network-current-main', 'bash scripts/ci/terragrunt-current-main.sh'),
+            ('network-stopped-reader', 'python3 -I scripts/openclaw-retirement-status.py'),
+            ('network-namespace', 'proof="$(timeout 45s kubectl'),
+            ('network-postcheck', 'python3 -I scripts/openclaw-retirement-status.py'),
+        )
+        for phase, command in boundaries:
+            with self.subTest(phase=phase):
+                start = block.index('phase=' + phase)
+                self.assertIn(command, block[start:])
+        self.assertLess(block.index('phase=network-current-main'),
+                        block.index('phase=network-stopped-reader'))
+        self.assertLess(block.index('phase=network-stopped-reader'),
+                        block.index('phase=network-namespace'))
+        self.assertLess(block.index('phase=network-namespace'),
+                        block.index('phase=network-postcheck'))
+
+        workflow = WORKFLOW.read_text()
+        run = textwrap.dedent(workflow.split('      - name: Run Legacy Stage\n', 1)[1]
+                              .split('\n  enterprise:\n', 1)[0]
+                              .split('        run: |\n', 1)[1])
+        self.assertLess(run.index("printf '%s\\n' network-access"),
+                        run.index('bash scripts/ci/install-kubeconfig.sh'))
+        self.assertLess(run.index("printf '%s\\n' network-source"),
+                        run.index("sha256sum --check --status"))
+
+        with tempfile.TemporaryDirectory() as directory:
+            fake_nix = Path(directory) / 'nix'
+            fake_nix.write_text('''#!/bin/sh
+cat >/dev/null
+printf '%s\\n' PRIVATE_CLUSTER_DETAIL >&2
+printf '%s\\n' "$TEST_PHASE" >"$OPENCLAW_PHASE_FILE"
+exit 1
+''')
+            fake_nix.chmod(0o755)
+            for phase in ('network-access', 'network-source', 'network-current-main',
+                          'network-stopped-reader', 'network-namespace', 'network-postcheck',
+                          'network-namespace\nPRIVATE_CLUSTER_DETAIL'):
+                with self.subTest(phase=phase):
+                    result = subprocess.run(['bash', '-c', run], cwd=ROOT,
+                                            env={**os.environ, 'PATH': directory + os.pathsep +
+                                                 os.environ['PATH'], 'TMPDIR': directory,
+                                                 'RUNNER_TEMP': directory,
+                                                 'RUN_STAGE': 'network-preflight',
+                                                 'TEST_PHASE': phase,
+                                                 'OPENCLAW_RESUME_PROVENANCE': directory +
+                                                 '/absent'},
+                                            capture_output=True, text=True, timeout=5,
+                                            check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertNotIn('PRIVATE_CLUSTER_DETAIL', result.stdout + result.stderr)
+                    expected = phase if '\n' not in phase else None
+                    message = (f'Legacy operation failed in {expected}; '
+                               if expected else 'Legacy operation failed; ')
+                    self.assertIn(message + 'private cluster and archive diagnostics withheld.',
+                                  result.stdout)
+                    self.assertEqual(list(Path(directory).glob('tmp.*')), [])
 
     def test_versioned_restore_maps_only_fixed_public_failure_categories(self):
         source = SCRIPT.read_text()
@@ -1013,7 +1086,7 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore, network-preflight]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore, network-preflight, publish-discord-cache, transfer-discord-cache]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',

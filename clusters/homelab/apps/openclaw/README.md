@@ -188,8 +188,10 @@ checks the stopped writer and reader identity, starts a disposable process
 namespace with only loopback, rejects routable interfaces and routes, and
 requires direct IPv4/IPv6 egress probes to return `ENETUNREACH` (an unsupported
 IPv6 address family is accepted only when the IPv4 probes and route checks pass).
-It does not copy
-state, start the old gateway, create a Kubernetes object, or prove that a later
+Failures expose only a fixed stage category: access, source integrity, current
+main, stopped reader, namespace proof, or post-check. Private diagnostics stay
+on the protected runner. It does not copy state, start the old gateway, create a
+Kubernetes object, or prove that a later
 rehearsal Pod has the same seccomp and namespace behavior. A failed stage leaves
 T014 blocked; a successful stage is capability evidence only. The eventual
 isolated boot must repeat these checks in the same namespace that runs the
@@ -231,6 +233,52 @@ but it still needs a proven container host, space for separate restored copies,
 the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run.
 Without evidence of the former writable overlay, do not claim exact compatible
 recovery from the image baseline alone.
+
+The 2026.9.5 image does not contain the matching external Discord package;
+the retained install is 2026.5.22. The
+[offline cache builder](../../../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image digest and the npm tarball integrity, installs the exact
+package in a disposable state, then tests a fresh state with `--network none`
+using only an archive round-trip of npm's content cache. The warm home and state
+are removed from the Docker bind mount before that test. The fresh pinned CLI
+creates its own SQLite install record and must report the expected global npm
+origin, spec and version. It also requires the online and offline npm project
+lockfiles to agree, except for npm's generated project-root name. Package paths,
+versions, integrity hashes, dependency edges and other metadata remain exact.
+Its output is a private-transfer contract:
+`npm-cache.tar`, `dependency-lock.json`, and `manifest.json` with both SHA-256
+hashes. It contains no
+retained OpenClaw state, credentials, or install records. The
+[CI check](../../../../.github/workflows/openclaw-discord-offline-cache.yml)
+builds and tests but discards that output. After its pinned-image offline proof
+passes on protected `main`, the `publish-discord-cache` stage of the
+[protected operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
+rebuilds the public package closure and stores all three files under a fresh
+`openclaw-enterprise/legacy-discord-cache/<SOURCE_SHA>/<RUN_ID>/` prefix in the
+versioned KMS backup bucket. It verifies exact downloaded object versions and
+writes `final.json` last. Do not reuse a partial prefix. `transfer-discord-cache`
+accepts that exact SHA/run ID as `cache_ref`, checks the final receipt, each
+version, manifest, lock and tar safety, then copies exact versions into new
+owner-only `/archive/private/discord-cache-<TRANSFER_RUN_ID>` scratch through
+bounded reader slices. It writes `completed.json` only after all copied hashes
+match. Both stages require the stopped legacy writer and unchanged reader/PVC
+identity. They never mount or edit the retained source claims. Run each stage
+from a fresh exact current `main` SHA; keep private receipts out of Git and
+public CI logs. A successful transfer does not prove a no-egress old-image
+boot, real turn, or scheduled job, so T014 remains open.
+
+```sh
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-discord-cache
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=transfer-discord-cache \
+  -f cache_ref=<PUBLICATION_SHA>/<PUBLICATION_RUN_ID>
+```
+
+The first run must finish successfully before transfer. A failed or partial run
+keeps its unique prefix or scratch directory for private diagnosis; retry with
+a new workflow run after fixing the cause. Neither stage should be dispatched
+until the pinned offline cache check and protected review have passed.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
