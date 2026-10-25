@@ -55,13 +55,9 @@ controllers:
               export N8N_ENCRYPTION_KEY="$N8N_BOOTSTRAP_ENCRYPTION_KEY"
             fi
 
-            # The credential is deliberately blank. CREDENTIALS_OVERWRITE_DATA in
-            # the application container supplies the dedicated LiteLLM key and URL.
-            printf '%s\n' '[{"id":"litellm-managed","name":"LiteLLM Gateway","type":"openAiApi","data":{}}]' \
-              >/tmp/litellm-credential.json
-            n8n import:credentials --input=/tmp/litellm-credential.json
-
             umask 077
+            trap 'rm -f /tmp/litellm-credential.json /dev/shm/litellm-existing.json /tmp/litellm-export.log' 0
+            credential_checked=false
             workflow_ids="$(n8n list:workflow --onlyId)"
             for workflow_id in s1JVSbnvnmHMCbty xaUDsbylSwaveMQ5 Wc0AMPBPqBegSey5; do
             if ! printf '%s\n' "$workflow_ids" | grep -Fxq "$workflow_id"; then
@@ -143,6 +139,45 @@ controllers:
               true) ;;
               *) echo "Invalid AI workflow migration result for $workflow_id" >&2; exit 1 ;;
             esac
+
+            # Imports overwrite matching IDs; type-wide overwrites fill only blank data.
+            if [ "$credential_checked" = false ]; then
+              test -d /dev/shm && test -w /dev/shm
+              rm -f /dev/shm/litellm-existing.json /tmp/litellm-export.log
+              if n8n export:credentials --id=litellm-managed --decrypted \
+                  --output=/dev/shm/litellm-existing.json \
+                  >/tmp/litellm-export.log 2>&1; then
+                credential_export_ok=true
+              else
+                credential_export_ok=false
+              fi
+              if [ "$credential_export_ok" = true ] && [ -s /dev/shm/litellm-existing.json ]; then
+                node - <<'CREDENTIAL'
+            const fs = require('node:fs');
+            const credentials = JSON.parse(fs.readFileSync('/dev/shm/litellm-existing.json', 'utf8'));
+            if (!Array.isArray(credentials) || credentials.length !== 1 ||
+                credentials[0]?.id !== 'litellm-managed' ||
+                credentials[0]?.name !== 'LiteLLM Gateway' ||
+                credentials[0]?.type !== 'openAiApi' ||
+                !credentials[0]?.data || typeof credentials[0].data !== 'object' ||
+                Array.isArray(credentials[0].data) ||
+                Object.keys(credentials[0].data).length !== 0) {
+              throw new Error('existing LiteLLM credential is not the blank migration credential');
+            }
+            CREDENTIAL
+              elif [ ! -e /dev/shm/litellm-existing.json ] && \
+                  grep -Fq 'No credentials found with specified filters' /tmp/litellm-export.log; then
+                # CREDENTIALS_OVERWRITE_DATA in the application supplies the key and URL.
+                printf '%s\n' '[{"id":"litellm-managed","name":"LiteLLM Gateway","type":"openAiApi","data":{}}]' \
+                  >/tmp/litellm-credential.json
+                n8n import:credentials --input=/tmp/litellm-credential.json
+              else
+                echo 'Cannot determine LiteLLM credential state; refusing workflow migration' >&2
+                exit 1
+              fi
+              credential_checked=true
+              rm -f /dev/shm/litellm-existing.json /tmp/litellm-export.log /tmp/litellm-credential.json
+            fi
 
             n8n import:workflow --input=/tmp/ai-workflow.json
             if [ "$(cat /tmp/ai-workflow-active)" = true ]; then

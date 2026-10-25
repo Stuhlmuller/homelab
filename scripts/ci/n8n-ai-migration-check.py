@@ -127,6 +127,7 @@ with tempfile.TemporaryDirectory() as directory:
     exports = root / "exports"
     exports.mkdir()
     calls = root / "calls"
+    credential_store = root / "credential-store.json"
     password = root / "postgres-password"
     password.write_text("fixture")
     edited = copy.deepcopy(originals["xaUDsbylSwaveMQ5"])
@@ -135,11 +136,28 @@ with tempfile.TemporaryDirectory() as directory:
     (exports / "xaUDsbylSwaveMQ5.json").write_text(json.dumps(edited))
     fixture_command = command.replace("/home/node/.n8n/config", str(root / "config")) \
         .replace("/tmp/ai-", str(root / "ai-")) \
-        .replace("/tmp/litellm-", str(root / "litellm-"))
+        .replace("/tmp/litellm-", str(root / "litellm-")) \
+        .replace("/dev/shm", str(root))
     n8n_stub = '''
 n8n() {
   case "$1" in
-    import:credentials) echo credentials >> "$CALLS" ;;
+    export:credentials)
+      echo credential-export >> "$CALLS"
+      [ "$2" = --id=litellm-managed ] && [ "$3" = --decrypted ] || return 99
+      [ "${CREDENTIAL_EXPORT_FAIL:-}" != true ] || {
+        echo 'database unavailable' >&2
+        return 33
+      }
+      if [ -f "$CREDENTIAL_STORE" ]; then
+        cp "$CREDENTIAL_STORE" "${4#--output=}"
+      else
+        echo 'No credentials found with specified filters' >&2
+        return 1
+      fi
+      ;;
+    import:credentials)
+      echo credentials >> "$CALLS"
+      cp "${2#--input=}" "$CREDENTIAL_STORE" ;;
     list:workflow)
       [ "$2" = --onlyId ] || return 99
       [ "${LIST_FAIL:-}" != true ] || return 28
@@ -157,7 +175,8 @@ n8n() {
       ;;
     import:workflow)
       [ "${IMPORT_FAIL:-}" != true ] || return 29
-      echo import >> "$CALLS" ;;
+      echo import >> "$CALLS"
+      cp "${2#--input=}" "$EXPORT_DIR/$workflow_id.json" ;;
     publish:workflow) echo "publish:${2#--id=}" >> "$CALLS" ;;
     *) return 99 ;;
   esac
@@ -165,70 +184,113 @@ n8n() {
 '''
     environment = {**os.environ, "DB_POSTGRESDB_PASSWORD_FILE": str(password),
                    "N8N_BOOTSTRAP_ENCRYPTION_KEY": "fixture", "EXPORT_DIR": str(exports),
-                   "CALLS": str(calls)}
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env=environment, capture_output=True, text=True, timeout=20)
+                   "CREDENTIAL_STORE": str(credential_store), "CALLS": str(calls)}
+
+    def run_job(extra_env=None, shell_command=fixture_command):
+        calls.unlink(missing_ok=True)
+        result = subprocess.run(["/bin/sh", "-ec", n8n_stub + shell_command],
+                                env={**environment, **(extra_env or {})},
+                                capture_output=True, text=True, timeout=20)
+        observed = calls.read_text().splitlines() if calls.exists() else []
+        assert not (root / "litellm-existing.json").exists()
+        assert not (root / "litellm-export.log").exists()
+        assert not (root / "litellm-credential.json").exists()
+        return result, observed
+
+    result, observed = run_job()
     assert result.returncode == 0, result.stderr
-    assert calls.read_text().splitlines() == ["credentials", "import", "publish:s1JVSbnvnmHMCbty"]
+    assert observed == ["credential-export", "credentials", "import", "publish:s1JVSbnvnmHMCbty"]
     assert "Skipping AI workflow migration for xaUDsbylSwaveMQ5" in result.stderr
     assert "Skipping AI workflow migration for Wc0AMPBPqBegSey5" in result.stderr
+    assert json.loads(credential_store.read_text()) == [{
+        "id": "litellm-managed", "name": "LiteLLM Gateway", "type": "openAiApi", "data": {},
+    }]
+
+    # A Job retry after import must not rewrite either already-migrated state.
+    credential_before = credential_store.read_bytes()
+    result, observed = run_job()
+    assert result.returncode == 0, result.stderr
+    assert observed == []
+    assert credential_store.read_bytes() == credential_before
+
+    # A needed migration reuses the existing blank credential without import.
+    credential_before = credential_store.read_bytes()
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    result, observed = run_job()
+    assert result.returncode == 0, result.stderr
+    assert observed == ["credential-export", "import", "publish:s1JVSbnvnmHMCbty"]
+    assert credential_store.read_bytes() == credential_before
+
+    # Type-wide overwrites fill only empty fields: reject stored custom data.
+    credential_store.write_text(json.dumps([{
+        "id": "litellm-managed", "name": "LiteLLM Gateway", "type": "openAiApi",
+        "data": {"apiKey": "user-owned-fixture"},
+    }]))
+    credential_before = credential_store.read_bytes()
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    result, observed = run_job()
+    assert result.returncode != 0
+    assert observed == ["credential-export"]
+    assert credential_store.read_bytes() == credential_before
 
     for export in exports.iterdir():
         export.unlink()
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env=environment, capture_output=True, text=True, timeout=20)
+    result, observed = run_job()
     assert result.returncode == 0, result.stderr
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == []
+    assert credential_store.read_bytes() == credential_before
 
     (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env={**environment, "EXPORT_FAIL_ID": "s1JVSbnvnmHMCbty"},
-                            capture_output=True, text=True, timeout=20)
+    result, observed = run_job({"EXPORT_FAIL_ID": "s1JVSbnvnmHMCbty"})
     assert result.returncode != 0
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == []
+    assert credential_store.read_bytes() == credential_before
 
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env={**environment, "LIST_FAIL": "true"},
-                            capture_output=True, text=True, timeout=20)
+    result, observed = run_job({"LIST_FAIL": "true"})
     assert result.returncode != 0
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == []
+    assert credential_store.read_bytes() == credential_before
 
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env={**environment, "IMPORT_FAIL": "true"},
-                            capture_output=True, text=True, timeout=20)
+    result, observed = run_job({"CREDENTIAL_EXPORT_FAIL": "true"})
     assert result.returncode != 0
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == ["credential-export"]
+    assert credential_store.read_bytes() == credential_before
+
+    result, observed = run_job({"IMPORT_FAIL": "true"})
+    assert result.returncode != 0
+    assert observed == ["credential-export"]
+    assert credential_store.read_bytes() == credential_before
+
+    credential_store.write_text(json.dumps([{
+        "id": "litellm-managed", "name": "LiteLLM Gateway", "type": "otherCredential",
+        "data": {},
+    }]))
+    credential_before = credential_store.read_bytes()
+    result, observed = run_job()
+    assert result.returncode != 0
+    assert observed == ["credential-export"]
+    assert credential_store.read_bytes() == credential_before
 
     (exports / "s1JVSbnvnmHMCbty.json").write_text("{invalid-json")
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env=environment, capture_output=True, text=True, timeout=20)
+    result, observed = run_job()
     assert result.returncode != 0
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == []
 
     (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
     write_failure_command = fixture_command.replace(
         "fs.writeFileSync(path, JSON.stringify(workflows));",
         f"fs.writeFileSync({json.dumps(str(root / 'missing-parent' / 'workflow.json'))}, JSON.stringify(workflows));")
     assert write_failure_command != fixture_command
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + write_failure_command],
-                            env=environment, capture_output=True, text=True, timeout=20)
+    result, observed = run_job(shell_command=write_failure_command)
     assert result.returncode != 0
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == []
 
     removed = copy.deepcopy(originals["s1JVSbnvnmHMCbty"])
     removed[0]["nodes"] = [node for node in removed[0]["nodes"]
                            if node["id"] != "5c52f616-3b9e-4483-89e3-effffc393750"]
     (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(removed))
-    calls.unlink()
-    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
-                            env=environment, capture_output=True, text=True, timeout=20)
+    result, observed = run_job()
     assert result.returncode == 0, result.stderr
-    assert calls.read_text().splitlines() == ["credentials"]
+    assert observed == []
     assert "Skipping AI workflow migration for s1JVSbnvnmHMCbty" in result.stderr
-print("n8n staged AI migration: startup independence, three targets, inactive preservation, idempotence and refusal guards passed")
+print("n8n staged AI migration: startup independence, credential preservation, idempotence and refusal guards passed")

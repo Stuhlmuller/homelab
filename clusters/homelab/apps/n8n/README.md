@@ -55,9 +55,16 @@ The [database notes](../n8n-postgres/README.md#backup-and-restore) show a
 `pg_dump` command but do not yet establish this paired backup receipt. The
 staged Job uses exact workflow/node IDs and previous settings as guards; it
 skips missing or edited workflows, fails on list/export/parse/import errors,
-and republishes only previously active workflows. Credentials and workflow
-exports retain n8n's required one-element JSON arrays. The key never enters
-workflow JSON. Run `nix develop --command python3 -I
+and republishes only previously active workflows. It inspects the LiteLLM
+credential only when a workflow needs migration. A matching existing credential
+with blank stored data is preserved; an absent one is created with blank data.
+The decrypted inspection uses container memory (`/dev/shm`) and removes its
+temporary file without logging credential values. Inspection failures,
+unexpected metadata or nonblank stored data stop the Job before workflow
+import. This avoids n8n's same-ID credential import overwrite on retries or
+restored DBs; type-wide credential overwrites fill only blank fields.
+Credentials and workflow exports retain n8n's required one-element JSON arrays.
+The key never enters workflow JSON. Run `nix develop --command python3 -I
 scripts/ci/n8n-ai-migration-check.py` to exercise these cases.
 
 When activated, Argo CD applies the Job at sync wave 1 after n8n is healthy and

@@ -279,9 +279,14 @@ activating the Job.
 On activation, the Job runs after n8n becomes healthy, with same-node affinity
 for the existing `ReadWriteOnce` config PVC. Its failure stays visible without
 blocking app startup. The persisted config owns the encryption key on existing
-PVCs. The Job skips only missing or edited exact workflow/node targets; failed
-ID listing, export, parse, import or unexpected node shape fails the Job. It
-republishes only previously active workflows. If an active workflow changes,
+PVCs. The Job skips only missing or edited exact workflow/node targets. It
+inspects the LiteLLM credential only when a workflow needs migration, preserves
+a matching existing credential only if its stored data is blank, and imports a
+blank one only if absent. The decrypted inspection uses container memory and
+does not log values; failed inspection, unexpected metadata or nonblank data
+stops before workflow import. Failed ID listing, export, parse, import or
+unexpected node shape also fails the Job. It republishes only previously active
+workflows. If an active workflow changes,
 a separate reviewed GitOps Deployment restart is needed before the published
 version is live. The synthetic migration check covers fresh and edited DB
 states, malformed exports, failures and the exact node transformation.
