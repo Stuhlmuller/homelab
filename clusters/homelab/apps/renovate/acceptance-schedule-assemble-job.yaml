@@ -1,0 +1,78 @@
+# Stage outside Kustomize. Set the reviewed window start and add this Job with
+# its deny-all policy only after all acceptance writers are suspended and drained.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-acceptance-schedule-assemble
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate-acceptance-schedule-assemble
+    app.kubernetes.io/component: acceptance-schedule-assemble
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  activeDeadlineSeconds: 900
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate-acceptance-schedule-assemble
+        app.kubernetes.io/component: acceptance-schedule-assemble
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: renovate
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 0
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: assemble
+          image: docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
+          imagePullPolicy: IfNotPresent
+          command: [python3, -I, -B, /usr/local/bin/renovate-acceptance-schedule-assemble.py]
+          args:
+            - --source
+            - /schedule
+            - --window-start
+            - REPLACE_WITH_REVIEWED_UTC_HOUR
+            - --output
+            - /assembled/seven-day
+          resources:
+            requests: {cpu: 100m, memory: 128Mi, ephemeral-storage: 128Mi}
+            limits: {cpu: "1", memory: 1Gi, ephemeral-storage: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: source
+              mountPath: /usr/local/bin/renovate-acceptance-schedule.py
+              subPath: renovate-acceptance-schedule.py
+              readOnly: true
+            - name: source
+              mountPath: /usr/local/bin/renovate-acceptance-schedule-assemble.py
+              subPath: renovate-acceptance-schedule-assemble.py
+              readOnly: true
+            - name: ledger
+              mountPath: /schedule
+              subPath: private/schedule
+              readOnly: true
+            - name: ledger
+              mountPath: /assembled
+              subPath: private/schedule/assembled
+      volumes:
+        - name: source
+          configMap:
+            name: renovate-acceptance-observer
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: renovate-acceptance-ledger

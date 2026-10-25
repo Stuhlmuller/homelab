@@ -181,6 +181,7 @@ async function collect(request, now = () => new Date().toISOString(), write = tr
     checkedDirectory(outputRoot);
     checkedDirectory(path.join(outputRoot, 'logs'));
     checkedDirectory(path.join(outputRoot, 'snapshots'));
+    checkedDirectory(path.join(outputRoot, 'assembled'));
   }
   for (const pod of selectedPods) {
     const phase = pod.status?.phase;
