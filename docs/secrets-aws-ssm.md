@@ -699,7 +699,8 @@ See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
 The temporary acceptance observer uses a separate, read-only GitHub App. Its
 two Standard SecureString placeholders must first be created by a reviewed
-apply of `IaC/live/aws-ssm-parameters`. From the exact reviewed, clean remote
+apply of `IaC/homelab/us-west-2/shared/aws-ssm-parameters`. From the exact
+reviewed, clean remote
 `main`, use an existing operator SSO profile and the repo-owned manifest flow:
 
 ```sh

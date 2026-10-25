@@ -778,6 +778,7 @@ authorization/handoff before deleting the dedicated acceptance App in GitHub
 owner Developer settings; verify its recorded App ID is absent from the
 installation list. Remove only the two
 `/homelab/renovate/acceptance/github-app/` SSM names through a reviewed
-`IaC/live/aws-ssm-parameters` saved-plan PR and verify both absent. Keep the
+`IaC/homelab/us-west-2/shared/aws-ssm-parameters` saved-plan PR and
+verify both absent. Keep the
 production `renovate` App and Secret intact.
 A PVC reset before the aggregate review destroys acceptance evidence.
