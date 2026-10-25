@@ -24,7 +24,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [publication `9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification on `90d3d413`, run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Passed T013. Protected publication uploaded the versioned archive and receipt, restored both objects and wrote a private final receipt. The separate protected `verify` run succeeded on 2026-10-23 09:52 UTC after retrieving the exact published versions and independently restoring the full local/NAS trees, both SQLite databases, NAS workspace/configuration, and historical backup directories. Local source and partial attempts remain retained. |
 | Legacy compatible recovery rehearsal | [read-only image/mount review on `90f7338`](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c); [failed transfer attempts `39942297939`, `39951803625`, `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305); [cancelled protected copy run `39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652); [successful protected resume on main `efb6a3a`, run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926) | — | Partial. The first three attempts failed before a verified copy. Run `39988927652` downloaded the pinned versioned archive and receipt and started a detached restore worker, then the six-hour protected job was cancelled. Its source-bound `resume-restore` run passed exact-main, prior-job provenance and the protected legacy stage at 2026-10-24 02:04 UTC. The stage required a stable worker success marker, exact cached archive/receipt size and SHA-256, a completed restored-database report, source identity and zero stopped-production writers; it prepared a separate private NAS scratch recovery tree. Original claims and credentials remain retained; the reader mounts originals read-only. T014 remains open: the old image has not booted in isolation, a UID 1000 local copy and enforced offline network boundary have not been proven, six external `/app` links may depend on unretained writable-overlay contents, and three dangling external targets remain unclassified. |
-| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-25 12:23 UTC recheck below | — | Blocked. Acer has 1,162 MiB unreserved: 1,142 MiB short of the 2,304 MiB database-plus-Embedded-Gateway floor, or 2,934 MiB short of the initial 4 GiB full reservation, before transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. One-service cross-node splits fail observed-memory or request-margin checks. Even a three-service retirement candidate does not admit the isolated canary at declared limits. T022, T027 and T035 remain pending. |
+| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-25 12:56 UTC recheck below | — | Blocked. Acer has 1,162 MiB unreserved: 1,142 MiB short of the 2,304 MiB database-plus-Embedded-Gateway floor, or 2,934 MiB short of the initial 4 GiB full reservation, before transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. One-service cross-node splits fail observed-memory or request-margin checks. A three-service retirement candidate still lacks measured canary peak, restart and isolation proof. T022, T027 and T035 remain pending. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -561,15 +561,19 @@ after the screened replacement; moving Cloudflared and Harbor exporter to
 `zimaboard-1` adds 74 MiB sampled use there, leaving 647 MiB. Neither
 allocation proves service continuity or safe restart headroom.
 
-The canary is independently blocked. On `zimaboard-2`, the four ordinary Pods
-used 173 + 31 + 43 + 48 = 295 MiB at 12:23 UTC. Vacating them leaves about
-671 MiB of observed host/system use. The [declared enforcer](../../clusters/homelab/platform/network-policy/daemonset.yaml)
-limit is 512 MiB, and three simultaneous [fixture](../../clusters/homelab/platform/network-policy/canary/fixtures.yaml)
-limits total 192 MiB; 671 + 512 + 192 =
-1,375 MiB, 67 MiB above the node's 1,308 MiB allocatable memory. The
-250 + 3 × 32 MiB requests fit, but their limits do not provide a conservative
-canary bound. No service pause alone establishes enforcer peaks, image-pull
-space, cleanup overlap or isolation; keep T022 and T027 blocked.
+The canary is independently blocked. At 2026-10-25 12:56 UTC, the kubelet
+Summary API reported a 955 MiB node working set on `zimaboard-2`; its four
+ordinary Pods used 297 MiB. The Node API reports 1,792 MiB physical capacity
+and 1,308 MiB allocatable. If those Pods leave and the [enforcer](../../clusters/homelab/platform/network-policy/daemonset.yaml)
+and three simultaneous [fixtures](../../clusters/homelab/platform/network-policy/canary/fixtures.yaml)
+reach their 512 + 192 MiB limits, projected node use is 955 - 297 + 704 =
+1,362 MiB, about 430 MiB below physical capacity. The earlier comparison to
+1,308 MiB was too strict: [Node Allocatable](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/)
+is the Pod budget, while the node working set includes host use. Separately,
+534 MiB system Pod requests plus 250 + 3 × 32 MiB new requests leave 428 MiB
+under allocatable. These snapshots do not measure enforcer peaks, host growth,
+restart overlap, image-pull space or cleanup. No reviewed placement has vacated
+the node; keep T022 and T027 blocked.
 
 Suspension would interrupt Dispatcharr's IPTV/EPG export and Langfuse's
 telemetry UI/ingestion; [LiteLLM](../../clusters/homelab/apps/litellm/README.md)
