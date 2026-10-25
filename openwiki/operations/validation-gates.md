@@ -1560,6 +1560,13 @@ changes may skip AzureAD. Restore the environment secrets through the
 [Entra provider runbook](../../docs/entra-terraform-provider.md), then rerun
 the PR plan and verify the protected gate before merging.
 
+The staged `Github-TF-Plan` role has an OpenTofu boundary fixture for its
+exact OIDC subject, state-object read scope, and denied AWS resource writes.
+The `aws-plan-role-configure-test.py` fixture checks that its publisher accepts
+only the expected role ARN and does not write by default. These source checks
+do not establish that the role, reviewer gate, or separate plan credential is
+live. The current PR plan still uses `Github-TF-State`.
+
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`, `IaC/homelab/us-west-2/apps/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
 `IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching

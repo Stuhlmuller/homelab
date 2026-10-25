@@ -131,6 +131,15 @@ read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
 applies the catalog nor issues a plan token; the PR plan still reads its
 environment secret.
 
+The operator catalog also stages `Github-TF-Plan`, trusted only by
+`homelab-plan`. Keep the current `Github-TF-State` role and shared Octelium
+token in the plan workflow until the `homelab-plan` reviewer gate is live.
+Then review and apply the full operator saved plan, accepting only the new role
+and inline policy; preview and execute `scripts/aws-plan-role-configure.sh` to
+publish its exact ARN. Publish and verify a separate Octelium plan token before
+a later workflow cutover PR. The staged source has not created the role or
+changed live credentials; follow the [operator rollout](../../docs/operator-infrastructure.md#dedicated-pull-request-plan-role).
+
 The separate Octelium Private Kubernetes Apply dispatch verifies the selected
 `main` commit before the protected job. Its fixed helper rechecks current `main`
 immediately before each of two catalog writes; a failed lookup or newer commit

@@ -652,6 +652,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [Continuous Improvement](../operations/continuous-improvement.md).
+- A separate `Github-TF-Plan` role is staged in the operator unit for the
+  `Stuhlmuller/homelab:homelab-plan` OIDC subject. It can list state object
+  names and read contents only for the four PR-planned families, with no AWS
+  resource-write grant. AzureAD state contains SSO credentials, so the
+  `homelab-plan` reviewer gate must be active before merge or apply. The plan
+  workflow still uses `Github-TF-State` until a separate credential cutover;
+  see the [operator rollout](../../docs/operator-infrastructure.md#dedicated-pull-request-plan-role).
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,
