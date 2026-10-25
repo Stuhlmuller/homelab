@@ -175,7 +175,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "renovate"):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -582,6 +582,23 @@ else:
                     "apps.plan", "apps.policy", "apps.apply",
                 ])
 
+    def test_renovate_target_checks_ssm_then_only_its_app(self):
+        result, events = self.run_apply(target="renovate", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, [
+            "generate", "ssm.init", "ssm.state",
+            *(["ssm.lookup", "ssm.import"] * 4),
+            "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
+            "apps.plan", "apps.policy", "apps.apply",
+        ])
+
+    def test_renovate_target_stops_before_app_when_ssm_policy_fails(self):
+        result, events = self.run_apply(target="renovate", fail="ssm.policy")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events[-1], "ssm.policy")
+        self.assertNotIn("ssm.apply", events)
+        self.assertNotIn("apps.plan", events)
+
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
         for target, access_app in (("fleet", "traefik"), ("mastodon", "octelium-public")):
             app_names = [*APPS, *([access_app] if access_app else [])]
@@ -667,7 +684,7 @@ else:
         result, events = self.run_apply(
             target="", existing_argocd_only="true", existing_only_noop=True,
             live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !nofx/argocd | !renovate/argocd | !traefik/argocd")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events.count("apps.live"), 1)
         self.assertIn("apps.apply", events)
@@ -676,7 +693,7 @@ else:
     def test_existing_only_rejects_create_plan(self):
         result, events = self.run_apply(
             target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !nofx/argocd | !renovate/argocd | !traefik/argocd")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("would create an Application", result.stderr)
         self.assertNotIn("apps.apply", events)

@@ -4,6 +4,7 @@ umask 077
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(pwd)"
+# shellcheck disable=SC1091
 source "${script_dir}/terragrunt-filter-base.sh"
 
 cleanup_dirs=()
@@ -356,7 +357,7 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
-  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" || "$TERRAGRUNT_ARGOCD_APP" == "renovate" ]]; then
     plan_and_apply_ssm_prerequisites
   fi
   echo "::group::Targeted Argo CD Application registration apply"

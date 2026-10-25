@@ -212,6 +212,11 @@ checks remain fresh.
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
+- For Renovate acceptance, set `argocd_app=renovate` in the protected dispatch.
+  It first applies the shared SSM/IAM unit through its private Conftest-checked
+  saved plan, then only the Renovate Application. Review that shared plan for
+  unrelated changes before dispatch. This target does not advance the full-apply
+  checkpoint.
 - For a layout-only reconciliation, `existing_argocd_only=true` selects only
   Argo CD Applications already registered live. The saved-plan gate rejects
   any creation in that selection; new registrations still require their
