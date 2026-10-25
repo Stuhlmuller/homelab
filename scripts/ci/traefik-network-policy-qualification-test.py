@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline failure tests for private Traefik NetworkPolicy acceptance."""
 
+import copy
 import importlib.util
 import json
 import socket
@@ -38,6 +39,7 @@ class TraefikQualificationTests(unittest.TestCase):
                              {"matchLabels": {"app.kubernetes.io/name": "harbor-image-signing"}},
                              ["Ingress", "Egress"], egress=[
                                  {"to": [peer], "ports": [{"protocol": "TCP", "port": 8443}]}])
+        self.source_signer = copy.deepcopy(self.signer)
         self.destination = policy("traefik", "traefik",
                                   {"matchLabels": {"app.kubernetes.io/name": "traefik"}},
                                   ["Ingress"], ingress=[
@@ -85,12 +87,21 @@ class TraefikQualificationTests(unittest.TestCase):
                 return {"metadata": {}, "items": traefik_policies}
             raise AssertionError(args)
 
+        def source(*args):
+            return json.dumps(self.source_signer if args[-1].endswith("harbor/networkpolicy.yaml")
+                              else self.destination)
+
         with patch.object(CHECK, "kubernetes_json", side_effect=kube), \
-                patch.object(CHECK, "command", return_value=json.dumps(self.destination)):
+                patch.object(CHECK, "command", side_effect=source):
             return CHECK.inspect_policies(self.probes, self.traefik, self.harbor_namespace)
 
     def test_matching_signer_and_unrestricted_denied_egress(self):
         self.assertIn("traefik", self.inspect())
+
+    def test_additive_broad_signer_egress_blocks_acceptance(self):
+        self.signer["spec"]["egress"].append({})
+        with self.assertRaisesRegex(ValueError, "signer Egress policy differs"):
+            self.inspect()
 
     def test_denied_source_egress_policy_blocks_acceptance(self):
         source_block = policy("deny-source-egress", "harbor",
