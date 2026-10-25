@@ -476,6 +476,14 @@ their local config volumes bind them to that node. All 12 Jobs later reported
 Increasing deadlines or reducing requests would not create the missing
 placement. Free node capacity through reviewed placement or a chosen pause,
 then require fresh backups and an independent restore before media retirement.
+Moving Harbor Trivy's 512 MiB request from `zimaboard-0` to `zimaboard-1` is
+not admitted: that node had about 925 MiB observed room, and Trivy's seven-day
+working-set peak was 586 MiB, leaving about 339 MiB against the current
+snapshot before the proposed `#1584` moves or restart overlap. Its NFS volume
+is portable, but these separate observations do not prove safe co-peak margin.
+A reviewed temporary 1,024 MiB Nix builder pause would free enough request
+capacity for fresh backups without moving its 8 GiB ephemeral request onto
+`zimaboard-1`'s roughly 9 GiB free disk; no pause has been executed.
 Pausing Langfuse instead needs a complete PostgreSQL, ClickHouse, Valkey,
 object-store and recovery-material backup with independent restore; the
 current PostgreSQL-only checkpoint cannot authorize that pause.
