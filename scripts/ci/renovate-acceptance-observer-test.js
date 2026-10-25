@@ -468,6 +468,7 @@ test('global poll failure persists private failed observations and exits nonzero
     assert.equal(ledger.sample.every((item) => item.failures[0].status === 'global-error'), true);
     assert.equal(writes.length, 2);
     assert.equal(process.exitCode, 1);
+    assert.match(JSON.parse(logs.at(-1)).ledgerSha256, /^[0-9a-f]{64}$/);
     assert.equal(JSON.stringify(logs).includes('private failure'), false);
     assert.equal(JSON.stringify(logs).includes('@example/private'), false);
   } finally {

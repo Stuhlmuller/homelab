@@ -597,9 +597,33 @@ publishing acceptance.
 
 Start the seven-day clock only after the sample and baseline are verified.
 Keep the observer suspended if the inventory, a datasource, private-source
-access, or the pinned image's datasource API fails validation. After the
-aggregate report is reviewed, erase the private files with a reviewed GitOps
-cleanup Job and verify `/ledger/private` is empty. Next remove `Prune=false`
+access, or the pinned image's datasource API fails validation. After the window,
+suspend the observer, inventory, report, and proof writers through reviewed
+GitOps and verify no acceptance Job or Pod is pending or active. Run the final
+aggregate-only report mode against this frozen ledger through a reviewed
+read-only Job, then review its aggregate and private receipts. If no declared
+read-only report path exists, keep cleanup suspended until one is added.
+Compare the final report's `ledgerSha256` with the last observer poll digest.
+A mismatch means the report is stale: regenerate and review it before cleanup.
+The digest is safe to retain in the public activation change; never publish the
+ledger or its private files.
+
+`acceptance-ledger-cleanup-job.yaml` is deliberately suspended and outside
+`kustomization.yaml`. In a reviewed activation PR, replace
+`REPLACE_WITH_REVIEWED_LEDGER_SHA256` with that exact final 64-character digest,
+set `suspend: false`, and add the Job to Renovate's Kustomization. It mounts
+only the acceptance ledger PVC, has no Kubernetes token or App credential, and
+will refuse deletion if the reviewed hash, mount, ownership, private directory,
+or retry marker is wrong. It removes only `/ledger/private`, recreates it empty,
+and leaves a digest marker at `/ledger/.renovate-acceptance-cleanup-<digest>` so
+a reviewed retry can finish after an interruption. A failed guard leaves the
+ledger intact; investigate through a new reviewed change rather than altering
+the Pod or files directly.
+
+Verify the Job has `Complete=True` and its restricted log contains exactly the
+`private-ledger-empty` result; the Job checks the recreated directory is empty
+before logging success. Keep all acceptance writers suspended during this check.
+Next remove `Prune=false`
 from the PVC and PV and `Delete=false` from the PV through their respective
 GitOps Applications; verify the live annotations are gone. Remove the CronJob,
 script, init/cleanup Jobs, and PVC from Renovate first, then remove the PV and
@@ -608,7 +632,8 @@ claim and PV are gone.
 The retained local PV does not erase its hostPath on deletion. Use a separate
 reviewed exact-path storage cleanup on `acer` and verify
 `/var/lib/renovate-acceptance-ledger` has no retained files before closing
-T035.
+T035. This later hostPath cleanup also removes the Job's digest marker; the
+Job itself never touches the backing path directly.
 Remove the suspended report and proof CronJobs, one-shot Job manifests,
 inventory Job, and acceptance scripts through the same reviewed GitOps change.
 Prune the acceptance ExternalSecret and target `renovate-acceptance` Secret

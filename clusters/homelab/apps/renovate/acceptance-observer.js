@@ -415,13 +415,15 @@ function privateDirectory() {
 
 function saveLedger(ledger) {
   const temporary = `${ledgerPath}.${crypto.randomUUID()}.tmp`;
+  const bytes = `${JSON.stringify(ledger)}\n`;
   try {
-    fs.writeFileSync(temporary, `${JSON.stringify(ledger)}\n`,
+    fs.writeFileSync(temporary, bytes,
       { flag: 'wx', mode: 0o600, flush: true });
     fs.renameSync(temporary, ledgerPath);
   } finally {
     if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
   }
+  return digest(bytes);
 }
 
 async function readToken(permissions = { contents: 'read', metadata: 'read' }) {
@@ -556,8 +558,8 @@ async function poll(ledger) {
     process.stderr.write = stderr;
   }
   const counts = recordPoll(ledger, results, new Date().toISOString(), cycleStartedAt);
-  saveLedger(ledger);
-  console.log(JSON.stringify({ mode: 'poll', ...counts }));
+  const ledgerSha256 = saveLedger(ledger);
+  console.log(JSON.stringify({ mode: 'poll', ...counts, ledgerSha256 }));
   if (counts.failed) process.exitCode = 1;
 }
 
@@ -568,13 +570,15 @@ async function main() {
   const metadata = fs.lstatSync(ledgerPath);
   if (!metadata.isFile() || metadata.uid !== process.getuid() ||
       (metadata.mode & 0o077)) throw new Error('ledger-permissions');
-  const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+  const ledgerBytes = fs.readFileSync(ledgerPath);
+  const ledger = JSON.parse(ledgerBytes);
   verifyFrozenSample(ledger);
   if (mode === 'poll') {
     await poll(ledger);
   } else {
     const outcomes = readPrivateOutcomes();
-    console.log(JSON.stringify(aggregateReport(ledger, outcomes, verifyPrivateEvidence(outcomes))));
+    console.log(JSON.stringify({ ...aggregateReport(ledger, outcomes, verifyPrivateEvidence(outcomes)),
+      ledgerSha256: digest(ledgerBytes) }));
   }
 }
 
