@@ -16,7 +16,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DESTINATION = "harbor.stinkyboi.com/mirror/helm"
 MANIFEST = ROOT / "scripts/config/harbor-helm-charts.json"
+ISTIO_UPGRADE_MANIFEST = ROOT / "scripts/config/harbor-istio-1.28.10-charts.json"
 SOURCES = ROOT / "scripts/config/harbor-image-charts.json"
+ISTIO_UPGRADE_CHARTS = {"base", "cni", "gateway", "istiod", "ztunnel"}
+ISTIO_REPOSITORY = "https://istio-release.storage.googleapis.com/charts"
 
 
 def validate(manifest, sources):
@@ -55,6 +58,24 @@ def validate(manifest, sources):
                 raise ValueError("Argo CD Git chart lacks a Harbor package")
         elif (chart, version) not in seen:
             raise ValueError("Argo CD chart lacks a Harbor package")
+    return charts
+
+
+def validate_istio_upgrade(manifest):
+    """Keep future upgrade packages separate from the active Argo chart inventory."""
+    if set(manifest) != {"destination", "charts"} or manifest["destination"] != DESTINATION:
+        raise ValueError("Istio upgrade destination changed")
+    charts = manifest["charts"]
+    if not isinstance(charts, list) or len(charts) != len(ISTIO_UPGRADE_CHARTS):
+        raise ValueError("Istio upgrade must contain exactly five packages")
+    if {row.get("chart") for row in charts if isinstance(row, dict)} != ISTIO_UPGRADE_CHARTS:
+        raise ValueError("Istio upgrade chart set changed")
+    for row in charts:
+        if (set(row) != {"chart", "version", "repository", "sha256"} or
+                row["version"] != "1.28.10" or row["repository"] != ISTIO_REPOSITORY or
+                not isinstance(row["sha256"], str) or
+                not re.fullmatch(r"[0-9a-f]{64}", row["sha256"])):
+            raise ValueError("Istio upgrade source or hash is invalid")
     return charts
 
 
@@ -115,13 +136,29 @@ def upstream_package(row, directory, anonymous_config):
     return package
 
 
-def publish(row, package, directory, reader_auth, reader_helm, publisher_helm):
+def verified_manifest_digest(reference, expected_package_sha, reader_auth):
+    result = subprocess.run(["skopeo", "inspect", "--raw", "--authfile", str(reader_auth),
+                             f"docker://{reference}"], check=True, capture_output=True)
+    manifest = json.loads(result.stdout)
+    layers = manifest.get("layers")
+    if (manifest.get("schemaVersion") != 2 or not isinstance(layers, list) or len(layers) != 1 or
+            layers[0].get("mediaType") != "application/vnd.cncf.helm.chart.content.v1.tar+gzip" or
+            layers[0].get("digest") != f"sha256:{expected_package_sha}" or
+            manifest.get("config", {}).get("mediaType") != "application/vnd.cncf.helm.config.v1+json"):
+        raise ValueError("Harbor OCI manifest does not bind the reviewed Helm package")
+    return "sha256:" + hashlib.sha256(result.stdout).hexdigest()
+
+
+def publish(row, package, directory, reader_auth, reader_helm, publisher_helm, digest_receipt=False):
     reference = f"{DESTINATION}/{row['chart']}:{row['version']}"
     probe = subprocess.run(["skopeo", "inspect", "--raw", "--authfile", str(reader_auth),
                             f"docker://{reference}"], capture_output=True, text=True)
     if probe.returncode:
         if not missing_harbor_artifact(probe.stderr, row["chart"]):
             raise RuntimeError(f"Harbor lookup failed for {row['chart']} {row['version']}")
+        if digest_receipt and run("git", "ls-remote", "https://github.com/Stuhlmuller/homelab.git",
+                                  "refs/heads/main").stdout.split()[0] != os.environ["GITHUB_SHA"]:
+            raise RuntimeError("Current main changed before chart publication")
         run("helm", "push", str(package), f"oci://{DESTINATION}",
             "--registry-config", str(publisher_helm))
     receipt = directory / "receipt"
@@ -132,17 +169,31 @@ def publish(row, package, directory, reader_auth, reader_helm, publisher_helm):
     packages = list(receipt.glob("*.tgz"))
     if len(packages) != 1 or hashlib.sha256(packages[0].read_bytes()).hexdigest() != row["sha256"]:
         raise ValueError(f"Harbor pull bytes differ: {row['chart']} {row['version']}")
+    if digest_receipt:
+        digest = verified_manifest_digest(reference, row["sha256"], reader_auth)
+        digest_directory = directory / "digest-receipt"
+        digest_directory.mkdir()
+        run("helm", "pull", f"oci://{DESTINATION}/{row['chart']}@{digest}",
+            "--destination", str(digest_directory), "--registry-config", str(reader_helm))
+        digest_packages = list(digest_directory.glob("*.tgz"))
+        if (len(digest_packages) != 1 or
+                hashlib.sha256(digest_packages[0].read_bytes()).hexdigest() != row["sha256"]):
+            raise ValueError(f"Harbor digest pull bytes differ: {row['chart']} {row['version']}")
+        return digest
     print(f"verified {row['chart']} {row['version']}", flush=True)
 
 
 def main():
-    if len(sys.argv) not in (2, 5) or sys.argv[1] not in ("--check", "--publish"):
-        raise SystemExit("usage: harbor-chart-publish.py --check | --publish READER_AUTH READER_HELM PUBLISHER_HELM")
-    if sys.argv[1] == "--publish" and len(sys.argv) != 5:
-        raise SystemExit("--publish needs three credential file paths")
-    charts = validate(json.loads(MANIFEST.read_text()), json.loads(SOURCES.read_text()))
-    if sys.argv[1] == "--check":
-        print(f"{len(charts)} reviewed Harbor Helm packages cover the Argo CD chart inventory")
+    mode = sys.argv[1] if len(sys.argv) > 1 else ""
+    if (mode not in ("--check", "--check-istio-1.28.10", "--publish", "--publish-istio-1.28.10") or
+            len(sys.argv) != (5 if mode.startswith("--publish") else 2)):
+        raise SystemExit("usage: harbor-chart-publish.py --check[-istio-1.28.10] | --publish[-istio-1.28.10] READER_AUTH READER_HELM PUBLISHER_HELM")
+    istio_upgrade = mode.endswith("istio-1.28.10")
+    charts = (validate_istio_upgrade(json.loads(ISTIO_UPGRADE_MANIFEST.read_text())) if istio_upgrade
+              else validate(json.loads(MANIFEST.read_text()), json.loads(SOURCES.read_text())))
+    if mode.startswith("--check"):
+        label = "Istio upgrade" if istio_upgrade else "Argo CD chart inventory"
+        print(f"{len(charts)} reviewed Harbor Helm packages cover the {label}")
         return
     with tempfile.TemporaryDirectory(prefix="harbor-charts-") as temporary:
         directory = Path(temporary)
@@ -156,11 +207,24 @@ def main():
             location = directory / name.lower()
             location.mkdir()
             os.environ[name] = str(location)
+        receipts = []
         for row in charts:
             chart_directory = directory / row["chart"]
             chart_directory.mkdir()
             package = upstream_package(row, chart_directory, anonymous_config)
-            publish(row, package, chart_directory, *map(Path, sys.argv[2:]))
+            digest = publish(row, package, chart_directory, *map(Path, sys.argv[2:]),
+                             digest_receipt=istio_upgrade)
+            if istio_upgrade:
+                receipts.append({"chart": row["chart"], "version": row["version"],
+                                 "packageSha256": row["sha256"], "manifestDigest": digest})
+        if istio_upgrade:
+            if run("git", "ls-remote", "https://github.com/Stuhlmuller/homelab.git",
+                   "refs/heads/main").stdout.split()[0] != os.environ["GITHUB_SHA"]:
+                raise RuntimeError("Current main changed before chart receipt")
+            receipt = {"sourceSha": os.environ["GITHUB_SHA"], "destination": DESTINATION,
+                       "charts": receipts}
+            Path(os.environ["RUNNER_TEMP"], "harbor-istio-charts-receipt.json").write_text(
+                json.dumps(receipt, indent=2) + "\n")
 
 
 if __name__ == "__main__":
