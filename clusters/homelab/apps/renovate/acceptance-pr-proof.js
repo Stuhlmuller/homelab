@@ -5,8 +5,11 @@ const observer = require('./acceptance-observer.js');
 
 const privateDir = '/ledger/private';
 const bot = 'rstuhlmuller-renovate[bot]';
+const maxHeadFileBytes = 1024 * 1024;
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const validTime = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value));
+const blobSha = (bytes) => crypto.createHash('sha1')
+  .update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 
 function privateFile(file, limit = 128 * 1024 * 1024) {
   const metadata = fs.lstatSync(file);
@@ -133,44 +136,130 @@ function pullSnapshot(pull) {
   };
 }
 
-function terraformProviderVersion(patch, packageName, version) {
+function terraformSourceVersionLine(source, lineNumber, packageName, version) {
+  const stack = [];
+  for (const [index, line] of source.split('\n').entries()) {
+    // These constructs need a full HCL parser. Leave the candidate unknown.
+    if (line.includes('/*') || line.includes('*/') || line.includes('<<')) return false;
+    let quoted = false;
+    let escaped = false;
+    const braces = [];
+    for (let offset = 0; offset < line.length; offset++) {
+      const char = line[offset];
+      if (quoted) {
+        if (escaped) escaped = false;
+        else if (char === '\\') escaped = true;
+        else if (char === '"') quoted = false;
+      } else if (char === '"') quoted = true;
+      else if (char === '#' || (char === '/' && line[offset + 1] === '/')) break;
+      else if (char === '{' || char === '}') braces.push(char);
+    }
+    if (quoted) return false;
+    const parent = stack.at(-1);
+    if (parent?.kind === 'provider') {
+      const sourceValue = line.match(/^\s*source\s*=\s*"([^"]+)"\s*$/);
+      if (sourceValue) {
+        if (parent.source !== null) parent.invalid = true;
+        parent.source = sourceValue[1];
+      }
+      const versionValue = line.match(/^\s*version\s*=\s*"([^"]+)"\s*$/);
+      if (versionValue) {
+        if (parent.versionLine !== null) parent.invalid = true;
+        parent.versionLine = index + 1;
+        parent.version = versionValue[1];
+      }
+    }
+    if (braces.length === 1 && braces[0] === '{') {
+      let kind = 'other';
+      if (stack.length === 0 && /^terraform\s*\{\s*$/.test(line)) kind = 'terraform';
+      else if (parent?.kind === 'terraform' &&
+        /^\s*required_providers\s*\{\s*$/.test(line)) kind = 'required-providers';
+      else if (parent?.kind === 'required-providers' &&
+        /^\s*[A-Za-z_][\w-]*\s*=\s*\{\s*$/.test(line)) kind = 'provider';
+      if (parent?.kind === 'provider') parent.invalid = true;
+      stack.push({ kind, source: null, versionLine: null, version: null, invalid: false });
+    } else {
+      for (const brace of braces) {
+        if (brace === '{') {
+          if (stack.at(-1)?.kind === 'provider') stack.at(-1).invalid = true;
+          stack.push({ kind: 'other' });
+        } else {
+          const closed = stack.pop();
+          if (!closed) return false;
+          if (closed.kind === 'provider' && !closed.invalid &&
+              closed.source === packageName && closed.versionLine === lineNumber &&
+              typeof closed.version === 'string' && version.test(closed.version)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function terraformProviderVersion(patch, headFile, packageName, version, headSha, filename) {
+  if (!headFile || headFile.ref !== headSha || headFile.path !== filename ||
+      typeof headFile.content !== 'string' || headFile.content.includes('\0') ||
+      Buffer.byteLength(headFile.content) > maxHeadFileBytes ||
+      blobSha(Buffer.from(headFile.content)) !== headFile.blobSha) return false;
+  const sourceLines = headFile.content.split('\n');
+  const candidates = [];
   let block = null;
-  let requiredProviders = false;
+  let nextLine = null;
+  let oldRemaining = 0;
+  let newRemaining = 0;
   for (const line of patch.split('\n')) {
-    if (line.startsWith('@@')) { block = null; requiredProviders = false; continue; }
-    if (line.startsWith('-')) {
-      if (block && /^\s*version\s*=/.test(line.slice(1))) block.replacedVersion = true;
+    if (line.startsWith('@@')) {
+      if (nextLine !== null && (oldRemaining || newRemaining)) return false;
+      const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+      if (!hunk) return false;
+      nextLine = Number(hunk[3]);
+      oldRemaining = Number(hunk[2] ?? 1);
+      newRemaining = Number(hunk[4] ?? 1);
+      block = null;
       continue;
     }
-    if (!line.startsWith(' ') && !line.startsWith('+')) continue;
+    if (line.startsWith('\\ No newline at end of file')) continue;
+    if (nextLine === null || ![' ', '+', '-'].includes(line[0])) return false;
+    const kind = line[0];
     const content = line.slice(1);
+    const at = nextLine;
+    if (kind !== '-') {
+      if (sourceLines[nextLine - 1] !== content) return false;
+      nextLine++;
+      newRemaining--;
+    }
+    if (kind !== '+') oldRemaining--;
+    if (oldRemaining < 0 || newRemaining < 0) return false;
     if (!block) {
-      if (/^\s*required_providers\s*\{\s*$/.test(content)) {
-        requiredProviders = true;
-      } else if (requiredProviders && /^\s*\}\s*$/.test(content)) {
-        requiredProviders = false;
-      } else if (requiredProviders && /^\s*[A-Za-z_][\w-]*\s*=\s*\{\s*$/.test(content)) {
-        block = { source: null, replacedVersion: false, changedVersion: false };
+      if (kind !== '-' && /^\s*[A-Za-z_][\w-]*\s*=\s*\{\s*$/.test(content)) {
+        block = { source: null, replaced: false, changedLine: null, invalid: false };
       }
       continue;
     }
-    if (/^\s*\}\s*$/.test(content)) {
-      if (block.source === packageName && block.replacedVersion && block.changedVersion) return true;
+    if (kind !== '-' && /^\s*\}\s*$/.test(content)) {
+      if (!block.invalid && block.source === packageName && block.changedLine !== null) {
+        candidates.push(block.changedLine);
+      }
       block = null;
       continue;
     }
     if (/[{}]/.test(content)) { block = null; continue; }
-    const source = content.match(/^\s*source\s*=\s*"([^"]+)"\s*$/);
+    const source = kind !== '-' && content.match(/^\s*source\s*=\s*"([^"]+)"\s*$/);
     if (source) {
-      if (block.source) { block = null; continue; }
+      if (block.source !== null) block.invalid = true;
       block.source = source[1];
     }
-    const updated = content.match(/^\s*version\s*=\s*"([^"]+)"\s*$/);
-    if (line.startsWith('+') && updated && version.test(updated[1])) {
-      block.changedVersion = true;
+    const oldVersion = kind === '-' && /^\s*version\s*=\s*"[^"]+"\s*$/.test(content);
+    const newVersion = kind === '+' && content.match(/^\s*version\s*=\s*"([^"]+)"\s*$/);
+    if (block.replaced && newVersion && version.test(newVersion[1])) {
+      if (block.changedLine !== null) block.invalid = true;
+      block.changedLine = at;
     }
+    block.replaced = oldVersion;
   }
-  return false;
+  if (nextLine === null || oldRemaining || newRemaining) return false;
+  return candidates.some((line) =>
+    terraformSourceVersionLine(headFile.content, line, packageName, version));
 }
 
 function proposalProof(item, event, match, pull, files, observedAt, baseBranch,
@@ -201,7 +290,8 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch,
       line.startsWith('+') && !line.startsWith('+++') &&
       packageName.test(line.slice(1)) && version.test(line.slice(1))) ||
       (item.datasource === 'terraform-provider' && /\.(?:tf|tofu)$/.test(item.packageFile) &&
-        terraformProviderVersion(entry.patch, item.packageName, version))));
+        terraformProviderVersion(entry.patch, entry.headFile, item.packageName,
+          version, pull.head.sha, item.packageFile))));
   if (!file) return null;
   return {
     claim: { kind: 'proposal', at: merged ? pull.merged_at : observedAt,
@@ -229,6 +319,28 @@ async function github(token, route) {
     throw new Error('github-clock-unverified');
   }
   return response.json();
+}
+
+async function readHeadFile(token, repository, filename, headSha) {
+  const segments = typeof filename === 'string' ? filename.split('/') : null;
+  if (!/^[a-f0-9]{40}$/.test(headSha) || !Array.isArray(segments) ||
+      segments.some((part) => !part || part === '.' || part === '..' ||
+        /[\\\r\n\0]/.test(part))) return null;
+  const route = `/repos/${repository}/contents/${segments.map(encodeURIComponent).join('/')}` +
+    `?ref=${headSha}`;
+  const file = await github(token, route);
+  if (file?.type !== 'file' || file.path !== filename ||
+      file.encoding !== 'base64' || !Number.isSafeInteger(file.size) ||
+      file.size > maxHeadFileBytes || typeof file.content !== 'string') return null;
+  const encoded = file.content.replace(/\n/g, '');
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) return null;
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.length !== file.size || bytes.toString('base64') !== encoded ||
+      blobSha(bytes) !== file.sha) return null;
+  let content;
+  try { content = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return null; }
+  if (content.includes('\0')) return null;
+  return { ref: headSha, path: filename, blobSha: file.sha, content };
 }
 
 async function pullFiles(token, repository, number, count) {
@@ -305,20 +417,31 @@ async function collect(directory = privateDir) {
   if (!folderMetadata.isDirectory() || folderMetadata.uid !== process.getuid() ||
       (folderMetadata.mode & 0o077)) throw new Error('invalid-evidence-directory');
   const verified = [];
+  const headFiles = new Map();
   for (const { item, event, id, match, baseBranch } of work) {
     const repository = item.repository;
     if (!/^Stuhlmuller\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('invalid-repository');
     const route = `/repos/${repository}/pulls/${match.number}`;
     const pull = await github(token, route);
     const files = await pullFiles(token, repository, match.number, pull.changed_files);
+    if (!files) continue;
+    const snapshot = { before: pullSnapshot(pull), after: null,
+      files: files.map(({ filename, patch }) => ({ filename, patch })) };
+    if (item.datasource === 'terraform-provider' && /\.(?:tf|tofu)$/.test(item.packageFile)) {
+      const entry = snapshot.files.find((file) => file.filename === item.packageFile &&
+        typeof file.patch === 'string');
+      if (entry) {
+        const key = JSON.stringify([repository, pull.head?.sha, entry.filename]);
+        if (!headFiles.has(key)) headFiles.set(key, await readHeadFile(token,
+          repository, entry.filename, pull.head?.sha));
+        const headFile = headFiles.get(key);
+        if (headFile) entry.headFile = headFile;
+      }
+    }
     const finalPull = await github(token, route);
     if (!samePullSnapshot(pull, finalPull)) continue;
-    if (!files) continue;
+    snapshot.after = pullSnapshot(finalPull);
     // The upper bound allows for the maximum accepted difference from GitHub's Date header.
-    const snapshot = {
-      before: pullSnapshot(pull), after: pullSnapshot(finalPull),
-      files: files.map(({ filename, patch }) => ({ filename, patch })),
-    };
     if (Buffer.byteLength(JSON.stringify(snapshot)) > 8 * 1024 * 1024) continue;
     const result = proposalProof(item, event, match, snapshot.after,
       snapshot.files, new Date(Date.now() + 60000).toISOString(), baseBranch, snapshot);
@@ -386,4 +509,4 @@ if (require.main === module) collect().catch(() => {
 });
 
 module.exports = { privateFile, verifiedReports, candidate, reportDecision, samePullSnapshot,
-  pullSnapshot, proposalProof, pullFiles, collect };
+  pullSnapshot, proposalProof, pullFiles, readHeadFile, collect };

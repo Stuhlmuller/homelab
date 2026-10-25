@@ -30,6 +30,12 @@ const pull = { number: 42, changed_files: 1, state: 'open', merged: false,
 const files = [{ filename: 'package.json', patch: '@@ -1 +1 @@\n-"fixture-package":"1.0.0"\n+"fixture-package":"1.1.0"' }];
 const observedAt = '2026-10-19T00:30:00.000Z';
 
+const headFile = (content, filename = 'versions.tf', ref = pull.head.sha) => {
+  const bytes = Buffer.from(content);
+  return { ref, path: filename, content, blobSha: crypto.createHash('sha1')
+    .update(`blob ${bytes.length}\0`).update(bytes).digest('hex') };
+};
+
 test('only one exact pinned-report PR candidate can bind a sampled version', () => {
   const reports = [{ receipt, report }];
   assert.equal(proof.candidate(item, event, reports).number, 42);
@@ -86,12 +92,17 @@ test('Terraform provider proof binds a changed version to its source block', () 
   const match = proof.candidate(provider, update, [{ receipt: { ...receipt,
     report: { sha256: 'b'.repeat(64) } },
     report: { repositories: { [repository]: { branches: [providerBranch] } } } }]);
-  const changed = '@@ -4,11 +4,11 @@ terraform {\n' +
+  const source = 'terraform {\n  required_providers {\n    aws = {\n' +
+    '      source  = "hashicorp/aws"\n      version = "6.66.0"\n    }\n' +
+    '    azurerm = {\n      source  = "hashicorp/azurerm"\n' +
+    '      version = "4.1.0"\n    }\n  }\n}\n';
+  const changed = '@@ -2,9 +2,9 @@ terraform {\n' +
     '   required_providers {\n     aws = {\n       source  = "hashicorp/aws"\n' +
     '-      version = "6.65.0"\n+      version = "6.66.0"\n     }\n' +
     '     azurerm = {\n       source  = "hashicorp/azurerm"\n' +
     '-      version = "4.0.0"\n+      version = "4.1.0"\n     }';
-  const changedFiles = [{ filename: provider.packageFile, patch: changed }];
+  const changedFiles = [{ filename: provider.packageFile, patch: changed,
+    headFile: headFile(source) }];
   assert.ok(proof.proposalProof(provider, update, match, pull,
     changedFiles, observedAt, 'main'));
   assert.equal(proof.proposalProof(provider, { ...update, version: '4.1.0' }, match,
@@ -99,17 +110,58 @@ test('Terraform provider proof binds a changed version to its source block', () 
   const unrelated = changed.replace('+      version = "6.66.0"',
     '+      version = "6.65.1"');
   assert.equal(proof.proposalProof(provider, update, match, pull,
-    [{ filename: provider.packageFile, patch: unrelated }], observedAt, 'main'), null);
+    [{ ...changedFiles[0], patch: unrelated }], observedAt, 'main'), null);
+  const lookalike = source.replace('required_providers {', 'metadata {');
   assert.equal(proof.proposalProof(provider, update, match, pull,
-    [{ filename: provider.packageFile, patch: changed.replace(
-      'required_providers {', 'metadata {') }], observedAt, 'main'), null);
+    [{ ...changedFiles[0], patch: changed.replace('required_providers {', 'metadata {'),
+      headFile: headFile(lookalike) }], observedAt, 'main'), null);
   assert.equal(proof.proposalProof(provider, update, match, pull,
-    [{ filename: provider.packageFile, patch: changed.replace(
+    [{ ...changedFiles[0], patch: changed.replace(
+      '@@ -2,9 +2,9 @@', '@@ -2,8 +2,9 @@').replace(
       '-      version = "6.65.0"\n', '') }], observedAt, 'main'), null);
   assert.equal(proof.proposalProof(provider, update, match, pull,
-    [{ filename: provider.packageFile, patch: '@@ -5,3 +5,3 @@\n' +
+    [{ ...changedFiles[0], patch: '@@ -5,2 +5,2 @@\n' +
       '-      version = "6.65.0"\n+      version = "6.66.0"\n     }' }],
     observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ ...changedFiles[0], headFile: { ...changedFiles[0].headFile,
+      blobSha: 'f'.repeat(40) } }], observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ ...changedFiles[0], headFile: { ...changedFiles[0].headFile,
+      ref: 'f'.repeat(40) } }], observedAt, 'main'), null);
+});
+
+test('a later Terraform provider is proven from the immutable head file, not a hunk label', () => {
+  const provider = { ...item, datasource: 'terraform-provider',
+    packageName: 'microsoft/msgraph', packageFile: 'versions.tf' };
+  const update = { ...event, version: '0.6.0' };
+  const providerBranch = { ...branch, upgrades: [{ datasource: provider.datasource,
+    packageName: provider.packageName, packageFile: provider.packageFile,
+    newVersion: update.version }] };
+  const match = proof.candidate(provider, update, [{ receipt: { ...receipt,
+    report: { sha256: 'b'.repeat(64) } },
+    report: { repositories: { [repository]: { branches: [providerBranch] } } } }]);
+  const source = 'terraform {\n  required_providers {\n    aws = {\n' +
+    '      source  = "hashicorp/aws"\n      version = "6.65.0"\n    }\n' +
+    '    msgraph = {\n      source  = "microsoft/msgraph"\n' +
+    '      version = "0.6.0"\n    }\n  }\n}\n';
+  const changed = '@@ -6,7 +6,7 @@ terraform {\n' +
+    '     }\n     msgraph = {\n       source  = "microsoft/msgraph"\n' +
+    '-      version = "0.5.0"\n+      version = "0.6.0"\n     }\n   }\n }';
+  const file = { filename: provider.packageFile, patch: changed,
+    headFile: headFile(source) };
+  assert.ok(proof.proposalProof(provider, update, match, pull,
+    [file], observedAt, 'main'));
+  const localSource = source.replace('  required_providers {', '  providers = {');
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ ...file, headFile: headFile(localSource) }], observedAt, 'main'), null);
+  const unrelatedMap = source.replace('terraform {\n  required_providers {',
+    'locals {\n  providers = {');
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ ...file, headFile: headFile(unrelatedMap) }], observedAt, 'main'), null);
+  const badPatch = changed.replace('@@ -6,7 +6,7 @@', '@@ -6,8 +6,7 @@');
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ ...file, patch: badPatch }], observedAt, 'main'), null);
 });
 
 test('stable PR snapshots reject a changed head, file count, or state during file fetch', () => {
@@ -223,6 +275,35 @@ test('GitHub response needs a current server clock before a timing receipt', asy
       json: async () => files });
     await assert.rejects(proof.pullFiles('ghs_test', repository, 42, 1),
       /github-clock-unverified/);
+  } finally {
+    global.fetch = oldFetch;
+  }
+});
+
+test('Terraform source fetch is pinned to the PR head and validates Git blob bytes', async () => {
+  const oldFetch = global.fetch;
+  const content = 'terraform {\n  required_providers {}\n}\n';
+  const bytes = Buffer.from(content);
+  const valid = { type: 'file', path: 'versions.tf', encoding: 'base64',
+    size: bytes.length, content: bytes.toString('base64'),
+    sha: headFile(content).blobSha };
+  let response = valid;
+  try {
+    global.fetch = async (url) => {
+      assert.match(url, new RegExp(`/repos/${repository}/contents/versions\\.tf\\?ref=${pull.head.sha}$`));
+      return { ok: true, headers: { get: () => new Date().toUTCString() },
+        json: async () => response };
+    };
+    assert.deepEqual(await proof.readHeadFile('ghs_test', repository,
+      'versions.tf', pull.head.sha), headFile(content));
+    response = { ...valid, sha: 'f'.repeat(40) };
+    assert.equal(await proof.readHeadFile('ghs_test', repository,
+      'versions.tf', pull.head.sha), null);
+    response = { ...valid, size: 1024 * 1024 + 1 };
+    assert.equal(await proof.readHeadFile('ghs_test', repository,
+      'versions.tf', pull.head.sha), null);
+    assert.equal(await proof.readHeadFile('ghs_test', repository,
+      '../versions.tf', pull.head.sha), null);
   } finally {
     global.fetch = oldFetch;
   }

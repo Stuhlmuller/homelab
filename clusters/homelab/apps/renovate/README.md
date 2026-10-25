@@ -512,9 +512,13 @@ omitted from Kustomize and suspended. It verifies a pinned report and private
 hash receipt, matches an exact sampled package, file, and version to one
 Renovate PR number, then reads that PR and its complete GitHub file diff with
 a read-scoped App token. The patch must put package and version on one added
-line, or change a Terraform provider version inside a complete block whose
-`source` matches the sampled package. Unsupported or incomplete patches remain
-unknown. It requires GitHub's response clock to agree within one minute.
+line. For a Terraform provider with separate `source` and `version` lines, the
+worker also reads the file at the PR's immutable head SHA. It requires a
+complete provider block in the patch, the added version line at the same line
+in that file, and a matching `source` inside `terraform.required_providers`.
+The private source snapshot is limited to 1 MiB and replayed during source
+review. Unsupported or incomplete HCL and patches remain unknown. GitHub's
+response clock must agree within one minute.
 The worker reads the PR again after fetching all changed files and discards
 proof if its head, file count, or state changed. An open PR uses the read time
 plus that minute as a conservative proposal **upper bound**. A GitHub-confirmed
