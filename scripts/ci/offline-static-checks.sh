@@ -36,12 +36,12 @@ terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
       $spec.syncPolicy.automated.selfHeal == true and
       ([ $spec.sources[] | select(has("chart")) |
         [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
-        ["https://istio-release.storage.googleapis.com/charts", "base", "istio-base", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "istiod", "istiod", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "cni", "istio-cni", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "ztunnel", "ztunnel", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "istio-ingressgateway", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
       ]) and
       any($spec.sources[];
         .chart == "ztunnel" and
