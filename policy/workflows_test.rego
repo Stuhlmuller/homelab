@@ -102,6 +102,8 @@ test_rejects_changed_platform_baseline_inputs if {
 	every changed in [
 		object.union(inputs, {"baseline_source_sha": {"required": true, "type": "string"}}),
 		object.union(inputs, {"baseline_run_id": {"required": false, "type": "number"}}),
+		object.union(inputs, {"placement_run_id": {"required": false, "type": "number"}}),
+		object.union(inputs, {"admission_run_id": {"required": true, "type": "string"}}),
 	] {
 		candidate := object.union(platform_maintenance_fixture, {"true": {"workflow_dispatch": {"inputs": changed}}})
 		violations := deny with input as candidate
@@ -139,11 +141,25 @@ test_rejects_missing_owner_attestation if {
 	contains(msg, "Platform maintenance requires exact protected stages")
 }
 
+test_rejects_unowned_canary_recovery if {
+	static := platform_maintenance_fixture.jobs["static-policy"]
+	steps := static.steps
+	changed := object.union(steps[0], {"run": replace(
+		platform_maintenance_dispatch_check,
+		` || [ "$RUN_STAGE" = canary-admit-recover ]`, "",
+	)})
+	candidate_static := object.union(static, {"steps": [changed, steps[1], steps[2], steps[3]]})
+	candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"static-policy": candidate_static})})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform maintenance requires exact protected stages")
+}
+
 test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"35a87a8ec697d46d7414e790e55415d842641a435f21bb4274c248a0735cec2a",
+		"dd0ce17cc573acff38974b0dca233a8708adbf2ae988578837adce27823acddb",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -203,9 +219,11 @@ platform_maintenance_fixture := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"stage": {"options": ["inspect", "firewall-baseline", "firewall-baseline-recover", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"stage": {"options": ["inspect", "firewall-baseline", "firewall-baseline-recover", "placement", "canary-admit", "canary-admit-recover", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
 		"baseline_source_sha": {"required": false, "type": "string"},
 		"baseline_run_id": {"required": false, "type": "string"},
+		"placement_run_id": {"required": false, "type": "string"},
+		"admission_run_id": {"required": false, "type": "string"},
 		"cleanup_run_id": {"required": false, "type": "string"},
 		"qualification_run_id": {},
 		"evidence_source_sha": {},
