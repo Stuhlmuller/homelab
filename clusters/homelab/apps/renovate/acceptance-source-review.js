@@ -70,7 +70,7 @@ function sourceReview(directory = '/ledger/private') {
         throw new Error('invalid-report-link');
       }
       if (!tasks.has(uid)) tasks.set(uid, []);
-      tasks.get(uid).push({ receipt, item, event, kind, value, material });
+      tasks.get(uid).push({ item, event, kind, value, material });
       sourceLinks++;
     }
   }
@@ -81,7 +81,7 @@ function sourceReview(directory = '/ledger/private') {
     if (reportReceipt.policySha256 !== review.configSha256) {
       throw new Error('policy-changed');
     }
-    for (const { receipt, item, event, kind, value, material } of linked) {
+    for (const { item, event, kind, value, material } of linked) {
       if (material.reportSha256 !== reportReceipt.report.sha256 ||
           material.reportCompletedAt && material.reportCompletedAt !== reportReceipt.completedAt) {
         throw new Error('report-link-mismatch');

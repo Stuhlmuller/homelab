@@ -90,7 +90,7 @@ class AcceptanceAppTests(unittest.TestCase):
                 return json.dumps(metadata).encode()
             if 'get-parameters' in args:
                 return json.dumps(values).encode()
-            self.fail('Preflight must not write to SSM')
+            raise AssertionError('Preflight must not write to SSM')
 
         with patch.object(app, 'aws_command', side_effect=fake_aws):
             app.ssm_slots('fixture', require_placeholder=True)

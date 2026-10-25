@@ -7,8 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-import unittest
-from unittest import mock
+from unittest import TestCase, main, mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,7 +17,7 @@ REVIEW = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(REVIEW)
 
 
-class ReviewDeliveryTests(unittest.TestCase):
+class ReviewDeliveryTests(TestCase):
     def test_operator_requires_signed_exact_remote_main_and_fixed_api(self):
         expected = "a" * 40
         replies = {
@@ -145,4 +144,4 @@ class ReviewDeliveryTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
