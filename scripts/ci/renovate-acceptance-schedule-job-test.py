@@ -30,7 +30,7 @@ class ScheduleJob(unittest.TestCase):
         self.assertNotRegex(job, r"(?m)^\s+(?:secretName:|env:|envFrom:|hostAliases:)")
         self.assertNotIn("claimName: renovate-cache", job)
         self.assertNotIn("- acceptance-schedule-assemble-job.yaml", kustomization)
-        self.assertNotIn("- acceptance-schedule-assemble-networkpolicy.yaml", kustomization)
+        self.assertIn("- acceptance-schedule-assemble-networkpolicy.yaml", kustomization)
         for source in ("renovate-acceptance-schedule.py",
                        "renovate-acceptance-schedule-assemble.py"):
             self.assertIn(f"- {source}", kustomization)
