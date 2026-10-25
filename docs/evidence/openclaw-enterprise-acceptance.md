@@ -405,6 +405,14 @@ leaving only about 9 MiB after the 2,304 MiB minimum. This separate drift
 follow-up would not isolate a canary or prove transient fit; no workload was
 moved or scaled.
 
+At 2026-10-25 05:45 UTC, an authenticated read-only Terragrunt plan against
+exact `main` `9380278e` selected only
+`IaC/homelab/us-west-2/apps/platform-crossplane/argocd`. It predicted one
+in-place Argo Application update: add Helm `replicas=0` and
+`rbacManager.replicas=0`, plus the standby description. There was no delete or
+replacement, and `conftest` accepted the plan. This is plan evidence, not an
+apply or a live standby receipt; both 256 MiB controllers remain running.
+
 At 2026-10-23 09:32 UTC on `main` `111b58f`, a fresh read-only check found
 `acer` at 13,459 / 15,261 MiB requested with 383.01 GiB node filesystem free.
 Every worker remained below 10 GiB free. The Embedded Gateway's local 10 GiB
