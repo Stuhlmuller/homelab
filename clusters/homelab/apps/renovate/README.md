@@ -164,8 +164,8 @@ to assert that phase's intended Kustomization membership and Job suspension;
 its staging assertions deliberately fail after a resource is activated.
 The [`platform-storage` stack](../../../../IaC/homelab/us-west-2/apps/platform-storage/stack.hcl)
 inherits the [`homelab` AppProject](../../argocd/self-management/appproject.yaml),
-which whitelists PVs; Renovate's `homelab-workloads` project cannot own one. In a second
-reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
+which whitelists PVs; Renovate's `homelab-workloads` project cannot own one.
+In a second reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
 `dedicated-cache-claim-probe.yaml` to Renovate's Kustomization; set the Job's
 `suspend` to `false` in that same change. The probe has no GitHub credential
 or Kubernetes API token, mounts only the new claim read-only, and denies Pod

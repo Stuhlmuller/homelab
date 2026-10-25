@@ -90,7 +90,7 @@ GitOps. Do not change the existing exports.
 
 ## GitOps Desired State
 
-`IaC/homelab/us-west-2/apps/platform-storage/argocd/terragrunt.hcl` registers the parent
+`IaC/homelab/us-west-2/apps/platform-storage/stack.hcl` registers the parent
 `platform-storage` Application through the Terragrunt catalog. That parent
 points at `clusters/homelab/platform/storage` and auto-syncs by default.
 
@@ -243,9 +243,10 @@ app has acceptable backup and restore coverage.
   `10.1.0.202`.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
-- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
-  Radarr, Sonarr, LiteLLM, OpenClaw, and n8n each explicitly depend on
-  `IaC/homelab/us-west-2/apps/platform-storage/argocd`.
+- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
+  Grafana, Deluge, Dispatcharr, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw,
+  and n8n now name `platform-storage` as a stack dependency. Its Application
+  is configured in `IaC/homelab/us-west-2/apps/platform-storage/stack.hcl`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

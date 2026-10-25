@@ -2,8 +2,9 @@
 
 This path owns the dynamic provisioners for the homelab cluster.
 The parent `platform-storage` Application is registered by the Terragrunt unit
-at `IaC/live/argocd-apps/platform-storage` and is automated by default. Its
-child Applications install upstream Helm charts into dedicated namespaces:
+at `IaC/homelab/us-west-2/apps/platform-storage/stack.hcl` and is automated by
+default. Its child Applications install upstream Helm charts into dedicated
+namespaces:
 
 - `nfs-subdir-external-provisioner` creates the default `nfs-default`
   StorageClass for durable shared storage.
