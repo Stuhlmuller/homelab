@@ -30,6 +30,8 @@ python3 -I scripts/ci/openclaw-enterprise-active-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
+node --test scripts/ci/renovate-cache-corruption-drill-test.mjs
+python3 -I scripts/ci/renovate-cache-capacity-drill-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
