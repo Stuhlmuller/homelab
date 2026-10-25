@@ -65,6 +65,14 @@ output. If the App sees fewer repositories than the owner inventory or its
 installation does not select all repositories, stop cutover and add a reviewed
 access path.
 
+For private repositories on the current GitHub Free plan, the separate staged
+policy-proof Job may record the exact protection API plan-entitlement 403 only
+when the unchanged default branch reports `protected: false`. This records an
+unavailable read, not an empty stored ruleset or approved merge policy. An
+independent owner review of repository settings, committed Renovate overrides,
+and App merge behavior is still required. T029/T040 and writer cutover stay open
+until that review and the remaining dry-run parity evidence pass.
+
 The mock discovery fixture above proves the add/remove rule; it does not claim
 that a real owner transfer occurred.
 

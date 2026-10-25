@@ -595,14 +595,19 @@ source-visibility, and effective-policy review remain open. The staged
 `acceptance-policy-proof-job.yaml` uses the dedicated acceptance App with
 repository Administration, Contents, and Metadata **read** grants. It reads
 the App-visible private repositories' effective branch rules, classic branch
-protection, and pinned Renovate 44.167.4 repository config paths. A 403,
-malformed response, or changed branch fails without a success receipt; 404 is
-accepted only for absent classic protection or config files. It seals hashes
-and protection flags under the mode `0700` private ledger, logs counts only,
+protection, and pinned Renovate 44.167.4 repository config paths. [GitHub Free](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
+does not expose private branch protection through those endpoints. Only their
+exact plan-entitlement 403 responses, together with an unchanged default branch
+reporting `protected: false`, produce an unavailable/inactive receipt; they do
+not prove that no rule is stored. Any other 403, malformed response, changed
+branch, or protected branch fails. A 404 is accepted only for absent classic
+protection or config files. It seals hashes and protection status under the mode
+`0700` private ledger, logs counts only,
 and cannot overwrite an earlier Pod receipt. The App grant remains read-only;
 the production writer App is unchanged. GitHub omits ruleset bypass actors
-from read-only responses, so that fact and effective auto-merge remain
-explicit private-review gaps. The receipt covers only App-visible repos;
+from read-only responses. A private owner review must verify the current
+Renovate-driven auto-merge behavior and repository policy; the proof Job never
+marks effective auto-merge as accepted. The receipt covers only App-visible repos;
 compare it with the independent owner inventory before accepting coverage.
 Keep the Job omitted/suspended until the separate App, ledger, and private
 review path are ready. Keep the inventory Job omitted/suspended until those
