@@ -38,7 +38,9 @@ def timestamp(value):
 
 def pod_request_bytes(pod):
     spec = pod["spec"]
-    request = lambda c: quantity_bytes(c.get("resources", {}).get("requests", {}).get("memory", "0"))
+    def request(container):
+        return quantity_bytes(container.get("resources", {}).get("requests", {}).get("memory", "0"))
+
     sidecars = 0
     startup = 0
     for container in spec.get("initContainers", []):
