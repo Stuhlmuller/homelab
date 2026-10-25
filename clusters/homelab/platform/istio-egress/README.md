@@ -25,7 +25,10 @@ These checks do not prove a hard outbound allowlist: direct IP or undeclared
 host traffic still needs an enforcing network-layer rule. Flannel does not
 enforce NetworkPolicy; the staged kube-router canary remains held without an
 isolated worker. Router enforcement, if later added by the owner, needs its
-own evidence. No router change is part of this Application.
+own evidence. The live Flannel DaemonSet uses `--ip-masq`, so off-cluster Pod
+traffic normally reaches the router under the node's address; a router rule
+matching only that address cannot distinguish the waypoint from other Pods on
+the same node. No router change is part of this Application.
 Do not enable `REGISTRY_ONLY` as a substitute. Talos image pulls, non-ambient
 namespaces, and Deluge's WireGuard UDP path need separate policy.
 

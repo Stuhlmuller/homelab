@@ -119,6 +119,9 @@ pass before adding callers. The waypoint's
 service-account policy handles meshed TCP; kube-router remains the hard
 network boundary for direct bypass, UDP, and non-ambient workloads. See
 [`istio-egress/README.md`](../../clusters/homelab/platform/istio-egress/README.md).
+The live Flannel DaemonSet uses `--ip-masq`; external Pod traffic normally
+shares each node's source address at the router. Router source-address rules
+alone therefore cannot prove traffic used the waypoint.
 
 The 2026-10-12 read-only audit found all Flannel and ztunnel instances Ready,
 but readiness does not add egress enforcement. Gateway API CRDs and a
