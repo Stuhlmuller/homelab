@@ -1,0 +1,95 @@
+# Staged only. Add to Renovate's Kustomization and unsuspend
+# after the platform PV is bound.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-cache-dedicated-claim-probe
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate-cache-claim-probe
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate-cache-claim-probe
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 0
+        runAsNonRoot: true
+        fsGroup: 12021
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: probe
+          image: busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              source=$(
+                awk '$5 == "/cache" {
+                  for (i = 1; i <= NF; i++)
+                    if ($i == "-") print $(i + 1) " " $(i + 2)
+                }' /proc/self/mountinfo
+              )
+              [ "$source" = 'nfs 10.1.0.2:/renovate-cache' ] || {
+                echo 'Unexpected cache export' >&2
+                exit 1
+              }
+              options=$(awk '$5 == "/cache" { print $6 }' /proc/self/mountinfo)
+              case ",$options," in
+                *,ro,*) ;;
+                *) echo 'Cache claim mount is writable' >&2; exit 1 ;;
+              esac
+              size=$(df -Pk /cache | awk 'NR == 2 { print $2 }')
+              case "$size" in
+                ''|*[!0-9]*) echo 'Unknown cache volume size' >&2; exit 1 ;;
+              esac
+              if [ "$size" -lt 16777216 ] || [ "$size" -gt 25165824 ]; then
+                echo 'Unexpected cache volume size' >&2
+                exit 1
+              fi
+              echo 'Dedicated cache claim mount and capacity verified'
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+              readOnly: true
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: renovate-cache-dedicated
+            readOnly: true
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-cache-claim-probe
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate-cache-claim-probe
+  policyTypes: [Ingress, Egress]

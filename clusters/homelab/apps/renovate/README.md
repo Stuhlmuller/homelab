@@ -160,11 +160,15 @@ Before GitOps activation, verify in QTS that this is a separate 20 GiB volume,
 is exact. Add only `renovate-cache-pv.yaml` to the `platform-storage`
 Kustomization in a reviewed PR and verify its cluster-scoped PV reconciles.
 Renovate's `homelab-workloads` Argo project cannot own a PV. In a second
-reviewed PR, add `dedicated-cache-pvc.yaml` and a credential-free, read-only
-claim-probe Job to Renovate's Kustomization. Verify the claim is bound and the
-probe's mounted `df` reports 16–24 GiB from exactly
+reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
+`dedicated-cache-claim-probe.yaml` to Renovate's Kustomization; set the Job's
+`suspend` to `false` in that same change. The probe has no GitHub credential
+or Kubernetes API token, mounts only the new claim read-only, and denies Pod
+network traffic. Verify the claim is Bound and the Job succeeds with its
+source, read-only mount, and 16–24 GiB capacity check against exactly
 `10.1.0.2:/renovate-cache`. Keep the live CronJob on `renovate-cache` if the
-probe fails. Remove the completed probe through a later reviewed change.
+probe fails. Remove the completed probe and its NetworkPolicy through a later
+reviewed change.
 Suspend the CronJob through a
 reviewed PR and confirm Argo CD synced to exact `main` with no active Renovate
 Job or Pod. Switch the CronJob claim to `renovate-cache-dedicated` and unsuspend

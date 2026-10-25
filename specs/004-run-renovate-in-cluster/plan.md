@@ -27,7 +27,7 @@ Move the existing Stuhlmuller Renovate GitHub App runner from its daily GitHub A
 
 **Constraints**: One-hour GitHub App installation-token lifetime; bound each job below that lifetime; no public endpoint, cluster API credential, permanent GitHub token, plaintext secret, manual live mutation, or environment variable as a desired-state input.
 
-**Scale/Scope**: All non-archived repositories owned by Stuhlmuller, including newly owned and forked repositories; archived repositories are skipped, while missing App access to an otherwise eligible owned repository blocks cutover. Current read-only owner inventory has eight non-archived repositories, but cutover must compare the App's actual access.
+**Scale/Scope**: All non-archived repositories owned by Stuhlmuller, including newly owned and forked repositories; archived repositories are skipped, while missing App access to an otherwise eligible owned repository blocks cutover. The [2026-10-25 read-only owner inventory](dry-run-parity-receipt.md) has nine non-archived repositories; cutover must compare the App's actual access.
 
 ## Constitution Check
 
