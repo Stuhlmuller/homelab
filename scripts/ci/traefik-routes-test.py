@@ -123,6 +123,9 @@ class RouteTests(unittest.TestCase):
         for path in ("/", "/rest/settings", "/rest/login", "/healthz",
                      "/webhook-admin", "/webhook-test-admin", "/webhook-waiting-admin"):
             self.assertIsNone(allowed.search(path))
+        legacy = read_yaml("clusters/homelab/apps/policy-bot/virtualservice-webhook.yaml")
+        self.assertEqual(legacy["spec"]["http"][0]["match"],
+                         [{"uri": {"exact": "/api/github/hook"}}])
 
     def test_cordium_and_control_plane_preserve_hosts_and_protocols(self):
         self.assertEqual(ROUTERS["cordium"]["rule"],
