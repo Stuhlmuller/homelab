@@ -122,10 +122,16 @@ Secret GET permission is pinned to the current Installation digest and exposes
 the Secret body. Change that Role with any Installation candidate change.
 
 T022/T035 must choose the node and add a fourth static Retain PV, with its
-directory precreated for UID 10001 at mode `0700` through a reviewed code
+directory precreated for UID 1000 at mode `0700` through a reviewed code
 path. The PVC, PV, and bootstrap claim UIDs, path and node then belong in the
 reviewed `journalOperator` declaration. The exact-source operator digest and
 source SHA are already pinned there while the operator remains disabled.
+UID 1000 matches the pinned upstream bootstrap Job, which writes its service
+key as an owner-only `0600` file; a different UID cannot read that key from
+the operator's read-only bootstrap mount. The dormant declaration still uses
+UID 10001 to preserve the exact historical legacy-restore provenance input;
+the dispatcher rejects that UID. T035 must review that provenance guard and
+set UID 1000 before enabling the operator.
 The operator image must contain a prior reviewed homelab source commit,
 `python3`, `kubectl`, and `yq`. The dispatcher compares its embedded
 reconciler, Installation, and values files with current `main`, then projects
