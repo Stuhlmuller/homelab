@@ -39,6 +39,47 @@ class Routes(unittest.TestCase):
         entries = dict(line.split("=", 1) for line in environment.splitlines() if "=" in line)
         self.assertEqual(entries["TRUSTED_PROXY_IP"], "loopback,uniquelocal")
 
+    def test_cold_start_dependencies_precede_postgres(self):
+        postgres = documents("postgres.yaml")[1]
+        postgres_wave = int(postgres["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"])
+        for name in ("serviceaccount.yaml", "externalsecret.yaml", "initdb-configmap.yaml", "storage.yaml"):
+            for dependency in documents(name):
+                wave = dependency["metadata"].get("annotations", {}).get("argocd.argoproj.io/sync-wave", "0")
+                with self.subTest(resource=dependency["metadata"]["name"]):
+                    self.assertLess(int(wave), postgres_wave)
+
+    def test_application_credentials_and_native_image_user(self):
+        for name in ("workloads.yaml", "migration.yaml", "bootstrap-job.yaml"):
+            for resource in documents(name):
+                if resource["kind"] not in ("Deployment", "Job"):
+                    continue
+                context = resource["spec"]["template"]["spec"]["securityContext"]
+                self.assertEqual(context["runAsUser"], 991)
+                self.assertEqual(context["runAsGroup"], 991)
+                self.assertEqual(context["fsGroup"], 65534)
+        postgres = documents("postgres.yaml")[1]
+        role = documents("database-role-job.yaml")[0]
+        self.assertLess(int(postgres["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]),
+                        int(role["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]))
+        runtime = documents("runtime-externalsecret.yaml")[0]["spec"]
+        self.assertEqual(runtime["target"]["template"]["data"]["runtime-v2"], "ready")
+        migration = documents("migration.yaml")[0]["spec"]["template"]["spec"]
+        projection = next(v["secret"] for v in migration["volumes"] if v["name"] == "runtime")
+        self.assertEqual(projection["secretName"], runtime["target"]["name"])
+        self.assertFalse(projection.get("optional", False))
+        self.assertEqual({item["key"] for item in projection["items"]}, {
+            "runtime-v2", ".env.production", "vapid.pem", "smtp-password",
+        })
+        paths = {item["remoteRef"]["key"] for item in runtime["data"]}
+        self.assertIn("/homelab/mastodon/postgres-app-password", paths)
+        self.assertNotIn("/homelab/mastodon/postgres-password", paths)
+        for environment in documents("configmap.yaml")[0]["data"].values():
+            self.assertIn("DB_USER=mastodon_app\n", environment)
+            self.assertIn("DB_PASS={{ .postgres_app_password }}", environment)
+        redis = documents("redis.yaml")[1]["spec"]["template"]["spec"]
+        auth = next(v["secret"] for v in redis["volumes"] if v["name"] == "auth")
+        self.assertEqual(auth["items"], [{"key": "REDIS_PASSWORD", "path": "REDIS_PASSWORD"}])
+
     def test_gateway_cannot_reach_datastore_ports(self):
         peer, default, allowed = documents("authorizationpolicy.yaml")
         self.assertEqual(peer["spec"]["mtls"]["mode"], "STRICT")

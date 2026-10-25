@@ -844,7 +844,10 @@ SSM generates internal credentials and the bootstrap-only owner password.
 Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
 files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
 and runtime revisions after rotation. The launcher refuses SMTP placeholders.
-Schema preparation precedes owner bootstrap and application Deployments.
+A wave-0 local-socket hook provisions limited `mastodon_app`; PostgreSQL's
+protected bootstrap administrator remains separate. Schema preparation precedes
+owner bootstrap and application Deployments. Application containers use native
+image UID/GID 991 with filesystem group 65534; datastores use UID/GID 65534.
 
 The targeted Terragrunt saved-plan path checks upstream health, storage and
 secret-store permissions before SSM declarations and registration. The separate
@@ -859,3 +862,6 @@ and [activation gates](../operations/validation-gates.md#mastodon-activation-gat
 Merge, actual rollout, loaded-library checks, owner login, SMTP receipt,
 public website/media/streaming/federation and backup/isolated-restore acceptance
 remain distinct milestones.
+
+Web, Sidekiq, streaming and migration/owner Jobs select Acer for memory
+headroom. Datastores and the local-socket backup Job remain on `zimaboard-1`.

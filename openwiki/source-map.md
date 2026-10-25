@@ -211,3 +211,6 @@ Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/
 See the [inventory](workloads/inventory.md),
 [credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
 and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
+Database role provisioning: [SQL and initial extensions](../clusters/homelab/apps/mastodon/initdb-configmap.yaml),
+[ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
+[PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).

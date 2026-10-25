@@ -16,8 +16,8 @@ data:
     DB_HOST=mastodon-postgres.mastodon.svc.cluster.local
     DB_PORT=5432
     DB_NAME=mastodon
-    DB_USER=mastodon
-    DB_PASS={{ .postgres_password }}
+    DB_USER=mastodon_app
+    DB_PASS={{ .postgres_app_password }}
     REDIS_HOST=mastodon-redis.mastodon.svc.cluster.local
     REDIS_PORT=6379
     REDIS_PASSWORD={{ .redis_password }}
@@ -46,8 +46,8 @@ data:
     DB_HOST=mastodon-postgres.mastodon.svc.cluster.local
     DB_PORT=5432
     DB_NAME=mastodon
-    DB_USER=mastodon
-    DB_PASS={{ .postgres_password }}
+    DB_USER=mastodon_app
+    DB_PASS={{ .postgres_app_password }}
     REDIS_HOST=mastodon-redis.mastodon.svc.cluster.local
     REDIS_PORT=6379
     REDIS_PASSWORD={{ .redis_password }}

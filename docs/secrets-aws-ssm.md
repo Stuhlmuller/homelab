@@ -122,9 +122,13 @@ acceptance, rotation, and recovery commands.
 
 ## Mastodon secret contract
 
-The undeployed Mastodon draft declares generated PostgreSQL, Redis, Rails,
+Mastodon declares separate generated PostgreSQL bootstrap/application credentials, Redis, Rails,
 Active Record encryption, and P-256 VAPID keys under `/homelab/mastodon/`.
-`mastodon-datastores` mounts database/Redis passwords; `mastodon-runtime`
+`mastodon-datastores` contains bootstrap, application and Redis passwords with
+per-container key projections. PostgreSQL retains its protected bootstrap role;
+a local-socket hook creates limited `mastodon_app`. The bootstrap password is
+excluded from application configuration and Redis mounts only its own key.
+`mastodon-runtime`
 templates mounted application configuration, the stable VAPID PEM, and the
 initial owner password. `/homelab/mastodon/admin-password` is generated for
 first bootstrap only; its file mounts only into the owner Job, not the web or
@@ -387,8 +391,8 @@ cluster CA is intentionally rotated.
 | litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
-| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password` |
-| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
+| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/postgres-app-password`, `/homelab/mastodon/redis-password` |
+| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-app-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
 | mastodon owner | `mastodon-runtime` | `mastodon-runtime` (Job-only file mount) | `/homelab/mastodon/admin-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
