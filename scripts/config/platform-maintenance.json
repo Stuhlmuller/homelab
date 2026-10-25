@@ -108,7 +108,7 @@
     "acer"
   ],
   "canary": {
-    "node": null,
+    "node": "zimaboard-2",
     "label": "homelab.stinkyboi.com/network-policy-canary",
     "taint": "homelab.stinkyboi.com/network-policy-canary=true:NoSchedule",
     "requiresDedicatedTaint": true,

@@ -21,8 +21,9 @@ the fixture namespace as an explicit destination.
 
 The protected `canary-admit` stage changes only the reviewed Node's dedicated
 `NoSchedule` taint, then its selector label. It remains blocked while
-`scripts/config/platform-maintenance.json` has `canary.node: null`. A later
-protected `firewall-baseline` stage can run before activation on `zimaboard-2`.
+`scripts/config/platform-maintenance.json` selects `zimaboard-2` but keeps
+`activationEnabled: false`. A protected `firewall-baseline` stage can run before
+activation on that worker.
 It first confirms the worker UID, boot ID, hostname selector, Ready state,
 and only eligible system DaemonSet Pods. It creates the fixed, digest-pinned
 `preflight/pod.json` Pod through the protected workflow, reads both IPv4 and
@@ -41,16 +42,27 @@ with that attempt's `baseline_source_sha` and `baseline_run_id`; the stage
 checks the token, uses a UID-precondition Kubernetes DELETE through a private
 Unix socket, and confirms absence. Recovery never certifies the firewall.
 `canary-admit` separately refuses any remaining preflight Pod before changing
-the Node. Review the private capture before using its `firewallBaselineEmpty`
-and exact Node IDs in a placement receipt. This capture does not authorize
-placement or admission: no producer currently binds it into `placement.json`,
-it does not measure capacity, and firewall rules can change after capture.
+the Node. Review the private capture before dispatching protected `placement`
+with the same current-main SHA and the baseline run ID. Placement requires the
+capture to be less than one hour old, verifies its single KMS-encrypted S3
+version, checksum, empty IPv4/IPv6/ipset snapshot, Node UID/boot ID and exact
+system Pod UIDs, then checks live Pod requests, metrics younger than two minutes,
+and kubelet node filesystem space. The pinned enforcer and three fixtures need
+346 MiB/280m in requests and at most 704 MiB memory at their limits; placement
+requires another 128 MiB/100m and 5 GiB node filesystem free. It writes one
+versioned `placement.json` for that exact current-main SHA. `canary-admit`
+accepts it only within 30 minutes of measurement and one hour of the baseline
+capture, then repeats the read-only Pod, metrics, node filesystem, and headroom
+checks immediately before changing the Node. A new main commit,
+changed Node/Pod identity, insufficient headroom, or a failed read blocks the
+stage. The earlier host firewall snapshot can drift after capture; admission
+does not rerun the privileged probe.
 
-After capacity measurement, a reviewed placement must name one worker and
-place a single KMS-encrypted, versioned `placement.json` under
+The protected placement stage names this worker and stores one KMS-encrypted,
+versioned `placement.json` under
 `openclaw-enterprise/platform/receipts/<current-main-sha>/`. The receipt must
 have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
-`canaryNode`, `nodeUid`, `bootID`, a timestamp younger than six hours,
+`canaryNode`, `nodeUid`, `bootID`, a timestamp younger than 30 minutes,
 `measured: true`, the configured `isolatedTaint`, and
 `firewallBaselineEmpty: true` from an independently reviewed pre-enable
 snapshot. It must also list every permitted system DaemonSet Pod under
@@ -72,7 +84,10 @@ list again after labeling. Each Node patch tests
 taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.
 
-After a tainted node passes capacity admission and the fixture image is mirrored,
+Admission only gates the Node taint and label. The later enforcer and fixture
+rollout still needs its own protected fresh capacity gate; that gate is not
+implemented, so do not enable the rollout yet. Once that gate and the fixture
+image mirror are ready,
 merge one reviewed change that enables automated sync and pruning in both
 `IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl` and
 `IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`, and lists `fixtures.yaml` in

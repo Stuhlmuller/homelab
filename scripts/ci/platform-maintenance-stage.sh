@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|firewall-baseline|firewall-baseline-recover|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -16,7 +16,9 @@ esac
 
 config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
-if [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
+if [[ "$stage" == placement || "$stage" == firewall-baseline ]]; then
+  jq -e '.activationEnabled == false and .canary.node == "zimaboard-2"' "$config" >/dev/null
+elif [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
 elif [[ "$stage" != inspect && "$stage" != firewall-baseline && "$stage" != firewall-baseline-recover ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
@@ -176,9 +178,32 @@ case "$stage" in
     fi
     retain_result "$work/baseline-recover.json" baseline-recover
     ;;
+  placement)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
+    [[ "${BASELINE_SOURCE_SHA:-}" == "$GITHUB_SHA" &&
+       "${BASELINE_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
+    bash scripts/ci/install-kubeconfig.sh
+    kubectl auth can-i get nodes --quiet
+    kubectl auth can-i list nodes --quiet
+    kubectl auth can-i list pods --all-namespaces --quiet
+    kubectl auth can-i get nodes.metrics.k8s.io --quiet
+    kubectl auth can-i get nodes/proxy --quiet
+    python3 -I scripts/network-policy-placement.py --config "$config" \
+      --expected-sha "$GITHUB_SHA" --baseline-source-sha "$BASELINE_SOURCE_SHA" \
+      --baseline-run-id "$BASELINE_RUN_ID" --bucket "$bucket" \
+      --output "$work/placement.json"
+    retain_result "$work/placement.json" placement
+    ;;
   canary-admit|canary-release)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
     bash scripts/ci/install-kubeconfig.sh
+    if [[ "$stage" == canary-admit ]]; then
+      kubectl auth can-i get nodes --quiet
+      kubectl auth can-i list nodes --quiet
+      kubectl auth can-i list pods --all-namespaces --quiet
+      kubectl auth can-i get nodes.metrics.k8s.io --quiet
+      kubectl auth can-i get nodes/proxy --quiet
+    fi
     install -m 0700 -d "$work/receipts"
     if [[ "$stage" == canary-release ]]; then
       [[ "${CLEANUP_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
@@ -203,7 +228,7 @@ case "$stage" in
     retain_result "$work/canary-attempt.json" "${stage}-attempt"
     if ! python3 -I scripts/network-policy-canary-node.py "${stage#canary-}" \
       --config "$config" --expected-sha "$GITHUB_SHA" \
-      --receipt-dir "$work/receipts" --output "$work/canary.json"; then
+      --receipt-dir "$work/receipts" --bucket "$bucket" --output "$work/canary.json"; then
       if [[ -f "$work/canary.json" && ! -L "$work/canary.json" ]]; then
         retain_result "$work/canary.json" "${stage}-interrupted"
       fi

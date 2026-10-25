@@ -1915,8 +1915,16 @@ arrive during deletion. Live activation stays blocked until isolated placement
 rules that out or a reviewed repository-owned isolation path is added. See
 the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
-The staged protected `canary-admit` path remains dormant while `canary.node` is
-unset. With a fresh placement receipt, it verifies the exact Node UID and boot
+The staged protected `canary-admit` path remains dormant until the protected
+`placement` stage writes a verified current-main receipt. Placement binds a
+reviewed, less-than-one-hour-old versioned firewall capture to fresh Node and
+system Pod identities, requested resources, metrics and node filesystem
+headroom; it keeps platform activation disabled. Admission rejects placement
+older than 30 minutes or its baseline older than one hour, then rechecks the
+bound capture, Pod identities, Node metrics, filesystem and capacity before
+Node mutation. A separate fresh capacity gate is still needed before the later
+enforcer and fixture rollout. With a fresh receipt,
+admission verifies the exact Node UID and boot
 ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
 Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
 then the selector label. A complete cluster-wide selector inventory must show

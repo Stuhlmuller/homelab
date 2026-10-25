@@ -68,10 +68,37 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(external)
 
-    def test_pre_enable_baseline_reaches_protected_entry_without_canary_node(self):
-        result, external = self.run_stage("firewall-baseline")
+    def test_pre_enable_baseline_reaches_protected_entry_with_reviewed_node(self):
+        result, external = self.run_stage("firewall-baseline", "zimaboard-2")
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(external)
+
+    def test_placement_requires_reviewed_node_before_external_access(self):
+        result, external = self.run_stage("placement")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(external)
+        result, external = self.run_stage("placement", "zimaboard-2")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(external)
+
+    def test_placement_binds_baseline_before_publishing(self):
+        source = STAGE.read_text().split('  placement)\n', 1)[1].split(
+            '  canary-admit|canary-release)\n', 1)[0]
+        self.assertIn('"${BASELINE_SOURCE_SHA:-}" == "$GITHUB_SHA"', source)
+        self.assertIn('"${BASELINE_RUN_ID:-}" =~ ^[1-9][0-9]*$', source)
+        self.assertIn('scripts/network-policy-placement.py', source)
+        self.assertLess(source.index('scripts/network-policy-placement.py'),
+                        source.index('retain_result "$work/placement.json" placement'))
+
+    def test_admission_checks_capacity_rbac_before_node_script(self):
+        source = STAGE.read_text().split('  canary-admit|canary-release)\n', 1)[1].split(
+            '  qualify)\n', 1)[0]
+        for access in ("get nodes", "list nodes", "list pods --all-namespaces",
+                       "get nodes.metrics.k8s.io", "get nodes/proxy"):
+            self.assertIn(f"kubectl auth can-i {access} --quiet", source)
+        self.assertLess(source.index("kubectl auth can-i get nodes.metrics.k8s.io"),
+                        source.index('scripts/network-policy-canary-node.py'))
+        self.assertIn('--receipt-dir "$work/receipts" --bucket "$bucket"', source)
 
     def test_baseline_retains_attempt_before_probe_and_private_capture(self):
         source = STAGE.read_text()
