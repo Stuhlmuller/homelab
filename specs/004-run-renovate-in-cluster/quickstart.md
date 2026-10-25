@@ -55,13 +55,14 @@ persists across distinct Pod UIDs. A shorter second run alone is insufficient
 cache evidence: use scoped restricted TRACE or a mock-registry counter to prove
 a same-key hit, then confirm a newly published canary version appears after
 normal refresh. [The parity receipt](dry-run-parity-receipt.md) records the
-completed v0.0.1/v0.0.2 proof. Its temporary INFO remap was removed because
+completed v0.0.1/v0.0.2 proof. [Companion #53](https://github.com/Stuhlmuller/renovate/pull/53)
+removed the canary fixture and workflow. Its temporary INFO remap was removed
+in [homelab #1579](https://github.com/Stuhlmuller/homelab/pull/1579) because
 cache keys can identify private repositories and packages; do not reintroduce
 it for write-enabled runs. Keep raw records out of public PRs, issues, and CI
-output. Remove the companion canary fixture and workflow through a reviewed PR
-after acceptance, deleting `renovate.json` only if it remains canary-only. If
-the App sees fewer repositories than the owner inventory or its installation
-does not select all repositories, stop cutover and add a reviewed access path.
+output. If the App sees fewer repositories than the owner inventory or its
+installation does not select all repositories, stop cutover and add a reviewed
+access path.
 
 The mock discovery fixture above proves the add/remove rule; it does not claim
 that a real owner transfer occurred.
