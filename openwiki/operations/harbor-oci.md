@@ -183,7 +183,8 @@ verified:
 ## Helm chart publication
 
 The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
-the package SHA-256 for every Argo CD chart source. The protected
+the package SHA-256 for every Argo CD chart source, including the dormant
+OpenClaw Enterprise Git Helm chart. The protected
 `harbor-helm-charts.yml` dispatch publishes the exact packages to
 `harbor.stinkyboi.com/mirror/helm` and verifies each with the separate reader
 robot. Run it on current `main` before moving any Argo CD chart source to

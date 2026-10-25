@@ -38,9 +38,10 @@ def validate(manifest, sources):
             raise ValueError("Harbor chart hash or uniqueness is invalid")
         seen.add((chart, version))
         if "revision" in row:
-            if (row["repository"] != "https://github.com/rancher/local-path-provisioner.git"
-                    or row["path"] != "deploy/chart/local-path-provisioner"
-                    or not re.fullmatch(r"[0-9a-f]{40}", row["revision"])):
+            if (row["repository"], row["path"]) not in {
+                ("https://github.com/rancher/local-path-provisioner.git", "deploy/chart/local-path-provisioner"),
+                ("https://github.com/openclaw/openclaw-enterprise.git", "deploy/helm/openclaw-enterprise"),
+            } or not re.fullmatch(r"[0-9a-f]{40}", row["revision"]):
                 raise ValueError("Git chart source is invalid")
             if ("git:" + row["path"], row["revision"], row["repository"]) not in declared and (chart, version, DESTINATION) not in declared:
                 raise ValueError("Git chart is not in the Argo CD inventory")

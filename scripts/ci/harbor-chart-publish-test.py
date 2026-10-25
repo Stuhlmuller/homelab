@@ -15,7 +15,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 manifest = json.loads(publisher.MANIFEST.read_text())
 sources = json.loads(publisher.SOURCES.read_text())
-assert len(publisher.validate(manifest, sources)) == 27
+assert len(publisher.validate(manifest, sources)) == 28
 
 with tempfile.TemporaryDirectory() as temporary:
     package = Path(temporary) / "test.tgz"

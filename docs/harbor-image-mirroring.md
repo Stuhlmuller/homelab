@@ -5,8 +5,8 @@
 ## Helm charts
 
 `scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
-chart in `scripts/config/harbor-image-charts.json`, including the local-path
-chart packaged from its pinned Git revision. The protected
+chart in `scripts/config/harbor-image-charts.json`, including local-path and
+OpenClaw Enterprise charts packaged from pinned Git revisions. The protected
 `harbor-helm-charts.yml` workflow accepts only the exact current `main` SHA,
 fetches those upstream packages, checks their identity and bytes, and pushes
 them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
