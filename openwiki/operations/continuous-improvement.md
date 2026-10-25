@@ -274,7 +274,7 @@ observations below retain their original dates.
   CLI, console, Cordium execution and reconnect behavior before withdrawing
   private fallback access.
 
-- **Status:** fixed
+- **Status:** in progress
 - **Area:** CI/CD / credential isolation
 - **Evidence:** On 2026-08-27 `homelab-plan` and `homelab-production` were
   configured with required reviewers, production was limited to `main`,
@@ -282,14 +282,17 @@ observations below retain their original dates.
   `14700233` began requiring signed squash pull requests, strict always-on
   checks, and non-fast-forward protection. Unused repository secrets
   `KUBE_CONFIG_B64`, `TAILSCALE_AUTH_KEY`, and `TS_AUTH_KEY` were removed.
-- **Update:** The operator requested no deployment approval for `main`.
-  `homelab-production` retains its exact main-only branch restriction, with no
-  required reviewers; `homelab-plan` retains reviewers for PR branches.
-  The source is `github-iac/Stuhlmuller/repositories/terragrunt.hcl`; its
-  focused reconciler verifies both boundaries before and after apply.
-- **Risk:** Main jobs receive production credentials without another human
-  checkpoint; merged-code review and branch protections remain the boundary.
-- **Next step:** Keep credentials environment-scoped and retain PR-plan review.
+- **Update:** [github-iac PR #120](https://github.com/Stuhlmuller/github-iac/pull/120)
+  removed the `homelab-plan` reviewer from its
+  source of truth. Read-only inspection on 2026-10-25 found no live plan
+  protection rules. `homelab-production` still restricts deployment to `main`
+  without required reviewers.
+- **Risk:** Same-repository writers can run PR code with plan credentials and
+  read AzureAD state containing SSO credentials. Main jobs receive production
+  credentials without another human checkpoint.
+- **Next step:** Keep credentials environment-scoped, finish the dedicated
+  read-only plan role and Octelium token, and treat repository write access as
+  the PR-plan credential gate.
 
 - **Status:** blocked by organization policy and authority
 - **Area:** dependency security

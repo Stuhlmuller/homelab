@@ -266,17 +266,17 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. It requires
-  `rstuhlmuller` review before releasing plan credentials; the same-repository
-  workflow trust check remains required.
+- `homelab-plan`: used by same-repository pull request plans. It has no
+  required reviewers; the same-repository workflow trust check remains
+  required before credentials are released automatically.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
   No required reviewers; allow only the exact `main` branch (no tags).
 
 The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
 in [github-iac](https://github.com/Stuhlmuller/github-iac). Apply its documented
 environment-only saved plan; the ruleset-only deployment workflow does not
-reconcile environments. Restore reviewers through HCL and a saved plan to
-roll back approval behavior, retaining the exact `main` production allowlist.
+reconcile environments. Change approval behavior through HCL and a saved plan,
+retaining the exact `main` production allowlist.
 
 `OCTELIUM_CI_AUTH_TOKEN` currently holds the same `homelab-ci` credential in
 both environments. The staged `homelab-ci-plan` User and Policy allow a
@@ -634,9 +634,10 @@ needed by AzureAD plans. `s3:ListBucket` on the state bucket is unconditional
 so a missing new unit state returns 404 to OpenTofu's `HeadObject`; it exposes
 all state object key names, while `s3:GetObject` still limits state contents to
 the four PR-planned families. The allowed AzureAD state itself contains SSO
-credentials; the reviewer gate protects that access. The runtime-secret KMS
-grant decrypts those parameters only through SSM. It has no AWS resource-write
-grant. The plan workflow still uses `Github-TF-State`;
+credentials. Same-repository writers can run PR code with this read scope;
+repository write access and the workflow's same-repository check are the gate.
+The runtime-secret KMS grant decrypts those parameters only through SSM. It has
+no AWS resource-write grant. The plan workflow still uses `Github-TF-State`;
 apply the new role with a reviewed operator saved plan, publish its ARN with
 `scripts/aws-plan-role-configure.sh`, and switch the workflow in a separate PR.
 The [operator runbook](operator-infrastructure.md#dedicated-pull-request-plan-role)

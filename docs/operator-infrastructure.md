@@ -354,8 +354,10 @@ Do not use the trust-only target for those changes.
 
 ### Dedicated pull-request plan role
 
-Merge the role declaration only after the PR plan environment has its reviewer
-gate. Use the administrator-authenticated full-unit saved-plan path in
+The PR plan environment starts same-repository jobs without reviewer approval.
+Its AzureAD state read scope includes SSO credentials; repository write access
+and the workflow's same-repository check are the gate. Use the
+administrator-authenticated full-unit saved-plan path in
 [`ci-cd.md`](ci-cd.md#aws-setup). Expect only
 `aws_iam_role.github_actions_plan` and
 `aws_iam_role_policy.github_actions_plan` creations; stop on unrelated changes.
