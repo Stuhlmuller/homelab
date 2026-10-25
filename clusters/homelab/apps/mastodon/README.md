@@ -426,7 +426,7 @@ for this single-Service change. The tunnel bypasses human access only for the fe
 The tunnel matches an anchored allowlist before its authenticated Octelium
 fallback. Only WebFinger/host-meta, instance actor/inboxes, canonical `/ap/`
 ActivityPub resources, legacy `/users/` resources, contexts, collections,
-emojis and local attachment/avatar/header/emoji files remain anonymous.
+emojis and local attachment/thumbnail/avatar/header/emoji files remain anonymous.
 The path grammar excludes dot segments, encoded escapes and arbitrary media
 suffixes; tests exercise cloudflared's actual matcher, including encoded bypasses.
 
@@ -446,3 +446,13 @@ allowlist expansion without checking Mastodon route ownership again.
 
 Rollback through a reviewed PR reverting the tunnel config and its Deployment
 revision; preserve the authenticated Service and all retained data.
+
+The allowlist follows [Mastodon 4.7.3 route ownership](https://github.com/mastodon/mastodon/blob/v4.7.3/config/routes.rb)
+and [attachment serialization](https://github.com/mastodon/mastodon/blob/v4.7.3/app/serializers/activitypub/note_serializer.rb).
+[Cloudflared matches rules in order](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/configuration-file/);
+the first Mastodon rule is the narrow exception, the second requires Octelium.
+
+On 2026-10-25 the initial-backup and isolated restore-verification Jobs completed
+successfully at revision `ce28791046ced6805c0a0df1397c382f227e67dc`; Argo reported
+Synced/Healthy/Succeeded. Schema, approved owner and media catalog were restored;
+production database storage and credentials were not mounted into the verifier.

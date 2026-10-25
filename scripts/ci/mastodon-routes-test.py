@@ -35,6 +35,7 @@ class Routes(unittest.TestCase):
                 "/ap/users/123/quote_authorizations/456", "/users/rodman/inbox",
                 "/users/rodman/collections/featured", "/contexts/123-456/items", "/collections/123",
                 "/emojis/123", "/system/media_attachments/files/123/456/original/abc123.png",
+                "/system/media_attachments/thumbnails/123/456/original/abc123.jpg",
                 "/system/accounts/avatars/123/456/original/abc123.png",
                 "/system/custom_emojis/images/123/456/static/abc123.png",
             ]
