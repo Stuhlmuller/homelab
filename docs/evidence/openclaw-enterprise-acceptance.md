@@ -41,6 +41,13 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | 24-hour observation and selective retirement | Pending | — | Pending |
 | T059 source documentation and OpenWiki refresh | [merged PR #1560](https://github.com/Stuhlmuller/homelab/pull/1560), main `0e223d6`; protected static, lint, image-policy, network-policy and release-dry-run checks passed | — | Passed for source documentation only: five named runbooks updated and affected OpenWiki pages refreshed by the native update path. Capacity, credentials, policy enforcement, platform upgrades and Enterprise live acceptance remain pending. |
 
+The zero-replica Nix builder declaration is a source-only candidate to free
+1,024 MiB of requests on `zimaboard-0` for node-bound media backups. Before
+a reviewed merge, confirm no active build.
+After Argo sync, require fresh successful backup Jobs and independent restore
+before any media retirement. This does not admit Enterprise placement or a
+canary.
+
 The successful Enterprise bundle's [job summary](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867#summary-120734188450) records these immutable references:
 
 ```text
