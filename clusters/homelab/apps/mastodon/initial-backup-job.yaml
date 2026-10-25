@@ -9,4 +9,13 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: '3'
 # Kustomize copies the nightly Job template so both use the same backup path.
-spec: {}
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault

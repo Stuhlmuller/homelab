@@ -28,6 +28,9 @@ class Routes(unittest.TestCase):
         backup = by_name["mastodon-initial-backup-v1"]
         verify = by_name["mastodon-restore-verification-v1"]
         self.assertEqual(backup["spec"], by_name["mastodon-backup"]["spec"]["jobTemplate"]["spec"])
+        source_pod = documents("initial-backup-job.yaml")[0]["spec"]["template"]["spec"]
+        for key, value in source_pod.items():
+            self.assertEqual(value, backup["spec"]["template"]["spec"][key])
         def wave(resource):
             return int(resource["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"])
         self.assertLess(wave(documents("bootstrap-job.yaml")[0]), wave(backup))

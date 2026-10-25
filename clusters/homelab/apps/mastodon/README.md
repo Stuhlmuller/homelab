@@ -132,6 +132,14 @@ stable application keys through rollback; rerunning the hook is not a password
 reset mechanism. Tests verify first creation, repeat preservation, conflict
 refusal, and error containment. Actual Rails persistence is verified after rollout.
 
+## Browser acceptance
+
+Public browser acceptance on 2026-10-25 verified owner sign-in, Home navigation,
+and private-post read-back. The pinned 4.7.3 admin dashboard also loads, but emits
+a React Router `Invariant failed` error from `react-router-dom-C1dtKQUg.js`.
+Client-side dashboard widgets remain an open validation finding; inspect that
+bundle and its router context before treating those widgets as verified.
+
 ## Backup and restore
 
 The nightly `mastodon-backup` CronJob connects over the database's local Unix
