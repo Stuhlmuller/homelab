@@ -1,4 +1,4 @@
-"""Exercise the deployed inline migration with synthetic workflow exports."""
+"""Exercise the one-time Job migration with synthetic workflow exports."""
 import copy
 import json
 import os
@@ -14,10 +14,40 @@ rule = gateway_policy["spec"]["rules"][0]
 assert "cluster.local/ns/automation/sa/n8n" in rule["from"][0]["source"]["principals"]
 assert rule["to"] == [{"operation": {"ports": ["4000"]}}]
 
-command = subprocess.check_output([
-    "yq", "-r", '.controllers.n8n.initContainers."migrate-ai-workflow".command[2]',
-    "clusters/homelab/apps/n8n/values.yaml",
-], text=True)
+values = json.loads(subprocess.check_output([
+    "yq", "-o=json", ".", "clusters/homelab/apps/n8n/values.yaml",
+], text=True))
+app = values["controllers"]["n8n"]
+assert "migrate-ai-workflow" not in app["initContainers"]
+assert list(app["initContainers"]) == ["wait-for-postgres"]
+assert app["strategy"] == "Recreate"
+assert "migrate-ai-workflow-v1" not in values["controllers"]
+assert "migration-v1.values.yaml" not in Path("IaC/homelab/us-west-2/apps/n8n/stack.hcl").read_text()
+assert "migration-v1.values.yaml" not in Path("clusters/homelab/apps/n8n/kustomization.yaml").read_text()
+migration_values = json.loads(subprocess.check_output([
+    "yq", "-o=json", ".", "clusters/homelab/apps/n8n/migration-v1.values.yaml",
+], text=True))
+job = migration_values["controllers"]["migrate-ai-workflow-v1"]
+assert job["type"] == "job"
+assert job["annotations"] == {"argocd.argoproj.io/sync-wave": "1"}
+assert job["job"]["backoffLimit"] == 1
+assert job["job"]["activeDeadlineSeconds"] == 900
+assert "ttlSecondsAfterFinished" not in job["job"]
+assert job["pod"]["affinity"]["podAffinity"]["requiredDuringSchedulingIgnoredDuringExecution"] == [{
+    "labelSelector": {"matchLabels": {
+        "app.kubernetes.io/controller": "n8n",
+        "app.kubernetes.io/instance": "n8n",
+        "app.kubernetes.io/name": "n8n",
+    }},
+    "topologyKey": "kubernetes.io/hostname",
+}]
+assert migration_values["persistence"]["data"]["advancedMounts"]["migrate-ai-workflow-v1"]["migrate"] == [
+    {"path": "/home/node/.n8n"},
+]
+assert migration_values["persistence"]["postgres-client"]["advancedMounts"]["migrate-ai-workflow-v1"]["migrate"] == [
+    {"path": "/run/secrets/n8n-postgres", "readOnly": True},
+]
+command = job["containers"]["migrate"]["command"][2]
 script = command.split('node - "$workflow_id" <<\'NODE\'\n', 1)[1].split("\nNODE", 1)[0]
 assert 'if [ "$(cat /tmp/ai-workflow-active)" = true ]; then\n  n8n publish:workflow' in command
 assert 'n8n export:workflow --id="$workflow_id"' in command
@@ -26,6 +56,7 @@ assert 'workflow_ids="$(n8n list:workflow --onlyId)"' in command
 assert 'if ! printf' in command
 assert 'node - "$workflow_id" <<' in command
 assert 'if ! node - "$workflow_id"' not in command
+assert 'N8N_AI_MIGRATION_APPLIED workflow_id=$workflow_id active=true restart_required=true' in command
 targets = [
     ("s1JVSbnvnmHMCbty", "5c52f616-3b9e-4483-89e3-effffc393750", True, "lmChatAwsBedrock", "anthropic.claude-3-sonnet-20240229-v1:0"),
     ("xaUDsbylSwaveMQ5", "d8f30a03-c3a1-4bdd-b733-8e33da04b004", False, "lmChatOpenAi", "gpt-5.5"),
@@ -124,7 +155,9 @@ n8n() {
       [ -f "$EXPORT_DIR/$workflow_id.json" ] || return 1
       cp "$EXPORT_DIR/$workflow_id.json" "${3#--output=}"
       ;;
-    import:workflow) echo import >> "$CALLS" ;;
+    import:workflow)
+      [ "${IMPORT_FAIL:-}" != true ] || return 29
+      echo import >> "$CALLS" ;;
     publish:workflow) echo "publish:${2#--id=}" >> "$CALLS" ;;
     *) return 99 ;;
   esac
@@ -163,6 +196,13 @@ n8n() {
     assert result.returncode != 0
     assert calls.read_text().splitlines() == ["credentials"]
 
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env={**environment, "IMPORT_FAIL": "true"},
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
     (exports / "s1JVSbnvnmHMCbty.json").write_text("{invalid-json")
     calls.unlink()
     result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
@@ -191,4 +231,4 @@ n8n() {
     assert result.returncode == 0, result.stderr
     assert calls.read_text().splitlines() == ["credentials"]
     assert "Skipping AI workflow migration for s1JVSbnvnmHMCbty" in result.stderr
-print("n8n AI migration: three targets, inactive preservation, arrays, idempotence and refusal guards passed")
+print("n8n staged AI migration: startup independence, three targets, inactive preservation, idempotence and refusal guards passed")
