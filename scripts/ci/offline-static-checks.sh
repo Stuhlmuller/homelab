@@ -997,6 +997,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/image-automation.yml:observe' \
     '.github/workflows/image-automation.yml:promote' \
     '.github/workflows/image-automation.yml:verify' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
@@ -1078,6 +1080,7 @@ done <<'EOF'
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
+.github/workflows/langfuse-postgres-checkpoint.yml 10fcf54954c0c3020582a993f792cc0923a1d6c631d0bc5d9fdd103d0a0d58fb
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
@@ -1108,6 +1111,7 @@ for workflow_job in \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
+  '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
