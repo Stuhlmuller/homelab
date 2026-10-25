@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Keep Mastodon's public route away from private apps and datastores."""
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -66,6 +67,7 @@ class Routes(unittest.TestCase):
         service, = [r for r in catalog if r.get("kind") == "Service"
                     and r["metadata"]["name"] == "mastodon"]
         spec = service["spec"]
+        self.assertEqual((spec["mode"], spec["port"]), ("WEB", 80))
         self.assertTrue(spec["isPublic"])
         self.assertFalse(spec["isAnonymous"])
         self.assertEqual(spec["authorization"]["policies"], ["homelab-human-web-access"])
@@ -76,6 +78,53 @@ class Routes(unittest.TestCase):
         self.assertEqual(header["authorizationMode"], "PASS")
         self.assertEqual(header["forwardedMode"], "TRANSPARENT")
 
+    def test_fresh_bootstrap_creates_backup_before_verification(self):
+        rendered = subprocess.check_output(["kubectl", "kustomize", str(APP)], text=True)
+        resources = json.loads(subprocess.check_output([
+            "yq", "eval-all", "-o=json", ". as $doc ireduce ([]; . + [$doc])", "-",
+        ], input=rendered, text=True))
+        by_name = {r["metadata"]["name"]: r for r in resources}
+        backup = by_name["mastodon-initial-backup-v1"]
+        verify = by_name["mastodon-restore-verification-v1"]
+        self.assertEqual(backup["spec"], by_name["mastodon-backup"]["spec"]["jobTemplate"]["spec"])
+        source_pod = documents("initial-backup-job.yaml")[0]["spec"]["template"]["spec"]
+        for key, value in source_pod.items():
+            self.assertEqual(value, backup["spec"]["template"]["spec"][key])
+        def wave(resource):
+            return int(resource["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"])
+        self.assertLess(wave(documents("bootstrap-job.yaml")[0]), wave(backup))
+        self.assertLess(wave(backup), wave(verify))
+
+    def test_restore_failure_cannot_report_success(self):
+        script = documents("restore-verification-job.yaml")[0]["spec"]["template"]["spec"]["containers"][0]["args"][0]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "restore").mkdir()
+            backup = root / "backup/database/20261025T100000Z"
+            backup.mkdir(parents=True)
+            (backup / "SHA256SUMS").write_text("")
+            binaries = root / "bin"
+            binaries.mkdir()
+            for name in ("sha256sum", "initdb", "pg_ctl", "createdb", "psql", "pg_restore"):
+                path = binaries / name
+                path.write_text("#!/bin/sh\n" + ("exit 1\n" if name == "pg_restore" else "echo t\n"))
+                path.chmod(0o700)
+            script = script.replace("/restore", str(root / "restore")).replace("/backup", str(root / "backup"))
+            result = subprocess.run(["/bin/sh", "-ec", script], text=True, capture_output=True,
+                                    env={**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"]})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("restore failed", result.stderr)
+            self.assertNotIn("catalog verified", result.stdout)
+
+    def test_restore_cannot_mount_production_database_or_credentials(self):
+        job = documents("restore-verification-job.yaml")[0]
+        pod = job["spec"]["template"]["spec"]
+        self.assertFalse(pod["automountServiceAccountToken"])
+        claims = [v["persistentVolumeClaim"] for v in pod["volumes"] if "persistentVolumeClaim" in v]
+        self.assertEqual(claims, [{"claimName": "mastodon-backup", "readOnly": True}])
+        self.assertFalse(any("secret" in v for v in pod["volumes"]))
+        self.assertEqual(job["spec"]["backoffLimit"], 0)
+        self.assertEqual(int(job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]), 4)
     def test_public_egress_matches_configured_smtp_port(self):
         config = documents("configmap.yaml")[0]["data"][".env.production"]
         entries = dict(line.split("=", 1) for line in config.splitlines() if "=" in line)
