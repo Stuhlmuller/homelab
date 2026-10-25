@@ -10,6 +10,7 @@ resources:
   - redis.yaml
   - networkpolicy.yaml
   - backup-cronjob.yaml
+  - restore-verification-job.yaml
   - configmap.yaml
   - runtime-externalsecret.yaml
   - database-role-job.yaml

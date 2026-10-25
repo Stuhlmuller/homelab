@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Keep Mastodon's public route away from private apps and datastores."""
 import json
+import os
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -17,6 +19,37 @@ def documents(name):
 
 
 class Routes(unittest.TestCase):
+    def test_restore_failure_cannot_report_success(self):
+        script = documents("restore-verification-job.yaml")[0]["spec"]["template"]["spec"]["containers"][0]["args"][0]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "restore").mkdir()
+            backup = root / "backup/database/20261025T100000Z"
+            backup.mkdir(parents=True)
+            (backup / "SHA256SUMS").write_text("")
+            binaries = root / "bin"
+            binaries.mkdir()
+            for name in ("sha256sum", "initdb", "pg_ctl", "createdb", "psql", "pg_restore"):
+                path = binaries / name
+                path.write_text("#!/bin/sh\n" + ("exit 1\n" if name == "pg_restore" else "echo t\n"))
+                path.chmod(0o700)
+            script = script.replace("/restore", str(root / "restore")).replace("/backup", str(root / "backup"))
+            result = subprocess.run(["/bin/sh", "-ec", script], text=True, capture_output=True,
+                                    env={**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"]})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("restore failed", result.stderr)
+            self.assertNotIn("catalog verified", result.stdout)
+
+    def test_restore_cannot_mount_production_database_or_credentials(self):
+        job = documents("restore-verification-job.yaml")[0]
+        pod = job["spec"]["template"]["spec"]
+        self.assertFalse(pod["automountServiceAccountToken"])
+        claims = [v["persistentVolumeClaim"] for v in pod["volumes"] if "persistentVolumeClaim" in v]
+        self.assertEqual(claims, [{"claimName": "mastodon-backup", "readOnly": True}])
+        self.assertFalse(any("secret" in v for v in pod["volumes"]))
+        self.assertEqual(job["spec"]["backoffLimit"], 0)
+        self.assertEqual(int(job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]), 4)
+
     def test_public_route_only_reaches_mastodon(self):
         spec = documents("virtualservice.yaml")[0]["spec"]
         self.assertEqual(spec["hosts"], ["mastodon.stinkyboi.com"])

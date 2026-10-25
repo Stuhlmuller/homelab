@@ -141,6 +141,14 @@ and atomically publishes it to the retained NFS backup claim. It retains
 and stable application keys still need their final backup contract. NFS media
 and backups share a NAS and do not protect against NAS loss.
 
+The one-shot `mastodon-restore-verification-v1` Job restores the newest
+checksum-verified NAS dump into disposable PostgreSQL 18 storage after the
+application rollout. It mounts the backup read-only, has no production database
+volume or credentials, and listens only on its private Unix socket. Success
+requires the restored schema, approved owner, and readable media catalog.
+Its completed Job records this rehearsal; it does not continuously verify later
+backups or recover media files and application keys.
+
 Before acceptance, prove a successful scheduled backup and restore the newest
 dump into an isolated PostgreSQL instance. Verify tables, accounts, and media
 references before trusting the restore. Initialize the extensions and limited application role from
