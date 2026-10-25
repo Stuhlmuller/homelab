@@ -1,0 +1,4 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# T023 enables fixture.yaml after measured worker placement and a reviewed apply.
+resources: []

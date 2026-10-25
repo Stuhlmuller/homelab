@@ -4,13 +4,17 @@
 import argparse
 import base64
 import hashlib
+import http.client
+import ipaddress
 import json
 import os
 import re
+import select
 import stat
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -26,6 +30,13 @@ SHA = re.compile(r"[0-9a-f]{40}\Z")
 RECEIPT_PREFIX = "openclaw-enterprise/platform/upgrade"
 PREREQUISITE_PREFIX = "openclaw-enterprise/platform/receipts"
 MAX_RECOVERY_AGE_SECONDS = 6 * 60 * 60
+PROBE_NAMESPACE = "monitoring"
+PROBE_NAME = "platform-maintenance-probe"
+PROBE_NODE = "zimaboard-1"
+PROBE_IMAGE = ("harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:"
+               "1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
+               "@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394")
+PROBE_SCRIPT = ROOT / "scripts/ci/platform-maintenance-pod-probe.py"
 
 
 def receipt_target():
@@ -369,6 +380,7 @@ def node_action(node, source_version, target_version, observed_version, observed
             isinstance(evidence, dict) and evidence.get("bootID") == observed_boot_id and
             evidence.get("observedVersion") == target_version and
             evidence.get("ready") is True and evidence.get("clusterHealth") is True):
+        verify_path_probe(evidence.get("pathProbe"), stage, node, receipt["sourceSha"])
         return "skip"
     raise ValueError("interrupted or unknown node state requires recovery review")
 
@@ -449,6 +461,7 @@ def complete_node_receipt(directory, stage, node, source_sha, evidence, store=No
             evidence.get("ready") is not True or evidence.get("clusterHealth") is not True or
             not isinstance(evidence.get("bootID"), str) or not evidence["bootID"]):
         raise ValueError("pending node receipt does not match execution")
+    verify_path_probe(evidence.get("pathProbe"), stage, node, source_sha)
     record = {**pending, "status": "verified", "verified": True, "evidence": evidence}
     temporary = path.with_name(f".{path.name}.complete")
     save_inspection(temporary, record)
@@ -705,6 +718,7 @@ def verify_stage_receipt(config, stage, summary, receipt_dir):
             not isinstance(summary.get("nodes"), dict) or
             set(summary["nodes"]) != set(NODES)):
         raise ValueError("platform stage receipt is incomplete")
+    verify_path_probe(summary.get("pathProbe"), stage, "stage", summary["sourceSha"])
     for node in NODES:
         path = node_receipt_path(receipt_dir, stage, node)
         record = read_private_json(path)
@@ -723,6 +737,8 @@ def verify_stage_receipt(config, stage, summary, receipt_dir):
                 not record.get("evidence", {}).get("bootID") or
                 record.get("evidence", {}).get("clusterHealth") is not True):
             raise ValueError("platform node receipt is incomplete or changed")
+        verify_path_probe(record["evidence"].get("pathProbe"), stage, node,
+                          record["sourceSha"])
     return summary
 
 
@@ -744,6 +760,274 @@ def cluster_health(config, talosconfig):
         raise ValueError("Kubernetes API readiness failed")
 
 
+def verify_path_probe(probe, stage, node, source_sha):
+    if (not isinstance(probe, dict) or probe.get("format") != 1 or
+            probe.get("stage") != stage or probe.get("node") != node or
+            probe.get("sourceSha") != source_sha or
+            not isinstance(probe.get("capturedAt"), str) or
+            not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", probe["capturedAt"])):
+        raise ValueError("inter-node path probe identity is incomplete")
+    fixture = probe.get("fixture")
+    if (not isinstance(fixture, dict) or fixture.get("namespace") != PROBE_NAMESPACE or
+            fixture.get("pod") != PROBE_NAME or fixture.get("claim") != PROBE_NAME or
+            fixture.get("storageClass") != "nfs-default" or
+            fixture.get("node") != PROBE_NODE or
+            any(not isinstance(fixture.get(key), str) or not fixture[key]
+                for key in ("podUid", "claimUid", "volumeUid"))):
+        raise ValueError("inter-node storage fixture proof is incomplete")
+    dns = probe.get("dns")
+    if (not isinstance(dns, dict) or
+            set(dns) != {"kubernetes.default.svc.cluster.local",
+                         "grafana.monitoring.svc.cluster.local"}):
+        raise ValueError("inter-node DNS proof is incomplete")
+    try:
+        for address in dns.values():
+            ipaddress.IPv4Address(address)
+    except (ipaddress.AddressValueError, ValueError, TypeError):
+        raise ValueError("inter-node DNS answer is invalid") from None
+    storage = probe.get("storage")
+    if (not isinstance(storage, dict) or storage.get("bytes") != 4096 or
+            storage.get("readBack") is not True or storage.get("deleted") is not True or
+            not isinstance(storage.get("sha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", storage["sha256"])):
+        raise ValueError("inter-node NFS I/O proof is incomplete")
+    if (probe.get("access") != {"octeliumKubernetesApi": True, "octeliumTalosMtls": True} or
+            probe.get("webhooks") != {"policyBotStatus": 404,
+                                      "policyBotRequestId": True,
+                                      "n8nStatus": 404, "n8nApplicationBody": True} or
+            not isinstance(probe.get("application"), dict) or
+            probe["application"].get("grafanaHttpStatus") != 200 or
+            probe["application"].get("grafanaDatabase") != "ok" or
+            probe["application"].get("service") != "monitoring/grafana" or
+            not isinstance(probe["application"].get("serviceUid"), str) or
+            not probe["application"]["serviceUid"] or
+            not isinstance(probe["application"].get("podUid"), str) or
+            not probe["application"]["podUid"] or
+            not isinstance(probe["application"].get("pod"), str) or
+            not re.fullmatch(r"grafana-[a-z0-9-]+", probe["application"]["pod"])):
+        raise ValueError("inter-node access, webhook or application proof is incomplete")
+    return probe
+
+
+def _kubectl_json(*arguments):
+    result = subprocess.run(["kubectl", "--request-timeout=15s", *arguments, "-o", "json"],
+                            capture_output=True, text=True, timeout=25, check=True)
+    return json.loads(result.stdout)
+
+
+def _webhook_response(host, path, method):
+    connection = http.client.HTTPSConnection(host, timeout=10)
+    try:
+        connection.request(method, path)
+        response = connection.getresponse()
+        return response.status, response.read(2049), response.getheaders()
+    finally:
+        connection.close()
+
+
+def _webhook_path_proof(deadline_seconds):
+    """Allow bounded restart recovery; accept only the fixed application responses."""
+    deadline = time.monotonic() + deadline_seconds
+    while True:
+        try:
+            policy_status, _, policy_headers = _webhook_response(
+                "policy-bot-hook.tail67beb.ts.net", "/api/github/hook", "GET")
+            request_ids = [value for key, value in policy_headers
+                           if key.lower() == "x-request-id"]
+            if policy_status == 404 and (len(request_ids) != 1 or
+                                          not re.fullmatch(r"[0-9a-v]{20}", request_ids[0])):
+                raise ValueError("Policy Bot webhook application response is invalid")
+            if policy_status != 404 and policy_status < 500:
+                raise ValueError("Policy Bot webhook path changed")
+            if policy_status == 404:
+                n8n_status, n8n_body, _ = _webhook_response(
+                    "n8n-webhook.tail67beb.ts.net", "/webhook/__octelium_e2e_missing__", "GET")
+                if n8n_status == 404 and b"webhook" not in n8n_body.lower():
+                    raise ValueError("n8n webhook application response is invalid")
+                if n8n_status != 404 and n8n_status < 500:
+                    raise ValueError("n8n webhook path changed")
+                if n8n_status == 404:
+                    return {"policyBotStatus": 404, "policyBotRequestId": True,
+                            "n8nStatus": 404, "n8nApplicationBody": True}
+        except (OSError, http.client.HTTPException):
+            pass
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ValueError("webhook application paths unavailable after deadline")
+        time.sleep(min(5, remaining))
+
+
+def _grafana_health_via_port_forward(pod_name):
+    """Read Grafana's database health over the protected Octelium Kubernetes API."""
+    if not re.fullmatch(r"grafana-[a-z0-9-]+", pod_name):
+        raise ValueError("unreviewed Grafana Pod identity")
+    process = subprocess.Popen(
+        ["kubectl", "-n", "monitoring", "port-forward",
+         "--address", "127.0.0.1", f"pod/{pod_name}", ":3000"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    try:
+        deadline = time.monotonic() + 20
+        port = None
+        while time.monotonic() < deadline and process.poll() is None:
+            readable, _, _ = select.select([process.stdout], [], [],
+                                            max(0, min(1, deadline - time.monotonic())))
+            if readable:
+                line = process.stdout.readline().strip()
+                if not line:
+                    raise ValueError("Grafana port-forward closed before readiness")
+                match = re.fullmatch(r"Forwarding from 127\.0\.0\.1:(\d+) -> 3000", line)
+                if match:
+                    port = int(match.group(1))
+                    break
+        if port is None or not 1 <= port <= 65535 or process.poll() is not None:
+            raise ValueError("Grafana port-forward did not become ready")
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        try:
+            try:
+                connection.request("GET", "/api/health")
+                response = connection.getresponse()
+                body = response.read(4097)
+            except http.client.HTTPException:
+                raise ValueError("Grafana health stream failed") from None
+            if (response.status != 200 or len(body) > 4096 or
+                    json.loads(body).get("database") != "ok"):
+                raise ValueError("Grafana database health path failed")
+        finally:
+            connection.close()
+        if process.poll() is not None:
+            raise ValueError("Grafana port-forward ended during health check")
+        return {"grafanaHttpStatus": 200, "grafanaDatabase": "ok"}
+    finally:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+        if process.stdout is not None:
+            process.stdout.close()
+
+
+def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
+    """Run fixed functional paths before a node/stage can be marked verified."""
+    if (node not in (*NODES, "stage") or
+            not re.fullmatch(r"(?:talos|kubernetes)-\d+\.\d+\.\d+", stage) or
+            not isinstance(source_sha, str) or not SHA.fullmatch(source_sha)):
+        raise ValueError("unreviewed inter-node probe identity")
+    wait_seconds = min(config["readinessDeadlineSeconds"]["storage"], 300)
+    subprocess.run(
+        ["kubectl", "-n", PROBE_NAMESPACE, "wait", "--for=condition=Ready",
+         f"pod/{PROBE_NAME}", f"--timeout={wait_seconds}s"],
+        capture_output=True, text=True, timeout=wait_seconds + 30, check=True)
+    pod = _kubectl_json("-n", PROBE_NAMESPACE, "get", "pod", PROBE_NAME)
+    claim = _kubectl_json("-n", PROBE_NAMESPACE, "get", "pvc", PROBE_NAME)
+    api = _kubectl_json("-n", "default", "get", "service", "kubernetes")
+    grafana = _kubectl_json("-n", "monitoring", "get", "service", "grafana")
+    grafana_wait_seconds = min(config["readinessDeadlineSeconds"]["mesh"], 300)
+    subprocess.run(
+        ["kubectl", "-n", "monitoring", "rollout", "status", "deployment/grafana",
+         f"--timeout={grafana_wait_seconds}s"],
+        capture_output=True, text=True, timeout=grafana_wait_seconds + 30, check=True)
+    grafana_pods = _kubectl_json("-n", "monitoring", "get", "pods", "-l",
+                                 "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=grafana")
+    volume_name = claim.get("spec", {}).get("volumeName")
+    if not isinstance(volume_name, str) or not volume_name:
+        raise ValueError("maintenance NFS claim has no bound volume")
+    volume = _kubectl_json("get", "pv", volume_name)
+    pod_spec = pod.get("spec", {})
+    pod_status = pod.get("status", {})
+    claim_uid = claim.get("metadata", {}).get("uid")
+    pod_uid = pod.get("metadata", {}).get("uid")
+    volume_uid = volume.get("metadata", {}).get("uid")
+    if (pod_spec.get("nodeName") != PROBE_NODE or
+            pod_spec.get("automountServiceAccountToken") is not False or
+            pod_status.get("phase") != "Running" or
+            not any(item.get("type") == "Ready" and item.get("status") == "True"
+                    for item in pod_status.get("conditions", [])) or
+            [item.get("image") for item in pod_spec.get("containers", [])] != [PROBE_IMAGE] or
+            [item.get("volumeMounts") for item in pod_spec.get("containers", [])] != [[
+                {"name": "storage", "mountPath": "/probe"}]] or
+            not any(item.get("name") == "storage" and item.get("persistentVolumeClaim", {}).get(
+                "claimName") == PROBE_NAME for item in pod_spec.get("volumes", [])) or
+            claim.get("status", {}).get("phase") != "Bound" or
+            claim.get("spec", {}).get("storageClassName") != "nfs-default" or
+            volume.get("status", {}).get("phase") != "Bound" or
+            volume.get("spec", {}).get("claimRef", {}).get("uid") != claim_uid or
+            volume.get("spec", {}).get("storageClassName") != "nfs-default" or
+            volume.get("spec", {}).get("nfs", {}).get("server") != "10.1.0.2" or
+            not volume.get("spec", {}).get("nfs", {}).get("path", "").startswith("/homelab/") or
+            any(not isinstance(value, str) or not value
+                for value in (pod_uid, claim_uid, volume_uid))):
+        raise ValueError("maintenance NFS fixture is absent, unready or changed")
+    api_ip = api.get("spec", {}).get("clusterIP")
+    grafana_ip = grafana.get("spec", {}).get("clusterIP")
+    for address in (api_ip, grafana_ip):
+        ipaddress.IPv4Address(address)
+    selector = {"app.kubernetes.io/name": "grafana", "app.kubernetes.io/instance": "grafana"}
+    selected = grafana_pods.get("items")
+    if (grafana.get("spec", {}).get("selector") != selector or
+            not any(item.get("port") == 80 and item.get("targetPort") == "grafana"
+                    for item in grafana.get("spec", {}).get("ports", [])) or
+            not isinstance(grafana.get("metadata", {}).get("uid"), str) or
+            not grafana["metadata"]["uid"] or
+            not isinstance(selected, list) or len(selected) != 1):
+        raise ValueError("Grafana Service identity is unavailable or changed")
+    grafana_pod = selected[0]
+    grafana_name = grafana_pod.get("metadata", {}).get("name")
+    grafana_uid = grafana_pod.get("metadata", {}).get("uid")
+    if (not isinstance(grafana_name, str) or
+            not re.fullmatch(r"grafana-[a-z0-9-]+", grafana_name) or
+            not isinstance(grafana_uid, str) or not grafana_uid or
+            any(grafana_pod.get("metadata", {}).get("labels", {}).get(key) != value
+                for key, value in selector.items()) or
+            grafana_pod.get("metadata", {}).get("deletionTimestamp") or
+            grafana_pod.get("status", {}).get("phase") != "Running" or
+            not any(item.get("type") == "Ready" and item.get("status") == "True"
+                    for item in grafana_pod.get("status", {}).get("conditions", [])) or
+            not any(container.get("name") == "grafana" and
+                    any(port.get("name") == "grafana" and port.get("containerPort") == 3000
+                        for port in container.get("ports", []))
+                    for container in grafana_pod.get("spec", {}).get("containers", []))):
+        raise ValueError("Grafana Pod endpoint is unavailable or changed")
+    path_result = subprocess.run(
+        ["kubectl", "--request-timeout=15s", "-n", PROBE_NAMESPACE, "exec", "-i",
+         PROBE_NAME, "-c", "probe", "--", "/usr/bin/python3", "-", "/probe", api_ip,
+         grafana_ip], input=PROBE_SCRIPT.read_text(), capture_output=True, text=True,
+        timeout=45, check=True)
+    path_evidence = json.loads(path_result.stdout)
+    expected_dns = {"kubernetes.default.svc.cluster.local": api_ip,
+                    "grafana.monitoring.svc.cluster.local": grafana_ip}
+    if path_evidence.get("dns") != expected_dns:
+        raise ValueError("in-cluster DNS path differs from Service identity")
+    application = _grafana_health_via_port_forward(grafana_name)
+    application.update({"service": "monitoring/grafana",
+                        "serviceUid": grafana["metadata"]["uid"],
+                        "pod": grafana_name, "podUid": grafana_uid})
+    raw = subprocess.run(["kubectl", "--request-timeout=15s", "get", "--raw", "/readyz"],
+                         capture_output=True, text=True, timeout=25, check=True)
+    if raw.stdout.strip() != "ok":
+        raise ValueError("Octelium Kubernetes API path failed")
+    control = config["expectedStart"]["nodes"]["acer"]["address"]
+    talos = subprocess.run(
+        ["talosctl", "--talosconfig", str(talosconfig), "--endpoints",
+         config["protectedTalosEndpoint"], "--nodes", control, "version", "--short"],
+        capture_output=True, text=True, timeout=30, check=True)
+    if not re.search(r"Server:\s*Talos v\d+\.\d+\.\d+", talos.stdout):
+        raise ValueError("Octelium Talos mTLS path failed")
+    webhook_proof = _webhook_path_proof(min(config["readinessDeadlineSeconds"]["mesh"], 300))
+    probe = {"format": 1, "sourceSha": source_sha, "stage": stage, "node": node,
+             "capturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+             "fixture": {"namespace": PROBE_NAMESPACE, "pod": PROBE_NAME,
+                         "claim": PROBE_NAME, "storageClass": "nfs-default",
+                         "podUid": pod_uid, "claimUid": claim_uid,
+                         "volumeUid": volume_uid, "node": pod_spec["nodeName"]},
+             "dns": path_evidence["dns"], "storage": path_evidence.get("storage"),
+             "application": application,
+             "access": {"octeliumKubernetesApi": True, "octeliumTalosMtls": True},
+             "webhooks": webhook_proof}
+    return verify_path_probe(probe, stage, node, source_sha)
+
+
 def kubernetes_server_version():
     result = subprocess.run(["kubectl", "version", "-o", "json"],
                             capture_output=True, text=True, timeout=30, check=True)
@@ -753,7 +1037,7 @@ def kubernetes_server_version():
     return version.removeprefix("v")
 
 
-def finish_started_stage(config, stage, source_sha, receipt_dir, store=None):
+def finish_started_stage(config, stage, source_sha, receipt_dir, path_probe, store=None):
     path = private_output(receipt_dir / f"{stage}.json")
     pending = read_private_json(path)
     if (not isinstance(pending, dict) or pending.get("stage") != stage or
@@ -761,7 +1045,7 @@ def finish_started_stage(config, stage, source_sha, receipt_dir, store=None):
             pending.get("verified") is not False):
         raise ValueError("platform stage is not in a known pending state")
     record = {"format": 1, "stage": stage, "sourceSha": source_sha,
-              "verified": True, "nodes": {
+              "verified": True, "pathProbe": path_probe, "nodes": {
                   node: hashlib.sha256(node_receipt_path(receipt_dir, stage, node).read_bytes()).hexdigest()
                   for node in NODES}}
     verify_stage_receipt(config, stage, record, receipt_dir)
@@ -833,6 +1117,7 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
                 any(observed["nodes"][node]["talos"] != target["to"] for node in NODES)):
             raise ValueError("existing stage receipt does not match live target")
         cluster_health(config, talosconfig)
+        inter_node_path_probe(config, talosconfig, stage, "stage", source_sha)
         return complete
     for node in NODES:
         current = observed["nodes"][node]
@@ -848,6 +1133,7 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
         if not current["ready"] or current["kubelet"] != "v1.34.11":
             raise ValueError("node or Kubernetes baseline is not healthy")
         cluster_health(config, talosconfig)
+        inter_node_path_probe(config, talosconfig, stage, node, source_sha)
         if action == "skip":
             continue
         if current_main_sha() != source_sha:
@@ -871,16 +1157,21 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
                 current["kubelet"] != "v1.34.11"):
             raise ValueError("Talos node did not reach the reviewed target")
         cluster_health(config, talosconfig)
+        path_probe = inter_node_path_probe(config, talosconfig, stage, node, source_sha)
         complete_node_receipt(receipt_dir, stage, node, source_sha, {
             "observedVersion": current["talos"], "ready": True,
-            "clusterHealth": True, "bootID": current["bootID"],
+            "clusterHealth": True, "bootID": current["bootID"], "pathProbe": path_probe,
         }, store)
     if current_main_sha() != source_sha:
         raise ValueError("main advanced before Talos stage completion")
     if any(observed["nodes"][node]["talos"] != target["to"] for node in NODES):
         raise ValueError("Talos stage has an unupgraded node")
+    cluster_health(config, talosconfig)
+    stage_probe = inter_node_path_probe(config, talosconfig, stage, "stage", source_sha)
+    if current_main_sha() != source_sha:
+        raise ValueError("main advanced before Talos stage receipt")
     stage_receipt = {"format": 1, "stage": stage, "sourceSha": source_sha,
-                     "verified": True, "nodes": {
+                     "verified": True, "pathProbe": stage_probe, "nodes": {
                          node: hashlib.sha256(node_receipt_path(receipt_dir, stage, node).read_bytes()).hexdigest()
                          for node in NODES}}
     verify_stage_receipt(config, stage, stage_receipt, receipt_dir)
@@ -913,6 +1204,7 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
             raise ValueError("existing Kubernetes receipt does not match live target")
         cluster_health(config, talosconfig)
         verify_live_istio_target(config)
+        inter_node_path_probe(config, talosconfig, stage, "stage", source_sha)
         return complete
     if (current_version != target["from"] or
             any(observed["nodes"][node]["talos"] != config["talosStages"][-1]["to"] or
@@ -920,6 +1212,7 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
                 not observed["nodes"][node]["ready"] for node in NODES)):
         raise ValueError("Kubernetes upgrade baseline is not uniformly ready")
     cluster_health(config, talosconfig)
+    inter_node_path_probe(config, talosconfig, stage, "stage", source_sha)
     verify_live_istio_target(config)
     verify_kubernetes_mirror_routes(config, talosconfig)
     verify_kubernetes_mirror_tags(config)
@@ -946,13 +1239,17 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
     if current_main_sha() != source_sha:
         raise ValueError("main advanced before Kubernetes stage verification")
     for node in NODES:
+        path_probe = inter_node_path_probe(config, talosconfig, stage, node, source_sha)
         start_node_receipt(receipt_dir, stage, node, target["from"], target["to"], source_sha,
                            store)
         complete_node_receipt(receipt_dir, stage, node, source_sha, {
             "observedVersion": target["to"], "ready": True, "clusterHealth": True,
-            "bootID": observed["nodes"][node]["bootID"],
+            "bootID": observed["nodes"][node]["bootID"], "pathProbe": path_probe,
         }, store)
-    return finish_started_stage(config, stage, source_sha, receipt_dir, store)
+    stage_probe = inter_node_path_probe(config, talosconfig, stage, "stage", source_sha)
+    if current_main_sha() != source_sha:
+        raise ValueError("main advanced before Kubernetes stage receipt")
+    return finish_started_stage(config, stage, source_sha, receipt_dir, stage_probe, store)
 
 
 def read_only_inspection(config, talosconfig):
