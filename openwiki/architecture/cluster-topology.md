@@ -171,6 +171,21 @@ Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
 
+### Network canary staging
+
+The staged `zimaboard-2` evacuation pins Multica frontend to `acer`, Harbor's
+vulnerability exporter to `zimaboard-1`, and Cloudflared replicas separately
+to those nodes. The separate Langfuse PostgreSQL change pins its `Recreate`
+Deployment to `acer` with the retained NFS claim; rollout requires a verified
+off-NAS checkpoint. This staging does not activate the firewall.
+See [runtime isolation](../../docs/runtime-isolation.md#staged-networkpolicy-enforcement).
+
+The protected canary admission stage remains blocked with no configured node.
+Its receipt must account for every assigned Pod; eligible system Pods include
+only reviewed `kube-system` DaemonSets plus `ztunnel` and `istio-cni-node` in
+`istio-system`. The stage owns the eventual taint and label after that review.
+See the [network-policy guard](../../clusters/homelab/platform/network-policy/README.md).
+
 ### October 17 Cordium capacity preparation
 
 Acer's measured allocatable memory was 15,260.7 MiB against 14,483 MiB of

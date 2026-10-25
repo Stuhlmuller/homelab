@@ -173,9 +173,9 @@ separate `acer` and `zimaboard-1` nodes. Cloudflared updates one replica at a
 time so its strict node separation cannot block later rollouts. Verify both
 replacements are Ready before further changes. A read-only check on 2026-10-26
 found Langfuse PostgreSQL on `zimaboard-1`; this stage does not pin or move it.
-A later `Recreate` move to `acer` interrupts database access. The prior
-checkpoint predates source-PVC/PV UID binding, so that move needs a fresh
-checkpoint and isolated restore. The protected
+The separate PostgreSQL change pins its `Recreate` Deployment to `acer` with
+the retained NFS claim. Before rollout, verify a fresh source-bound off-NAS
+checkpoint and isolated restore; the move interrupts database access. The protected
 `canary-admit` stage owns the eventual taint and label after a fresh receipt
 proves only reviewed system DaemonSet Pods remain. This staging does not
 activate the firewall.
