@@ -1,5 +1,6 @@
 # Stage outside Kustomize. Set the reviewed window start and add this Job with
-# its deny-all policy only after all acceptance writers are suspended and drained.
+# the already-reconciled deny-all policy only after all acceptance writers are
+# suspended and drained.
 apiVersion: batch/v1
 kind: Job
 metadata:

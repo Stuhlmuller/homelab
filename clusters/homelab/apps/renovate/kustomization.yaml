@@ -5,6 +5,7 @@ resources:
   - acceptance-observer-cronjob.yaml
   - acceptance-report-cronjob.yaml
   - acceptance-pr-proof-cronjob.yaml
+  - acceptance-schedule-assemble-networkpolicy.yaml
   - cronjob.yaml
   - externalsecret.yaml
   - networkpolicy.yaml
