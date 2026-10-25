@@ -58,6 +58,13 @@ T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup
 mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
 archive directory before creating anything; the future Job must still prove
 that the volume is the reviewed off-node destination.
+The current [packager](backup.sh) writes the database dump, bootstrap SQL and
+copied recovery material in plaintext under
+`/backup/openclaw-enterprise/.*.partial` before renaming the directory.
+The QNAP [NFS export](../../../../docs/storage-nfs.md) uses NFSv3 `sec=sys`
+and maps clients to one guest identity; an NFS claim alone does not prove an
+encrypted backup. Encrypt before the first off-node write, then independently
+decrypt and restore the completed set before using NFS for T051.
 No declared producer assembles the identity-checked recovery tree or exposes an
 encrypted off-node POSIX mount. A suspended CronJob with placeholder PVCs would
 have no runnable recovery path; keep T051 open until both inputs and an

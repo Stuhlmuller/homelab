@@ -48,6 +48,17 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | 24-hour observation and selective retirement | Pending | — | Pending |
 | T059 source documentation and OpenWiki refresh | [merged PR #1560](https://github.com/Stuhlmuller/homelab/pull/1560), main `0e223d6`; protected static, lint, image-policy, network-policy and release-dry-run checks passed | — | Passed for source documentation only: five named runbooks updated and affected OpenWiki pages refreshed by the native update path. Capacity, credentials, policy enforcement, platform upgrades and Enterprise live acceptance remain pending. |
 
+T051 NFS option remains unqualified. On 2026-10-25, read-only
+`df -B1 /var/lib/postgresql/data` inside the NFS-backed
+`octelium-postgres-0` Pod reported 718,305,492,992 bytes available on the
+QNAP `/homelab` export. [NFS claim sizes](../storage-nfs.md) do not reserve
+or cap that space, so this sample does not admit retention. The current
+[packager](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
+writes its dump and recovery material in plaintext to `/backup` before
+rename. NFSv3 `sec=sys` does not encrypt transport, QNAP at-rest encryption is
+unverified, and the same NAS is not an independent off-NAS copy. Encrypt before
+the first NFS write, then prove an isolated decrypt-and-restore.
+
 The 215-image public catalog passed protected `image_scope=all` run
 [`40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517).
 Both jobs succeeded and its final marker confirms matching digests and complete
