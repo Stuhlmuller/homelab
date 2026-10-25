@@ -191,11 +191,20 @@ all five target directories present and nonempty. This proves that the pinned
 image supplies a baseline for those six links. The former gateway did not set
 `readOnlyRootFilesystem`, so its `/app` overlay could have held added or changed
 files that the reader cannot see. The original contents of all six targets
-remain unclassified until compared with retained evidence. The other three
-external targets are dangling in the reader; their individual dependencies
-and disposition also remain unclassified. The archive preserves each link,
-but no external target payload. Do not assume the baseline image recovers the
-gateway's exact contents or that the dangling links are harmless.
+remain unclassified until compared with retained evidence. A 2026-10-25
+read-only check of the private restore report found 37 links: 27 contained,
+nine external, and one pointing to a missing target within the archived roots.
+The six `/app` links resolve to five nonempty directories in the pinned image,
+but the former writable overlay is unproven. The other three external links
+originate in the archived workspace and point under `/home`; the fresh reader
+has no targets there. The old Pod declared no `/home` volume, so their former
+overlay dependency is unknown. The missing-in-archive link points within the
+retained NAS to a skill target absent from both the archive and original
+read-only mount. Its source
+link still matches the archive, so this was already dangling, not an archive
+omission; its purpose remains unknown. The archive preserves each link but no
+external target payload. Do not assume the image baseline recovers the
+gateway's exact contents or that dangling links are harmless.
 
 Archive verification and the retained original PVCs do not pass T014. The
 reader restores into NAS scratch and does not start the old image. A rehearsal
