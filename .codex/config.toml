@@ -4,10 +4,10 @@ command = "/bin/sh"
 args = ["-c", '''
 for candidate in /nix/var/nix/profiles/default/bin/nix /run/current-system/sw/bin/nix ~/.nix-profile/bin/nix; do
   if [ -x "$candidate" ]; then
-    exec "$candidate" run .#openwiki -- mcp --host codex
+    exec "$candidate" run github:Stuhlmuller/homelab#openwiki -- mcp --host codex
   fi
 done
-exec nix run .#openwiki -- mcp --host codex
+exec nix run github:Stuhlmuller/homelab#openwiki -- mcp --host codex
 ''']
 # OPENWIKI:MCP:END
 
