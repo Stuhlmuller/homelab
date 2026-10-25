@@ -181,7 +181,15 @@ and complete recovery, then observe 24 hours before obsolete resources are remov
 ### US4 tests and implementation
 
 - [X] T050 [P] [US4] Add `scripts/ci/openclaw-enterprise-recovery-test.py` for agent-stop-before-control-plane ordering, interrupted/unknown runtime termination, preservation of failed/new state, compatible legacy restore, owned-PVC retention and blocked enforcement removal; ensure failed recovery never resumes uncertain writers or deletes archives.
-- [ ] T051 [P] [US4] Add `clusters/homelab/apps/openclaw-enterprise-foundation/backup-cronjob.yaml` using the verified T036 backup path; declare schedule, retention, private off-node destination, resource reservations and failure reporting, wire it into foundation `kustomization.yaml`, and validate a scheduled complete backup/restore without exposing contents.
+- [ ] T051 [P] [US4] Before scheduling, prove a complete identity-checked
+  recovery-material producer and encrypted off-node destination. Prove either a
+  consistent online snapshot or a journaled supported stop, capture, and
+  new-revision deployment with failure recovery; preserve ordinary no-change
+  reconciliation. Add `clusters/homelab/apps/openclaw-enterprise-foundation/backup-cronjob.yaml`
+  using the verified T036 path; declare schedule, retention, resource
+  reservations and failure reporting, wire it into foundation
+  `kustomization.yaml`, and validate a scheduled complete backup/restore
+  without exposing contents.
 - [ ] T052 [US4] Run repeated setup, one real configuration revision and a declared runtime restart through `scripts/openclaw-enterprise.py`; require stable installation/agent/grant IDs, proper generation conflict handling, persisted fresh state and observed active revision, recording SC-004 evidence in `docs/evidence/openclaw-enterprise-acceptance.md`.
 - [ ] T053 [US4] Rehearse the full upgrade protocol on an isolated copy of the accepted new recovery set through `.github/workflows/openclaw-enterprise-operations.yml`, using the pinned release and migration-failure fixtures from `clusters/homelab/apps/openclaw-enterprise/validation/`; block external delivery/inference from the copy and prove writer fencing, failed-migration
   shutdown and exactly-once successful retry without overlapping init Jobs.

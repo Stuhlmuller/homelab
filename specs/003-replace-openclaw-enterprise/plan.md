@@ -248,6 +248,12 @@ path, without hand-editing generated state.
 - OCE database rollback requires compatible verified state; preserve failed/new
   data before restore. An old agent configuration is a new revision, not a
   filesystem rollback. Do not delete an OCE agent to preserve its owned PVC.
+- Stock Agent stop clears the active revision; resuming requires a new deployment,
+  because old revisions cannot restart ([pinned Agent API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md#L328-L334)).
+  Before scheduling T051, prove a complete identity-checked recovery set and
+  encrypted off-node destination, then either prove a consistent online snapshot
+  or serialize stop, capture, new-revision deployment and failure recovery in a
+  durable journal. Keep ordinary unchanged-input reconciliation idempotent.
 - Talos A/B fallback applies only to the immediately prior verified compatible
   image. Kubernetes has no automatic downgrade path; stop and use reviewed
   forward repair or separately declared disaster recovery.

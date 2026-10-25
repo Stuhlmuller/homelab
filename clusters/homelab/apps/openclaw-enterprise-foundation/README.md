@@ -61,7 +61,13 @@ that the volume is the reviewed off-node destination.
 No declared producer assembles the identity-checked recovery tree or exposes an
 encrypted off-node POSIX mount. A suspended CronJob with placeholder PVCs would
 have no runnable recovery path; keep T051 open until both inputs and an
-independent scheduled restore are verified. `restore-drill.yaml` is
+independent scheduled restore are verified. Stock Agent stop clears its
+active revision; the [pinned API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md#L328-L334)
+requires a new deployment to resume. A scheduled backup must prove either
+a consistent online capture or a journaled stop, capture and new-deployment
+resume with failure recovery. The normal no-change reconcile must not
+redeploy just to compensate for an incomplete backup path.
+`restore-drill.yaml` is
 deliberately outside the Kustomization; T045 must run it in isolation against
 a complete set and verify the result. Its
 fixed-name Job is a one-shot candidate; a declared repeat/recreate workflow is
