@@ -108,6 +108,16 @@ def patch(node, operations, source_sha):
                        metadata["name"], "--type=json", "-p", json.dumps(steps), "-o", "json")
 
 
+def require_fresh_capacity(args, directory):
+    if not isinstance(args.bucket, str) or not args.bucket:
+        raise ValueError("canary admission requires the reviewed backup bucket")
+    subprocess.run([sys.executable, "-I", str(ROOT / "scripts/network-policy-placement.py"),
+                    "--config", str(args.config), "--expected-sha", args.expected_sha,
+                    "--bucket", args.bucket,
+                    "--check-placement", str(directory / "placement.json")],
+                   cwd=ROOT, check=True, timeout=300)
+
+
 def validate_placement(placement, config, source_sha, fresh):
     if (not isinstance(placement, dict) or placement.get("format") != 1 or
             placement.get("verified") is not True or
@@ -117,11 +127,31 @@ def validate_placement(placement, config, source_sha, fresh):
             placement.get("measured") is not True or
             placement.get("isolatedTaint") != config["canary"]["taint"] or
             placement.get("firewallBaselineEmpty") is not True or
+            placement.get("baselineSourceSha") != source_sha or
+            not re.fullmatch(r"[1-9][0-9]*", str(placement.get("baselineRunId", ""))) or
+            not re.fullmatch(r"[0-9a-f]{64}",
+                             str(placement.get("baselineCaptureSha256", ""))) or
+            not isinstance(placement.get("baselineCaptureVersionId"), str) or
+            placement["baselineCaptureVersionId"] in {"", "null"} or
+            not isinstance(placement.get("baselineCapturedAt"), str) or
             not isinstance(placement.get("nodeUid"), str) or not placement["nodeUid"] or
             not isinstance(placement.get("bootID"), str) or not placement["bootID"]):
         raise ValueError("reviewed placement and empty firewall baseline are required")
     if fresh:
         PLATFORM["fresh_recovery_time"](placement.get("capturedAt"))
+        baseline_time = placement.get("baselineCapturedAt")
+        if not isinstance(baseline_time, str) or not re.fullmatch(
+                r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", baseline_time):
+            raise ValueError("reviewed firewall capture timestamp is missing")
+        captured = datetime.strptime(baseline_time, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc)
+        if not 0 <= (datetime.now(timezone.utc) - captured).total_seconds() <= 3600:
+            raise ValueError("reviewed firewall capture is stale")
+        placement_time = datetime.strptime(placement["capturedAt"],
+                                           "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        if (captured > placement_time or
+                (datetime.now(timezone.utc) - placement_time).total_seconds() > 1800):
+            raise ValueError("reviewed placement is stale")
         expected = placement.get("systemDaemonSetPods")
         if (not isinstance(expected, list) or
                 any(not isinstance(pod, dict) or
@@ -268,6 +298,7 @@ def execute(args):
     CLEANUP["write_record"](output, record)
     try:
         if args.action == "admit":
+            require_fresh_capacity(args, directory)
             if not tainted:
                 taints = node["spec"].get("taints")
                 taint_add = {"op": "add", "path": "/spec/taints/-", "value": TAINT} if taints \
@@ -330,6 +361,7 @@ def main():
     parser.add_argument("--config", type=Path, default=CONFIG)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--receipt-dir", type=Path, required=True)
+    parser.add_argument("--bucket")
     parser.add_argument("--output", type=Path, required=True)
     try:
         execute(parser.parse_args())

@@ -81,8 +81,13 @@ no kube-router objects in IPv4, IPv6, or ipset, saves the full snapshot
 privately, and confirms the Pod is absent before a placement can be admitted.
 An orphaned probe has a protected, UID-bound `firewall-baseline-recover` stage
 using the original private ownership marker.
-The capture does not create or authorize `placement.json`; rules can change
-after capture, so placement needs separate review and current live checks.
+The capture does not authorize admission. After private review, protected
+[`placement`](../../scripts/network-policy-placement.py) binds the same-current-main capture version and checksum to fresh
+Node/Pod identities, Pod requests, two-minute node metrics, and kubelet nodefs
+space, then writes one versioned `placement.json`. Admission requires placement
+under 30 minutes old and baseline capture under one hour old. It fails below the reviewed
+enforcer/fixture budget plus 128 MiB/100m reserve or 5 GiB filesystem free.
+Rules and usage can change after capture; recheck before admission.
 The [network-policy runbook](../../clusters/homelab/platform/network-policy/README.md)
 describes the Node identity and separate placement review gates.
 Most existing non-privileged namespaces declare baseline Pod Security. The
@@ -207,8 +212,10 @@ remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
 
 The protected `canary-admit` source path requires a fresh measured placement
-receipt and exact Node and system Pod identities. It checks that the enforcer,
-cleanup Pods, and fixture traffic are absent, then adds the dedicated
+receipt and exact Node and system Pod identities. It re-reads the bound firewall
+capture and repeats Pod, metrics, node filesystem, and headroom checks before
+mutation. It checks that the enforcer, cleanup Pods, and fixture traffic are
+absent, then adds the dedicated
 `NoSchedule` taint before the selector label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
@@ -233,6 +240,10 @@ reviewed recovery. A partial deletion requires a new capture and approval.
 Inventory checks and firewall deletion are not atomic: a taint-tolerating Pod
 could arrive during deletion. Live activation remains blocked until isolated
 placement rules that out or a reviewed repository-owned isolation path exists.
+The later enforcer and fixture rollout also lacks its own protected fresh
+capacity gate; admission does not authorize that rollout. The earlier firewall
+snapshot may drift after capture because admission does not run another
+privileged probe.
 `canary-release` verifies the cleanup, ownership and original placement
 receipts, the exact two dedicated commits in current `main` history, absent fixture
 namespace and workloads, and an empty owned firewall. It removes the label

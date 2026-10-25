@@ -56,6 +56,7 @@ python3 -I scripts/ci/platform-maintenance-credentials-test.py
 python3 -I scripts/ci/istio-image-overlays-test.py
 python3 -I scripts/ci/network-policy-canary-node-test.py
 python3 -I scripts/ci/network-policy-firewall-baseline-test.py
+python3 -I scripts/ci/network-policy-placement-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/network-policy-qualification-test.py
 python3 -I scripts/ci/network-policy-ownership-test.py
