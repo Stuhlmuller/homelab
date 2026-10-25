@@ -24,7 +24,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [publication `9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification on `90d3d413`, run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Passed T013. Protected publication uploaded the versioned archive and receipt, restored both objects and wrote a private final receipt. The separate protected `verify` run succeeded on 2026-10-23 09:52 UTC after retrieving the exact published versions and independently restoring the full local/NAS trees, both SQLite databases, NAS workspace/configuration, and historical backup directories. Local source and partial attempts remain retained. |
 | Legacy compatible recovery rehearsal | [read-only image/mount review on `90f7338`](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c); [failed transfer attempts `39942297939`, `39951803625`, `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305); [cancelled protected copy run `39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652); [successful protected resume on main `efb6a3a`, run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926) | — | Partial. The first three attempts failed before a verified copy. Run `39988927652` downloaded the pinned versioned archive and receipt and started a detached restore worker, then the six-hour protected job was cancelled. Its source-bound `resume-restore` run passed exact-main, prior-job provenance and the protected legacy stage at 2026-10-24 02:04 UTC. The stage required a stable worker success marker, exact cached archive/receipt size and SHA-256, a completed restored-database report, source identity and zero stopped-production writers; it prepared a separate private NAS scratch recovery tree. Original claims and credentials remain retained; the reader mounts originals read-only. T014 remains open: the old image has not booted in isolation, a UID 1000 local copy and enforced offline network boundary have not been proven, six external `/app` links may depend on unretained writable-overlay contents, and three dangling external targets remain unclassified. |
-| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-23 08:18 UTC recheck below | — | Blocked. Acer is 503 MiB short of database plus gateway, and the initial 4 GiB API/worker/database/Envoy/gateway planning reservation would be about 2,295 MiB short if co-located there; both exclude transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. No isolated tainted canary or admitted Enterprise placement. T022, T027 and T035 remain pending. |
+| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-25 06:32 UTC recheck below | — | Blocked. With Crossplane already at zero replicas, Acer has only about 9 MiB by requests after the database-plus-gateway floor, or is about 1,783 MiB short of the initial 4 GiB co-located budget; neither figure includes transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. No isolated tainted canary or admitted Enterprise placement. T022, T027 and T035 remain pending. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -512,6 +512,48 @@ package-store backup are separate Octelium recovery gaps, not prerequisites
 for pruning these stateless fallback Pods. Once Enterprise consumes this
 capacity, rollback must stop it through the declared path before GitOps
 restores the fallback Pods; `acer` cannot host both sets together.
+
+At 2026-10-25 06:32 UTC on `main` `e10199f2`, Crossplane's two live
+Deployments were at zero replicas; only completed historical Pods remained.
+Its earlier 512 MiB saving is already reflected in `acer`'s 12,947 / 15,261
+MiB requested / allocatable, so it cannot be counted again. `acer` had about
+2,313 MiB unreserved by requests, 10,618 MiB observed node memory use and
+411.96 GB filesystem free. The four-node read-only check still found no
+canary taint or enforcing policy DaemonSet. The initial 4,096 MiB Enterprise
+budget cannot fit on `acer` today; both distinct 10 GiB local claims still
+point there because the workers each have less than 10 GiB filesystem free.
+
+<!-- markdownlint-disable MD013 -->
+
+| Candidate pause or retirement | Memory requests released | Recovery and service effect |
+| --- | --- | --- |
+| 25 temporary Octelium fallback Pods | `acer` 2,656 MiB; about 1,527 MiB observed use | No PVCs. Native off-ramp and direct/public traffic checks must pass first; rollback would stop Enterprise before restoring fallback. |
+| Langfuse | `acer` 2,816 MiB; `zimaboard-0` 256 MiB; `zimaboard-2` 128 MiB | LLM tracing stops. PostgreSQL, ClickHouse, Valkey, object storage and secrets lack a complete independent restore. |
+| Multica | `acer` 512 MiB; `zimaboard-0` 448 MiB; `zimaboard-2` 320 MiB | Agent runtime stops. Database/uploads and local OAuth/PAT recovery are incomplete; this pause alone cannot fit Enterprise. |
+| Dispatcharr | `acer` 1,664 MiB; `zimaboard-1` 256 MiB | Plex Live TV stops. Paired database/files/provider-credential restore is missing; this pause alone leaves `acer` 119 MiB short of the Enterprise budget. |
+
+<!-- markdownlint-enable MD013 -->
+
+The temporary fallback is the smallest state-free capacity candidate: after
+its qualified removal, `acer` would have 4,969 MiB request room and only 873
+MiB after Enterprise's initial budget, before startup, backup and peak margin.
+Its current off-ramp still fails: the read-only preflight found 25/25 native
+twins with 24-hour Ready evidence, but `zimaboard-0` itself lacks 24-hour
+uninterrupted Ready, and has only 5 MiB request and 991 MiB observed margin
+against the 2,765 MiB rolling screen. Direct native Pod-IP and public
+end-to-end proof is also pending. No fallback or stateful app was paused.
+
+`zimaboard-2` has 1,308 MiB allocatable, 1,078 MiB requested and 8.65 GiB
+filesystem free. Its four unrelated application Pods (Multica frontend 320
+MiB, Langfuse PostgreSQL 128 MiB, Cloudflared 64 MiB and Harbor vulnerability
+exporter 32 MiB) reserve 544 MiB and currently use about 290 MiB. Moving or
+retiring all four would leave about 774 MiB by requests and 647 MiB against
+current observed use for the enforcer and canary fixtures, before their peak
+or restart margin. `zimaboard-1` currently uses 6,331 of 7,282 MiB
+allocatable, so it is not a proven landing zone. The proposed 250 MiB
+enforcer and three 32 MiB fixtures would leave only 428 MiB by requests on
+the cleared canary; workload continuity, taint tolerations and traffic
+qualification remain unproven. No node is admitted for T022 or T027.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
