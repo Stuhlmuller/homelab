@@ -452,8 +452,9 @@ drill. Those acceptance gaps remain in the knowledge base.
 
 The October 17 [Acer capacity audit](../../../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 sets PostgreSQL's memory request to 128 MiB, above its observed seven-day peak
-working set of 63.8 MiB. Its 1 GiB limit, storage, placement and replica count stay
-unchanged. The existing `Recreate` update briefly interrupts database access;
+working set of 63.8 MiB. That request change left its 1 GiB limit, storage,
+placement and replica count unchanged. The existing `Recreate` update briefly
+interrupts database access;
 require SQL readiness and recovery of web/worker before accepting the rollout.
 
 The stateless web Pod moves from `zimaboard-1` to Acer with a 1280 MiB request,
