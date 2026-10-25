@@ -124,6 +124,13 @@ class Assemble(unittest.TestCase):
                                     "missing-fifteen-minute-snapshot"):
             ASSEMBLER.build_document(self.source, START)
 
+    def test_cronjob_last_schedule_time_cannot_hide_pruned_job(self):
+        self.snapshots[0]["cronjob"]["lastScheduleTime"] = stamp(START)
+        self.write_snapshots()
+        with self.assertRaisesRegex(ASSEMBLER.AssemblyError,
+                                    "scheduled-job-missing-from-capture"):
+            ASSEMBLER.build_document(self.source, START)
+
     def test_duplicate_or_late_capture_is_inconclusive(self):
         self.write_snapshots()
         duplicate = self.source / "snapshots/duplicate.json"
