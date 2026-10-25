@@ -308,8 +308,10 @@ The earlier workload phase added `acceptance-ledger-pvc.yaml` after live
 verification of the class and PV. Renovate's `homelab-workloads` Argo project
 cannot create cluster-scoped storage. Before merging this phase, verify the
 claim is `Bound` to `renovate-acceptance-ledger-local`. This phase adds the
-initializer and its deny-all NetworkPolicy; wave -1 reconciles the policy
-before the unsuspended Job runs. The Job has no Kubernetes API token.
+initializer and its deny-all NetworkPolicy at sync wave -1. Flannel does not
+enforce NetworkPolicy here, so that wave does not block egress. The Job mounts
+no Kubernetes API token or GitHub credential.
+
 Every acceptance worker has
 an `acer` node selector; the PV has the same node affinity. The shared QNAP
 NFS export squashes clients to one guest identity and cannot enforce private

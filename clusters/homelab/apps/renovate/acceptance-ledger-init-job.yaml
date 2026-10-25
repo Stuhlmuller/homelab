@@ -42,7 +42,8 @@ spec:
           args:
             - |
               test -d /ledger
-              test -z "$(find /ledger -mindepth 1 -maxdepth 1 -print -quit)"
+              entries=$(find /ledger -mindepth 1 -maxdepth 1 -print -quit)
+              test -z "$entries"
               chmod 0700 /ledger
               chown 12021:12021 /ledger
               test "$(stat -c '%u:%g:%a' /ledger)" = '12021:12021:700'

@@ -728,12 +728,14 @@ The repository declares a separate 64 GiB `acer`-local
 for the temporary acceptance ledger. The PV is prebound to
 `automation/renovate-acceptance-ledger` with `Retain` and Argo CD
 prune/delete protection. QNAP's shared NFS guest identity cannot enforce the
-ledger's private file ownership. This phase adds the matching
+ledger's private file ownership. The earlier phase adds the matching
 [PVC](../../clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml) to the
-Renovate Kustomization; live binding remains unverified. The ownership
-initializer remains staged, and observer and proof Jobs stay suspended. Verify
-the claim is `Bound` after reviewed reconciliation before a separate reviewed
-initializer change. A node loss
+Renovate Kustomization. Before this phase merges, verify its live binding to
+the local PV. This phase declares the unsuspended
+[ownership initializer](../../clusters/homelab/apps/renovate/acceptance-ledger-init-job.yaml)
+and a deny-all NetworkPolicy; Flannel does not enforce that policy. Live Job
+completion and UID 12021/mode `0700` ownership remain unverified; observer and
+proof Jobs stay suspended until those checks pass. A node loss
 invalidates the seven-day window, and retained hostPath cleanup needs its own
 reviewed path. See the [Renovate runbook](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer).
 
