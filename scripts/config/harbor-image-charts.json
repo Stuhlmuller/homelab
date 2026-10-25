@@ -134,7 +134,7 @@
   {
     "chart": "git:deploy/helm/openclaw-enterprise",
     "repoURL": "https://github.com/openclaw/openclaw-enterprise.git",
-    "source": "IaC/openclaw-enterprise/stack.hcl",
+    "source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
     "targetRevision": "33bb74590a749f37934da4502fca6035cd234a55"
   },
   {

@@ -40,18 +40,18 @@ with tempfile.TemporaryDirectory() as directory:
     else:
         raise AssertionError("A chart omitted from inventory extraction passed")
     stack.write_text(stack.read_text().replace("local.hidden_version", '"2.1.0"'))
-    enterprise = check.ROOT / "IaC/openclaw-enterprise/stack.hcl"
+    enterprise = check.ROOT / "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl"
     enterprise.parent.mkdir()
     enterprise.write_text('sources = [{ repoURL = "https://github.com/openclaw/openclaw-enterprise.git" '
                           'path = "deploy/helm/openclaw-enterprise" targetRevision = "' + 'a' * 40 + '" '
                           'helm = { releaseName = "oce" } }]')
-    assert {"source": "IaC/openclaw-enterprise/stack.hcl",
+    assert {"source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
             "repoURL": "https://github.com/openclaw/openclaw-enterprise.git",
             "chart": "git:deploy/helm/openclaw-enterprise", "targetRevision": 'a' * 40} in check.chart_sources()
     enterprise.write_text('sources = [{ repoURL = "harbor.stinkyboi.com/mirror/helm" '
                           'chart = "openclaw-enterprise" targetRevision = "0.1.0" '
                           'helm = { releaseName = "oce" } }]')
-    assert {"source": "IaC/openclaw-enterprise/stack.hcl",
+    assert {"source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
             "repoURL": "harbor.stinkyboi.com/mirror/helm",
             "chart": "openclaw-enterprise", "targetRevision": "0.1.0"} in check.chart_sources()
     check.ROOT = original_root
