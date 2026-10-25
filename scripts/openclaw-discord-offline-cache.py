@@ -126,23 +126,11 @@ def project_lock(state):
     return lock
 
 
-def lock_difference_paths(warm, offline):
-    """Report changed lockfile fields, never their potentially sensitive values."""
-    differences = []
-
-    def compare(left, right, path):
-        if isinstance(left, dict) and isinstance(right, dict):
-            for key in sorted(left.keys() | right.keys()):
-                # npm lockfile keys are package paths or field names. Keep logs bounded.
-                if key not in left or key not in right:
-                    differences.append(f"{path}/{key}")
-                else:
-                    compare(left[key], right[key], f"{path}/{key}")
-        elif left != right:
-            differences.append(path)
-
-    compare(warm, offline, "")
-    return differences
+def dependency_locks_match(warm, offline):
+    """Compare the package closure, ignoring only npm's project-root name."""
+    if not all(isinstance(lock.get("name"), str) and lock["name"] for lock in (warm, offline)):
+        return False
+    return {**warm, "name": None} == {**offline, "name": None}
 
 
 def check_registry_integrity(raw):
@@ -192,13 +180,8 @@ def build(output_dir, root):
             )
             check_inspect(json.loads(report.stdout), work)
             offline_lock = project_lock(work / "offline-state")
-            if offline_lock != warm_lock:
-                differences = lock_difference_paths(warm_lock, offline_lock)
-                fields = ", ".join(differences[:20])
-                raise ValueError(
-                    "offline managed npm dependency tree differs from warm install "
-                    f"({len(differences)} changed fields: {fields})"
-                )
+            if not dependency_locks_match(warm_lock, offline_lock):
+                raise ValueError("offline managed npm dependency tree differs from warm install")
 
             lock_bytes = (json.dumps(warm_lock, indent=2, sort_keys=True) + "\n").encode()
             lock_path = output_dir / "dependency-lock.json"

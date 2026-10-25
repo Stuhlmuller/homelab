@@ -222,7 +222,9 @@ using only an archive round-trip of npm's content cache. The warm home and state
 are removed from the Docker bind mount before that test. The fresh pinned CLI
 creates its own SQLite install record and must report the expected global npm
 origin, spec and version. It also requires the online and offline npm project
-lockfiles to agree. Its output is a private-transfer contract:
+lockfiles to agree, except for npm's generated project-root name. Package paths,
+versions, integrity hashes, dependency edges and other metadata remain exact.
+Its output is a private-transfer contract:
 `npm-cache.tar`, `dependency-lock.json`, and `manifest.json` with both SHA-256
 hashes. It contains no
 retained OpenClaw state, credentials, or install records. The
