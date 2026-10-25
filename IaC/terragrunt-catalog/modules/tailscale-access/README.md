@@ -1,7 +1,8 @@
 # Tailscale access ownership
 
-The `operator/tailscale-access` Terragrunt unit owns the complete tailnet policy
-and three scoped CI auth keys through `tailscale/tailscale` 0.29.2.
+The `operator/tailscale-access` Terragrunt unit owns the complete tailnet policy,
+DNS configuration, tailnet settings, contact addresses, and three scoped CI auth
+keys through `tailscale/tailscale` 0.29.2.
 The tailnet keeps Tailnet Lock enabled; OAuth/OIDC enrollment alone cannot sign
 a new node. Existing unused federated identities remain protected in state until
 the final migration retirement removes them through a reviewed provider apply
@@ -9,9 +10,28 @@ after signed-key CI acceptance.
 Ordinary CI never applies this unit or receives policy administration scopes.
 State and saved plans use the existing encrypted homelab S3 backend.
 
-The provider reads the administrator API key from
-`~/.config/homelab/tailscale/api-key`; keep the directory `0700` and file `0600`.
-This is a private credential, never a desired-state input or repository file.
+The provider reads a separate administrator OAuth client from private
+`~/.config/homelab/tailscale/terragrunt-oauth-client-{id,secret}` files. Keep the
+directory `0700` and both files `0600`; never commit or print either value.
+The Kubernetes operator's SSM-backed OAuth client remains separate. The
+Terragrunt client needs read access plus write scopes for each managed surface:
+`dns`, `feature_settings`, `account_settings`, `policy_file`, `auth_keys`, and
+`federated_keys` when those resources need updating. Do not broaden the
+Kubernetes operator credential to administer the tailnet.
+
+The imported DNS configuration preserves MagicDNS, two global resolvers with
+local-DNS override off, and the `stinkyboi.com` split DNS resolver. The fixed
+split DNS IP must match the `homelab-dns` Tailscale Service before any update.
+The imported tailnet settings preserve existing approval, key-duration, HTTPS,
+auto-update, logging, posture, and routing flags. Provider 0.29.2 does not
+expose the live `routeSelection` setting; keep that gap visible when reviewing
+tailnet-wide drift. Configuration and network log streaming are unavailable on
+the current Tailscale billing plan.
+The six Kubernetes proxy devices are owned by the Tailscale operator's reviewed
+Helm values, Connector, Service, Ingress, and policy declarations. Their current
+hostnames, tags, authorization, key-expiry behavior, and exit-node routes were
+checked against those sources. Do not pin controller-generated device IDs in this
+module. Personal and non-Kubernetes devices remain outside repository ownership.
 
 The complete policy in `scripts/config/tailscale-policy.json` preserves the
 reviewed October 10, 2026 baseline. The former wildcard grant now names existing
@@ -25,8 +45,8 @@ initial adoption, preserving any intervening unrelated changes. Its embedded
 positive and negative tests check the CI boundaries. An unknown-policy bootstrap
 marker is rejected by the module.
 
-Generate the root stack, initialize the operator unit, and import the existing
-policy only if `tailscale_acl.homelab` is absent from its state:
+Generate the root stack, initialize the operator unit, and import existing
+singletons only when their addresses are absent from state:
 
 ```sh
 umask 077
@@ -36,12 +56,19 @@ terragrunt stack generate
 cd operator/tailscale-access
 terragrunt init
 terragrunt state list >"$review_dir/state-list.txt"
-if ! grep -Fxq tailscale_acl.homelab "$review_dir/state-list.txt"; then
-  terragrunt import tailscale_acl.homelab acl
-fi
+for entry in \
+  'tailscale_acl.homelab acl' \
+  'tailscale_dns_configuration.homelab dns_configuration' \
+  'tailscale_tailnet_settings.homelab tailnet_settings' \
+  'tailscale_contacts.homelab contacts'; do
+  address=${entry% *}
+  if ! grep -Fxq "$address" "$review_dir/state-list.txt"; then
+    terragrunt import "$address" "${entry#* }"
+  fi
+done
 terragrunt plan -out="$review_dir/access.tfplan"
 terragrunt show -no-color "$review_dir/access.tfplan" >"$review_dir/access.txt"
-# Review access.txt privately, then apply exactly the saved encrypted plan.
+# Require no unreviewed ACL, DNS, settings, contact, or CI key change.
 terragrunt apply "$review_dir/access.tfplan"
 ```
 
@@ -53,10 +80,13 @@ normal local AWS SSO profile before initialization; do not disable encryption or
 use a local state fallback when that credential expires. Import only adopts the
 existing policy into this state; it does not write the live policy.
 
-Review the saved plan before apply. For the Tailnet Lock addition, expect exactly
-three new `tailscale_tailnet_key.github` resources, with no ACL change or deletion
-of the existing federated identities. The full policy and retained identities
-keep `prevent_destroy`. Do not remove resources from state to bypass that guard.
+Review the saved plan before apply. The October 24, 2026 adoption plan was a
+no-op after reconciling the existing CI key generation 2 and both global DNS
+resolvers. An earlier preview would have replaced all three working generation
+2 keys with generation 1; never apply that stale plan. The full policy and
+retained identities keep `prevent_destroy`. Do not remove resources from state
+to bypass that guard. The aggregate DNS resource is alpha in provider 0.29.2;
+pin its version and check the exact plan before updating it.
 The keys are reusable, ephemeral, preauthorized, scoped to separate CI tags, and
 expire after 90 days. `preauthorized` is not a Tailnet Lock signature.
 
@@ -153,7 +183,7 @@ out. No provider resource or generation change is required for this repair.
 
 ## Rotation and retirement
 
-Generation 1 was prepared on October 10, 2026 UTC. Rotate every 60 days from
+Generation 2 was created on October 14, 2026 UTC. Rotate every 60 days from
 the provider creation timestamp, before the 90-day expiry. No timestamp or local environment
 variable silently changes desired state. Increment the committed
 `ci_key_generation` in

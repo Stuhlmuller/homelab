@@ -26,6 +26,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
+    resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-8564baaf10e1673a998e5188
@@ -36,10 +38,10 @@ sources:
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
+generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T19:18:26.448Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # GitOps Flow
@@ -136,9 +138,11 @@ does not authorize restoring public DNS or the deleted restoration workflow.
 ## Tailscale ingress foundation
 
 The staged migration adds the `traefik` Application and the administrator-owned
-`operator/tailscale-access` unit. The latter imports the existing full policy
-before applying the reviewed policy and three scoped CI auth keys with the
-Tailscale Terraform provider; CI cannot administer its own tailnet grants.
+`operator/tailscale-access` unit. The latter adopts the existing full policy,
+DNS, tailnet settings, and contacts into encrypted state before applying reviewed
+changes. It also owns three scoped CI auth keys. A separate private OAuth client
+authenticates this unit; the Kubernetes operator client remains limited to its
+runtime scopes, and CI cannot administer its own tailnet grants.
 Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
 fixed publisher; committed generation changes drive 60-day rotation of keys
 with 90-day expiry. The three unused federated identities remain protected until

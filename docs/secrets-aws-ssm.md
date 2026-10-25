@@ -104,9 +104,10 @@ parameters in the matrix remain unchanged.
 
 `scripts/tailscale-ci-configure.py` signs the provider keys on the trusted Mac,
 then publishes only `TAILSCALE_AUTH_KEY` in each of `homelab-plan` and
-`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. The first two
-retain owner-review environment protection; Cordium's separate tag has no
-Kubernetes RBAC. No private kubeconfig or Tailscale administrator token is copied
+`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. Same-repository
+PR plans use `homelab-plan` without a required reviewer; production remains
+restricted to `main`. Cordium's separate tag has no Kubernetes RBAC. No private
+kubeconfig or Tailscale administrator token is copied
 to GitHub. The three old client-ID variables are retired only after all secret
 writes and metadata checks succeed. Dormant provider OIDC identities remain
 protected pending separate retirement.
