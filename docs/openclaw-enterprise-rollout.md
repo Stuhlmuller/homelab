@@ -51,9 +51,12 @@ runs under the protected production environment and shared operations queue,
 pins the reviewed stage and dispatcher checksums, and withholds private output.
 A source-bound in-cluster Job reads the UID-1000-owned, `0600` bootstrap key
 from its read-only PVC mount and proves the live Installation, Pod, and startup
-Secret identities. It emits one bounded private readiness receipt. The runner
-checks the Job and Pod UIDs, image, mounts, service account, source and Secret
-UID/resource version, then rechecks exact current `main` immediately before a
+Secret identities. Before creating the Job, the runner verifies the exact
+immutable startup Secret and reviewed candidate bytes, then pins its UID,
+resource version, candidate digest and immutable state in the Job Pod template.
+The Job emits one bounded private readiness receipt. The runner
+checks the Job and Pod UIDs, image, mounts, service account, source and pinned
+Secret baseline, then rechecks exact current `main` immediately before a
 single guarded patch of the named Secret annotation. The Job must confirm the
 bound Installation and unchanged workloads afterward. The runner never reads
 the key; the Job cannot patch the Secret. An uncertain patch is read back once
@@ -65,7 +68,8 @@ until its signed image is rebuilt and pinned from this source, the admitted
 canary proves enforcement, and placement, claims, key ownership and dormant
 Installation are reviewed. If `main` advances after Job creation, the unbound
 Job fails and blocks later dispatches. Its exact failed Job requires read-only
-inspection and a separate reviewed, identity-checked cleanup workflow before
+inspection against its Pod-template Secret baseline and a separate reviewed,
+identity-checked cleanup workflow before
 a new exact-main attempt; no automatic Job deletion is included here.
 
 The fixed `full-sync` lane can sync both Applications only after a reviewed

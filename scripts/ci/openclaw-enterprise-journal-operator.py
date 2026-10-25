@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Dispatch one source-bound Enterprise Job; never stream its private output."""
 
+import base64
 import json
 import hashlib
 import os
@@ -20,6 +21,10 @@ UID = re.compile(r"[0-9a-f-]{36}\Z")
 IMAGE = re.compile(r"harbor\.stinkyboi\.com/homelab/homelab-oce-operator@sha256:[0-9a-f]{64}\Z")
 NODE = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\Z")
 JOB_NAME = re.compile(r"oce-journal-(bind-installation|reconcile|stop|verification)-[1-9][0-9]{0,19}-[1-9][0-9]{0,4}\Z")
+BINDING_UID = "homelab.stuhlmuller.dev/startup-secret-uid"
+BINDING_VERSION = "homelab.stuhlmuller.dev/startup-secret-resource-version"
+BINDING_DIGEST = "homelab.stuhlmuller.dev/startup-candidate-sha256"
+BINDING_IMMUTABLE = "homelab.stuhlmuller.dev/startup-secret-immutable"
 
 
 class Blocked(RuntimeError):
@@ -216,7 +221,37 @@ def prove_claims(operator):
             "operator bootstrap volume identity or placement changed")
 
 
-def build_job(stage, expected, run_id, operator, projection, attempt="1"):
+def binding_secret_baseline(namespace):
+    """Record the reviewed Secret identity before a key-bearing Job can start."""
+    candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+    digest = hashlib.sha256(candidate).hexdigest()
+    name = "occ-installation-startup-" + digest[:32]
+    secret = kubectl_json("-n", namespace, "get", "secret", name, "-o=json")
+    metadata = secret.get("metadata", {}) if isinstance(secret, dict) else {}
+    annotations = metadata.get("annotations") if isinstance(metadata, dict) else None
+    uid = metadata.get("uid") if isinstance(metadata, dict) else None
+    version = metadata.get("resourceVersion") if isinstance(metadata, dict) else None
+    require(isinstance(annotations, dict) and
+            isinstance(uid, str) and UID.fullmatch(uid) and
+            isinstance(version, str) and re.fullmatch(r"[1-9][0-9]*", version) and
+            secret.get("kind") == "Secret" and secret.get("type") == "Opaque" and
+            secret.get("immutable") is True and
+            metadata.get("name") == name and metadata.get("namespace") == namespace and
+            metadata.get("labels") == {"app.kubernetes.io/part-of": "openclaw-enterprise"} and
+            not metadata.get("ownerReferences") and
+            annotations.get("homelab.stuhlmuller.dev/installation-sha256") == digest and
+            set(annotations) <= {"homelab.stuhlmuller.dev/installation-sha256",
+                                 "openclaw.dev/installation-id"} and
+            ("openclaw.dev/installation-id" not in annotations or
+             isinstance(annotations["openclaw.dev/installation-id"], str) and
+             re.fullmatch(r"ins_[A-Za-z0-9_-]+", annotations["openclaw.dev/installation-id"])) and
+            secret.get("data") == {"installation.yaml": base64.b64encode(candidate).decode()},
+            "startup Secret baseline is absent or differs from reviewed candidate")
+    return {BINDING_UID: uid, BINDING_VERSION: version,
+            BINDING_DIGEST: digest, BINDING_IMMUTABLE: "true"}
+
+
+def build_job(stage, expected, run_id, operator, projection, attempt="1", *, baseline=None):
     require(stage in STAGES and re.fullmatch(r"[1-9][0-9]{0,19}", run_id) and
             re.fullmatch(r"[1-9][0-9]{0,4}", attempt),
             "operator stage, run ID or attempt is invalid")
@@ -231,6 +266,18 @@ def build_job(stage, expected, run_id, operator, projection, attempt="1"):
             receipt["configSha256"] == hashlib.sha256(
                 projection["data"]["openclaw-enterprise.json"].encode()).hexdigest(),
             "operator projected source receipt changed")
+    if stage == "bind-installation":
+        candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+        require(isinstance(baseline, dict) and set(baseline) == {
+            BINDING_UID, BINDING_VERSION, BINDING_DIGEST, BINDING_IMMUTABLE} and
+            isinstance(baseline[BINDING_UID], str) and UID.fullmatch(baseline[BINDING_UID]) and
+            isinstance(baseline[BINDING_VERSION], str) and
+            re.fullmatch(r"[1-9][0-9]*", baseline[BINDING_VERSION]) and
+            baseline[BINDING_DIGEST] == hashlib.sha256(candidate).hexdigest() and
+            baseline[BINDING_IMMUTABLE] == "true",
+            "binding Secret baseline is incomplete")
+    else:
+        require(baseline is None, "non-binding Job has a Secret baseline")
     args = ["--config", "/etc/oce-operator-config/openclaw-enterprise.json",
             "--expected-sha", expected, "--operator-source-sha",
             operator["imageSourceSha"], "--reviewed-config-sha256", receipt["configSha256"]]
@@ -248,7 +295,9 @@ def build_job(stage, expected, run_id, operator, projection, attempt="1"):
     return {"apiVersion": "batch/v1", "kind": "Job",
             "metadata": {"name": name, "namespace": operator["namespace"], "labels": labels},
             "spec": {"backoffLimit": 0, "activeDeadlineSeconds": 1800,
-                     "template": {"metadata": {"labels": labels}, "spec": {
+                     "template": {"metadata": {"labels": labels,
+                                               **({"annotations": baseline} if baseline else {})},
+                                  "spec": {
                          "serviceAccountName": operator["serviceAccount"],
                          "automountServiceAccountToken": False,
                          "restartPolicy": "Never",
@@ -303,8 +352,11 @@ def job_identity(actual, intended):
     template = spec.get("template", {})
     pod = template.get("spec", {})
     wanted = intended["spec"]["template"]["spec"]
-    labels = template.get("metadata", {}).get("labels", {})
+    template_metadata = template.get("metadata", {})
+    labels = template_metadata.get("labels", {})
     expected_labels = intended["spec"]["template"]["metadata"]["labels"]
+    annotations = template_metadata.get("annotations") or {}
+    expected_annotations = intended["spec"]["template"]["metadata"].get("annotations") or {}
     allowed_labels = set(expected_labels) | {"batch.kubernetes.io/controller-uid",
                                               "batch.kubernetes.io/job-name",
                                               "controller-uid", "job-name"}
@@ -317,6 +369,7 @@ def job_identity(actual, intended):
             actual.get("metadata", {}).get("labels") == intended["metadata"]["labels"] and
             isinstance(labels, dict) and set(labels) <= allowed_labels and
             all(labels.get(key) == value for key, value in expected_labels.items()) and
+            annotations == expected_annotations and
             spec.get("backoffLimit") == 0 and spec.get("activeDeadlineSeconds") == 1800 and
             pod.get("serviceAccountName") == wanted["serviceAccountName"] and
             pod.get("nodeSelector") == wanted["nodeSelector"] and
@@ -348,6 +401,7 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
     job_uid = actual_job.get("metadata", {}).get("uid")
     require(isinstance(job_uid, str) and UID.fullmatch(job_uid),
             "binding Job UID is missing")
+    baseline = intended_job["spec"]["template"]["metadata"]["annotations"]
     proof = None
     pod_name = None
     for _ in range(90):
@@ -367,7 +421,10 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
             containers = spec.get("containers")
             wanted = intended_job["spec"]["template"]["spec"]
             labels = metadata.get("labels")
+            pod_annotations = metadata.get("annotations")
             require(isinstance(owners, list) and isinstance(labels, dict) and
+                    isinstance(pod_annotations, dict) and
+                    all(pod_annotations.get(key) == value for key, value in baseline.items()) and
                     metadata.get("namespace") == namespace and
                     isinstance(metadata.get("name"), str) and
                     metadata["name"].startswith(name + "-") and
@@ -454,7 +511,13 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
             type(proof["issuedAt"]) is int and
             -5 <= time.time() - proof["issuedAt"] <= 60,
             "binding Job proof is stale or invalid")
+    require(proof["secretUid"] == baseline[BINDING_UID] and
+            proof["secretResourceVersion"] == baseline[BINDING_VERSION],
+            "startup Secret changed after binding Job creation")
     candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+    require(baseline[BINDING_DIGEST] == hashlib.sha256(candidate).hexdigest() and
+            baseline[BINDING_IMMUTABLE] == "true",
+            "binding Job startup Secret baseline changed")
     secret_name = "occ-installation-startup-" + hashlib.sha256(candidate).hexdigest()[:32]
     secret = kubectl_json("-n", namespace, "get", "secret", secret_name, "-o=json")
     metadata = secret.get("metadata", {}) if isinstance(secret, dict) else {}
@@ -594,8 +657,10 @@ def main(argv=None, environ=None):
         projection = config_projection(config, expected, operator)
         exact_main(expected, environ)
         prove_or_create_projection(projection)
+        baseline = binding_secret_baseline(operator["namespace"]) if stage == "bind-installation" else None
         job = build_job(stage, expected, environ.get("GITHUB_RUN_ID", ""),
-                        operator, projection, environ.get("GITHUB_RUN_ATTEMPT", ""))
+                        operator, projection, environ.get("GITHUB_RUN_ATTEMPT", ""),
+                        baseline=baseline)
         exact_main(expected, environ)
         if stage == "bind-installation":
             dispatch(job, ready=lambda actual, intended: bind_proof_and_patch(

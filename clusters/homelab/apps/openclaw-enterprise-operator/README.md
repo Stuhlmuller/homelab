@@ -62,7 +62,11 @@ stages still require their own live recovery and owner-session receipts.
 
 The protected `bind-installation` workflow keeps the bootstrap service key on
 its PVC. A source-bound UID-1000 Job reads it through a read-only mount and
-performs private Installation proof; the protected runner rechecks current
+performs private Installation proof. Before creating that Job, the runner
+verifies the exact immutable startup Secret and reviewed candidate bytes, then
+pins its UID, resource version, candidate digest and immutable state in the
+Job's Pod template. Job and Pod identity checks reject a changed baseline.
+The protected runner rechecks current
 `main` immediately before its UID/resourceVersion-guarded patch of the one
 startup Secret annotation, then requires an in-cluster post-patch proof. The
 operator ServiceAccount has no Secret patch grant, and no key crosses to the
@@ -73,8 +77,8 @@ are reviewed.
 If `main` advances after Job creation but before the Secret patch, the Job
 times out without binding. The dispatcher then refuses any fresh attempt while
 that failed Job remains. Inspect its private log, Pod and Job UIDs, and the
-startup Secret annotation and resource version read-only. A separate reviewed
-cleanup workflow must prove those identities and remove only that failed Job
+startup Secret against the pinned Pod-template baseline read-only. A separate
+reviewed cleanup workflow must prove those identities and remove only that failed Job
 before a fresh exact-main dispatch. No automatic deletion or patch retry is
 authorized by this source slice. T041 stays open until this recovery path and
 the live prerequisites are proven.
