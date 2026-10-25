@@ -22,3 +22,8 @@ It is not replicated or backed up and must not be used for durable app data.
 The NAS-side setup is documented in `docs/storage-nfs.md`. Do not depend on
 stateful workloads until the provisioner is healthy and the PVC write, delete,
 and recreate validation in that runbook has passed.
+
+The staged `renovate-cache-pv.yaml` declares only the cluster-scoped PV for a
+separate QNAP cache volume. It stays outside this Kustomization until the
+isolated export exists. Renovate's namespaced Argo project owns the matching
+PVC and a read-only capacity probe after this platform PV reconciles.

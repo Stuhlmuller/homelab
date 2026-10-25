@@ -111,11 +111,11 @@ through a reviewed PR, restore share capacity through a declared path, and
 verify the next scheduled Job after resuming. If no declared NAS capacity path
 exists, add one before changing live state. Increasing the PVC request will
 not restore writes. No verified QNAP `/homelab` capacity-restoration operation
-is declared yet. The staged `dedicated-cache-storage.yaml` instead defines a
-static PV and new claim for a separate 20 GiB QTS thick volume exported as
-`/renovate-cache`. It is deliberately absent from `kustomization.yaml`; the
-export and its capacity boundary must be verified before a reviewed PR adds
-the manifest. A bounded, isolated tmpfs `ENOSPC` drill can test failure
+is declared yet. The staged platform `renovate-cache-pv.yaml` and workload
+`dedicated-cache-pvc.yaml` define a static PV and new claim for a separate
+20 GiB QTS thick volume exported as `/renovate-cache`. Both are absent from
+their Kustomizations; verify the NAS volume and export before binding them.
+A bounded, isolated tmpfs `ENOSPC` drill can test failure
 visibility and later normal PVC use, but cannot prove recovery from an actual
 full NAS export. T024/T042 and writer cutover remain blocked on a declared
 capacity path and direct recovery evidence.
@@ -137,7 +137,8 @@ failed cycle and verify the next scheduled run and freshness alerts recover.
 
 ### Staged dedicated-cache cutover
 
-`dedicated-cache-storage.yaml` is not in `kustomization.yaml` and has no live
+`clusters/homelab/platform/storage/renovate-cache-pv.yaml` and
+`dedicated-cache-pvc.yaml` are outside their Kustomizations and have no live
 effect. The target is a separate 20 GiB
 QTS thick volume on Storage Pool 1 with one NFSv3 export at
 `10.1.0.2:/renovate-cache`, the same four Talos node allow-list and guest
@@ -154,14 +155,17 @@ and the network recycle bin for this rebuildable cache, and grant NFSv3
 read/write access only to the four Talos node addresses in
 [`docs/storage-nfs.md`](../../../../docs/storage-nfs.md), with `sys` security
 and all-squash to guest. Do not create a pool or change existing exports.
-Before any GitOps activation, verify the volume is distinct from `/homelab`,
-`showmount -e 10.1.0.2` lists `/renovate-cache`, the node allow-list is exact,
-and a read-only mounted `df` reports roughly 20 GiB rather than the shared
-export's capacity.
-
-After that prerequisite, add `dedicated-cache-storage.yaml` to
-`kustomization.yaml` in a reviewed PR. Verify the new PV and PVC bind, while
-the live CronJob still uses `renovate-cache`. Suspend the CronJob through a
+Before GitOps activation, verify in QTS that this is a separate 20 GiB volume,
+`showmount -e 10.1.0.2` lists `/renovate-cache`, and the four-node allow-list
+is exact. Add only `renovate-cache-pv.yaml` to the `platform-storage`
+Kustomization in a reviewed PR and verify its cluster-scoped PV reconciles.
+Renovate's `homelab-workloads` Argo project cannot own a PV. In a second
+reviewed PR, add `dedicated-cache-pvc.yaml` and a credential-free, read-only
+claim-probe Job to Renovate's Kustomization. Verify the claim is bound and the
+probe's mounted `df` reports 16–24 GiB from exactly
+`10.1.0.2:/renovate-cache`. Keep the live CronJob on `renovate-cache` if the
+probe fails. Remove the completed probe through a later reviewed change.
+Suspend the CronJob through a
 reviewed PR and confirm Argo CD synced to exact `main` with no active Renovate
 Job or Pod. Switch the CronJob claim to `renovate-cache-dedicated` and unsuspend
 through a reviewed PR. The first scheduled Pod must mount the new volume,
