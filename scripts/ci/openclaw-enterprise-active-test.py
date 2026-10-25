@@ -88,6 +88,32 @@ class ActiveAgentReconciliation(unittest.TestCase):
         self.assertEqual(self._journal()["revisionId"], "rev_one")
         self.assertNotIn("pending", self._journal())
 
+    def test_duplicate_logical_namespace_blocks_active_mutation_verify_and_stop(self):
+        original_get = self.api.get
+
+        def competing_namespace(path):
+            result = original_get(path)
+            if path == "/namespaces":
+                result.append({**self.api.namespace, "id": "ns_other"})
+            return result
+
+        with patch.object(self.api, "get", side_effect=competing_namespace):
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._active()
+        self.assertFalse(self.api.secrets)
+        self.assertFalse(self.api.revisions)
+
+        self._active()
+        writes = [call for call in self.api.calls if call[0].startswith("POST") or
+                  call[0] == "PATCH"]
+        with patch.object(self.api, "get", side_effect=competing_namespace):
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._verify()
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._stop()
+        self.assertEqual([call for call in self.api.calls if call[0].startswith("POST") or
+                          call[0] == "PATCH"], writes)
+
     def test_active_gate_keeps_committed_config_off_and_needs_key(self):
         self.assertFalse(json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())[
             "activationEnabled"])
