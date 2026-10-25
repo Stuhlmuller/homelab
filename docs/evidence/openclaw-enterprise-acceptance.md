@@ -153,6 +153,12 @@ is another inventory render input, not a live owner. At that checkpoint, ten
 Octelium Enterprise Genesis policies lacked source-bound fixtures. `octelium/svc-upstream`
 public all-port egress, actual traffic, and the tainted canary remain
 unqualified; T018 and T027 remain open.
+The pinned Octelium installer constructs the Genesis image from package and
+version for both init and upgrade; it has no image or digest override. A
+corrected generator therefore also needs reviewed immutable image selection
+in the installer path. The source catalog does not prove all live or dynamic
+Octelium upstreams or Cordium Workspace outbound needs, so no narrower
+generated egress rule has been selected or deployed.
 On October 20, the ten Octelium Enterprise Genesis policies also matched a
 read-only complete-spec check against the reviewed v0.22.0 constructors. Their
 [expected-spec fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
