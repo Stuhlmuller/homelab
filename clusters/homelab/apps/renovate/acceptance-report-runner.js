@@ -16,7 +16,8 @@ function privateFile(file, allowEmpty = false) {
   return { metadata, bytes: fs.readFileSync(file) };
 }
 
-function seal(paths, uid, startedAt, completedAt) {
+function seal(paths, uid, startedAt, completedAt,
+  policyPath = path.join(__dirname, 'runner-config.js')) {
   const report = privateFile(paths.report);
   const log = privateFile(paths.log, true);
   let parsed;
@@ -53,6 +54,7 @@ function seal(paths, uid, startedAt, completedAt) {
     schema: 1,
     podUid: uid,
     image: 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d',
+    policySha256: sha256(fs.readFileSync(policyPath)),
     startedAt,
     completedAt,
     report: {
