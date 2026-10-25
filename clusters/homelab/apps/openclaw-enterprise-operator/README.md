@@ -61,11 +61,14 @@ bundle into GitOps or setting `enabled: true`. Stop and restore/acceptance
 stages still require their own live recovery and owner-session receipts.
 
 The protected `bind-installation` workflow keeps the bootstrap service key on
-its PVC. A source-bound UID-1000 Job reads it through a read-only mount and
+its PVC. Its checkout fetches full history so the dispatcher can prove the
+pinned image source is an ancestor of current `main`. A source-bound UID-1000
+Job reads the key through a read-only mount and
 performs private Installation proof. Before creating that Job, the runner
 verifies the exact immutable startup Secret and reviewed candidate bytes, then
 pins its UID, resource version, candidate digest and immutable state in the
-Job's Pod template. Job and Pod identity checks reject a changed baseline.
+Job's Pod template. Job and Pod identity checks reject a changed baseline or
+resources pending deletion.
 The protected runner rechecks current
 `main` immediately before its UID/resourceVersion-guarded patch of the one
 startup Secret annotation, then requires an in-cluster post-patch proof. The

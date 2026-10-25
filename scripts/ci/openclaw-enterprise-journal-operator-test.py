@@ -142,7 +142,8 @@ class JournalOperator(unittest.TestCase):
         self.assertEqual(baseline[runner.BINDING_IMMUTABLE], "true")
         self.assertEqual(read.call_args.args[:5], (
             "-n", "openclaw-system", "get", "secret", secret["metadata"]["name"]))
-        for change in ("uid", "version", "immutable", "candidate", "data", "name"):
+        for change in ("uid", "version", "immutable", "candidate", "data", "name",
+                       "deleting"):
             altered = copy.deepcopy(secret)
             if change == "uid":
                 altered["metadata"]["uid"] = "wrong"
@@ -155,6 +156,8 @@ class JournalOperator(unittest.TestCase):
                     "homelab.stuhlmuller.dev/installation-sha256"] = "0" * 64
             elif change == "data":
                 altered["data"]["installation.yaml"] = "Zm9yZWlnbg=="
+            elif change == "deleting":
+                altered["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
             else:
                 altered["metadata"]["name"] = "foreign"
             with self.subTest(change=change), \
@@ -265,7 +268,8 @@ class JournalOperator(unittest.TestCase):
 
     def test_binding_rejects_secret_race_and_uncertain_patch_without_retry(self):
         operator, job, actual, pod, secret, proof = binding_objects()
-        for field, value in (("uid", POD_UID), ("resourceVersion", "101")):
+        for field, value in (("uid", POD_UID), ("resourceVersion", "101"),
+                             ("deletionTimestamp", "2026-10-25T14:00:00Z")):
             altered = copy.deepcopy(secret)
             altered["metadata"][field] = value
             with self.subTest(field=field), \
@@ -299,6 +303,15 @@ class JournalOperator(unittest.TestCase):
              mock.patch.object(runner, "exact_main"):
             runner.bind_proof_and_patch(actual, job, SHA, operator, {})
         self.assertEqual(len(commands), 2)
+        deleting = copy.deepcopy(bound)
+        deleting["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual), deleting]), \
+             mock.patch.object(runner, "command", side_effect=uncertain), \
+             mock.patch.object(runner, "exact_main"), \
+             self.assertRaisesRegex(runner.Blocked, "outcome is uncertain"):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        self.assertEqual(len(commands), 3)
 
     def test_binding_rejects_secret_change_after_job_creation(self):
         operator, job, actual, pod, _, proof = binding_objects()
@@ -322,6 +335,29 @@ class JournalOperator(unittest.TestCase):
             with self.assertRaisesRegex(runner.Blocked, "Job stopped"):
                 runner.bind_proof_and_patch(actual, job, SHA, operator, {})
             main.assert_not_called()
+
+    def test_binding_rejects_terminating_job_or_pod_before_patch(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        for target in ("initial_job", "initial_pod", "current_job", "current_pod"):
+            first_job, first_pod = copy.deepcopy(actual), copy.deepcopy(pod)
+            latest_job, latest_pod = running_job(actual), copy.deepcopy(pod)
+            if target == "initial_job":
+                first_job["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            elif target == "initial_pod":
+                first_pod["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            elif target == "current_job":
+                latest_job["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            else:
+                latest_pod["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            with self.subTest(target=target), \
+                 mock.patch.object(runner, "kubectl_json", side_effect=[
+                     {"items": [first_pod]}, secret, latest_pod, latest_job]), \
+                 mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                                   json.dumps(proof)), \
+                 mock.patch.object(runner, "exact_main") as main:
+                with self.assertRaises(runner.Blocked):
+                    runner.bind_proof_and_patch(first_job, job, SHA, operator, {})
+                main.assert_not_called()
 
     def test_binding_rejects_proof_that_expires_during_cluster_reads(self):
         operator, job, actual, pod, secret, proof = binding_objects()

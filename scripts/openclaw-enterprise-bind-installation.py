@@ -52,6 +52,7 @@ def _secret(snapshot, candidate, identity):
             not set(annotations) <= {"homelab.stuhlmuller.dev/installation-sha256",
                                      ANNOTATION} or
             (ANNOTATION in annotations and annotations[ANNOTATION] != identity) or
+            metadata.get("deletionTimestamp") is not None or
             not isinstance(metadata.get("uid"), str) or not metadata["uid"] or
             not isinstance(metadata.get("resourceVersion"), str) or
             not metadata["resourceVersion"]):

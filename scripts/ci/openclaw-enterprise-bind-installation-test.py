@@ -112,7 +112,8 @@ class InstallationBinding(unittest.TestCase):
 
     def test_rejects_foreign_secret_before_patch(self):
         for change in ("wrong-id", "wrong-label", "owner", "wrong-bytes",
-                       "wrong-digest", "mutable", "missing-version", "null-id"):
+                       "wrong-digest", "mutable", "missing-version", "null-id",
+                       "deleting"):
             with self.subTest(change=change):
                 pre = self.snapshots()
                 for snapshot in pre:
@@ -132,6 +133,8 @@ class InstallationBinding(unittest.TestCase):
                         secret["immutable"] = False
                     elif change == "missing-version":
                         metadata["resourceVersion"] = ""
+                    elif change == "deleting":
+                        metadata["deletionTimestamp"] = "2026-10-25T14:00:00Z"
                     else:
                         metadata["annotations"][binder.ANNOTATION] = None
                 with patch.object(binder.startup, "kube") as patch_secret:

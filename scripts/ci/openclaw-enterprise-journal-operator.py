@@ -237,6 +237,7 @@ def binding_secret_baseline(namespace):
             secret.get("kind") == "Secret" and secret.get("type") == "Opaque" and
             secret.get("immutable") is True and
             metadata.get("name") == name and metadata.get("namespace") == namespace and
+            metadata.get("deletionTimestamp") is None and
             metadata.get("labels") == {"app.kubernetes.io/part-of": "openclaw-enterprise"} and
             not metadata.get("ownerReferences") and
             annotations.get("homelab.stuhlmuller.dev/installation-sha256") == digest and
@@ -398,8 +399,10 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
     """Patch only after a fresh, source-bound proof from the running key reader."""
     namespace = intended_job["metadata"]["namespace"]
     name = intended_job["metadata"]["name"]
-    job_uid = actual_job.get("metadata", {}).get("uid")
-    require(isinstance(job_uid, str) and UID.fullmatch(job_uid),
+    initial_job_metadata = actual_job.get("metadata", {})
+    job_uid = initial_job_metadata.get("uid")
+    require(isinstance(job_uid, str) and UID.fullmatch(job_uid) and
+            initial_job_metadata.get("deletionTimestamp") is None,
             "binding Job UID is missing")
     baseline = intended_job["spec"]["template"]["metadata"]["annotations"]
     proof = None
@@ -426,6 +429,7 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
                     isinstance(pod_annotations, dict) and
                     all(pod_annotations.get(key) == value for key, value in baseline.items()) and
                     metadata.get("namespace") == namespace and
+                    metadata.get("deletionTimestamp") is None and
                     isinstance(metadata.get("name"), str) and
                     metadata["name"].startswith(name + "-") and
                     labels.get("batch.kubernetes.io/job-name") == name and
@@ -528,6 +532,7 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
             secret.get("immutable") is True and secret.get("type") == "Opaque" and
             metadata.get("name") == secret_name and
             metadata.get("namespace") == namespace and
+            metadata.get("deletionTimestamp") is None and
             metadata.get("labels") == {"app.kubernetes.io/part-of": "openclaw-enterprise"} and
             annotations.get("homelab.stuhlmuller.dev/installation-sha256") ==
             hashlib.sha256(candidate).hexdigest(),
@@ -548,6 +553,7 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
     container_statuses = pod_status.get("containerStatuses") if isinstance(pod_status, dict) else None
     require(isinstance(pod_status, dict) and isinstance(pod_metadata, dict) and
             pod_metadata.get("uid") == pod["metadata"]["uid"] and
+            pod_metadata.get("deletionTimestamp") is None and
             pod_status.get("phase") == "Running" and
             isinstance(container_statuses, list) and len(container_statuses) == 1 and
             isinstance(container_statuses[0], dict) and
@@ -558,6 +564,7 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
             isinstance(job_status, dict) and
             job_identity(current_job, intended_job) and
             job_metadata.get("uid") == job_uid and
+            job_metadata.get("deletionTimestamp") is None and
             job_status.get("active") == 1 and
             not job_status.get("conditions"),
             "binding Job stopped before the protected patch")
@@ -583,6 +590,7 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
         require(isinstance(seen_annotations, dict) and
                 seen.get("uid") == proof["secretUid"] and
                 seen.get("resourceVersion") != proof["secretResourceVersion"] and
+                seen.get("deletionTimestamp") is None and
                 seen.get("labels") == metadata["labels"] and
                 seen_annotations == {**annotations,
                                      "openclaw.dev/installation-id": proof["installationId"]} and
