@@ -22,6 +22,7 @@ configMapGenerator:
       - acceptance-report-config.js
       - acceptance-report-runner.js
       - acceptance-pr-proof.js
+      - acceptance-policy-proof.js
       - acceptance-schedule-collector.js
       - acceptance-source-review.js
       - renovate-acceptance-schedule.py

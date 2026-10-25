@@ -585,11 +585,25 @@ pre-lookup, so evidence references in `review.json` need independent effective
 policy and registry-access verification; the Job alone cannot prove them.
 
 The private input delivery path is declared, but independent owner inventory,
-source-visibility, and effective-policy receipt production and review remain
-open. Keep the Job omitted/suspended until those inputs and the first
-write-enabled extraction cache are ready. Do not place files on the ledger with
-an ad hoc live command. A review larger than 900 KiB needs a new reviewed
-delivery contract before seeding; this path does not split or truncate it.
+source-visibility, and effective-policy review remain open. The staged
+`acceptance-policy-proof-job.yaml` uses the dedicated acceptance App with
+repository Administration, Contents, and Metadata **read** grants. It reads
+the App-visible private repositories' effective branch rules, classic branch
+protection, and pinned Renovate 44.167.4 repository config paths. A 403,
+malformed response, or changed branch fails without a success receipt; 404 is
+accepted only for absent classic protection or config files. It seals hashes
+and protection flags under the mode `0700` private ledger, logs counts only,
+and cannot overwrite an earlier Pod receipt. The App grant remains read-only;
+the production writer App is unchanged. GitHub omits ruleset bypass actors
+from read-only responses, so that fact and effective auto-merge remain
+explicit private-review gaps. The receipt covers only App-visible repos;
+compare it with the independent owner inventory before accepting coverage.
+Keep the Job omitted/suspended until the separate App, ledger, and private
+review path are ready. Keep the inventory Job omitted/suspended until those
+inputs and the first write-enabled extraction cache are ready. Do not place
+files on the ledger with an ad hoc live command. A review larger than 900 KiB
+needs a new reviewed delivery contract before seeding; this path does not split
+or truncate it.
 
 After the private source review is complete and the seeding change is ready,
 deliver the file shortly before reviewed GitOps activation so the owner

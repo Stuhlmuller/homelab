@@ -305,5 +305,5 @@ if (require.main === module) main().catch(() => {
   process.exitCode = 1;
 });
 
-module.exports = { candidateKey, canonicalRegistry, readCache, buildInventory, saveLedger,
+module.exports = { candidateKey, canonicalRegistry, readCache, githubRepositories, buildInventory, saveLedger,
   readReview, materializeReview };

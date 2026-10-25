@@ -32,7 +32,7 @@ class AcceptanceAppTests(unittest.TestCase):
     def test_manifest_and_callback_cannot_expand_grants_or_skip_state(self):
         declared = app.manifest('http://127.0.0.1:4123/callback')
         self.assertEqual(declared['default_permissions'], {
-            name: 'read' for name in ('checks', 'contents', 'issues', 'members', 'metadata',
+            name: 'read' for name in ('administration', 'checks', 'contents', 'issues', 'members', 'metadata',
                                      'pull_requests', 'statuses', 'vulnerability_alerts')})
         self.assertEqual(declared['default_events'], [])
         self.assertFalse(declared['hook_attributes']['active'])
@@ -61,7 +61,9 @@ class AcceptanceAppTests(unittest.TestCase):
             returned, _ = app.validate_registration(42, PEM_FIXTURE)
             app.validate_installation(returned, 42)
             for key, changed in (("permissions", {**grants, 'contents': 'write'}),
-                                 ('permissions', {**grants, 'administration': 'read'}),
+                                 ('permissions', {**grants, 'administration': 'write'}),
+                                 ('permissions', {key: value for key, value in grants.items()
+                                                  if key != 'administration'}),
                                  ('events', ['push']), ('name', 'another app'),
                                  ('owner', {'login': 'other', 'type': 'Organization'})):
                 with self.subTest(key=key, changed=changed):

@@ -31,7 +31,7 @@ SSM = {
     'issuer-id': '/homelab/renovate/acceptance/github-app/issuer-id',
 }
 READ_PERMISSIONS = {name: 'read' for name in (
-    'checks', 'contents', 'issues', 'members', 'metadata', 'pull_requests',
+    'administration', 'checks', 'contents', 'issues', 'members', 'metadata', 'pull_requests',
     'statuses', 'vulnerability_alerts')}
 APP_NAME = 'Stuhlmuller Renovate Acceptance Observer'
 HOMEPAGE = 'https://github.com/Stuhlmuller/homelab'
