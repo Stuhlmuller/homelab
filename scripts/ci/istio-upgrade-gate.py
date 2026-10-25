@@ -14,6 +14,16 @@ CANDIDATE = ROOT / "clusters/homelab/apps/istio/upgrade-1.28.10.json"
 OLD_REPOSITORY = "https://istio-release.storage.googleapis.com/charts"
 NEW_REPOSITORY = "https://blob.istio.io/istio-release/charts"
 BASELINE_MANIFEST_SHA256 = "46693741bf78ea71aab36dd9359422a9cb21478b4c3aa7e87c979a5f24b9c3b5"
+REFERENCED_FILES = {
+    ".argocd-values-ref-placeholder.yaml": "cb1d512dd7021fe32904661dec7f52219c58ae5ba049303f84c681a4c4f75df6",
+    "clusters/homelab/apps/istio/values.yaml": "f9d20e2fb93e22e78dc07db649def6cb1c426c3ef8e8b0c89f050d4dc37211c9",
+    "clusters/homelab/apps/istio/octelium-api-gateway-values.yaml": "3cc751beb194a4dfd7c7d29fe360794f0924caf416379cd412415b5e40b6e832",
+    "clusters/homelab/apps/istio/kustomization.yaml": "c2dbb06b3c845574e5caca471822aa5b841e43035ea79df0faef9923be37adae",
+    "clusters/homelab/apps/istio/certificate.yaml": "357f4da93c854a9986063311d9b85fe7602f4f5b6cd370629f6d19cba99a00f9",
+    "clusters/homelab/apps/istio/namespace.yaml": "42706bd1545aa18b40f3c54276db6a8ed38ed3c63e7957827154c12c36dfe054",
+    "clusters/homelab/apps/istio/octelium-api-gateway.yaml": "737545be14f2ff76101139ee024e17c5ffc368d0541952ccaa09b3b1148e5038",
+    "clusters/homelab/apps/istio/tailnet-gateway.yaml": "17f8e1a1bb6f82ce1fcd17c1f91706b888e88d24823eaccc2e0f9b208f64a716",
+}
 COMPONENTS = (
     ("base", "istio-base", "32b3d9833cf6473e8e567407855c029012b1080416ae4f9ee7bd4ce93617e132"),
     ("istiod", "istiod", "125367e6eec08c8e7fc6e165c35ecf306dc23ea069b7953aed57fe83098004f1"),
@@ -96,6 +106,17 @@ def without_labels(manifest):
     return value
 
 
+def check_referenced_content(root, phase):
+    """Git-backed values and Kustomize content must not move during a hop."""
+    if phase == 0:
+        return
+    for name, digest in REFERENCED_FILES.items():
+        path = root / name
+        require(path.is_file() and not path.is_symlink() and
+                hashlib.sha256(path.read_bytes()).hexdigest() == digest,
+                "Istio referenced content changed during a staged upgrade")
+
+
 def authorize_plan(plan_dir, rendered, phase):
     """Allow baseline/no-op plans; hold an actual Istio chart/source transition."""
     plans = list(plan_dir.glob("**/istio/argocd/tfplan.json"))
@@ -139,6 +160,7 @@ def main():
     phase = check_candidate(candidate)
     rendered = json.load(sys.stdin)
     check_sources(rendered, phase)
+    check_referenced_content(ROOT, phase)
     if args.action == "authorize-apply":
         require(args.plan_dir is not None and args.plan_dir.is_dir(), "Istio plan directory is missing")
         # A protected post-sync verifier and durable per-component receipts

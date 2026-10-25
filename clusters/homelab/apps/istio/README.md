@@ -47,6 +47,11 @@ admitted canary node. The protected Talos/Kubernetes workflow does not perform
 Istio upgrades. `upgrade-1.28.10.json` has `phase: 0`; a phase means that
 exactly that many leading charts in the sequence have moved to 1.28.10. The
 offline source check verifies that prefix against the rendered Argo Application.
+In any active phase it also pins the two Helm values files, five Kustomize
+source files, and root values-ref placeholder Argo reads. Git-only changes to
+those files can auto-sync without a Terragrunt plan. Phase 0 keeps the current
+maintenance behavior; refresh these pins in a reviewed activation PR if the
+phase-0 values change.
 The protected Terragrunt apply path also examines the saved Istio plan. It
 allows the unchanged 1.27.3 Application and metadata-label drift repair, but
 holds any Application specification change until a protected post-sync health verifier and

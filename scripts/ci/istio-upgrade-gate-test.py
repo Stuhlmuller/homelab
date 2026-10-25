@@ -4,6 +4,7 @@
 import copy
 import importlib.util
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -122,6 +123,21 @@ class IstioUpgradeGateTest(unittest.TestCase):
             with self.subTest(change=change, phase=phase):
                 with self.assertRaises(ValueError):
                     self.authorize(change, phase)
+
+    def test_active_phase_holds_git_backed_values_and_kustomize(self):
+        GATE.check_referenced_content(GATE.ROOT, 1)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "clusters/homelab/apps/istio"
+            for name in GATE.REFERENCED_FILES:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(GATE.ROOT / name, path)
+            GATE.check_referenced_content(root, 1)
+            (directory / "values.yaml").write_text("unreviewed values\n")
+            GATE.check_referenced_content(root, 0)
+            with self.assertRaises(ValueError):
+                GATE.check_referenced_content(root, 1)
 
 
 if __name__ == "__main__":

@@ -76,6 +76,7 @@ def event(name):
 
 def unexpected():
     event("UNEXPECTED")
+    sys.stderr.write(f"Unexpected {tool} fixture call: {args}\n")
     sys.exit(99)
 
 def plan(path):
@@ -84,7 +85,7 @@ def plan(path):
     document = {"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
     ] if unit == "apps" else []}
-    if unit == "apps" and config["target"] == "istio":
+    if unit == "apps" and config["target"] in ("", "istio"):
         document = istio_plan()
     path.write_text(json.dumps(document))
 
@@ -137,10 +138,12 @@ if tool == "git":
         pass
     elif args[:1] == ["show"] and args[1].endswith(":IaC/terragrunt.stack.hcl"):
         pass  # Both fixture revisions have no deleted units.
+    elif args[:1] == ["show"] and args[1].endswith(":IaC/root.hcl"):
+        print("locals {}\ninputs = {}")
     elif args[:2] == ["diff", "--name-only"]:
         pass
     elif "diff" in args and "--quiet" in args:
-        sys.exit(1)  # Shared inputs changed: existing full-run filters select '*'.
+        sys.exit(0 if config.get("unchanged_stack") else 1)
     else:
         unexpected()
 elif tool == "kubectl":
@@ -188,6 +191,14 @@ elif tool == "terragrunt":
                    "render", "--json", "--write=false", "--no-color"]:
         event("istio.render")
         print(json.dumps(config["istio_render"]))
+    elif command[:1] == ["list"] and cwd == "IaC/homelab/us-west-2/apps":
+        expected = "*/argocd | [main...HEAD]" if config.get("unchanged_stack") else "*/argocd"
+        assert command[1:3] == ["--filter", expected]
+        assert command[3:] == ["--format", "long"]
+        event("apps.list")
+        print("unrecognized" if config.get("malformed_list") else "Type  Path")
+        if config.get("list_istio_selected", True):
+            print("unit  istio/argocd")
     elif command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
         for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx", "istio"):
@@ -230,20 +241,26 @@ elif tool == "terragrunt":
         target = command[command.index("--filter") + 1]
         if target.startswith("*/azuread"):
             unit = "azure"
-        assert target == ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else "*/argocd" if unit == "apps" else "*"))
+        if config["target"]:
+            assert target == config["target"] + "/argocd"
+        elif unit == "azure":
+            assert target.startswith("*/azuread")
+        elif unit == "apps":
+            assert target.startswith("*/argocd")
+        else:
+            assert target == "*" or target == "* | [main...HEAD]"
         assert "--non-interactive" in command and "--parallelism" in command
         tail = command[command.index("--") + 1:]
         if unit == "apps":
-            path = Path(command[command.index("--out-dir") + 1]) / target / "tfplan"
+            unit_path = ("*/argocd" if config.get("misname_istio_plan") else "istio/argocd") \
+                if config["target"] == "" else target
+            path = Path(command[command.index("--out-dir") + 1]) / unit_path / "tfplan"
             if tail == ["plan", "-no-color"]:
                 assert command[command.index("--json-out-dir") + 1] == str(path.parents[2])
                 event("apps.plan")
                 plan(path)
-                path.with_suffix(".json").write_bytes(path.read_bytes())
-                if config.get("include_istio_plan"):
-                    istio = path.parents[2] / "istio/argocd/tfplan.json"
-                    istio.parent.mkdir(parents=True, exist_ok=True)
-                    istio.write_text(json.dumps(istio_plan()))
+                if not config.get("omit_apps_plan_json"):
+                    path.with_suffix(".json").write_bytes(path.read_bytes())
             elif tail == ["apply", "-no-color"]:
                 checked(path)
                 bulk_apply()
@@ -312,6 +329,13 @@ class TerragruntApplyTest(unittest.TestCase):
             candidate_target.parent.mkdir(parents=True)
             candidate_target.write_text(json.dumps(candidate or json.loads(
                 (SOURCE.parent.parent / "clusters/homelab/apps/istio/upgrade-1.28.10.json").read_text())))
+            for name in ("values.yaml", "octelium-api-gateway-values.yaml", "kustomization.yaml",
+                         "certificate.yaml", "namespace.yaml", "octelium-api-gateway.yaml",
+                         "tailnet-gateway.yaml"):
+                shutil.copyfile(SOURCE.parent.parent / "clusters/homelab/apps/istio" / name,
+                                candidate_target.parent / name)
+            shutil.copyfile(SOURCE.parent.parent / ".argocd-values-ref-placeholder.yaml",
+                            root / ".argocd-values-ref-placeholder.yaml")
             for unit in ("homelab/us-west-2/bootstrap/argocd",
                          "homelab/us-west-2/shared/aws-ssm-parameters",
                          "homelab/us-west-2/apps/langfuse/blob-storage",
@@ -384,10 +408,50 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertNotIn("apps.apply", events)
 
     def test_full_apply_allows_a_no_op_istio_registration(self):
-        result, events = self.run_apply(target="", include_istio_plan=True)
+        result, events = self.run_apply(target="")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("istio.render", events)
         self.assertIn("apps.apply", events)
+
+    def test_full_apply_rejects_missing_or_misnamed_selected_istio_plan(self):
+        for options in ({"misname_istio_plan": True}, {"omit_apps_plan_json": True}):
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Selected Istio Application has no saved plan", result.stderr)
+                self.assertNotIn("apps.apply", events)
+
+    def test_changed_full_filter_rejects_missing_selected_istio_plan(self):
+        result, events = self.run_apply(target="", unchanged_stack=True,
+                                        omit_apps_plan_json=True, list_istio_selected=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Selected Istio Application has no saved plan", result.stderr)
+        self.assertIn("apps.list", events)
+        self.assertNotIn("apps.apply", events)
+
+    def test_changed_full_filter_rejects_unrecognized_selection_output(self):
+        result, events = self.run_apply(target="", unchanged_stack=True,
+                                        omit_apps_plan_json=True, malformed_list=True,
+                                        list_istio_selected=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Unrecognized Argo CD Application selection output", result.stderr)
+        self.assertIn("apps.list", events)
+        self.assertNotIn("apps.apply", events)
+
+    def test_targeted_istio_rejects_absent_plan(self):
+        result, events = self.run_apply(target="istio", omit_apps_plan_json=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Selected Istio Application has no saved plan", result.stderr)
+        self.assertNotIn("apps.apply", events)
+
+    def test_full_apply_accepts_excluded_istio_without_a_plan(self):
+        result, events = self.run_apply(target="", unchanged_stack=True,
+                                        omit_apps_plan_json=True,
+                                        list_istio_selected=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("apps.list", events)
+        self.assertNotIn("istio.render", events)
+        self.assertNotIn("apps.apply", events)
 
     def test_unrelated_target_does_not_consume_the_istio_gate(self):
         rendered = json.loads(json.dumps(ISTIO_RENDER))
