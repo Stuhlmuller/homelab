@@ -97,6 +97,19 @@ test_rejects_changed_platform_maintenance if {
 	}
 }
 
+test_rejects_changed_platform_baseline_inputs if {
+	inputs := platform_maintenance_fixture["true"].workflow_dispatch.inputs
+	every changed in [
+		object.union(inputs, {"baseline_source_sha": {"required": true, "type": "string"}}),
+		object.union(inputs, {"baseline_run_id": {"required": false, "type": "number"}}),
+	] {
+		candidate := object.union(platform_maintenance_fixture, {"true": {"workflow_dispatch": {"inputs": changed}}})
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
 test_rejects_missing_or_stale_main_recheck if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	every changed in [
@@ -130,7 +143,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312",
+		"35a87a8ec697d46d7414e790e55415d842641a435f21bb4274c248a0735cec2a",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -190,7 +203,9 @@ platform_maintenance_fixture := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"stage": {"options": ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"stage": {"options": ["inspect", "firewall-baseline", "firewall-baseline-recover", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]},
+		"baseline_source_sha": {"required": false, "type": "string"},
+		"baseline_run_id": {"required": false, "type": "string"},
 		"cleanup_run_id": {"required": false, "type": "string"},
 		"qualification_run_id": {},
 		"evidence_source_sha": {},
