@@ -19,7 +19,7 @@ REWRITE_NAMESPACES = {"octelium", "monitoring", "ai"}
 
 
 def sources():
-    for path in sorted((ROOT / "IaC").glob("*/stack.hcl")):
+    for path in sorted((ROOT / "IaC/homelab/us-west-2/apps").glob("*/stack.hcl")):
         data = hcl2.loads(path.read_text())
         for block in data.get("inputs", []):
             destination = block.get("spec", {}).get("destination", {}).get("namespace")
