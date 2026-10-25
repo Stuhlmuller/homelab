@@ -399,3 +399,25 @@ Rollback before registration is removal of this preparation. After registration,
 revert the Application/workload change through protected `main`. The namespace,
 local StorageClasses, PVs, and PVCs carry `Prune=false,Delete=false` so deleting
 the Application retains claims for recovery. Preserve SSM keys and backups too.
+
+## Private client access
+
+The catalog declares a non-anonymous `mastodon.default` Octelium WEB Service.
+It requires `homelab-human-web-access`, preserves Mastodon's bearer token,
+and forwards the original HTTPS host to Istio. `isPublic: true` enables the
+clientless HTTPS listener; it does not grant anonymous access.
+
+Establish this Service before restricting the tunnel paths. From reviewed
+`main`, using an authenticated Octelium operator session:
+
+```sh
+yq ea 'select(.kind == "Service" and .metadata.name == "mastodon") | .metadata.name = "mastodon.default"' \
+  docs/examples/octelium/homelab-services.yaml > /tmp/mastodon-service.yaml
+octeliumctl apply --domain stinkyboi.com --include Service /tmp/mastodon-service.yaml
+octeliumctl get service mastodon.default --domain stinkyboi.com -o json
+```
+
+Verify anonymous access is disabled and the human policy is attached; repeat
+apply must report no changes. Do not apply/prune the complete shared catalog
+for this single-Service change. The tunnel continues its existing routing
+until the separately reviewed federation/client path split is activated.

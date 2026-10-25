@@ -19,6 +19,25 @@ def documents(name):
 
 
 class Routes(unittest.TestCase):
+    def test_private_client_service_requires_human_access(self):
+        catalog = json.loads(subprocess.check_output([
+            "yq", "ea", "-o=json", ". as $doc ireduce ([]; . + [$doc])",
+            str(ROOT / "docs/examples/octelium/homelab-services.yaml"),
+        ], text=True))
+        service, = [r for r in catalog if r.get("kind") == "Service"
+                    and r["metadata"]["name"] == "mastodon"]
+        spec = service["spec"]
+        self.assertEqual((spec["mode"], spec["port"]), ("WEB", 80))
+        self.assertTrue(spec["isPublic"])
+        self.assertFalse(spec["isAnonymous"])
+        self.assertEqual(spec["authorization"]["policies"], ["homelab-human-web-access"])
+        self.assertEqual(spec["config"]["upstream"]["url"],
+                         "https://istio-ingressgateway.istio-system.svc.cluster.local:443")
+        header = spec["config"]["http"]["header"]
+        self.assertEqual(header["host"]["value"], "mastodon.stinkyboi.com")
+        self.assertEqual(header["authorizationMode"], "PASS")
+        self.assertEqual(header["forwardedMode"], "TRANSPARENT")
+
     def test_fresh_bootstrap_creates_backup_before_verification(self):
         rendered = subprocess.check_output(["kubectl", "kustomize", str(APP)], text=True)
         resources = json.loads(subprocess.check_output([
