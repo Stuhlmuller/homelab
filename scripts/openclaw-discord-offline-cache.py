@@ -23,6 +23,10 @@ IMAGE = (
 )
 SPEC = "@openclaw/discord@2026.9.5"
 INTEGRITY = "sha512-kPEbPiYAnJqxqLHqBnZCr3zowsxzboW0Q7ZdqX52X7IENLrU4CBdK4+ndqzQf+255ilffrYBTDrHBg8a137cgQ=="
+ARTIFACTS = ("npm-cache.tar", "dependency-lock.json", "manifest.json")
+MAX_BYTES = {"npm-cache.tar": 1024 * 1024 * 1024,
+             "dependency-lock.json": 10 * 1024 * 1024,
+             "manifest.json": 64 * 1024}
 
 
 def run(*args, capture=False):
@@ -139,6 +143,57 @@ def check_registry_integrity(raw):
         raise ValueError("npm registry integrity changed for pinned Discord package")
 
 
+def verify_bundle(directory, root):
+    """Verify the complete public package closure before publication or transfer."""
+    check_image_contract(root)
+    if not directory.is_dir() or directory.is_symlink() or set(
+        path.name for path in directory.iterdir()
+    ) != set(ARTIFACTS):
+        raise ValueError("Discord cache artifact set changed")
+    for name in ARTIFACTS:
+        path = directory / name
+        if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= MAX_BYTES[name]:
+            raise ValueError("Discord cache artifact type or size changed")
+    manifest = json.loads((directory / "manifest.json").read_text())
+    if set(manifest) != {"schema", "image", "platform", "package", "npm_integrity",
+                         "cache_sha256", "dependency_lock_sha256", "validation"} or not (
+        manifest["schema"] == 1 and manifest["image"] == IMAGE and
+        manifest["platform"] == "linux/amd64" and manifest["package"] == SPEC and
+        manifest["npm_integrity"] == INTEGRITY and
+        manifest["validation"] == "fresh-state-network-none-install-and-runtime-inspect"
+    ):
+        raise ValueError("Discord cache manifest contract changed")
+    for name, field in (("npm-cache.tar", "cache_sha256"),
+                        ("dependency-lock.json", "dependency_lock_sha256")):
+        with (directory / name).open("rb") as content:
+            if hashlib.file_digest(content, "sha256").hexdigest() != manifest[field]:
+                raise ValueError("Discord cache artifact digest differs from manifest")
+    lock = json.loads((directory / "dependency-lock.json").read_text())
+    package = lock["packages"]["node_modules/@openclaw/discord"]
+    if (package.get("version"), package.get("integrity")) != ("2026.9.5", INTEGRITY):
+        raise ValueError("Discord dependency lock changed")
+    seen = set()
+    total = 0
+    files = 0
+    with tarfile.open(directory / "npm-cache.tar", "r") as archive:
+        for member in archive:
+            path = Path(member.name)
+            if (path.is_absolute() or ".." in path.parts or not path.parts or
+                    path.parts[0] != "_cacache" or
+                    path.as_posix() != member.name or path.as_posix() in seen or
+                    not (member.isfile() or member.isdir())):
+                raise ValueError("unsafe Discord npm cache entry")
+            seen.add(path.as_posix())
+            if member.isfile():
+                files += 1
+                total += member.size
+                if total > MAX_BYTES["npm-cache.tar"]:
+                    raise ValueError("Discord npm cache expands beyond limit")
+    if files == 0:
+        raise ValueError("Discord npm cache has no package content")
+    return manifest
+
+
 def build(output_dir, root):
     check_image_contract(root)
     if output_dir.exists():
@@ -204,6 +259,7 @@ def build(output_dir, root):
                 json.dumps(manifest, indent=2, sort_keys=True) + "\n"
             )
             os.chmod(output_dir / "manifest.json", 0o600)
+            verify_bundle(output_dir, root)
             print(json.dumps(manifest, sort_keys=True))
     except Exception:
         shutil.rmtree(output_dir)

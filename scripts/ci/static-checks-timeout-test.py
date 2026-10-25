@@ -26,6 +26,8 @@ class Timeout(unittest.TestCase):
                          "openclaw-retirement-status-test.py",
                          "openclaw-enterprise-operations-test.py",
                          "openclaw-legacy-netns-preflight-test.py",
+                         "openclaw-discord-cache-publication-test.py",
+                         "openclaw-legacy-netns-preflight-test.py",
                          "openclaw-enterprise-resume-test.py",
                          "openclaw-enterprise-journal-operator-test.py",
                          "openclaw-enterprise-operator-image-test.py",
