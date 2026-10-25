@@ -8,7 +8,6 @@ import sys
 import time
 from pathlib import Path
 from urllib.error import HTTPError
-from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 NAMESPACE = "openclaw-system"
@@ -45,10 +44,29 @@ def deployment_path(component):
 
 
 def pods():
-    selector = quote(",".join(f"{key}={value}" for key, value in LABELS.items()), safe="")
-    response = api(f"/api/v1/namespaces/{NAMESPACE}/pods?labelSelector={selector}")
-    return [pod for pod in response.get("items", [])
-            if pod.get("metadata", {}).get("labels", {}).get("app.kubernetes.io/component") in COMPONENTS]
+    response = api(f"/api/v1/namespaces/{NAMESPACE}/pods")
+    metadata = response.get("metadata") if isinstance(response, dict) else None
+    if (not isinstance(response, dict) or response.get("kind") != "PodList" or
+            not isinstance(metadata, dict) or
+            not isinstance(metadata.get("resourceVersion"), str) or
+            metadata["resourceVersion"] in ("", "0") or
+            metadata.get("continue") not in (None, "") or
+            not isinstance(response.get("items"), list)):
+        raise RuntimeError("API/worker Pod list is incomplete or invalid")
+    candidates = []
+    for pod in response["items"]:
+        if not isinstance(pod, dict) or not isinstance(pod.get("metadata"), dict):
+            raise RuntimeError("API/worker Pod list is incomplete or invalid")
+        pod_meta = pod["metadata"]
+        labels = pod_meta.get("labels") or {}
+        name = pod_meta.get("name")
+        if not isinstance(labels, dict) or not isinstance(name, str):
+            raise RuntimeError("API/worker Pod list is incomplete or invalid")
+        if ((all(labels.get(key) == value for key, value in LABELS.items()) and
+             labels.get("app.kubernetes.io/component") in COMPONENTS) or
+                any(name.startswith(deployment_name(component) + "-") for component in COMPONENTS)):
+            candidates.append(pod)
+    return candidates
 
 
 def owned(deployment, component, require_observed=True):
