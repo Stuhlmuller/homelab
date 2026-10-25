@@ -17,6 +17,19 @@ def documents(name):
 
 
 class Routes(unittest.TestCase):
+    def test_public_egress_matches_configured_smtp_port(self):
+        config = documents("configmap.yaml")[0]["data"][".env.production"]
+        entries = dict(line.split("=", 1) for line in config.splitlines() if "=" in line)
+        federation = next(resource["spec"] for resource in documents("networkpolicy.yaml")
+                          if resource["metadata"]["name"] == "mastodon-federation-egress")
+        self.assertEqual(federation["podSelector"]["matchExpressions"][0]["values"],
+                         ["mastodon-web", "mastodon-sidekiq"])
+        self.assertEqual(len(federation["egress"]), 1)
+        allowed = {(port["protocol"], port["port"])
+                   for port in federation["egress"][0]["ports"]}
+        self.assertEqual(allowed, {("TCP", 80), ("TCP", 443),
+                                   ("TCP", int(entries["SMTP_PORT"]))})
+
     def test_public_route_only_reaches_mastodon(self):
         spec = documents("virtualservice.yaml")[0]["spec"]
         self.assertEqual(spec["hosts"], ["mastodon.stinkyboi.com"])
