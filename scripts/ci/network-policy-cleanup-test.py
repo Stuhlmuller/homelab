@@ -2,6 +2,7 @@
 """Keep owned firewall rollback narrow across kube-router and foreign rules."""
 
 import argparse
+import copy
 import runpy
 import subprocess
 import tempfile
@@ -41,6 +42,21 @@ def state():
             "ipset": (f"create {SET} hash:ip family inet hashsize 1024 maxelem 65536\n"
                       "create kube-router-local-pods hash:ip family inet hashsize 1024 maxelem 65536\n"
                       f"add {SET} 10.0.0.1\n")}
+
+
+def cleanup_spec():
+    return {"nodeSelector": {SUT["CANARY"]: "true"},
+            "tolerations": [{"key": SUT["CANARY"], "operator": "Equal",
+                             "value": "true", "effect": "NoSchedule"}],
+            "automountServiceAccountToken": False,
+            "hostNetwork": True, "dnsPolicy": "ClusterFirstWithHostNet",
+            "volumes": [{"name": "xtables-lock", "hostPath": {
+                "path": "/run/xtables.lock", "type": "FileOrCreate"}}],
+            "containers": [{"name": "cleanup", "image": SUT["IMAGE"],
+                            "command": ["/bin/sh", "-c"], "args": ["sleep 86400"],
+                            "securityContext": {"privileged": True},
+                            "volumeMounts": [{"name": "xtables-lock",
+                                              "mountPath": "/run/xtables.lock"}]}]}
 
 
 class FirewallCleanupTests(unittest.TestCase):
@@ -408,20 +424,12 @@ class FirewallCleanupTests(unittest.TestCase):
         daemonset = {"metadata": {"name": cleanup, "uid": "ds-uid"},
                      "status": {"desiredNumberScheduled": 1, "numberReady": 1},
                      "spec": {"selector": {"matchLabels": {"app.kubernetes.io/name": cleanup}},
-                              "template": {"spec": {
-                                  "nodeSelector": {canary: "true"},
-                                  "automountServiceAccountToken": False,
-                                  "hostNetwork": True,
-                                  "containers": [{"image": SUT["IMAGE"],
-                                                  "command": ["/bin/sh", "-c"],
-                                                  "args": ["sleep 86400"],
-                                                  "securityContext": {"privileged": True}}]}}}}
+                              "template": {"spec": cleanup_spec()}}}
         pod = {"metadata": {"namespace": "kube-system", "name": "cleanup-pod",
                             "uid": "pod-uid", "ownerReferences": [{"kind": "DaemonSet",
                             "name": cleanup, "uid": "ds-uid", "controller": True}]},
                "status": {"conditions": [{"type": "Ready", "status": "True"}]},
-               "spec": {"nodeName": "zimaboard-1", "hostNetwork": True,
-                        "containers": [{"image": SUT["IMAGE"]}]}}
+               "spec": cleanup_spec() | {"nodeName": "zimaboard-1"}}
         system = {"metadata": {"namespace": "kube-system", "name": "flannel-pod",
                                "uid": "system-uid", "ownerReferences": [{"kind": "DaemonSet",
                                "name": "flannel", "controller": True}]},
@@ -470,6 +478,53 @@ class FirewallCleanupTests(unittest.TestCase):
                 "command": lambda *args: ""}):
             with self.assertRaisesRegex(ValueError, "unreviewed Pod"):
                 SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}}, placement)
+
+        # The actual Pod may contain API defaults, but its host access and
+        # executable must still match the reviewed DaemonSet source.
+        pod["spec"]["restartPolicy"] = "Always"
+        pod["spec"]["containers"][0]["terminationMessagePath"] = "/dev/termination-log"
+        responses = iter((node, {"metadata": {}, "items": []},
+                          {"metadata": {}, "items": []}, daemonset,
+                          {"metadata": {}, "items": [pod]},
+                          {"metadata": {}, "items": [system, pod]}))
+        with patch.dict(SUT["inspect_cluster"].__globals__, {
+                "kubernetes_json": lambda *args: next(responses),
+                "command": lambda *args: ""}):
+            self.assertEqual(SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}},
+                                                     placement), ("cleanup-pod", "pod-uid"))
+
+        mutations = (
+            ("template", "initContainers", [{"name": "unreviewed-host-writer",
+                                               "image": SUT["IMAGE"],
+                                               "securityContext": {"privileged": True}}]),
+            ("template", "hostPID", True),
+            ("template", "volumes", cleanup_spec()["volumes"] + [{"name": "host-root",
+                    "hostPath": {"path": "/", "type": "Directory"}}]),
+            ("pod", "ephemeralContainers", [{"name": "unreviewed-debugger",
+                                               "image": SUT["IMAGE"]}]),
+            ("pod-container", "envFrom", [{"secretRef": {"name": "unreviewed"}}]),
+            ("pod-container", "lifecycle", {"postStart": {"exec": {
+                "command": ["/bin/sh", "-c", "true"]}}}),
+            ("pod-container", "securityContext", {"privileged": True,
+                                                     "capabilities": {"add": ["SYS_ADMIN"]}}),
+        )
+        for target, field, value in mutations:
+            with self.subTest(target=target, field=field):
+                changed_daemonset, changed_pod = copy.deepcopy(daemonset), copy.deepcopy(pod)
+                spec = (changed_daemonset["spec"]["template"]["spec"] if target == "template"
+                        else changed_pod["spec"])
+                if target == "pod-container":
+                    spec = spec["containers"][0]
+                spec[field] = value
+                responses = iter((node, {"metadata": {}, "items": []},
+                                  {"metadata": {}, "items": []}, changed_daemonset,
+                                  {"metadata": {}, "items": [changed_pod]}))
+                with patch.dict(SUT["inspect_cluster"].__globals__, {
+                        "kubernetes_json": lambda *args: next(responses),
+                        "command": lambda *args: ""}):
+                    with self.assertRaisesRegex(ValueError, "reviewed|node-local"):
+                        SUT["inspect_cluster"]({"canary": {"node": "zimaboard-1"}},
+                                               placement)
 
     def test_canary_node_inventory_rejects_unreviewed_or_incomplete_pods(self):
         cleanup = {"metadata": {"namespace": "kube-system", "name": "cleanup-pod",
