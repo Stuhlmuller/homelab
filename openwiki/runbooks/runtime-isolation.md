@@ -109,6 +109,15 @@ ambient HBONE, kubelet probes, and denied peers before activation.
 
 ## Egress enforcement prerequisite
 
+The staged `platform-istio-egress` Application defines a waypoint and the
+first caller-specific external destination, LiteLLM to OpenRouter on TLS 443.
+Its auto-sync stays disabled. The live cluster lacks Gateway API CRDs and
+ambient DNS capture is disabled, so the waypoint cannot be treated as active
+until those owned prerequisites and a traffic canary pass. The waypoint's
+service-account policy handles meshed TCP; kube-router remains the hard
+network boundary for direct bypass, UDP, and non-ambient workloads. See
+[`istio-egress/README.md`](../../clusters/homelab/platform/istio-egress/README.md).
+
 The 2026-10-12 read-only audit found all Flannel and ztunnel instances Ready,
 but readiness does not add egress enforcement. Gateway API CRDs and a
 `GatewayClass` were absent; existing Istio Gateway objects use the legacy API.

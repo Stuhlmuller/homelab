@@ -294,6 +294,14 @@ unit "argocd_apps_platform_image_policy" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/platform-image-policy/stack.hcl").inputs
 }
 
+unit "argocd_apps_platform_istio_egress" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-istio-egress"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-istio-egress/stack.hcl").inputs
+}
+
 unit "argocd_apps_platform_multus" {
   source                  = "./terragrunt-catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/platform-multus"
