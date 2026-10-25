@@ -76,6 +76,10 @@ socket and write dumps to NFS. Migration Secret
 projection requires the `runtime-v2` key, rendered atomically with the app-role
 credentials; an old Ready status cannot let the hook mount v1 credentials. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
+
+The Ruby launcher creates a private `0700` directory under the writable `/tmp`
+volume for upload processing. The volume root is group-managed by Kubernetes
+and lacks the sticky bit Ruby requires for a shared temporary directory.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
 small homelab. Sidekiq startup/readiness checks use the upstream job-processing
 marker, cleared by the launcher before each restart to prevent stale readiness.

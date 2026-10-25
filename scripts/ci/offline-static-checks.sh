@@ -36,12 +36,12 @@ terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
       $spec.syncPolicy.automated.selfHeal == true and
       ([ $spec.sources[] | select(has("chart")) |
         [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
-        ["https://istio-release.storage.googleapis.com/charts", "base", "istio-base", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "istiod", "istiod", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "cni", "istio-cni", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "ztunnel", "ztunnel", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "istio-ingressgateway", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
       ]) and
       any($spec.sources[];
         .chart == "ztunnel" and
@@ -79,7 +79,7 @@ if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[
   exit 1
 fi
 if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
-  echo "The public PR plan job must not render live plan or state details." >&2
+  echo "The PR plan job must not render saved plan or state details." >&2
   exit 1
 fi
 if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
@@ -1082,7 +1082,7 @@ done <<'EOF'
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/langfuse-postgres-checkpoint.yml 10fcf54954c0c3020582a993f792cc0923a1d6c631d0bc5d9fdd103d0a0d58fb
+.github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
@@ -1098,7 +1098,7 @@ done <<'EOF'
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
-.github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
+.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
 EOF
 echo "::endgroup::"
 

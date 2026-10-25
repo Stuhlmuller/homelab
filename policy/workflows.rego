@@ -849,6 +849,27 @@ private_live_output(run) if {
 	azuread_plan_private_live_tail(tail)
 }
 
+# The PR plan streams the CLI's redacted human output. Its report and saved
+# plans remain in private temporary files; allow only this reviewed command.
+private_live_output(run) if {
+	trim(run, "\n") == visible_terragrunt_plan_run
+}
+
+visible_terragrunt_plan_run := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash <<'EOF'
+set -euo pipefail
+umask 077
+echo "::group::Kubeconfig setup"
+bash scripts/ci/install-kubeconfig.sh
+echo "::group::Kubernetes API check"
+kubectl --request-timeout=15s version >/dev/null
+echo "::group::Argo CD bootstrap plan"
+bash scripts/ci/terragrunt-plan.sh
+EOF`
+
 # Harbor exposes only the reviewed publisher's fixed status fields. Keep this
 # exception exact: other private wrappers cannot print arbitrary files or logs.
 private_live_output(run) if {

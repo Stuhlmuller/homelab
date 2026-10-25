@@ -13,7 +13,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | --- | --- | --- | --- |
 | Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
 | Earlier stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Historical signed and fully pulled pair; the newer source-built bundle below supplies the selected digests. |
-| Full platform image catalog and transitive render | [main `8c9e0b41c151a64555bc1007203aad541464848c`, protected `all` mirror `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180) | — | Passed T004 catalog on 2026-10-24 00:06 UTC: all 214 reviewed sources matched Harbor digests and completed authenticated pulls. The six strict publication-bundle files remained byte-identical at later main `efb6a3a557a47cd73fb136f56a57f9139215b4a6`. |
+| Full platform image catalog and transitive render | [main `8c9e0b41c151a64555bc1007203aad541464848c`, protected `all` mirror `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180); [later 214-image retry `40157353792`](https://github.com/Stuhlmuller/homelab/actions/runs/40157353792) | — | Pending at current main. The protected 2026-10-24 run passed both jobs, matching Harbor digests and authenticated pulls for its 214 reviewed sources; its six strict publication-bundle files still matched main `efb6a3a557a47cd73fb136f56a57f9139215b4a6`. The catalog now has 215 images after `c227a5df`; both that successful run and the later retry at `bc593023` use the older 214-image catalog. |
 | Source-built Enterprise controller/runtime/CLI/operator | [main `4b0186236b919570164a73f5ca3b8ef7420564cb`, protected publisher `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867); exact refs below | — | Passed 2026-10-24 01:28 UTC: exact-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. Controller/runtime and CLI are pinned in source; this operator digest became historical when the selected Installation/values bytes changed. |
 | Exact-source Enterprise journal operator | [main `fda0d68cd2fc5d4689b6f1b048d329ae66ef3727`, protected publisher `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158); `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08` | — | Passed 2026-10-24 03:24 UTC: exact-current-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. The operator digest and embedded source SHA are pinned in the disabled declaration; placement, bootstrap credential and live isolation proofs remain open. |
 | Pinned Prometheus one-image qualification | [main `12bb86c84beffd8a7260049fa46abb3deeefa664`, protected `prometheus` mirror `39949606211`](https://github.com/Stuhlmuller/homelab/actions/runs/39949606211); `quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d` | — | Passed 2026-10-23 12:14 UTC: exact-current-main guard, matching digests and complete authenticated Harbor pull. This fixed one-image scope does not pass full-catalog T004. |
@@ -40,6 +40,14 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Complete new-state independent restore | Pending | — | Pending |
 | 24-hour observation and selective retirement | Pending | — | Pending |
 | T059 source documentation and OpenWiki refresh | [merged PR #1560](https://github.com/Stuhlmuller/homelab/pull/1560), main `0e223d6`; protected static, lint, image-policy, network-policy and release-dry-run checks passed | — | Passed for source documentation only: five named runbooks updated and affected OpenWiki pages refreshed by the native update path. Capacity, credentials, policy enforcement, platform upgrades and Enterprise live acceptance remain pending. |
+
+T004 needs a fresh protected `image_scope=all` run on exact current main. Accept
+it only after both workflow jobs succeed, the digest and authenticated-pull
+checks pass, and all six publication-bundle files match that main byte for
+byte: `scripts/config/harbor-images.json`, `.github/workflows/harbor-mirror.yml`,
+`scripts/ci/harbor-publish.sh`, `scripts/ci/install-kubeconfig.sh`, `flake.nix`
+and `flake.lock`. The earlier 214-image receipts remain historical evidence;
+the later retry cannot qualify the 215-image catalog.
 
 The successful Enterprise bundle's [job summary](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867#summary-120734188450) records these immutable references:
 
@@ -153,6 +161,12 @@ is another inventory render input, not a live owner. At that checkpoint, ten
 Octelium Enterprise Genesis policies lacked source-bound fixtures. `octelium/svc-upstream`
 public all-port egress, actual traffic, and the tainted canary remain
 unqualified; T018 and T027 remain open.
+The pinned Octelium installer constructs the Genesis image from package and
+version for both init and upgrade; it has no image or digest override. A
+corrected generator therefore also needs reviewed immutable image selection
+in the installer path. The source catalog does not prove all live or dynamic
+Octelium upstreams or Cordium Workspace outbound needs, so no narrower
+generated egress rule has been selected or deployed.
 On October 20, the ten Octelium Enterprise Genesis policies also matched a
 read-only complete-spec check against the reviewed v0.22.0 constructors. Their
 [expected-spec fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
