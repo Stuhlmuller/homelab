@@ -9,6 +9,8 @@ const ledgerDir = '/ledger/private';
 const ledgerPath = path.join(ledgerDir, 'ledger.json');
 const outcomesPath = path.join(ledgerDir, 'outcomes.json');
 const sampleSize = 5;
+const quarterHour = 15 * 60 * 1000;
+const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
 function digest(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
@@ -32,7 +34,29 @@ function sourceKey(item) {
   return [item.datasource, packageName, registry].join('\0');
 }
 
+function windowBounds(value) {
+  function utcHour(input) {
+    if (typeof input !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:00:00(?:\.000)?Z$/.test(input)) {
+      throw new Error('invalid-window');
+    }
+    const at = Date.parse(input);
+    if (!Number.isFinite(at) || at % 3600000 !== 0 ||
+        ![new Date(at).toISOString(), new Date(at).toISOString().replace('.000Z', 'Z')].includes(input)) {
+      throw new Error('invalid-window');
+    }
+    return at;
+  }
+  const start = utcHour(value?.windowStart);
+  const end = utcHour(value?.windowEnd);
+  if (end - start !== sevenDays) throw new Error('invalid-window');
+  if (value.inventory && (value.windowStart !== value.inventory.windowStart ||
+      value.windowEnd !== value.inventory.windowEnd)) throw new Error('window-mismatch');
+  return { start, end };
+}
+
 function selectSample(inventory) {
+  windowBounds(inventory);
   if (inventory.schema !== 1 || inventory.owner !== owner ||
       !/^[a-zA-Z0-9_-]{8,64}$/.test(inventory.seed) ||
       !Array.isArray(inventory.activeDatasources) || !inventory.activeDatasources.length ||
@@ -108,6 +132,8 @@ function selectSample(inventory) {
   return {
     schema: 1,
     seed: inventory.seed,
+    windowStart: inventory.windowStart,
+    windowEnd: inventory.windowEnd,
     inventorySha256: digest(JSON.stringify(inventory)),
     selectedAt: new Date().toISOString(),
     sample,
@@ -119,6 +145,7 @@ function recordPoll(ledger, results, at, startedAt = at) {
   const started = Date.parse(startedAt);
   if (!Number.isFinite(started) || !Number.isFinite(Date.parse(at))) throw new Error('invalid-poll-time');
   const slotAt = new Date(Math.floor(started / 900000) * 900000).toISOString();
+  const baselineSlot = Date.parse(slotAt) === windowBounds(ledger).start;
   const late = started - Date.parse(slotAt) > 300000;
   let healthy = 0;
   let failed = 0;
@@ -141,7 +168,7 @@ function recordPoll(ledger, results, at, startedAt = at) {
     healthy++;
     const seen = new Set(item.seen);
     const versions = new Map(result.releases.map((release) => [digest(release.version), release.version]));
-    if (item.lastHealthyAt) {
+    if (item.lastHealthyAt && !baselineSlot) {
       for (const [hash, version] of versions) {
         if (!seen.has(hash)) {
           const previousSlot = Date.parse(item.lastHealthySlot);
@@ -165,46 +192,70 @@ function recordPoll(ledger, results, at, startedAt = at) {
   return { healthy, failed, events };
 }
 
+function pollSlot(poll) {
+  const slot = Date.parse(poll?.slotAt);
+  const started = Date.parse(poll?.startedAt);
+  const finished = Date.parse(poll?.at);
+  if (!Number.isFinite(slot) || !Number.isFinite(started) || !Number.isFinite(finished) ||
+      poll.slotAt !== new Date(slot).toISOString() ||
+      Math.floor(started / quarterHour) * quarterHour !== slot ||
+      started > finished || poll.late !== (started - slot > 300000)) {
+    throw new Error('invalid-ledger-poll');
+  }
+  return slot;
+}
+
 function aggregate(ledger) {
+  const { start, end } = windowBounds(ledger);
   const strata = { public: 0, private: 0 };
   for (const item of ledger.sample) strata[item.sourceVisibility]++;
-  let missedPolls = 0;
-  for (let index = 1; index < ledger.polls.length; index++) {
-    const gap = Date.parse(ledger.polls[index].slotAt) - Date.parse(ledger.polls[index - 1].slotAt);
-    if (gap > 900000) missedPolls += gap / 900000 - 1;
-  }
+  const polls = ledger.polls.filter((poll) => {
+    const slot = pollSlot(poll);
+    return slot >= start && slot <= end;
+  });
+  const missedPolls = sevenDays / quarterHour + 1 -
+    new Set(polls.map((poll) => poll.slotAt)).size;
+  const events = ledger.sample.flatMap((item) => item.events);
+  const included = events.filter((event) => Date.parse(event.lastAbsent) >= start &&
+    Date.parse(event.firstPresent) <= end);
   return {
     classes: new Set(ledger.sample.map((item) => item.datasource)).size,
     sample: ledger.sample.length,
     strata,
-    polls: ledger.polls.length,
+    polls: polls.length,
     missedPolls,
-    latePolls: ledger.polls.filter((poll) => poll.late).length,
-    failedSources: ledger.polls.reduce((sum, poll) => sum + poll.failed, 0),
-    bracketedEvents: ledger.sample.reduce((sum, item) => sum + item.events.length, 0),
-    ambiguousEvents: ledger.sample.reduce((sum, item) =>
-      sum + item.events.filter((event) => event.ambiguous).length, 0),
+    latePolls: polls.filter((poll) => poll.late).length,
+    failedSources: polls.reduce((sum, poll) => sum + poll.failed, 0),
+    bracketedEvents: included.length,
+    ambiguousEvents: included.filter((event) => event.ambiguous).length,
   };
 }
 
 function windowHealth(ledger) {
-  const requiredSlots = 7 * 24 * 4 + 1;
+  const { start, end } = windowBounds(ledger);
+  const requiredSlots = sevenDays / quarterHour + 1;
+  const bySlot = new Map();
+  let duplicateSlots = 0;
+  for (const poll of ledger.polls) {
+    const slot = pollSlot(poll);
+    if (slot < start || slot > end) continue;
+    if (bySlot.has(slot)) duplicateSlots++;
+    else bySlot.set(slot, poll);
+  }
   let longestHealthySlots = 0;
   let current = 0;
-  let previous = null;
-  for (const poll of ledger.polls) {
-    const slot = Date.parse(poll.slotAt);
-    if (!Number.isFinite(slot) || poll.late || poll.failed ||
-        poll.healthy !== ledger.sample.length ||
-        (previous !== null && slot - previous !== 900000)) current = 0;
-    if (Number.isFinite(slot) && !poll.late && poll.failed === 0 &&
+  for (let index = 0; index < requiredSlots; index++) {
+    const poll = bySlot.get(start + index * quarterHour);
+    if (poll && !poll.late && poll.failed === 0 &&
         poll.healthy === ledger.sample.length) current++;
+    else current = 0;
     longestHealthySlots = Math.max(longestHealthySlots, current);
-    previous = Number.isFinite(slot) ? slot : null;
   }
-  return { requiredSlots, longestHealthySlots,
-    complete: longestHealthySlots >= requiredSlots &&
-      longestHealthySlots === ledger.polls.length };
+  return { windowStart: ledger.windowStart, windowEnd: ledger.windowEnd,
+    plannedHourlySlots: 168, requiredSlots, observedSlots: bySlot.size,
+    duplicateSlots, longestHealthySlots,
+    complete: Date.now() >= end && duplicateSlots === 0 && bySlot.size === requiredSlots &&
+      longestHealthySlots === requiredSlots };
 }
 
 function verifyFrozenSample(ledger) {
@@ -212,6 +263,7 @@ function verifyFrozenSample(ledger) {
       ledger.inventorySha256 !== digest(JSON.stringify(ledger.inventory))) {
     throw new Error('invalid-ledger');
   }
+  windowBounds(ledger);
   const fields = ['repository', 'datasource', 'packageName', 'registryUrl',
     'currentValue', 'sourceVisibility', 'packageFile', 'key'];
   const identities = (items) => items.map((item) => fields.map((field) => item?.[field]));
@@ -316,11 +368,14 @@ function classifyReceipt(receipt, event, evidence) {
 }
 
 function aggregateReport(ledger, outcomes, evidence = new Set()) {
+  const { start, end } = windowBounds(ledger);
   const receipts = outcomes || { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
   if (receipts.schema !== 1 || receipts.inventorySha256 !== ledger.inventorySha256 ||
       !Array.isArray(receipts.receipts)) throw new Error('invalid-outcomes');
   const events = new Map();
   const releases = new Map();
+  let boundaryEvents = 0;
+  let outsideEvents = 0;
   for (const item of ledger.sample) {
     for (const event of item.events) {
       if (typeof item.key !== 'string' || typeof event.version !== 'string' ||
@@ -329,6 +384,16 @@ function aggregateReport(ledger, outcomes, evidence = new Set()) {
       const id = JSON.stringify([item.key, event.version]);
       if (events.has(id)) throw new Error('invalid-ledger');
       events.set(id, event);
+      const absent = Date.parse(event.lastAbsent);
+      const present = Date.parse(event.firstPresent);
+      if (present < start || absent >= end) {
+        outsideEvents++;
+        continue;
+      }
+      if (absent < start || present > end) {
+        boundaryEvents++;
+        continue;
+      }
       const release = JSON.stringify([sourceKey(item), event.version]);
       if (!releases.has(release)) releases.set(release, []);
       releases.get(release).push({ item, event, id });
@@ -351,6 +416,8 @@ function aggregateReport(ledger, outcomes, evidence = new Set()) {
     unknownEvents: 0,
     incompleteEvidence: 0,
     ambiguousEvents: 0,
+    boundaryEvents,
+    outsideEvents,
   };
   for (const members of releases.values()) {
     const classifications = members.map(({ id, event }) => classifyReceipt(byEvent.get(id), event, evidence));
@@ -380,7 +447,8 @@ function aggregateReport(ledger, outcomes, evidence = new Set()) {
   }
   let status = 'review-required';
   const window = windowHealth(ledger);
-  if (!window.complete || counts.eligibleEvents < 10 || counts.ambiguousEvents || counts.unknownEvents ||
+  if (!window.complete || counts.eligibleEvents < 10 || counts.ambiguousEvents || counts.boundaryEvents ||
+      counts.unknownEvents ||
       counts.incompleteEvidence || counts.missingOutcomes) status = 'inconclusive';
   else if (counts.onTime * 100 < counts.eligibleEvents * 95) status = 'criteria-not-met';
   return {
@@ -591,7 +659,7 @@ if (require.main === module) {
 }
 
 module.exports = { selectSample, recordPoll, aggregate, aggregateReport, verifyFrozenSample,
-  windowHealth,
+  windowBounds, windowHealth,
   readPrivateOutcomes, privateDirectory,
   verifyPrivateEvidence,
   readToken, renovateRoot, datasourceApi, poll };

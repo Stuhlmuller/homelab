@@ -24,6 +24,8 @@ function inventory() {
     schema: 1,
     owner: 'Stuhlmuller',
     seed: 'natural-2026-10-18',
+    windowStart: '2026-10-17T00:00:00.000Z',
+    windowEnd: '2026-10-24T00:00:00.000Z',
     provenance: { method: 'renovate-extract', repositories,
       sha256: crypto.createHash('sha256').update(JSON.stringify(repositories)).digest('hex') },
     activeDatasources: ['npm', 'github-releases'],
@@ -51,7 +53,7 @@ function fixtureReport(ledger, receipts) {
 }
 
 function completeWindow(ledger) {
-  const start = Date.parse('2026-10-17T00:00:00.000Z');
+  const start = Date.parse(ledger.windowStart);
   for (let index = 0; index <= 7 * 24 * 4; index++) {
     const slotAt = new Date(start + index * 900000).toISOString();
     ledger.polls.push({ at: slotAt, startedAt: slotAt, slotAt, late: false,
@@ -145,7 +147,7 @@ test('seed deduplicates one upstream source across repositories before freezing'
   const reverse = observer.selectSample({ ...source, dependencies: [...source.dependencies].reverse() }).sample;
   assert.equal(first.length, 2);
   assert.deepEqual(first, reverse);
-  assert.deepEqual(observer.aggregate({ sample: first, polls: [] }).strata,
+  assert.deepEqual(observer.aggregate({ ...observer.selectSample(source), sample: first }).strata,
     { public: 1, private: 1 });
   source.dependencies[2].registryUrl = 'https://registry.example.com/packages';
   assert.throws(() => observer.selectSample(source), /ambiguous-source-visibility/);
@@ -223,6 +225,70 @@ test('offline report joins exact private receipts and counts missing outcomes in
   assert.equal(incomplete.onTime, 8);
   assert.equal(incomplete.onTimePercent, 80);
   assert.equal(incomplete.status, 'inconclusive');
+});
+
+test('the frozen seven-day window excludes earlier and eighth-day observations', () => {
+  const { ledger, receipts } = observedReleases();
+  const outsidePoll = (slotAt) => ({ slotAt, startedAt: slotAt, at: slotAt,
+    late: false, healthy: ledger.sample.length - 1, failed: 1, events: 1 });
+  ledger.polls.unshift(outsidePoll('2026-10-16T23:45:00.000Z'));
+  ledger.polls.push(outsidePoll('2026-10-24T00:15:00.000Z'));
+  ledger.sample[0].events.push(
+    { version: 'pre-window', lastAbsent: '2026-10-16T23:00:00.000Z',
+      firstPresent: '2026-10-16T23:15:00.000Z', ambiguous: false },
+    { version: 'eighth-day', lastAbsent: '2026-10-24T01:00:00.000Z',
+      firstPresent: '2026-10-24T01:15:00.000Z', ambiguous: false });
+  for (const version of ['pre-window', 'eighth-day']) {
+    receipts.receipts.push({ ...receipts.receipts[0], key: ledger.sample[0].key, version });
+  }
+  const report = fixtureReport(ledger, receipts);
+  assert.equal(report.status, 'review-required');
+  assert.equal(report.naturalEvents, 10);
+  assert.equal(report.eligibleEvents, 10);
+  assert.equal(report.onTime, 10);
+  assert.equal(report.polls, 673);
+  assert.equal(report.failedSources, 0);
+  assert.equal(report.bracketedEvents, 10);
+  assert.equal(report.outsideEvents, 2);
+  assert.equal(report.window.plannedHourlySlots, 168);
+  assert.equal(report.window.requiredSlots, 673);
+  assert.equal(report.window.complete, true);
+
+  ledger.sample[0].events.push({ version: 'boundary-unknown',
+    lastAbsent: '2026-10-16T23:45:00.000Z',
+    firstPresent: '2026-10-17T00:01:00.000Z', ambiguous: false });
+  const boundary = fixtureReport(ledger, receipts);
+  assert.equal(boundary.boundaryEvents, 1);
+  assert.equal(boundary.eligibleEvents, 10);
+  assert.equal(boundary.status, 'inconclusive');
+});
+
+test('the first in-window poll establishes a fresh baseline after pre-window polls', () => {
+  const ledger = observer.selectSample(inventory());
+  const item = ledger.sample[0];
+  const poll = (at, version) => observer.recordPoll(ledger,
+    new Map([[item.key, { response: { releases: [{ version }] },
+      startedAt: at, finishedAt: new Date(Date.parse(at) + 60_000).toISOString() }]]),
+    new Date(Date.parse(at) + 60_000).toISOString(), at);
+  poll('2026-10-16T23:45:00.000Z', '1.0.0');
+  poll(ledger.windowStart, '1.1.0');
+  assert.equal(item.events.length, 0);
+  poll('2026-10-17T00:15:00.000Z', '1.2.0');
+  assert.deepEqual(item.events.map(({ version }) => version), ['1.2.0']);
+});
+
+test('missing or mismatched frozen boundaries cannot produce a final report', () => {
+  const { ledger, receipts } = observedReleases();
+  ledger.inventory = inventory();
+  delete ledger.windowStart;
+  assert.throws(() => fixtureReport(ledger, receipts), /invalid-window/);
+  ledger.windowStart = '2026-10-17T01:00:00.000Z';
+  ledger.windowEnd = '2026-10-24T01:00:00.000Z';
+  assert.throws(() => fixtureReport(ledger, receipts), /window-mismatch/);
+  ledger.windowStart = ledger.inventory.windowStart;
+  ledger.windowEnd = ledger.inventory.windowEnd;
+  ledger.polls[0].slotAt = '2026-10-17T00:15:00.000Z';
+  assert.throws(() => fixtureReport(ledger, receipts), /invalid-ledger-poll/);
 });
 
 test('a node-loss gap or unhealthy source cannot silently complete the seven-day window', () => {
@@ -430,7 +496,7 @@ test('missed and late observer slots make release timing ambiguous', () => {
   const missedItem = baseline(missed, '2026-10-18T00:00:00.000Z');
   baseline(missed, '2026-10-18T00:30:00.000Z', '1.1.0');
   assert.equal(missedItem.events[0].ambiguous, true);
-  assert.equal(observer.aggregate(missed).missedPolls, 1);
+  assert.equal(observer.aggregate(missed).missedPolls, 671);
 
   const late = observer.selectSample(source);
   const lateItem = baseline(late, '2026-10-18T00:06:00.000Z');
@@ -442,7 +508,7 @@ test('missed and late observer slots make release timing ambiguous', () => {
   const healthyItem = baseline(healthy, '2026-10-18T00:00:00.000Z');
   baseline(healthy, '2026-10-18T00:15:00.000Z', '1.1.0');
   assert.equal(healthyItem.events[0].ambiguous, false);
-  assert.equal(observer.aggregate(healthy).missedPolls, 0);
+  assert.equal(observer.aggregate(healthy).missedPolls, 671);
 });
 
 test('global poll failure persists private failed observations and exits nonzero', async () => {

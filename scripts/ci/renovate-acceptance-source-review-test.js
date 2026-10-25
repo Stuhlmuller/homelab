@@ -39,13 +39,16 @@ function fixture() {
   const provenance = [{ repository, baseBranch: 'main', headSha: 'a'.repeat(40),
     cacheSha512: 'b'.repeat(128), configHash: 'c'.repeat(128) }];
   const inventory = { schema: 1, owner: 'Stuhlmuller', seed: 'reviewed-seed-2026',
+    windowStart: '2026-10-17T00:00:00.000Z',
+    windowEnd: '2026-10-24T00:00:00.000Z',
     provenance: { method: 'renovate-extract', repositories: provenance,
       sha256: sha256(JSON.stringify(provenance)) },
     activeDatasources: ['npm'], dependencies: [item] };
   const ledger = observer.selectSample(inventory);
   ledger.inventory = inventory;
   ledger.sample[0].events.push(event);
-  const review = { schema: 1, configSha256: 'd'.repeat(64) };
+  const review = { schema: 1, configSha256: 'd'.repeat(64),
+    windowStart: inventory.windowStart, windowEnd: inventory.windowEnd };
   ledger.reviewSha256 = sha256(JSON.stringify(review));
   fs.writeFileSync(path.join(directory, 'ledger.json'), JSON.stringify(ledger), { mode: 0o600 });
   fs.writeFileSync(path.join(directory, 'review.json'), JSON.stringify(review), { mode: 0o600 });
@@ -122,6 +125,22 @@ test('changed policy hash, report branch, or PR head fails closed', () => {
       report: { ...data.reportReceipt.report, bytes: reportBytes.length,
         sha256: sha256(reportBytes) } }));
     assert.throws(() => reviewer.sourceReview(data.directory), /report-link-mismatch/);
+  } finally { fs.rmSync(data.directory, { recursive: true, force: true }); }
+});
+
+test('source replay rejects a review window different from the frozen ledger', () => {
+  const data = fixture();
+  try {
+    const reviewPath = path.join(data.directory, 'review.json');
+    const ledgerPath = path.join(data.directory, 'ledger.json');
+    const review = JSON.parse(fs.readFileSync(reviewPath));
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath));
+    review.windowStart = '2026-10-17T01:00:00.000Z';
+    review.windowEnd = '2026-10-24T01:00:00.000Z';
+    ledger.reviewSha256 = sha256(JSON.stringify(review));
+    fs.writeFileSync(reviewPath, JSON.stringify(review));
+    fs.writeFileSync(ledgerPath, JSON.stringify(ledger));
+    assert.throws(() => reviewer.sourceReview(data.directory), /policy-review-invalid/);
   } finally { fs.rmSync(data.directory, { recursive: true, force: true }); }
 });
 

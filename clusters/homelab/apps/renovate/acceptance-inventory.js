@@ -85,6 +85,7 @@ async function githubRepositories(token) {
 }
 
 function buildInventory(review, scans, datasources, liveRepositories) {
+  observer.windowBounds(review);
   if (review?.schema !== 1 || review.owner !== owner ||
       !/^[A-Za-z0-9_-]{8,64}$/.test(review.seed) ||
       review.imageDigest !== imageDigest ||
@@ -115,6 +116,7 @@ function buildInventory(review, scans, datasources, liveRepositories) {
   const decisions = new Map(review.classifications.map((entry) => [entry.key, entry]));
   if (decisions.size !== review.classifications.length) throw new Error('duplicate-classification');
   const dependencies = [];
+  const activeStrata = new Map();
   const provenance = [];
   for (const [repository, entry] of [...expected].sort(([left], [right]) =>
     left < right ? -1 : left > right ? 1 : 0)) {
@@ -144,14 +146,30 @@ function buildInventory(review, scans, datasources, liveRepositories) {
               typeof decision.policyEvidence !== 'string' ||
               !decision.policyEvidence.startsWith('private://')) throw new Error('unreviewed-dependency');
           decisions.delete(key);
+          const datasource = dependency.datasource || file.datasource;
+          const packageName = dependency.packageName || dependency.depName;
+          if (!datasource && decision.decision === 'exclude') {
+            if (typeof decision.reason !== 'string' || !decision.reason) throw new Error('invalid-exclusion');
+            continue; // An unclassified extraction row is not an active datasource.
+          }
+          if (typeof datasource !== 'string' || !datasources.has(datasource)) {
+            throw new Error('invalid-source');
+          }
+          const controlledCanary = file.packageFile === 'scripts/fixtures/renovate-cache-canary.txt' ||
+            (datasource === 'github-releases' && typeof packageName === 'string' &&
+              packageName.toLowerCase() === 'stuhlmuller/renovate');
+          if (!controlledCanary) {
+            if (!['public', 'private'].includes(decision.sourceVisibility) ||
+                typeof decision.visibilityEvidence !== 'string' ||
+                !decision.visibilityEvidence.startsWith('private://')) throw new Error('invalid-source');
+            const stratum = `${datasource}:${decision.sourceVisibility}`;
+            activeStrata.set(stratum, (activeStrata.get(stratum) || 0) + 1);
+          }
           if (decision.decision === 'exclude') {
             if (typeof decision.reason !== 'string' || !decision.reason) throw new Error('invalid-exclusion');
             continue;
           }
-          const datasource = dependency.datasource || file.datasource;
-          const packageName = dependency.packageName || dependency.depName;
-          if (typeof datasource !== 'string' || !datasources.has(datasource) ||
-              typeof packageName !== 'string' || !packageName ||
+          if (typeof packageName !== 'string' || !packageName ||
               !['public', 'private'].includes(decision.sourceVisibility) ||
               typeof decision.visibilityEvidence !== 'string' ||
               !decision.visibilityEvidence.startsWith('private://')) throw new Error('invalid-source');
@@ -162,8 +180,6 @@ function buildInventory(review, scans, datasources, liveRepositories) {
           }
           const registryUrl = canonicalRegistry(urls[0]);
           if (decision.registryUrl !== registryUrl) throw new Error('registry-parity');
-          const controlledCanary = file.packageFile === 'scripts/fixtures/renovate-cache-canary.txt' ||
-            (datasource === 'github-releases' && packageName.toLowerCase() === 'stuhlmuller/renovate');
           if (decision.controlledCanary === true && !controlledCanary) {
             throw new Error('invalid-canary');
           }
@@ -176,19 +192,22 @@ function buildInventory(review, scans, datasources, liveRepositories) {
     }
   }
   if (decisions.size || !dependencies.length) throw new Error('inventory-incomplete');
-  const classes = [...new Set(dependencies.filter((item) => !item.controlledCanary)
-    .map((item) => item.datasource))].sort();
-  const strata = new Map();
+  const selectedStrata = new Set();
   for (const item of dependencies.filter((candidate) => !candidate.controlledCanary)) {
     const key = `${item.datasource}:${item.sourceVisibility}`;
-    strata.set(key, (strata.get(key) || 0) + 1);
+    selectedStrata.add(key);
   }
-  const expectedStrata = [...strata].sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+  if ([...activeStrata.keys()].some((key) => !selectedStrata.has(key))) {
+    throw new Error('missing-source-stratum');
+  }
+  const classes = [...new Set([...activeStrata.keys()].map((key) => key.split(':')[0]))].sort();
+  const expectedStrata = [...activeStrata].sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
     .map(([key, count]) => ({ datasource: key.split(':')[0], sourceVisibility: key.split(':')[1], count }));
   if (JSON.stringify(expectedStrata) !== JSON.stringify(review.expectedStrata)) {
     throw new Error('stratum-parity');
   }
   const inventory = { schema: 1, owner, seed: review.seed,
+    windowStart: review.windowStart, windowEnd: review.windowEnd,
     provenance: { method: 'renovate-extract', repositories: provenance,
       sha256: digest(JSON.stringify(provenance)) },
     activeDatasources: classes, dependencies };
@@ -251,6 +270,7 @@ async function main() {
         ledger.inventorySha256 !== digest(JSON.stringify(ledger.inventory))) {
       throw new Error('sample-already-frozen');
     }
+    observer.verifyFrozenSample(ledger);
     materializeReview(bytes);
     console.log(JSON.stringify({ mode: 'inventory-seed', status: 'already-frozen',
       repositories: ledger.inventory.provenance.repositories.length,
@@ -261,6 +281,7 @@ async function main() {
   if (digest(fs.readFileSync('/usr/src/app/config.js')) !== review.configSha256) {
     throw new Error('config-parity');
   }
+  if (observer.windowBounds(review).start <= Date.now()) throw new Error('window-already-started');
   const token = await observer.readToken();
   const [datasources, live] = await Promise.all([
     observer.datasourceApi(token), githubRepositories(token),
