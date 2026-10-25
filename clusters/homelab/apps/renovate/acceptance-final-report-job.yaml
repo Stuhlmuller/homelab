@@ -1,0 +1,78 @@
+# Stage outside Kustomize. Activate only after every acceptance writer is suspended and drained.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-acceptance-final-report
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-final-report
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  activeDeadlineSeconds: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate
+        app.kubernetes.io/component: acceptance-final-report
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: renovate
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 12021
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: report
+          image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+          imagePullPolicy: IfNotPresent
+          command: [node, /usr/src/app/acceptance-observer.js]
+          args: [report]
+          resources:
+            requests: {cpu: 50m, memory: 128Mi, ephemeral-storage: 64Mi}
+            limits: {cpu: 500m, memory: 1Gi, ephemeral-storage: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: observer
+              mountPath: /usr/src/app/acceptance-observer.js
+              subPath: acceptance-observer.js
+              readOnly: true
+            - name: ledger
+              mountPath: /ledger
+              readOnly: true
+      volumes:
+        - name: observer
+          configMap:
+            name: renovate-acceptance-observer
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: renovate-acceptance-ledger
+            readOnly: true
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-final-report
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate
+      app.kubernetes.io/component: acceptance-final-report
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []
