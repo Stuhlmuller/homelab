@@ -1,0 +1,13 @@
+# Add with the suspended assembler Job through the same reviewed GitOps change.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-schedule-assemble
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate-acceptance-schedule-assemble
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []

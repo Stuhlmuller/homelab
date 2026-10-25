@@ -109,6 +109,7 @@ test('writes only private immutable logs and snapshots', async () => {
     assert.equal(fs.statSync(log).mode & 0o777, 0o600);
     assert.equal(fs.statSync(path.join(output, 'snapshots', snapshots[0])).mode & 0o777, 0o600);
     assert.equal(fs.statSync(output).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(path.join(output, 'assembled')).mode & 0o777, 0o700);
     assert.match(fs.readFileSync(log, 'utf8'), /private\/name/);
     assert.equal(fs.readFileSync(path.join(output, 'snapshots', snapshots[0]), 'utf8')
       .includes('private/name'), false);
