@@ -76,6 +76,42 @@ test('GitHub PR patch proves an exact version only at the read time upper bound'
     head: { ...pull.head, ref: 'unrelated' } }, files, observedAt, 'main'), null);
 });
 
+test('Terraform provider proof binds a changed version to its source block', () => {
+  const provider = { ...item, datasource: 'terraform-provider',
+    packageName: 'hashicorp/aws', packageFile: 'versions.tf' };
+  const update = { ...event, version: '6.66.0' };
+  const providerBranch = { ...branch, upgrades: [{ datasource: provider.datasource,
+    packageName: provider.packageName, packageFile: provider.packageFile,
+    newVersion: update.version }] };
+  const match = proof.candidate(provider, update, [{ receipt: { ...receipt,
+    report: { sha256: 'b'.repeat(64) } },
+    report: { repositories: { [repository]: { branches: [providerBranch] } } } }]);
+  const changed = '@@ -4,11 +4,11 @@ terraform {\n' +
+    '   required_providers {\n     aws = {\n       source  = "hashicorp/aws"\n' +
+    '-      version = "6.65.0"\n+      version = "6.66.0"\n     }\n' +
+    '     azurerm = {\n       source  = "hashicorp/azurerm"\n' +
+    '-      version = "4.0.0"\n+      version = "4.1.0"\n     }';
+  const changedFiles = [{ filename: provider.packageFile, patch: changed }];
+  assert.ok(proof.proposalProof(provider, update, match, pull,
+    changedFiles, observedAt, 'main'));
+  assert.equal(proof.proposalProof(provider, { ...update, version: '4.1.0' }, match,
+    pull, changedFiles, observedAt, 'main'), null);
+  const unrelated = changed.replace('+      version = "6.66.0"',
+    '+      version = "6.65.1"');
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ filename: provider.packageFile, patch: unrelated }], observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ filename: provider.packageFile, patch: changed.replace(
+      'required_providers {', 'metadata {') }], observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ filename: provider.packageFile, patch: changed.replace(
+      '-      version = "6.65.0"\n', '') }], observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(provider, update, match, pull,
+    [{ filename: provider.packageFile, patch: '@@ -5,3 +5,3 @@\n' +
+      '-      version = "6.65.0"\n+      version = "6.66.0"\n     }' }],
+    observedAt, 'main'), null);
+});
+
 test('stable PR snapshots reject a changed head, file count, or state during file fetch', () => {
   assert.equal(proof.samePullSnapshot(pull, { ...pull }), true);
   assert.equal(proof.samePullSnapshot(pull, { ...pull,
@@ -241,7 +277,8 @@ test('collector writes private version-bound proof and logs aggregate counts onl
       headers: { get: () => new Date().toUTCString() }, json: async () => {
         if (url.includes('/files?')) return files;
         const changed = ++pullReads % 2 === 0;
-        const current = { ...pull, created_at: iso(-8) };
+        const current = { ...pull, created_at: iso(-8),
+          changed_files: variant === 'unsupported-files' ? 1001 : 1 };
         if (changed && variant === 'head-changed') {
           return { ...current, head: { ...pull.head, sha: 'b'.repeat(40) } };
         }
@@ -264,6 +301,13 @@ test('collector writes private version-bound proof and logs aggregate counts onl
     assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome, undefined);
     assert.deepEqual(JSON.parse(output[1]), { mode: 'proposal-proof', candidates: 1, proven: 0,
       eligible: 0, deferred: 0, unknown: 1 });
+    variant = 'unsupported-files';
+    pullReads = 0;
+    await proof.collect(directory);
+    outcomes = JSON.parse(fs.readFileSync(path.join(directory, 'outcomes.json')));
+    assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome, undefined);
+    assert.deepEqual(JSON.parse(output[2]), { mode: 'proposal-proof', candidates: 1, proven: 0,
+      eligible: 0, deferred: 0, unknown: 1 });
     variant = 'stable';
     pullReads = 0;
     await proof.collect(directory);
@@ -279,12 +323,12 @@ test('collector writes private version-bound proof and logs aggregate counts onl
     assert.equal(outcomes.receipts.every((entry) => entry.eligibility.status === 'eligible'), true);
     assert.equal(fs.statSync(path.join(directory, 'outcomes.json')).mode & 0o077, 0);
     assert.equal(observer.verifyPrivateEvidence(outcomes, directory).size, 4);
-    assert.deepEqual(JSON.parse(output[2]), { mode: 'proposal-proof', candidates: 1, proven: 1,
+    assert.deepEqual(JSON.parse(output[3]), { mode: 'proposal-proof', candidates: 1, proven: 1,
       eligible: 0, deferred: 0, unknown: 0 });
     assert.equal(output.join('').includes(repository), false);
     assert.equal(output.join('').includes(event.version), false);
     await proof.collect(directory);
-    assert.deepEqual(JSON.parse(output[3]), { mode: 'proposal-proof', candidates: 0, proven: 0,
+    assert.deepEqual(JSON.parse(output[4]), { mode: 'proposal-proof', candidates: 0, proven: 0,
       eligible: 0, deferred: 0, unknown: 0 });
   } finally {
     observer.readToken = oldToken;

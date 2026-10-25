@@ -133,6 +133,46 @@ function pullSnapshot(pull) {
   };
 }
 
+function terraformProviderVersion(patch, packageName, version) {
+  let block = null;
+  let requiredProviders = false;
+  for (const line of patch.split('\n')) {
+    if (line.startsWith('@@')) { block = null; requiredProviders = false; continue; }
+    if (line.startsWith('-')) {
+      if (block && /^\s*version\s*=/.test(line.slice(1))) block.replacedVersion = true;
+      continue;
+    }
+    if (!line.startsWith(' ') && !line.startsWith('+')) continue;
+    const content = line.slice(1);
+    if (!block) {
+      if (/^\s*required_providers\s*\{\s*$/.test(content)) {
+        requiredProviders = true;
+      } else if (requiredProviders && /^\s*\}\s*$/.test(content)) {
+        requiredProviders = false;
+      } else if (requiredProviders && /^\s*[A-Za-z_][\w-]*\s*=\s*\{\s*$/.test(content)) {
+        block = { source: null, replacedVersion: false, changedVersion: false };
+      }
+      continue;
+    }
+    if (/^\s*\}\s*$/.test(content)) {
+      if (block.source === packageName && block.replacedVersion && block.changedVersion) return true;
+      block = null;
+      continue;
+    }
+    if (/[{}]/.test(content)) { block = null; continue; }
+    const source = content.match(/^\s*source\s*=\s*"([^"]+)"\s*$/);
+    if (source) {
+      if (block.source) { block = null; continue; }
+      block.source = source[1];
+    }
+    const updated = content.match(/^\s*version\s*=\s*"([^"]+)"\s*$/);
+    if (line.startsWith('+') && updated && version.test(updated[1])) {
+      block.changedVersion = true;
+    }
+  }
+  return false;
+}
+
 function proposalProof(item, event, match, pull, files, observedAt, baseBranch,
   snapshot = null) {
   const open = pull?.state === 'open' && pull.merged === false &&
@@ -157,9 +197,11 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch,
   const escapedPackage = item.packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const packageName = new RegExp(`(?:^|[^A-Za-z0-9_/@.-])${escapedPackage}(?:$|[^A-Za-z0-9_/@.-])`);
   const file = files.find((entry) => entry?.filename === item.packageFile &&
-    typeof entry.patch === 'string' && entry.patch.split('\n').some((line) =>
+    typeof entry.patch === 'string' && (entry.patch.split('\n').some((line) =>
       line.startsWith('+') && !line.startsWith('+++') &&
-      packageName.test(line.slice(1)) && version.test(line.slice(1))));
+      packageName.test(line.slice(1)) && version.test(line.slice(1))) ||
+      (item.datasource === 'terraform-provider' && /\.(?:tf|tofu)$/.test(item.packageFile) &&
+        terraformProviderVersion(entry.patch, item.packageName, version))));
   if (!file) return null;
   return {
     claim: { kind: 'proposal', at: merged ? pull.merged_at : observedAt,
@@ -271,6 +313,7 @@ async function collect(directory = privateDir) {
     const files = await pullFiles(token, repository, match.number, pull.changed_files);
     const finalPull = await github(token, route);
     if (!samePullSnapshot(pull, finalPull)) continue;
+    if (!files) continue;
     // The upper bound allows for the maximum accepted difference from GitHub's Date header.
     const snapshot = {
       before: pullSnapshot(pull), after: pullSnapshot(finalPull),
