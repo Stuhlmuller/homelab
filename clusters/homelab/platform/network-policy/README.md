@@ -22,8 +22,32 @@ the fixture namespace as an explicit destination.
 The protected `canary-admit` stage changes only the reviewed Node's dedicated
 `NoSchedule` taint, then its selector label. It remains blocked while
 `scripts/config/platform-maintenance.json` has `canary.node: null`. A later
-reviewed placement must name one worker and place a single KMS-encrypted,
-versioned `placement.json` under
+protected `firewall-baseline` stage can run before activation on `zimaboard-2`.
+It first confirms the worker UID, boot ID, hostname selector, Ready state,
+and only eligible system DaemonSet Pods. It creates the fixed, digest-pinned
+`preflight/pod.json` Pod through the protected workflow, reads both IPv4 and
+IPv6 iptables backends plus ipset with the existing cleanup snapshot parser,
+and requires zero kube-router-owned chains, jumps, and sets.
+The short-lived host-network Pod has `NET_ADMIN` to read the host firewall;
+it has no service account token or host mount. `NET_ADMIN` can also alter firewall state, so
+running this stage is a protected live Pod change, not a read-only API query.
+The stage deletes it and observes its absence
+before writing a verified, full private snapshot to the KMS-encrypted,
+versioned backup bucket. If deletion, Node identity, Pod inventory, source
+SHA, or any snapshot command is uncertain, the attempt is unverified. Its
+private `baseline-attempt.json` retains a random Pod ownership token before
+creation. If the Pod remains, dispatch protected `firewall-baseline-recover`
+with that attempt's `baseline_source_sha` and `baseline_run_id`; the stage
+checks the token, uses a UID-precondition Kubernetes DELETE through a private
+Unix socket, and confirms absence. Recovery never certifies the firewall.
+`canary-admit` separately refuses any remaining preflight Pod before changing
+the Node. Review the private capture before using its `firewallBaselineEmpty`
+and exact Node IDs in a placement receipt. This capture does not authorize
+placement or admission: no producer currently binds it into `placement.json`,
+it does not measure capacity, and firewall rules can change after capture.
+
+After capacity measurement, a reviewed placement must name one worker and
+place a single KMS-encrypted, versioned `placement.json` under
 `openclaw-enterprise/platform/receipts/<current-main-sha>/`. The receipt must
 have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
 `canaryNode`, `nodeUid`, `bootID`, a timestamp younger than six hours,
