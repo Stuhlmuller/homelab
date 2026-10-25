@@ -292,6 +292,26 @@ nightly recurrence. Then verify a real device enrolls and checks in over the
 Tailscale mesh from outside the LAN.
 A rendered configuration or healthy server alone does not prove MDM enrollment.
 
+For the enrolled iPhone, confirm its Fleet host ID privately and put it on
+cellular with Tailscale connected. Run the repository-owned one-shot check:
+
+```sh
+python3 -I scripts/fleet-free-setup.py ios-checkin --host-id <fleet-ios-id>
+python3 -I scripts/fleet-free-setup.py ios-checkin --host-id <fleet-ios-id> --execute
+```
+
+Execution verifies the selected iPhone's Fleet MDM enrollment and UUID, then
+checks its Fleet MySQL state for deliverable MDM commands, unfinished profiles
+or declarations, and pending host actions. It withholds the push if that
+read-only preflight is unavailable or nonempty. The check is a snapshot; a
+concurrent Fleet writer can still enqueue work before the iPhone checks in.
+The helper sends one blank APNs ping and polls for a newer MDM check-in for 90
+seconds. It enqueues no new MDM command or profile, but a push can deliver
+already pending work. A 204 ping response alone
+does not pass; if the timestamp stays unchanged, inspect the device and private
+Fleet route before another attempt. The operator's cellular/Tailscale check is
+separate evidence that this check-in came from outside the LAN.
+
 Rollback a failed ingress change through a reviewed Traefik/DNS revert while
 preserving Fleet's private canonical hostname. Do not restore public Fleet access.
 Preserve the Fleet Application and PVCs while investigating.
