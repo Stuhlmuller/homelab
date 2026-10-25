@@ -87,7 +87,7 @@ class PlatformMaintenance(unittest.TestCase):
     def test_committed_ladder_is_valid_but_not_activated(self):
         self.module.validate_config(self.config)
         self.assertFalse(self.config["activationEnabled"])
-        self.assertIsNone(self.config["canary"]["node"])
+        self.assertEqual(self.config["canary"]["node"], "zimaboard-2")
         for stage in self.config["talosStages"]:
             patch_file = ROOT / f'.talos/patches/talos-{stage["to"]}.yaml'
             self.assertEqual([line.strip().removeprefix("image: ")

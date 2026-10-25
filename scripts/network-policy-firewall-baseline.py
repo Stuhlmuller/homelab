@@ -245,7 +245,7 @@ def delete_probe(token, private_dir, uid=None, timeout_seconds=120):
 def execute(args):
     PLATFORM["require_reviewed_execution_config"](args.config, args.expected_sha)
     config = PLATFORM["validate_config"](json.loads(args.config.read_text()))
-    if config["activationEnabled"] is not False or config["canary"]["node"] is not None:
+    if config["activationEnabled"] is not False or config["canary"]["node"] != NODE:
         raise ValueError("baseline requires pre-enable canary configuration")
     PLATFORM["protected_context"](args.expected_sha)
     CLEANUP["require_current_main"](args.expected_sha)

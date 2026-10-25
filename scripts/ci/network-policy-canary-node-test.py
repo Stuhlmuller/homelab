@@ -28,6 +28,9 @@ def placement(source_sha=SHA):
             "node": "zimaboard-1", "canaryNode": "zimaboard-1", "nodeUid": "uid",
             "bootID": "boot", "measured": True, "isolatedTaint": CONFIG["canary"]["taint"],
             "firewallBaselineEmpty": True,
+            "baselineSourceSha": source_sha, "baselineCaptureVersionId": "version-1",
+            "baselineRunId": "123", "baselineCaptureSha256": "a" * 64,
+            "baselineCapturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "systemDaemonSetPods": [{"namespace": "kube-system", "name": "flannel-1",
                                      "uid": "system-pod-uid"}],
             "capturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -122,6 +125,11 @@ class CanaryNodeTests(unittest.TestCase):
     def test_private_placement_and_cleanup_must_be_verified_and_bound(self):
         for change in ({"verified": False}, {"sourceSha": "b" * 40},
                        {"nodeUid": ""}, {"firewallBaselineEmpty": False},
+                       {"baselineRunId": ""}, {"baselineCaptureSha256": "bad"},
+                       {"baselineSourceSha": "f" * 40},
+                       {"baselineCaptureVersionId": ""},
+                       {"baselineCapturedAt": "2026-10-01T00:00:00Z"},
+                       {"capturedAt": "2026-10-01T00:00:00Z"},
                        {"systemDaemonSetPods": None},
                        {"systemDaemonSetPods": [{"namespace": "kube-system",
                                                 "name": "flannel-1", "uid": ""}]},
@@ -340,7 +348,7 @@ class CanaryNodeTests(unittest.TestCase):
                     SUT["verify_live_pods"](CONFIG, placement())
 
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
-                   cleanup_pods=None, label_inventory=None):
+                   cleanup_pods=None, label_inventory=None, capacity_error=None):
         commands, records, events = [], [], []
         self.last_records = records
         self.last_events = events
@@ -394,6 +402,10 @@ class CanaryNodeTests(unittest.TestCase):
                 return json.dumps(state)
             return ""
 
+        def capacity_gate(*_):
+            if capacity_error:
+                raise capacity_error
+
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ,
                 {"GITHUB_RUN_ID": "123"}), patch.dict(SUT["PLATFORM"], {
                     "validate_config": lambda _: CONFIG,
@@ -413,11 +425,20 @@ class CanaryNodeTests(unittest.TestCase):
                     "write_record": lambda _path, record, replace=False:
                     records.append(copy.deepcopy(record))}), patch.object(SUT["time"],
                     "sleep", lambda _: None), patch.dict(
-                    SUT["execute"].__globals__, {"require_current_main": lambda _: None}):
+                    SUT["execute"].__globals__, {
+                        "require_current_main": lambda _: None,
+                        "require_fresh_capacity": capacity_gate}):
             args = argparse.Namespace(action=action,
                                       config=ROOT / "scripts/config/platform-maintenance.json",
                                       expected_sha=SHA, receipt_dir=Path(directory),
-                                      output=Path(directory) / "result.json")
+                                      output=Path(directory) / "result.json", bucket="bucket")
+            if capacity_error:
+                with self.assertRaisesRegex(ValueError, "headroom"):
+                    SUT["execute"](args)
+                self.assertFalse(commands)
+                self.assertEqual([item["status"] for item in records],
+                                 ["started", "interrupted"])
+                return commands, state
             result = SUT["execute"](args)
         self.assertEqual(state["metadata"]["labels"]["foreign.example/owner"],
                          initial_foreign_labels["foreign.example/owner"])
@@ -436,6 +457,26 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertEqual(self.last_events, ["taint", "inventory", "label", "inventory"])
         self.assertEqual(state["metadata"]["labels"][CANARY], "true")
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
+
+    def test_admit_rejects_capacity_spike_before_node_mutation(self):
+        commands, state = self.run_action("admit", node(),
+                                          capacity_error=ValueError("memory headroom"))
+        self.assertFalse(commands)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+
+    def test_admission_check_runs_read_only_placement_mode(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+                SUT["subprocess"], "run") as run:
+            args = argparse.Namespace(config=ROOT / "scripts/config/platform-maintenance.json",
+                                      expected_sha=SHA, bucket="bucket")
+            SUT["require_fresh_capacity"](args, Path(directory))
+            command = run.call_args.args[0]
+            self.assertEqual(command[2], str(ROOT / "scripts/network-policy-placement.py"))
+            self.assertEqual(command[-2:], ["--check-placement",
+                                           str(Path(directory) / "placement.json")])
+            self.assertEqual(run.call_args.kwargs["check"], True)
+            self.assertIn("--bucket", command)
 
     def test_release_removes_only_owned_label_then_taint(self):
         commands, state = self.run_action("release", node(admitted=True))
