@@ -21,9 +21,10 @@ class PlanRolePublisher(unittest.TestCase):
             generated = bin_dir / "generated"
             (bin_dir / "terragrunt").write_text(
                 "#!/bin/sh\n"
-                "if [ \"$*\" = '--working-dir IaC stack generate' ]; then "
+                "if [ \"$*\" = '--working-dir IaC/homelab/us-west-2/operator stack generate' ]; then "
                 "touch \"$TEST_GENERATED\"; exit 0; fi\n"
                 "[ -f \"$TEST_GENERATED\" ] || exit 1\n"
+                "[ \"$*\" = '--working-dir IaC/homelab/us-west-2/operator/github-actions-role-policy output -raw plan_role_arn' ] || exit 1\n"
                 "printf '%s\\n' \"$TEST_ROLE_ARN\"\n"
             )
             (bin_dir / "gh").write_text(

@@ -295,9 +295,8 @@ the GitHub Actions apply role to change its own maximum.
 set -euo pipefail
 operator_profile="<administrator-profile>"
 aws sso login --profile "$operator_profile"
-cd IaC
-terragrunt stack generate
-cd operator/github-actions-role-policy
+terragrunt --working-dir IaC/homelab/us-west-2/operator stack generate
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 terragrunt --log-disable run --no-auto-init -- test -no-color
@@ -405,9 +404,8 @@ policy being created; stop on unrelated changes. Review the private plan
 before applying the saved bytes. Do not attach it to a public PR.
 
 ```sh
-cd IaC
-terragrunt stack generate
-cd operator/github-actions-role-policy
+terragrunt --working-dir IaC/homelab/us-west-2/operator stack generate
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 terragrunt --log-disable run --no-auto-init -- test -no-color

@@ -12,8 +12,8 @@ esac
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-terragrunt --working-dir IaC stack generate >/dev/null
-role_arn="$(terragrunt --working-dir IaC/operator/github-actions-role-policy output -raw plan_role_arn)"
+terragrunt --working-dir IaC/homelab/us-west-2/operator stack generate >/dev/null
+role_arn="$(terragrunt --working-dir IaC/homelab/us-west-2/operator/github-actions-role-policy output -raw plan_role_arn)"
 if [[ ! "$role_arn" =~ ^arn:aws:iam::[0-9]{12}:role/Github-TF-Plan$ ]]; then
   echo "error: operator state did not return the dedicated Github-TF-Plan role ARN" >&2
   exit 1
