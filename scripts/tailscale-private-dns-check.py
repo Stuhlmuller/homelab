@@ -166,7 +166,15 @@ def openclaw_suspended():
     controller = controllers.get("openclaw") if isinstance(controllers, dict) else None
     if not isinstance(controller, dict) or type(controller.get("replicas")) is not int or controller["replicas"] != 0:
         return False
-    return deployment_suspended("ai", "openclaw")
+    if not deployment_suspended("ai", "openclaw"):
+        return False
+    slices = json.loads(run("kubectl", "-n", "ai", "get", "endpointslices", "-l",
+                            "kubernetes.io/service-name=openclaw", "-o", "json"))
+    items = slices.get("items") if isinstance(slices, dict) else None
+    return (isinstance(slices, dict) and slices.get("kind") == "EndpointSliceList"
+            and isinstance(items, list) and bool(items)
+            and all(isinstance(item, dict) and item.get("metadata", {}).get("labels", {}).get(
+                "kubernetes.io/service-name") == "openclaw" and item.get("endpoints") == [] for item in items))
 
 
 def routes(value, address=None):
@@ -183,7 +191,7 @@ def routes(value, address=None):
             accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and hostname != OCE_NAMES[1] and status == 404)
             if hostname == "affine.stinkyboi.com" and status in (500, 502, 503):
                 accepted = affine_suspended()
-            elif hostname == "openclaw.stinkyboi.com" and status == 502:
+            elif hostname == "openclaw.stinkyboi.com" and status in (500, 502):
                 accepted = openclaw_suspended()
             if not accepted:
                 raise RuntimeError(f"Traefik TLS/upstream readiness failed for {hostname}: HTTP {status}")
