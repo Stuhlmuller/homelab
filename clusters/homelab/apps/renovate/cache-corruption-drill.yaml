@@ -1,0 +1,153 @@
+# Staged only. Activate through a reviewed PR after the dedicated cache is live.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: renovate-cache-corruption-drill
+  namespace: automation
+data:
+  inject.js: |
+    'use strict';
+
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const { createRequire } = require('node:module');
+    const { execFileSync } = require('node:child_process');
+
+    const MOUNT = '/cache/renovate';
+    const EXPORT = '10.1.0.2:/renovate-cache';
+    const CACHE = path.join(MOUNT, 'renovate/renovate-cache-v1');
+    const KEY = 'github-tags-datasource-v2-' +
+      'https://api.github.com/:chainguard-actions:actions-checkout';
+    const MIN_KIB = 16 * 1024 * 1024;
+    const MAX_KIB = 24 * 1024 * 1024;
+    const MIN_REMAINING_MS = 2 * 60 * 60 * 1000;
+    const DRILL_EXPIRY_MS = 6 * 60 * 60 * 1000;
+
+    function verifyMount(mountInfo) {
+      const entries = mountInfo.split('\n').filter((line) => {
+        return line.split(' ')[4] === MOUNT;
+      });
+      if (entries.length !== 1) {
+        throw new Error('Dedicated cache mount is missing or ambiguous');
+      }
+      const [before, after] = entries[0].split(' - ');
+      const mountFields = before?.split(' ');
+      const sourceFields = after?.split(' ');
+      if (sourceFields?.[0] !== 'nfs' || sourceFields?.[1] !== EXPORT ||
+          !mountFields?.[5]?.split(',').includes('rw')) {
+        throw new Error('Unexpected cache export or mount mode');
+      }
+    }
+
+    function verifyCapacity(dfOutput) {
+      const row = dfOutput.trim().split('\n')[1];
+      const size = row?.trim().split(/\s+/)[1];
+      if (!size || !/^\d+$/.test(size) ||
+          Number(size) < MIN_KIB || Number(size) > MAX_KIB) {
+        throw new Error('Unexpected dedicated cache capacity');
+      }
+    }
+
+    async function inject(store, mountInfo, dfOutput, now) {
+      verifyMount(mountInfo);
+      verifyCapacity(dfOutput);
+      const info = await store.info(KEY);
+      if (info?.key !== KEY ||
+          !Number.isFinite(info.metadata?.expiry) ||
+          info.metadata.expiry <= now + MIN_REMAINING_MS) {
+        throw new Error('Expected warm public cache key is unavailable');
+      }
+      await store.put(KEY, Buffer.from('not a cache entry'), {
+        metadata: { expiry: now + DRILL_EXPIRY_MS },
+      });
+    }
+
+    async function main() {
+      const mountInfo = fs.readFileSync('/proc/self/mountinfo', 'utf8');
+      const dfOutput = execFileSync('df', ['-Pk', MOUNT], {
+        encoding: 'utf8',
+      });
+      const renovateRequire = createRequire('/usr/local/renovate/package.json');
+      if (renovateRequire('./package.json').version !== '44.167.4') {
+        throw new Error('Unexpected Renovate version');
+      }
+      const cacache = renovateRequire('cacache');
+      const store = {
+        info: (key) => cacache.get.info(CACHE, key),
+        put: (key, data, options) => cacache.put(CACHE, key, data, options),
+      };
+      await inject(store, mountInfo, dfOutput, Date.now());
+      console.log('One fixed public package-cache entry marked malformed');
+    }
+
+    module.exports = { CACHE, KEY, verifyMount, verifyCapacity, inject };
+    if (require.main === module) {
+      main().catch(() => {
+        console.error('Cache corruption drill failed closed');
+        process.exitCode = 1;
+      });
+    }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-cache-corruption-drill
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate-cache-corruption-drill
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-cache-corruption-drill
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate-cache-corruption-drill
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate-cache-corruption-drill
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 0
+        runAsNonRoot: true
+        fsGroup: 12021
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: inject
+          image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+          command: [node, /drill/inject.js]
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: drill, mountPath: /drill, readOnly: true}
+            - {name: cache, mountPath: /cache/renovate}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: drill
+          configMap: {name: renovate-cache-corruption-drill}
+        - name: cache
+          persistentVolumeClaim: {claimName: renovate-cache-dedicated}
+        - name: tmp
+          emptyDir: {sizeLimit: 32Mi}
