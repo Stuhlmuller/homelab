@@ -12,6 +12,11 @@ spec = importlib.util.spec_from_file_location("check", Path(__file__).with_name(
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
 real_yaml_documents = check.yaml_documents
+sha = "a" * 64
+images, _ = check.declared_images({"image": {"registry": "harbor.stinkyboi.com",
+                                               "repository": "mirror/docker.io/library/busybox",
+                                               "tag": "1.38", "sha": sha}})
+assert images == {"harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@sha256:" + sha}
 # Shared stack defaults and sparse sources must not hide chart upgrades from
 # the image inventory gate. A chart needs no Helm overrides to deploy.
 with tempfile.TemporaryDirectory() as directory:

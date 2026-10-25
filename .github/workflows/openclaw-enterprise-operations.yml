@@ -13,7 +13,7 @@ on:
         required: false
         default: none
         type: choice
-        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore]
+        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore, network-preflight]
       enterprise_stage:
         description: Fixed Enterprise operation (binding needs a private bootstrap key; other stages need a durable journal)
         required: false
@@ -55,7 +55,7 @@ jobs:
           test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
             *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
           esac
           if [[ "$ENTERPRISE_STAGE" != none ]]; then
@@ -65,6 +65,10 @@ jobs:
           if [[ "$LEGACY_STAGE" == resume-restore ]]; then
             test "$ARCHIVE_REF" = '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221'
             test -z "$BASELINE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" == network-preflight ]]; then
+            test -z "$BASELINE_REF"
+            test -z "$ARCHIVE_REF"
           fi
 
       - name: Check Out Repository
@@ -149,13 +153,19 @@ jobs:
 
       - name: Verify Protected Inputs
         env:
-          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
-          test -n "$AWS_APPLY_ROLE_ARN"
           test -n "$OCTELIUM_AUTH_TOKEN"
 
+      - name: Verify AWS Role Input
+        if: inputs.legacy_stage != 'network-preflight'
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+        run: |
+          test -n "$AWS_APPLY_ROLE_ARN"
+
       - name: Configure AWS Credentials
+        if: inputs.legacy_stage != 'network-preflight'
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:
           aws-region: us-east-1
@@ -184,7 +194,8 @@ jobs:
           fi
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'581ab1f1c6bcf3c2941e9c5effc0629f64ce18a4a5b308b8a6d5b08bcd34fa38  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'
           sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
           sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"

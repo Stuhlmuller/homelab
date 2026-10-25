@@ -727,6 +727,8 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             ('publish-archive', {'BASELINE_REF': 'a' * 40 + '/123', 'ARCHIVE_REF': '../secret'}),
             ('verify', {}), ('verify', {'ARCHIVE_REF': 'abc/123'}),
             ('prepare-restore', {}), ('prepare-restore', {'ARCHIVE_REF': '../secret'}),
+            ('network-preflight', {'BASELINE_REF': 'a' * 40 + '/123'}),
+            ('network-preflight', {'ARCHIVE_REF': 'a' * 40 + '/123'}),
         ):
             with self.subTest(stage=stage, extra=extra):
                 result = subprocess.run(['bash', str(SCRIPT), stage], cwd=ROOT,
@@ -1011,7 +1013,7 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore, network-preflight]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',
@@ -1021,7 +1023,16 @@ printf '%s\\n' "$phase"
         ):
             self.assertIn(required, workflow)
         self.assertNotIn('actions/upload-artifact@', workflow)
+        self.assertIn("if: inputs.legacy_stage != 'network-preflight'", workflow)
+        self.assertIn(hashlib.sha256((ROOT / 'scripts/ci/openclaw-legacy-netns-preflight.py').read_bytes()).hexdigest(), workflow)
         script = SCRIPT.read_text()
+        preflight = script.split('if [[ "$stage" == network-preflight ]]; then\n', 1)[1].split('\nfi\n\nbucket=', 1)[0]
+        self.assertIn('exec unshare --user --map-current-user --net -- python3 -', preflight)
+        self.assertIn('openclaw-retirement-status.py', preflight)
+        self.assertIn('LEGACY_NETNS_CAPABILITY_OK', preflight)
+        self.assertNotIn('aws ', preflight)
+        for mutation in ('kubectl apply', 'kubectl patch', 'kubectl delete'):
+            self.assertNotIn(mutation, preflight)
         self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
         self.assertIn('nohup sh /etc/openclaw-retirement/inventory-worker.sh', script)
         self.assertNotIn('"$worker" <scripts/ci/', script)

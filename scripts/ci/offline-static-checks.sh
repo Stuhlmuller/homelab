@@ -374,7 +374,7 @@ yq -o=json '.' "$kiali_values" |
       | select(.name == "wait-for-prometheus")
     ] | (
       length == 1 and
-      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
       .[0].imagePullPolicy == "IfNotPresent" and
       .[0].command == ["curl"] and
       .[0].args == [
@@ -1087,7 +1087,7 @@ done <<'EOF'
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 31a190f5e8fb0f4feea6f9a238277d8f8f864d4318fcea44c435713207e0b170
+.github/workflows/openclaw-enterprise-operations.yml a8327c6f3d09aef626a86ac11993a98b7955bcb0a9c506e9ee17c0228b802780
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -1644,20 +1644,7 @@ yq -o=json '.' "$cert_manager_values" \
       .startupapicheck.image.digest
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
-tag_only_images="$(
-  {
-    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
-    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } \
-    | rg -v '@sha256:' \
-    || true
-)"
-
-if [[ -n "$tag_only_images" ]]; then
-  echo "Container images must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
-  exit 1
-fi
+python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

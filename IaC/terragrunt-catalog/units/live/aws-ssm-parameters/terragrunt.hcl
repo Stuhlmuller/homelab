@@ -335,6 +335,14 @@ inputs = {
       description   = "Existing Renovate GitHub App private key; transfer from the companion repository before activation."
       initial_value = local.placeholder
     }
+    "/homelab/renovate/acceptance/github-app/issuer-id" = {
+      description   = "Read-only GitHub App issuer for the temporary Renovate acceptance Jobs."
+      initial_value = local.placeholder
+    }
+    "/homelab/renovate/acceptance/github-app/private-key" = {
+      description   = "Read-only GitHub App private key for the temporary Renovate acceptance Jobs."
+      initial_value = local.placeholder
+    }
     "/homelab/external-secrets/aws-ssm/access-key-id" = {
       description   = "AWS access key ID used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder
