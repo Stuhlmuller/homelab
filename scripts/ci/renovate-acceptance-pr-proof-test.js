@@ -15,6 +15,7 @@ const event = { version: '1.1.0', lastAbsent: '2026-10-19T00:00:00.000Z',
   firstPresent: '2026-10-19T00:15:00.000Z' };
 const receipt = { schema: 1, podUid: uid,
   image: 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d',
+  policySha256: 'd'.repeat(64),
   startedAt: '2026-10-19T00:20:00.000Z', completedAt: '2026-10-19T00:22:00.000Z' };
 const branch = { branchName: 'renovate/fixture-package-1.x', prNo: 42,
   result: 'done',
@@ -266,6 +267,11 @@ test('collector writes private version-bound proof and logs aggregate counts onl
     outcomes = JSON.parse(fs.readFileSync(path.join(directory, 'outcomes.json')));
     assert.equal(outcomes.receipts.length, 2);
     assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome.kind, 'proposal');
+    assert.equal(outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome.source.startsWith('evidence/'), true);
+    const proposal = outcomes.receipts.find((entry) => entry.version === '1.1.0').outcome;
+    const material = JSON.parse(fs.readFileSync(path.join(directory, proposal.source))).material;
+    assert.equal(proof.samePullSnapshot(material.github.before, material.github.after), true);
+    assert.equal(material.github.after.head.sha, pull.head.sha);
     assert.equal(outcomes.receipts.find((entry) => entry.version === '1.2.0').outcome.kind, 'deferral');
     assert.equal(outcomes.receipts.every((entry) => entry.eligibility.status === 'eligible'), true);
     assert.equal(fs.statSync(path.join(directory, 'outcomes.json')).mode & 0o077, 0);

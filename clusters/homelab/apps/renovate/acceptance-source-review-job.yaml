@@ -1,0 +1,85 @@
+# Stage outside Kustomize; run only after all acceptance writers drain.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-acceptance-source-review
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-source-review
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  activeDeadlineSeconds: 600
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate
+        app.kubernetes.io/component: acceptance-source-review
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: renovate
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 12021
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: review
+          image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+          imagePullPolicy: IfNotPresent
+          command: [node, /usr/src/app/acceptance-source-review.js]
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {cpu: "1", memory: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: code
+              mountPath: /usr/src/app/acceptance-source-review.js
+              subPath: acceptance-source-review.js
+              readOnly: true
+            - name: code
+              mountPath: /usr/src/app/acceptance-observer.js
+              subPath: acceptance-observer.js
+              readOnly: true
+            - name: code
+              mountPath: /usr/src/app/acceptance-pr-proof.js
+              subPath: acceptance-pr-proof.js
+              readOnly: true
+            - name: ledger
+              mountPath: /ledger
+              readOnly: true
+      volumes:
+        - name: code
+          configMap:
+            name: renovate-acceptance-observer
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: renovate-acceptance-ledger
+            readOnly: true
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-source-review
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate
+      app.kubernetes.io/component: acceptance-source-review
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []

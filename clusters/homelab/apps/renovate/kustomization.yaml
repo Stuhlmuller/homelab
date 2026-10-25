@@ -19,6 +19,7 @@ configMapGenerator:
       - acceptance-report-runner.js
       - acceptance-pr-proof.js
       - acceptance-schedule-collector.js
+      - acceptance-source-review.js
   - name: renovate-config
     files:
       - config.js

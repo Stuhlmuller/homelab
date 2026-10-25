@@ -106,17 +106,19 @@ test('a pinned-shape report is sealed once with private files and matching hashe
     fs.writeFileSync(scratch, bytes, { mode: 0o600 });
     runner.copyBoundedReport(scratch, paths.report);
     fs.writeFileSync(paths.log, 'private diagnostic\n', { mode: 0o600 });
-    const counts = runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z');
+    const counts = runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z', path.join(root, 'config.js'));
     assert.deepEqual(counts, { repositories: 1, packageFiles: 1, dependencies: 1, branches: 3 });
     const receipt = JSON.parse(fs.readFileSync(paths.receipt, 'utf8'));
     const manifest = fs.readFileSync(path.join(root, 'acceptance-report-job.yaml'), 'utf8');
     assert.equal(receipt.image, manifest.match(/^\s+image: (\S+)$/m)?.[1]);
     assert.equal(receipt.report.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
+    assert.equal(receipt.policySha256, crypto.createHash('sha256').update(
+      fs.readFileSync(path.join(root, 'config.js'))).digest('hex'));
     assert.equal(receipt.podUid, uid);
     assert.equal(receipt.report.file, `${uid}.json`);
     assert.equal(fs.statSync(paths.receipt).mode & 0o077, 0);
     assert.doesNotMatch(JSON.stringify(receipt), /example\/repo|private diagnostic/);
-    assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z'), /EEXIST/);
+    assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z', path.join(root, 'config.js')), /EEXIST/);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
@@ -173,9 +175,9 @@ test('missing or malformed report cannot create a success receipt', () => {
     const paths = config.reportPaths(uid, directory);
     config.prepare(paths);
     fs.writeFileSync(paths.log, '', { mode: 0o600 });
-    assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00Z', '2026-10-19T00:01:00Z'), /ENOENT/);
+    assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00Z', '2026-10-19T00:01:00Z', path.join(root, 'config.js')), /ENOENT/);
     fs.writeFileSync(paths.report, '{"problems":[],"repositories":{"repo":{}}}', { mode: 0o600 });
-    assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00Z', '2026-10-19T00:01:00Z'), /invalid-report-shape/);
+    assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00Z', '2026-10-19T00:01:00Z', path.join(root, 'config.js')), /invalid-report-shape/);
     assert.equal(fs.existsSync(paths.receipt), false);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
