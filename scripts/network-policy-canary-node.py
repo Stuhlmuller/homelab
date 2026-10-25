@@ -67,7 +67,19 @@ def require_exclusive_canary_label(config, placement, selected):
         raise ValueError("canary label matches another Node or changed")
 
 
+def require_preflight_absent():
+    preflight = CLEANUP["command"]("kubectl", "--request-timeout=20s", "-n", "kube-system",
+                                    "get", "pod", "kube-router-firewall-baseline",
+                                    "--ignore-not-found", "-o", "json")
+    preflight_pods = CLEANUP["kubernetes_json"]("-n", "kube-system", "get", "pods", "-l",
+                                                "app.kubernetes.io/name=kube-router-firewall-baseline",
+                                                "--chunk-size=0")
+    if preflight.strip() or CLEANUP["complete_items"](preflight_pods, "preflight Pod"):
+        raise ValueError("preflight Pod must be deleted before canary placement")
+
+
 def require_runtime_absent(admit):
+    require_preflight_absent()
     for name in (CLEANUP["ENFORCER"], CLEANUP["CLEANUP"] if admit else None):
         if name is None:
             continue

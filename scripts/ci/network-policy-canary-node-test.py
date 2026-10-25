@@ -100,6 +100,17 @@ def apply_patch(state, operations):
 
 
 class CanaryNodeTests(unittest.TestCase):
+    def test_admission_refuses_remaining_or_incomplete_preflight_pod(self):
+        for raw, listing in (("{\"kind\":\"Pod\"}", {"metadata": {}, "items": []}),
+                             ("", {"metadata": {}, "items": [{"metadata":
+                                {"name": "kube-router-firewall-baseline"}}]}),
+                             ("", {"items": []})):
+            with self.subTest(raw=raw, listing=listing), patch.dict(SUT["CLEANUP"], {
+                    "command": lambda *_: raw,
+                    "kubernetes_json": lambda *_: listing}):
+                with self.assertRaisesRegex(ValueError, "preflight"):
+                    SUT["require_runtime_absent"](True)
+
     def test_dormant_config_rejects_before_cluster_access(self):
         with patch.dict(SUT["PLATFORM"], {
                 "validate_config": lambda _: {"canary": {"node": None}}}):
@@ -341,6 +352,9 @@ class CanaryNodeTests(unittest.TestCase):
         def kube_json(*args):
             if args[:2] == ("get", "node"):
                 return copy.deepcopy(state)
+            if (args[:4] == ("-n", "kube-system", "get", "pods") and
+                    "app.kubernetes.io/name=kube-router-firewall-baseline" in args):
+                return {"metadata": {}, "items": []}
             if args[:2] == ("get", "nodes"):
                 if label_inventory is not None:
                     return copy.deepcopy(label_inventory() if callable(label_inventory)
