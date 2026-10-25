@@ -126,6 +126,12 @@ def project_lock(state):
     return lock
 
 
+def check_registry_integrity(raw):
+    # npm 12 wraps even one exact-version --json result in a list.
+    if json.loads(raw) not in (INTEGRITY, [INTEGRITY]):
+        raise ValueError("npm registry integrity changed for pinned Discord package")
+
+
 def build(output_dir, root):
     check_image_contract(root)
     if output_dir.exists():
@@ -143,8 +149,7 @@ def build(output_dir, root):
                 f"npm view {SPEC} dist.integrity --json",
                 offline=False,
             ).stdout.strip()
-            if json.loads(metadata) != INTEGRITY:
-                raise ValueError("npm registry integrity changed for pinned Discord package")
+            check_registry_integrity(metadata)
 
             install = f"openclaw plugins install npm:{SPEC} --pin --force --accept-capabilities"
             container(work, "warm-state", "warm-home", install, offline=False)
