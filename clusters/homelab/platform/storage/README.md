@@ -29,8 +29,9 @@ separate QNAP cache volume. It stays outside this Kustomization until the
 isolated export exists. Renovate's namespaced Argo project owns the matching
 PVC and a read-only capacity probe after this platform PV reconciles.
 
-`renovate-acceptance-ledger-platform.yaml` stages a separate static Talos-local
+`renovate-acceptance-ledger-platform.yaml` declares a separate static Talos-local
 StorageClass and PV for the temporary private Renovate acceptance ledger on
-`acer`. It is outside this Kustomization until a reviewed activation. The
-Renovate Application owns only the matching namespaced claim after the platform
-resources reconcile.
+`acer`. This Kustomization includes them; verify the class and PV reconcile
+before adding the namespaced claim to Renovate. The PV retains its hostPath and
+has Argo CD prune/delete protection, so removal needs a separate reviewed
+cleanup path.
