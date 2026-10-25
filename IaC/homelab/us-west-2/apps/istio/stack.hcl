@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://istio-release.storage.googleapis.com/charts"
+        repoURL        = "https://blob.istio.io/istio-release/charts"
         chart          = "base"
         path           = "."
         targetRevision = "1.27.3"
@@ -22,7 +22,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://istio-release.storage.googleapis.com/charts"
+        repoURL        = "https://blob.istio.io/istio-release/charts"
         chart          = "istiod"
         path           = "."
         targetRevision = "1.27.3"
@@ -39,7 +39,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://istio-release.storage.googleapis.com/charts"
+        repoURL        = "https://blob.istio.io/istio-release/charts"
         chart          = "cni"
         path           = "."
         targetRevision = "1.27.3"
@@ -50,7 +50,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://istio-release.storage.googleapis.com/charts"
+        repoURL        = "https://blob.istio.io/istio-release/charts"
         chart          = "ztunnel"
         path           = "."
         targetRevision = "1.27.3"
@@ -83,7 +83,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://istio-release.storage.googleapis.com/charts"
+        repoURL        = "https://blob.istio.io/istio-release/charts"
         chart          = "gateway"
         path           = "."
         targetRevision = "1.27.3"
@@ -94,7 +94,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://istio-release.storage.googleapis.com/charts"
+        repoURL        = "https://blob.istio.io/istio-release/charts"
         chart          = "gateway"
         path           = "."
         targetRevision = "1.27.3"
