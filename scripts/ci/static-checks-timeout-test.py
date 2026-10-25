@@ -49,6 +49,7 @@ class Timeout(unittest.TestCase):
                          "network-policy-firewall-baseline-test.py",
                          "network-policy-enforcement-test.py",
                          "network-policy-qualification-test.py",
+                         "traefik-network-policy-qualification-test.py",
                          "network-policy-ownership-test.py",
                          "network-policy-cleanup-test.py",
                          "network-policy-placement-test.py",
