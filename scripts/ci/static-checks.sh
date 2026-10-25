@@ -36,6 +36,7 @@ python3 -I scripts/ci/renovate-acceptance-app-test.py
 node --test scripts/ci/renovate-acceptance-observer-test.js
 node --test scripts/ci/renovate-acceptance-inventory-test.js
 python3 -I scripts/ci/renovate-acceptance-review-test.py
+python3 -I scripts/ci/renovate-acceptance-schedule-test.py
 node --test scripts/ci/renovate-acceptance-report-test.js
 node --test scripts/ci/renovate-acceptance-pr-proof-test.js
 python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
