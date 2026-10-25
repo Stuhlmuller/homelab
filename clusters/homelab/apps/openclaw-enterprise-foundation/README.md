@@ -65,7 +65,8 @@ still required before T045/T049 can accept recurring restore evidence. Its Pod
 logs report only the fixed success/failure stage; raw restore details remain
 inside scratch and are not emitted to cluster logs. The Job reads the completed
 recovery set from a read-only mount, checks its hashes before and after restore,
-and keeps only the restored database and private diagnostics in scratch. T051
+rejects a marker without a stopped writer and claim UID, and keeps only the
+restored database and private diagnostics in scratch. T051
 must publish completed directories without further writes; any change detected
 during a drill fails its final hash check. Storage
 placement and 24Gi restore scratch headroom need measured admission;

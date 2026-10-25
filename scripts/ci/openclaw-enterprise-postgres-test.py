@@ -294,6 +294,32 @@ class PostgresFoundation(unittest.TestCase):
         finally:
             run("pg_ctl", "-D", str(self.root / "drill/pgdata"), "-m", "immediate", "-w", "stop")
 
+        marker = complete / "material/recovery.json"
+        original_marker = marker.read_bytes()
+        checksums = complete / "SHA256SUMS"
+        original_checksums = checksums.read_bytes()
+        try:
+            for index, invalid in enumerate((
+                    {"claimUid": "fixture", "writerStopped": False},
+                    {"claimUid": "", "writerStopped": True}), start=1):
+                marker.write_text(json.dumps(invalid))
+                checksums.write_text(run("sh", "-ec",
+                    "find database.dump database-bootstrap.sql material -type f -print0 "
+                    "| sort -z | xargs -0 sha256sum", cwd=complete).stdout)
+                run("sha256sum", "--check", "SHA256SUMS", cwd=complete)
+                invalid_script = script.replace(str(self.root / "drill"),
+                                                str(self.root / f"invalid-drill-{index}"))
+                invalid_script = invalid_script.replace(str(self.restored_secrets),
+                                                        str(self.root / f"invalid-secrets-{index}"))
+                result = run("sh", "-ec", invalid_script, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(result.stderr,
+                                 "OpenClaw Enterprise isolated restore failed at recovery-marker\n")
+        finally:
+            marker.write_bytes(original_marker)
+            checksums.write_bytes(original_checksums)
+
         # An archive changed after the first checksum must fail the final hash
         # check, even when database restore itself succeeds.
         metadata = complete / "material/tenant/metadata.json"
