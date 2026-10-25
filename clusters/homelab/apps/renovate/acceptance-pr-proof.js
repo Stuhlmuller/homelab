@@ -15,7 +15,7 @@ function privateFile(file, limit = 128 * 1024 * 1024) {
   return fs.readFileSync(file);
 }
 
-function* verifiedReports(directory = privateDir, since = null) {
+function* verifiedReports(directory = privateDir, since = null, onlyUids = null) {
   const folder = path.join(directory, 'reports');
   const metadata = fs.lstatSync(folder);
   if (!metadata.isDirectory() || metadata.uid !== process.getuid() ||
@@ -26,10 +26,12 @@ function* verifiedReports(directory = privateDir, since = null) {
   if (names.length > 192) throw new Error('report-set-too-large');
   for (const name of names) {
       const uid = name.slice(0, 36);
+      if (onlyUids && !onlyUids.has(uid)) continue;
       const receiptBytes = privateFile(path.join(folder, name), 8192);
       const receipt = JSON.parse(receiptBytes);
       if (receipt.schema !== 1 || receipt.podUid !== uid ||
           receipt.image !== 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d' ||
+          !/^[a-f0-9]{64}$/.test(receipt.policySha256 || '') ||
           !validTime(receipt.startedAt) || !validTime(receipt.completedAt) ||
           Date.parse(receipt.startedAt) > Date.parse(receipt.completedAt) ||
           Date.parse(receipt.completedAt) > Date.now()) throw new Error('invalid-report-receipt');
@@ -118,7 +120,21 @@ function samePullSnapshot(before, after) {
     before?.user?.login === after?.user?.login;
 }
 
-function proposalProof(item, event, match, pull, files, observedAt, baseBranch) {
+function pullSnapshot(pull) {
+  return {
+    number: pull?.number, changed_files: pull?.changed_files,
+    state: pull?.state, merged: pull?.merged, closed_at: pull?.closed_at,
+    merged_at: pull?.merged_at, created_at: pull?.created_at,
+    user: { login: pull?.user?.login },
+    head: { sha: pull?.head?.sha, ref: pull?.head?.ref,
+      repo: { full_name: pull?.head?.repo?.full_name } },
+    base: { ref: pull?.base?.ref,
+      repo: { full_name: pull?.base?.repo?.full_name } },
+  };
+}
+
+function proposalProof(item, event, match, pull, files, observedAt, baseBranch,
+  snapshot = null) {
   const open = pull?.state === 'open' && pull.merged === false &&
     pull.closed_at == null && pull.merged_at == null;
   const merged = pull?.state === 'closed' && pull.merged === true &&
@@ -154,7 +170,7 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch) 
       branchName: match.branch.branchName, headSha: pull.head.sha,
       reportPodUid: match.receipt.podUid,
       reportSha256: match.receipt.report.sha256, packageFile: item.packageFile,
-      patch: file.patch },
+      patch: file.patch, ...(snapshot ? { github: snapshot } : {}) },
   };
 }
 
@@ -256,8 +272,13 @@ async function collect(directory = privateDir) {
     const finalPull = await github(token, route);
     if (!samePullSnapshot(pull, finalPull)) continue;
     // The upper bound allows for the maximum accepted difference from GitHub's Date header.
-    const result = proposalProof(item, event, match, finalPull,
-      files, new Date(Date.now() + 60000).toISOString(), baseBranch);
+    const snapshot = {
+      before: pullSnapshot(pull), after: pullSnapshot(finalPull),
+      files: files.map(({ filename, patch }) => ({ filename, patch })),
+    };
+    if (Buffer.byteLength(JSON.stringify(snapshot)) > 8 * 1024 * 1024) continue;
+    const result = proposalProof(item, event, match, snapshot.after,
+      snapshot.files, new Date(Date.now() + 60000).toISOString(), baseBranch, snapshot);
     if (!result) continue;
     verified.push({ item, event, id, result });
   }
@@ -322,4 +343,4 @@ if (require.main === module) collect().catch(() => {
 });
 
 module.exports = { privateFile, verifiedReports, candidate, reportDecision, samePullSnapshot,
-  proposalProof, pullFiles, collect };
+  pullSnapshot, proposalProof, pullFiles, collect };
