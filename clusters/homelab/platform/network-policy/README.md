@@ -48,8 +48,8 @@ receipt; a labeled Node needs direct review before another admission attempt.
 
 After a tainted node passes capacity admission and the fixture image is mirrored,
 merge one reviewed change that enables automated sync and pruning in both
-`IaC/platform-network-policy/stack.hcl` and
-`IaC/platform-network-policy-canary/stack.hcl`, and lists `fixtures.yaml` in
+`IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl` and
+`IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`, and lists `fixtures.yaml` in
 `canary/kustomization.yaml`. Dispatch the protected Terragrunt Apply workflow
 on the exact current `main` SHA for `argocd_app=platform-network-policy` first;
 verify its DaemonSet is Ready on the admitted node. Then dispatch it for
@@ -106,11 +106,11 @@ files. This fail-closed allowlist keeps runtime manifests, the private receipt
 bucket, hidden Argo inputs, and validation configuration fixed while allowing
 documentation and inventory evidence merges. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
-`allowEmpty` in `IaC/platform-network-policy-canary/stack.hcl`; apply it and
+`allowEmpty` in `IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`; apply it and
 verify the fixture namespace is absent. The second changes only
 `kustomization.yaml` here from the enforcer DaemonSet to `resources: []` and
 adds `allowEmpty = true` to the already automated
-`IaC/platform-network-policy/stack.hcl`. Apply it and verify the enforcer is
+`IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl`. Apply it and verify the enforcer is
 gone.
 Each commit may also include native updates to the affected OpenWiki pages,
 Claims, and run metadata; no other source changes are accepted.

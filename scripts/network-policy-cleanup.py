@@ -421,7 +421,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
             evidence_sha == source_sha):
         raise ValueError("firewall evidence is not from the reviewed pre-removal commit")
     canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
-    canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+    canary_application = "IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl"
     # Native OpenWiki may update only these non-runtime pages and their provenance.
     wiki_paths = {
         "openwiki/.last-update.json",
@@ -440,7 +440,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
     old_canary_sync = "        enabled = true\n        prune   = true\n"
     new_sync = "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"
     manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
-    application = "IaC/platform-network-policy/stack.hcl"
+    application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
     old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
     old_sync = "        enabled = true\n        prune   = true\n"
     def non_operational(path):
