@@ -387,5 +387,30 @@ octeliumctl get service mastodon.default --domain stinkyboi.com -o json
 
 Verify anonymous access is disabled and the human policy is attached; repeat
 apply must report no changes. Do not apply/prune the complete shared catalog
-for this single-Service change. The tunnel continues its existing routing
-until the separately reviewed federation/client path split is activated.
+for this single-Service change. The tunnel bypasses human access only for the federation allowlist below.
+
+### Public federation boundary
+
+The tunnel matches an anchored allowlist before its authenticated Octelium
+fallback. Only WebFinger/host-meta, instance actor/inboxes, canonical `/ap/`
+ActivityPub resources, legacy `/users/` resources, contexts, collections,
+emojis and local attachment/avatar/header/emoji files remain anonymous.
+The path grammar excludes dot segments, encoded escapes and arbitrary media
+suffixes; tests exercise cloudflared's actual matcher, including encoded bypasses.
+
+All other paths require Octelium human access: root/web UI, login/recovery,
+settings, admin/Sidekiq/PgHero, OAuth, all REST APIs, streaming, NodeInfo,
+static application assets, media proxy and backup downloads. Mastodon's own
+login/permissions remain required after Octelium. Native clients need private
+Octelium access; anonymous Internet API/OAuth access is intentionally removed.
+Browser profile/post links (`/@...`) also require human access; remote servers
+can still discover accounts with WebFinger and fetch canonical ActivityPub IDs.
+
+Acceptance: anonymous `/admin`, `/auth/sign_in`, `/api/v1/streaming` and `/`
+must reach Octelium authentication, never Mastodon; actor/WebFinger and a real
+media URL must remain accessible. Verify a signed federation fetch, owner login,
+REST posting and streaming through the authenticated/private path. No public
+allowlist expansion without checking Mastodon route ownership again.
+
+Rollback through a reviewed PR reverting the tunnel config and its Deployment
+revision; preserve the authenticated Service and all retained data.
