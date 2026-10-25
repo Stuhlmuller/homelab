@@ -21,8 +21,10 @@ jobs:
           persist-credentials: false
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
-      - name: Render Argo chart images
-        run: nix develop --command python3 scripts/ci/harbor-rendered-images-check.py
+      - name: Render Argo workload images
+        run: |
+          nix develop --command python3 scripts/ci/harbor-rendered-images-check-test.py
+          nix develop --command python3 scripts/ci/harbor-rendered-images-check.py
   image-policy:
     runs-on: ubuntu-latest
     timeout-minutes: 10

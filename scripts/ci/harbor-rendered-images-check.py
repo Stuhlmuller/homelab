@@ -95,9 +95,26 @@ def generated_images(value):
             yield from generated_images(child)
 
 
+def kustomize_images(root=ROOT):
+    for path in sorted((root / "clusters/homelab").rglob("kustomization.yaml")):
+        result = subprocess.run(["kustomize", "build", str(path.parent)], text=True,
+                                capture_output=True, timeout=30)
+        if result.returncode:
+            raise RuntimeError(f"{path.relative_to(root)} render failed: {result.stderr[-1000:]}")
+        for doc in yaml.safe_load_all(result.stdout):
+            if isinstance(doc, dict):
+                for image in (*images(doc), *generated_images(doc)):
+                    yield path.relative_to(root), image
+
+
+def pinned(image):
+    return image.startswith("harbor.stinkyboi.com/") and "@sha256:" in image
+
+
 def check():
     failures = []
     count = 0
+    kustomizations = set()
     with tempfile.TemporaryDirectory(prefix="harbor-chart-render-") as directory:
         workdir = Path(directory)
         docker = workdir / "docker"
@@ -122,7 +139,7 @@ def check():
                 for image in (*images(doc), *generated_images(doc)):
                     if image == "auto" and source["chart"] == "gateway":
                         continue  # Istio injection uses the pinned global.proxy.image from istiod.
-                    if image.startswith("harbor.stinkyboi.com/") and "@sha256:" in image:
+                    if pinned(image):
                         continue
                     annotations = doc.get("metadata", {}).get("annotations", {})
                     hook = annotations.get("helm.sh/hook", "")
@@ -130,9 +147,13 @@ def check():
                             and image == "busybox" and rewrite.normalize(image) in CATALOG):
                         continue  # The scoped admission webhook rewrites this hardcoded test Pod image.
                     failures.append(f"{location}: {source['chart']}: {doc.get('kind')}: {image}")
+        for location, image in kustomize_images():
+            kustomizations.add(location)
+            if not pinned(image):
+                failures.append(f"{location}: {image}")
     if failures:
         raise AssertionError("Non-Harbor rendered images:\n" + "\n".join(failures))
-    print(f"Harbor chart render passed: {count} Argo chart sources")
+    print(f"Harbor image render passed: {count} Argo chart and {len(kustomizations)} image-bearing Kustomize sources")
 
 
 if __name__ == "__main__":
