@@ -319,6 +319,66 @@ evidence in the declared 64 GiB size. If measured reports exceed those bounds
 or node free space falls, keep the CronJobs suspended and resize through
 reviewed desired state before starting the window.
 
+### Hourly schedule acceptance (SC-001)
+
+`scripts/renovate-acceptance-schedule.py` computes an offline SC-001 report
+from a private, credential-free `slots.json` and protected source files. It
+does not query Kubernetes, start the CronJob, or produce the source evidence.
+The input needs `schema: 1`, hour-aligned UTC `windowStart` and `windowEnd`
+exactly seven days apart, and one record for **each** of the 168 planned UTC
+hours, including missed and excluded slots. Each record needs `slotAt`,
+`collectedAt` at least one hour later, a `collection` object with a relative
+`evidence/<name>` source and SHA-256, and a `runs` array. Each scheduled run
+needs distinct Kubernetes `jobUid` and `podUid`, actual
+`discoveryStartedAt`, `finishedAt`, and `phase` (`succeeded` or `failed`). An
+explicit optional `exclusion` needs `kind` (`maintenance`, `cluster-outage`,
+`github-outage`, or `registry-outage`), nonempty observed `impact`, a
+`reviewedAt` time after that hour, and its own evidence source and SHA-256.
+The referenced files must be unique regular mode `0600` JSON files in a mode
+`0700` `evidence/` directory beside the mode `0600` input. Each has
+`{schema:1, kind, slotAt, claim, material}`. A `slot-collection` claim is the
+exact `collectedAt` and `runs` for its slot; a `slot-exclusion` claim is the
+exact exclusion `kind`, `impact`, and `reviewedAt`. `material` is a nonempty
+private source object. Hash and claim binding detect missing, reused, or
+changed files, but independent review must establish that the source material
+is authentic and exhaustive.
+
+The read-only evidence producer still needs a reviewed, retained path. During
+the seven-day window it must snapshot the CronJob schedule and every matching
+Job/Pod UID, scheduled-hour annotation, conditions, and timestamps before the
+CronJob's three retained successful and failed Jobs are pruned. It must retain
+restricted, timestamped Renovate logs that establish the actual beginning of
+owner discovery and the Job's finish, plus a complete Job/Pod list or watch
+receipt proving when an hour had no run. Every slot's `collection` hash must
+bind that exhaustive private snapshot; an exclusion file must contain the
+outage or maintenance interval and evidence of its impact on that specific
+hour. Prometheus' retained `kube_job_created` and
+`kube_pod_container_state_started` history may corroborate Job/Pod timing if
+its scrape coverage and retention for the entire window are verified. Those
+metrics do not establish the actual `discoveryStartedAt`, Job finish, or
+exhaustive no-run proof by themselves. Do not infer a discovery start from Pod
+creation, or call an absent Job a miss without complete collection evidence.
+If the current restricted logs lack an unambiguous discovery-start marker,
+add it through a reviewed runner change before starting the window. Keep
+source material and the full slot input on the protected ledger until
+independent review and reviewed cleanup; do not commit it or print it in CI/PR
+logs. If collection, identity, timing, or outage attribution is incomplete, the
+result is inconclusive.
+
+Run `python3 -I scripts/renovate-acceptance-schedule.py
+<absolute-private-slots.json>` offline after the window. Its aggregate JSON
+reports planned, excluded, denominator, timely starts (at most 15 minutes),
+late starts, missing runs, failed runs, duplicate cycles, and overlaps. A
+missing run in an otherwise complete slot counts against the 95% threshold;
+missing slot evidence, failed runs, or an all-excluded window are
+`inconclusive`. Overlap or duplicate cycles fail the criterion even if the
+timely rate reaches 95%. Exit codes are 0 for `review-required`, 1 for
+`criteria-not-met`, and 2 for `inconclusive`. `review-required` is a numeric
+result only: a private reviewer must verify the source files came from the
+read-only producer, cover all 168 hours, and justify each exclusion before
+claiming SC-001 acceptance. The staged observer does not supply these hourly
+writer-run receipts.
+
 The separate `renovate-acceptance-observer` CronJob is staged suspended. It
 would poll every 15 minutes during the seven-day acceptance window. It mounts
 only `renovate-acceptance-ledger`, never `renovate-cache`. It mounts only the
