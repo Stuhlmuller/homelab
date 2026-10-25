@@ -531,14 +531,25 @@ test('observer requests only read-scoped GitHub App permissions', async () => {
 
 test('private acceptance data binds only to initialized acer-local storage', () => {
   const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
+  const platform = path.resolve(__dirname, '../../clusters/homelab/platform/storage');
   const storage = fs.readFileSync(path.join(root, 'acceptance-ledger-pvc.yaml'), 'utf8');
+  const platformStorage = fs.readFileSync(path.join(platform,
+    'renovate-acceptance-ledger-platform.yaml'), 'utf8');
+  const platformKustomization = fs.readFileSync(path.join(platform, 'kustomization.yaml'), 'utf8');
   const initializer = fs.readFileSync(path.join(root, 'acceptance-ledger-init-job.yaml'), 'utf8');
   const runner = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
   const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
   assert.match(storage, /storageClassName: renovate-acceptance-ledger-local/);
-  assert.match(storage, /path: \/var\/lib\/renovate-acceptance-ledger/);
-  assert.match(storage, /values:\s*\n\s*- acer/);
+  assert.match(storage, /^kind: PersistentVolumeClaim$/m);
+  assert.doesNotMatch(storage, /^kind: (StorageClass|PersistentVolume)$/m);
+  assert.match(platformStorage, /^kind: StorageClass$/m);
+  assert.match(platformStorage, /^kind: PersistentVolume$/m);
+  assert.doesNotMatch(platformStorage, /^kind: PersistentVolumeClaim$/m);
+  assert.match(platformStorage, /path: \/var\/lib\/renovate-acceptance-ledger/);
+  assert.match(platformStorage, /values:\s*\n\s*- acer/);
   assert.doesNotMatch(storage, /nfs-default/);
+  assert.doesNotMatch(kustomization, /- acceptance-ledger-pvc.yaml/);
+  assert.doesNotMatch(platformKustomization, /- renovate-acceptance-ledger-platform.yaml/);
   assert.match(initializer, /^  suspend: true$/m);
   assert.match(initializer, /chown 12021:12021 \/ledger/);
   assert.match(initializer, /chmod 0700 \/ledger/);

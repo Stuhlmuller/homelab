@@ -234,12 +234,19 @@ and first cluster write is a planned no-writer gap.
 
 ## Temporary acceptance observer
 
-The acceptance ledger uses a dedicated 64 GiB static Talos-local PV at
-`/var/lib/renovate-acceptance-ledger` on `acer`. Every acceptance worker has
+The acceptance ledger is staged as a dedicated 64 GiB static Talos-local PV at
+`/var/lib/renovate-acceptance-ledger` on `acer`. The StorageClass and PV are in
+`clusters/homelab/platform/storage/renovate-acceptance-ledger-platform.yaml`;
+the namespaced claim is in `acceptance-ledger-pvc.yaml`. Neither file is in its
+Kustomization yet. Renovate's `homelab-workloads` Argo project cannot create
+cluster-scoped storage. First reconcile the class and PV through a reviewed
+`platform-storage` change and verify their identities. Then bind the claim
+through a separate reviewed Renovate change and verify it reaches `Bound`.
+Every acceptance worker has
 an `acer` node selector; the PV has the same node affinity. The shared QNAP
 NFS export squashes clients to one guest identity and cannot enforce private
 ledger ownership, so it must not hold the sample, reports, review input, or
-receipts. Before delivering private input, run the suspended
+receipts. Only after the claim binds, run the suspended
 `renovate-acceptance-ledger-init` Job through reviewed GitOps. It refuses a
 nonempty path and sets the volume root to UID/GID 12021, mode `0700`.
 Verify the PVC is bound to the local PV and the init Job succeeded before
@@ -471,10 +478,11 @@ Keep the observer suspended if the inventory, a datasource, private-source
 access, or the pinned image's datasource API fails validation. After the
 aggregate report is reviewed, erase the private files with a reviewed GitOps
 cleanup Job and verify `/ledger/private` is empty. Next remove `Prune=false`
-from the PVC and PV and `Delete=false` from the PV through GitOps; verify the
-live annotations are gone. Remove the CronJob, script, init/cleanup Jobs,
-PVC, PV, and local
-StorageClass through reviewed changes; verify the claim and PV are gone.
+from the PVC and PV and `Delete=false` from the PV through their respective
+GitOps Applications; verify the live annotations are gone. Remove the CronJob,
+script, init/cleanup Jobs, and PVC from Renovate first, then remove the PV and
+local StorageClass from platform-storage through reviewed changes; verify the
+claim and PV are gone.
 The retained local PV does not erase its hostPath on deletion. Use a separate
 reviewed exact-path storage cleanup on `acer` and verify
 `/var/lib/renovate-acceptance-ledger` has no retained files before closing

@@ -22,3 +22,9 @@ It is not replicated or backed up and must not be used for durable app data.
 The NAS-side setup is documented in `docs/storage-nfs.md`. Do not depend on
 stateful workloads until the provisioner is healthy and the PVC write, delete,
 and recreate validation in that runbook has passed.
+
+`renovate-acceptance-ledger-platform.yaml` stages a separate static Talos-local
+StorageClass and PV for the temporary private Renovate acceptance ledger on
+`acer`. It is outside this Kustomization until a reviewed activation. The
+Renovate Application owns only the matching namespaced claim after the platform
+resources reconcile.
