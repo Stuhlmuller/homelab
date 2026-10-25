@@ -32,7 +32,7 @@ PREREQUISITE_PREFIX = "openclaw-enterprise/platform/receipts"
 MAX_RECOVERY_AGE_SECONDS = 6 * 60 * 60
 PROBE_NAMESPACE = "monitoring"
 PROBE_NAME = "platform-maintenance-probe"
-PROBE_NODE = "zimaboard-1"
+PROBE_SELECTOR = f"app.kubernetes.io/name={PROBE_NAME}"
 PROBE_IMAGE = ("harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:"
                "1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
                "@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394")
@@ -378,12 +378,12 @@ def node_action(node, source_version, target_version, observed_version, observed
             receipt.get("to") == target_version and receipt.get("verified") is True and
             receipt.get("status") == "verified" and
             receipt.get("pinSha256") == PIN_SHA256 and
-            isinstance(receipt.get("sourceSha"), str) and SHA.fullmatch(receipt["sourceSha"]) and
+            receipt.get("sourceSha") == source_sha and
             receipt.get("stage") == stage and observed_version == target_version and
             isinstance(evidence, dict) and evidence.get("bootID") == observed_boot_id and
             evidence.get("observedVersion") == target_version and
             evidence.get("ready") is True and evidence.get("clusterHealth") is True):
-        verify_path_probe(evidence.get("pathProbe"), stage, node, receipt["sourceSha"])
+        verify_path_probe(evidence.get("pathProbe"), stage, node, source_sha)
         return "skip"
     raise ValueError("interrupted or unknown node state requires recovery review")
 
@@ -730,8 +730,7 @@ def verify_stage_receipt(config, stage, summary, receipt_dir):
                 record.get("format") != 1 or record.get("stage") != stage or
                 record.get("node") != node or
                 record.get("pinSha256") != PIN_SHA256 or
-                not isinstance(record.get("sourceSha"), str) or
-                not SHA.fullmatch(record["sourceSha"]) or
+                record.get("sourceSha") != summary["sourceSha"] or
                 record.get("from") != target["from"] or record.get("to") != target["to"] or
                 record.get("verified") is not True or record.get("status") != "verified" or
                 not isinstance(record.get("evidence"), dict) or
@@ -741,7 +740,7 @@ def verify_stage_receipt(config, stage, summary, receipt_dir):
                 record.get("evidence", {}).get("clusterHealth") is not True):
             raise ValueError("platform node receipt is incomplete or changed")
         verify_path_probe(record["evidence"].get("pathProbe"), stage, node,
-                          record["sourceSha"])
+                          summary["sourceSha"])
     return summary
 
 
@@ -764,19 +763,47 @@ def cluster_health(config, talosconfig):
 
 
 def verify_path_probe(probe, stage, node, source_sha):
-    if (not isinstance(probe, dict) or probe.get("format") != 1 or
+    if (not isinstance(probe, dict) or probe.get("format") != 2 or
             probe.get("stage") != stage or probe.get("node") != node or
             probe.get("sourceSha") != source_sha or
             not isinstance(probe.get("capturedAt"), str) or
             not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", probe["capturedAt"])):
         raise ValueError("inter-node path probe identity is incomplete")
+    if node == "stage":
+        paths = probe.get("nodePaths")
+        if not isinstance(paths, dict) or set(paths) != set(NODES):
+            raise ValueError("platform stage lacks all target-node paths")
+        for target in NODES:
+            _verify_node_io(paths[target], stage, target, source_sha)
+        fixtures = [paths[target]["fixture"] for target in NODES]
+        if (len({(item["controllerUid"], item["claimUid"], item["volumeUid"])
+                 for item in fixtures}) != 1 or
+                len({item["podUid"] for item in fixtures}) != len(NODES) or
+                len({item["pod"] for item in fixtures}) != len(NODES)):
+            raise ValueError("platform stage mixes fixture generations or Pod identities")
+    else:
+        _verify_node_io(probe, stage, node, source_sha)
+    _verify_shared_paths(probe)
+    return probe
+
+
+def _verify_node_io(probe, stage, node, source_sha):
+    if (not isinstance(probe, dict) or probe.get("format") != 2 or
+            probe.get("stage") != stage or probe.get("node") != node or
+            probe.get("sourceSha") != source_sha or
+            not isinstance(probe.get("capturedAt"), str) or
+            not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", probe["capturedAt"])):
+        raise ValueError("target-node path identity is incomplete")
     fixture = probe.get("fixture")
     if (not isinstance(fixture, dict) or fixture.get("namespace") != PROBE_NAMESPACE or
-            fixture.get("pod") != PROBE_NAME or fixture.get("claim") != PROBE_NAME or
+            fixture.get("controller") != PROBE_NAME or
+            not isinstance(fixture.get("pod"), str) or
+            not re.fullmatch(rf"{PROBE_NAME}-[a-z0-9]{{5}}", fixture["pod"]) or
+            fixture.get("claim") != PROBE_NAME or
             fixture.get("storageClass") != "nfs-default" or
-            fixture.get("node") != PROBE_NODE or
+            fixture.get("node") != node or
             any(not isinstance(fixture.get(key), str) or not fixture[key]
-                for key in ("podUid", "claimUid", "volumeUid"))):
+                for key in ("controllerUid", "podUid", "claimUid", "volumeUid"))):
         raise ValueError("inter-node storage fixture proof is incomplete")
     dns = probe.get("dns")
     if (not isinstance(dns, dict) or
@@ -794,7 +821,11 @@ def verify_path_probe(probe, stage, node, source_sha):
             not isinstance(storage.get("sha256"), str) or
             not re.fullmatch(r"[0-9a-f]{64}", storage["sha256"])):
         raise ValueError("inter-node NFS I/O proof is incomplete")
-    if (probe.get("access") != {"octeliumKubernetesApi": True, "octeliumTalosMtls": True} or
+
+
+def _verify_shared_paths(probe):
+    if (probe.get("sharedChecksOrigin") != "protected-runner" or
+            probe.get("access") != {"octeliumKubernetesApi": True, "octeliumTalosMtls": True} or
             probe.get("webhooks") != {"policyBotStatus": 404,
                                       "policyBotRequestId": True,
                                       "n8nStatus": 404, "n8nApplicationBody": True} or
@@ -809,7 +840,6 @@ def verify_path_probe(probe, stage, node, source_sha):
             not isinstance(probe["application"].get("pod"), str) or
             not re.fullmatch(r"grafana-[a-z0-9-]+", probe["application"]["pod"])):
         raise ValueError("inter-node access, webhook or application proof is incomplete")
-    return probe
 
 
 def _kubectl_json(*arguments):
@@ -912,18 +942,74 @@ def _grafana_health_via_port_forward(pod_name):
             process.stdout.close()
 
 
-def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
+def inter_node_path_probe(config, talosconfig, stage, node, source_sha, shared=True):
     """Run fixed functional paths before a node/stage can be marked verified."""
     if (node not in (*NODES, "stage") or
             not re.fullmatch(r"(?:talos|kubernetes)-\d+\.\d+\.\d+", stage) or
             not isinstance(source_sha, str) or not SHA.fullmatch(source_sha)):
         raise ValueError("unreviewed inter-node probe identity")
+    if node == "stage":
+        first = inter_node_path_probe(config, talosconfig, stage, NODES[0], source_sha)
+        paths = {NODES[0]: {key: value for key, value in first.items()
+                            if key not in ("application", "access", "webhooks",
+                                           "sharedChecksOrigin")}}
+        for target in NODES[1:]:
+            paths[target] = inter_node_path_probe(
+                config, talosconfig, stage, target, source_sha, shared=False)
+        return verify_path_probe({
+            "format": 2, "sourceSha": source_sha, "stage": stage, "node": "stage",
+            "capturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "nodePaths": paths,
+            "sharedChecksOrigin": "protected-runner",
+            "application": first["application"], "access": first["access"],
+            "webhooks": first["webhooks"],
+        }, stage, node, source_sha)
     wait_seconds = min(config["readinessDeadlineSeconds"]["storage"], 300)
     subprocess.run(
-        ["kubectl", "-n", PROBE_NAMESPACE, "wait", "--for=condition=Ready",
-         f"pod/{PROBE_NAME}", f"--timeout={wait_seconds}s"],
+        ["kubectl", "-n", PROBE_NAMESPACE, "rollout", "status",
+         f"daemonset/{PROBE_NAME}", f"--timeout={wait_seconds}s"],
         capture_output=True, text=True, timeout=wait_seconds + 30, check=True)
-    pod = _kubectl_json("-n", PROBE_NAMESPACE, "get", "pod", PROBE_NAME)
+    daemonset = _kubectl_json("-n", PROBE_NAMESPACE, "get", "daemonset", PROBE_NAME)
+    probe_pods = _kubectl_json("-n", PROBE_NAMESPACE, "get", "pods", "-l", PROBE_SELECTOR)
+    controller_uid = daemonset.get("metadata", {}).get("uid")
+    generation = daemonset.get("metadata", {}).get("generation")
+    status = daemonset.get("status", {})
+    affinity = (daemonset.get("spec", {}).get("template", {}).get("spec", {})
+                .get("affinity", {}).get("nodeAffinity", {})
+                .get("requiredDuringSchedulingIgnoredDuringExecution", {}))
+    terms = affinity.get("nodeSelectorTerms")
+    selector = daemonset.get("spec", {}).get("selector", {}).get("matchLabels")
+    if (not isinstance(controller_uid, str) or not controller_uid or
+            not isinstance(generation, int) or generation < 1 or
+            status.get("observedGeneration") != generation or
+            any(status.get(key) != len(NODES) for key in (
+                "desiredNumberScheduled", "updatedNumberScheduled", "numberReady",
+                "numberAvailable")) or
+            selector != {"app.kubernetes.io/name": PROBE_NAME} or
+            terms != [{"matchExpressions": [{"key": "kubernetes.io/hostname",
+                                              "operator": "In", "values": list(NODES)}]}]):
+        raise ValueError("maintenance DaemonSet is absent, incomplete or changed")
+    selected = probe_pods.get("items")
+    if not isinstance(selected, list) or len(selected) != len(NODES):
+        raise ValueError("maintenance DaemonSet Pods are incomplete")
+    by_node = {}
+    for candidate in selected:
+        metadata = candidate.get("metadata", {})
+        candidate_node = candidate.get("spec", {}).get("nodeName")
+        owners = metadata.get("ownerReferences", [])
+        if (candidate_node not in NODES or candidate_node in by_node or
+                metadata.get("labels", {}).get("app.kubernetes.io/name") != PROBE_NAME or
+                metadata.get("deletionTimestamp") or
+                not any(owner.get("kind") == "DaemonSet" and
+                        owner.get("name") == PROBE_NAME and owner.get("uid") == controller_uid and
+                        owner.get("controller") is True for owner in owners)):
+            raise ValueError("maintenance DaemonSet Pod identity is incomplete")
+        by_node[candidate_node] = candidate
+    pod = by_node[node]
+    pod_name = pod.get("metadata", {}).get("name")
+    if not isinstance(pod_name, str) or not re.fullmatch(
+            rf"{PROBE_NAME}-[a-z0-9]{{5}}", pod_name):
+        raise ValueError("maintenance DaemonSet Pod name is invalid")
     claim = _kubectl_json("-n", PROBE_NAMESPACE, "get", "pvc", PROBE_NAME)
     api = _kubectl_json("-n", "default", "get", "service", "kubernetes")
     grafana = _kubectl_json("-n", "monitoring", "get", "service", "grafana")
@@ -943,7 +1029,7 @@ def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
     claim_uid = claim.get("metadata", {}).get("uid")
     pod_uid = pod.get("metadata", {}).get("uid")
     volume_uid = volume.get("metadata", {}).get("uid")
-    if (pod_spec.get("nodeName") != PROBE_NODE or
+    if (pod_spec.get("nodeName") != node or
             pod_spec.get("automountServiceAccountToken") is not False or
             pod_status.get("phase") != "Running" or
             not any(item.get("type") == "Ready" and item.get("status") == "True"
@@ -995,7 +1081,7 @@ def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
         raise ValueError("Grafana Pod endpoint is unavailable or changed")
     path_result = subprocess.run(
         ["kubectl", "--request-timeout=15s", "-n", PROBE_NAMESPACE, "exec", "-i",
-         PROBE_NAME, "-c", "probe", "--", "/usr/bin/python3", "-", "/probe", api_ip,
+         pod_name, "-c", "probe", "--", "/usr/bin/python3", "-", "/probe", api_ip,
          grafana_ip], input=PROBE_SCRIPT.read_text(), capture_output=True, text=True,
         timeout=45, check=True)
     path_evidence = json.loads(path_result.stdout)
@@ -1003,6 +1089,17 @@ def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
                     "grafana.monitoring.svc.cluster.local": grafana_ip}
     if path_evidence.get("dns") != expected_dns:
         raise ValueError("in-cluster DNS path differs from Service identity")
+    probe = {"format": 2, "sourceSha": source_sha, "stage": stage, "node": node,
+             "capturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+             "fixture": {"namespace": PROBE_NAMESPACE, "controller": PROBE_NAME,
+                         "controllerUid": controller_uid, "pod": pod_name,
+                         "claim": PROBE_NAME, "storageClass": "nfs-default",
+                         "podUid": pod_uid, "claimUid": claim_uid,
+                         "volumeUid": volume_uid, "node": pod_spec["nodeName"]},
+             "dns": path_evidence["dns"], "storage": path_evidence.get("storage")}
+    _verify_node_io(probe, stage, node, source_sha)
+    if not shared:
+        return probe
     application = _grafana_health_via_port_forward(grafana_name)
     application.update({"service": "monitoring/grafana",
                         "serviceUid": grafana["metadata"]["uid"],
@@ -1019,16 +1116,9 @@ def inter_node_path_probe(config, talosconfig, stage, node, source_sha):
     if not re.search(r"Server:\s*Talos v\d+\.\d+\.\d+", talos.stdout):
         raise ValueError("Octelium Talos mTLS path failed")
     webhook_proof = _webhook_path_proof(min(config["readinessDeadlineSeconds"]["mesh"], 300))
-    probe = {"format": 1, "sourceSha": source_sha, "stage": stage, "node": node,
-             "capturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-             "fixture": {"namespace": PROBE_NAMESPACE, "pod": PROBE_NAME,
-                         "claim": PROBE_NAME, "storageClass": "nfs-default",
-                         "podUid": pod_uid, "claimUid": claim_uid,
-                         "volumeUid": volume_uid, "node": pod_spec["nodeName"]},
-             "dns": path_evidence["dns"], "storage": path_evidence.get("storage"),
-             "application": application,
-             "access": {"octeliumKubernetesApi": True, "octeliumTalosMtls": True},
-             "webhooks": webhook_proof}
+    probe.update({"sharedChecksOrigin": "protected-runner", "application": application,
+                  "access": {"octeliumKubernetesApi": True, "octeliumTalosMtls": True},
+                  "webhooks": webhook_proof})
     return verify_path_probe(probe, stage, node, source_sha)
 
 

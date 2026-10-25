@@ -69,16 +69,33 @@ class PlatformMaintenance(unittest.TestCase):
             self.addCleanup(replacement.stop)
 
     def probe_record(self, stage, node, sha):
-        return {"format": 1, "sourceSha": sha, "stage": stage, "node": node,
+        if node == "stage":
+            first = self.probe_record(stage, self.module.NODES[0], sha)
+            return {"format": 2, "sourceSha": sha, "stage": stage, "node": node,
+                    "capturedAt": "2026-10-25T00:00:00Z",
+                    "nodePaths": {target: {key: value for key, value in
+                                           self.probe_record(stage, target, sha).items()
+                                           if key not in ("application", "access", "webhooks",
+                                                          "sharedChecksOrigin")}
+                                  for target in self.module.NODES},
+                    "sharedChecksOrigin": "protected-runner",
+                    "application": first["application"], "access": first["access"],
+                    "webhooks": first["webhooks"]}
+        pod_suffix = "abcd"[self.module.NODES.index(node)] * 5
+        return {"format": 2, "sourceSha": sha, "stage": stage, "node": node,
                 "capturedAt": "2026-10-25T00:00:00Z",
-                "fixture": {"namespace": "monitoring", "pod": "platform-maintenance-probe",
+                "fixture": {"namespace": "monitoring", "controller": "platform-maintenance-probe",
+                            "controllerUid": "daemonset-uid",
+                            "pod": f"platform-maintenance-probe-{pod_suffix}",
                             "claim": "platform-maintenance-probe", "storageClass": "nfs-default",
-                            "podUid": "pod-uid", "claimUid": "claim-uid", "volumeUid": "pv-uid",
-                            "node": "zimaboard-1"},
+                            "podUid": f"pod-uid-{node}", "claimUid": "claim-uid",
+                            "volumeUid": "pv-uid",
+                            "node": node},
                 "dns": {"kubernetes.default.svc.cluster.local": "10.96.0.1",
                         "grafana.monitoring.svc.cluster.local": "10.96.0.2"},
                 "storage": {"bytes": 4096, "sha256": "a" * 64,
                             "readBack": True, "deleted": True},
+                "sharedChecksOrigin": "protected-runner",
                 "access": {"octeliumKubernetesApi": True, "octeliumTalosMtls": True},
                 "webhooks": {"policyBotStatus": 404, "policyBotRequestId": True,
                              "n8nStatus": 404,
@@ -142,10 +159,36 @@ class PlatformMaintenance(unittest.TestCase):
                 self.module.verify_path_probe({**good, key: value}, stage, node, sha)
         with self.assertRaises(ValueError):
             self.module.verify_path_probe(good, stage, node, "b" * 40)
+        stage_good = self.probe_record(stage, "stage", sha)
+        self.module.verify_path_probe(stage_good, stage, "stage", sha)
+        with self.assertRaisesRegex(ValueError, "all target-node paths"):
+            self.module.verify_path_probe(
+                {**stage_good, "nodePaths": {node: good}}, stage, "stage", sha)
+        wrong_node = copy.deepcopy(stage_good)
+        wrong_node["nodePaths"]["acer"]["fixture"]["node"] = "zimaboard-1"
+        with self.assertRaisesRegex(ValueError, "fixture proof"):
+            self.module.verify_path_probe(wrong_node, stage, "stage", sha)
+        old_format = copy.deepcopy(stage_good)
+        old_format["nodePaths"]["acer"]["format"] = 1
+        with self.assertRaisesRegex(ValueError, "target-node path identity"):
+            self.module.verify_path_probe(old_format, stage, "stage", sha)
+        mixed_claim = copy.deepcopy(stage_good)
+        mixed_claim["nodePaths"]["acer"]["fixture"]["claimUid"] = "new-claim"
+        with self.assertRaisesRegex(ValueError, "mixes fixture generations"):
+            self.module.verify_path_probe(mixed_claim, stage, "stage", sha)
+        duplicate_pod = copy.deepcopy(stage_good)
+        duplicate_pod["nodePaths"]["acer"]["fixture"]["podUid"] = (
+            duplicate_pod["nodePaths"]["zimaboard-0"]["fixture"]["podUid"])
+        with self.assertRaisesRegex(ValueError, "Pod identities"):
+            self.module.verify_path_probe(duplicate_pod, stage, "stage", sha)
 
     def test_inter_node_probe_requires_fixture_io_access_and_webhooks(self):
         sha, stage, node = "a" * 40, "talos-1.11.6", "zimaboard-1"
-        pod = {"metadata": {"uid": "pod-uid"}, "spec": {
+        pod = {"metadata": {"uid": "pod-uid", "name": "platform-maintenance-probe-bbbbb",
+                             "labels": {"app.kubernetes.io/name": self.module.PROBE_NAME},
+                             "ownerReferences": [{"kind": "DaemonSet",
+                                                  "name": self.module.PROBE_NAME,
+                                                  "uid": "daemonset-uid", "controller": True}]}, "spec": {
             "nodeName": node, "containers": [{"image": self.module.PROBE_IMAGE,
                                                "volumeMounts": [{"name": "storage",
                                                                  "mountPath": "/probe"}]}],
@@ -153,6 +196,23 @@ class PlatformMaintenance(unittest.TestCase):
             "volumes": [{"name": "storage", "persistentVolumeClaim": {
                 "claimName": self.module.PROBE_NAME}}]},
             "status": {"phase": "Running", "conditions": [{"type": "Ready", "status": "True"}]}}
+        daemonset = {"metadata": {"uid": "daemonset-uid", "generation": 1},
+                     "spec": {"selector": {"matchLabels": {
+                         "app.kubernetes.io/name": self.module.PROBE_NAME}},
+                         "template": {"spec": {"affinity": {"nodeAffinity": {
+                             "requiredDuringSchedulingIgnoredDuringExecution": {
+                                 "nodeSelectorTerms": [{"matchExpressions": [{
+                                     "key": "kubernetes.io/hostname", "operator": "In",
+                                     "values": list(self.module.NODES)}]}]}}}}}},
+                     "status": {"observedGeneration": 1,
+                                "desiredNumberScheduled": 4, "updatedNumberScheduled": 4,
+                                "numberReady": 4, "numberAvailable": 4}}
+        pods = [copy.deepcopy(pod) for _ in self.module.NODES]
+        for index, (target, selected) in enumerate(zip(self.module.NODES, pods)):
+            selected["metadata"]["name"] = (
+                f"platform-maintenance-probe-{'abcde'[index] * 5}")
+            selected["metadata"]["uid"] = f"pod-uid-{target}"
+            selected["spec"]["nodeName"] = target
         claim = {"metadata": {"uid": "claim-uid"}, "spec": {
             "volumeName": "probe-pv", "storageClassName": "nfs-default"},
             "status": {"phase": "Bound"}}
@@ -170,17 +230,20 @@ class PlatformMaintenance(unittest.TestCase):
                            {"name": "grafana", "containerPort": 3000}]}]},
                        "status": {"phase": "Running", "conditions": [
                            {"type": "Ready", "status": "True"}]}}
-        objects = [pod, claim, {"spec": {"clusterIP": "10.96.0.1"}},
-                   grafana_service, {"items": [grafana_pod]}, volume]
+        objects = [daemonset, {"items": pods}, claim,
+                   {"spec": {"clusterIP": "10.96.0.1"}}, grafana_service,
+                   {"items": [grafana_pod]}, volume]
         output = {"dns": self.probe_record(stage, node, sha)["dns"],
                   "storage": self.probe_record(stage, node, sha)["storage"]}
         webhooks = [(404, b"", [("X-Request-ID", "a" * 20)]),
                     (404, b"Webhook not registered", [])]
+        executed_pods = []
 
         def run(command, **kwargs):
             if "exec" in command:
                 self.assertIn("-i", command)
                 self.assertIn("os.fsync", kwargs["input"])
+                executed_pods.append(command[command.index("-i") + 1])
                 return subprocess.CompletedProcess(command, 0, json.dumps(output), "")
             if command[:2] == ["kubectl", "--request-timeout=15s"]:
                 return subprocess.CompletedProcess(command, 0, "ok\n", "")
@@ -197,12 +260,30 @@ class PlatformMaintenance(unittest.TestCase):
                                              stage, node, sha)
         self.assertEqual(proof["storage"]["bytes"], 4096)
         self.assertEqual(proof["fixture"]["claimUid"], "claim-uid")
+        self.assertEqual(proof["fixture"]["node"], node)
+        self.assertEqual(proof["fixture"]["pod"], pods[1]["metadata"]["name"])
+        self.assertEqual(executed_pods, [pods[1]["metadata"]["name"]])
+        executed_pods.clear()
+        with patch.object(self.module, "_kubectl_json", side_effect=objects * 4), \
+                patch.object(self.module, "inter_node_path_probe", new=self.path_probe_function), \
+                patch.object(self.module, "_webhook_response", side_effect=webhooks), \
+                patch.object(self.module, "_grafana_health_via_port_forward",
+                             return_value={"grafanaHttpStatus": 200,
+                                           "grafanaDatabase": "ok"}) as grafana_check, \
+                patch.object(self.module.subprocess, "run", side_effect=run):
+            stage_proof = self.path_probe_function(candidate, Path("/private/talosconfig"),
+                                                   stage, "stage", sha)
+        self.assertEqual(set(stage_proof["nodePaths"]), set(self.module.NODES))
+        self.assertEqual(executed_pods, [item["metadata"]["name"] for item in pods])
+        grafana_check.assert_called_once()
         for changed, responses in (
-            ([{**pod, "spec": {**pod["spec"], "nodeName": "acer"}}, *objects[1:]], webhooks),
-            ([{**pod, "spec": {**pod["spec"], "containers": [{"image": self.module.PROBE_IMAGE,
+            ([daemonset, {"items": [*pods[:1], {**pods[1], "spec": {
+                **pods[1]["spec"], "nodeName": "acer"}}, *pods[2:]]}, *objects[2:]], webhooks),
+            ([daemonset, {"items": [*pods[:1], {**pods[1], "spec": {
+                **pods[1]["spec"], "containers": [{"image": self.module.PROBE_IMAGE,
                     "volumeMounts": [{"name": "other", "mountPath": "/probe"}]}]}},
-              *objects[1:]], webhooks),
-            ([*objects[:4], {"items": [{**grafana_pod, "metadata": {
+                *pods[2:]]}, *objects[2:]], webhooks),
+            ([*objects[:5], {"items": [{**grafana_pod, "metadata": {
                 **grafana_pod["metadata"], "name": "wrong-endpoint"}}]}, volume], webhooks),
             (objects, [(404, b"", []), *webhooks[1:]]),
             (objects, [webhooks[0], (404, b"edge not found", [])]),
@@ -407,12 +488,13 @@ class PlatformMaintenance(unittest.TestCase):
                         "pathProbe": self.probe_record(stage, "zimaboard-0", sha)}}
         self.assertEqual(decide("zimaboard-0", "1.11.3", "1.11.6", "1.11.6", "boot", complete,
                                 sha, stage), "skip")
-        self.assertEqual(decide("zimaboard-0", "1.11.3", "1.11.6", "1.11.6", "boot",
-                                {**complete, "sourceSha": "b" * 40,
-                                 "evidence": {**complete["evidence"],
-                                              "pathProbe": self.probe_record(
-                                                  stage, "zimaboard-0", "b" * 40)}},
-                                sha, stage), "skip")
+        with self.assertRaisesRegex(ValueError, "recovery review"):
+            decide("zimaboard-0", "1.11.3", "1.11.6", "1.11.6", "boot",
+                   {**complete, "sourceSha": "b" * 40,
+                    "evidence": {**complete["evidence"],
+                                 "pathProbe": self.probe_record(
+                                     stage, "zimaboard-0", "b" * 40)}},
+                   sha, stage)
         for observed, receipt in (
             ("1.11.6", None),
             ("1.11.3", {**complete, "verified": False}),
@@ -991,6 +1073,11 @@ class PlatformMaintenance(unittest.TestCase):
             self.assertTrue(all(self.module.read_node_receipt(Path(directory), stage, node)["verified"]
                                 for node in self.config["nodeOrder"]))
             self.module.verify_stage_receipt(self.config, stage, receipt, Path(directory))
+            stale_summary = {**receipt, "sourceSha": "b" * 40,
+                             "pathProbe": self.probe_record(stage, "stage", "b" * 40)}
+            with self.assertRaisesRegex(ValueError, "incomplete or changed"):
+                self.module.verify_stage_receipt(self.config, stage, stale_summary,
+                                                 Path(directory))
             changed = self.module.node_receipt_path(Path(directory), stage, "zimaboard-0")
             changed.write_text(changed.read_text() + " ")
             with self.assertRaises(ValueError):
@@ -1018,7 +1105,7 @@ class PlatformMaintenance(unittest.TestCase):
             self.assertFalse((path / f"{stage}--zimaboard-0.json").exists())
             self.assertFalse((path / f"{stage}.json").exists())
 
-    def test_talos_stage_resumes_verified_nodes_after_main_advances(self):
+    def test_talos_stage_blocks_stale_node_receipt_after_main_advances(self):
         old_sha, new_sha, stage = "a" * 40, "b" * 40, "talos-1.11.6"
         first = self.config["nodeOrder"][0]
         state = {node: {"talos": "1.11.3", "kubelet": "v1.34.11", "ready": True,
@@ -1050,12 +1137,12 @@ class PlatformMaintenance(unittest.TestCase):
                     patch.object(self.module, "cluster_health"), \
                     patch.object(self.module, "current_main_sha", return_value=new_sha), \
                     patch.object(self.module.subprocess, "run", side_effect=upgrade):
-                receipt = self.module.execute_talos_stage(
-                    self.config, stage, new_sha, Path("/private/talosconfig"), path)
-            self.assertEqual(commands, list(self.config["nodeOrder"][1:]))
-            self.assertEqual(receipt["sourceSha"], new_sha)
+                with self.assertRaisesRegex(ValueError, "recovery review"):
+                    self.module.execute_talos_stage(
+                        self.config, stage, new_sha, Path("/private/talosconfig"), path)
+            self.assertEqual(commands, [])
             self.assertEqual(self.module.read_node_receipt(path, stage, first)["sourceSha"], old_sha)
-            self.module.verify_stage_receipt(self.config, stage, receipt, path)
+            self.assertFalse((path / f"{stage}.json").exists())
 
     def test_failed_upgrade_leaves_pending_receipt_and_refuses_retry(self):
         sha, stage, node = "a" * 40, "talos-1.11.6", "zimaboard-0"

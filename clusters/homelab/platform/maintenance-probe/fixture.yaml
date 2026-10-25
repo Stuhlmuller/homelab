@@ -12,46 +12,60 @@ spec:
     requests:
       storage: 32Mi
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
   name: platform-maintenance-probe
   namespace: monitoring
   labels:
     app.kubernetes.io/name: platform-maintenance-probe
-  annotations:
-    checkov.io/skip1: CKV_K8S_8=The idle probe has no listening endpoint; the protected workflow checks its runtime paths.
-    checkov.io/skip2: CKV_K8S_9=The protected workflow checks Pod phase and functional probes before upgrade receipts.
 spec:
-  nodeSelector:
-    kubernetes.io/hostname: zimaboard-1
-  automountServiceAccountToken: false
-  securityContext:
-    runAsUser: 65532
-    runAsNonRoot: true
-    fsGroup: 65532
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-    - name: probe
-      image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
-      command: [/usr/bin/python3, -c, "import time; time.sleep(86400)"]
-      resources:
-        requests:
-          cpu: 10m
-          memory: 32Mi
-        limits:
-          cpu: 100m
-          memory: 64Mi
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: platform-maintenance-probe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: platform-maintenance-probe
+      annotations:
+        checkov.io/skip1: CKV_K8S_8=The idle probe has no listening endpoint; the protected workflow checks its runtime paths.
+        checkov.io/skip2: CKV_K8S_9=The protected workflow checks Pod phase and functional probes before upgrade receipts.
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [zimaboard-0, zimaboard-1, zimaboard-2, acer]
+      automountServiceAccountToken: false
       securityContext:
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        capabilities:
-          drop: [ALL]
-      volumeMounts:
+        runAsUser: 65532
+        runAsNonRoot: true
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: probe
+          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+          command: [/usr/bin/python3, -c, "import time; time.sleep(10**9)"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: storage
+              mountPath: /probe
+      volumes:
         - name: storage
-          mountPath: /probe
-  volumes:
-    - name: storage
-      persistentVolumeClaim:
-        claimName: platform-maintenance-probe
+          persistentVolumeClaim:
+            claimName: platform-maintenance-probe
