@@ -573,6 +573,13 @@ and Harbor exporter (32 MiB) to `acer`, its request margin would be about
 four unrelated Pods from `zimaboard-2`, including Langfuse PostgreSQL, would
 leave about 428 MiB there after the 250 MiB enforcer and three 32 MiB
 fixtures. These are scheduling estimates, not observed peak or restart fit.
+
+At 2026-10-25 08:18 UTC, Langfuse's `acer` worker was 1/1 Ready but degraded:
+136 liveness restarts and 3,268 HTTP 500 health events since October 11. Its
+last exit was 137 followed by a kubelet kill; current use of 459 MiB under a
+1 GiB limit does not establish OOM. Require private read-only diagnosis and
+complete recovery proof before counting its retirement as safe capacity.
+
 Do not retire either service before independent complete restores of
 Langfuse's PostgreSQL, ClickHouse, Valkey, object store and recovery material,
 and Dispatcharr's database, files and provider credentials; retain their
