@@ -102,9 +102,33 @@ class PrivateStore:
             raise ValueError("private firewall evidence write was not verified")
 
 
-def placement_and_qualification(store, evidence_sha, node_name, qualification_run_id):
-    placement = json.loads(store.read(
-        f"{PREFIX}/receipts/{evidence_sha}/placement.json", 1048576))
+def placement_and_qualification(store, evidence_sha, node_name, qualification_run_id,
+                                admission_run_id):
+    if not RUN_ID.fullmatch(admission_run_id or ""):
+        raise ValueError("selected canary admission run ID is invalid")
+    admission = json.loads(store.read(
+        f"{PREFIX}/{evidence_sha}/{admission_run_id}/canary-admit.json", 1048576))
+    placement_run_id = admission.get("placementRunId") if isinstance(admission, dict) else None
+    placement_version = admission.get("placementVersionId") if isinstance(admission, dict) else None
+    if (not isinstance(admission, dict) or admission.get("format") != 1 or
+            admission.get("stage") != "canary-admit" or
+            admission.get("status") != "verified" or admission.get("verified") is not True or
+            admission.get("sourceSha") != evidence_sha or
+            admission.get("runId") != admission_run_id or
+            admission.get("node") != node_name or
+            not isinstance(admission.get("nodeUid"), str) or
+            not admission["nodeUid"] or
+            not isinstance(admission.get("bootID"), str) or
+            not admission["bootID"] or
+            not isinstance(placement_run_id, str) or not RUN_ID.fullmatch(placement_run_id) or
+            not isinstance(placement_version, str) or placement_version in ("", "null")):
+        raise ValueError("verified selected canary admission is missing")
+    placement_key = f"{PREFIX}/receipts/{evidence_sha}/placement/{placement_run_id}.json"
+    if store.version(placement_key, True) != placement_version:
+        raise ValueError("selected placement version differs from admission")
+    placement = json.loads(store.read(placement_key, 1048576))
+    if store.version(placement_key, True) != placement_version:
+        raise ValueError("selected placement version changed during review")
     qualification_bytes = store.read(
         f"{PREFIX}/{evidence_sha}/{qualification_run_id}/qualification.json", 1048576)
     qualification = json.loads(qualification_bytes)
@@ -113,7 +137,9 @@ def placement_and_qualification(store, evidence_sha, node_name, qualification_ru
             placement.get("sourceSha") != evidence_sha or
             placement.get("node") != node_name or
             placement.get("firewallBaselineEmpty") is not True or
-            not placement.get("nodeUid") or not placement.get("bootID")):
+            placement.get("placementRunId") != placement_run_id or
+            placement.get("nodeUid") != admission["nodeUid"] or
+            placement.get("bootID") != admission["bootID"]):
         raise ValueError("verified pre-enable placement is missing")
     expected_cases = [
         {"source": source, "target": target, "port": port, "protocol": protocol,
@@ -132,14 +158,18 @@ def placement_and_qualification(store, evidence_sha, node_name, qualification_ru
             qualification.get("unverifiedLifecycleScenarios") !=
             list(QUALIFY["LIFECYCLE_SCENARIOS"])):
         raise ValueError("successful source-bound canary traffic probe is missing")
-    return placement, hashlib.sha256(qualification_bytes).hexdigest()
+    return placement, hashlib.sha256(qualification_bytes).hexdigest(), {
+        "admissionRunId": admission_run_id, "placementRunId": placement_run_id,
+        "placementVersionId": placement_version,
+    }
 
 
-def capture(store, source_sha, evidence_sha, run_id, qualification_run_id, config):
+def capture(store, source_sha, evidence_sha, run_id, qualification_run_id,
+            admission_run_id, config):
     CLEANUP["require_firewall_removal_transition"](evidence_sha, source_sha)
     node_name = config["canary"]["node"]
-    placement, qualification_sha = placement_and_qualification(
-        store, evidence_sha, node_name, qualification_run_id)
+    placement, qualification_sha, selection = placement_and_qualification(
+        store, evidence_sha, node_name, qualification_run_id, admission_run_id)
     pod, pod_uid = CLEANUP["inspect_cluster"](config, placement)
     state = CLEANUP["snapshot"](pod)
     _, chains, sets = CLEANUP["cleanup_plan"](state)
@@ -150,6 +180,7 @@ def capture(store, source_sha, evidence_sha, run_id, qualification_run_id, confi
               "nodeUid": placement["nodeUid"], "bootID": placement["bootID"],
               "cleanupPodUid": pod_uid, "qualificationRunId": qualification_run_id,
               "qualificationSha256": qualification_sha,
+              **selection,
               "snapshotSha256": CLEANUP["snapshot_sha256"](state),
               "snapshot": state, "ownedChains": chains, "ownedSets": sets,
               "capturedAt": datetime.now(timezone.utc).isoformat()}
@@ -169,18 +200,27 @@ def approve(store, source_sha, capture_run_id, reviewed_sha, config):
             candidate.get("sourceSha") != source_sha or
             not isinstance(candidate.get("evidenceSourceSha"), str) or
             candidate.get("node") != node_name or
-            not RUN_ID.fullmatch(str(candidate.get("qualificationRunId", ""))) or
+            not isinstance(candidate.get("qualificationRunId"), str) or
+            not RUN_ID.fullmatch(candidate["qualificationRunId"]) or
+            not isinstance(candidate.get("admissionRunId"), str) or
+            not RUN_ID.fullmatch(candidate["admissionRunId"]) or
+            not isinstance(candidate.get("placementRunId"), str) or
+            not RUN_ID.fullmatch(candidate["placementRunId"]) or
+            not isinstance(candidate.get("placementVersionId"), str) or
+            candidate["placementVersionId"] in ("", "null") or
             candidate.get("snapshotSha256") != reviewed_sha or
             candidate.get("snapshotSha256") !=
             CLEANUP["snapshot_sha256"](candidate.get("snapshot"))):
         raise ValueError("reviewed firewall capture is missing or differs")
     evidence_sha = candidate["evidenceSourceSha"]
     CLEANUP["require_firewall_removal_transition"](evidence_sha, source_sha)
-    placement, qualification_sha = placement_and_qualification(
-        store, evidence_sha, node_name, candidate["qualificationRunId"])
+    placement, qualification_sha, selection = placement_and_qualification(
+        store, evidence_sha, node_name, candidate["qualificationRunId"],
+        candidate["admissionRunId"])
     if (candidate.get("nodeUid") != placement["nodeUid"] or
             candidate.get("bootID") != placement["bootID"] or
-            candidate.get("qualificationSha256") != qualification_sha):
+            candidate.get("qualificationSha256") != qualification_sha or
+            any(candidate.get(key) != value for key, value in selection.items())):
         raise ValueError("capture differs from reviewed placement or qualification")
     _, chains, sets = CLEANUP["cleanup_plan"](candidate["snapshot"])
     if (chains, sets) != (candidate.get("ownedChains"), candidate.get("ownedSets")):
@@ -196,6 +236,7 @@ def approve(store, source_sha, capture_run_id, reviewed_sha, config):
                "bootID": placement["bootID"], "snapshotSha256": reviewed_sha,
                "captureRunId": capture_run_id,
                "qualificationRunId": candidate["qualificationRunId"],
+               **selection,
                "reviewedAt": datetime.now(timezone.utc).isoformat()}
     store.write_once(f"{PREFIX}/receipts/{source_sha}/firewall-ownership/{capture_run_id}.json",
                      receipt, 1048576)
@@ -208,6 +249,7 @@ def main():
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--qualification-run-id")
+    parser.add_argument("--admission-run-id")
     parser.add_argument("--evidence-source-sha")
     parser.add_argument("--capture-run-id")
     parser.add_argument("--reviewed-snapshot-sha256")
@@ -228,15 +270,17 @@ def main():
             run_id = os.environ.get("GITHUB_RUN_ID", "")
             if (not RUN_ID.fullmatch(run_id) or
                     not RUN_ID.fullmatch(args.qualification_run_id or "") or
+                    not RUN_ID.fullmatch(args.admission_run_id or "") or
                     not PLATFORM["SHA"].fullmatch(args.evidence_source_sha or "") or
                     args.capture_run_id or args.reviewed_snapshot_sha256):
                 raise ValueError("unreviewed capture inputs")
             capture(store, args.expected_sha, args.evidence_source_sha,
-                    run_id, args.qualification_run_id, config)
+                    run_id, args.qualification_run_id, args.admission_run_id, config)
         else:
             if (not RUN_ID.fullmatch(args.capture_run_id or "") or
                     not SHA256.fullmatch(args.reviewed_snapshot_sha256 or "") or
-                    args.qualification_run_id or args.evidence_source_sha):
+                    args.qualification_run_id or args.admission_run_id or
+                    args.evidence_source_sha):
                 raise ValueError("unreviewed approval inputs")
             approve(store, args.expected_sha, args.capture_run_id,
                     args.reviewed_snapshot_sha256, config)

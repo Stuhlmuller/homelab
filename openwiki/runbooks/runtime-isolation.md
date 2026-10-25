@@ -82,11 +82,16 @@ privately, and confirms the Pod is absent before a placement can be admitted.
 An orphaned probe has a protected, UID-bound `firewall-baseline-recover` stage
 using the original private ownership marker.
 The capture does not authorize admission. After private review, protected
-[`placement`](../../scripts/network-policy-placement.py) binds the same-current-main capture version and checksum to fresh
-Node/Pod identities, Pod requests, two-minute node metrics, and kubelet nodefs
-space, then writes one versioned `placement.json`. Admission requires placement
-under 30 minutes old and baseline capture under one hour old. It fails below the reviewed
-enforcer/fixture budget plus 128 MiB/100m reserve or 5 GiB filesystem free.
+[`placement`](../../scripts/network-policy-placement.py) binds the capture
+version and checksum from current `main` to fresh Node/Pod identities, Pod
+requests, two-minute node metrics, and kubelet nodefs
+space, then writes one immutable, versioned receipt per run at
+`receipts/<source-sha>/placement/<placement-run-id>.json`. A fresh run can
+replace expired evidence on unchanged `main` without rewriting earlier receipts;
+an expired baseline needs a new reviewed capture first.
+Admission selects the run and exact S3 version, requires placement under
+30 minutes old and baseline capture under one hour old, and fails below the
+reviewed enforcer/fixture budget plus 128 MiB/100m reserve or 5 GiB filesystem free.
 Rules and usage can change after capture; recheck before admission.
 The [network-policy runbook](../../clusters/homelab/platform/network-policy/README.md)
 describes the Node identity and separate placement review gates.
@@ -178,6 +183,12 @@ requested and Harbor exporter plus system Pods still present. A later
 PostgreSQL move to `acer` remains backup-gated. After source merges, verify
 Argo, endpoints, client paths, and fresh node capacity before treating the
 evacuation as live or admitting a canary.
+
+The planned enforcer and fixtures have 704 MiB in memory limits plus a 128 MiB
+reserve, so pre-canary measured use must be at most 476 MiB of the observed
+1,308 MiB allocatable. The 2026-10-26 measurement exceeds that gate; re-measure
+after any declared evacuation, and do not lower the guard without hardware
+evidence.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
@@ -212,14 +223,23 @@ remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
 
 The protected `canary-admit` source path requires a fresh measured placement
-receipt and exact Node and system Pod identities. It re-reads the bound firewall
+receipt selected by run ID and exact S3 version, plus exact Node and system Pod
+identities. It re-reads the bound firewall
 capture and repeats Pod, metrics, node filesystem, and headroom checks before
 mutation. It checks that the enforcer, cleanup Pods, and fixture traffic are
 absent, then adds the dedicated
 `NoSchedule` taint before the selector label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
-the taint. After a qualifying traffic probe, exact reviewed GitOps commits
+the taint. If admission changed the Node but
+its final receipt upload failed, protected `canary-admit-recover` uses the
+immutable attempt and selected placement version. A same-run privileged probe
+confirms the host firewall remains empty and deletes its owned Pod before
+UID/resource-version guarded removal of only the canary label and taint. It
+works after placement expiry, under the original exact current `main` SHA.
+An orphaned recovery probe uses the protected `firewall-baseline-recover`
+token/UID deletion path with its recovery run and admission IDs.
+After a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
@@ -228,7 +248,10 @@ inputs. The static gate accepts only five exact policy/canary source
 phases; private receipts and live checks still gate protected operations.
 Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent
-before ownership capture. The owner reviews the private full firewall snapshot
+before ownership capture. Capture loads the successful admission receipt by
+run ID, checks its selected placement run/version, and carries that selection
+through ownership approval, cleanup, and release. The owner reviews the private
+full firewall snapshot
 and freshly approves its digest before `owned-cleanup` can delete those
 objects. Capture through release require a complete node Pod inventory
 matching the reviewed system DaemonSet UIDs plus the validated cleanup Pod

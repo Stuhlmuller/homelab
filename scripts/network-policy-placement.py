@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import runpy
 import subprocess
@@ -228,7 +229,11 @@ def execute(args):
     store.store.check()
     capture, digest, version = read_baseline(store, args.expected_sha, args.baseline_run_id)
     identity, measured = live_capacity(config, capture, args.expected_sha)
+    run_id = os.environ["GITHUB_RUN_ID"]
+    if not re.fullmatch(r"[1-9][0-9]*", run_id):
+        raise ValueError("placement run ID is invalid")
     record = {"format": 1, "verified": True, "sourceSha": args.expected_sha,
+              "placementRunId": run_id,
               "node": NODE, "canaryNode": NODE, "nodeUid": identity[0],
               "bootID": identity[1], "measured": True,
               "isolatedTaint": config["canary"]["taint"],
@@ -242,7 +247,8 @@ def execute(args):
               "baselineCaptureSha256": digest, "baselineCaptureVersionId": version,
               "capacity": measured}
     CANARY["validate_placement"](record, config, args.expected_sha, True)
-    key = f"openclaw-enterprise/platform/receipts/{args.expected_sha}/placement.json"
+    key = (f"openclaw-enterprise/platform/receipts/{args.expected_sha}/"
+           f"placement/{run_id}.json")
     store.write_once(key, record, 1048576)
     CLEANUP["write_record"](output, record)
     return record
@@ -255,8 +261,19 @@ def check(args):
         raise ValueError("reviewed placement path is required")
     placement = PLATFORM["read_private_json"](placement_path)
     CANARY["validate_placement"](placement, config, args.expected_sha, True)
+    if (not re.fullmatch(r"[1-9][0-9]*", args.placement_run_id or "") or
+            not isinstance(args.placement_version_id, str) or
+            args.placement_version_id in {"", "null"} or
+            placement.get("placementRunId") != args.placement_run_id):
+        raise ValueError("selected placement run or version differs")
     store = OWNERSHIP["PrivateStore"](args.bucket)
     store.store.check()
+    key = (f"openclaw-enterprise/platform/receipts/{args.expected_sha}/"
+           f"placement/{args.placement_run_id}.json")
+    if (store.version(key, True) != args.placement_version_id or
+            json.loads(store.read(key, 1048576)) != placement or
+            store.version(key, True) != args.placement_version_id):
+        raise ValueError("selected placement version or content differs")
     capture, digest, version = read_baseline(
         store, args.expected_sha, placement["baselineRunId"])
     if (placement["nodeUid"] != capture["nodeUid"] or
@@ -285,6 +302,8 @@ def main():
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check-placement", type=Path)
+    parser.add_argument("--placement-run-id")
+    parser.add_argument("--placement-version-id")
     args = parser.parse_args()
     try:
         if args.check_placement:
@@ -292,7 +311,8 @@ def main():
                 raise ValueError("placement check accepts only its reviewed receipt")
             check(args)
         else:
-            if not args.output or not args.baseline_source_sha or not args.baseline_run_id:
+            if (not args.output or not args.baseline_source_sha or not args.baseline_run_id or
+                    args.placement_run_id or args.placement_version_id):
                 raise ValueError("placement output and baseline source are required")
             execute(args)
     except (OSError, ValueError, KeyError, TypeError, IndexError,

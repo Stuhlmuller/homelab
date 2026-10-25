@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Admit or release the reviewed kube-router canary Node in protected CI."""
+"""Admit, release, or recover the reviewed kube-router canary Node in protected CI."""
 
 import argparse
 import json
@@ -49,12 +49,12 @@ def node_state(config, placement):
 def require_exclusive_canary_label(config, placement, selected):
     listing = CLEANUP["kubernetes_json"]("get", "nodes", "-l", f"{CANARY}=true",
                                          "--chunk-size=0")
-    if (not isinstance(listing, dict) or not isinstance(listing.get("items"), list) or
-            not isinstance(listing.get("metadata", {}), dict) or
-            listing.get("metadata", {}).get("continue")):
-        raise ValueError("canary label inventory is incomplete")
+    try:
+        items = CLEANUP["complete_items"](listing, "canary label")
+    except ValueError as exc:
+        raise ValueError("canary label inventory is incomplete") from exc
     matches = []
-    for item in listing["items"]:
+    for item in items:
         metadata = item.get("metadata") if isinstance(item, dict) else None
         labels = metadata.get("labels") if isinstance(metadata, dict) else None
         if (not isinstance(labels, dict) or labels.get(CANARY) != "true" or
@@ -88,8 +88,9 @@ def require_runtime_absent(admit):
         if daemonset.strip():
             raise ValueError("firewall DaemonSet must be absent")
         pods = CLEANUP["kubernetes_json"]("-n", "kube-system", "get", "pods", "-l",
-                                          f"app.kubernetes.io/name={name}")
-        if pods.get("items"):
+                                          f"app.kubernetes.io/name={name}",
+                                          "--chunk-size=0")
+        if CLEANUP["complete_items"](pods, "firewall DaemonSet Pod"):
             raise ValueError("firewall DaemonSet Pod still exists")
     namespace = CLEANUP["command"]("kubectl", "--request-timeout=20s", "get", "namespace",
                                    "network-policy-canary", "--ignore-not-found", "-o", "json")
@@ -109,11 +110,15 @@ def patch(node, operations, source_sha):
 
 
 def require_fresh_capacity(args, directory):
-    if not isinstance(args.bucket, str) or not args.bucket:
-        raise ValueError("canary admission requires the reviewed backup bucket")
+    if (not isinstance(args.bucket, str) or not args.bucket or
+            not re.fullmatch(r"[1-9][0-9]*", args.placement_run_id or "") or
+            not isinstance(args.placement_version_id, str) or
+            args.placement_version_id in {"", "null"}):
+        raise ValueError("canary admission requires the selected placement version")
     subprocess.run([sys.executable, "-I", str(ROOT / "scripts/network-policy-placement.py"),
                     "--config", str(args.config), "--expected-sha", args.expected_sha,
-                    "--bucket", args.bucket,
+                    "--bucket", args.bucket, "--placement-run-id", args.placement_run_id,
+                    "--placement-version-id", args.placement_version_id,
                     "--check-placement", str(directory / "placement.json")],
                    cwd=ROOT, check=True, timeout=300)
 
@@ -127,6 +132,8 @@ def validate_placement(placement, config, source_sha, fresh):
             placement.get("measured") is not True or
             placement.get("isolatedTaint") != config["canary"]["taint"] or
             placement.get("firewallBaselineEmpty") is not True or
+            not isinstance(placement.get("placementRunId"), str) or
+            not re.fullmatch(r"[1-9][0-9]*", placement["placementRunId"]) or
             placement.get("baselineSourceSha") != source_sha or
             not re.fullmatch(r"[1-9][0-9]*", str(placement.get("baselineRunId", ""))) or
             not re.fullmatch(r"[0-9a-f]{64}",
@@ -137,6 +144,16 @@ def validate_placement(placement, config, source_sha, fresh):
             not isinstance(placement.get("nodeUid"), str) or not placement["nodeUid"] or
             not isinstance(placement.get("bootID"), str) or not placement["bootID"]):
         raise ValueError("reviewed placement and empty firewall baseline are required")
+    expected = placement.get("systemDaemonSetPods")
+    if (not isinstance(expected, list) or
+            any(not isinstance(pod, dict) or
+                set(pod) != {"namespace", "name", "uid"} or
+                pod.get("namespace") not in SYSTEM_NAMESPACES or
+                any(not isinstance(value, str) or not value
+                    for value in pod.values()) for pod in expected) or
+            len({(pod["namespace"], pod["name"], pod["uid"])
+                 for pod in expected}) != len(expected)):
+        raise ValueError("reviewed system DaemonSet Pod identities are required")
     if fresh:
         PLATFORM["fresh_recovery_time"](placement.get("capturedAt"))
         baseline_time = placement.get("baselineCapturedAt")
@@ -152,16 +169,6 @@ def validate_placement(placement, config, source_sha, fresh):
         if (captured > placement_time or
                 (datetime.now(timezone.utc) - placement_time).total_seconds() > 1800):
             raise ValueError("reviewed placement is stale")
-        expected = placement.get("systemDaemonSetPods")
-        if (not isinstance(expected, list) or
-                any(not isinstance(pod, dict) or
-                    set(pod) != {"namespace", "name", "uid"} or
-                    pod.get("namespace") not in SYSTEM_NAMESPACES or
-                    any(not isinstance(value, str) or not value
-                        for value in pod.values()) for pod in expected) or
-                len({(pod["namespace"], pod["name"], pod["uid"])
-                     for pod in expected}) != len(expected)):
-            raise ValueError("reviewed system DaemonSet Pod identities are required")
 
 
 def verify_live_pods(config, placement):
@@ -205,6 +212,9 @@ def validate_cleanup(cleanup, ownership, placement, config, source_sha):
             ownership.get("node") != config["canary"]["node"] or
             ownership.get("nodeUid") != placement["nodeUid"] or
             ownership.get("bootID") != placement["bootID"] or
+            ownership.get("placementRunId") != placement.get("placementRunId") or
+            not isinstance(ownership.get("placementVersionId"), str) or
+            ownership["placementVersionId"] in {"", "null"} or
             not isinstance(ownership.get("captureRunId"), str) or
             not re.fullmatch(r"[1-9][0-9]*", ownership["captureRunId"]) or
             not re.fullmatch(r"[0-9a-f]{64}", str(ownership.get("snapshotSha256", ""))) or
@@ -212,6 +222,7 @@ def validate_cleanup(cleanup, ownership, placement, config, source_sha):
             not ownership["reviewedAt"]):
         raise ValueError("reviewed firewall ownership receipt is required for release")
     validate_placement(placement, config, ownership["evidenceSourceSha"], False)
+    CLEANUP["require_placement_selection"](ownership, placement)
     CLEANUP["require_firewall_removal_transition"](ownership["evidenceSourceSha"], source_sha)
     if (not isinstance(cleanup, dict) or cleanup.get("format") != 1 or
             cleanup.get("stage") != "owned-firewall-cleanup" or
@@ -256,6 +267,134 @@ def wait_for_cleanup_pod_deletion(config, placement, pod_name, timeout_seconds=1
         time.sleep(2)
 
 
+def validate_recovery_receipts(attempt, proof, placement, args, config):
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    admission_run_id = getattr(args, "admission_run_id", None)
+    placement_run_id = getattr(args, "placement_run_id", None)
+    placement_version_id = getattr(args, "placement_version_id", None)
+    if (not isinstance(admission_run_id, str) or
+            not re.fullmatch(r"[1-9][0-9]*", admission_run_id) or
+            not isinstance(placement_run_id, str) or
+            not re.fullmatch(r"[1-9][0-9]*", placement_run_id) or
+            not isinstance(placement_version_id, str) or
+            placement_version_id in {"", "null"} or
+            not re.fullmatch(r"[1-9][0-9]*", run_id) or
+            placement["placementRunId"] != placement_run_id):
+        raise ValueError("canary recovery selection is invalid")
+    identity = {"node": config["canary"]["node"],
+                "nodeUid": placement["nodeUid"], "bootID": placement["bootID"]}
+    selection = {"placementRunId": placement_run_id,
+                 "placementVersionId": placement_version_id}
+    if (not isinstance(attempt, dict) or attempt.get("format") != 1 or
+            attempt.get("stage") != "canary-admit" or
+            attempt.get("status") != "attempted" or
+            attempt.get("verified") is not False or
+            attempt.get("sourceSha") != args.expected_sha or
+            attempt.get("runId") != admission_run_id or
+            any(attempt.get(key) != value for key, value in
+                (identity | selection).items())):
+        raise ValueError("selected admission attempt is missing or unrelated")
+    capture_key = (f"openclaw-enterprise/platform/{args.expected_sha}/{run_id}/"
+                   "firewall-recovery-capture.json")
+    if (not isinstance(proof, dict) or proof.get("format") != 1 or
+            proof.get("stage") != "firewall-recovery-proof" or
+            proof.get("status") != "verified" or proof.get("verified") is not True or
+            proof.get("sourceSha") != args.expected_sha or
+            proof.get("runId") != run_id or
+            proof.get("admissionRunId") != admission_run_id or
+            any(proof.get(key) != value for key, value in
+                (identity | selection).items()) or
+            proof.get("firewallBaselineEmpty") is not True or
+            proof.get("ownedChains") != 0 or proof.get("ownedSets") != 0 or
+            proof.get("podDeleted") is not True or
+            not isinstance(proof.get("snapshotSha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", proof["snapshotSha256"]) or
+            proof.get("captureKey") != capture_key):
+        raise ValueError("same-run empty firewall recovery proof is missing or unrelated")
+    completed = proof.get("completedAt")
+    if not isinstance(completed, str):
+        raise ValueError("firewall recovery proof has no completion time")
+    try:
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(completed)).total_seconds()
+    except (TypeError, ValueError) as error:
+        raise ValueError("firewall recovery proof has invalid completion time") from error
+    if not 0 <= age <= 300:
+        raise ValueError("firewall recovery proof is stale or in the future")
+
+
+def recover(args):
+    if args.config.resolve() != CONFIG or not PLATFORM["SHA"].fullmatch(args.expected_sha):
+        raise ValueError("canary recovery requires committed input and exact source SHA")
+    config = PLATFORM["validate_config"](json.loads(args.config.read_text()))
+    if config["canary"]["node"] is None:
+        raise ValueError("no admitted canary Node configured")
+    PLATFORM["protected_context"](args.expected_sha)
+    require_current_main(args.expected_sha)
+    directory = PLATFORM["private_directory"](args.receipt_dir)
+    placement = PLATFORM["read_private_json"](directory / "placement.json")
+    validate_placement(placement, config, args.expected_sha, False)
+    attempt = PLATFORM["read_private_json"](directory / "admission-attempt.json")
+    proof = PLATFORM["read_private_json"](directory / "firewall-recovery-proof.json")
+    validate_recovery_receipts(attempt, proof, placement, args, config)
+    output = PLATFORM["private_output"](args.output)
+    if output.exists() or output.is_symlink():
+        raise ValueError("canary recovery output already exists")
+    node, labeled, tainted = node_state(config, placement)
+    if labeled and not tainted:
+        raise ValueError("unisolated canary label is not recoverable")
+    require_runtime_absent(True)
+    verify_live_pods(config, placement)
+    require_exclusive_canary_label(config, placement, labeled)
+    record = {"format": 1, "stage": "canary-admit-recover", "status": "started",
+              "verified": False, "sourceSha": args.expected_sha,
+              "runId": os.environ["GITHUB_RUN_ID"],
+              "admissionRunId": args.admission_run_id,
+              "placementRunId": args.placement_run_id,
+              "placementVersionId": args.placement_version_id,
+              "firewallCaptureKey": proof["captureKey"],
+              "firewallSnapshotSha256": proof["snapshotSha256"],
+              "node": config["canary"]["node"], "nodeUid": placement["nodeUid"],
+              "bootID": placement["bootID"],
+              "startedAt": datetime.now(timezone.utc).isoformat()}
+    CLEANUP["write_record"](output, record)
+    try:
+        if labeled:
+            index = next(index for index, item in enumerate(node["spec"]["taints"])
+                         if item.get("key") == CANARY)
+            patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
+                         {"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
+                         {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
+            node, labeled, tainted = node_state(config, placement)
+            if labeled or not tainted:
+                raise ValueError("canary recovery label readback differs")
+            require_runtime_absent(True)
+            verify_live_pods(config, placement)
+            require_exclusive_canary_label(config, placement, False)
+        if tainted:
+            index = next(index for index, item in enumerate(node["spec"]["taints"])
+                         if item.get("key") == CANARY)
+            patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
+                         {"op": "remove", "path": f"/spec/taints/{index}"}],
+                  args.expected_sha)
+        require_current_main(args.expected_sha)
+        node, labeled, tainted = node_state(config, placement)
+        if labeled or tainted:
+            raise ValueError("canary recovery Node readback differs")
+        require_runtime_absent(True)
+        verify_live_pods(config, placement)
+        require_exclusive_canary_label(config, placement, False)
+        record.update({"status": "verified", "verified": True,
+                       "resourceVersion": node["metadata"]["resourceVersion"],
+                       "completedAt": datetime.now(timezone.utc).isoformat()})
+    except (OSError, ValueError, KeyError, TypeError, StopIteration,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        record.update({"status": "interrupted", "verified": False})
+        CLEANUP["write_record"](output, record, replace=True)
+        raise
+    CLEANUP["write_record"](output, record, replace=True)
+    return record
+
+
 def execute(args):
     if args.config.resolve() != CONFIG or not PLATFORM["SHA"].fullmatch(args.expected_sha):
         raise ValueError("canary stage requires committed input and exact source SHA")
@@ -267,11 +406,15 @@ def execute(args):
     directory = PLATFORM["private_directory"](args.receipt_dir)
     placement = PLATFORM["read_private_json"](directory / "placement.json")
     if args.action == "release":
+        if args.placement_run_id or args.placement_version_id:
+            raise ValueError("release selection is bound by reviewed ownership")
         validate_cleanup(PLATFORM["read_private_json"](directory / "cleanup.json"),
                          PLATFORM["read_private_json"](directory / "firewall-ownership.json"),
                          placement, config, args.expected_sha)
     else:
         validate_placement(placement, config, args.expected_sha, True)
+        if placement["placementRunId"] != args.placement_run_id:
+            raise ValueError("selected placement run differs from loaded receipt")
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         raise ValueError("canary output already exists")
@@ -295,6 +438,9 @@ def execute(args):
               "node": config["canary"]["node"], "nodeUid": placement["nodeUid"],
               "bootID": placement["bootID"], "runId": os.environ["GITHUB_RUN_ID"],
               "startedAt": datetime.now(timezone.utc).isoformat()}
+    if args.action == "admit":
+        record.update(placementRunId=args.placement_run_id,
+                      placementVersionId=args.placement_version_id)
     CLEANUP["write_record"](output, record)
     try:
         if args.action == "admit":
@@ -357,14 +503,23 @@ def execute(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("admit", "release"))
+    parser.add_argument("action", choices=("admit", "release", "recover"))
     parser.add_argument("--config", type=Path, default=CONFIG)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--receipt-dir", type=Path, required=True)
     parser.add_argument("--bucket")
+    parser.add_argument("--placement-run-id")
+    parser.add_argument("--placement-version-id")
+    parser.add_argument("--admission-run-id")
     parser.add_argument("--output", type=Path, required=True)
     try:
-        execute(parser.parse_args())
+        args = parser.parse_args()
+        if args.action == "recover":
+            recover(args)
+        else:
+            if args.admission_run_id:
+                raise ValueError("admission run applies only to canary recovery")
+            execute(args)
         print("Canary Node stage verified; private receipt retained")
         return 0
     except (OSError, ValueError, KeyError, TypeError, StopIteration, json.JSONDecodeError,
