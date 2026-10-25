@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -129,29 +130,34 @@ test('report copy refuses oversized input before publishing on the ledger', () =
   }
 });
 
-test('runner streams a bounded log without forwarding child output to Pod logs', async () => {
+test('runner keeps bounded private logs and restricted Pod output', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'renovate-report-stream-'));
   try {
     const script = path.join(directory, 'fixture.js');
     const log = path.join(directory, 'fixture.log');
+    const harness = [
+      "const fs = require('node:fs');",
+      'const runner = require(' + JSON.stringify(path.join(root, 'acceptance-report-runner.js')) + ');',
+      "const descriptor = fs.openSync(process.argv[2], 'wx', 0o600);",
+      'runner.runBounded(process.argv[1], descriptor, 1024, process.cwd())',
+      '  .then(({ code, signal }) => { if (code || signal) process.exitCode = 2; })',
+      '  .catch((error) => { console.error(error.message); process.exitCode = 3; })',
+      '  .finally(() => fs.closeSync(descriptor));',
+    ].join('\n');
     fs.writeFileSync(script, 'process.stdout.write("normal-out"); process.stderr.write("normal-err");\n');
-    let descriptor = fs.openSync(log, 'wx', 0o600);
-    try {
-      assert.deepEqual(await runner.runBounded(script, descriptor, 1024, directory),
-        { code: 0, signal: null });
-    } finally {
-      fs.closeSync(descriptor);
-    }
+    const success = spawnSync(process.execPath, ['-e', harness, script, log],
+      { cwd: directory, encoding: 'utf8' });
+    assert.equal(success.status, 0, success.stderr);
+    assert.equal(success.stdout, 'normal-out');
+    assert.equal(success.stderr, 'normal-err');
     assert.equal(fs.readFileSync(log, 'utf8'), 'normal-outnormal-err');
     fs.writeFileSync(script, 'process.stdout.write("x".repeat(4096));\n');
-    descriptor = fs.openSync(path.join(directory, 'overflow.log'), 'wx', 0o600);
-    try {
-      await assert.rejects(runner.runBounded(script, descriptor, 1024, directory),
-        /report-log-too-large/);
-    } finally {
-      fs.closeSync(descriptor);
-    }
-    assert.ok(fs.statSync(path.join(directory, 'overflow.log')).size <= 1024);
+    const overflow = path.join(directory, 'overflow.log');
+    const failure = spawnSync(process.execPath, ['-e', harness, script, overflow],
+      { cwd: directory, encoding: 'utf8' });
+    assert.notEqual(failure.status, 0);
+    assert.match(failure.stderr, /report-log-too-large/);
+    assert.ok(fs.statSync(overflow).size <= 1024);
     assert.equal(fs.existsSync(path.join(directory, 'fixture.receipt.json')), false);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });

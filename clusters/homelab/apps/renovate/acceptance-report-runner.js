@@ -97,6 +97,9 @@ function runBounded(script, logFd, limit = maxEvidenceBytes, cwd = '/usr/src/app
       cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
+    // Keep the primary runner's restricted Pod logs for discovery and failures.
+    child.stdout.pipe(process.stdout, { end: false });
+    child.stderr.pipe(process.stderr, { end: false });
     let written = 0;
     let failure;
     function stop(message) {

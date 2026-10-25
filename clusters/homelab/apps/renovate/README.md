@@ -478,11 +478,13 @@ App token, cache, and dry-run or writer policy, and adds pinned Renovate
 and `prBlockedBy`. The wrapper sets umask `077`, captures bounded private
 logs and the report under a Pod UID, then seals a hash receipt only after
 Renovate exits successfully. A failed run, missing report, or malformed report
-creates no success receipt. Pod logs show aggregate counts or a safe failure
-class; raw reports and diagnostics stay on the local protected ledger, never
-in public output. The existing writer key remains mounted only as a Secret
-file and is not copied to the ledger. The local ledger volume constrains the
-hourly Pod to `acer`. Before starting the seven-day window, verify memory
+creates no success receipt. Restricted primary Pod logs retain Renovate's
+per-repository outcomes and failure details for the operator and schedule
+collector; the wrapper also keeps a bounded private copy on the ledger.
+Never publish those logs or the raw report. The existing writer key remains
+mounted only as a Secret file and is not copied to the ledger. The local
+ledger volume constrains the hourly Pod to `acer`. Before starting the
+seven-day window, verify memory
 headroom and two report-enabled scheduled Jobs on that node, including
 completion before the 40-minute deadline, no restarts or MemoryPressure, and
 the expected hourly alerts. If this preflight fails, remove the patch through
