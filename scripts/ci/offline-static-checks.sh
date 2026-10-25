@@ -79,7 +79,7 @@ if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[
   exit 1
 fi
 if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
-  echo "The public PR plan job must not render live plan or state details." >&2
+  echo "The PR plan job must not render saved plan or state details." >&2
   exit 1
 fi
 if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
@@ -1098,7 +1098,7 @@ done <<'EOF'
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
-.github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
+.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
 EOF
 echo "::endgroup::"
 
