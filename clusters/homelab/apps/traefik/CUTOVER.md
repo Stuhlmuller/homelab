@@ -146,19 +146,25 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    afterward. Public record deletion follows those checks and the old maximum
    TTL wait described above.
 7. Once Funnel is reachable from outside the mesh and its root/admin paths fail,
-   preview and migrate the fixed GitHub callbacks:
+   preview the surviving GitHub callbacks and the unused helper retirement:
 
    ```sh
    python3 -I scripts/policy-bot-webhook.py
    python3 -I scripts/n8n-github-webhooks.py
+   python3 -I scripts/n8n-github-webhooks.py --retire-helper
    python3 -I scripts/policy-bot-webhook.py --execute --expected-sha '<merged-main-sha>'
    python3 -I scripts/n8n-github-webhooks.py --execute --expected-sha '<merged-main-sha>'
+   python3 -I scripts/n8n-github-webhooks.py --retire-helper --execute --expected-sha '<merged-main-sha>'
    ```
 
-   Policy Bot uses its existing GitHub App identity. n8n changes only repository
-   hooks `589400612` and `636944763`. Both helpers preserve secrets and settings,
-   preflight without triggering workflows, and save non-secret cutover receipts
-   under `~/.local/state/homelab`. Do not delete these receipts before acceptance.
+   Policy Bot uses its existing GitHub App identity. n8n keeps repository hook
+   `636944763` (Github Emergency Bot) and retires exact hook `589400612`
+   (inactive Codex Review Helper) without publishing its workflow. URL changes
+   preserve secrets and settings; retirement requires a fresh Emergency delivery,
+   deletes only the reviewed helper ID, then checks its absence and preserves
+   Emergency settings. The helpers preflight without triggering workflows and
+   save non-secret URL cutover receipts under `~/.local/state/homelab`. Do not
+   delete these receipts before acceptance.
    Policy Bot's safe GET preflight requires the POST-only hook's `404` plus one
    valid backend `X-Request-ID`; the unrouted root must return `404` without that
    header. This proves routing only, not HMAC acceptance. See the
@@ -170,8 +176,10 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    python3 -I scripts/n8n-github-webhooks.py --require-delivery
    ```
 
-   These checks never trigger an event or redelivery. Both delivery ID and
-   timestamp must be newer than the saved cutover. Old successes do not count.
+   These checks never trigger an event or redelivery. Both surviving callbacks
+   need delivery IDs and timestamps newer than their saved cutovers; the n8n
+   check also rejects a remaining helper ID or reused callback path. Old
+   successes do not count.
 8. Move each CI consumer only after its Tailscale trust, connectivity, RBAC, and
    real admission-denial checks pass. Cordium CI additionally needs the canonical
    native API path from the runner. Change the shared native operator transport

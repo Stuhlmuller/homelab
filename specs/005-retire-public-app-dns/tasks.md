@@ -123,6 +123,11 @@ The affected DNS checks above passed independently.
 `2f94bec3f4d42b4759bfe5cab566633eaa7cb6d3`; no public DNS records were
 deleted. Revalidate current `main` before the live cutover because later changes
 affect the private-name inventory and readiness checks.
+- [ ] T026 Before T018's public-callback signoff, merge the guarded
+  repository-owned retirement of unused Codex Review Helper hook `589400612`,
+  run its exact-ID deletion from clean reviewed `main`, then verify the ID and
+  callback path are absent while fresh Github Emergency Bot and Policy Bot
+  deliveries still succeed; leave the inactive n8n workflow unpublished.
 - [ ] T018 From clean reviewed `main`, capture read-only Argo, signed resolver,
   all 29 ordinary tailnet DNS answers, the original 27 migration HTTPS routes and declared/live
   zero-replica suspensions, Fleet, Harbor node pulls, native API, Cordium
@@ -172,7 +177,7 @@ completing evidence or deleting records.
 - **US1 (Phase 3)** follows foundational; T005 follows T004, then T006 checks execution behavior.
 - **US2 (Phase 4)** uses the US1 deletion path but its preservation fixtures and documentation can be prepared in parallel.
 - **US3 (Phase 5)** uses the same 26-name set and deletion path; T011–T013 follow failing safety tests T010. Documentation can proceed in parallel.
-- **Polish and live acceptance (Phase 6)** follows all source changes; T017 follows local validation, T018–T020 are read-only gates, T021 is the sole public DNS write, and T022–T023 follow its last deletion and previous TTL.
+- **Polish and live acceptance (Phase 6)** follows all source changes; T017 follows local validation, T026 precedes T018's callback signoff, T018–T020 are read-only gates, T021 is the sole public DNS write, and T022–T023 follow its last deletion and previous TTL.
 
 ### User Story Dependencies
 

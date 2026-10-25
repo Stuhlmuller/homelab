@@ -71,21 +71,27 @@ plain HTTP on the Service's port `5678`; TLS terminates at Traefik, so an HTTPS
 Service URL fails. The workload AuthorizationPolicy allows the n8n principal
 to call itself without widening other workload access.
 
-Move existing external registrations from `n8n-webhook.stinkyboi.com` to the
-Funnel host only after the [callback cutover gates](../traefik/CUTOVER.md).
-The fixed helper previews the two existing homelab GitHub hooks, `589400612`
-(Codex Review Helper) and `636944763` (Github Emergency Bot):
+Move the surviving external registration from `n8n-webhook.stinkyboi.com` to
+the Funnel host only after the [callback cutover gates](../traefik/CUTOVER.md).
+The helper previews the Github Emergency Bot hook `636944763` and the exact
+retirement of unused Codex Review Helper hook `589400612`:
 
 ```sh
 python3 -I scripts/n8n-github-webhooks.py
+python3 -I scripts/n8n-github-webhooks.py --retire-helper
 ```
 
-Its guarded `--execute` changes only those URL hosts, preserving paths, secrets,
-events and settings. It first requires root 404 and safe OPTIONS 204 responses
-for both POST-only hooks; it never POSTs or triggers redelivery. After cutover,
-`--require-delivery` requires newer delivery IDs and timestamps from the saved
-receipts. Historical success does not establish current callback acceptance.
-Keep the legacy Tunnel route until fresh signed deliveries pass.
+Its guarded `--execute` changes only the Emergency hook URL, preserving its
+path, secret, events, and settings. It requires root 404 and a safe OPTIONS 204
+response for that POST-only hook; it never POSTs or triggers redelivery.
+`--retire-helper --execute --expected-sha REVIEWED_MAIN_SHA` removes only the
+reviewed helper hook after a fresh successful Emergency delivery. Here
+`REVIEWED_MAIN_SHA` is the full reviewed current `main` commit. Repeating it
+after verified absence is a no-op. `--require-delivery` requires the retired
+ID and callback path to be absent and a newer successful Emergency delivery
+than its saved cutover receipt. Historical success does not establish current
+callback acceptance. Keep the legacy Tunnel route until the surviving Policy
+Bot and Emergency callbacks pass their fresh delivery checks.
 
 ## Database Readiness
 
@@ -135,8 +141,9 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 Expected route behavior: the editor is reachable on the mesh, and the Funnel
 host reaches n8n only under webhook prefixes. An unknown webhook path returns
 an n8n not-found response; a generic 404 without n8n webhook text does not prove
-backend reachability. Also require Funnel root/admin denial and fresh signed
-deliveries for both fixed GitHub hooks after their guarded URL change. The internal database-aware health request from the n8n pod should
+backend reachability. Also require Funnel root/admin denial, absence of the
+retired helper hook, and fresh signed deliveries for the surviving Emergency
+and Policy Bot callbacks. The internal database-aware health request from the n8n pod should
 print `200` after the AuthorizationPolicy syncs. HTTP 503 with `Database is not
 ready!` means the callback reached n8n but n8n cannot use PostgreSQL; inspect
 both pods and confirm the database-aware liveness probe replaces the stale n8n
@@ -145,7 +152,7 @@ process.
 ## Rollback
 
 Revert a failed application revision through GitOps while preserving the working
-Funnel URL and fixed external registrations. A transport rollback needs a
+Funnel URL and surviving external registrations. A transport rollback needs a
 separate reviewed route/URL change and fresh delivery verification; do not point
 public webhooks at the private editor or restore the deleted DNS writer.
 Retain the legacy routes until replacement acceptance. Preserve both the n8n
