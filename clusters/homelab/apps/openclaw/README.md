@@ -181,6 +181,20 @@ archive into Enterprise.
 
 ### T014 isolated legacy boot gate
 
+The protected `network-preflight` legacy stage checks whether the existing
+read-only retirement reader can create a rootless network namespace. Dispatch it
+only on exact current `main` with empty `baseline_ref` and `archive_ref`. It
+checks the stopped writer and reader identity, starts a disposable process
+namespace with only loopback, rejects routable interfaces and routes, and
+requires direct IPv4/IPv6 egress probes to return `ENETUNREACH` (an unsupported
+IPv6 address family is accepted only when the IPv4 probes and route checks pass).
+It does not copy
+state, start the old gateway, create a Kubernetes object, or prove that a later
+rehearsal Pod has the same seccomp and namespace behavior. A failed stage leaves
+T014 blocked; a successful stage is capability evidence only. The eventual
+isolated boot must repeat these checks in the same namespace that runs the
+pinned old image, with separate writable copies and no external deliveries.
+
 A read-only stopped-source review found 37 NAS symlinks. Nine absolute targets
 leave both archived roots. Six point into `/app`: `plugin-skills` links for
 `browser-automation`, `obsidian-vault-maintainer`, `wiki-maintainer`, and
@@ -195,7 +209,12 @@ remain unclassified until compared with retained evidence. The other three
 external targets are dangling in the reader; their individual dependencies
 and disposition also remain unclassified. The archive preserves each link,
 but no external target payload. Do not assume the baseline image recovers the
-gateway's exact contents or that the dangling links are harmless.
+gateway's exact contents or that the dangling links are harmless. The three
+dangling links point into absent `/home/node/.cache` Terraform provider caches.
+The pinned 2026.9.5 image lacks `@openclaw/discord`; the archived package is
+2026.5.22. A compatible boot also needs the complete global npm install tree
+and metadata for `@openclaw/discord@2026.9.5`, with the former writable
+overlay classified before claiming an exact recovery.
 
 Archive verification and the retained original PVCs do not pass T014. The
 reader restores into NAS scratch and does not start the old image. A rehearsal

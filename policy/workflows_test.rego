@@ -257,13 +257,13 @@ test_rejects_openclaw_operations_run_overrides if {
 		with_job_run_env(workflow, "legacy", {"BASH_ENV": "unreviewed"}),
 		with_job_run_env(workflow, "enterprise", {"ENV": "unreviewed"}),
 		with_job_run_env(workflow, "binding", {"BASH_ENV": "unreviewed"}),
-		with_step_run_setting(workflow, "legacy", 6, {"shell": "python"}),
+		with_step_run_setting(workflow, "legacy", 7, {"shell": "python"}),
 		with_step_run_setting(workflow, "enterprise", 3, {"shell": "python"}),
 		with_step_run_setting(workflow, "binding", 4, {"shell": "python"}),
 		with_step_run_setting(workflow, "enterprise", 3, {"working-directory": "unreviewed"}),
 		with_step_run_env(workflow, "static-policy", 0, {"BASH_ENV": "unreviewed"}),
-		with_step_run_env(workflow, "legacy", 6, {"BASH_ENV": "unreviewed"}),
-		with_step_run_env(workflow, "legacy", 6, {"UNREVIEWED": "value"}),
+		with_step_run_env(workflow, "legacy", 7, {"BASH_ENV": "unreviewed"}),
+		with_step_run_env(workflow, "legacy", 7, {"UNREVIEWED": "value"}),
 		with_step_run_env(workflow, "enterprise", 3, {"ENV": "unreviewed"}),
 	] {
 		violations := deny with input as candidate
@@ -275,7 +275,11 @@ test_rejects_openclaw_operations_run_overrides if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "581ab1f1c6bcf3c2941e9c5effc0629f64ce18a4a5b308b8a6d5b08bcd34fa38", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"actions": "read", "contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
@@ -288,6 +292,8 @@ test_rejects_changed_openclaw_legacy_operation if {
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "write", "id-token": "write"}),
 		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"actions": "read", "contents": "read", "id-token": "write"}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"steps": array.concat(array.slice(openclaw_operations_fixture.jobs.legacy.steps, 0, 5), [object.union(openclaw_operations_fixture.jobs.legacy.steps[5], {"if": "true"}), openclaw_operations_fixture.jobs.legacy.steps[6], openclaw_operations_fixture.jobs.legacy.steps[7]])})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"steps": array.concat(array.slice(openclaw_operations_fixture.jobs.legacy.steps, 0, 6), [object.union(openclaw_operations_fixture.jobs.legacy.steps[6], {"if": "true"}), openclaw_operations_fixture.jobs.legacy.steps[7]])})})}),
 		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"legacy": object.union(openclaw_operations_fixture.jobs.legacy, {"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "single"}})})}),
 	] {
 		violations := deny with input as candidate
@@ -299,8 +305,8 @@ test_rejects_changed_openclaw_legacy_operation if {
 test_rejects_short_openclaw_legacy_session if {
 	candidate := workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "read", "id-token": "write"})
 	legacy := candidate.jobs.legacy
-	short_credentials := object.union(legacy.steps[5], {"with": {"role-duration-seconds": 3600}})
-	short_job := object.union(legacy, {"steps": [legacy.steps[0], legacy.steps[1], legacy.steps[2], legacy.steps[3], legacy.steps[4], short_credentials, legacy.steps[6]]})
+	short_credentials := object.union(legacy.steps[6], {"with": {"role-duration-seconds": 3600}})
+	short_job := object.union(legacy, {"steps": [legacy.steps[0], legacy.steps[1], legacy.steps[2], legacy.steps[3], legacy.steps[4], legacy.steps[5], short_credentials, legacy.steps[7]]})
 	short_workflow := object.union(candidate, {"jobs": object.union(candidate.jobs, {"legacy": short_job})})
 	violations := deny with input as short_workflow
 	some msg in violations
@@ -377,7 +383,8 @@ if [[ "$RUN_STAGE" == resume-restore ]]; then
   export PRIOR_RUN_ID=39988927652
 fi
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'581ab1f1c6bcf3c2941e9c5effc0629f64ce18a4a5b308b8a6d5b08bcd34fa38  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
@@ -389,7 +396,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore"], "default": "none"},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore", "network-preflight"], "default": "none"},
 		"enterprise_stage": {"options": ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
 		"baseline_ref": {}, "archive_ref": {},
 	}}},
@@ -413,8 +420,9 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}},
 			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
 			{"name": "Verify Prior Restore Run", "env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "PRIOR_RUN_ID": "39988927652", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_resume_provenance_run},
-			{"name": "Verify Protected Inputs"},
-			{"name": "Configure AWS Credentials", "with": {"role-duration-seconds": 25200}}, {
+			{"name": "Verify Protected Inputs", "env": {"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": `test -n "$OCTELIUM_AUTH_TOKEN"`},
+			{"name": "Verify AWS Role Input", "if": "inputs.legacy_stage != 'network-preflight'", "env": {"AWS_APPLY_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}"}, "run": `test -n "$AWS_APPLY_ROLE_ARN"`},
+			{"name": "Configure AWS Credentials", "if": "inputs.legacy_stage != 'network-preflight'", "with": {"role-duration-seconds": 25200}}, {
 			"name": "Run Legacy Stage",
 				"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,
