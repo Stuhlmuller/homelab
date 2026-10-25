@@ -19,7 +19,7 @@ MANIFEST = ROOT / "scripts/config/harbor-helm-charts.json"
 ISTIO_UPGRADE_MANIFEST = ROOT / "scripts/config/harbor-istio-1.28.10-charts.json"
 SOURCES = ROOT / "scripts/config/harbor-image-charts.json"
 ISTIO_UPGRADE_CHARTS = {"base", "cni", "gateway", "istiod", "ztunnel"}
-ISTIO_REPOSITORY = "https://istio-release.storage.googleapis.com/charts"
+ISTIO_REPOSITORY = "https://blob.istio.io/istio-release/charts"
 
 
 def validate(manifest, sources):
