@@ -19,6 +19,7 @@ manifest = json.loads(publisher.MANIFEST.read_text())
 sources = json.loads(publisher.SOURCES.read_text())
 assert len(publisher.validate(manifest, sources)) == 28
 istio = json.loads(publisher.ISTIO_UPGRADE_MANIFEST.read_text())
+assert publisher.ISTIO_REPOSITORY == "https://blob.istio.io/istio-release/charts"
 assert [row["chart"] for row in publisher.validate_istio_upgrade(istio)] == [
     "base", "cni", "gateway", "istiod", "ztunnel"]
 assert publisher.missing_harbor_artifact(

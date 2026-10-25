@@ -20,8 +20,11 @@ and re-run the protected publication workflow before asking Argo CD to sync.
 
 The pending Istio 1.28.10 hop has a separate, five-chart inventory in
 `scripts/config/harbor-istio-1.28.10-charts.json`; the gateway chart serves both
-gateway Applications. Its package hashes were verified against the upstream
-Istio Helm repository. After this publication contract reaches `main`, dispatch
+gateway Applications. Its package hashes were verified against Istio's
+`https://blob.istio.io/istio-release/charts` repository. Istio's
+[hosting migration notice](https://istio.io/latest/blog/2026/retirement-of-gcp/)
+retains that endpoint and retires the older GCS chart endpoint in December 2026.
+After this publication contract reaches `main`, dispatch
 `harbor-helm-charts.yml` with `chart_scope=istio-1.28.10` and `expected_sha` set
 to that exact current `main` SHA. The workflow checks current `main` before
 obtaining credentials and before each missing-chart push. It verifies each
