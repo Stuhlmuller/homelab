@@ -23,7 +23,7 @@ account="${BASH_REMATCH[1]}"
 image="$(yq -r 'select(.kind == "Deployment" and .metadata.name == "langfuse-postgres") | .spec.template.spec.containers[] | select(.name == "postgres") | .image' clusters/homelab/apps/langfuse/datastores.yaml)"
 [[ "$image" =~ ^pgvector/pgvector:pg17@sha256:[0-9a-f]{64}$ ]] || exit 1
 [[ "$(kubectl auth can-i get deployments -n langfuse)" == yes ]] || exit 1
-[[ "$(kubectl auth can-i get pods -n langfuse)" == yes ]] || exit 1
+[[ "$(kubectl auth can-i list pods -n langfuse)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i get replicasets -n langfuse)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i get persistentvolumeclaims -n langfuse)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i get persistentvolumes)" == yes ]] || exit 1
@@ -71,8 +71,8 @@ binding_record="$(select_binding)"
 IFS=$'\t' read -r claim_uid pv_name pv_uid <<<"$binding_record"
 
 select_pod() {
-  kubectl -n langfuse get pods --chunk-size=0 \
-    -l 'app.kubernetes.io/name=langfuse,app.kubernetes.io/instance=langfuse,app.kubernetes.io/component=postgresql' -o json |
+  # kubectl get pods -o json emits a generic List without the server's list resourceVersion.
+  kubectl get --raw '/api/v1/namespaces/langfuse/pods?labelSelector=app.kubernetes.io%2Fname%3Dlangfuse%2Capp.kubernetes.io%2Finstance%3Dlangfuse%2Capp.kubernetes.io%2Fcomponent%3Dpostgresql' |
     jq -er --arg image "$image" '
       select(.kind == "PodList" and
         (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and

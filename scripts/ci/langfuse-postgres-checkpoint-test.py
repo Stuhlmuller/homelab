@@ -14,6 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/ci/langfuse-postgres-checkpoint.sh"
 IMAGE = re.search(r"pgvector/pgvector:pg17@sha256:[0-9a-f]{64}",
                   (ROOT / "clusters/homelab/apps/langfuse/datastores.yaml").read_text()).group()
+PODS_PATH = ("/api/v1/namespaces/langfuse/pods?labelSelector="
+             "app.kubernetes.io%2Fname%3Dlangfuse%2C"
+             "app.kubernetes.io%2Finstance%3Dlangfuse%2C"
+             "app.kubernetes.io%2Fcomponent%3Dpostgresql")
 
 MOCK = r'''#!/usr/bin/env python3
 import base64, hashlib, json, os, sys
@@ -33,6 +37,7 @@ if name == "gh":
 elif name == "kubectl":
     if args[:2] == ["auth", "can-i"]:
         print("no" if (mode == "deny-exec" and "pods/exec" in args) or
+              (mode == "deny-pod-list" and args[2:4] == ["list", "pods"]) or
               (mode == "deny-pv" and "persistentvolumes" in args) else "yes")
     elif "get" in args and "deployment" in args:
         print(json.dumps({"metadata": {"uid": "c" * 36, "generation": 1}, "spec": {"replicas": 1,
@@ -59,7 +64,10 @@ elif name == "kubectl":
                        "claimRef": {"namespace": "langfuse", "name": "langfuse-postgres-data",
                                     "uid": "2" * 36 if mode == "wrong-pv-owner" else "e" * 36}},
               "status": {"phase": "Bound"}}))
-    elif "get" in args and "pods" in args:
+    elif args[:2] == ["get", "--raw"] or ("get" in args and "pods" in args):
+        raw = args[:2] == ["get", "--raw"]
+        if raw:
+            assert args == ["get", "--raw", os.environ["TEST_PODS_PATH"]]
         pod = {"metadata": {"name": "langfuse-postgres-abc", "uid": "a" * 36,
                "ownerReferences": [{"controller": True, "kind": "ReplicaSet",
                                     "name": "langfuse-postgres-abc", "uid": "b" * 36}]},
@@ -68,8 +76,10 @@ elif name == "kubectl":
                        "volumeMounts": [{"name": "data", "mountPath": "/var/lib/postgresql/data"}]}],
                         "volumes": [{"name": "data", "persistentVolumeClaim":
                                      {"claimName": "wrong-data" if mode == "wrong-pvc" else "langfuse-postgres-data"}}]}}
-        print(json.dumps({"kind": "PodList", "metadata": {
-            "resourceVersion": "0" if mode == "zero-list-version" else "12345",
+        print(json.dumps({"kind": "List" if not raw or mode == "generic-cli-list" else "PodList",
+            "metadata": {
+            "resourceVersion": "" if not raw or mode == "generic-cli-list" else
+                               "0" if mode == "zero-list-version" else "12345",
             "continue": "next-page" if mode == "partial-pod-list" else ""},
             "items": [pod, pod] if mode == "two-pods" else [pod]}))
     elif "get" in args and "replicaset" in args:
@@ -150,6 +160,7 @@ class CheckpointTests(unittest.TestCase):
                 "TEST_MODE": mode,
                 "TEST_LOG": str(log),
                 "TEST_DUMPED": str(path / "dumped"),
+                "TEST_PODS_PATH": PODS_PATH,
             }
             result = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
                                     capture_output=True, text=True, timeout=30)
@@ -164,6 +175,9 @@ class CheckpointTests(unittest.TestCase):
         self.assertIn("tables=8", receipt)
         self.assertIn("pvc_uid=" + "e" * 36, receipt)
         self.assertIn("pv=pvc-" + "e" * 36 + " pv_uid=" + "1" * 36, receipt)
+        pod_reads = [args for name, args in commands if name == "kubectl" and
+                     ("--raw" in args or "pods" in args and "get" in args)]
+        self.assertEqual(pod_reads, [["get", "--raw", PODS_PATH]] * 2)
         self.assertTrue(any(name == "aws" and "--if-none-match" in args
                             for name, args in commands))
         self.assertTrue(any(name == "docker" and args[0] == "run" and "--network" in args
@@ -192,6 +206,12 @@ class CheckpointTests(unittest.TestCase):
 
     def test_missing_pv_read_right_prevents_dump_and_upload(self):
         result, commands, receipt = self.run_case("deny-pv")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
+
+    def test_missing_pod_list_right_prevents_dump_and_upload(self):
+        result, commands, receipt = self.run_case("deny-pod-list")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(receipt, "")
         self.assertFalse(any("pg_dump" in args or "put-object" in args for _, args in commands))
@@ -231,8 +251,8 @@ class CheckpointTests(unittest.TestCase):
         self.assertTrue(any("pg_dump" in args for _, args in commands))
         self.assertFalse(any("put-object" in args for _, args in commands))
 
-    def test_partial_or_unversioned_pod_list_prevents_dump_and_upload(self):
-        for mode in ("partial-pod-list", "zero-list-version"):
+    def test_partial_unversioned_or_generic_cli_list_prevents_dump_and_upload(self):
+        for mode in ("partial-pod-list", "zero-list-version", "generic-cli-list"):
             with self.subTest(mode=mode):
                 result, commands, receipt = self.run_case(mode)
                 self.assertNotEqual(result.returncode, 0)
