@@ -133,6 +133,22 @@ class OfframpPreflightTest(unittest.TestCase):
         _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
         self.assertTrue(any("expected one non-terminating" in x for x in failures))
 
+    def test_completed_native_pods_do_not_count_as_live_replicas(self):
+        workloads, nodes, metrics, pods = fixture()
+        for phase in ("Failed", "Succeeded"):
+            completed = copy.deepcopy(workloads["items"][3])
+            completed["status"]["phase"] = phase
+            workloads["items"].append(completed)
+            pods["items"].append(completed)
+        self.assertEqual(offramp.evaluate(workloads, nodes, metrics, pods, NOW), (25, []))
+
+        terminating = copy.deepcopy(workloads["items"][3])
+        terminating["metadata"]["deletionTimestamp"] = NOW.isoformat()
+        workloads["items"].append(terminating)
+        pods["items"].append(terminating)
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("expected one non-terminating" in x for x in failures))
+
     def test_restarted_init_sidecar_blocks(self):
         workloads, nodes, metrics, pods = fixture()
         pod = workloads["items"][3]

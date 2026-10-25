@@ -98,7 +98,8 @@ def evaluate(workloads, nodes, metrics, all_pods, now):
             failures.append(f"{name}: native Deployment not converged to one Ready replica")
             continue
         rs_uids = {r["metadata"]["uid"] for r in replicasets if owner_uid(r, "Deployment") == twin_uid}
-        owned = [p for p in pods if owner_uid(p, "ReplicaSet") in rs_uids]
+        owned = [p for p in pods if owner_uid(p, "ReplicaSet") in rs_uids
+                 and p.get("status", {}).get("phase") not in ("Succeeded", "Failed")]
         if len(owned) != 1 or owned[0].get("status", {}).get("phase") != "Running" or owned[0]["metadata"].get("deletionTimestamp"):
             failures.append(f"{name}: expected one non-terminating owned Running native Pod; found {len(owned)}")
             continue
