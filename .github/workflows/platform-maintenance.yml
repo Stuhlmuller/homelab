@@ -1,3 +1,5 @@
+---
+# yamllint disable rule:line-length
 name: Platform Maintenance
 
 # checkov:skip=CKV_GHA_7: fixed operations are bound to the exact current main SHA.
@@ -50,7 +52,7 @@ on:
         required: false
         type: string
 
-permissions: {}
+permissions: { }
 
 env:
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
