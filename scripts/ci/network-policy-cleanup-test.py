@@ -284,8 +284,10 @@ class FirewallCleanupTests(unittest.TestCase):
         evidence_sha = "b" * 40
         placement = {"format": 1, "verified": True, "sourceSha": evidence_sha,
                      "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
-                     "firewallBaselineEmpty": True}
-        ownership = {"evidenceSourceSha": evidence_sha, "captureRunId": "8"}
+                     "firewallBaselineEmpty": True, "placementRunId": "5"}
+        ownership = {"evidenceSourceSha": evidence_sha, "captureRunId": "8",
+                     "admissionRunId": "6", "placementRunId": "5",
+                     "placementVersionId": "v1"}
         checks = iter((source_sha, source_sha, "b" * 40))
         operations = []
         records = []
@@ -327,9 +329,11 @@ class FirewallCleanupTests(unittest.TestCase):
                     "ip6nft": empty, "ip6legacy": empty, "ipset": "\n"}
         placement = {"format": 1, "verified": True, "sourceSha": evidence_sha,
                      "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
-                     "firewallBaselineEmpty": True}
+                     "firewallBaselineEmpty": True, "placementRunId": "5"}
         ownership = {"format": 1, "verified": True, "sourceSha": source_sha,
                      "evidenceSourceSha": evidence_sha, "captureRunId": "9",
+                     "admissionRunId": "6", "placementRunId": "5",
+                     "placementVersionId": "v1",
                      "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
                      "snapshotSha256": SUT["snapshot_sha256"](snapshot),
                      "reviewedAt": "2026-10-19T00:00:00Z"}
@@ -362,9 +366,13 @@ class FirewallCleanupTests(unittest.TestCase):
         self.assertEqual(operations, [])
 
     def test_reviewed_snapshot_blocks_foreign_rule_or_set_added_later(self):
-        placement = {"nodeUid": "uid", "bootID": "boot"}
+        placement = {"nodeUid": "uid", "bootID": "boot",
+                     "sourceSha": "b" * 40, "placementRunId": "5"}
         original = state()
         ownership = {"format": 1, "verified": True, "sourceSha": "a" * 40,
+                     "evidenceSourceSha": "b" * 40,
+                     "admissionRunId": "6", "placementRunId": "5",
+                     "placementVersionId": "v1",
                      "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
                      "reviewedAt": "2026-10-19T00:00:00Z",
                      "snapshotSha256": SUT["snapshot_sha256"](original)}
@@ -382,6 +390,19 @@ class FirewallCleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "ownership snapshot"):
                     SUT["require_ownership"](ownership, placement, candidate,
                                              "a" * 40, "zimaboard-1")
+
+    def test_cleanup_rejects_mismatched_or_missing_placement_selection(self):
+        placement = {"sourceSha": "b" * 40, "placementRunId": "5"}
+        ownership = {"evidenceSourceSha": "b" * 40, "admissionRunId": "6",
+                     "placementRunId": "5", "placementVersionId": "v1"}
+        SUT["require_placement_selection"](ownership, placement)
+        for field, value in (("admissionRunId", ""), ("placementRunId", "4"),
+                             ("placementVersionId", ""),
+                             ("evidenceSourceSha", "a" * 40)):
+            with self.subTest(field=field):
+                modified = ownership | {field: value}
+                with self.assertRaisesRegex(ValueError, "selected placement"):
+                    SUT["require_placement_selection"](modified, placement)
 
     def test_enforcer_daemonset_must_be_absent_even_if_zero_scheduled(self):
         canary = SUT["CANARY"]

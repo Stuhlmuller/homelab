@@ -51,7 +51,7 @@ class PlatformStageTests(unittest.TestCase):
         self.assertFalse(external)
 
     def test_disabled_config_blocks_all_mutating_stages(self):
-        for stage in ("canary-admit", "canary-release", "qualify",
+        for stage in ("canary-admit", "canary-admit-recover", "canary-release", "qualify",
                       "ownership-capture", "ownership-approve", "owned-cleanup",
                       "talos-1.11.6",
                       "talos-1.12.12", "talos-1.13.11", "talos-1.14.4",
@@ -62,7 +62,7 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertFalse(external)
 
     def test_canary_with_reviewed_node_reaches_protected_entry_even_before_activation(self):
-        for stage in ("canary-admit", "canary-release"):
+        for stage in ("canary-admit", "canary-admit-recover", "canary-release"):
             with self.subTest(stage=stage):
                 result, external = self.run_stage(stage, "zimaboard-1")
                 self.assertNotEqual(result.returncode, 0)
@@ -119,7 +119,8 @@ class PlatformStageTests(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
         self.assertIn('baseline_source_sha:', workflow)
         self.assertIn('baseline_run_id:', workflow)
-        self.assertLess(source.index('load_receipt "openclaw-enterprise/platform/${BASELINE_SOURCE_SHA}/${BASELINE_RUN_ID}/baseline-attempt.json"'),
+        self.assertIn('attempt_name=canary-admit-recover-attempt', source)
+        self.assertLess(source.index('load_receipt "openclaw-enterprise/platform/${BASELINE_SOURCE_SHA}/${BASELINE_RUN_ID}/${attempt_name}.json"'),
                         source.index('retain_result "$work/baseline-recover-attempt.json"'))
         self.assertLess(source.index('retain_result "$work/baseline-recover-attempt.json"'),
                         source.index('python3 -I scripts/network-policy-firewall-baseline.py recover'))
@@ -185,7 +186,7 @@ class PlatformStageTests(unittest.TestCase):
                         source.index('python3 scripts/network-policy-cleanup.py'))
 
     def load_cleanup_receipt(self, versions=None, markers=None, body=b"reviewed receipt",
-                             content_length=..., truncated=False):
+                             content_length=..., truncated=False, expected_version=None):
         key = f"openclaw-enterprise/platform/receipts/{SHA}/firewall-ownership/8.json"
         version = "reviewed-version"
         versions = versions if versions is not None else [
@@ -229,11 +230,12 @@ aws() {
     *) return 99 ;;
   esac
 }
-""" + function + '\nload_receipt "$TEST_KEY" "$TEST_TARGET"\n'
+""" + function + '\nload_receipt "$TEST_KEY" "$TEST_TARGET" "$TEST_EXPECTED_VERSION"\n'
             env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}",
                        TEST_VERSIONS=json.dumps(payload), TEST_METADATA=json.dumps(metadata),
                        TEST_VERSION=version, TEST_KEY=key, TEST_TARGET=str(target),
-                       TEST_TRACE=str(trace), TEST_BODY=body.decode())
+                       TEST_TRACE=str(trace), TEST_BODY=body.decode(),
+                       TEST_EXPECTED_VERSION=expected_version or "")
             result = subprocess.run([shutil.which("bash"), "-c", script], env=env,
                                     capture_output=True, text=True, timeout=10)
             return result, target.read_bytes() if target.exists() else None, \
@@ -266,6 +268,10 @@ aws() {
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(trace, ["head", "get"])
 
+        result, _, trace = self.load_cleanup_receipt(expected_version="forged-version")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(trace, [])
+
         for content_length in (0, 1048577, None):
             with self.subTest(content_length=content_length):
                 result, _, trace = self.load_cleanup_receipt(content_length=content_length)
@@ -276,9 +282,10 @@ aws() {
         source = STAGE.read_text().split('  owned-cleanup)\n', 1)[1]
         helper = source.index('python3 scripts/network-policy-cleanup.py')
         ownership = source.index('load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership/${CAPTURE_RUN_ID}.json"')
-        placement = source.index('load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json"')
+        placement = source.index('load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement/${placement_run_id}.json"')
         self.assertLess(ownership, placement)
         self.assertLess(placement, helper)
+        self.assertIn('"$work/receipts/placement.json" "$placement_version"', source)
         self.assertIn('[[ "${CAPTURE_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]]', source)
         self.assertIn('--capture-run-id "$CAPTURE_RUN_ID"', source)
 
@@ -287,11 +294,68 @@ aws() {
             '  qualify)\n', 1)[0]
         cleanup = source.index('load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${CLEANUP_RUN_ID}/cleanup.json"')
         ownership = source.index('load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/firewall-ownership/${capture_run_id}.json"')
-        placement = source.index('load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json"')
+        placement = source.index('load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement/${placement_run_id}.json"')
         helper = source.index('python3 -I scripts/network-policy-canary-node.py')
         self.assertLess(cleanup, ownership)
         self.assertLess(ownership, placement)
         self.assertLess(placement, helper)
+        self.assertIn('"$work/receipts/placement.json" "$placement_version"', source)
+
+    def test_canary_admit_selects_immutable_placement_version(self):
+        source = STAGE.read_text().split('  canary-admit|canary-release)\n', 1)[1].split(
+            '  qualify)\n', 1)[0]
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        self.assertIn('"${PLACEMENT_RUN_ID:-}" =~ ^[1-9][0-9]*$', source)
+        self.assertIn('receipts/${GITHUB_SHA}/placement/${PLACEMENT_RUN_ID}.json', source)
+        self.assertIn('placement_version="$loaded_receipt_version"', source)
+        self.assertIn('selection_args=(--placement-run-id "$PLACEMENT_RUN_ID" --placement-version-id "$placement_version")', source)
+        self.assertIn('"${selection_args[@]}"', source)
+        self.assertIn("placement_run_id:", workflow)
+        self.assertIn("admission_run_id:", workflow)
+
+    def test_recovery_retains_probe_marker_and_proof_before_node_mutation(self):
+        source = STAGE.read_text().split('  canary-admit-recover)\n', 1)[1].split(
+            '  qualify)\n', 1)[0]
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        self.assertIn("canary-admit-recover", workflow)
+        self.assertIn('"${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$', source)
+        self.assertLess(source.index('canary-admit-attempt.json'),
+                        source.index('require_absent_receipt'))
+        self.assertLess(source.index('require_absent_receipt'),
+                        source.index('placement/${placement_run_id}.json'))
+        self.assertIn('"$work/receipts/placement.json" "$placement_version"', source)
+        self.assertLess(source.index('retain_result "$work/recovery-attempt.json"'),
+                        source.index('scripts/network-policy-firewall-baseline.py'))
+        self.assertLess(source.index('retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof'),
+                        source.index('scripts/network-policy-canary-node.py recover'))
+        self.assertEqual(source.count('require_absent_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"'), 2)
+        self.assertIn('--admission-run-id "$ADMISSION_RUN_ID"', source)
+        self.assertIn('if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then',
+                      workflow)
+        self.assertIn('group: platform-maintenance-production', workflow)
+        self.assertIn('cancel-in-progress: false', workflow)
+
+    def test_recovery_requires_no_final_admission_receipt_version(self):
+        source = STAGE.read_text()
+        function = "require_absent_receipt() {" + source.split(
+            "require_absent_receipt() {", 1)[1].split("\n}\n", 1)[0] + "\n}"
+        script = """set -euo pipefail
+bucket=test-bucket
+aws() { printf '%s\\n' "$TEST_VERSIONS"; }
+""" + function + '\nrequire_absent_receipt "$TEST_KEY"\n'
+        key = "openclaw-enterprise/platform/aaa/123/canary-admit.json"
+        for payload, accepted in (
+                ({"IsTruncated": False, "Versions": [], "DeleteMarkers": []}, True),
+                ({"IsTruncated": True, "Versions": [], "DeleteMarkers": []}, False),
+                ({"IsTruncated": False, "Versions": [{"Key": key}],
+                  "DeleteMarkers": []}, False),
+                ({"IsTruncated": False, "Versions": [],
+                  "DeleteMarkers": [{"Key": key}]}, False)):
+            with self.subTest(payload=payload):
+                result = subprocess.run([shutil.which("bash"), "-c", script],
+                                        env=dict(os.environ, TEST_VERSIONS=json.dumps(payload),
+                                                 TEST_KEY=key), capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, accepted, result.stderr)
 
     def test_canary_retains_attempt_before_mutating_node(self):
         source = STAGE.read_text()

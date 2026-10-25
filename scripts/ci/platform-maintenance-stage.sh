@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-admit-recover|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -18,7 +18,8 @@ config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
 if [[ "$stage" == placement || "$stage" == firewall-baseline ]]; then
   jq -e '.activationEnabled == false and .canary.node == "zimaboard-2"' "$config" >/dev/null
-elif [[ "$stage" == canary-admit || "$stage" == canary-release ]]; then
+elif [[ "$stage" == canary-admit || "$stage" == canary-admit-recover ||
+        "$stage" == canary-release ]]; then
   jq -e '(.canary.node | type) == "string"' "$config" >/dev/null
 elif [[ "$stage" != inspect && "$stage" != firewall-baseline && "$stage" != firewall-baseline-recover ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
@@ -62,7 +63,7 @@ retain_result() {
 }
 
 load_receipt() {
-  local key="$1" target="$2" versions version metadata checksum actual
+  local key="$1" target="$2" expected_version="${3:-}" versions version metadata checksum actual
   versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$key" --no-paginate)"
   version="$(jq -er --arg key "$key" '
     if .IsTruncated == false and (.DeleteMarkers // []) == [] and
@@ -70,6 +71,7 @@ load_receipt() {
        (.Versions[0].IsLatest == true) and
        (.Versions[0].VersionId | type == "string" and . != "" and . != "null")
     then .Versions[0].VersionId else empty end' <<<"$versions")"
+  [[ -z "$expected_version" || "$version" == "$expected_version" ]] || exit 1
   metadata="$(aws s3api head-object --bucket "$bucket" --key "$key" \
     --version-id "$version" --checksum-mode ENABLED)"
   checksum="$(jq -er --arg version "$version" '
@@ -80,6 +82,17 @@ load_receipt() {
   chmod 600 "$target"
   actual="$(openssl dgst -sha256 -binary "$target" | base64 -w0)"
   [[ "$actual" == "$checksum" ]]
+  loaded_receipt_version="$version"
+}
+
+require_absent_receipt() {
+  local key="$1" versions
+  versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$key" --no-paginate)"
+  jq -e --arg key "$key" '
+    .IsTruncated == false and
+    ([.Versions[]? | select(.Key == $key)] | length) == 0 and
+    ([.DeleteMarkers[]? | select(.Key == $key)] | length) == 0
+  ' <<<"$versions" >/dev/null
 }
 
 connect_talos() {
@@ -156,7 +169,12 @@ case "$stage" in
     bash scripts/ci/install-kubeconfig.sh
     kubectl auth can-i delete pods -n kube-system --quiet
     kubectl auth can-i get pods -n kube-system --quiet
-    load_receipt "openclaw-enterprise/platform/${BASELINE_SOURCE_SHA}/${BASELINE_RUN_ID}/baseline-attempt.json" \
+    attempt_name=baseline-attempt
+    if [[ -n "${ADMISSION_RUN_ID:-}" ]]; then
+      [[ "$ADMISSION_RUN_ID" =~ ^[1-9][0-9]*$ ]] || exit 2
+      attempt_name=canary-admit-recover-attempt
+    fi
+    load_receipt "openclaw-enterprise/platform/${BASELINE_SOURCE_SHA}/${BASELINE_RUN_ID}/${attempt_name}.json" \
       "$work/baseline-attempt.json"
     jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
       --arg baselineSourceSha "$BASELINE_SOURCE_SHA" --arg baselineRunId "$BASELINE_RUN_ID" \
@@ -205,6 +223,11 @@ case "$stage" in
       kubectl auth can-i get nodes/proxy --quiet
     fi
     install -m 0700 -d "$work/receipts"
+    placement_version=
+    placement_node=
+    placement_node_uid=
+    placement_boot_id=
+    selection_args=()
     if [[ "$stage" == canary-release ]]; then
       [[ "${CLEANUP_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
       load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${CLEANUP_RUN_ID}/cleanup.json" \
@@ -215,26 +238,109 @@ case "$stage" in
         "$work/receipts/firewall-ownership.json"
       evidence_source_sha="$(jq -er '.evidenceSourceSha | select(type == "string" and test("^[0-9a-f]{40}$"))' \
         "$work/receipts/firewall-ownership.json")"
-      load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json" \
-        "$work/receipts/placement.json"
+      placement_run_id="$(jq -er '.placementRunId | select(type == "string" and test("^[1-9][0-9]*$"))' \
+        "$work/receipts/firewall-ownership.json")"
+      placement_version="$(jq -er '.placementVersionId | select(type == "string" and . != "" and . != "null")' \
+        "$work/receipts/firewall-ownership.json")"
+      load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement/${placement_run_id}.json" \
+        "$work/receipts/placement.json" "$placement_version"
     else
-      load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement.json" \
+      [[ "${PLACEMENT_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
+      load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement/${PLACEMENT_RUN_ID}.json" \
         "$work/receipts/placement.json"
+      placement_version="$loaded_receipt_version"
+      placement_node="$(jq -er '.node | select(type == "string" and . != "")' "$work/receipts/placement.json")"
+      placement_node_uid="$(jq -er '.nodeUid | select(type == "string" and . != "")' "$work/receipts/placement.json")"
+      placement_boot_id="$(jq -er '.bootID | select(type == "string" and . != "")' "$work/receipts/placement.json")"
+      selection_args=(--placement-run-id "$PLACEMENT_RUN_ID" --placement-version-id "$placement_version")
     fi
     jq -n --arg stage "$stage" --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      --arg placementRunId "${PLACEMENT_RUN_ID:-}" --arg placementVersionId "$placement_version" \
+      --arg node "$placement_node" --arg nodeUid "$placement_node_uid" \
+      --arg bootID "$placement_boot_id" \
       '{format: 1, stage: $stage, status: "attempted", verified: false,
-        sourceSha: $sourceSha, runId: $runId}' >"$work/canary-attempt.json"
+        sourceSha: $sourceSha, runId: $runId} +
+        (if $stage == "canary-admit" then
+          {node: $node, nodeUid: $nodeUid, bootID: $bootID,
+           placementRunId: $placementRunId, placementVersionId: $placementVersionId}
+         else {} end)' >"$work/canary-attempt.json"
     chmod 600 "$work/canary-attempt.json"
     retain_result "$work/canary-attempt.json" "${stage}-attempt"
     if ! python3 -I scripts/network-policy-canary-node.py "${stage#canary-}" \
       --config "$config" --expected-sha "$GITHUB_SHA" \
-      --receipt-dir "$work/receipts" --bucket "$bucket" --output "$work/canary.json"; then
+      --receipt-dir "$work/receipts" --bucket "$bucket" \
+      "${selection_args[@]}" \
+      --output "$work/canary.json"; then
       if [[ -f "$work/canary.json" && ! -L "$work/canary.json" ]]; then
         retain_result "$work/canary.json" "${stage}-interrupted"
       fi
       exit 1
     fi
     retain_result "$work/canary.json" "$stage"
+    ;;
+  canary-admit-recover)
+    [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
+    bash scripts/ci/install-kubeconfig.sh
+    kubectl auth can-i create pods -n kube-system --quiet
+    kubectl auth can-i create pods/exec -n kube-system --quiet
+    kubectl auth can-i delete pods -n kube-system --quiet
+    kubectl auth can-i get pods -n kube-system --quiet
+    kubectl auth can-i list pods --all-namespaces --quiet
+    kubectl auth can-i get nodes --quiet
+    kubectl auth can-i list nodes --quiet
+    install -m 0700 -d "$work/receipts"
+    load_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit-attempt.json" \
+      "$work/receipts/admission-attempt.json"
+    jq -e --arg sourceSha "$GITHUB_SHA" --arg runId "$ADMISSION_RUN_ID" \
+      '.format == 1 and .stage == "canary-admit" and .status == "attempted" and
+       .verified == false and .sourceSha == $sourceSha and .runId == $runId' \
+      "$work/receipts/admission-attempt.json" >/dev/null
+    require_absent_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
+    placement_run_id="$(jq -er '.placementRunId | select(type == "string" and test("^[1-9][0-9]*$"))' \
+      "$work/receipts/admission-attempt.json")"
+    placement_version="$(jq -er '.placementVersionId | select(type == "string" and . != "" and . != "null")' \
+      "$work/receipts/admission-attempt.json")"
+    load_receipt "openclaw-enterprise/platform/receipts/${GITHUB_SHA}/placement/${placement_run_id}.json" \
+      "$work/receipts/placement.json" "$placement_version"
+    node="$(jq -er '.node | select(type == "string" and . != "")' "$work/receipts/placement.json")"
+    node_uid="$(jq -er '.nodeUid | select(type == "string" and . != "")' "$work/receipts/placement.json")"
+    boot_id="$(jq -er '.bootID | select(type == "string" and . != "")' "$work/receipts/placement.json")"
+    pod_token="$(openssl rand -hex 24)"
+    jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \
+      --arg admissionRunId "$ADMISSION_RUN_ID" --arg placementRunId "$placement_run_id" \
+      --arg placementVersionId "$placement_version" --arg node "$node" \
+      --arg nodeUid "$node_uid" --arg bootID "$boot_id" --arg podToken "$pod_token" \
+      '{format: 1, stage: "canary-admit-recover", status: "attempted", verified: false,
+        sourceSha: $sourceSha, runId: $runId, admissionRunId: $admissionRunId,
+        placementRunId: $placementRunId, placementVersionId: $placementVersionId,
+        node: $node, nodeUid: $nodeUid, bootID: $bootID, podToken: $podToken}' \
+      >"$work/recovery-attempt.json"
+    chmod 600 "$work/recovery-attempt.json"
+    retain_result "$work/recovery-attempt.json" canary-admit-recover-attempt
+    if ! python3 -I scripts/network-policy-firewall-baseline.py --config "$config" \
+      --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+      --recovery-placement "$work/receipts/placement.json" \
+      --attempt "$work/recovery-attempt.json" \
+      --output "$work/receipts/firewall-recovery-proof.json"; then
+      if [[ -f "$work/receipts/firewall-recovery-proof.json" &&
+            ! -L "$work/receipts/firewall-recovery-proof.json" ]]; then
+        retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-interrupted
+      fi
+      exit 1
+    fi
+    retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof
+    require_absent_receipt "openclaw-enterprise/platform/${GITHUB_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
+    if ! python3 -I scripts/network-policy-canary-node.py recover \
+      --config "$config" --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
+      --admission-run-id "$ADMISSION_RUN_ID" \
+      --placement-run-id "$placement_run_id" --placement-version-id "$placement_version" \
+      --receipt-dir "$work/receipts" --output "$work/canary-recovery.json"; then
+      if [[ -f "$work/canary-recovery.json" && ! -L "$work/canary-recovery.json" ]]; then
+        retain_result "$work/canary-recovery.json" canary-admit-recover-interrupted
+      fi
+      exit 1
+    fi
+    retain_result "$work/canary-recovery.json" canary-admit-recover
     ;;
   qualify)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
@@ -246,10 +352,12 @@ case "$stage" in
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1
     bash scripts/ci/install-kubeconfig.sh
     if [[ "$stage" == ownership-capture ]]; then
+      [[ "${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
       python3 -I scripts/network-policy-ownership.py capture --config "$config" \
         --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
         --evidence-source-sha "${EVIDENCE_SOURCE_SHA:-}" \
-        --qualification-run-id "${QUALIFICATION_RUN_ID:-}"
+        --qualification-run-id "${QUALIFICATION_RUN_ID:-}" \
+        --admission-run-id "${ADMISSION_RUN_ID:-}"
     else
       python3 -I scripts/network-policy-ownership.py approve --config "$config" \
         --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
@@ -266,8 +374,12 @@ case "$stage" in
       "$work/receipts/firewall-ownership.json"
     evidence_source_sha="$(jq -er '.evidenceSourceSha | select(type == "string" and test("^[0-9a-f]{40}$"))' \
       "$work/receipts/firewall-ownership.json")"
-    load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement.json" \
-      "$work/receipts/placement.json"
+    placement_run_id="$(jq -er '.placementRunId | select(type == "string" and test("^[1-9][0-9]*$"))' \
+      "$work/receipts/firewall-ownership.json")"
+    placement_version="$(jq -er '.placementVersionId | select(type == "string" and . != "" and . != "null")' \
+      "$work/receipts/firewall-ownership.json")"
+    load_receipt "openclaw-enterprise/platform/receipts/${evidence_source_sha}/placement/${placement_run_id}.json" \
+      "$work/receipts/placement.json" "$placement_version"
     # A versioned private attempt must exist before any firewall operation.
     # If the final upload fails, this marker still requires direct review.
     jq -n --arg sourceSha "$GITHUB_SHA" --arg runId "$GITHUB_RUN_ID" \

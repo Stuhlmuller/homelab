@@ -20,18 +20,19 @@ alone creates no namespace, Pods, or policy. The `homelab` AppProject admits
 the fixture namespace as an explicit destination.
 
 The protected `canary-admit` stage changes only the reviewed Node's dedicated
-`NoSchedule` taint, then its selector label. It remains blocked while
-`scripts/config/platform-maintenance.json` selects `zimaboard-2` but keeps
-`activationEnabled: false`. A protected `firewall-baseline` stage can run before
-activation on that worker.
+`NoSchedule` taint, then its selector label. It can run with
+`activationEnabled: false` after the reviewed baseline, fresh placement, and
+live admission checks pass. Admission does not enable the enforcer or fixtures.
+A protected `firewall-baseline` stage can run before activation on that worker.
 It first confirms the worker UID, boot ID, hostname selector, Ready state,
 and only eligible system DaemonSet Pods. It creates the fixed, digest-pinned
 `preflight/pod.json` Pod through the protected workflow, reads both IPv4 and
 IPv6 iptables backends plus ipset with the existing cleanup snapshot parser,
 and requires zero kube-router-owned chains, jumps, and sets.
 The short-lived host-network Pod has `NET_ADMIN` to read the host firewall;
-it has no service account token or host mount. `NET_ADMIN` can also alter firewall state, so
-running this stage is a protected live Pod change, not a read-only API query.
+it has no service account token or host mount. `NET_ADMIN` can also alter
+firewall state, so running this stage is a protected live Pod change, not a
+read-only API query.
 The stage deletes it and observes its absence
 before writing a verified, full private snapshot to the KMS-encrypted,
 versioned backup bucket. If deletion, Node identity, Pod inventory, source
@@ -50,19 +51,27 @@ system Pod UIDs, then checks live Pod requests, metrics younger than two minutes
 and kubelet node filesystem space. The pinned enforcer and three fixtures need
 346 MiB/280m in requests and at most 704 MiB memory at their limits; placement
 requires another 128 MiB/100m and 5 GiB node filesystem free. It writes one
-versioned `placement.json` for that exact current-main SHA. `canary-admit`
-accepts it only within 30 minutes of measurement and one hour of the baseline
+immutable receipt per placement run at
+`receipts/<current-main-sha>/placement/<placement-run-id>.json`. Another run
+can publish a fresh receipt on unchanged `main` after evidence expires, using a
+fresh reviewed baseline when the old capture is past its one-hour limit;
+earlier receipts remain immutable. Dispatch `canary-admit` with the selected
+`placement_run_id`. It verifies the single exact S3 version and binds that
+version to the admission result. `canary-admit` accepts it only within 30 minutes
+of measurement and one hour of the baseline
 capture, then repeats the read-only Pod, metrics, node filesystem, and headroom
 checks immediately before changing the Node. A new main commit,
 changed Node/Pod identity, insufficient headroom, or a failed read blocks the
 stage. The earlier host firewall snapshot can drift after capture; admission
 does not rerun the privileged probe.
 
-The protected placement stage names this worker and stores one KMS-encrypted,
-versioned `placement.json` under
-`openclaw-enterprise/platform/receipts/<current-main-sha>/`. The receipt must
+The protected placement stage names this worker and stores a KMS-encrypted,
+versioned receipt under
+`openclaw-enterprise/platform/receipts/<current-main-sha>/placement/<placement-run-id>.json`.
+The receipt must
 have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
-`canaryNode`, `nodeUid`, `bootID`, a timestamp younger than 30 minutes,
+`canaryNode`, `nodeUid`, `bootID`, `placementRunId`, a timestamp younger than
+30 minutes,
 `measured: true`, the configured `isolatedTaint`, and
 `firewallBaselineEmpty: true` from an independently reviewed pre-enable
 snapshot. It must also list every permitted system DaemonSet Pod under
@@ -83,6 +92,19 @@ list again after labeling. Each Node patch tests
 `resourceVersion` and UID and touches only the owned taint or label. A
 taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.
+If the Node patch succeeded but the final `canary-admit.json` upload failed,
+dispatch protected `canary-admit-recover` on the same current-main SHA with the
+original `admission_run_id`. This owner-only stage loads the immutable
+pre-mutation attempt and its exact placement version, refuses an existing final
+admission receipt, and runs a short-lived privileged host firewall probe. It
+confirms empty kube-router rules, absent enforcer and fixtures, and no foreign
+Pod on the same UID/boot Node before removing only the owned label and taint
+with resource-version/UID tests. It works after placement expires because it
+retracts admission rather than accepting a new one. The probe's attempt is
+stored before Pod creation; if the probe remains, use protected
+`firewall-baseline-recover` with its recovery run ID as `baseline_run_id`, the
+same main SHA as `baseline_source_sha`, and the original `admission_run_id` to
+delete only that token/UID-matched Pod before retrying.
 
 Admission only gates the Node taint and label. The later enforcer and fixture
 rollout still needs its own protected fresh capacity gate; that gate is not
@@ -133,8 +155,9 @@ Removing the DaemonSet alone can leave firewall rules behind. The separately
 registered `platform-network-policy-cleanup` Application has automatic sync
 disabled and schedules only on the admitted tainted canary. After Enterprise
 tenants are quiesced and the enforcer Pod is gone, sync that reviewed cleanup
-source through Argo CD. The protected `owned-cleanup` stage requires a private
-`placement.json` proving that the node had no kube-router firewall objects
+source through Argo CD. The protected `owned-cleanup` stage requires the selected
+private placement receipt proving that the node had no kube-router firewall
+objects
 before enforcement, plus a separately reviewed `firewall-ownership.json`
 pinning the full current firewall snapshot to the same node UID and boot ID.
 The protected Platform Maintenance workflow has separate `ownership-capture`
@@ -166,9 +189,10 @@ system DaemonSet Pod restart changes its UID and blocks this flow; the
 immutable qualify-SHA placement cannot be refreshed after removal through
 the current workflow. Stop for a separately reviewed recovery path; do not
 substitute an unreviewed Pod identity. Dispatch `ownership-capture` on the new
-exact current `main` with the qualify SHA as `evidence_source_sha` and
-the qualify run ID. It verifies both exact commit transitions and reads the
-pre-removal placement and traffic receipts,
+exact current `main` with the qualify SHA as `evidence_source_sha`, the
+qualify run ID, and the successful admission run ID as `admission_run_id`.
+It verifies both exact commit transitions and reads that admission receipt,
+its selected placement version, and the traffic receipt,
 checks that the fixture namespace and any lingering fixture workload are absent,
 then reviews the cleanup Pod and owned-rule plan without deleting anything.
 It stores the full IPv4/IPv6/ipset
@@ -201,7 +225,8 @@ inventory check. Keep live activation blocked until isolated placement proves
 that cannot happen, or add a reviewed repository-owned isolation path.
 
 Each ownership receipt contains `format: 1`, `verified: true`, the exact
-`sourceSha`, `evidenceSourceSha`, `captureRunId`, `node`, `nodeUid`, `bootID`,
+`sourceSha`, `evidenceSourceSha`, `captureRunId`, `admissionRunId`,
+`placementRunId`, `placementVersionId`, `node`, `nodeUid`, `bootID`,
 `snapshotSha256`, and `reviewedAt`.
 Approval attests snapshot ownership only. The `qualify` traffic receipt still
 lists unverified lifecycle scenarios; it does not authorize enforcement

@@ -12,13 +12,21 @@ on:
         description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
       baseline_source_sha:
         description: Firewall-baseline main SHA, required for placement or recovery
         required: false
         type: string
       baseline_run_id:
         description: Firewall-baseline run ID, required for placement or recovery
+        required: false
+        type: string
+      placement_run_id:
+        description: Selected immutable placement run ID, required for canary-admit
+        required: false
+        type: string
+      admission_run_id:
+        description: Canary-admit run ID, required for recovery or ownership-capture
         required: false
         type: string
       cleanup_run_id:
@@ -63,7 +71,7 @@ jobs:
         run: |
           test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          if [ "$RUN_STAGE" = ownership-approve ]; then
+          if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then
             test "$GITHUB_ACTOR_ID" = 57728706
             test "$GITHUB_RUN_ATTEMPT" = 1
           fi
@@ -116,7 +124,7 @@ jobs:
           set -euo pipefail
           test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
-          if [ "$RUN_STAGE" = ownership-approve ]; then
+          if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then
             test "$GITHUB_ACTOR_ID" = 57728706
             test "$GITHUB_RUN_ATTEMPT" = 1
           fi
@@ -161,6 +169,8 @@ jobs:
           RUN_STAGE: ${{ inputs.stage }}
           BASELINE_SOURCE_SHA: ${{ inputs.baseline_source_sha }}
           BASELINE_RUN_ID: ${{ inputs.baseline_run_id }}
+          PLACEMENT_RUN_ID: ${{ inputs.placement_run_id }}
+          ADMISSION_RUN_ID: ${{ inputs.admission_run_id }}
           CLEANUP_RUN_ID: ${{ inputs.cleanup_run_id }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           QUALIFICATION_RUN_ID: ${{ inputs.qualification_run_id }}
@@ -181,7 +191,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'7908c297e9051e8e0adf8409767d07f5928cc7a4cdbfecdc97a191f2e73c8c1f  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'8d1efc862995212bdfab5ea14785cf85487e0fb40941bf04dfa2337a90b21805  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then

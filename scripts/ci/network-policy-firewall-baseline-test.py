@@ -11,6 +11,7 @@ import socketserver
 import tempfile
 import threading
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -151,13 +152,70 @@ class FirewallBaselineTests(unittest.TestCase):
             SUT["delete_probe"]("token", Path("/unused"), "pod-uid")
         self.assertEqual(deleted, ["pod-uid"])
 
-    def run_baseline(self, plan, identities=None, delete_fails=False, create_fails=False):
+    def test_recovery_probe_requires_exact_canary_toleration(self):
+        valid = pod()
+        valid["spec"]["tolerations"] = [SUT["CANARY_TOLERATION"]]
+        self.assertEqual(SUT["require_probe_pod"](
+            valid, "token", "pod-uid", True, recovery=True), "pod-uid")
+        for tolerations in ([], [{"key": SUT["CLEANUP"]["CANARY"],
+                                   "operator": "Exists", "effect": "NoSchedule"}],
+                            [SUT["CANARY_TOLERATION"], {"key": SUT["CLEANUP"]["CANARY"],
+                                                          "operator": "Exists"}]):
+            with self.subTest(tolerations=tolerations):
+                changed = copy.deepcopy(valid)
+                changed["spec"]["tolerations"] = tolerations
+                with self.assertRaisesRegex(ValueError, "preflight Pod"):
+                    SUT["require_probe_pod"](changed, "token", "pod-uid", True,
+                                             recovery=True)
+
+    def test_recovery_attempt_binds_selected_run_version_and_node(self):
+        placement = {"placementRunId": "456", "nodeUid": "node-uid", "bootID": "boot-id"}
+        attempt = {"format": 1, "stage": "canary-admit-recover", "status": "attempted",
+                   "verified": False, "sourceSha": SHA, "runId": "123",
+                   "node": SUT["NODE"], "nodeUid": "node-uid", "bootID": "boot-id",
+                   "admissionRunId": "789", "placementRunId": "456",
+                   "placementVersionId": "version-2", "podToken": "1" * 48}
+        with patch.dict(SUT["PLATFORM"], {"read_private_json": lambda *_: attempt}):
+            self.assertEqual(SUT["read_recovery_attempt"](Path("/unused"), SHA, "123",
+                                                          placement), attempt)
+            self.assertEqual(SUT["read_attempt"](Path("/unused"), SHA, "123",
+                                                  stage=None), attempt)
+            with self.assertRaisesRegex(ValueError, "preflight ownership"):
+                SUT["read_attempt"](Path("/unused"), SHA, "123")
+            for changed in ({"admissionRunId": ""}, {"placementRunId": "455"},
+                            {"placementVersionId": ""}, {"nodeUid": "replacement"},
+                            {"bootID": "new-boot"}, {"podToken": "a" * 47}):
+                with self.subTest(changed=changed), patch.dict(attempt, changed):
+                    with self.assertRaises(ValueError):
+                        SUT["read_recovery_attempt"](Path("/unused"), SHA, "123",
+                                                     placement)
+
+    def run_baseline(self, plan, identities=None, delete_fails=False, create_fails=False,
+                     recovery=False, assigned=None):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             path.chmod(0o700)
             output = path / "baseline.json"
             config = json.loads(SUT["CONFIG"].read_text())
             events = []
+            stale = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime(
+                "%Y-%m-%dT%H:%M:%SZ")
+            placement = {"format": 1, "verified": True, "sourceSha": SHA,
+                         "placementRunId": "456", "node": SUT["NODE"],
+                         "canaryNode": SUT["NODE"], "nodeUid": "node-uid",
+                         "bootID": "boot-id", "measured": True,
+                         "isolatedTaint": config["canary"]["taint"],
+                         "firewallBaselineEmpty": True, "baselineSourceSha": SHA,
+                         "baselineRunId": "789", "baselineCapturedAt": stale,
+                         "baselineCaptureSha256": "0" * 64,
+                         "baselineCaptureVersionId": "version-1",
+                         "systemDaemonSetPods": [], "capturedAt": stale}
+            marker = {"format": 1, "stage": "canary-admit-recover",
+                      "status": "attempted", "verified": False, "sourceSha": SHA,
+                      "runId": "123", "node": SUT["NODE"], "nodeUid": "node-uid",
+                      "bootID": "boot-id", "admissionRunId": "987",
+                      "placementRunId": "456", "placementVersionId": "version-2",
+                      "podToken": "1" * 48}
 
             class Store:
                 def __init__(self, _bucket):
@@ -202,7 +260,9 @@ class FirewallBaselineTests(unittest.TestCase):
                     "require_reviewed_execution_config": lambda *_: None,
                     "validate_config": lambda *_: config,
                     "protected_context": lambda *_: None,
-                    "private_output": lambda *_: output}), \
+                    "private_output": lambda *_: output,
+                    "read_private_json": lambda target: placement if target.name ==
+                    "placement.json" else marker}), \
                     patch.dict(SUT["CLEANUP"], {
                         "require_current_main": lambda *_: None,
                         "kubernetes_json": kube_json,
@@ -214,23 +274,27 @@ class FirewallBaselineTests(unittest.TestCase):
                     patch.dict(SUT["OWNERSHIP"], {"PrivateStore": lambda *_: store}), \
                     patch.dict(helper, {"require_reviewed_manifest": lambda *_:
                                      json.loads(SUT["MANIFEST"].read_text()),
-                                     "read_attempt": lambda *_: {"podToken": "1" * 48},
+                                     "read_attempt": lambda *_, **__: marker if recovery else
+                                     {"podToken": "1" * 48},
                                      "node_identity": node_identity,
-                                     "system_pods": lambda: [],
+                                     "recovery_node_identity": lambda *_: node_identity(),
+                                     "system_pods": lambda: [] if assigned is None else assigned,
                                      "get_pod": get_pod,
                                      "require_probe_pod": lambda *_, **__: "pod-uid",
-                                     "wait_ready": lambda *_: None,
+                                     "wait_ready": lambda *_, **__: None,
                                      "delete_probe": delete}), \
                     patch.dict("os.environ", {"GITHUB_RUN_ID": "123"}):
                 error = None
                 try:
                     result = SUT["execute"](argparse.Namespace(
                         config=SUT["CONFIG"], expected_sha=SHA,
-                        bucket="bucket", attempt=path / "attempt.json", output=output))
+                        bucket="bucket", attempt=path / "attempt.json", output=output,
+                        recovery_placement=path / "placement.json" if recovery else None))
                 except ValueError as exc:
                     result = None
                     error = str(exc)
-            return result, error, events, output.read_text(), getattr(store, "capture", None)
+            return (result, error, events, output.read_text() if output.exists() else None,
+                    getattr(store, "capture", None))
 
     def test_owned_object_fails_and_still_deletes_probe(self):
         result, error, events, receipt, capture = self.run_baseline(
@@ -282,6 +346,56 @@ class FirewallBaselineTests(unittest.TestCase):
         self.assertIsNone(capture)
         self.assertFalse(json.loads(receipt)["verified"])
 
+    def test_recovery_probes_empty_firewall_after_placement_expiry(self):
+        result, error, events, receipt, capture = self.run_baseline(([], 0, 0),
+                                                                     recovery=True)
+        self.assertIsNone(error)
+        proof = json.loads(receipt)
+        self.assertEqual(proof["stage"], "firewall-recovery-proof")
+        self.assertEqual(proof["runId"], "123")
+        self.assertEqual(proof["admissionRunId"], "987")
+        self.assertEqual(proof["placementRunId"], "456")
+        self.assertEqual(proof["placementVersionId"], "version-2")
+        self.assertEqual(proof["nodeUid"], "node-uid")
+        self.assertEqual(proof["bootID"], "boot-id")
+        self.assertTrue(proof["firewallBaselineEmpty"])
+        self.assertTrue(proof["podDeleted"])
+        self.assertEqual(proof["snapshotSha256"], "0" * 64)
+        self.assertEqual(proof["captureKey"],
+                         f"openclaw-enterprise/platform/{SHA}/123/"
+                         "firewall-recovery-capture.json")
+        self.assertEqual(capture[0], proof["captureKey"])
+        self.assertIn("snapshot", capture[1])
+        self.assertLess(events.index("delete"), events.index("capture"))
+        self.assertEqual(result["captureKey"], proof["captureKey"])
+
+    def test_recovery_refuses_owned_firewall_and_deletes_probe(self):
+        result, error, events, receipt, capture = self.run_baseline(
+            ([("iptables-nft", "-D", "owned")], 1, 0), recovery=True)
+        self.assertIsNone(result)
+        self.assertIn("not empty", error)
+        self.assertIn("delete", events)
+        self.assertIsNone(capture)
+        self.assertFalse(json.loads(receipt)["verified"])
+
+    def test_recovery_refuses_changed_system_pod_before_probe_creation(self):
+        result, error, events, receipt, capture = self.run_baseline(
+            ([], 0, 0), recovery=True,
+            assigned=[{"namespace": "kube-system", "name": "replacement", "uid": "new"}])
+        self.assertIsNone(result)
+        self.assertIn("system Pods differ", error)
+        self.assertIsNone(receipt)
+        self.assertIsNone(capture)
+        self.assertNotIn("delete", events)
+
+    def test_recovery_never_proves_absence_before_probe_deletion(self):
+        result, error, events, receipt, capture = self.run_baseline(
+            ([], 0, 0), recovery=True, delete_fails=True)
+        self.assertIsNone(result)
+        self.assertIn("deletion was not observed", error)
+        self.assertIsNone(capture)
+        self.assertFalse(json.loads(receipt)["verified"])
+
     def test_recovery_deletes_only_original_token_pod_and_cannot_certify_baseline(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
@@ -306,7 +420,7 @@ class FirewallBaselineTests(unittest.TestCase):
                     patch.dict(SUT["CANARY"], {"require_preflight_absent": lambda: None}), \
                     patch.dict(helper, {"require_reviewed_manifest": lambda *_:
                                      (_ for _ in ()).throw(ValueError("old manifest removed")),
-                                        "read_attempt": lambda *_: {"podToken": "1" * 48},
+                                        "read_attempt": lambda *_, **__: {"podToken": "1" * 48},
                                         "get_pod": pods.__next__,
                                         "delete_probe": lambda *args: deleted.append(args)}), \
                     patch.dict("os.environ", {"GITHUB_RUN_ID": "123"}):
