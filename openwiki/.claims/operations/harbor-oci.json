@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5e0345349c8f790c4ab4abbdc46ce0a28d244d66eab446deac9f4c3611a0f36d",
+  "pageVersion": "sha256:9c8af3148ca56bd5c3aacade14d61f06f6355f6638944c5dea48510cb62a3c89",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -458,7 +458,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:82d41263cc122fda34f19c95f33e350857f4087edf78a6c646ac44d6ec018c07"
+          "version": "repo-file-v1:sha256:2eddbcd22dcd5540dd472c933585834dcb80b9bfb7b08fc505ea03d4ac8a2eb5"
         }
       ]
     },
@@ -540,7 +540,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:82d41263cc122fda34f19c95f33e350857f4087edf78a6c646ac44d6ec018c07"
+          "version": "repo-file-v1:sha256:2eddbcd22dcd5540dd472c933585834dcb80b9bfb7b08fc505ea03d4ac8a2eb5"
         }
       ]
     },
@@ -662,7 +662,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/config.js",
-          "version": "repo-file-v1:sha256:31b52246c100fe81df240f26385aff5861d944ead48c9d170217f2187b693db4"
+          "version": "repo-file-v1:sha256:534e1e67b7c6da472c0a1643d952b28da09f16115ff1dcc73cff06beb44b1649"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -750,7 +750,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:64ffd58d5e7e01518df303790d6d63349dc985339c140bb0cd18cf09091149ab"
+          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -995,6 +995,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T04:28:23.381Z"
   }
 }

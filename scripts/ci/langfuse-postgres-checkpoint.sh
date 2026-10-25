@@ -7,6 +7,8 @@ umask 077
    "${GITHUB_REF:-}" == refs/heads/main &&
    "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
    "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
+   "${EXPECTED_PVC_UID:-}" =~ ^[0-9a-f-]{36}$ &&
+   "${EXPECTED_PV_UID:-}" =~ ^[0-9a-f-]{36}$ &&
    "${GITHUB_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&
    "${GITHUB_RUN_ATTEMPT:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
 [[ "$GITHUB_SHA" == "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" ]] || exit 1
@@ -21,8 +23,10 @@ account="${BASH_REMATCH[1]}"
 image="$(yq -r 'select(.kind == "Deployment" and .metadata.name == "langfuse-postgres") | .spec.template.spec.containers[] | select(.name == "postgres") | .image' clusters/homelab/apps/langfuse/datastores.yaml)"
 [[ "$image" =~ ^pgvector/pgvector:pg17@sha256:[0-9a-f]{64}$ ]] || exit 1
 [[ "$(kubectl auth can-i get deployments -n langfuse)" == yes ]] || exit 1
-[[ "$(kubectl auth can-i get pods -n langfuse)" == yes ]] || exit 1
+[[ "$(kubectl auth can-i list pods -n langfuse)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i get replicasets -n langfuse)" == yes ]] || exit 1
+[[ "$(kubectl auth can-i get persistentvolumeclaims -n langfuse)" == yes ]] || exit 1
+[[ "$(kubectl auth can-i get persistentvolumes)" == yes ]] || exit 1
 [[ "$(kubectl auth can-i create pods/exec -n langfuse)" == yes ]] || exit 1
 select_deployment() {
   kubectl -n langfuse get deployment langfuse-postgres -o json |
@@ -38,10 +42,41 @@ select_deployment() {
 deployment_uid="$(select_deployment)"
 [[ "$deployment_uid" =~ ^[0-9a-f-]{36}$ ]] || exit 1
 
+select_binding() {
+  local claim_record claim_uid pv_name pv_uid
+  claim_record="$(kubectl -n langfuse get pvc langfuse-postgres-data -o json |
+    jq -er '
+      select(.kind == "PersistentVolumeClaim" and .metadata.namespace == "langfuse" and
+        .metadata.name == "langfuse-postgres-data" and .metadata.deletionTimestamp == null and
+        .status.phase == "Bound" and
+        .spec.storageClassName == "nfs-default" and .spec.accessModes == ["ReadWriteOnce"]) |
+      [.metadata.uid, .spec.volumeName] | @tsv')"
+  IFS=$'\t' read -r claim_uid pv_name <<<"$claim_record"
+  [[ "$claim_uid" == "$EXPECTED_PVC_UID" && "$pv_name" == "pvc-$claim_uid" ]] || return 1
+  pv_uid="$(kubectl get pv "$pv_name" -o json |
+    jq -er --arg name "$pv_name" --arg claim_uid "$claim_uid" '
+      select(.kind == "PersistentVolume" and .metadata.name == $name and
+        .metadata.deletionTimestamp == null and
+        .status.phase == "Bound" and .spec.storageClassName == "nfs-default" and
+        .spec.persistentVolumeReclaimPolicy == "Retain" and
+        .spec.nfs.server == "10.1.0.2" and
+        .spec.nfs.path == ("/homelab/langfuse-langfuse-postgres-data-pvc-" + $claim_uid) and
+        .spec.claimRef.namespace == "langfuse" and
+        .spec.claimRef.name == "langfuse-postgres-data" and
+        .spec.claimRef.uid == $claim_uid) | .metadata.uid')"
+  [[ "$pv_uid" == "$EXPECTED_PV_UID" ]] || return 1
+  printf '%s\t%s\t%s\n' "$claim_uid" "$pv_name" "$pv_uid"
+}
+binding_record="$(select_binding)"
+IFS=$'\t' read -r claim_uid pv_name pv_uid <<<"$binding_record"
+
 select_pod() {
-  kubectl -n langfuse get pods --chunk-size=0 \
-    -l 'app.kubernetes.io/name=langfuse,app.kubernetes.io/instance=langfuse,app.kubernetes.io/component=postgresql' -o json |
+  # kubectl get pods -o json emits a generic List without the server's list resourceVersion.
+  kubectl get --raw '/api/v1/namespaces/langfuse/pods?labelSelector=app.kubernetes.io%2Fname%3Dlangfuse%2Capp.kubernetes.io%2Finstance%3Dlangfuse%2Capp.kubernetes.io%2Fcomponent%3Dpostgresql' |
     jq -er --arg image "$image" '
+      select(.kind == "PodList" and
+        (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and
+        (.metadata.continue // "") == "" and (.items | type == "array")) |
       .items | if length == 1 then .[0] else error("expected exactly one PostgreSQL Pod") end |
       select(.metadata.deletionTimestamp == null and .status.phase == "Running" and
         ([.spec.containers[] | select(.name == "postgres" and .image == $image and
@@ -86,6 +121,7 @@ kubectl -n langfuse exec "$pod" -c postgres -- \
   -U langfuse -d langfuse >"$work/langfuse.dump"
 [[ "$(select_deployment)" == "$deployment_uid" && "$(select_pod)" == "$pod_record" ]] || exit 1
 verify_replica_set
+[[ "$(select_binding)" == "$binding_record" ]] || exit 1
 bytes="$(wc -c <"$work/langfuse.dump" | tr -d '[:space:]')"
 [[ "$bytes" =~ ^[1-9][0-9]*$ && "$bytes" -lt 1073741824 ]] || exit 1
 checksum="$(openssl dgst -sha256 -binary "$work/langfuse.dump" | openssl base64 -A)"
@@ -136,6 +172,7 @@ docker exec "$container" pg_restore --clean --if-exists --exit-on-error \
 tables="$(docker exec "$container" psql -XAt -w -U langfuse -d langfuse \
   -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")"
 [[ "$tables" =~ ^[1-9][0-9]*$ ]] || exit 1
+[[ "$(select_binding)" == "$binding_record" ]] || exit 1
 
-printf 'Verified Langfuse PostgreSQL checkpoint: key=%s version=%s sha256=%s bytes=%s tables=%s\n' \
-  "$key" "$version" "$digest" "$bytes" "$tables" >"${RUNNER_TEMP:?}/langfuse-checkpoint-receipt"
+printf 'Verified Langfuse PostgreSQL checkpoint: key=%s version=%s sha256=%s bytes=%s tables=%s pvc_uid=%s pv=%s pv_uid=%s\n' \
+  "$key" "$version" "$digest" "$bytes" "$tables" "$claim_uid" "$pv_name" "$pv_uid" >"${RUNNER_TEMP:?}/langfuse-checkpoint-receipt"

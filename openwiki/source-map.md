@@ -124,10 +124,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Source Map
@@ -157,7 +157,7 @@ desired state.
 | `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
-| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale tailnet DNS, settings, contacts, policy, and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |

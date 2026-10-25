@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b16df979438bad1179753e2caf4f0b03d2947d5224000ccff6f8e1dfb7056483",
+  "pageVersion": "sha256:34ff67707e3c44d10c664a3add7f9315961348ac92209fecb04a44b95dc379c9",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:64ffd58d5e7e01518df303790d6d63349dc985339c140bb0cd18cf09091149ab"
+          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ba96d393e96eef109996906f46deba7d5ace54d237d9d4477667ea9f224f03c9"
+          "version": "repo-file-v1:sha256:c4b63d069880fed82d1d27d4504dd415300563d478e6ecf5bf312f21ff3ace82"
         }
       ]
     },
@@ -590,19 +590,19 @@
     },
     {
       "id": "claim_177aaa90270b469cb95319ead02bf1a7",
-      "statement": "The protected Enterprise workflow invokes a pinned full-sync helper, but the committed unselected installation phase blocks Kubernetes sync. Reconcile, stop, and verification now route through a source-bound exact-main one-shot Job dispatcher, yet the disabled operator gate prevents Job creation; restore and acceptance remain separately blocked. Offline fixtures check source, identity, and dependency ordering.",
+      "statement": "The protected Enterprise workflow invokes a pinned full-sync helper, but the committed unselected installation phase blocks Kubernetes sync. Reconcile, stop, and verification route through a source-bound exact-main one-shot Job dispatcher, yet the disabled operator gate prevents Job creation; restore and acceptance remain separately blocked. Offline fixtures check source, identity, and dependency ordering.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L202-L276",
-          "version": "repo-lines-v1:sha256:81e53e968943b24e2de4e61d7e157aa651ddaafa22b2c16b366e1343d0c5ad59:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkODM0NjZmMDIwNTZjMDMyMWZkM2MzZTM5MzllOGRjYTg3YmY0MjczOTlhY2ZjYWZjYjM4NjI2MjAxZmFjOGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjZmM2YWYxNzhlNTVjNjZhODhhMGY5NDg0OGMwNzNmYWYyYjMwZDc0OWRmNGRkNzlmOWNhZDA4YzVhMmFkMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNzgwOWM5MjEwNmI3ZTI1NmM1ZGU0YTZlZWZjNmZmYWU5NDU4NjBmN2MwMDhjOThmYTU5NWJlYzlmY2Y3MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzZGQwZjE5YTJmYjhlZmU1ZmM5NDc4YzQyNzNhMTYxNDMwYmYxMTIwZDdjNjRiZWY4ZmZkZDlkOGE5ZDA1Y2EifQ"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator-test.py",
           "version": "repo-file-v1:sha256:c65724882178876bc8a995d7a329e20d805cbe8143a324a551d65bdf5b6cd965"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L1-L46",
-          "version": "repo-lines-v1:sha256:9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -616,7 +616,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:026daf83ba1171ae5cbb7bee2b109c3f2f11f6aef0b5a1f2970cc70f035731f0"
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -744,11 +744,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:64ffd58d5e7e01518df303790d6d63349dc985339c140bb0cd18cf09091149ab"
+          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:ba13c2224b86f0b0c576773f3361bc032aa572e43790d0ae4d073cae0f994349"
+          "version": "repo-file-v1:sha256:04bcadde4d22cd0e83fab58e385f2d4d7b16d8d4d3e8c9aae29b9a9c9ef146ec"
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
@@ -835,6 +835,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T01:38:00.583Z"
   }
 }

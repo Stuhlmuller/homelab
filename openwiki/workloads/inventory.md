@@ -221,7 +221,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Workload Inventory
@@ -612,11 +612,6 @@ Argo pruned it in a separate revision before this writer restart. The separate 1
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
-
-The draft protected [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
-is a manual, one-shot safety copy for a later database move. It verifies an
-exact versioned dump through an isolated restore, but no live receipt exists;
-ClickHouse, Valkey, raw objects, and secrets still need separate recovery.
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening

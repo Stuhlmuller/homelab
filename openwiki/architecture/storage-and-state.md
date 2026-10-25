@@ -65,7 +65,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Storage And State
@@ -433,13 +433,6 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
-The draft protected, manual [PostgreSQL checkpoint workflow](
-../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
-would capture the single Ready database, retain a versioned KMS-encrypted dump,
-download that exact version, verify its digest, and restore it offline in a
-network-isolated PostgreSQL container. No live checkpoint receipt exists yet.
-It covers PostgreSQL only; ClickHouse, Valkey, raw objects, application secrets,
-and a coordinated full restore remain outside this check.
 The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
 and permanently detaches them without deleting their files. Repeated merge
 failures caused shared-NAS metadata pressure; application tables remain attached.

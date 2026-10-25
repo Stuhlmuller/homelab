@@ -825,6 +825,23 @@ test_allows_exact_azuread_plan_stage_classifier if {
 	count(violations) == 0
 }
 
+test_allows_visible_terragrunt_plan if {
+	violations := deny with input as workflow_with_live_run(visible_terragrunt_plan_run)
+	count(violations) == 0
+}
+
+test_rejects_changed_visible_terragrunt_plan if {
+	every changed in [
+		replace(visible_terragrunt_plan_run, `bash scripts/ci/terragrunt-plan.sh`, `bash scripts/ci/terragrunt-apply.sh`),
+		concat("\n", [visible_terragrunt_plan_run, `cat "$azuread_report"`]),
+		replace(visible_terragrunt_plan_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `echo "$azuread_report"`),
+	] {
+		violations := deny with input as workflow_with_live_run(changed)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_rejects_modified_azuread_plan_private_wrapper if {
 	every run in [
 		replace(classified_azuread_live_run, `private_dir="$(mktemp -d)"`, `private_dir="$(mktemp)"`),

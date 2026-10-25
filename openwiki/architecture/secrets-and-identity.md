@@ -68,6 +68,8 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
@@ -100,6 +102,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
+    resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
@@ -138,10 +142,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Secrets And Identity
@@ -174,12 +178,16 @@ fragment would overwrite unrelated access. The committed policy preserves legacy
 users, tags, SSH and route approvals while giving new CI tags only explicit grants.
 Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
 
-The local provider reads a private administrator token file. The temporary
-bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
-S3 state and private encrypted saved plans retain the existing KMS boundary.
+The local provider reads a dedicated administrator OAuth client from private
+`0600` ID and secret files. The Kubernetes operator's SSM-backed OAuth client
+stays separate and has no tailnet administration scopes. Encrypted S3 state and
+private encrypted saved plans retain the existing KMS boundary. The same unit
+adopts existing DNS, tailnet settings, and contact addresses; it does not own
+personal devices or controller-generated Kubernetes device IDs.
 Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
 and Cordium tags and expire after 90 days. The committed generation drives
-rotation every 60 days; an invalid key is not silently recreated. Tailnet Lock
+rotation every 60 days; generation 2 matches the encrypted state. An invalid key
+is not silently recreated. Tailnet Lock
 requires signatures in addition to enrollment. The unused federated identities
 remain protected until final migration retirement after signed-key acceptance.
 
@@ -553,12 +561,12 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`. Only `homelab-plan` requires reviewer approval.
-  The production environment
+  `homelab-production`. PR plans use `homelab-plan` without a required
+  environment reviewer. The production environment
   permits only `main` and releases credentials without another approval;
-  main-only diagnostics also use production. Approve a pull request plan only
-  after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
-  identity. Repository Actions policy rejects mutable action tags, and the
+  main-only diagnostics also use production. Review the pull request plan and
+  exact code before merge because that job assumes the environment-bound AWS
+  OIDC identity. Repository Actions policy rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
   always-on checks and no force pushes. The CI connector does not pass Octelium
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,

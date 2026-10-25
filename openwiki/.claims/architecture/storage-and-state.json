@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b16ac7b120804a772f7708e808a3225c49fb4bc8b4741150134ef743794fa00",
+  "pageVersion": "sha256:2e49c4134896ecaa8966d293c2f9b158ef1eef82fda0a51e73f5e857fb8c2689",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:211f3230bc0844e4402db5453d2bc4b6df4c874a44b53bdcfdacb243d8e1b7e0"
+          "version": "repo-file-v1:sha256:72653e540cd6e644c3308a0c7a244d26f82c75316f5da19aeea6e35ee2625ec2"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
+          "version": "repo-file-v1:sha256:f0527f3f96861beaf460a297338e8d4af4b452c4ca234b73c4aaaa447a13f6c6"
         }
       ]
     },
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:64ffd58d5e7e01518df303790d6d63349dc985339c140bb0cd18cf09091149ab"
+          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -187,7 +187,7 @@
           "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L23-L46",
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L27-L50",
           "version": "repo-lines-v1:sha256:2bb2a90e863f614bdd8d2d0bdee1d2ec3fa93f44fe07c525755362e84fcf53f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzMGM2ZWEyMmNjYTBjNDJiZmM3MTMyYjA5YWQ5NTdkMGE1MmI0M2YxNjAyZWQ2MzY2OTcyMzFmMTZiMDFjMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
@@ -248,11 +248,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:ba13c2224b86f0b0c576773f3361bc032aa572e43790d0ae4d073cae0f994349"
+          "version": "repo-file-v1:sha256:04bcadde4d22cd0e83fab58e385f2d4d7b16d8d4d3e8c9aae29b9a9c9ef146ec"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
-          "version": "repo-file-v1:sha256:f660436f7b5993055d46641f35f223ea5ae592a4ce2e47ec5ee02984828494e7"
+          "version": "repo-file-v1:sha256:95baa44ed471d8efc23d3d652cc8c78d320cf6874fc3982514ce8acbc201ced9"
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
@@ -289,6 +289,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T04:28:23.381Z"
   }
 }
