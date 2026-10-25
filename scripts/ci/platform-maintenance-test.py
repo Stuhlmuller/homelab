@@ -483,6 +483,7 @@ class PlatformMaintenance(unittest.TestCase):
 
         def fake_call(service, operation, arguments=()):
             if operation == "list-object-versions":
+                self.assertIn("--no-paginate", arguments)
                 prefix = arguments[arguments.index("--prefix") + 1]
                 return {"IsTruncated": False, "Versions": [
                     {"Key": key, "VersionId": version, "IsLatest": True}
@@ -561,6 +562,21 @@ class PlatformMaintenance(unittest.TestCase):
         self.assertTrue(run.call_args.kwargs["capture_output"])
         with self.assertRaisesRegex(ValueError, "unreviewed platform receipt destination"):
             self.module.DurableReceipts({**target, "bucket": "another-bucket"})
+
+    def test_durable_version_reads_require_raw_completeness(self):
+        store = self.module.DurableReceipts(self.module.receipt_target())
+        key = f"{self.module.PREREQUISITE_PREFIX}/{'a' * 40}/placement.json"
+        for result in ({"Versions": []}, {"IsTruncated": True, "Versions": []}):
+            with self.subTest(result=result), \
+                    patch.object(store, "call", return_value=result) as read, \
+                    patch.object(store, "download") as download:
+                with self.assertRaisesRegex(ValueError, "incomplete"):
+                    store.versions("talos-1.11.6")
+                self.assertIn("--no-paginate", read.call_args.args[2])
+                with self.assertRaisesRegex(ValueError, "ambiguous"):
+                    store.load_one(key, Path("/tmp/unused-platform-receipt.json"))
+                self.assertIn("--no-paginate", read.call_args.args[2])
+                download.assert_not_called()
 
     def test_kubernetes_completion_requires_durable_stage_start(self):
         target = self.module.receipt_target()
@@ -892,6 +908,7 @@ class PlatformMaintenance(unittest.TestCase):
 
         def versions(_service, operation, arguments=()):
             self.assertEqual(operation, "list-object-versions")
+            self.assertIn("--no-paginate", arguments)
             key = arguments[-1]
             return {"IsTruncated": False, "Versions": [
                 {"Key": key, "VersionId": "version-1", "IsLatest": True}]}

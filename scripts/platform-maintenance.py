@@ -90,8 +90,8 @@ class DurableReceipts:
 
     def versions(self, stage):
         prefix = f"{RECEIPT_PREFIX}/{stage}/"
-        result = self.call("s3api", "list-object-versions", ["--prefix", prefix])
-        if result.get("IsTruncated") is True or result.get("DeleteMarkers"):
+        result = self.call("s3api", "list-object-versions", ["--no-paginate", "--prefix", prefix])
+        if result.get("IsTruncated") is not False or result.get("DeleteMarkers"):
             raise ValueError("platform receipt history is incomplete or deleted")
         expected = {self.key(stage, node, status)
                     for node in (None, *NODES) for status in ("started", "verified")}
@@ -205,9 +205,9 @@ class DurableReceipts:
                 os.fsync(output.fileno())
 
     def load_one(self, key, path):
-        result = self.call("s3api", "list-object-versions", ["--prefix", key])
+        result = self.call("s3api", "list-object-versions", ["--no-paginate", "--prefix", key])
         versions = result.get("Versions", [])
-        if (result.get("IsTruncated") is True or result.get("DeleteMarkers") or
+        if (result.get("IsTruncated") is not False or result.get("DeleteMarkers") or
                 not isinstance(versions, list) or len(versions) != 1 or
                 versions[0].get("Key") != key or
                 versions[0].get("IsLatest") is not True or
