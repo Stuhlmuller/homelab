@@ -296,8 +296,8 @@ For the enrolled iPhone, confirm its Fleet host ID privately and put it on
 cellular with Tailscale connected. Run the repository-owned one-shot check:
 
 ```sh
-python3 -I scripts/fleet-free-setup.py ios-checkin --host-id <fleet-ios-id>
-python3 -I scripts/fleet-free-setup.py ios-checkin --host-id <fleet-ios-id> --execute
+python3 -I scripts/fleet-free-setup.py ios-checkin --host-id REPLACE_WITH_FLEET_IOS_HOST_ID
+python3 -I scripts/fleet-free-setup.py ios-checkin --host-id REPLACE_WITH_FLEET_IOS_HOST_ID --execute
 ```
 
 Execution verifies the selected iPhone's Fleet MDM enrollment and UUID, then

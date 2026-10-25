@@ -58,6 +58,7 @@ class FakeAPI:
 
     def __init__(self):
         self.calls = []
+        self.timeouts = []
         self.errors = {}
         self.config = {"license": {"tier": "free"}, "sso_settings": {"enable_sso": False}}
         self.users = [{"id": 1, "email": self.ADMIN_EMAIL, "sso_enabled": False, "global_role": "admin"}]
@@ -69,6 +70,8 @@ class FakeAPI:
                      "last_mdm_checked_in_at": "2026-10-06T02:42:02Z"}
         self.apns_ack = True
         self.apns_drift = False
+        self.apns_sent = False
+        self.timeout_after_ping = False
         self.policies = []
         self.catalog = [copy.deepcopy(CATALOG_UNRELATED)]
         self.catalog_has_next = False
@@ -108,8 +111,10 @@ class FakeAPI:
     def user(self, email):
         return next((user for user in self.users if user.get("email") == email), None)
 
-    def request(self, method, path, body=None, token=None, content_type="application/json", accepted_status=200):
+    def request(self, method, path, body=None, token=None, content_type="application/json", accepted_status=200,
+                timeout=60):
         self.calls.append((method, path, copy.deepcopy(body), token))
+        self.timeouts.append((method, path, timeout))
         if (method, path) in self.errors:
             raise self.errors[method, path]
         if path == "/api/v1/fleet/login":
@@ -173,6 +178,8 @@ class FakeAPI:
                 return {}
             raise AssertionError("Unexpected user update")
         if path == "/api/v1/fleet/hosts/2" and method == "GET":
+            if self.apns_sent and self.timeout_after_ping:
+                raise TimeoutError(PRIVATE)
             return {"host": copy.deepcopy(self.host)}
         if path == "/api/v1/fleet/hosts/2/apns_ping" and method == "POST":
             if accepted_status != 204 or body is not None:
@@ -181,6 +188,7 @@ class FakeAPI:
                 self.host["last_mdm_checked_in_at"] = datetime.now(timezone.utc).isoformat()
             if self.apns_drift:
                 self.host["uuid"] = LOCAL_UUID
+            self.apns_sent = True
             return {}
         if path == "/api/v1/fleet/global/policies?per_page=100" and method == "GET":
             return {"policies": copy.deepcopy(self.policies)}
@@ -586,6 +594,24 @@ class FleetFreeTest(unittest.TestCase):
         self.assertIn("did not complete a fresh Fleet MDM check-in", output)
         self.assertEqual(sum(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls), 1)
         self.assertEqual(self.mdm.calls, [])
+        self.assert_logged_out()
+
+    def test_ios_checkin_limits_each_poll_to_remaining_deadline(self):
+        self.api.apns_ack = False
+        with patch.object(helper.time, "monotonic", side_effect=(0, 89.5, 90.1)):
+            status, _, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        poll_timeouts = [timeout for method, path, timeout in self.api.timeouts
+                         if method == "GET" and path == "/api/v1/fleet/hosts/2"]
+        self.assertEqual(poll_timeouts, [60, 60, 60, 0.5])
+        self.assert_logged_out()
+
+    def test_ios_checkin_revokes_session_when_a_poll_times_out(self):
+        self.api.timeout_after_ping = True
+        status, output, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        self.assertIn("Private details withheld", output)
+        self.assertEqual(sum(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls), 1)
         self.assert_logged_out()
 
     def test_ios_checkin_rejects_identity_drift_after_ping(self):

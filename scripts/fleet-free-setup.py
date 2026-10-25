@@ -141,8 +141,8 @@ def ios_checkin(api, mdm, token, host_id):
     host_uuid = ios_host(api, mdm, token, host_id)
     path = f"/api/v1/fleet/hosts/{host_id}"
 
-    def checked_in_at():
-        host = api.request("GET", path, token=token)["host"]
+    def checked_in_at(timeout=60):
+        host = api.request("GET", path, token=token, timeout=timeout)["host"]
         if (host.get("id") != host_id or host.get("platform") != "ios"
                 or host.get("uuid") != host_uuid
                 or host.get("mdm", {}).get("connected_to_fleet") is not True):
@@ -162,13 +162,19 @@ def ios_checkin(api, mdm, token, host_id):
     started = datetime.now(timezone.utc)
     api.request("POST", path + "/apns_ping", token=token, accepted_status=204)
     deadline = time.monotonic() + 90
-    while time.monotonic() < deadline:
-        current = checked_in_at()
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        current = checked_in_at(timeout=min(60, remaining))
         if (previous < current <= datetime.now(timezone.utc) + timedelta(minutes=1)
                 and current >= started - timedelta(minutes=2)):
             print("Enrolled iPhone MDM check-in advanced after one APNs ping; no MDM command sent", flush=True)
             return
-        time.sleep(3)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(3, remaining))
     raise SetupError("iPhone did not complete a fresh Fleet MDM check-in after one APNs ping")
 
 
