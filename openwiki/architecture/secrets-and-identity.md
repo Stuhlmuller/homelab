@@ -98,6 +98,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
+    resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
@@ -136,10 +138,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Secrets And Identity
@@ -172,12 +174,16 @@ fragment would overwrite unrelated access. The committed policy preserves legacy
 users, tags, SSH and route approvals while giving new CI tags only explicit grants.
 Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
 
-The local provider reads a private administrator token file. The temporary
-bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
-S3 state and private encrypted saved plans retain the existing KMS boundary.
+The local provider reads a dedicated administrator OAuth client from private
+`0600` ID and secret files. The Kubernetes operator's SSM-backed OAuth client
+stays separate and has no tailnet administration scopes. Encrypted S3 state and
+private encrypted saved plans retain the existing KMS boundary. The same unit
+adopts existing DNS, tailnet settings, and contact addresses; it does not own
+personal devices or controller-generated Kubernetes device IDs.
 Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
 and Cordium tags and expire after 90 days. The committed generation drives
-rotation every 60 days; an invalid key is not silently recreated. Tailnet Lock
+rotation every 60 days; generation 2 matches the encrypted state. An invalid key
+is not silently recreated. Tailnet Lock
 requires signatures in addition to enrollment. The unused federated identities
 remain protected until final migration retirement after signed-key acceptance.
 
