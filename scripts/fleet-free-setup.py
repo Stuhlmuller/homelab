@@ -169,7 +169,7 @@ def ios_checkin(api, mdm, token, host_id):
         current = checked_in_at(timeout=min(60, remaining))
         if (previous < current <= datetime.now(timezone.utc) + timedelta(minutes=1)
                 and current >= started - timedelta(minutes=2)):
-            print("Enrolled iPhone MDM check-in advanced after one APNs ping; no MDM command sent", flush=True)
+            print("Enrolled iPhone MDM check-in advanced after one APNs ping", flush=True)
             return
         remaining = deadline - time.monotonic()
         if remaining <= 0:
