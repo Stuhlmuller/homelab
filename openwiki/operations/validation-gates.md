@@ -2054,12 +2054,27 @@ Pod inventory against reviewed system Pod UIDs before removing the taint. A
 survivor, incomplete inventory, changed Pod or timeout leaves the taint and an
 interrupted private receipt. Source fixtures do not supply live capacity or
 traffic qualification.
-After an interrupted unlabel, current `canary-release` cannot retry the
-taint-only state. Before activation, a protected release-recovery stage must
-bind reviewed ownership/cleanup receipts and the admission marker to fresh
-empty owned-firewall, absent-runtime, and Node/Pod identity proof before taint
-removal. See [the canary Node stage](../../scripts/network-policy-canary-node.py);
-manual untaint is barred.
+After an interrupted unlabel, `canary-release` cannot retry the taint-only
+state. Owner-only `canary-release-recover` selects the immutable original
+release attempt, verified cleanup, ownership, and placement. The attempt must
+bind the cleanup run and Pod UID; earlier attempts without those fields fail
+closed. The original release SHA must be on current first-parent `main`, with
+its runtime manifests, canary settings, and activation state unchanged. The
+stage requires the matching admission marker on the unlabeled, tainted Node,
+a reviewed dormant
+cleanup DaemonSet with no Pods anywhere, and absent enforcer and fixtures.
+Before untaint it requires the original system Pod UIDs. Its same-run
+UID-owned host probe must prove an
+empty firewall and be deleted before one resource-version/UID-guarded patch
+removes the marker and taint. An orphaned probe uses protected
+`firewall-baseline-recover` with the release recovery run ID. See
+[the canary Node stage](../../scripts/network-policy-canary-node.py); manual
+untaint is barred. If the Node was cleared but the final receipt was lost,
+the same selected receipts can produce a read-only `observedClean` receipt
+after a fresh empty firewall probe and complete, unchanged current Pod
+inventory. It permits ordinary post-untaint workloads but rejects firewall
+and cleanup Pods. It records `mutationPerformed: false` and does not
+attribute the earlier patch.
 
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)

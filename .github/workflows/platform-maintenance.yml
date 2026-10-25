@@ -12,7 +12,7 @@ on:
         description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-abort, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-abort, canary-release, canary-release-recover, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
       baseline_source_sha:
         description: Firewall-baseline main SHA, required for placement or recovery
         required: false
@@ -30,7 +30,15 @@ on:
         required: false
         type: string
       cleanup_run_id:
-        description: Verified owned-cleanup run ID, required only for canary-release
+        description: Verified owned-cleanup run ID, required for canary-release or recovery
+        required: false
+        type: string
+      release_source_sha:
+        description: Original canary-release main SHA, required for release recovery
+        required: false
+        type: string
+      release_run_id:
+        description: Original canary-release run ID, required for release recovery
         required: false
         type: string
       qualification_run_id:
@@ -71,7 +79,7 @@ jobs:
         run: |
           test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ]; then
+          if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ] || [ "$RUN_STAGE" = canary-release-recover ]; then
             test "$GITHUB_ACTOR_ID" = 57728706
             test "$GITHUB_RUN_ATTEMPT" = 1
           fi
@@ -124,7 +132,7 @@ jobs:
           set -euo pipefail
           test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
-          if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ]; then
+          if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ] || [ "$RUN_STAGE" = canary-release-recover ]; then
             test "$GITHUB_ACTOR_ID" = 57728706
             test "$GITHUB_RUN_ATTEMPT" = 1
           fi
@@ -172,6 +180,8 @@ jobs:
           PLACEMENT_RUN_ID: ${{ inputs.placement_run_id }}
           ADMISSION_RUN_ID: ${{ inputs.admission_run_id }}
           CLEANUP_RUN_ID: ${{ inputs.cleanup_run_id }}
+          RELEASE_SOURCE_SHA: ${{ inputs.release_source_sha }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           QUALIFICATION_RUN_ID: ${{ inputs.qualification_run_id }}
           EVIDENCE_SOURCE_SHA: ${{ inputs.evidence_source_sha }}
@@ -191,7 +201,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'bda975bc15217c4557828790f37788b8047c137323e44b16826142f4ff9238e5  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'468962ce40fe71673a86f54c7eba7a1e10362095e731ab7e3a3dfbe7b00ba7ba  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then
