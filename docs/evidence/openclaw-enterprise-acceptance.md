@@ -498,6 +498,21 @@ current PostgreSQL-only checkpoint cannot authorize that pause.
 No service was paused or moved. T022, local storage and canary admission remain
 blocked; these estimates are not peak or recovery receipts.
 
+At 2026-10-25 05:49 UTC on `main` `9380278e`, the 25 live
+`emergency-octelium-*` Pods on `acer` requested 2,656 MiB in total and mounted
+no PVCs. Retiring this retained
+[fallback manifest](../../clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml)
+after the native off-ramp gate, then reconciling Crossplane's declared standby
+state, would raise `acer` request headroom from 1,801 to 4,969 MiB. The initial
+4,096 MiB Enterprise budget would leave 873 MiB by requests before peaks or
+restart overlap. The off-ramp remains blocked: `zimaboard-0` had only 5 MiB
+request margin and 1,003 MiB observed margin against its 2,765 MiB rolling
+screen, with direct native and public traffic proof still pending. Redis and
+package-store backup are separate Octelium recovery gaps, not prerequisites
+for pruning these stateless fallback Pods. Once Enterprise consumes this
+capacity, rollback must stop it through the declared path before GitOps
+restores the fallback Pods; `acer` cannot host both sets together.
+
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global
