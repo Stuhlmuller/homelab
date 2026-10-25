@@ -86,11 +86,13 @@ version, SHA-256 digest, and isolated-restore table count. The checkpoint covers
 PostgreSQL only; it does not back up ClickHouse, Valkey, raw events, or secrets.
 If the receipt or restore check fails, stop the move.
 
-The `Recreate` rollout stops the old Pod before starting it on `acer`, causing
-a brief database outage. Verify the new Pod is Ready on `acer`, the same PVC is
-mounted, Langfuse web and worker recover, and a fresh event is ingested. If the
-remount fails, revert the node selector through a reviewed GitOps change while
-preserving the PVC. Do not restore a dump over a running database.
+The `Recreate` rollout stops the old Pod before starting it on `acer`. Database
+access stays down until NFS remount and PostgreSQL startup finish; the duration
+is not guaranteed. Verify the new Pod is Ready on `acer`, the same PVC is mounted,
+Langfuse web and worker recover, and a fresh event is ingested. If remount fails,
+keep the canary taint disabled and use a reviewed GitOps change to pin PostgreSQL
+back to `zimaboard-2` while preserving the PVC. Do not restore a dump over a
+running database.
 
 ## Web memory
 
