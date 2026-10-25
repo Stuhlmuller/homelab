@@ -1,9 +1,10 @@
 # Bulldozer
 
 Bulldozer is the Stuhlmuller GitHub App that squash-merges eligible PRs after
-GitHub permits the merge. Its repository-wide default considers every PR, but
-`allow_merge_with_no_checks: false` blocks merges where no required checks exist.
-The branch's rulesets, required reviews, and status checks remain authoritative.
+GitHub permits the merge. Its repository-wide default considers every PR.
+`allow_merge_with_no_checks: true` includes repositories without required checks;
+there, a PR may merge without CI if GitHub allows it. Where branch rules require
+reviews or checks, GitHub enforces them.
 The branch-update feature is disabled to avoid extra CI churn.
 
 This Deployment starts at zero replicas. Create a dedicated GitHub App owned by
@@ -44,10 +45,10 @@ route before setting the App webhook. Scale to one through a reviewed GitOps
 change only after credentials are real. Require a successful signed GitHub
 delivery and an eligible PR merging under its actual repository rules.
 
-Private repositories on the current GitHub plan cannot expose rulesets through
-the API; those without required checks will be installed but cannot auto-merge
-under this safety setting. Reassess the plan and branch rules before expecting
-automatic merges in them.
+Private repositories on the current GitHub plan cannot enforce rulesets through
+the API. Their otherwise mergeable PRs are included even without required
+checks, as requested by the owner. Add enforceable branch rules before relying
+on CI or reviews to gate those merges.
 
 Render and route checks:
 
