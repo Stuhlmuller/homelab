@@ -39,6 +39,15 @@ class Routes(unittest.TestCase):
         entries = dict(line.split("=", 1) for line in environment.splitlines() if "=" in line)
         self.assertEqual(entries["TRUSTED_PROXY_IP"], "loopback,uniquelocal")
 
+    def test_cold_start_dependencies_precede_postgres(self):
+        postgres = documents("postgres.yaml")[1]
+        postgres_wave = int(postgres["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"])
+        for name in ("serviceaccount.yaml", "externalsecret.yaml", "initdb-configmap.yaml", "storage.yaml"):
+            for dependency in documents(name):
+                wave = dependency["metadata"].get("annotations", {}).get("argocd.argoproj.io/sync-wave", "0")
+                with self.subTest(resource=dependency["metadata"]["name"]):
+                    self.assertLess(int(wave), postgres_wave)
+
     def test_application_credentials_and_native_image_user(self):
         for name in ("workloads.yaml", "migration.yaml", "bootstrap-job.yaml"):
             for resource in documents(name):

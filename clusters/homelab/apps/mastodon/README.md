@@ -66,7 +66,8 @@ The official 4.7.3 image serves compiled static files and media through Puma;
 streaming runs separately on port 4000. The image's private application directory
 requires its native UID/GID 991; application containers use those IDs with
 supplementary filesystem group 65534 for shared volumes. The datastore and
-backup containers retain UID/GID 65534. PostgreSQL rolls in wave -1 before
+backup containers retain UID/GID 65534. The service account, config, secrets
+and storage precede PostgreSQL in wave -2. PostgreSQL rolls in wave -1 before
 database-role provisioning in wave 0, schema preparation in wave 1, owner
 bootstrap in wave 2, and the Deployments start in wave 3. Web, Sidekiq, streaming
 and migration/owner Jobs select Acer for memory headroom. PostgreSQL and Redis
