@@ -2,6 +2,22 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+## Helm charts
+
+`scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
+chart in `scripts/config/harbor-image-charts.json`, including the local-path
+chart packaged from its pinned Git revision. The protected
+`harbor-helm-charts.yml` workflow accepts only the exact current `main` SHA,
+fetches those upstream packages, checks their identity and bytes, and pushes
+them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
+separate mirror reader robot and compares the package SHA-256. A retry checks
+existing artifacts before pushing; a mismatched artifact stops publication.
+
+Publish and verify all chart packages before changing Argo CD sources. Argo CD
+uses the repository Secret in `clusters/homelab/argocd/self-management` and its
+read-only mirror credential. If Harbor cannot serve charts, restore its registry
+and re-run the protected publication workflow before asking Argo CD to sync.
+
 ## Chainguard source provenance
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
