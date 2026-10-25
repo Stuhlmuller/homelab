@@ -533,6 +533,7 @@ test('private acceptance data binds only to initialized acer-local storage', () 
   const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
   const storage = fs.readFileSync(path.join(root, 'acceptance-ledger-pvc.yaml'), 'utf8');
   const initializer = fs.readFileSync(path.join(root, 'acceptance-ledger-init-job.yaml'), 'utf8');
+  const runner = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
   const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
   assert.match(storage, /storageClassName: renovate-acceptance-ledger-local/);
   assert.match(storage, /path: \/var\/lib\/renovate-acceptance-ledger/);
@@ -551,7 +552,13 @@ test('private acceptance data binds only to initialized acer-local storage', () 
     if (filename !== 'acceptance-inventory-job.yaml') {
       assert.doesNotMatch(manifest, /claimName: renovate-cache/, filename);
     } else {
-      assert.match(manifest, /claimName: renovate-cache\n\s+readOnly: true/, filename);
+      const inventoryClaim = manifest.match(/claimName: (renovate-cache(?:-dedicated)?)\n\s+readOnly: true/)?.[1];
+      const runnerClaim = runner.match(/claimName: (renovate-cache(?:-dedicated)?)/)?.[1];
+      assert.equal(inventoryClaim, 'renovate-cache-dedicated');
+      if (inventoryClaim !== runnerClaim) {
+        assert.match(manifest, /^  suspend: true$/m);
+        assert.doesNotMatch(kustomization, /- acceptance-inventory-job.yaml/);
+      }
     }
   }
 });

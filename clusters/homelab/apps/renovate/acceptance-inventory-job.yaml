@@ -102,7 +102,7 @@ spec:
                 path: private-key
         - name: cache
           persistentVolumeClaim:
-            claimName: renovate-cache
+            claimName: renovate-cache-dedicated
             readOnly: true
         - name: review
           secret:

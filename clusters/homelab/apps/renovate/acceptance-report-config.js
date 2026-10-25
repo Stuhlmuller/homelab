@@ -4,6 +4,7 @@ const { readToken } = require('./acceptance-observer.js');
 const { renovatePolicy } = require('./runner-config.js');
 
 const privateDir = '/ledger/private';
+const scratchDir = '/report-output';
 const uidFile = '/var/run/podinfo/uid';
 const readPermissions = Object.freeze({
   checks: 'read',
@@ -38,6 +39,13 @@ function reportPaths(uid, directory = privateDir) {
   };
 }
 
+function reportScratchPath(uid) {
+  if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(uid)) {
+    throw new Error('invalid-pod-uid');
+  }
+  return path.join(scratchDir, `${uid}.json`);
+}
+
 function prepare(paths) {
   for (const directory of [paths.directory, paths.reports]) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -67,12 +75,15 @@ async function config() {
     cachePrivatePackages: false,
     dryRun: 'full',
     reportType: 'file',
-    reportPath: paths.report,
+    // The 128 MiB memory-backed volume hard-limits the raw report before it
+    // can be copied to the private ledger and sealed by the wrapper.
+    reportPath: reportScratchPath(podUid()),
   };
 }
 
 config.podUid = podUid;
 config.reportPaths = reportPaths;
+config.reportScratchPath = reportScratchPath;
 config.prepare = prepare;
 config.readPermissions = readPermissions;
 module.exports = config;

@@ -111,6 +111,7 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch) 
       !validTime(observedAt) || Date.parse(observedAt) < Date.parse(event.firstPresent) ||
       !Array.isArray(files) || !Number.isSafeInteger(pull?.changed_files) ||
       pull.changed_files !== files.length || pull.number !== match.number ||
+      pull.state !== 'open' || pull.closed_at != null || pull.merged_at != null ||
       pull.user?.login !== bot || pull.base?.repo?.full_name !== item.repository ||
       pull.head?.repo?.full_name !== item.repository ||
       pull.head?.ref !== match.branch.branchName || pull.base?.ref !== baseBranch ||

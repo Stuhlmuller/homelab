@@ -250,8 +250,10 @@ reviewed private sample and empty ledger after the node recovers.
 The local PV's capacity is advisory for a hostPath. Before activation, verify
 `acer` is Ready and has at least 80 GiB free on its node filesystem. A
 read-only kubelet check on 2026-10-24 showed 412 GiB available. The proof
-reader bounds each report to 128 MiB and the set to 192 hourly reports; the
-runner also bounds each diagnostic log to 128 MiB when sealing. Thus the
+reader bounds each report to 128 MiB and the set to 192 hourly reports. The
+runner directs the raw report to a separate 128 MiB memory-backed volume,
+copies it to the ledger only after success and validation, and caps its
+streamed diagnostic log at 128 MiB while Renovate runs. Thus the
 seven-day raw report/log ceiling is 48 GiB, leaving room for the ledger and
 evidence in the declared 64 GiB size. If measured reports exceed those bounds
 or node free space falls, keep the CronJobs suspended and resize through
@@ -307,8 +309,9 @@ omitted from Kustomize and suspended. It verifies a pinned report and private
 hash receipt, matches an exact sampled package, file, and version to one
 Renovate PR number, then reads that PR and its complete GitHub file diff with
 a read-scoped App token. A matching added line must contain both the package
-and version. It requires GitHub's response clock to agree within one minute,
-then writes the private diff snapshot and hashed outcome receipt to the ledger;
+and version. It requires GitHub's response clock to agree within one minute
+and the PR to be open and unmerged when read. It then writes the private diff
+snapshot and hashed outcome receipt to the ledger;
 Pod logs contain counts only. Its read time plus that minute is a conservative
 **upper bound** for the proposal. Reads more than four hours after the
 last-absent bound, missing patches, and ambiguous PR matches remain unknown.
@@ -322,7 +325,9 @@ persistence, so this requires a successful later write-enabled scan. The
 `acceptance-inventory-job.yaml` Job is deliberately omitted from Kustomize and
 has `suspend: true`; merging this source cannot start it. It uses the same
 no-token `renovate` ServiceAccount and Pod-local registry route. Its cache mount
-is read-only, and it writes only to the separate protected ledger. Activate it
+is read-only and targets `renovate-cache-dedicated`; verify that the live writer
+CronJob uses this same claim before activating the Job. It writes only to the
+separate protected ledger. Activate it
 through a reviewed GitOps change only after the
 App transfer, write cutover, and private review input are ready.
 

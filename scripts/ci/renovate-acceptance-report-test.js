@@ -55,7 +55,7 @@ test('report scan uses only read grants and a per-Pod private path, without the 
   const value = await config();
   assert.equal(value.token, 'ghs_read');
   assert.equal(value.reportType, 'file');
-  assert.equal(value.reportPath, `/ledger/private/reports/${uid}.json`);
+  assert.equal(value.reportPath, `/report-output/${uid}.json`);
   assert.equal(value.baseDir, '/tmp/renovate-report/base');
   assert.equal(value.cacheDir, '/tmp/renovate-report/cache');
   assert.equal(value.repositoryCache, 'disabled');
@@ -67,12 +67,15 @@ test('report scan uses only read grants and a per-Pod private path, without the 
     vulnerability_alerts: 'read',
   });
   assert.throws(() => config.reportPaths('../escape'), /invalid-pod-uid/);
+  assert.throws(() => config.reportScratchPath('../escape'), /invalid-pod-uid/);
   const manifest = fs.readFileSync(path.join(root, 'acceptance-report-job.yaml'), 'utf8');
   const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
   assert.match(manifest, /^  suspend: true$/m);
   assert.match(manifest, /fieldPath: metadata.uid/);
   assert.match(manifest, /automountServiceAccountToken: false/);
   assert.doesNotMatch(manifest, /claimName: renovate-cache/);
+  assert.match(manifest, /mountPath: \/report-output/);
+  assert.match(manifest, /medium: Memory\n\s+sizeLimit: 128Mi/);
   assert.doesNotMatch(kustomization, /- acceptance-report-job.yaml/);
   const cron = fs.readFileSync(path.join(root, 'acceptance-report-cronjob.yaml'), 'utf8');
   assert.match(kustomization, /- acceptance-report-cronjob.yaml/);
@@ -82,6 +85,8 @@ test('report scan uses only read grants and a per-Pod private path, without the 
   assert.match(cron, /secretName: renovate-acceptance/);
   assert.match(cron, /mountPath: \/var\/run\/secrets\/renovate-acceptance/);
   assert.doesNotMatch(cron, /claimName: renovate-cache|secretName: renovate\n/);
+  assert.match(cron, /mountPath: \/report-output/);
+  assert.match(cron, /medium: Memory\n\s+sizeLimit: 128Mi/);
 });
 
 test('a pinned-shape report is sealed once with private files and matching hashes', () => {
@@ -97,7 +102,9 @@ test('a pinned-shape report is sealed once with private files and matching hashe
       ['not-scheduled', 'needs-pr-approval', 'done']);
     assert.equal(report.repositories['example/fixture'].branches[2].prNo, 42);
     assert.equal(Object.hasOwn(report, 'timestamp'), false, 'the receipt supplies the scan time');
-    fs.writeFileSync(paths.report, bytes, { mode: 0o600 });
+    const scratch = path.join(directory, 'scratch.json');
+    fs.writeFileSync(scratch, bytes, { mode: 0o600 });
+    runner.copyBoundedReport(scratch, paths.report);
     fs.writeFileSync(paths.log, 'private diagnostic\n', { mode: 0o600 });
     const counts = runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z');
     assert.deepEqual(counts, { repositories: 1, packageFiles: 1, dependencies: 1, branches: 3 });
@@ -110,6 +117,50 @@ test('a pinned-shape report is sealed once with private files and matching hashe
     assert.equal(fs.statSync(paths.receipt).mode & 0o077, 0);
     assert.doesNotMatch(JSON.stringify(receipt), /example\/repo|private diagnostic/);
     assert.throws(() => runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z'), /EEXIST/);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('report copy refuses oversized input before publishing on the ledger', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'renovate-report-cap-'));
+  try {
+    const source = path.join(directory, 'oversized.json');
+    const destination = path.join(directory, 'report.json');
+    const descriptor = fs.openSync(source, 'wx', 0o600);
+    fs.ftruncateSync(descriptor, 128 * 1024 * 1024 + 1);
+    fs.closeSync(descriptor);
+    assert.throws(() => runner.copyBoundedReport(source, destination), /invalid-report-file/);
+    assert.equal(fs.existsSync(destination), false);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('runner streams a bounded log without forwarding child output to Pod logs', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'renovate-report-stream-'));
+  try {
+    const script = path.join(directory, 'fixture.js');
+    const log = path.join(directory, 'fixture.log');
+    fs.writeFileSync(script, 'process.stdout.write("normal-out"); process.stderr.write("normal-err");\n');
+    let descriptor = fs.openSync(log, 'wx', 0o600);
+    try {
+      assert.deepEqual(await runner.runBounded(script, descriptor, 1024, directory),
+        { code: 0, signal: null });
+    } finally {
+      fs.closeSync(descriptor);
+    }
+    assert.equal(fs.readFileSync(log, 'utf8'), 'normal-outnormal-err');
+    fs.writeFileSync(script, 'process.stdout.write("x".repeat(4096));\n');
+    descriptor = fs.openSync(path.join(directory, 'overflow.log'), 'wx', 0o600);
+    try {
+      await assert.rejects(runner.runBounded(script, descriptor, 1024, directory),
+        /report-log-too-large/);
+    } finally {
+      fs.closeSync(descriptor);
+    }
+    assert.ok(fs.statSync(path.join(directory, 'overflow.log')).size <= 1024);
+    assert.equal(fs.existsSync(path.join(directory, 'fixture.receipt.json')), false);
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }

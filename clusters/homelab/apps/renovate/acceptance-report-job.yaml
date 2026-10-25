@@ -86,6 +86,8 @@ spec:
               readOnly: true
             - name: ledger
               mountPath: /ledger
+            - name: report-output
+              mountPath: /report-output
             - name: tmp
               mountPath: /tmp
       volumes:
@@ -113,6 +115,10 @@ spec:
         - name: ledger
           persistentVolumeClaim:
             claimName: renovate-acceptance-ledger
+        - name: report-output
+          emptyDir:
+            medium: Memory
+            sizeLimit: 128Mi
         - name: tmp
           emptyDir:
             sizeLimit: 8Gi

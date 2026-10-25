@@ -77,6 +77,62 @@ function seal(paths, uid, startedAt, completedAt) {
   return { repositories: receipt.repositories, packageFiles, dependencies, branches };
 }
 
+function copyBoundedReport(source, destination) {
+  const report = privateFile(source);
+  const temporary = `${destination}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporary, report.bytes, { flag: 'wx', mode: 0o600, flush: true });
+    fs.linkSync(temporary, destination); // Publish only a complete, bounded report.
+  } finally {
+    try { fs.unlinkSync(temporary); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
+}
+
+function runBounded(script, logFd, limit = maxEvidenceBytes, cwd = '/usr/src/app') {
+  if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error('invalid-report-limit');
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [script], {
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let written = 0;
+    let failure;
+    function stop(message) {
+      if (failure) return;
+      failure = new Error(message);
+      child.kill('SIGKILL');
+      child.stdout.destroy();
+      child.stderr.destroy();
+    }
+    function write(chunk) {
+      if (failure) return;
+      const allowed = Math.min(chunk.length, limit - written);
+      try {
+        let offset = 0;
+        while (offset < allowed) {
+          const count = fs.writeSync(logFd, chunk, offset, allowed - offset);
+          if (count <= 0) throw new Error('short-write');
+          offset += count;
+          written += count;
+        }
+      } catch {
+        stop('report-log-write-failed');
+        return;
+      }
+      if (allowed < chunk.length) stop('report-log-too-large');
+    }
+    child.stdout.on('data', write);
+    child.stderr.on('data', write);
+    child.stdout.on('error', () => stop('report-log-stream-failed'));
+    child.stderr.on('error', () => stop('report-log-stream-failed'));
+    child.once('error', reject);
+    child.once('close', (code, signal) => {
+      if (failure) reject(failure);
+      else resolve({ code, signal });
+    });
+  });
+}
+
 async function run() {
   process.umask(0o077);
   const uid = reportConfig.podUid();
@@ -84,21 +140,15 @@ async function run() {
   reportConfig.prepare(paths);
   const startedAt = new Date().toISOString();
   const logFd = fs.openSync(paths.log, 'wx', 0o600);
-  let exitCode;
+  let result;
   try {
     const script = path.join(renovateRoot(), 'dist/renovate.js');
-    exitCode = await new Promise((resolve, reject) => {
-      const child = spawn(process.execPath, [script], {
-        cwd: '/usr/src/app',
-        stdio: ['ignore', logFd, logFd],
-      });
-      child.once('error', reject);
-      child.once('close', resolve);
-    });
+    result = await runBounded(script, logFd);
   } finally {
     fs.closeSync(logFd);
   }
-  if (exitCode !== 0) throw new Error('renovate-report-run-failed');
+  if (result.code !== 0 || result.signal) throw new Error('renovate-report-run-failed');
+  copyBoundedReport(reportConfig.reportScratchPath(uid), paths.report);
   const counts = seal(paths, uid, startedAt, new Date().toISOString());
   console.log(JSON.stringify({ status: 'report-sealed', ...counts }));
 }
@@ -110,4 +160,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { privateFile, seal, run };
+module.exports = { privateFile, copyBoundedReport, runBounded, seal, run };

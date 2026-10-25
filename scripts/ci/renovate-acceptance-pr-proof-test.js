@@ -21,7 +21,8 @@ const branch = { branchName: 'renovate/fixture-package-1.x', prNo: 42,
   upgrades: [{ datasource: 'npm', depName: 'fixture-package',
   packageFile: 'package.json', newVersion: '1.1.0' }] };
 const report = { problems: [], repositories: { [repository]: { branches: [branch] } } };
-const pull = { number: 42, changed_files: 1,
+const pull = { number: 42, changed_files: 1, state: 'open',
+  closed_at: null, merged_at: null,
   created_at: '2026-10-19T00:21:00.000Z', user: { login: 'rstuhlmuller-renovate[bot]' },
   base: { ref: 'main', repo: { full_name: repository } },
   head: { ref: branch.branchName, sha: 'a'.repeat(40), repo: { full_name: repository } } };
@@ -59,6 +60,12 @@ test('GitHub PR patch proves an exact version only at the read time upper bound'
     [{ filename: 'package.json', patch: '+"somefixture-package":"1.1.0"' }], observedAt, 'main'), null);
   assert.equal(proof.proposalProof(item, event, match, { ...pull,
     user: { login: 'unrelated' } }, files, observedAt, 'main'), null);
+  for (const changed of [{ state: 'closed', closed_at: observedAt },
+    { state: 'closed', merged_at: observedAt }, { state: undefined },
+    { state: 'open', closed_at: observedAt }]) {
+    assert.equal(proof.proposalProof(item, event, match, { ...pull, ...changed },
+      files, observedAt, 'main'), null);
+  }
   assert.equal(proof.proposalProof(item, event, match, { ...pull,
     changed_files: 2 }, files, observedAt, 'main'), null);
   assert.equal(proof.proposalProof(item, event, match, { ...pull,
