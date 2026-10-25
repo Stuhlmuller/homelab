@@ -407,6 +407,30 @@ callback checks, and every remaining [cutover contract](../../specs/005-retire-p
 gate from reviewed `main` before any public deletion. This dated observation is
 not a cutover receipt.
 
+### Public app DNS retirement (2026-10-25)
+
+The guarded [retirement helper](../../scripts/tailscale-private-dns.sh) ran from
+clean reviewed `main` `e10199f2` and read back all 26 approved non-apex owners
+without public A/AAAA/CNAME records. After the previous 60-second TTL,
+324/324 address queries for those owners and a concrete Cordium wildcard child
+were empty at both Cloudflare authorities and two public recursive resolvers.
+The public apex, callback/CI/carrier names, and unrelated records matched all
+51 saved pre-cutover DNS comparisons. Cloudflare delegation and DNS-01
+references remained intact; the ExternalSecret, ClusterIssuer, and two
+Certificates remained Ready.
+
+The signed resolver still answered all 29 approved names, and normal macOS DNS
+and the original 27 HTTPS migration routes passed. Fleet's enrolled iPhone
+checked in after a guarded APNs ping; a Harbor node pulled its reviewed image
+without reboot, and native Octelium and Cordium calls passed. Fresh Emergency
+Bot and Policy Bot deliveries returned HTTP 200. Emergency deliveries also
+intermittently returned HTTP 500 at GitHub's client deadline before and after
+retirement. On another timeout, correlate its GitHub delivery timestamp and
+status with `ts-n8n-webhook` proxy context-canceled logs and n8n
+request-body-aborted logs, then fix latency through reviewed source. The
+[cutover tasks](../../specs/005-retire-public-app-dns/tasks.md) record the
+receipts and callback follow-up.
+
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and
 [Workload Inventory](../workloads/inventory.md).
