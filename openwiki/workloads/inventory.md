@@ -594,14 +594,6 @@ are not atomic; live activation remains blocked until isolated placement
 excludes arrival of a taint-tolerating Pod during deletion or a reviewed
 isolation path is added.
 
-The staged `zimaboard-2` evacuation assigns Multica frontend to `acer`, Harbor's
-vulnerability exporter to `zimaboard-1`, and Cloudflared replicas separately
-to those nodes. The separate Langfuse PostgreSQL change targets `acer` with
-its retained NFS claim; verify the off-NAS checkpoint before rollout. The
-protected canary admission and firewall are still blocked. See
-[runtime isolation](../../docs/runtime-isolation.md#staged-networkpolicy-enforcement)
-and [topology](../architecture/cluster-topology.md#network-canary-staging).
-
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were
 absent. cert-manager continues using `values-v1.20.3.yaml`; its unused v1.19.2
