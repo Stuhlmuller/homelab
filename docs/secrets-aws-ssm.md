@@ -803,10 +803,17 @@ reviewed fixed-target script in `Stuhlmuller/renovate` to retire only
 SecureStrings are past placeholder versions, the ExternalSecret refreshed
 after transfer, the Actions key is absent, and no old run remains. Only then
 enable cluster writes through GitOps. For rollback, first suspend the cluster
-CronJob through reviewed GitOps and verify all Renovate Jobs and Pods drained.
-The reviewed companion restore script can then read the fixed SSM private-key
-path and restore only the repository Actions secret, even if External Secrets
-is unavailable; restore the old workflow through a reviewed PR afterward.
+CronJob through reviewed GitOps, verify exact Argo CD sync and all Renovate
+Jobs and Pods drained, then repair or revert the same cluster runner through
+reviewed desired state. Before its first proven write-enabled run, return to
+full dry-run or suspension and record the no-writer gap. Keep the old Actions
+key absent. Legacy restoration requires a fresh credential-free GitHub-hosted
+probe of the Harbor Docker datasource route before key restore. If that route
+is unavailable, repair the cluster path instead. Once the probe passes, the
+guarded companion restore script can read the fixed SSM private-key path and
+restore only the repository Actions secret, even if External Secrets is
+unavailable; restore the old workflow through a separate reviewed PR while
+the cluster remains stopped. Retire that key again before cluster writes resume.
 
 ## Harbor private registry
 
