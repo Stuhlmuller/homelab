@@ -613,6 +613,11 @@ Argo pruned it in a separate revision before this writer restart. The separate 1
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
 
+The draft protected [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
+is a manual, one-shot safety copy for a later database move. It verifies an
+exact versioned dump through an isolated restore, but no live receipt exists;
+ClickHouse, Valkey, raw objects, and secrets still need separate recovery.
+
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
