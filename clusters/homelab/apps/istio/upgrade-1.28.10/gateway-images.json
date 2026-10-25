@@ -1,5 +1,5 @@
 {
   "podAnnotations": {
-    "sidecar.istio.io/proxyImage": "docker.io/istio/proxyv2@sha256:550b498e9cc350392e10cbe329111134d0e82c234a924fe17eebc65ddf6ffa73"
+    "sidecar.istio.io/proxyImage": "harbor.stinkyboi.com/mirror/docker.io/istio/proxyv2:1.28.10-distroless@sha256:550b498e9cc350392e10cbe329111134d0e82c234a924fe17eebc65ddf6ffa73"
   }
 }

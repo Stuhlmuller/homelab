@@ -1,3 +1,3 @@
 {
-  "image": "docker.io/istio/install-cni@sha256:eb5697089f7dac05b79f10ac1b1541ca8146f6e92c2f946677edb4f14263c8dd"
+  "image": "harbor.stinkyboi.com/mirror/docker.io/istio/install-cni:1.28.10-distroless@sha256:eb5697089f7dac05b79f10ac1b1541ca8146f6e92c2f946677edb4f14263c8dd"
 }
