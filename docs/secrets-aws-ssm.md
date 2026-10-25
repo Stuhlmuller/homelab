@@ -368,6 +368,7 @@ cluster CA is intentionally rotated.
 | App | ExternalSecret | Target Secret | SSM parameters |
 | --- | --- | --- | --- |
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
+| argocd | `harbor-helm-repository` | `harbor-helm-repository` | `/homelab/harbor/mirror-robot-pull-password` |
 | argocd-image-updater | retired; no ExternalSecret consumer | none | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` state tombstones |
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |

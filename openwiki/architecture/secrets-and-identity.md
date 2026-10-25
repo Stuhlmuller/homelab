@@ -395,6 +395,10 @@ gate remains disabled; these permissions are source intent, not live access.
   ID directly to `role:admin`, then evaluates group claims. It does not use a
   mutable email value for authorization, so the exact-UPN Mac PSSO pilot cannot
   inherit Argo CD administration from a matching email address.
+- Argo CD's `harbor-helm-repository` ExternalSecret uses the existing
+  `/homelab/harbor/mirror-robot-pull-password` to authenticate OCI Helm pulls
+  from `harbor.stinkyboi.com/mirror/helm`. Keep it Ready before switching chart
+  sources; `OnChange` rotation requires a reviewed manifest change.
 - Argo CD Image Updater is restored as a paused, zero-replica chart. The
   proposer/promoter GitHub App credential lane remains unprovisioned; no private
   key is committed and no runtime Secret is enabled. When provisioned, proposer
