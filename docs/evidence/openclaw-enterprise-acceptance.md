@@ -483,9 +483,16 @@ still requires Langfuse-attributed caller traces for its acceptance checks.
 Before relying on this capacity release, qualify caller behavior and complete
 the [recovery contracts](../application-recovery.md): Langfuse needs coordinated
 PostgreSQL, ClickHouse, Valkey and raw-event S3 recovery plus encryption/salt
-secrets and a queue-loss decision; Dispatcharr needs a paired PostgreSQL and
-runtime-files set plus private provider credentials. Retained PVCs make a
-declarative pause reversible but are not independent backups. No suspension,
+secrets and a queue-loss decision. An October 25 read-only inventory found
+4,683,189,334 bytes of active ClickHouse parts and 827,069,112 bytes across
+1,857 Langfuse blob-bucket versions. Those alone exceed the 5 GiB whole-set
+limit in [`application-backup.py`](../../scripts/application-backup.py).
+The [blob IAM policy](../../IaC/terragrunt-catalog/modules/aws-langfuse-blob-storage/main.tf)
+lacks `ListBucketVersions` and `GetObjectVersion`; an exact independent copy
+needs a reviewed scoped grant and componentized publication. Dispatcharr needs
+a paired PostgreSQL and runtime-files set plus private provider credentials.
+Retained PVCs make a declarative pause reversible but are not independent
+backups. No suspension,
 relocation, taint, local claim, or permanent retirement is authorized by this
 review; T022, T027 and T035 stay open.
 
