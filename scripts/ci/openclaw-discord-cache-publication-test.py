@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise immutable S3 publication and fail-closed reader transfer boundaries."""
 
+import copy
 import hashlib
 import importlib.util
 import io
@@ -11,7 +12,7 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,6 +27,19 @@ def load(path, name):
 
 BUILDER = load(ROOT / "scripts/openclaw-discord-offline-cache.py", "discord_builder")
 PUBLICATION = load(ROOT / "scripts/ci/openclaw-discord-cache-publication.py", "discord_publication")
+READER_MANIFEST = ROOT / "clusters/homelab/apps/openclaw/retirement-reader.yaml"
+
+
+def declared_reader_pod():
+    declared = subprocess.check_output(
+        ["yq", "-o=json", 'select(.kind == "Deployment" and .metadata.name == "openclaw-retirement-reader")',
+         str(READER_MANIFEST)], timeout=5)
+    if not declared:
+        raise ValueError("retirement reader declaration changed")
+    deployment = json.loads(declared)
+    return {"metadata": {"uid": "00000000-0000-0000-0000-000000000001"},
+            "status": {"phase": "Running"},
+            "spec": copy.deepcopy(deployment["spec"]["template"]["spec"])}
 
 
 def bundle(directory):
@@ -101,21 +115,80 @@ class Publication(unittest.TestCase):
             PUBLICATION.check_bucket("homelab-application-backups-716182248480-us-east-1")
             with self.assertRaisesRegex(ValueError, "unreviewed"):
                 PUBLICATION.check_bucket("other-bucket")
-        pod = {"metadata": {"uid": "00000000-0000-0000-0000-000000000001"},
-               "status": {"phase": "Running"}, "spec": {
-                   "securityContext": {"runAsUser": 1000},
-                   "automountServiceAccountToken": False,
-                   "containers": [{"name": "reader", "image": BUILDER.IMAGE}]}}
+        pod = declared_reader_pod()
+        self.assertEqual(pod["spec"]["containers"][0]["image"],
+                         PUBLICATION.READER_MIRROR + BUILDER.IMAGE)
         with mock.patch.object(PUBLICATION, "call", return_value=json.dumps(pod).encode()):
             PUBLICATION.reader_context("openclaw-retirement-reader-test",
                                        pod["metadata"]["uid"], BUILDER)
-        for changed in ({"metadata": {"uid": "changed"}},
-                        {"spec": {**pod["spec"], "securityContext": {"runAsUser": 0}}},
-                        {"spec": {**pod["spec"], "containers": [{"name": "reader",
-                                                                   "image": "unreviewed"}]}}):
-            altered = {**pod, **changed}
+        for change in (lambda altered: altered["metadata"].update(uid="changed"),
+                       lambda altered: altered["spec"]["securityContext"].update(runAsUser=0),
+                       lambda altered: altered["spec"]["securityContext"].update(runAsNonRoot=False),
+                       lambda altered: altered["spec"]["containers"][0].update(image=BUILDER.IMAGE),
+                       lambda altered: altered["spec"]["containers"][0]["securityContext"].update(
+                           runAsUser=0),
+                       lambda altered: altered["spec"]["containers"][0]["securityContext"].update(
+                           privileged=True),
+                       lambda altered: altered["spec"].update(automountServiceAccountToken=True),
+                       lambda altered: altered["spec"].update(hostNetwork=True),
+                       lambda altered: altered["spec"].update(hostPID=True),
+                       lambda altered: altered["spec"]["initContainers"][0].update(image="unreviewed"),
+                       lambda altered: altered["spec"].update(ephemeralContainers=[{"name": "shell"}])):
+            altered = copy.deepcopy(pod)
+            change(altered)
             with mock.patch.object(PUBLICATION, "call", return_value=json.dumps(altered).encode()):
                 with self.assertRaisesRegex(ValueError, "identity changed"):
+                    PUBLICATION.reader_context("openclaw-retirement-reader-test",
+                                               pod["metadata"]["uid"], BUILDER)
+
+    def test_reader_storage_rejects_drift_from_declared_manifest(self):
+        pod = declared_reader_pod()
+        spec = pod["spec"]
+        volumes = {volume["name"]: volume for volume in spec["volumes"]}
+        mounts = {mount["name"]: mount for mount in spec["containers"][0]["volumeMounts"]
+                  if mount["name"] != "private"}
+        for name, (claim, path) in PUBLICATION.READER_SOURCE_VOLUMES.items():
+            self.assertEqual(volumes[name]["persistentVolumeClaim"],
+                             {"claimName": claim, "readOnly": True})
+            self.assertEqual((mounts[name]["mountPath"], mounts[name]["readOnly"]),
+                             (path, True))
+        self.assertEqual(volumes["archive"]["persistentVolumeClaim"]["claimName"],
+                         PUBLICATION.READER_ARCHIVE[0])
+        self.assertEqual(mounts["archive"]["mountPath"], PUBLICATION.READER_ARCHIVE[1])
+
+        altered_pods = []
+        for name in (*PUBLICATION.READER_SOURCE_VOLUMES, "archive"):
+            changed = copy.deepcopy(pod)
+            changed_volumes = {volume["name"]: volume for volume in changed["spec"]["volumes"]}
+            changed_mounts = {mount["name"]: mount for mount in
+                              changed["spec"]["containers"][0]["volumeMounts"]
+                              if mount["name"] != "private"}
+            if name == "archive":
+                changed_volumes[name]["persistentVolumeClaim"]["claimName"] = "openclaw"
+            else:
+                changed_mounts[name]["readOnly"] = False
+            altered_pods.append(changed)
+        changed = copy.deepcopy(pod)
+        volumes = {volume["name"]: volume for volume in changed["spec"]["volumes"]}
+        volumes["local"]["persistentVolumeClaim"]["readOnly"] = False
+        altered_pods.append(changed)
+        changed = copy.deepcopy(pod)
+        changed["spec"]["containers"][0]["volumeMounts"].append(
+            {"name": "nas", "mountPath": "/archive/private", "readOnly": False})
+        altered_pods.append(changed)
+        changed = copy.deepcopy(pod)
+        changed["spec"]["volumes"].append({"name": "host", "hostPath": {"path": "/data"}})
+        altered_pods.append(changed)
+        changed = copy.deepcopy(pod)
+        private = next(volume for volume in changed["spec"]["volumes"]
+                       if volume["name"] == "private")
+        private.pop("emptyDir")
+        private["persistentVolumeClaim"] = {"claimName": "openclaw"}
+        altered_pods.append(changed)
+        for altered in altered_pods:
+            with self.subTest(altered=altered["spec"]), mock.patch.object(
+                    PUBLICATION, "call", return_value=json.dumps(altered).encode()):
+                with self.assertRaisesRegex(ValueError, "storage changed"):
                     PUBLICATION.reader_context("openclaw-retirement-reader-test",
                                                pod["metadata"]["uid"], BUILDER)
 

@@ -295,7 +295,7 @@ test_rejects_changed_openclaw_legacy_operation if {
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "11f752fd643a8e917f870b8aacb0473eff9d1c240576b69f824169459629d02b", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"actions": "read", "contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"actions": "read", "contents": "write", "id-token": "write"}),
@@ -396,7 +396,7 @@ sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c0
 sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
 sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
 sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'
-sha256sum --check --status <<<'11f752fd643a8e917f870b8aacb0473eff9d1c240576b69f824169459629d02b  scripts/ci/openclaw-discord-cache-publication.py'
+sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 

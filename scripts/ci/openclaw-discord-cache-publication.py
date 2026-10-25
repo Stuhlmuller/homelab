@@ -25,6 +25,23 @@ NAMES = ("npm-cache.tar", "dependency-lock.json", "manifest.json")
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 RUN = re.compile(r"[1-9][0-9]*\Z")
 BUCKET = re.compile(r"homelab-application-backups-[0-9]{12}-us-east-1\Z")
+READER_MIRROR = "harbor.stinkyboi.com/mirror/"
+READER_SOURCE_VOLUMES = {
+    "local": ("openclaw-runtime-local", "/runtime-volume"),
+    "state": ("openclaw-runtime-state-local", "/legacy-state"),
+    "agent": ("openclaw-runtime-agent-local", "/legacy-agent"),
+    "nas": ("openclaw", "/data"),
+}
+READER_ARCHIVE = ("openclaw-retirement-archive", "/archive")
+READER_CONFIG_MAPS = {"scripts": "openclaw-assistant", "retirement-scripts": "openclaw-retirement"}
+READER_MOUNTS = {
+    *((name, path, True) for name, (_, path) in READER_SOURCE_VOLUMES.items()),
+    ("archive", "/archive", False),
+    ("private", "/private", False),
+    ("private", "/tmp", False),
+    ("scripts", "/etc/openclaw-assistant", True),
+    ("retirement-scripts", "/etc/openclaw-retirement", True),
+}
 
 
 def load(path, name):
@@ -156,6 +173,25 @@ def validate_final(final, source_sha, run_id, builder):
             raise ValueError("cache final receipt file contract changed")
 
 
+def secure_reader_container(container):
+    security = container.get("securityContext", {})
+    return (security.get("runAsUser", 1000) == 1000 and
+            security.get("runAsNonRoot") is not False and
+            security.get("allowPrivilegeEscalation") is False and
+            security.get("readOnlyRootFilesystem") is True and
+            security.get("privileged") is not True and
+            security.get("seccompProfile", {}).get("type", "RuntimeDefault") == "RuntimeDefault" and
+            security.get("capabilities", {}).get("drop") == ["ALL"] and
+            not security.get("capabilities", {}).get("add"))
+
+
+def mount_contract(mounts):
+    if any("subPath" in mount or "subPathExpr" in mount for mount in mounts):
+        return None
+    return {(mount.get("name"), mount.get("mountPath"), mount.get("readOnly", False))
+            for mount in mounts}
+
+
 def reader_context(pod, uid, builder):
     if not re.fullmatch(r"openclaw-retirement-reader-[a-z0-9-]+", pod) or not re.fullmatch(
         r"[0-9a-f-]{36}", uid
@@ -164,11 +200,52 @@ def reader_context(pod, uid, builder):
     info = json.loads(call(["kubectl", "-n", "ai", "get", "pod", pod, "-o", "json"]))
     spec = info["spec"]
     readers = [container for container in spec["containers"] if container["name"] == "reader"]
+    init = spec.get("initContainers", [])
+    pod_security = spec.get("securityContext", {})
     if (info["metadata"]["uid"] != uid or info["status"]["phase"] != "Running" or
-            spec.get("securityContext", {}).get("runAsUser") != 1000 or
+            pod_security.get("runAsUser") != 1000 or
+            pod_security.get("runAsNonRoot") is not True or
+            pod_security.get("seccompProfile", {}).get("type") != "RuntimeDefault" or
             spec.get("automountServiceAccountToken") is not False or
-            len(readers) != 1 or readers[0]["image"] != builder.IMAGE):
+            any(spec.get(flag) is True for flag in ("hostNetwork", "hostPID", "hostIPC")) or
+            len(spec["containers"]) != 1 or len(readers) != 1 or
+            spec.get("ephemeralContainers") or
+            readers[0]["image"] != READER_MIRROR + builder.IMAGE or
+            not secure_reader_container(readers[0]) or len(init) != 1 or
+            init[0].get("name") != "private-archive-directory" or
+            init[0].get("image") != READER_MIRROR + builder.IMAGE or
+            init[0].get("command") != ["/bin/sh", "-ec"] or
+            init[0].get("args") != [
+                "test ! -L /archive/private && mkdir -p /archive/private && chmod 700 /archive/private"] or
+            not secure_reader_container(init[0]) or
+            mount_contract(init[0].get("volumeMounts", [])) != {("archive", "/archive", False)} or
+            len(init[0].get("volumeMounts", [])) != 1):
         raise ValueError("retirement reader identity changed")
+    volumes = spec.get("volumes", [])
+    mounts = readers[0].get("volumeMounts", [])
+    volume_names = [volume.get("name") for volume in volumes]
+    expected_names = set(READER_SOURCE_VOLUMES) | {"archive", "private"} | set(READER_CONFIG_MAPS)
+    if (len(volume_names) != len(expected_names) or set(volume_names) != expected_names or
+            len(mounts) != len(READER_MOUNTS) or mount_contract(mounts) != READER_MOUNTS):
+        raise ValueError("retirement reader storage changed")
+    volume_by_name = {volume["name"]: volume for volume in volumes}
+    for name, (claim, _) in READER_SOURCE_VOLUMES.items():
+        volume = volume_by_name[name]
+        if (set(volume) != {"name", "persistentVolumeClaim"} or
+                volume["persistentVolumeClaim"] != {"claimName": claim, "readOnly": True}):
+            raise ValueError("retirement reader storage changed")
+    archive = volume_by_name["archive"]
+    if (set(archive) != {"name", "persistentVolumeClaim"} or
+            archive["persistentVolumeClaim"].get("claimName") != READER_ARCHIVE[0] or
+            archive["persistentVolumeClaim"].get("readOnly") is True or
+            set(volume_by_name["private"]) != {"name", "emptyDir"} or
+            volume_by_name["private"]["emptyDir"] != {}):
+        raise ValueError("retirement reader storage changed")
+    for name, config_map in READER_CONFIG_MAPS.items():
+        volume = volume_by_name[name]
+        if (set(volume) != {"name", "configMap"} or
+                volume["configMap"].get("name") != config_map):
+            raise ValueError("retirement reader storage changed")
 
 
 REMOTE_PREPARE = r'''import os, stat, sys
