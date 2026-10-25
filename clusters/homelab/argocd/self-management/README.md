@@ -29,7 +29,7 @@ aligned with the Applications registered under `IaC/live/argocd-apps`.
 Ordinary applications that render no cluster resources belong in
 `homelab-workloads`. Keep platform controllers and applications that require
 audited cluster resources in `homelab`. The Enterprise installation uses its
-own project for the exact upstream and local sources, three namespaces and
+own project for the reviewed Harbor chart and local sources, three namespaces and
 rendered installation kinds. It does not grant Argo ownership of tenant
 workloads created by Enterprise. Update the selected project manifest
 in the same PR as any new chart repository, namespace, or resource kind. Keep

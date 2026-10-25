@@ -198,6 +198,12 @@
     "targetRevision": "4.0.18"
   },
   {
+    "chart": "openclaw-enterprise",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
+    "source": "IaC/openclaw-enterprise/stack.hcl",
+    "targetRevision": "0.1.0"
+  },
+  {
     "chart": "tailscale-operator",
     "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/tailscale/stack.hcl",

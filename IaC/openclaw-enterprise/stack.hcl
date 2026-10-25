@@ -12,9 +12,9 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://github.com/openclaw/openclaw-enterprise.git"
-        path           = "deploy/helm/openclaw-enterprise"
-        targetRevision = "33bb74590a749f37934da4502fca6035cd234a55"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
+        chart          = "openclaw-enterprise"
+        targetRevision = "0.1.0"
         helm = {
           releaseName = "oce"
           valueFiles  = ["$values/clusters/homelab/apps/openclaw-enterprise/values.yaml"]

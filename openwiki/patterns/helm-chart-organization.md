@@ -93,7 +93,8 @@ deployment. It preserves the existing chart behavior while concentrating
 repetition in the Application registration layer.
 
 The dormant [OpenClaw Enterprise candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
-keeps the pinned upstream chart intact. App-local `values.yaml` and reviewed
+uses a Harbor copy of the chart packaged from its pinned upstream Git revision.
+App-local `values.yaml` and reviewed
 `installation.yaml` supply site inputs; Kustomize holds lifecycle hook resources
 and a single EnvoyProxy image override. The focused renderer test compares
 profile output and rendered chart identities against the pinned upstream tree.

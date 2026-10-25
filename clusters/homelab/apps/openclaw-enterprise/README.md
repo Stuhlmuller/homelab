@@ -3,8 +3,9 @@
 This is a dormant local source for release `oce` in `openclaw-system`. Its Argo
 Application and root Terragrunt unit are declared with automatic sync disabled;
 they have not been applied. Agent activation remains false
-in `scripts/config/openclaw-enterprise.json`. The stock chart comes from upstream
-commit `33bb74590a749f37934da4502fca6035cd234a55`; this directory supplies
+in `scripts/config/openclaw-enterprise.json`. The stock chart is published to
+Harbor from upstream commit `33bb74590a749f37934da4502fca6035cd234a55`;
+this directory supplies
 values, one EnvoyProxy image override, and Helm-style lifecycle hooks.
 
 `profile-input.json` is the non-secret input to upstream's `openclaw` profile

@@ -75,7 +75,7 @@ class Registration(unittest.TestCase):
         self.assertEqual(self.project["metadata"]["name"], "openclaw-enterprise")
         self.assertEqual(set(spec["sourceRepos"]), {
             "https://github.com/Stuhlmuller/homelab.git",
-            "https://github.com/openclaw/openclaw-enterprise.git"})
+            "harbor.stinkyboi.com/mirror/helm"})
         self.assertEqual({item["namespace"] for item in spec["destinations"]},
                          {SYSTEM, AGENTS, ENVOY})
         self.assertTrue(all(item["server"] == "https://kubernetes.default.svc"
@@ -162,10 +162,9 @@ class Registration(unittest.TestCase):
             "targetRevision": "main"}])
         enterprise = self.apps["openclaw-enterprise"]["inputs"]["manifest"]
         chart, values, local = enterprise["spec"]["sources"]
-        self.assertEqual(chart["repoURL"].removesuffix(".git"),
-                         config["source"]["repository"])
-        self.assertEqual(chart["path"], config["source"]["chartPath"])
-        self.assertEqual(chart["targetRevision"], config["source"]["revision"])
+        self.assertEqual(chart["repoURL"], "harbor.stinkyboi.com/mirror/helm")
+        self.assertEqual(chart["chart"], "openclaw-enterprise")
+        self.assertEqual(chart["targetRevision"], "0.1.0")
         self.assertEqual(chart["helm"], {"releaseName": "oce", "valueFiles": [
             "$values/clusters/homelab/apps/openclaw-enterprise/values.yaml"]})
         self.assertEqual(values, {
