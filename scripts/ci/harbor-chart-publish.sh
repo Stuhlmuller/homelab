@@ -10,7 +10,10 @@ set -euo pipefail
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
 [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
 [[ ! -e "$HOME/.kube/config" ]]
-! grep -Eq '(^|[[:space:]])harbor[.]stinkyboi[.]com([[:space:]]|$)|# homelab-harbor-ci$' /etc/hosts
+if grep -Eq '(^|[[:space:]])harbor[.]stinkyboi[.]com([[:space:]]|$)|# homelab-harbor-ci$' /etc/hosts; then
+  echo 'Harbor hosts entry already exists.' >&2
+  exit 1
+fi
 python3 -I scripts/ci/harbor-chart-publish.py --check
 
 umask 077
@@ -76,13 +79,13 @@ aws ssm get-parameter --region us-west-2 \
   --name /homelab/harbor/mirror-robot-pull-password --with-decryption \
   --query Parameter.Value --output text >"$scratch/reader-password"
 [[ -s "$scratch/publisher-password" && -s "$scratch/reader-password" ]]
-helm registry login harbor.stinkyboi.com --username 'robot$mirror+publisher' \
+helm registry login harbor.stinkyboi.com --username "robot\$mirror+publisher" \
   --password-stdin --registry-config "$scratch/publisher-helm.json" \
   <"$scratch/publisher-password" >/dev/null
-helm registry login harbor.stinkyboi.com --username 'robot$mirror+pull' \
+helm registry login harbor.stinkyboi.com --username "robot\$mirror+pull" \
   --password-stdin --registry-config "$scratch/reader-helm.json" \
   <"$scratch/reader-password" >/dev/null
-skopeo login --authfile "$scratch/reader-skopeo.json" --username 'robot$mirror+pull' \
+skopeo login --authfile "$scratch/reader-skopeo.json" --username "robot\$mirror+pull" \
   --password-stdin harbor.stinkyboi.com <"$scratch/reader-password" >/dev/null
 rm -f -- "$scratch/publisher-password" "$scratch/reader-password"
 python3 -I scripts/ci/harbor-chart-publish.py --publish \
