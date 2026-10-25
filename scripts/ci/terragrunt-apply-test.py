@@ -23,13 +23,13 @@ CRDS = ["externalsecrets.external-secrets.io", "clustersecretstores.external-sec
         "authorizationpolicies.security.istio.io", "virtualservices.networking.istio.io"]
 PROJECT = {"spec": {
     "sourceRepos": ["https://github.com/Stuhlmuller/homelab.git",
-                    "ghcr.io/langfuse/langfuse-k8s/charts"],
+                    "harbor.stinkyboi.com/mirror/helm"],
     "destinations": [{"namespace": "langfuse", "server": "https://kubernetes.default.svc"}],
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}
 TRAEFIK_PROJECT = {"spec": {
     "sourceRepos": ["https://github.com/Stuhlmuller/homelab.git",
-                    "https://bjw-s-labs.github.io/helm-charts"],
+                    "harbor.stinkyboi.com/mirror/helm"],
     "destinations": [{"namespace": "traefik", "server": "https://kubernetes.default.svc"}],
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}

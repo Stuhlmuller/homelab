@@ -97,10 +97,10 @@ class Registration(unittest.TestCase):
         crds_source, controller_source, *_ = platform["spec"]["sources"]
         self.assertEqual((crds_source["repoURL"], crds_source["chart"],
                           crds_source["targetRevision"]),
-                         ("docker.io/envoyproxy", "gateway-crds-helm", "v1.9.2"))
+                         ("harbor.stinkyboi.com/mirror/helm", "gateway-crds-helm", "v1.9.2"))
         self.assertEqual((controller_source["repoURL"], controller_source["chart"],
                           controller_source["targetRevision"]),
-                         ("docker.io/envoyproxy", "gateway-helm", "v1.9.2"))
+                         ("harbor.stinkyboi.com/mirror/helm", "gateway-helm", "v1.9.2"))
         self.assertEqual(crds_source["helm"]["valueFiles"],
                          ["$values/clusters/homelab/platform/envoy-gateway/crds-values.yaml"])
         crds_values, = docs((ROOT / "clusters/homelab/platform/envoy-gateway/"
