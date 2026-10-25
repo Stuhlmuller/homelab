@@ -347,10 +347,17 @@ migrates the verified existing account while preserving credentials and
 owned-file rollback. After any later public retirement, wait the old TTL and
 verify normal DNS, canonical TLS and native gRPC.
 
-The callback helpers change only the fixed n8n hooks and Policy Bot App webhook
-URL. Non-executing preflights protect live workflows; private local receipts
-require both a newer delivery ID and timestamp after cutover. Historical success
-cannot satisfy acceptance. The CI publisher captures sensitive provider keys
+The callback helpers keep the surviving Github Emergency Bot hook `636944763`
+and Policy Bot App webhook on Funnel. The unused Codex Review Helper hook
+`589400612` is retired through the reviewed
+[`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) command from
+clean current `main`, after a fresh Emergency delivery. It verifies the exact
+helper identity and URL before deleting that ID, then requires its ID and
+callback path to be absent on any host and Emergency settings unchanged.
+Non-executing preflights protect live workflows; private local receipts require
+both a newer delivery ID and timestamp after cutover. The separate Policy Bot
+check also requires a fresh signed delivery. Historical success cannot satisfy
+acceptance. The CI publisher captures sensitive provider keys
 privately, signs via `file:/dev/stdin` and publishes only three scoped GitHub
 secrets after checking signed current main, environment protection and the
 trusted homelab signing profile. It removes the old client-ID variables only
@@ -362,8 +369,9 @@ private-file read restriction.
 PolicyBot's safe GET preflight requires HTTP 404 with exactly one valid backend
 `X-Request-ID` at `/api/github/hook`, and root HTTP 404 without that header.
 The pinned app registers POST only: GET proves routing, not HMAC validation.
-Fresh successful signed delivery remains the acceptance gate. The two fixed n8n
-POST-only hooks use non-executing OPTIONS probes before their URL changes.
+Fresh successful signed delivery remains the acceptance gate. The surviving
+Emergency Bot POST-only hook uses a non-executing OPTIONS probe before its URL
+change; the inactive helper workflow stays unpublished.
 
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,
