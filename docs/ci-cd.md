@@ -237,6 +237,10 @@ checks remain fresh.
   `run --all --filter ... --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+  Application plan and apply discover tracked changes with
+  `terragrunt find --filter-affected`, then run only selected Application units.
+  Changed per-app stack inputs select their generated Application unit explicitly;
+  shared root, template, and toolchain changes still select the full group.
 
 ## Terragrunt Gate Ruleset Rollout
 

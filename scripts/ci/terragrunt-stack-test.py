@@ -209,6 +209,38 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.shell("terragrunt_azuread_stack_changed", self.commit())
 
 
+class AffectedFilterTest(unittest.TestCase):
+    def test_app_stack_change_selects_only_its_generated_application(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            apps = root / "IaC/homelab/us-west-2/apps"
+            for name in ("kept/argocd", "identity/azuread"):
+                unit_dir = apps / name
+                unit_dir.mkdir(parents=True)
+                (unit_dir / "terragrunt.hcl").write_text('locals { value = 1 }\n')
+            app_stack = apps / "kept/stack.hcl"
+            app_stack.write_text('locals { value = 1 }\n')
+            run("git", "init", "-q", "-b", "main", cwd=root)
+            run("git", "add", ".", cwd=root)
+            run("git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                "commit", "-qm", "base", cwd=root)
+            run("git", "switch", "-qc", "change", cwd=root)
+            app_stack.write_text('locals { value = 2 }\n')
+            (apps / "identity/azuread/terragrunt.hcl").write_text('locals { value = 2 }\n')
+            run("git", "add", ".", cwd=root)
+            run("git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                "commit", "-qm", "change", cwd=root)
+            output = run("bash", "-euo", "pipefail", "-c", '''
+source "$1"
+TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF=main
+TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF=HEAD
+cd IaC/homelab/us-west-2/apps
+terragrunt_run_filter_args '*/argocd | [main...HEAD]'
+printf '%s\\n' "${TERRAGRUNT_RUN_FILTER_ARGS[@]}"
+''', "fixture", str(FILTERS), cwd=root)
+            self.assertEqual(output.splitlines(), ["--filter", "kept/argocd"])
+
+
 class SharedAppTemplateTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

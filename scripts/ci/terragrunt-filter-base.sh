@@ -226,14 +226,31 @@ terragrunt_stack_changed() {
   local repo_root
   local paths=(
     IaC/terragrunt.stack.hcl
-    IaC/homelab/us-west-2
-    IaC/stack-defaults.hcl
-    IaC/
-    IaC/terragrunt-catalog
-    IaC/terragrunt-catalog/modules
+    IaC/homelab/account.hcl
+    IaC/homelab/us-west-2/region.hcl
     IaC/root.hcl
     IaC/kubernetes-provider.hcl
   )
+
+  case "$generated_group" in
+    IaC/live/argocd-apps)
+      paths+=(IaC/stack-defaults.hcl ':(glob)IaC/*/stack.hcl'
+              IaC/terragrunt-catalog/units/live/argocd-app
+              IaC/terragrunt-catalog/modules/argocd-application-kubernetes)
+      ;;
+    IaC/homelab/us-west-2/apps)
+      paths+=(
+        IaC/stack-defaults.hcl
+        IaC/terragrunt-catalog/units/live/argocd-app
+        IaC/terragrunt-catalog/modules/argocd-application-kubernetes
+      )
+      ;;
+    IaC/homelab/us-west-2/shared/kubernetes-secrets)
+      paths+=(IaC/terragrunt-catalog/units/live/kubernetes-secrets
+              IaC/terragrunt-catalog/modules/kubernetes-secret-from-ssm)
+      ;;
+    *) paths+=(IaC/terragrunt-catalog) ;;
+  esac
 
   if [[ "$include_plan_inputs" == "true" ]]; then
     paths+=(
@@ -244,10 +261,6 @@ terragrunt_stack_changed() {
       scripts/ci/terragrunt-plan.sh
       scripts/ci/terragrunt-apply.sh
     )
-  fi
-
-  if [[ -n "$generated_group" ]]; then
-    paths+=("$generated_group")
   fi
 
   if ! repo_root="$(git rev-parse --show-toplevel)"; then
@@ -283,6 +296,43 @@ terragrunt_changed_filter() {
   else
     printf '%s | [main...HEAD]\n' "$all_filter"
   fi
+}
+
+terragrunt_run_filter_args() {
+  local filter="$1"
+  local repo_root
+  local affected
+  local changed_stacks
+  local path
+  local app
+
+  TERRAGRUNT_RUN_FILTER_ARGS=()
+  if [[ "$filter" != '*/argocd | [main...HEAD]' ]]; then
+    TERRAGRUNT_RUN_FILTER_ARGS=(--filter "$filter")
+    return
+  fi
+
+  repo_root="$(git rev-parse --show-toplevel)" || return 1
+  affected="$(cd "$repo_root" && terragrunt find --filter-affected)" || return 1
+  while IFS= read -r path; do
+    if [[ "$path" == IaC/homelab/us-west-2/apps/*/argocd &&
+          -f "$repo_root/$path/terragrunt.hcl" ]]; then
+      TERRAGRUNT_RUN_FILTER_ARGS+=(--filter "${path#IaC/homelab/us-west-2/apps/}")
+    fi
+  done <<<"$affected"
+
+  changed_stacks="$(git -C "$repo_root" diff --name-only \
+    "$TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF" "$TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF" -- \
+    ':(glob)IaC/homelab/us-west-2/apps/*/stack.hcl' \
+    ':(glob)IaC/homelab/us-west-2/apps/*/terragrunt.stack.hcl')" || return 1
+  while IFS= read -r path; do
+    [[ -n "$path" ]] || continue
+    app="${path#IaC/homelab/us-west-2/apps/}"
+    app="${app%%/*}"
+    if [[ -f "$repo_root/IaC/homelab/us-west-2/apps/$app/argocd/terragrunt.hcl" ]]; then
+      TERRAGRUNT_RUN_FILTER_ARGS+=(--filter "$app/argocd")
+    fi
+  done <<<"$changed_stacks"
 }
 
 terragrunt_argocd_app_filter() {
