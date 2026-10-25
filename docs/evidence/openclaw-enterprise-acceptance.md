@@ -453,6 +453,29 @@ Four media config backups last succeeded on 2026-10-18; later Jobs hit their
 by requests. Dispatcharr has no complete backup/restore workflow. Pausing the
 builder first might let fresh media backups run, but no service pause is
 recovery-ready now.
+At 2026-10-25 05:28 UTC, read-only Prometheus history confirmed an
+unschedulable sample for each of the 12 Bazarr, Deluge, Radarr and Sonarr
+backup Pods across the 2026-10-22 through 2026-10-24 11:00 UTC runs. The
+following query at 13:00 UTC each day returned four series with value `1`:
+
+```promql
+max_over_time(
+  kube_pod_status_unschedulable{
+    namespace="media",
+    pod=~"(bazarr|deluge|radarr|sonarr)-config-backup-.*"
+  }[3h]
+)
+```
+
+At each 11:00 UTC schedule, running containers requested 7,148 MiB on
+`zimaboard-0`, plus
+Deluge's 128 MiB restartable init sidecar, leaving 6 MiB of 7,282 MiB
+allocatable. The backup Pods require 16 MiB each, or 64 MiB for Bazarr, and
+their local config volumes bind them to that node. All 12 Jobs later reported
+`Failed:DeadlineExceeded`; their Pods and events are no longer retained.
+Increasing deadlines or reducing requests would not create the missing
+placement. Free node capacity through reviewed placement or a chosen pause,
+then require fresh backups and an independent restore before media retirement.
 Pausing Langfuse instead needs a complete PostgreSQL, ClickHouse, Valkey,
 object-store and recovery-material backup with independent restore; the
 current PostgreSQL-only checkpoint cannot authorize that pause.
