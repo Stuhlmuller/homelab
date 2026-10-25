@@ -408,11 +408,13 @@ renovate_secret(key) := {
 	},
 }
 
-test_allows_only_declared_renovate_app_keys if {
+test_allows_only_declared_renovate_secret_keys if {
 	issuer_violations := deny with input as renovate_secret("/homelab/renovate/github-app/issuer-id")
 	count(issuer_violations) == 0
 	key_violations := deny with input as renovate_secret("/homelab/renovate/github-app/private-key")
 	count(key_violations) == 0
+	harbor_violations := deny with input as renovate_secret("/homelab/renovate/harbor-pull-password")
+	count(harbor_violations) == 0
 	violations := deny with input as renovate_secret("/homelab/renovate/github-app/other-key")
 	some msg in violations
 	contains(msg, "outside its allowed application prefixes")

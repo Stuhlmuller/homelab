@@ -343,6 +343,12 @@ inputs = {
       description   = "Read-only GitHub App private key for the temporary Renovate acceptance Jobs."
       initial_value = local.placeholder
     }
+    "/homelab/renovate/harbor-pull-password" = {
+      description = "Renovate-scoped copy of the read-only Harbor homelab project robot credential."
+      generated = {
+        source_parameter = "/homelab/harbor/robot-pull-password"
+      }
+    }
     "/homelab/external-secrets/aws-ssm/access-key-id" = {
       description   = "AWS access key ID used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder
