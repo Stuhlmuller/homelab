@@ -155,7 +155,7 @@ def ios_checkin(api, mdm, token, host_id):
             raise SetupError("Fleet iPhone MDM check-in timestamp has no timezone")
         return stamp
 
-    previous = checked_in_at()
+    checked_in_at()
     ios_pending_work_clear(host_id)
     # Recheck identity after the database preflight, immediately before the push.
     previous = checked_in_at()
