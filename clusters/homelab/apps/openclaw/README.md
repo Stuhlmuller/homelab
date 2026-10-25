@@ -210,6 +210,11 @@ the verified offsite archive receipt before running it. A reviewed offline
 Linux container run with `--network none` could supply the network boundary,
 but it still needs a proven container host, space for separate restored copies,
 the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run.
+The cached compressed archive is 18,917,154,522 bytes. The
+[standard public `ubuntu-24.04` runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+has a 14 GB SSD, so it cannot hold even this archive before extraction. Select
+a reviewed larger isolated Linux host with measured space for the archive,
+restored roots and image before adding the boot stage.
 Without evidence of the former writable overlay, do not claim exact compatible
 recovery from the image baseline alone.
 
