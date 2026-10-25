@@ -19,15 +19,16 @@ OLD = (NOW - timedelta(days=2)).isoformat()
 
 def fixture():
     items = []
-    for index in range(25):
+    for index, emergency_name in enumerate(sorted(offramp.DECLARED_EMERGENCY_NAMES)):
         uid = f"service-{index}"
         labels = {"octelium.com/component": "svc", "octelium.com/svc-uid": uid}
         items += [
-            {"kind": "Deployment", "metadata": {"name": f"emergency-{index}"},
+            {"kind": "Deployment", "metadata": {"name": emergency_name},
              "spec": {"template": {"metadata": {"labels": dict(labels)}}}},
             {"kind": "Deployment", "metadata": {"name": f"native-{index}", "uid": f"deployment-{index}", "generation": 1},
              "spec": {"replicas": 1, "template": {"metadata": {"labels": dict(labels)}}},
-             "status": {"readyReplicas": 1, "observedGeneration": 1}},
+             "status": {"replicas": 1, "updatedReplicas": 1, "readyReplicas": 1,
+                        "availableReplicas": 1, "observedGeneration": 1}},
             {"kind": "ReplicaSet", "metadata": {"uid": f"rs-{index}",
              "ownerReferences": [{"kind": "Deployment", "uid": f"deployment-{index}", "controller": True}]}},
             {"kind": "Pod", "metadata": {"ownerReferences": [{"kind": "ReplicaSet", "uid": f"rs-{index}", "controller": True}]},
@@ -39,7 +40,10 @@ def fixture():
     workloads = {"items": items}
     nodes = {"items": [{"metadata": {"name": "worker", "labels": {"octelium.com/node-mode-dataplane": ""}},
                         "status": {"allocatable": {"memory": "8192Mi"},
-                                   "conditions": [{"type": "Ready", "status": "True", "lastTransitionTime": OLD}]}}]}
+                                   "conditions": [{"type": "Ready", "status": "True", "lastTransitionTime": OLD},
+                                                  {"type": "MemoryPressure", "status": "False"},
+                                                  {"type": "DiskPressure", "status": "False"},
+                                                  {"type": "PIDPressure", "status": "False"}]}}]}
     metrics = {"items": [{"metadata": {"name": "worker"}, "timestamp": NOW.isoformat(),
                           "usage": {"memory": "4096Mi"}}]}
     return workloads, nodes, metrics, {"items": [x for x in items if x["kind"] == "Pod"]}
@@ -73,11 +77,32 @@ class OfframpPreflightTest(unittest.TestCase):
         _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
         self.assertTrue(any("worker has not remained Ready for 24h" in x for x in failures))
 
+    def test_cordoned_or_tainted_worker_blocks(self):
+        workloads, nodes, metrics, pods = fixture()
+        nodes["items"][0]["spec"] = {"unschedulable": True}
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("not a Ready native dataplane worker" in x for x in failures))
+
+    def test_node_pressure_blocks(self):
+        workloads, nodes, metrics, pods = fixture()
+        nodes["items"][0]["status"]["conditions"][1]["status"] = "True"
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("not a Ready native dataplane worker" in x for x in failures))
+        nodes["items"][0]["spec"] = {"taints": [{"effect": "NoSchedule"}]}
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("not a Ready native dataplane worker" in x for x in failures))
+
     def test_missing_emergency_deployment_blocks(self):
         workloads, nodes, metrics, pods = fixture()
-        workloads["items"] = [x for x in workloads["items"] if x["metadata"].get("name") != "emergency-0"]
+        workloads["items"].pop(0)
         _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
         self.assertTrue(any("expected 25" in x for x in failures))
+
+    def test_same_count_drifted_emergency_deployment_blocks(self):
+        workloads, nodes, metrics, pods = fixture()
+        workloads["items"][0]["metadata"]["name"] = "emergency-unreviewed"
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("or drift" in x for x in failures))
 
     def test_restartable_init_sidecar_counts_during_startup_and_steady_state(self):
         pod = {"spec": {"containers": [{"resources": {"requests": {"memory": "368Mi"}}}],
@@ -95,6 +120,32 @@ class OfframpPreflightTest(unittest.TestCase):
         _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
         self.assertTrue(any("uninterrupted Ready" in x for x in failures))
         self.assertTrue(any("worker has not remained Ready" in x for x in failures))
+
+    def test_old_replica_or_extra_pending_pod_blocks(self):
+        workloads, nodes, metrics, pods = fixture()
+        workloads["items"][1]["status"].update(replicas=2, updatedReplicas=0)
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("not converged" in x for x in failures))
+        workloads["items"][1]["status"].update(replicas=1, updatedReplicas=1)
+        extra = copy.deepcopy(workloads["items"][3])
+        extra["status"]["phase"] = "Pending"
+        workloads["items"].append(extra)
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("expected one non-terminating" in x for x in failures))
+
+    def test_restarted_init_sidecar_blocks(self):
+        workloads, nodes, metrics, pods = fixture()
+        pod = workloads["items"][3]
+        pod["spec"]["initContainers"] = [{"restartPolicy": "Always"}]
+        pod["status"]["initContainerStatuses"] = [{"restartCount": 3}]
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("uninterrupted Ready" in x for x in failures))
+
+    def test_duplicate_fallback_target_blocks(self):
+        workloads, nodes, metrics, pods = fixture()
+        workloads["items"][4]["spec"]["template"]["metadata"]["labels"]["octelium.com/svc-uid"] = "service-0"
+        _, failures = offramp.evaluate(workloads, nodes, metrics, pods, NOW)
+        self.assertTrue(any("reused by another fallback" in x for x in failures))
 
 
 if __name__ == "__main__":

@@ -10,10 +10,15 @@ import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 
 ROLLING_HEADROOM_BYTES = 2765 * 1024 * 1024  # 2.7 GiB observed native-fleet p95.
 MIN_NATIVE_TWINS = 25
+DECLARED_EMERGENCY_NAMES = re.findall(
+    r"^  name: (emergency-[a-z0-9-]+)$",
+    (Path(__file__).resolve().parents[1] / "clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml").read_text(),
+    re.MULTILINE)
 
 
 def quantity_bytes(value):
@@ -61,9 +66,13 @@ def evaluate(workloads, nodes, metrics, all_pods, now):
     pods = [x for x in workloads["items"] if x["kind"] == "Pod"]
     emergency = [x for x in deployments if x["metadata"]["name"].startswith("emergency-")]
     native = [x for x in deployments if x not in emergency]
-    if len(emergency) != MIN_NATIVE_TWINS:
-        failures.append(f"expected {MIN_NATIVE_TWINS} emergency Deployments; found {len(emergency)}")
+    if (len(DECLARED_EMERGENCY_NAMES) != MIN_NATIVE_TWINS
+            or len(set(DECLARED_EMERGENCY_NAMES)) != MIN_NATIVE_TWINS):
+        failures.append("declared emergency Deployment inventory is incomplete or duplicated")
+    if {x["metadata"]["name"] for x in emergency} != set(DECLARED_EMERGENCY_NAMES) or len(emergency) != MIN_NATIVE_TWINS:
+        failures.append(f"expected {MIN_NATIVE_TWINS} declared emergency Deployments; found {len(emergency)} or drift")
     selected_nodes = set()
+    seen_native_uids = set()
     matched = 0
     for fallback in emergency:
         labels = fallback["spec"]["template"]["metadata"].get("labels", {})
@@ -76,22 +85,34 @@ def evaluate(workloads, nodes, metrics, all_pods, now):
             failures.append(f"{name}: exact native Deployment missing or ambiguous")
             continue
         twin = twins[0]
+        twin_uid = twin["metadata"]["uid"]
+        if twin_uid in seen_native_uids:
+            failures.append(f"{name}: native Deployment reused by another fallback")
+            continue
+        seen_native_uids.add(twin_uid)
         status = twin.get("status", {})
-        if twin["spec"].get("replicas", 1) != 1 or status.get("readyReplicas") != 1 or status.get("observedGeneration", 0) < twin["metadata"].get("generation", 1):
+        if (twin["spec"].get("replicas", 1) != 1
+                or any(status.get(field) != 1 for field in ("replicas", "updatedReplicas", "readyReplicas", "availableReplicas"))
+                or status.get("unavailableReplicas", 0) != 0
+                or status.get("observedGeneration", 0) < twin["metadata"].get("generation", 1)):
             failures.append(f"{name}: native Deployment not converged to one Ready replica")
             continue
-        rs_uids = {r["metadata"]["uid"] for r in replicasets if owner_uid(r, "Deployment") == twin["metadata"]["uid"]}
-        active = [p for p in pods if owner_uid(p, "ReplicaSet") in rs_uids and p.get("status", {}).get("phase") == "Running"]
-        if len(active) != 1:
-            failures.append(f"{name}: expected one owned Running native Pod; found {len(active)}")
+        rs_uids = {r["metadata"]["uid"] for r in replicasets if owner_uid(r, "Deployment") == twin_uid}
+        owned = [p for p in pods if owner_uid(p, "ReplicaSet") in rs_uids]
+        if len(owned) != 1 or owned[0].get("status", {}).get("phase") != "Running" or owned[0]["metadata"].get("deletionTimestamp"):
+            failures.append(f"{name}: expected one non-terminating owned Running native Pod; found {len(owned)}")
             continue
-        pod = active[0]
+        pod = owned[0]
         conditions = [c for c in pod["status"].get("conditions", []) if c.get("type") == "Ready"]
         containers = pod["status"].get("containerStatuses", [])
+        init_containers = pod["status"].get("initContainerStatuses", [])
         if (len(conditions) != 1 or conditions[0].get("status") != "True"
                 or not conditions[0].get("lastTransitionTime")
                 or now - timestamp(conditions[0]["lastTransitionTime"]) < timedelta(hours=24)
-                or not containers or any(not c.get("ready") or c.get("restartCount") != 0 for c in containers)
+                or len(containers) != len(pod["spec"].get("containers", []))
+                or len(init_containers) != len(pod["spec"].get("initContainers", []))
+                or any(not c.get("ready") or c.get("restartCount") != 0 for c in containers)
+                or any(c.get("restartCount") != 0 for c in init_containers)
                 or not pod["status"].get("podIP") or not pod["spec"].get("nodeName")):
             failures.append(f"{name}: native Pod lacks 24h uninterrupted Ready/zero-restart evidence")
             continue
@@ -107,8 +128,19 @@ def evaluate(workloads, nodes, metrics, all_pods, now):
             failures.append(f"{node_name}: node or fresh metrics unavailable")
         else:
             labels = node["metadata"].get("labels", {})
-            ready = [c for c in node["status"].get("conditions", []) if c.get("type") == "Ready"]
-            if node_name == "acer" or "octelium.com/node-mode-dataplane" not in labels or len(ready) != 1 or ready[0].get("status") != "True":
+            conditions = node["status"].get("conditions", [])
+            ready = [c for c in conditions if c.get("type") == "Ready"]
+            pressure_conditions = {
+                kind: [c for c in conditions if c.get("type") == kind]
+                for kind in ("MemoryPressure", "DiskPressure", "PIDPressure")}
+            pressures_clear = all(
+                len(items) == 1 and items[0].get("status") == "False"
+                for items in pressure_conditions.values())
+            scheduling_blocked = node.get("spec", {}).get("unschedulable") or any(
+                t.get("effect") in ("NoSchedule", "NoExecute") for t in node.get("spec", {}).get("taints", []))
+            if (node_name == "acer" or "octelium.com/node-mode-dataplane" not in labels
+                    or scheduling_blocked or not pressures_clear
+                    or len(ready) != 1 or ready[0].get("status") != "True"):
                 failures.append(f"{node_name}: not a Ready native dataplane worker")
             elif (not ready[0].get("lastTransitionTime")
                   or now - timestamp(ready[0]["lastTransitionTime"]) < timedelta(hours=24)):
