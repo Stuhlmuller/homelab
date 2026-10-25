@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:574140719c03a698d72ae14e79072268452c8e2c31006db45825519bb067ecc2",
+  "pageVersion": "sha256:50f6e9835f63757335a97145457e317c1adf543442486903c4c00817e2761544",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
+          "version": "repo-file-v1:sha256:9162eeaa4c209ec37f7a6b38ef6b74eac620680f33b910b6ed61b054765b4997"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -38,10 +38,10 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:8e68ee64ec2fa6c311b6193355c9b65ad4e6210454573c5ce7fd6317757cb375"
         },
         {
-          "resource": "repo://docs/image-egress-hardening.md#L92-L128",
+          "resource": "repo://docs/image-egress-hardening.md#L93-L129",
           "version": "repo-lines-v1:sha256:388ca4ed406943c9c6a434ad124b764bcb95fd096ca49b3da7ec8f0f7bf2f65d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjMmZkZGY5YzA3YTJjZmEwYzI2NjE3ODIwNTYyMjRmNGM1YmNiOWRkZDAwNjZjY2E5OTUyMDM3ZDc2ZGRhOTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViYzNiMDNhZmQxY2ZmNDdhNzgzMTQ0ZDMyOGEzNDJiYmQwYzAzY2JjY2EzNjVlZjZjMDU0Mzc1NjE4M2M0NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMDM5YWY0NzliZGMwOGM1NTU0MDVkMzY5ODNmM2ZlMGUwMTc3OTEzOTk1MzRmZWU0NTg2NDQ3YzM4OGI3NjAifQ"
         }
       ]
@@ -49,6 +49,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T22:27:13.661Z"
+    "at": "2026-10-25T12:11:12.391Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c981c552e484401b95ee7e57efc70d57c9ad09255e7778f286ad81cb83a666f6",
+  "pageVersion": "sha256:37eac2166c1561bdd0ad9ec3c3f7d5fa5126cf2f1bee523813c8f489b4d66ee1",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
@@ -21,7 +21,7 @@
           "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L85-L93",
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L87-L95",
           "version": "repo-lines-v1:sha256:cadc0ff8530d19b6f5ce21b3bda486a1a0fe405eb77163a3cfdabfc6eb81f54d:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY1NjE4MGRlZTI4ODIzZGZiZmZmN2NkY2I1Y2ZiYWUyMWU4ZWFjNDM3ZjdkMGViOWYzNjRiOTVkMTJlNjBlNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjliY2VjYzNiNjAyZjFhMWY1NjM2YmIzMTg5NDEwNTY2ODJiN2RmMTYxZDQ4ZWM3MGM4MDg0MjI2YTdhNTU1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2JmMDZiNTg2NzFjMmYxYTBhMzM0ZjYxMWRjODAxY2FjMjI0MThkNTVlN2E4OTg2OWJiNjk2ZmU5YjA0MTAxMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTJlZjNjYzY2NDcxZWI5Mzk4MWYxZWZmOTU2ZjZkYWM4NTQyYzA4ZWIyNGEyMTQ3MDJmNTBjY2ViNWQxYjdiMCJ9"
         },
         {
@@ -114,7 +114,7 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -128,11 +128,11 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
+          "version": "repo-file-v1:sha256:e3faffdb28c149068ba001202c643c9f0282bd269111d3352d52a3527054a2a2"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
         }
       ]
     },
@@ -178,11 +178,11 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
+          "version": "repo-file-v1:sha256:e3faffdb28c149068ba001202c643c9f0282bd269111d3352d52a3527054a2a2"
         },
         {
           "resource": "repo://scripts/ci/network-policy-registration-test.py",
-          "version": "repo-file-v1:sha256:2b1eb2eea4bc70ba7c353e15ff9a7ad93e0bd0148ab1542edd41ce9a50d6a412"
+          "version": "repo-file-v1:sha256:4692dc208fe7202c65a0440aaa43d52cfd8ff87229eb58aaccbd34f9ada04763"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -190,13 +190,13 @@
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:11057d41384158cd5a2a1ea991ecbd32e807b4888be97097476b9bfe88a59d52"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-23T18:25:34.713Z"
+    "at": "2026-10-25T12:00:26.315Z"
   }
 }

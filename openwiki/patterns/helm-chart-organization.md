@@ -11,15 +11,15 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/kustomization.yaml
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
+  - id: openwiki-source-6e612a8a6f7d729d059f3093
+    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-9828d67d6c8e28f372b28e0d
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
-  - id: openwiki-source-f5339d55c401403e74eef9ec
-    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T12:00:26.315Z
 ---
 
 # Helm Chart Organization

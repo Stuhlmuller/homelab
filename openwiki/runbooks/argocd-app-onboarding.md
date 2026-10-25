@@ -20,18 +20,18 @@ sources:
     resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-00c8a32293c8aaa55d3daba4
+  - id: openwiki-source-0c00f6db8dd49d62511a3f75
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw/stack.hcl
+  - id: openwiki-source-9c3fe2e8035c7eb9d09bfd26
     resource: repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
-  - id: openwiki-source-17718b74140783bc6aaf9388
+  - id: openwiki-source-e6bd097f07292b202c6eecb6
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
-  - id: openwiki-source-25f75cdd2a576d57bb951a93
-    resource: repo://IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -43,7 +43,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T12:00:26.315Z
 ---
 
 # Argo CD App Onboarding

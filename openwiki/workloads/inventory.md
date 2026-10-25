@@ -773,6 +773,11 @@ uses the existing file-mounted Harbor administrator credential, and emits no
 artifact, digest, or CVE labels. The [Talos mirror rollout](../../docs/harbor-image-mirroring.md)
 covers Helm/operator-generated workloads and system images; publication must
 precede node cutover or new consumer versions.
+The staged scoped rewrite handles newly created Octelium, monitoring and AI
+Pods. The Octelium Enterprise Application also declares a one-at-a-time Sync
+hook to replace existing controller-owned service-proxy Pods only after its
+server dry-run confirms admission rewrites the reviewed image. Live hook and
+current-Pod acceptance remain pending.
 New builds use a local signing Job and the cert-manager-owned
 `harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical
