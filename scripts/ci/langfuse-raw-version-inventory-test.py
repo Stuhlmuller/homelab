@@ -2,7 +2,9 @@
 """Focused pagination and readback checks for the private Langfuse inventory."""
 
 import importlib.util
+import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -14,6 +16,25 @@ SPEC.loader.exec_module(SUT)
 
 
 class InventoryTests(unittest.TestCase):
+    def test_protected_main_uses_dedicated_inventory_role(self):
+        workflow_path = SOURCE.parents[2] / ".github/workflows/langfuse-raw-version-inventory.yml"
+        workflow = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(workflow_path)], text=True))
+        job = workflow["jobs"]["inventory"]
+        self.assertEqual(job["if"], "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'")
+        self.assertEqual(job["environment"], {"name": "homelab-production"})
+        self.assertEqual(job["permissions"], {"contents": "read", "id-token": "write"})
+
+        steps = job["steps"]
+        guard = next(index for index, step in enumerate(steps) if step["name"] == "Verify Current Main Before Credentials")
+        credentials = next(index for index, step in enumerate(steps) if step["name"] == "Configure AWS Credentials")
+        self.assertLess(guard, credentials)
+        self.assertIn('test "$ACTUAL_SHA" = "$EXPECTED_SHA"', steps[guard]["run"])
+        self.assertIn('test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"', steps[guard]["run"])
+        account = SUT.declared_bucket()["account_id"]
+        self.assertEqual(steps[credentials]["with"]["role-to-assume"],
+                         f"arn:aws:iam::{account}:role/homelab-langfuse-raw-inventory")
+        self.assertEqual(steps[credentials]["with"]["role-duration-seconds"], 7200)
+
     def test_bucket_matches_infrastructure_and_workload(self):
         values = SUT.declared_bucket()
         self.assertEqual(values["bucket"],

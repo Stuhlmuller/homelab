@@ -92,7 +92,7 @@ jobs:
           mask-aws-account-id: true
           role-duration-seconds: 7200
           role-session-name: homelab-langfuse-raw-inventory-${{ github.run_id }}
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          role-to-assume: arn:aws:iam::716182248480:role/homelab-langfuse-raw-inventory
           unset-current-credentials: true
 
       - name: Inventory Private Versions

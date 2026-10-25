@@ -95,7 +95,10 @@ gh workflow run langfuse-raw-version-inventory.yml -R Stuhlmuller/homelab \
   --ref main -f expected_sha="$main_sha"
 ```
 
-The protected CI role needs `s3:GetBucketVersioning`,
+First apply the reviewed dedicated inventory role in the
+[`github-actions-role-policy`](../../../../IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf)
+operator unit, then verify that `homelab-production` retains its main-only
+branch policy. The inventory role needs `s3:GetBucketVersioning`,
 `s3:GetEncryptionConfiguration` and `s3:ListBucketVersions` on the bucket,
 `s3:GetObjectVersion` on its objects, and `kms:Decrypt` for their KMS key.
 The application IAM user intentionally
