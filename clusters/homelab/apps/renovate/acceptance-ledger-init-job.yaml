@@ -8,6 +8,7 @@ metadata:
     checkov.io/skip1: CKV_K8S_23=Only the one-shot ownership initializer runs as root; acceptance workers run as UID 12021.
     checkov.io/skip2: CKV_K8S_37=The initializer receives only CHOWN and FOWNER for its dedicated local volume.
     checkov.io/skip3: CKV_K8S_25=The initializer receives only CHOWN and FOWNER for its dedicated local volume.
+    checkov.io/skip4: CKV_K8S_40=The one-shot initializer needs UID 0 to own its dedicated local volume; acceptance workers run as UID 12021.
   labels:
     app.kubernetes.io/name: renovate
     app.kubernetes.io/component: acceptance-ledger-init
