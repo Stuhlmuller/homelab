@@ -986,6 +986,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
+    '.github/workflows/harbor-helm-charts.yml:publish' \
+    '.github/workflows/harbor-helm-charts.yml:validate' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \

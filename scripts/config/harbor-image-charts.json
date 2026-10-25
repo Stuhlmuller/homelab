@@ -132,6 +132,12 @@
     "targetRevision": "5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0"
   },
   {
+    "chart": "git:deploy/helm/openclaw-enterprise",
+    "repoURL": "https://github.com/openclaw/openclaw-enterprise.git",
+    "source": "IaC/openclaw-enterprise/stack.hcl",
+    "targetRevision": "33bb74590a749f37934da4502fca6035cd234a55"
+  },
+  {
     "chart": "grafana",
     "repoURL": "https://grafana-community.github.io/helm-charts",
     "source": "IaC/homelab/us-west-2/apps/grafana/stack.hcl",

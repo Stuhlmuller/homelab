@@ -180,6 +180,15 @@ def chart_sources():
                 raise SystemExit(f"{stack.relative_to(ROOT)}: Stack chart sources must keep literal "
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
+    enterprise = ROOT / "IaC/openclaw-enterprise/stack.hcl"
+    if enterprise.exists() and not re.search(r'\bchart\s*=', enterprise.read_text()):
+        match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'
+                          r'targetRevision\s*=\s*"([^"]+)"\s*helm\s*=', enterprise.read_text())
+        if not match:
+            raise SystemExit("IaC/openclaw-enterprise/stack.hcl: Git Helm chart source must keep literal fields")
+        repository, path, revision = match.groups()
+        charts.append({"source": str(enterprise.relative_to(ROOT)), "repoURL": repository,
+                       "chart": "git:" + path, "targetRevision": revision})
     bootstrap = ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
