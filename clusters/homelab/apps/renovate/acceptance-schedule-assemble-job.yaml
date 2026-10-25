@@ -36,7 +36,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: assemble
-          image: docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
           imagePullPolicy: IfNotPresent
           command: [python3, -I, -B, /usr/local/bin/renovate-acceptance-schedule-assemble.py]
           args:
