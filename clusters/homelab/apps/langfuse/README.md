@@ -40,8 +40,8 @@ with Docker networking disabled. The workflow leaves the live database and PVC
 untouched. It is a one-shot safety copy for the proposed database move, not a
 scheduled backup.
 
-After this workflow is merged and its live run is authorized, dispatch it from
-exact current `main`; `homelab-production` admits only that branch:
+To capture a fresh checkpoint, dispatch the workflow from exact current
+`main`; `homelab-production` admits only that branch:
 
 ```sh
 main_sha="$(gh api repos/Stuhlmuller/homelab/commits/main --jq .sha)"
@@ -50,14 +50,22 @@ gh workflow run langfuse-postgres-checkpoint.yml -R Stuhlmuller/homelab \
   -f expected_pvc_uid='<pre-move-pvc-uid>' -f expected_pv_uid='<pre-move-pv-uid>'
 ```
 
-The successful job prints the object key, version ID, SHA-256 digest, byte
+The [2026-10-25 protected run](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316)
+on exact `main` `3f5d8789ce8e821e8806bd944c1bc7c621d115e9` verified
+S3 object version `p7sNhZuyxRC4BIwad_iUPSx7pajjoHoM` readback, SHA-256
+`8b7c8f46a152337af28199ebf94de001af7e00b8ff50a3461edb2cd089c0f9a8`,
+323,964 bytes, and 75 public tables in an isolated restore. It predates the source
+PVC/PV UID check, so it is historical evidence and does not qualify the pending
+placement change.
+
+The current workflow prints the object key, version ID, SHA-256 digest, byte
 count, restored table count, and source PVC/PV identities. Keep that receipt
-with the migration record. Supply the expected UIDs from the independently
-checked pre-move source inventory, and compare them with the bound claim before
-the move; the object version remains in the private backup bucket. A failed job
-may leave an unverified S3 object at its run-specific key; inspect it
-privately and do not count it as a usable checkpoint. Preflight rejects stale main, missing CI
-Pod/PVC/PV read and exec rights, an incomplete Pod list, a replaced claim,
+with the migration record. Supply expected UIDs from an independently checked
+pre-move source inventory and confirm they still match the bound claim before
+the move. The object version remains in the private backup bucket. A failed job
+may leave an unverified S3 object at its run-specific key; inspect it privately
+and do not count it as a usable checkpoint. Preflight rejects stale main, missing
+CI Pod/PVC/PV read and exec rights, an incomplete Pod list, a replaced claim,
 multiple or unready PostgreSQL Pods, an image mismatch,
 wrong AWS account, unversioned or unencrypted storage, and a database over
 1 GiB. The hosted runner needs sufficient scratch disk for dump, retrieval,
@@ -80,11 +88,16 @@ The PostgreSQL Deployment pins to `acer` and keeps its existing NFS PVC and
 database files. `acer` has mounted other NFS workloads, but recheck its free
 memory, node health, and the claim's live binding immediately before rollout.
 
-Before merging the placement change, run the protected one-shot PostgreSQL
-checkpoint on the exact current `main`. Retain its private S3 object key,
-version, SHA-256 digest, and isolated-restore table count. The checkpoint covers
-PostgreSQL only; it does not back up ClickHouse, Valkey, raw events, or secrets.
-If the receipt or restore check fails, stop the move.
+Before merging the placement change, run a fresh protected checkpoint from
+exact current `main` for the independently inspected Bound, Retain NFS source
+PVC/PV UIDs. Match both UIDs in its receipt to the live claim immediately
+before rollout; retain the private S3 object key, version, SHA-256 digest, and
+isolated-restore table count. The 2026-10-25 receipt predates UID binding and
+does not qualify this move. Stop if the source identity changes or the
+checkpoint or restore check fails. This same-PVC Pod relocation does not
+establish whole-service recovery; a whole-service move or retirement requires
+the stopped-writer, all-store gate in
+[`docs/application-recovery.md`](../../../../docs/application-recovery.md).
 
 The `Recreate` rollout stops the old Pod before starting it on `acer`. Database
 access stays down until NFS remount and PostgreSQL startup finish; the duration
