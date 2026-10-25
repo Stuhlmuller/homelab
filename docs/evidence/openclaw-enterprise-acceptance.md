@@ -462,6 +462,22 @@ historical peaks:
 | `zimaboard-1` | 3,884 / 7,282 MiB | 6,141 MiB | 8.96 GiB |
 | `zimaboard-2` | 1,078 / 1,308 MiB | 967 MiB | 8.64 GiB |
 
+At 2026-10-25 12:50 UTC, kubelet reported 8.98 GiB free on
+`zimaboard-1`, below one required 10 GiB local Enterprise claim before
+image pulls or restart margin. Kubernetes reported seven bound node-local
+volumes there: three retained legacy OpenClaw volumes (5 + 3 + 2 GiB),
+Mastodon PostgreSQL and Redis (3 + 1 GiB), and two Cordium workspaces
+(20,000 + 10,000 MiB). Authenticated read-only Talos `usage` measured 300 MB
+in `/var/lib/openclaw-runtime`, 66 MB in Mastodon PostgreSQL, 4.1 MB in
+Mastodon Redis, and 438 kB across the Cordium workspaces. Their combined
+occupancy is below 0.35 GiB, less than the 1.02 GiB minimum claim shortfall;
+the declared PV capacities are not measured disk use. Retiring these services
+cannot close the shortfall and would discard retained state.
+The CRI lists 135 images with 13.9 GB summed listed sizes, but shared layers
+and active images make that sum no verified reclaim amount. No reviewed
+selective image-cleanup receipt exists. `acer` remains the only current
+local-storage candidate.
+
 The two 10 GiB local claims put PostgreSQL (512 MiB request) and the
 Embedded Gateway (1,792 MiB request) on `acer` under the proposed storage
 pattern. Suspending only Dispatcharr releases 1,664 MiB there, leaving 522
