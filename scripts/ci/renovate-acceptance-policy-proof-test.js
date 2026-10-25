@@ -15,7 +15,7 @@ const content = (text) => ({ type: 'file', encoding: 'base64',
 
 function fixture(found = {}) {
   const routes = new Map([
-    [`${base}/rules/branches/main`, []],
+    [`${base}/rules/branches/main?per_page=100`, []],
     [`${base}/branches/main/protection`, null],
     [`${base}/branches/main`, { commit: { sha: headSha } }],
     [base, { private: true, archived: false, default_branch: 'main' }],
@@ -53,7 +53,7 @@ test('override, shadowed config, rules, and classic protection stay private evid
     'package.json': '{"name":"fixture","renovate":{"schedule":["at any time"]}}',
   });
   const snapshot = await proof.snapshotRepository(repository, (route, allow404) => {
-    if (route === `${base}/rules/branches/main`) return [{ type: 'required_status_checks' }];
+    if (route === `${base}/rules/branches/main?per_page=100`) return [{ type: 'required_status_checks' }];
     if (route === `${base}/branches/main/protection`) return {
       required_status_checks: { strict: true },
       required_pull_request_reviews: { required_approving_review_count: 2 },
@@ -74,9 +74,18 @@ test('override, shadowed config, rules, and classic protection stay private evid
   assert.equal(JSON.stringify(snapshot).includes('automerge'), false);
 });
 
+test('effective branch rules fail closed at the GitHub page limit', async () => {
+  const get = fixture();
+  const rules = Array.from({ length: 100 }, () => ({ type: 'required_status_checks' }));
+  await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
+    if (route === `${base}/rules/branches/main?per_page=100`) return rules;
+    return get(route, allow404);
+  }), /invalid-branch-rules/);
+});
+
 test('403, malformed config, and changing default branch fail closed', async () => {
   await assert.rejects(proof.snapshotRepository(repository, (route, allow404) => {
-    if (route === `${base}/rules/branches/main`) throw new Error('github-policy-read-failed');
+    if (route === `${base}/rules/branches/main?per_page=100`) throw new Error('github-policy-read-failed');
     return fixture()(route, allow404);
   }), /github-policy-read-failed/);
   await assert.rejects(proof.snapshotRepository(repository, fixture({
@@ -101,6 +110,12 @@ test('GitHub 200 succeeds, 404 is optional only, and 403 always fails', async ()
     text: async () => '[]' });
   try {
     assert.deepEqual(await proof.github('fixture-token', '/rules'), []);
+    global.fetch = async () => ({ status: 200, ok: true,
+      headers: { get: (name) => name === 'date' ? new Date().toUTCString() :
+        name === 'link' ? '<https://api.github.com/next>; rel="next"' : null },
+      text: async () => '[]' });
+    await assert.rejects(proof.github('fixture-token', '/rules'),
+      /github-policy-response-paginated/);
     global.fetch = async () => ({ status: 404, ok: false,
       headers: { get: (name) => name === 'date' ? new Date().toUTCString() : null } });
     assert.equal(await proof.github('fixture-token', '/missing', true), null);

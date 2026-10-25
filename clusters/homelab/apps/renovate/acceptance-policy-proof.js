@@ -37,6 +37,9 @@ async function github(token, route, allow404 = false) {
   }
   if (allow404 && response.status === 404) return null;
   if (!response.ok) throw new Error('github-policy-read-failed');
+  if (response.headers.get('link')?.includes('rel="next"')) {
+    throw new Error('github-policy-response-paginated');
+  }
   const length = Number(response.headers.get('content-length'));
   if (Number.isFinite(length) && length > 4 * 1024 * 1024) {
     throw new Error('github-policy-response-too-large');
@@ -70,8 +73,8 @@ async function snapshotRepository(repository, get) {
   }
   const route = `/repos/${repository.full_name}`;
   const branch = encodeURIComponent(repository.default_branch);
-  const rules = await get(`${route}/rules/branches/${branch}`);
-  if (!Array.isArray(rules) || rules.some((rule) =>
+  const rules = await get(`${route}/rules/branches/${branch}?per_page=100`);
+  if (!Array.isArray(rules) || rules.length >= 100 || rules.some((rule) =>
     !rule || typeof rule.type !== 'string' || !rule.type)) throw new Error('invalid-branch-rules');
   const classic = await get(`${route}/branches/${branch}/protection`, true);
   if (classic !== null && (!classic || typeof classic !== 'object' || Array.isArray(classic))) {
