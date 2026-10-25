@@ -37,6 +37,7 @@ node --test scripts/ci/renovate-acceptance-schedule-collector-test.js
 node --test scripts/ci/renovate-acceptance-inventory-test.js
 python3 -I scripts/ci/renovate-acceptance-review-test.py
 python3 -I scripts/ci/renovate-acceptance-schedule-test.py
+python3 -I scripts/ci/renovate-acceptance-schedule-assemble-test.py
 node --test scripts/ci/renovate-acceptance-report-test.js
 node --test scripts/ci/renovate-acceptance-pr-proof-test.js
 node --test scripts/ci/renovate-acceptance-source-review-test.js
