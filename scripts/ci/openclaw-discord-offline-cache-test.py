@@ -25,6 +25,15 @@ class RegistryIntegrity(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "integrity changed"):
                     SUT["check_registry_integrity"](json.dumps(result))
 
+    def test_lock_difference_paths_omit_values(self):
+        warm = {"packages": {"node_modules/example": {
+            "version": "1.0.0", "resolved": "https://public.example/a"}}}
+        offline = {"packages": {"node_modules/example": {
+            "version": "1.0.0", "resolved": "secret-value"}}}
+        differences = SUT["lock_difference_paths"](warm, offline)
+        self.assertEqual(differences, ["/packages/node_modules/example/resolved"])
+        self.assertNotIn("secret-value", str(differences))
+
 
 if __name__ == "__main__":
     unittest.main()
