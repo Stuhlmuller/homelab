@@ -42,6 +42,8 @@ spec:
         app.kubernetes.io/component: postgresql
     spec:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
       terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534

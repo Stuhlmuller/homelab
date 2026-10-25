@@ -73,6 +73,25 @@ Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
 startup and ingestion. Keep the existing PVC and require a separate reviewed
 cutover and rollback before moving the database.
 
+## PostgreSQL move off `zimaboard-2`
+
+The PostgreSQL Deployment pins to `acer` and keeps its existing NFS PVC and
+`Recreate` strategy. This changes only Pod placement; it does not copy or reset
+database files. `acer` has mounted other NFS workloads, but recheck its free
+memory, node health, and the claim's live binding immediately before rollout.
+
+Before merging the placement change, run the protected one-shot PostgreSQL
+checkpoint on the exact current `main`. Retain its private S3 object key,
+version, SHA-256 digest, and isolated-restore table count. The checkpoint covers
+PostgreSQL only; it does not back up ClickHouse, Valkey, raw events, or secrets.
+If the receipt or restore check fails, stop the move.
+
+The `Recreate` rollout stops the old Pod before starting it on `acer`, causing
+a brief database outage. Verify the new Pod is Ready on `acer`, the same PVC is
+mounted, Langfuse web and worker recover, and a fresh event is ingested. If the
+remount fails, revert the node selector through a reviewed GitOps change while
+preserving the PVC. Do not restore a dump over a running database.
+
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
