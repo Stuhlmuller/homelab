@@ -74,6 +74,8 @@ requires a new deployment to resume. A scheduled backup must prove either
 a consistent online capture or a journaled stop, capture and new-deployment
 resume with failure recovery. The normal no-change reconcile must not
 redeploy just to compensate for an incomplete backup path.
+The current reconciler validates only the first one or two revisions; it
+cannot safely create a fresh revision after each scheduled backup stop.
 The [pinned upstream recovery guide](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/production-handoff.md#L108-L130)
 provides no general OCC backup/restore command and rejects live SQLite copies
 or PVC persistence as verified backups. A complete online capture needs a
