@@ -152,6 +152,10 @@ def main():
         docker_config.mkdir()
         (docker_config / "config.json").write_text('{"auths":{}}')
         os.environ["DOCKER_CONFIG"] = str(docker_config)
+        for name in ("HELM_CACHE_HOME", "HELM_CONFIG_HOME", "HELM_DATA_HOME"):
+            location = directory / name.lower()
+            location.mkdir()
+            os.environ[name] = str(location)
         for row in charts:
             chart_directory = directory / row["chart"]
             chart_directory.mkdir()
