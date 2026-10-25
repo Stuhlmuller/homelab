@@ -36,12 +36,12 @@ terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
       $spec.syncPolicy.automated.selfHeal == true and
       ([ $spec.sources[] | select(has("chart")) |
         [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
-        ["https://istio-release.storage.googleapis.com/charts", "base", "istio-base", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "istiod", "istiod", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "cni", "istio-cni", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "ztunnel", "ztunnel", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "istio-ingressgateway", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+        ["harbor.stinkyboi.com/mirror/helm", "base", "istio-base", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "istiod", "istiod", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "cni", "istio-cni", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "ztunnel", "ztunnel", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "gateway", "octelium-api-ingressgateway", "1.27.3"]
       ]) and
       any($spec.sources[];
         .chart == "ztunnel" and
@@ -1615,7 +1615,7 @@ terragrunt --log-disable --working-dir IaC/live/argocd-apps/cert-manager \
   render --json --write=false --no-color \
   | jq -e '
       any(.inputs.manifest.spec.sources[];
-        .repoURL == "https://charts.jetstack.io" and
+        .repoURL == "harbor.stinkyboi.com/mirror/helm" and
         .chart == "cert-manager" and
         .targetRevision == "v1.20.3" and
         .helm.valueFiles == ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]

@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://kubernetes-sigs.github.io/metrics-server/"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "metrics-server"
         targetRevision = "3.13.1"
         helm = {

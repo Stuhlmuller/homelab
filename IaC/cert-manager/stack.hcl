@@ -8,7 +8,7 @@ inputs = {
   spec = {
     sources = [
       {
-        repoURL        = "https://charts.jetstack.io"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "cert-manager"
         path           = "."
         targetRevision = "v1.20.3"

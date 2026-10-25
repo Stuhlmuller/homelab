@@ -1,7 +1,7 @@
 ---
 type: pattern
 title: "Helm Chart Organization"
-description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
+description: "Harbor hosted Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
 generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 sources:
@@ -24,10 +24,16 @@ verified:
 
 # Helm Chart Organization
 
-Decision researched 2026-10-04: keep pinned upstream charts, app-local values,
+Decision researched 2026-10-04: keep pinned charts, app-local values,
 and Kustomize extras. Generate Application boilerplate in the shared Terragrunt
 stack/template. This minimizes the files and configuration languages an agent
 must read for an ordinary deployment.
+
+Argo CD chart sources now use `harbor.stinkyboi.com/mirror/helm`. The protected
+publisher checks the reviewed upstream package SHA-256, then pulls each Harbor
+copy with a separate reader robot before a source revision can be changed.
+The Terraform Argo CD bootstrap chart remains upstream so a restored cluster
+can install Argo CD before Harbor exists.
 
 ## Source Layout
 

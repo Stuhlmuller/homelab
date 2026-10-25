@@ -14,9 +14,9 @@ metadata:
 spec:
   project: homelab
   source:
-    repoURL: https://github.com/rancher/local-path-provisioner.git
-    path: deploy/chart/local-path-provisioner
-    targetRevision: 5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0
+    repoURL: harbor.stinkyboi.com/mirror/helm
+    chart: local-path-provisioner
+    targetRevision: 0.0.36
     helm:
       releaseName: cordium-local-path-provisioner
       values: |

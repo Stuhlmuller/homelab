@@ -8,7 +8,7 @@ inputs = {
   spec = {
     sources = [
       {
-        repoURL        = "https://pkgs.tailscale.com/helmcharts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "tailscale-operator"
         path           = "."
         targetRevision = "1.102.3"

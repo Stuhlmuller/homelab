@@ -12,7 +12,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "app-template"
         path           = "."
         targetRevision = "4.4.0"

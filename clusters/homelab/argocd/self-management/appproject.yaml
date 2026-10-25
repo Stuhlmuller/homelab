@@ -10,27 +10,7 @@ spec:
   description: Homelab platform and applications with audited or pending cluster-scoped requirements.
   sourceRepos:
     - https://github.com/Stuhlmuller/homelab.git
-    - https://argoproj.github.io/argo-helm
-    - https://bjw-s-labs.github.io/helm-charts
-    - https://charts.external-secrets.io
-    - https://charts.jetstack.io
-    - https://charts.crossplane.io/stable
-    - https://grafana-community.github.io/helm-charts
-    - https://helm.goharbor.io
-    - https://istio-release.storage.googleapis.com/charts
-    - https://kiali.org/helm-charts
-    - https://kubernetes-sigs.github.io/descheduler
-    - https://kubernetes-sigs.github.io/metrics-server/
-    - https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
-    - https://github.com/rancher/local-path-provisioner.git
-    - https://pkgs.tailscale.com/helmcharts
-    - https://prometheus-community.github.io/helm-charts
-    - ghcr.io/adinhodovic/charts
-    - ghcr.io/berriai
-    - ghcr.io/langfuse/langfuse-k8s/charts
-    - ghcr.io/multica-ai/charts
-    - codeberg.org/k8s-gateway/charts
-    - docker.io/envoyproxy
+    - harbor.stinkyboi.com/mirror/helm
   destinations:
     - server: https://kubernetes.default.svc
       namespace: ai

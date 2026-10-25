@@ -15,7 +15,7 @@ metadata:
 spec:
   project: homelab
   source:
-    repoURL: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+    repoURL: harbor.stinkyboi.com/mirror/helm
     chart: nfs-subdir-external-provisioner
     targetRevision: 4.0.18
     helm:

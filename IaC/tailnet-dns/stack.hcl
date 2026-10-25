@@ -12,7 +12,7 @@ inputs = {
     sources = [
       {
         # OCI digest observed for chart 4.0.0: sha256:b02209df03b08706179875b6e1887cb6064a589b591a0ce1e809a354811e37a7
-        repoURL        = "codeberg.org/k8s-gateway/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "k8s-gateway"
         path           = "."
         targetRevision = "4.0.0"

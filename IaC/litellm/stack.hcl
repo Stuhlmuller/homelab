@@ -16,7 +16,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "ghcr.io/berriai"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "litellm-helm"
         path           = "."
         targetRevision = "0.1.832"
