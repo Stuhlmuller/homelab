@@ -620,6 +620,16 @@ Argo pruned it in a separate revision before this writer restart. The separate 1
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
 
+The manual [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
+now verifies the exact Bound source PVC/PV identities. The
+[2026-10-25 run](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316)
+restored 75 tables but predates that identity check and is not sufficient for
+the move; ClickHouse, Valkey, raw objects, and secrets need separate recovery.
+The draft [PostgreSQL move](../../clusters/homelab/apps/langfuse/README.md#postgresql-move-off-zimaboard-2)
+pins the single `Recreate` Pod to `acer` with its existing NFS claim. It requires
+a fresh source-bound checkpoint and reviewed rollout; source does not prove live
+placement or restore success.
+
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
