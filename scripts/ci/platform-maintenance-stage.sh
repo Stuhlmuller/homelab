@@ -6,7 +6,7 @@ umask 077
 
 stage="${RUN_STAGE:-}"
 case "$stage" in
-  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-admit-recover|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
+  inspect|firewall-baseline|firewall-baseline-recover|placement|canary-admit|canary-admit-recover|canary-abort|canary-release|qualify|ownership-capture|ownership-approve|owned-cleanup|talos-1.11.6|talos-1.12.12|talos-1.13.11|talos-1.14.4|kubernetes-1.35.9) ;;
   *) exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_REF:-}" == refs/heads/main &&
@@ -16,7 +16,7 @@ esac
 
 config=scripts/config/platform-maintenance.json
 jq -e '.schemaVersion == 1 and .sourceRevisionPolicy == "exact-current-main-sha-from-protected-workflow"' "$config" >/dev/null
-if [[ "$stage" == placement || "$stage" == firewall-baseline ]]; then
+if [[ "$stage" == placement || "$stage" == firewall-baseline || "$stage" == canary-abort ]]; then
   jq -e '.activationEnabled == false and .canary.node == "zimaboard-2"' "$config" >/dev/null
 elif [[ "$stage" == canary-admit || "$stage" == canary-admit-recover ||
         "$stage" == canary-release ]]; then
@@ -24,7 +24,7 @@ elif [[ "$stage" == canary-admit || "$stage" == canary-admit-recover ||
 elif [[ "$stage" != inspect && "$stage" != firewall-baseline && "$stage" != firewall-baseline-recover ]]; then
   jq -e '.activationEnabled == true and (.canary.node | type == "string")' "$config" >/dev/null
 fi
-if [[ "$stage" == canary-admit-recover ]]; then
+if [[ "$stage" == canary-admit-recover || "$stage" == canary-abort ]]; then
   [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${ADMISSION_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&
      "${EVIDENCE_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || exit 2
   git merge-base --is-ancestor "$EVIDENCE_SOURCE_SHA" "$GITHUB_SHA" || exit 1
@@ -283,7 +283,7 @@ case "$stage" in
     fi
     retain_result "$work/canary.json" "$stage"
     ;;
-  canary-admit-recover)
+  canary-admit-recover|canary-abort)
     bash scripts/ci/install-kubeconfig.sh
     kubectl auth can-i create pods -n kube-system --quiet
     kubectl auth can-i create pods/exec -n kube-system --quiet
@@ -299,7 +299,23 @@ case "$stage" in
       '.format == 1 and .stage == "canary-admit" and .status == "attempted" and
        .verified == false and .sourceSha == $sourceSha and .runId == $runId' \
       "$work/receipts/admission-attempt.json" >/dev/null
-    require_absent_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
+    admission_key="openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
+    admission_version=
+    if [[ "$stage" == canary-abort ]]; then
+      load_receipt "$admission_key" "$work/receipts/admission.json"
+      admission_version="$loaded_receipt_version"
+      git rev-list --first-parent "$GITHUB_SHA" | grep -Fx "$EVIDENCE_SOURCE_SHA" >/dev/null || exit 1
+      git diff --quiet "$EVIDENCE_SOURCE_SHA" "$GITHUB_SHA" -- \
+        clusters/homelab/platform/network-policy/preflight/pod.json \
+        clusters/homelab/platform/network-policy/daemonset.yaml \
+        clusters/homelab/platform/network-policy/canary/fixtures.yaml \
+        clusters/homelab/platform/network-policy/kustomization.yaml \
+        clusters/homelab/platform/network-policy/canary/kustomization.yaml \
+        IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl \
+        IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl || exit 1
+    else
+      require_absent_receipt "$admission_key"
+    fi
     placement_run_id="$(jq -er '.placementRunId | select(type == "string" and test("^[1-9][0-9]*$"))' \
       "$work/receipts/admission-attempt.json")"
     placement_version="$(jq -er '.placementVersionId | select(type == "string" and . != "" and . != "null")' \
@@ -315,7 +331,8 @@ case "$stage" in
       --arg admissionRunId "$ADMISSION_RUN_ID" --arg placementRunId "$placement_run_id" \
       --arg placementVersionId "$placement_version" --arg node "$node" \
       --arg nodeUid "$node_uid" --arg bootID "$boot_id" --arg podToken "$pod_token" \
-      '{format: 1, stage: "canary-admit-recover", status: "attempted", verified: false,
+      --arg stage "$stage" \
+      '{format: 1, stage: $stage, status: "attempted", verified: false,
         sourceSha: $sourceSha, evidenceSourceSha: $evidenceSourceSha,
         runId: $runId, admissionRunId: $admissionRunId,
         placementRunId: $placementRunId, placementVersionId: $placementVersionId,
@@ -336,19 +353,29 @@ case "$stage" in
       exit 1
     fi
     retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof
-    require_absent_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"
-    if ! python3 -I scripts/network-policy-canary-node.py recover \
+    if [[ "$stage" == canary-abort ]]; then
+      load_receipt "$admission_key" "$work/receipts/admission-readback.json" "$admission_version"
+      cmp "$work/receipts/admission.json" "$work/receipts/admission-readback.json"
+      action=abort
+      admission_args=(--admission-version-id "$admission_version")
+    else
+      require_absent_receipt "$admission_key"
+      action=recover
+      admission_args=()
+    fi
+    if ! python3 -I scripts/network-policy-canary-node.py "$action" \
       --config "$config" --expected-sha "$GITHUB_SHA" --bucket "$bucket" \
       --evidence-source-sha "$EVIDENCE_SOURCE_SHA" \
       --admission-run-id "$ADMISSION_RUN_ID" \
       --placement-run-id "$placement_run_id" --placement-version-id "$placement_version" \
+      "${admission_args[@]}" \
       --receipt-dir "$work/receipts" --output "$work/canary-recovery.json"; then
       if [[ -f "$work/canary-recovery.json" && ! -L "$work/canary-recovery.json" ]]; then
-        retain_result "$work/canary-recovery.json" canary-admit-recover-interrupted
+        retain_result "$work/canary-recovery.json" "${stage}-interrupted"
       fi
       exit 1
     fi
-    retain_result "$work/canary-recovery.json" canary-admit-recover
+    retain_result "$work/canary-recovery.json" "$stage"
     ;;
   qualify)
     [[ -n "${OCTELIUM_AUTH_TOKEN:-}" ]] || exit 1

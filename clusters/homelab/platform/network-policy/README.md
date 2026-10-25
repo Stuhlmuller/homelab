@@ -82,14 +82,18 @@ list is valid only when the node has no assigned Pods. Only `kube-system`
 DaemonSet controller ownership, and exact reviewed Pod UID; it cannot identify
 arbitrary `kube-system` applications, so review each listed identity. The stage rejects
 existing enforcer/cleanup DaemonSets and fixture namespace, adds the dedicated
-taint, then checks the live assigned Pod list before adding the selector label.
+taint and admission-run annotation in one Node patch, then checks the live
+assigned Pod list before adding the selector label.
 It requires a complete cluster-wide Node label inventory with no other canary
 selected before mutation and immediately before labeling; a post-label check
 removes this Node's label if another selected Node appears. It checks the Pod
 list again after labeling. Each Node patch tests
-`resourceVersion` and UID and touches only the owned taint or label. A
-taint-only interrupted attempt can retry with a fresh matching placement
-receipt; a labeled Node needs direct review before another admission attempt.
+`resourceVersion` and UID and touches only the owned taint, label, or admission
+annotation. The annotation binds the selected admission SHA and run ID for the
+whole taint lifetime, so an older receipt cannot remove a later attempt's
+taint. A taint-only interrupted attempt requires protected
+`canary-admit-recover` with its original receipt before a new admission;
+a labeled Node needs direct review before another admission attempt.
 If the Node patch succeeded but the final `canary-admit.json` upload failed,
 dispatch owner-only protected `canary-admit-recover` on current `main` with the
 original admission SHA as `evidence_source_sha` and its `admission_run_id`.
@@ -107,6 +111,29 @@ stored before Pod creation; if the probe remains, use protected
 `firewall-baseline-recover` with its recovery run ID as `baseline_run_id`, the
 same main SHA as `baseline_source_sha`, and the original `admission_run_id` to
 delete only that token/UID-matched Pod before retrying.
+
+If `canary-admit.json` was verified but activation is abandoned before the
+enforcer or fixtures exist, dispatch owner-only `canary-abort` on exact current
+`main` with the admission SHA as `evidence_source_sha` and its
+`admission_run_id`. It loads the immutable verified admission and placement,
+requires activation still disabled and the reviewed runtime manifests unchanged,
+then proves the host firewall empty with the same UID-owned probe. It requires
+the enforcer, cleanup DaemonSet and fixture namespace absent before removing
+the matching admission label, then the annotation and taint atomically. A
+retry after an interrupted unlabel or completed abort is safe; a changed Node,
+source manifest, or new admission marker blocks it. Restore the reviewed
+source contract in a protected PR or add a reviewed recovery path; never
+hand-remove the taint.
+If the abort probe is
+orphaned, run `firewall-baseline-recover` with the abort run ID as
+`baseline_run_id`, its main SHA as `baseline_source_sha`, and the original
+`admission_run_id` before retrying.
+
+`canary-release` still rejects a taint-only Node after an interrupted unlabel.
+Before activation, add a protected release-recovery stage bound to the reviewed
+ownership and cleanup receipts, the exact admission marker, and fresh proof of
+empty owned firewall, absent runtime, and unchanged Node/Pod identities. Do
+not remove that taint manually.
 
 Admission only gates the Node taint and label. The later enforcer and fixture
 rollout still needs its own protected fresh capacity gate; that gate is not

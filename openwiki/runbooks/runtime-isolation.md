@@ -228,7 +228,8 @@ identities. It re-reads the bound firewall
 capture and repeats Pod, metrics, node filesystem, and headroom checks before
 mutation. It checks that the enforcer, cleanup Pods, and fixture traffic are
 absent, then adds the dedicated
-`NoSchedule` taint before the selector label. A complete cluster-wide label
+`NoSchedule` taint and admission-run annotation atomically before the selector
+label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
 the taint. If admission changed the Node but
@@ -237,11 +238,30 @@ runs on current `main` with the original admission SHA and run ID. That SHA
 must be an ancestor of current `main`. It uses the original immutable attempt
 and selected placement version. A same-run privileged probe
 confirms the host firewall remains empty and deletes its owned Pod before
-UID/resource-version guarded removal of only the canary label and taint. It
+UID/resource-version guarded removal of only the canary label, then the
+annotation and taint atomically. A taint-only attempt must use this protected
+recovery before any new admission run. It
 works after placement expiry or a newer `main` commit while the reviewed
 canary node and taint remain unchanged.
 An orphaned recovery probe uses the protected `firewall-baseline-recover`
 token/UID deletion path with its recovery run and admission IDs.
+For a verified admission abandoned before enforcer activation, owner-only
+`canary-abort` loads that final admission and exact placement version. It
+requires disabled activation and unchanged runtime manifests on current
+`main`, proves the same node's kube-router firewall empty with a deleted
+UID-owned probe, and checks enforcer and fixtures absent before removing the
+matching label, then the admission annotation and taint atomically.
+Taint-only and already-clean retries are safe; a new admission marker or
+changed source blocks abort. Restore the reviewed source contract through a
+protected PR or add a reviewed recovery path; do not hand-remove the taint.
+An orphaned abort probe uses
+`firewall-baseline-recover` with the abort run and original admission IDs.
+[The canary Node stage](../../scripts/network-policy-canary-node.py) cannot
+retry `canary-release` after an
+interrupted unlabel leaves only the taint. Before activation, add protected
+release recovery bound to reviewed ownership/cleanup receipts and the exact
+admission marker; require fresh empty owned-firewall, absent-runtime, and
+Node/Pod identity proof before removing the taint. Manual untaint is barred.
 After a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full

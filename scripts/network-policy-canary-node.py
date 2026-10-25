@@ -16,9 +16,12 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "scripts/config/platform-maintenance.json"
 PLATFORM = runpy.run_path(str(ROOT / "scripts/platform-maintenance.py"))
 CLEANUP = runpy.run_path(str(ROOT / "scripts/network-policy-cleanup.py"))
+OWNERSHIP = runpy.run_path(str(ROOT / "scripts/network-policy-ownership.py"))
 CANARY = CLEANUP["CANARY"]
 TAINT = {"key": CANARY, "value": "true", "effect": "NoSchedule"}
 LABEL_PATH = "/metadata/labels/" + CANARY.replace("~", "~0").replace("/", "~1")
+ADMISSION = "homelab.stinkyboi.com/network-policy-canary-admission"
+ADMISSION_PATH = "/metadata/annotations/" + ADMISSION.replace("/", "~1")
 SYSTEM_NAMESPACES = {"kube-system", "istio-system"}
 
 
@@ -30,20 +33,34 @@ def node_state(config, placement):
     node = CLEANUP["kubernetes_json"]("get", "node", config["canary"]["node"])
     metadata, spec = node["metadata"], node["spec"]
     labels, taints = metadata.get("labels", {}), spec.get("taints", [])
+    annotations = metadata.get("annotations", {})
     if (metadata.get("name") != config["canary"]["node"] or
             metadata.get("uid") != placement["nodeUid"] or
             node["status"].get("nodeInfo", {}).get("bootID") != placement["bootID"] or
             not isinstance(metadata.get("resourceVersion"), str) or
             not metadata["resourceVersion"] or not isinstance(labels, dict) or
+            not isinstance(annotations, dict) or
             not isinstance(taints, list) or
             any(not isinstance(item, dict) for item in taints) or
             metadata.get("deletionTimestamp") or spec.get("unschedulable") is True or
             not CLEANUP["ready"](node)):
         raise ValueError("canary Node identity, readiness, or shape changed")
     owned = [item for item in taints if item.get("key") == CANARY]
-    if len(owned) > 1 or owned and owned[0] != TAINT or labels.get(CANARY) not in (None, "true"):
+    if (len(owned) > 1 or owned and owned[0] != TAINT or
+            labels.get(CANARY) not in (None, "true") or
+            (ADMISSION in annotations) != bool(owned)):
         raise ValueError("unexpected canary label or taint")
     return node, labels.get(CANARY) == "true", bool(owned)
+
+
+def admission_marker(source_sha, run_id):
+    return f"{source_sha}:{run_id}"
+
+
+def require_admission_marker(node, source_sha, run_id):
+    if node["metadata"].get("annotations", {}).get(ADMISSION) != admission_marker(
+            source_sha, run_id):
+        raise ValueError("canary admission marker differs from selected receipt")
 
 
 def require_exclusive_canary_label(config, placement, selected):
@@ -325,6 +342,49 @@ def validate_recovery_receipts(attempt, proof, placement, args, config):
         raise ValueError("firewall recovery proof is stale or in the future")
 
 
+def validate_abort_receipt(admission, placement, args, config):
+    if (not isinstance(admission, dict) or admission.get("format") != 1 or
+            admission.get("stage") != "canary-admit" or
+            admission.get("status") != "verified" or admission.get("verified") is not True or
+            admission.get("sourceSha") != args.evidence_source_sha or
+            admission.get("runId") != args.admission_run_id or
+            admission.get("node") != config["canary"]["node"] or
+            admission.get("nodeUid") != placement["nodeUid"] or
+            admission.get("bootID") != placement["bootID"] or
+            admission.get("placementRunId") != args.placement_run_id or
+            admission.get("placementVersionId") != args.placement_version_id or
+            not isinstance(admission.get("resourceVersion"), str) or
+            not admission["resourceVersion"] or
+            not isinstance(admission.get("completedAt"), str) or
+            not admission["completedAt"]):
+        raise ValueError("selected verified canary admission is missing or unrelated")
+
+
+def require_abort_source(config, evidence_sha, source_sha):
+    if config["activationEnabled"] is not False or config["canary"]["node"] != "zimaboard-2":
+        raise ValueError("abort requires the reviewed pre-activation configuration")
+    ancestors = subprocess.check_output(
+        ["git", "--no-replace-objects", "rev-list", "--first-parent", source_sha],
+        cwd=ROOT, text=True, timeout=30).splitlines()
+    if evidence_sha not in ancestors:
+        raise ValueError("admission source is not an ancestor of current main")
+    paths = (
+        "clusters/homelab/platform/network-policy/preflight/pod.json",
+        "clusters/homelab/platform/network-policy/daemonset.yaml",
+        "clusters/homelab/platform/network-policy/canary/fixtures.yaml",
+        "clusters/homelab/platform/network-policy/kustomization.yaml",
+        "clusters/homelab/platform/network-policy/canary/kustomization.yaml",
+        "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl",
+        "IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl",
+    )
+    for relative in paths:
+        original = subprocess.check_output(
+            ["git", "--no-replace-objects", "show", f"{evidence_sha}:{relative}"],
+            cwd=ROOT, timeout=15)
+        if original != (ROOT / relative).read_bytes():
+            raise ValueError("canary source changed after selected admission")
+
+
 def recover(args):
     if args.config.resolve() != CONFIG or not PLATFORM["SHA"].fullmatch(args.expected_sha):
         raise ValueError("canary recovery requires committed input and exact source SHA")
@@ -333,22 +393,44 @@ def recover(args):
         raise ValueError("no admitted canary Node configured")
     PLATFORM["protected_context"](args.expected_sha)
     require_current_main(args.expected_sha)
+    abort = args.action == "abort"
+    if abort:
+        OWNERSHIP["require_owner_attestation"]()
+        require_abort_source(config, args.evidence_source_sha, args.expected_sha)
+    elif getattr(args, "admission_version_id", None):
+        raise ValueError("admission version applies only to verified abort")
     directory = PLATFORM["private_directory"](args.receipt_dir)
     placement = PLATFORM["read_private_json"](directory / "placement.json")
     validate_placement(placement, config, args.evidence_source_sha, False)
     attempt = PLATFORM["read_private_json"](directory / "admission-attempt.json")
     proof = PLATFORM["read_private_json"](directory / "firewall-recovery-proof.json")
     validate_recovery_receipts(attempt, proof, placement, args, config)
+    if abort:
+        if (not isinstance(args.admission_version_id, str) or
+                args.admission_version_id in {"", "null"} or not args.bucket):
+            raise ValueError("abort requires the exact verified admission version")
+        admission = PLATFORM["read_private_json"](directory / "admission.json")
+        validate_abort_receipt(admission, placement, args, config)
+        key = (f"openclaw-enterprise/platform/{args.evidence_source_sha}/"
+               f"{args.admission_run_id}/canary-admit.json")
+        store = OWNERSHIP["PrivateStore"](args.bucket)
+        if (store.version(key, True) != args.admission_version_id or
+                json.loads(store.read(key, 1048576)) != admission or
+                store.version(key, True) != args.admission_version_id):
+            raise ValueError("selected admission version or content changed")
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         raise ValueError("canary recovery output already exists")
     node, labeled, tainted = node_state(config, placement)
     if labeled and not tainted:
         raise ValueError("unisolated canary label is not recoverable")
+    if tainted:
+        require_admission_marker(node, args.evidence_source_sha, args.admission_run_id)
     require_runtime_absent(True)
     verify_live_pods(config, placement)
     require_exclusive_canary_label(config, placement, labeled)
-    record = {"format": 1, "stage": "canary-admit-recover", "status": "started",
+    record = {"format": 1, "stage": "canary-abort" if abort else "canary-admit-recover",
+              "status": "started",
               "verified": False, "sourceSha": args.expected_sha,
               "evidenceSourceSha": args.evidence_source_sha,
               "runId": os.environ["GITHUB_RUN_ID"],
@@ -360,12 +442,16 @@ def recover(args):
               "node": config["canary"]["node"], "nodeUid": placement["nodeUid"],
               "bootID": placement["bootID"],
               "startedAt": datetime.now(timezone.utc).isoformat()}
+    if abort:
+        record["admissionVersionId"] = args.admission_version_id
     CLEANUP["write_record"](output, record)
     try:
         if labeled:
             index = next(index for index, item in enumerate(node["spec"]["taints"])
                          if item.get("key") == CANARY)
             patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
+                         {"op": "test", "path": ADMISSION_PATH, "value":
+                          admission_marker(args.evidence_source_sha, args.admission_run_id)},
                          {"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
                          {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
             node, labeled, tainted = node_state(config, placement)
@@ -375,9 +461,14 @@ def recover(args):
             verify_live_pods(config, placement)
             require_exclusive_canary_label(config, placement, False)
         if tainted:
+            if abort:
+                require_abort_source(config, args.evidence_source_sha, args.expected_sha)
             index = next(index for index, item in enumerate(node["spec"]["taints"])
                          if item.get("key") == CANARY)
             patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
+                         {"op": "test", "path": ADMISSION_PATH, "value":
+                          admission_marker(args.evidence_source_sha, args.admission_run_id)},
+                         {"op": "remove", "path": ADMISSION_PATH},
                          {"op": "remove", "path": f"/spec/taints/{index}"}],
                   args.expected_sha)
         require_current_main(args.expected_sha)
@@ -412,9 +503,9 @@ def execute(args):
     if args.action == "release":
         if args.placement_run_id or args.placement_version_id:
             raise ValueError("release selection is bound by reviewed ownership")
+        ownership = PLATFORM["read_private_json"](directory / "firewall-ownership.json")
         validate_cleanup(PLATFORM["read_private_json"](directory / "cleanup.json"),
-                         PLATFORM["read_private_json"](directory / "firewall-ownership.json"),
-                         placement, config, args.expected_sha)
+                         ownership, placement, config, args.expected_sha)
     else:
         validate_placement(placement, config, args.expected_sha, True)
         if placement["placementRunId"] != args.placement_run_id:
@@ -427,12 +518,16 @@ def execute(args):
     if args.action == "admit":
         if labeled:
             raise ValueError("canary Node is already labeled; review admission state")
+        if tainted:
+            raise ValueError("existing canary taint requires selected admission recovery")
         require_exclusive_canary_label(config, placement, False)
     elif labeled != tainted:
         raise ValueError("canary label and isolation taint differ")
     if args.action == "release":
         if not labeled:
             raise ValueError("canary Node is not admitted; live firewall proof unavailable")
+        require_admission_marker(node, ownership["evidenceSourceSha"],
+                                 ownership["admissionRunId"])
         pod, _ = CLEANUP["inspect_cluster"](config, placement)
         remaining, _, _ = CLEANUP["cleanup_plan"](CLEANUP["snapshot"](pod))
         if remaining:
@@ -449,14 +544,20 @@ def execute(args):
     try:
         if args.action == "admit":
             require_fresh_capacity(args, directory)
-            if not tainted:
-                taints = node["spec"].get("taints")
-                taint_add = {"op": "add", "path": "/spec/taints/-", "value": TAINT} if taints \
-                    else {"op": "add", "path": "/spec/taints", "value": [TAINT]}
-                patch(node, [taint_add], args.expected_sha)
+            taints = node["spec"].get("taints")
+            taint_add = {"op": "add", "path": "/spec/taints/-", "value": TAINT} if taints \
+                else {"op": "add", "path": "/spec/taints", "value": [TAINT]}
+            annotations = node["metadata"].get("annotations")
+            marker_add = {"op": "add", "path": ADMISSION_PATH,
+                          "value": admission_marker(args.expected_sha, os.environ["GITHUB_RUN_ID"])} \
+                if annotations else {"op": "add", "path": "/metadata/annotations",
+                                     "value": {ADMISSION: admission_marker(
+                                         args.expected_sha, os.environ["GITHUB_RUN_ID"])}}
+            patch(node, [taint_add, marker_add], args.expected_sha)
             node, labeled, tainted = node_state(config, placement)
             if labeled or not tainted:
                 raise ValueError("canary Node taint readback differs")
+            require_admission_marker(node, args.expected_sha, os.environ["GITHUB_RUN_ID"])
             require_runtime_absent(True)
             verify_live_pods(config, placement)
             require_exclusive_canary_label(config, placement, False)
@@ -469,6 +570,9 @@ def execute(args):
                 index = next(index for index, item in enumerate(node["spec"].get("taints", []))
                              if item.get("key") == CANARY)
                 patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
+                             {"op": "test", "path": ADMISSION_PATH, "value":
+                              admission_marker(ownership["evidenceSourceSha"],
+                                               ownership["admissionRunId"])},
                              {"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
                              {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
                 node = wait_for_cleanup_pod_deletion(config, placement, pod)
@@ -477,6 +581,10 @@ def execute(args):
                 index = next(index for index, item in enumerate(node["spec"].get("taints", []))
                              if item.get("key") == CANARY)
                 patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
+                             {"op": "test", "path": ADMISSION_PATH, "value":
+                              admission_marker(ownership["evidenceSourceSha"],
+                                               ownership["admissionRunId"])},
+                             {"op": "remove", "path": ADMISSION_PATH},
                              {"op": "remove", "path": f"/spec/taints/{index}"}],
                       args.expected_sha)
         require_current_main(args.expected_sha)
@@ -485,12 +593,15 @@ def execute(args):
             raise ValueError("canary Node readback differs")
         if args.action == "admit":
             try:
+                require_admission_marker(node, args.expected_sha, os.environ["GITHUB_RUN_ID"])
                 require_exclusive_canary_label(config, placement, True)
                 verify_live_pods(config, placement)
             except (OSError, ValueError, KeyError, TypeError,
                     subprocess.CalledProcessError, subprocess.TimeoutExpired):
                 require_runtime_absent(True)
                 patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
+                             {"op": "test", "path": ADMISSION_PATH, "value":
+                              admission_marker(args.expected_sha, os.environ["GITHUB_RUN_ID"])},
                              {"op": "remove", "path": LABEL_PATH}], args.expected_sha)
                 raise
         record.update({"status": "verified", "verified": True,
@@ -507,7 +618,7 @@ def execute(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("admit", "release", "recover"))
+    parser.add_argument("action", choices=("admit", "release", "recover", "abort"))
     parser.add_argument("--config", type=Path, default=CONFIG)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--receipt-dir", type=Path, required=True)
@@ -515,14 +626,15 @@ def main():
     parser.add_argument("--placement-run-id")
     parser.add_argument("--placement-version-id")
     parser.add_argument("--admission-run-id")
+    parser.add_argument("--admission-version-id")
     parser.add_argument("--evidence-source-sha")
     parser.add_argument("--output", type=Path, required=True)
     try:
         args = parser.parse_args()
-        if args.action == "recover":
+        if args.action in {"recover", "abort"}:
             recover(args)
         else:
-            if args.admission_run_id or args.evidence_source_sha:
+            if args.admission_run_id or args.admission_version_id or args.evidence_source_sha:
                 raise ValueError("admission run applies only to canary recovery")
             execute(args)
         print("Canary Node stage verified; private receipt retained")

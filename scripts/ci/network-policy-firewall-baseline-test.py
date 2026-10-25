@@ -89,6 +89,17 @@ class FirewallBaselineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "differs"):
                 SUT["require_reviewed_manifest"](SHA)
 
+    def test_recovery_probe_rejects_another_admission_marker_before_pod_access(self):
+        state = {"metadata": {"uid": "node-uid", "annotations": {
+            SUT["CANARY"]["ADMISSION"]: f"{EVIDENCE_SHA}:124"}},
+            "status": {"nodeInfo": {"bootID": "boot"}}}
+        with patch.dict(SUT["CANARY"], {
+                "node_state": lambda *_: (state, False, True)}), patch.dict(
+                SUT["CLEANUP"], {"kubernetes_json": lambda *_: self.fail(
+                    "probe should not inspect or create a Pod")}), self.assertRaisesRegex(
+                ValueError, "admission marker"):
+            SUT["recovery_node_identity"]({}, EVIDENCE_SHA, "123")
+
     def test_probe_rejects_wrong_node_token_command_and_capability(self):
         valid = pod()
         self.assertEqual(SUT["require_probe_pod"](valid, "token", "pod-uid", True),
@@ -183,6 +194,11 @@ class FirewallBaselineTests(unittest.TestCase):
                                                           placement), attempt)
             self.assertEqual(SUT["read_attempt"](Path("/unused"), SHA, "123",
                                                   stage=None), attempt)
+            attempt["stage"] = "canary-abort"
+            self.assertEqual(SUT["read_recovery_attempt"](Path("/unused"), SHA,
+                                                          EVIDENCE_SHA, "123",
+                                                          placement), attempt)
+            attempt["stage"] = "canary-admit-recover"
             with self.assertRaisesRegex(ValueError, "preflight ownership"):
                 SUT["read_attempt"](Path("/unused"), SHA, "123")
             for changed in ({"admissionRunId": ""}, {"evidenceSourceSha": SHA},

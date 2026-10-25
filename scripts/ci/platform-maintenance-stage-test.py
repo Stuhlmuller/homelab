@@ -85,6 +85,18 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(accessed, external)
 
+    def test_abort_requires_reviewed_node_and_ancestor_before_external_access(self):
+        for node_name, evidence_sha, ancestry, external in (
+                (None, "b" * 40, True, False),
+                ("zimaboard-2", "", True, False),
+                ("zimaboard-2", "b" * 40, False, False),
+                ("zimaboard-2", "b" * 40, True, True)):
+            with self.subTest(node=node_name, evidence_sha=evidence_sha):
+                result, accessed = self.run_stage(
+                    "canary-abort", node_name, evidence_sha, ancestry)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(accessed, external)
+
     def test_pre_enable_baseline_reaches_protected_entry_with_reviewed_node(self):
         result, external = self.run_stage("firewall-baseline", "zimaboard-2")
         self.assertNotEqual(result.returncode, 0)
@@ -331,7 +343,7 @@ aws() {
         self.assertIn("admission_run_id:", workflow)
 
     def test_recovery_retains_probe_marker_and_proof_before_node_mutation(self):
-        source = STAGE.read_text().split('  canary-admit-recover)\n', 1)[1].split(
+        source = STAGE.read_text().split('  canary-admit-recover|canary-abort)\n', 1)[1].split(
             '  qualify)\n', 1)[0]
         workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
         self.assertIn("canary-admit-recover", workflow)
@@ -341,22 +353,38 @@ aws() {
                       STAGE.read_text())
         self.assertIn('openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit-attempt.json', source)
         self.assertLess(source.index('canary-admit-attempt.json'),
-                        source.index('require_absent_receipt'))
-        self.assertLess(source.index('require_absent_receipt'),
+                        source.index('require_absent_receipt "$admission_key"'))
+        self.assertLess(source.index('require_absent_receipt "$admission_key"'),
                         source.index('placement/${placement_run_id}.json'))
         self.assertIn('receipts/${EVIDENCE_SOURCE_SHA}/placement/${placement_run_id}.json', source)
         self.assertIn('"$work/receipts/placement.json" "$placement_version"', source)
         self.assertLess(source.index('retain_result "$work/recovery-attempt.json"'),
                         source.index('scripts/network-policy-firewall-baseline.py'))
         self.assertLess(source.index('retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof'),
-                        source.index('scripts/network-policy-canary-node.py recover'))
-        self.assertEqual(source.count('require_absent_receipt "openclaw-enterprise/platform/${EVIDENCE_SOURCE_SHA}/${ADMISSION_RUN_ID}/canary-admit.json"'), 2)
+                        source.index('scripts/network-policy-canary-node.py "$action"'))
+        self.assertEqual(source.count('require_absent_receipt "$admission_key"'), 2)
         self.assertIn('--admission-run-id "$ADMISSION_RUN_ID"', source)
         self.assertEqual(source.count('--evidence-source-sha "$EVIDENCE_SOURCE_SHA"'), 2)
-        self.assertIn('if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ]; then',
+        self.assertIn('if [ "$RUN_STAGE" = ownership-approve ] || [ "$RUN_STAGE" = canary-admit-recover ] || [ "$RUN_STAGE" = canary-abort ]; then',
                       workflow)
         self.assertIn('group: platform-maintenance-production', workflow)
         self.assertIn('cancel-in-progress: false', workflow)
+
+    def test_abort_binds_verified_receipt_and_empty_firewall_before_unlabel(self):
+        source = STAGE.read_text().split('  canary-admit-recover|canary-abort)\n', 1)[1].split(
+            '  qualify)\n', 1)[0]
+        self.assertLess(source.index('load_receipt "$admission_key" "$work/receipts/admission.json"'),
+                        source.index('git rev-list --first-parent "$GITHUB_SHA"'))
+        self.assertLess(source.index('git rev-list --first-parent "$GITHUB_SHA"'),
+                        source.index('git diff --quiet "$EVIDENCE_SOURCE_SHA" "$GITHUB_SHA"'))
+        self.assertLess(source.index('git diff --quiet "$EVIDENCE_SOURCE_SHA" "$GITHUB_SHA"'),
+                        source.index('retain_result "$work/recovery-attempt.json"'))
+        self.assertLess(source.index('retain_result "$work/recovery-attempt.json"'),
+                        source.index('scripts/network-policy-firewall-baseline.py'))
+        self.assertLess(source.index('retain_result "$work/receipts/firewall-recovery-proof.json" firewall-recovery-proof'),
+                        source.index('scripts/network-policy-canary-node.py "$action"'))
+        self.assertIn('cmp "$work/receipts/admission.json" "$work/receipts/admission-readback.json"',
+                      source)
 
     def test_recovery_requires_no_final_admission_receipt_version(self):
         source = STAGE.read_text()
