@@ -529,8 +529,9 @@ The command creates only the fixed, immutable
 printing values. Its `review.json` key mounts only in the omitted, suspended
 inventory Job. That Job freezes a mode `0600` copy owned by UID 12021 on the
 dedicated acer-local ledger at `/ledger/private/review.json`; the directory has
-mode `0700`. The input contains a
-fixed seed, the pinned image digest and `config.js` SHA-256, every non-archived
+mode `0700`. The input contains a fixed seed, UTC-hour `windowStart` and
+`windowEnd` exactly seven days apart, the pinned image digest and `config.js`
+SHA-256, every non-archived
 owned repository's default branch, current head SHA, Renovate cache SHA-512 and
 extraction config hash, plus one decision for **every** extracted dependency.
 Each decision uses the SHA-256 key returned by `candidateKey(repository,
@@ -538,11 +539,15 @@ baseBranch, manager, packageFile, index, dependency)` in
 `acceptance-inventory.js`. A sampled decision needs a canonical HTTPS
 `registryUrl`, `public` or `private` **source** visibility, and private
 visibility/policy evidence references. An excluded decision needs a reason and
-private policy evidence. It also needs an independently obtained owner-inventory
-receipt (`ownerInventory.repositories`, SHA-256, source, and a verification time
-within one hour) and `expectedStrata` counts for each eligible datasource ×
-source-visibility pair. The Job compares these with App-visible repositories
-and reviewed extraction decisions. Repository visibility is not source visibility;
+private policy evidence. When its extraction has a datasource, it also needs
+source visibility and private visibility evidence. The input also needs an
+independent owner-inventory receipt (`ownerInventory.repositories`, SHA-256,
+source, and a verification time
+within one hour) and `expectedStrata` counts for every non-canary extracted
+datasource × source-visibility pair, including excluded rows. At least one
+dependency in each such stratum must remain selected. The Job compares these
+with App-visible repositories and reviewed extraction decisions. Repository
+visibility is not source visibility;
 rate-limited or failed anonymous registry checks are unknown. Never publish
 the review file or private package names.
 
@@ -550,10 +555,12 @@ The Job verifies the pinned cache-v13 Brotli payload and SHA-512, every
 extraction row's review decision, exact current GitHub repository inventory and
 per-repository default-branch SHA, one canonical registry URL, and the mounted
 config/image identity. A missing repo, unknown visibility/policy, stale cache,
-ambiguous registry, or mismatched declared stratum fails before seeding. It
-atomically creates one `ledger.json` with the full private inventory and
+ambiguous registry, missing selected stratum, or mismatched declared stratum
+fails before seeding. It atomically creates one `ledger.json` with the full
+private inventory and
 provenance embedded, mode `0600`, and logs counts only. A retry after an
 interrupted write can safely complete; it will not replace a frozen sample.
+The reviewed window must begin after seeding; an already-started window fails.
 Suspend the main Renovate CronJob through GitOps and verify no active Job while
 freezing this baseline. Keep
 the observer suspended until a private reviewer checks the full eligible
@@ -596,16 +603,24 @@ same source. It then
 selects up to five packages per datasource and source-visibility stratum by
 SHA-256 of the preregistered seed and dependency key. It writes the
 selection once to `/ledger/private/ledger.json` with mode `0600`; the seed stays
-private. A second seed refuses to replace it. Check the seed Job's aggregate
+private. The exact reviewed window is frozen with it. A second seed refuses to
+replace it. Check the seed Job's aggregate
 counts, then use a
 reviewed GitOps change to unsuspend the CronJob. Its first healthy poll sets
-the baseline. Later healthy polls record each new version with the previous
+the baseline at the reviewed `windowStart` slot. Later healthy polls record
+each new version with the previous
 healthy request-start time and first presence response time. Failed source
 polls stay in the private ledger and mark spanning brackets ambiguous; they do
 not advance a bracket. Only counts appear in Pod logs. The `report` mode emits
 aggregate sample, stratum, poll-failure, missed-slot, bracket, and ambiguous-event
 counts; raw brackets stay on the protected PVC. Do not publish the inventory or
 ledger.
+The final SC-002 report requires all 673 healthy quarter-hour slots from
+`windowStart` through `windowEnd`, inclusive. These bounds cover exactly 168
+hourly UTC slots and must match the SC-001 schedule assembler's reviewed start.
+Polls and release brackets entirely outside the bounds do not enter the
+denominator. A bracket crossing either boundary makes SC-002 inconclusive.
+The aggregate prints the frozen bounds and counts missing slots across them.
 
 For the offline SC-002 report, keep `outcomes.json` as a mode `0600` regular file
 beside the ledger on the protected PVC. Bind it to `ledger.inventorySha256`, set
@@ -650,7 +665,8 @@ first read time as the timing upper bound. The report worker binds explicit
 schedule or PR-approval deferrals to the sealed report completion time. A
 private reviewer must still check the stored material and effective policy.
 Each sealed report receipt records the SHA-256 of its mounted production
-`config.js` policy. The deny-all `acceptance-source-review-networkpolicy.yaml` reconciles before
+`config.js` policy. The deny-all
+`acceptance-source-review-networkpolicy.yaml` reconciles before
 any source-review Job. Verify it exists in `automation` after Argo CD sync;
 then, after every acceptance writer is suspended and drained, activate the
 staged `acceptance-source-review-job.yaml` in a separate reviewed GitOps
@@ -669,7 +685,8 @@ slots or node loss force `inconclusive`. Separately verify excluded intervals,
 hourly runner slots, and reviewable proposal or policy-deferral sources before
 publishing acceptance.
 
-Start the seven-day clock only after the sample and baseline are verified.
+Preregister the seven-day window after sample review. Its first healthy poll
+establishes the baseline; a failed start requires a new reviewed window.
 Keep the observer suspended if the inventory, a datasource, private-source
 access, or the pinned image's datasource API fails validation. After the
 seven-day window, suspend and drain the observer, inventory, report, PR-proof,

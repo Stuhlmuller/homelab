@@ -37,7 +37,10 @@ function sourceReview(directory = '/ledger/private') {
   const reviewBytes = privateBytes(path.join(directory, 'review.json'));
   const review = JSON.parse(reviewBytes);
   if (ledger.reviewSha256 !== sha256(JSON.stringify(review)) ||
-      !/^[a-f0-9]{64}$/.test(review.configSha256 || '')) throw new Error('policy-review-invalid');
+      !/^[a-f0-9]{64}$/.test(review.configSha256 || '') ||
+      review.windowStart !== ledger.windowStart || review.windowEnd !== ledger.windowEnd) {
+    throw new Error('policy-review-invalid');
+  }
   const outcomes = JSON.parse(privateBytes(path.join(directory, 'outcomes.json')));
   const verified = observer.verifyPrivateEvidence(outcomes, directory);
   const aggregate = observer.aggregateReport(ledger, outcomes, verified);

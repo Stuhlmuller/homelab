@@ -201,9 +201,12 @@ test('collector writes private version-bound proof and logs aggregate counts onl
   try {
     const now = Date.now();
     const iso = (offset) => new Date(now + offset * 60_000).toISOString();
+    const windowStart = Math.floor(now / 3600000) * 3600000 - 3600000;
     const provenance = [{ repository, baseBranch: 'main', headSha: 'a'.repeat(40),
       cacheSha512: 'b'.repeat(128), configHash: 'c'.repeat(128) }];
     const inventory = { schema: 1, owner: 'Stuhlmuller', seed: 'reviewed-seed-2026',
+      windowStart: new Date(windowStart).toISOString(),
+      windowEnd: new Date(windowStart + 7 * 24 * 3600000).toISOString(),
       provenance: { method: 'renovate-extract', repositories: provenance,
         sha256: crypto.createHash('sha256').update(JSON.stringify(provenance)).digest('hex') },
       activeDatasources: ['npm'], dependencies: [{ ...item, sourceVisibility: 'public',

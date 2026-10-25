@@ -22,6 +22,8 @@ function fixture() {
   return {
     review: {
       schema: 1, owner: 'Stuhlmuller', seed: 'natural-2026-10-18',
+      windowStart: '2026-10-17T00:00:00.000Z',
+      windowEnd: '2026-10-24T00:00:00.000Z',
       imageDigest: 'sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d',
       configSha256: 'b'.repeat(64),
       repositories: [{ repository, baseBranch: 'main', headSha,
@@ -45,6 +47,8 @@ test('frozen inventory derives class, canonical registry, and per-repository pro
   const { review, scans, datasources, live } = fixture();
   const { inventory: result, ledger } = inventory.buildInventory(review, scans, datasources, live);
   assert.deepEqual(result.activeDatasources, ['npm']);
+  assert.equal(ledger.windowStart, review.windowStart);
+  assert.equal(ledger.windowEnd, review.windowEnd);
   assert.deepEqual(result.dependencies[0], { repository, datasource: 'npm', packageName: 'lodash',
     registryUrl: 'https://registry.npmjs.org', currentValue: '1.0.0',
     sourceVisibility: 'public', packageFile, controlledCanary: false });
@@ -54,6 +58,54 @@ test('frozen inventory derives class, canonical registry, and per-repository pro
     crypto.createHash('sha256').update(JSON.stringify(result.provenance.repositories)).digest('hex'));
   assert.equal(ledger.inventorySha256,
     crypto.createHash('sha256').update(JSON.stringify(result)).digest('hex'));
+});
+
+test('excluded extraction rows cannot erase an active datasource or visibility stratum', () => {
+  function addExcluded(context, manager, fileName, dep, visibility) {
+    const extracted = structuredClone(context.scans.get(repository));
+    extracted.packageFiles[manager] ||= [];
+    extracted.packageFiles[manager].push({ packageFile: fileName, deps: [dep] });
+    context.scans.set(repository, extracted);
+    context.review.classifications.push({
+      key: inventory.candidateKey(repository, 'main', manager, fileName, 0, dep),
+      decision: 'exclude', reason: 'reviewed-policy-exclusion',
+      sourceVisibility: visibility, visibilityEvidence: 'private://registry-proof',
+      policyEvidence: 'private://policy-review',
+    });
+  }
+
+  const justified = fixture();
+  addExcluded(justified, 'npm', 'other.json',
+    { depName: 'other-package', datasource: 'npm' }, 'public');
+  justified.review.expectedStrata[0].count = 2;
+  const { inventory: frozen } = inventory.buildInventory(justified.review,
+    justified.scans, justified.datasources, justified.live);
+  assert.deepEqual(frozen.activeDatasources, ['npm']);
+  assert.equal(frozen.dependencies.length, 1);
+
+  const missingVisibility = fixture();
+  addExcluded(missingVisibility, 'npm', 'private.json',
+    { depName: '@example/private', datasource: 'npm' }, 'private');
+  missingVisibility.review.expectedStrata = [
+    { datasource: 'npm', sourceVisibility: 'private', count: 1 },
+    { datasource: 'npm', sourceVisibility: 'public', count: 1 },
+  ];
+  assert.throws(() => inventory.buildInventory(missingVisibility.review,
+    missingVisibility.scans, missingVisibility.datasources, missingVisibility.live),
+  /missing-source-stratum/);
+
+  const missingClass = fixture();
+  const release = { depName: 'example/tool', datasource: 'github-releases' };
+  addExcluded(missingClass, 'github', 'deps.yml', release, 'private');
+  missingClass.datasources.set('github-releases',
+    { getDefaultRegistryUrls: () => ['https://api.github.com/'] });
+  missingClass.review.expectedStrata = [
+    { datasource: 'github-releases', sourceVisibility: 'private', count: 1 },
+    { datasource: 'npm', sourceVisibility: 'public', count: 1 },
+  ];
+  assert.throws(() => inventory.buildInventory(missingClass.review,
+    missingClass.scans, missingClass.datasources, missingClass.live),
+  /missing-source-stratum/);
 });
 
 test('missing or stale policy, source, registry, or repository proof cannot seed', () => {
@@ -67,6 +119,8 @@ test('missing or stale policy, source, registry, or repository proof cannot seed
     (x) => { x.review.repositories[0].headSha = 'd'.repeat(40); },
     (x) => { x.review.repositories[0].configHash = 'stale'; },
     (x) => { x.review.expectedStrata[0].count = 0; },
+    (x) => { delete x.review.windowStart; },
+    (x) => { x.review.windowEnd = '2026-10-24T01:00:00.000Z'; },
     (x) => { x.review.ownerInventory.source = ''; },
     (x) => { x.review.ownerInventory.verifiedAt = '2020-01-01T00:00:00.000Z'; },
     (x) => { x.live.push({ full_name: 'Stuhlmuller/omitted', owner: { login: 'Stuhlmuller' },
