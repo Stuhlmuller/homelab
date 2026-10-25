@@ -79,10 +79,17 @@ terragrunt_stack_unit_paths_at_ref() {
   local stack_file
   local unit_path
   local app
+  local stack_files
 
   if git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
     terragrunt_stack_units_at_ref "$ref" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
     return
+  fi
+
+  if ! stack_files="$(git ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2 | grep '/terragrunt.stack.hcl$')" ||
+    [[ -z "$stack_files" ]]; then
+    echo "No Terragrunt stacks found at ${ref}; refusing deleted-unit detection." >&2
+    return 1
   fi
 
   while IFS= read -r stack_file; do
@@ -104,7 +111,7 @@ terragrunt_stack_unit_paths_at_ref() {
         *) echo "Unknown Terragrunt unit in ${stack_file}: ${unit_path}" >&2; return 1 ;;
       esac
     done < <(git show "${ref}:${stack_file}" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#\1#p')
-  done < <(git ls-tree -r --name-only "$ref" -- IaC/homelab/us-west-2 | grep '/terragrunt.stack.hcl$')
+  done <<<"$stack_files"
 }
 
 terragrunt_azuread_stack_changed() {

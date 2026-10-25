@@ -176,7 +176,7 @@ class Registration(unittest.TestCase):
             "repoURL": "https://github.com/Stuhlmuller/homelab.git",
             "path": "clusters/homelab/apps/openclaw-enterprise",
             "targetRevision": "main"})
-        dependencies = [Path(path).resolve().name for path in
+        dependencies = [Path(path).resolve().parent.name for path in
                         self.apps["openclaw-enterprise"]["dependencies"]["paths"]]
         self.assertEqual(dependencies,
                          ["openclaw-enterprise-foundation", "platform-envoy-gateway"])

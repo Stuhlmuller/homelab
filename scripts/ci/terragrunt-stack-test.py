@@ -127,6 +127,10 @@ inputs = { defaults = local.shared.argocd_defaults }
         self.base = moved
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", removed),
                          "IaC/live/argocd-apps/retired")
+        for stack in (self.root / "IaC/homelab/us-west-2").rglob("terragrunt.stack.hcl"):
+            stack.unlink()
+        empty = self.commit()
+        self.shell("! terragrunt_stack_unit_paths_at_ref HEAD", empty)
 
     def test_app_config_changes_select_apps_without_azure_or_retirement(self):
         self.separate_app_configs()
