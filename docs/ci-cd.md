@@ -118,10 +118,11 @@ checks remain fresh.
   This is a source gate; private recovery and capacity receipts still control
   whether a maintenance stage may run.
 - The `main` ruleset requires pull requests, squash-only linear history,
-  verified signatures, strict always-on checks, and blocks branch deletion and
-  force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
-  `Analyze (python)`, `analyze-actions`, `release-dry-run`, and
-  `Terragrunt Gate`, confirmed in active ruleset `14700233` on 2026-08-30.
+  verified signatures, and seven checks, and blocks branch deletion and force
+  pushes. A branch need not be up to date with `main` to merge. The required
+  checks are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
+  `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`, confirmed in
+  active ruleset `14700233` on 2026-10-24. `github-iac` owns this ruleset.
 - Live Terragrunt plan and apply jobs retain their Actions development-shell
   cache. Static jobs use the signed binary cache instead of restoring an
   arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
