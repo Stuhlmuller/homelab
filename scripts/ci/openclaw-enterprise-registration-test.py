@@ -139,7 +139,6 @@ class Registration(unittest.TestCase):
                                     crds[name]["spec"]["versions"] if entry["served"]})
 
     def test_generated_apps_are_disabled_and_require_full_manual_sync(self):
-        config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         for name, rendered in self.apps.items():
             app = rendered["inputs"]["manifest"]
             spec = app["spec"]
