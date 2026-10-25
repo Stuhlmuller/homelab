@@ -568,10 +568,12 @@ policy canary would disrupt service and still lacks peak proof. No existing
 node has an admitted Enterprise placement or isolated tainted canary.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
-`platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
+`platform-gateway-api-crds`, `platform-envoy-gateway`, and
+`platform-istio-egress` Argo Applications. Automatic sync is disabled;
 kube-router selects no node and the canary fixtures deploy nothing until
-placement, publication, policy review, and live qualification pass. Envoy's
-shared CRD source is ordered before the controller but no private route is
+placement, publication, policy review, and live qualification pass. The
+shared CRD Application precedes the Envoy controller and Istio waypoint;
+no private route is
 accepted yet. The network-policy cleanup Application stays unsynced until the
 reviewed fixture and enforcer removal commits reach current `main`. A live
 fixture namespace or lingering fixture workload blocks ownership capture,

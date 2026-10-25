@@ -60,7 +60,7 @@ class IstioEgressTests(unittest.TestCase):
             capture_output=True, text=True, check=True, timeout=30)
         rendered = json.loads(result.stdout)
         self.assertEqual(rendered["locals"]["stack_values"]["dependencies"],
-                         ["istio", "platform-envoy-gateway"])
+                         ["istio", "platform-gateway-api-crds"])
         app = rendered["inputs"]["manifest"]
         self.assertEqual(app["metadata"]["name"], "platform-istio-egress")
         self.assertEqual(app["spec"]["destination"]["namespace"], "istio-egress")

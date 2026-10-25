@@ -286,6 +286,14 @@ unit "argocd_apps_platform_envoy_gateway" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/platform-envoy-gateway/stack.hcl").inputs
 }
 
+unit "argocd_apps_platform_gateway_api_crds" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-gateway-api-crds"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-gateway-api-crds/stack.hcl").inputs
+}
+
 unit "argocd_apps_platform_image_policy" {
   source                  = "./terragrunt-catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/platform-image-policy"
