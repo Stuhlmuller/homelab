@@ -77,6 +77,10 @@ run the full package-managed fleet for 24 hours. Follow the direct native Pod
 probe and public end-to-end removal gate in
 `openwiki/architecture/cluster-topology.md`; Service-level probes
 alone can be satisfied by these emergency replicas.
+Keep the file for rollback after removing it from `kustomization.yaml`.
+If another workload consumes the released `acer` capacity, stop that workload
+through its declared path before restoring the fallback through GitOps; both
+sets may not schedule together.
 
 ## Updating
 
