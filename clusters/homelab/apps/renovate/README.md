@@ -334,8 +334,10 @@ hours, including missed and excluded slots. Each record needs `slotAt`,
 `collectedAt` at least one hour later, a `collection` object with a relative
 `evidence/<name>` source and SHA-256, and a `runs` array. Each scheduled run
 needs distinct Kubernetes `jobUid` and `podUid`, actual
-`discoveryStartedAt`, `finishedAt`, and `phase` (`succeeded` or `failed`). An
-explicit optional `exclusion` needs `kind` (`maintenance`, `cluster-outage`,
+`jobStartedAt`, `finishedAt`, and `phase` (`succeeded` or `failed`). A run may
+have `discoveryCompletedAt` from the restricted Renovate discovery log and an
+optional `discoveryStartedAt` only when an exact discovery-start marker exists.
+An explicit optional `exclusion` needs `kind` (`maintenance`, `cluster-outage`,
 `github-outage`, or `registry-outage`), nonempty observed `impact`, a
 `reviewedAt` time after that hour, and its own evidence source and SHA-256.
 The referenced files must be unique regular mode `0600` JSON files in a mode
@@ -352,7 +354,8 @@ the seven-day window it must snapshot the CronJob schedule and every matching
 Job/Pod UID, scheduled-hour annotation, conditions, and timestamps before the
 CronJob's three retained successful and failed Jobs are pruned. It must retain
 restricted, timestamped Renovate logs that establish the actual beginning of
-owner discovery and the Job's finish, plus a complete Job/Pod list or watch
+owner discovery when possible, its completion, and the Job's finish, plus a
+complete Job/Pod list or watch
 receipt proving when an hour had no run. Every slot's `collection` hash must
 bind that exhaustive private snapshot; an exclusion file must contain the
 outage or maintenance interval and evidence of its impact on that specific
@@ -362,9 +365,13 @@ its scrape coverage and retention for the entire window are verified. Those
 metrics do not establish the actual `discoveryStartedAt`, Job finish, or
 exhaustive no-run proof by themselves. Do not infer a discovery start from Pod
 creation, or call an absent Job a miss without complete collection evidence.
-If the current restricted logs lack an unambiguous discovery-start marker,
-add it through a reviewed runner change before starting the window. Keep
-source material and the full slot input on the protected ledger until
+The pinned image's `Renovate started` log is before configuration and platform
+initialization; it is not a discovery-start marker. Its
+`Autodiscovered repositories` log follows `getRepos`, so it supplies a conservative
+`discoveryCompletedAt` bound. If that completion is by the 15-minute deadline,
+discovery necessarily began on time. Later completion without an exact start
+remains unknown. A reviewed runner marker is needed to resolve those slots.
+Keep source material and the full slot input on the protected ledger until
 independent review and reviewed cleanup; do not commit it or print it in CI/PR
 logs. If collection, identity, timing, or outage attribution is incomplete, the
 result is inconclusive.
@@ -372,9 +379,11 @@ result is inconclusive.
 Run `python3 -I scripts/renovate-acceptance-schedule.py
 <absolute-private-slots.json>` offline after the window. Its aggregate JSON
 reports planned, excluded, denominator, timely starts (at most 15 minutes),
-late starts, missing runs, failed runs, duplicate cycles, and overlaps. A
-missing run in an otherwise complete slot counts against the 95% threshold;
-missing slot evidence, failed runs, or an all-excluded window are
+proven late starts, unknown starts, missing runs, failed runs, duplicate cycles,
+and overlaps. The no-overlap check uses full Job start-to-finish intervals,
+including excluded slots. A missing run in an otherwise complete slot counts
+against the 95% threshold;
+missing slot evidence, unknown starts, failed runs, or an all-excluded window are
 `inconclusive`. Overlap or duplicate cycles fail the criterion even if the
 timely rate reaches 95%. Exit codes are 0 for `review-required`, 1 for
 `criteria-not-met`, and 2 for `inconclusive`. `review-required` is a numeric

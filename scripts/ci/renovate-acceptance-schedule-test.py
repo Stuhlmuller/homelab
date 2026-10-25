@@ -46,7 +46,8 @@ class Schedule(unittest.TestCase):
                 "runs": [{
                     "jobUid": f"job-{index}",
                     "podUid": f"pod-{index}",
-                    "discoveryStartedAt": timestamp(at + timedelta(minutes=5)),
+                    "jobStartedAt": timestamp(at + timedelta(minutes=1)),
+                    "discoveryCompletedAt": timestamp(at + timedelta(minutes=6)),
                     "finishedAt": timestamp(at + timedelta(minutes=10)),
                     "phase": "succeeded",
                 }],
@@ -88,20 +89,38 @@ class Schedule(unittest.TestCase):
 
     def test_exact_fifteen_minute_boundary_is_timely(self):
         slot = self.doc["slots"][0]
-        slot["runs"][0]["discoveryStartedAt"] = timestamp(START + timedelta(minutes=15))
+        slot["runs"][0]["discoveryCompletedAt"] = timestamp(START + timedelta(minutes=15))
         slot["runs"][0]["finishedAt"] = timestamp(START + timedelta(minutes=20))
         report = self.evaluate()
         self.assertEqual((report["planned"], report["denominator"], report["timely"]),
                          (168, 168, 168))
         self.assertEqual(report["status"], "review-required")
 
-    def test_second_after_deadline_is_late(self):
-        self.doc["slots"][0]["runs"][0]["discoveryStartedAt"] = timestamp(
+    def test_completion_after_deadline_without_exact_start_is_inconclusive(self):
+        self.doc["slots"][0]["runs"][0]["discoveryCompletedAt"] = timestamp(
             START + timedelta(minutes=15, seconds=1))
         self.doc["slots"][0]["runs"][0]["finishedAt"] = timestamp(
             START + timedelta(minutes=20))
         report = self.evaluate()
-        self.assertEqual((report["timely"], report["late"]), (167, 1))
+        self.assertEqual((report["timely"], report["unknown"]), (167, 1))
+        self.assertEqual(report["status"], "inconclusive")
+
+    def test_exact_late_start_is_counted_late(self):
+        run = self.doc["slots"][0]["runs"][0]
+        run["discoveryStartedAt"] = timestamp(START + timedelta(minutes=15, seconds=1))
+        run["discoveryCompletedAt"] = timestamp(START + timedelta(minutes=16))
+        run["finishedAt"] = timestamp(START + timedelta(minutes=20))
+        report = self.evaluate()
+        self.assertEqual((report["timely"], report["late"], report["unknown"]),
+                         (167, 1, 0))
+
+    def test_exact_on_time_start_with_late_completion_is_timely(self):
+        run = self.doc["slots"][0]["runs"][0]
+        run["discoveryStartedAt"] = timestamp(START + timedelta(minutes=15))
+        run["discoveryCompletedAt"] = timestamp(START + timedelta(minutes=16))
+        run["finishedAt"] = timestamp(START + timedelta(minutes=20))
+        report = self.evaluate()
+        self.assertEqual((report["timely"], report["unknown"]), (168, 0))
 
     def test_integer_ninety_five_percent_threshold(self):
         for index in range(8):
@@ -145,7 +164,9 @@ class Schedule(unittest.TestCase):
     def test_two_nonoverlapping_cycles_in_one_slot_fail(self):
         second = copy.deepcopy(self.doc["slots"][0]["runs"][0])
         second.update({"jobUid": "extra-job", "podUid": "extra-pod",
+                       "jobStartedAt": timestamp(START + timedelta(minutes=19)),
                        "discoveryStartedAt": timestamp(START + timedelta(minutes=20)),
+                       "discoveryCompletedAt": timestamp(START + timedelta(minutes=21)),
                        "finishedAt": timestamp(START + timedelta(minutes=25))})
         self.doc["slots"][0]["runs"].append(second)
         report = self.evaluate()
@@ -167,7 +188,7 @@ class Schedule(unittest.TestCase):
         first = self.doc["slots"][0]
         first["collectedAt"] = timestamp(START + timedelta(hours=2))
         first["runs"][0]["finishedAt"] = self.doc["slots"][1]["runs"][0][
-            "discoveryStartedAt"]
+            "jobStartedAt"]
         report = self.evaluate()
         self.assertEqual(report["overlaps"], 0)
         self.assertEqual(report["status"], "review-required")
