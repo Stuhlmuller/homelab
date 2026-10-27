@@ -83,6 +83,7 @@ def contract(config, stage, expected):
     require(isinstance(operator, dict) and set(operator) == {
         "enabled", "namespace", "serviceAccount", "journalClaim", "journalClaimUid",
         "journalVolumeUid", "journalPath", "bootstrapClaim", "bootstrapClaimUid",
+        "bootstrapVolumeUid",
         "node", "runAsUser", "image", "imageSourceSha"},
         "operator declaration is invalid")
     require(operator["enabled"] is True, "operator remains disabled pending placement and credential proofs")
@@ -99,6 +100,8 @@ def contract(config, stage, expected):
             UID.fullmatch(operator["journalVolumeUid"]) and
             isinstance(operator["bootstrapClaimUid"], str) and
             UID.fullmatch(operator["bootstrapClaimUid"]) and
+            isinstance(operator["bootstrapVolumeUid"], str) and
+            UID.fullmatch(operator["bootstrapVolumeUid"]) and
             isinstance(operator["node"], str) and NODE.fullmatch(operator["node"]) and
             isinstance(operator["journalPath"], str) and
             operator["journalPath"].startswith("/var/lib/openclaw-enterprise/") and
@@ -189,6 +192,8 @@ def prove_claims(operator):
                 "path": operator["journalPath"], "type": "Directory"} and terms == expected_terms,
             "operator retained volume identity or placement changed")
     require(bootstrap_volume.get("metadata", {}).get("name") == bootstrap["spec"]["volumeName"] and
+            bootstrap_volume.get("metadata", {}).get("uid") ==
+            operator["bootstrapVolumeUid"] and
             bootstrap_volume.get("spec", {}).get("claimRef", {}).get("uid") ==
             operator["bootstrapClaimUid"] and
             bootstrap_volume.get("spec", {}).get("claimRef", {}).get("namespace") == namespace and
