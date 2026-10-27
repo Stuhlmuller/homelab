@@ -256,17 +256,19 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
-   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
-   those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require seven
-   complete authenticated pulls before merging any consuming Renovate PR:
+   The `renovate` scope selects nine pinned source references in
+   `scripts/config/harbor-renovate-images.json`. Six new candidates cover
+   #1607, #1606, #1537, #1535, #1533, and #1492; the two PostgreSQL tags
+   share one digest. Older pins remain in the full catalog but are omitted
+   from this scope so the tag aliases resolve to the new candidates. It
+   copies and verifies only those entries while the
+   unrelated full catalog is held. After this catalog change merges, dispatch
+   it at exact current `main` and require nine complete authenticated
+   pulls before merging any consuming Renovate PR.
 
-   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
-   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
-   catalog by digest, and the same new index was verified in the earlier
-   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+   The Harbor PostgreSQL entries now select the `bbf8359` index for both
+   `18-bookworm` and `18.6-bookworm`. Earlier `afc7e2d` and `7d38526` pins
+   remain in the full catalog for existing consumers.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
