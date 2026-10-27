@@ -721,6 +721,20 @@ hit the same key, refreshed its record, and selected the new public canary
 branch proposal. T022 is complete. A live cache-failure cycle and next-slot
 recovery remain open.
 
+## Renovate acceptance ledger
+
+The repository declares a separate 64 GiB `acer`-local
+[StorageClass and PV](../../clusters/homelab/platform/storage/renovate-acceptance-ledger-platform.yaml)
+for the temporary acceptance ledger. The PV is prebound to
+`automation/renovate-acceptance-ledger` with `Retain` and Argo CD
+prune/delete protection. QNAP's shared NFS guest identity cannot enforce the
+ledger's private file ownership. The matching [PVC](../../clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml)
+and ownership initializer remain staged; the observer and proof Jobs stay
+suspended. Verify the platform resources after reviewed reconciliation, then
+bind and initialize the claim through separate reviewed changes. A node loss
+invalidates the seven-day window, and retained hostPath cleanup needs its own
+reviewed path. See the [Renovate runbook](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer).
+
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
