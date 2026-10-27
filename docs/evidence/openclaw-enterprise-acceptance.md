@@ -28,7 +28,8 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy network capability retry | [guard-race run `40221941143` on `fb8b436`](https://github.com/Stuhlmuller/homelab/actions/runs/40221941143); [protected run `40450455658` on `54bcbd9`](https://github.com/Stuhlmuller/homelab/actions/runs/40450455658) | — | No T014 receipt. The former stopped at the current-main guard before credentials. The latter passed static validation, then failed in the sanitized `network-access` category in Protected Legacy Retention. Rootless capability and isolated old-image recovery remain unproved. |
 | Legacy link classification | [protected run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926), private report/marker recheck | — | 37 links: 27 contained, 9 external, 1 missing in archive. Three external cache targets and the separate NAS skill target are absent. Six image targets exist lexically; old overlay and boot behavior remain unproved. T014 open. |
 | 04:49 capacity sample | [read-only recheck](#october-27-capacity-rechecks) on `54bcbd9` | — | Acer was 1,201 MiB short of Enterprise's 4 GiB request budget. Pausing Langfuse and Dispatcharr would have left 1,487 MiB after modeled burst and replacement, by requests only. `zimaboard-2` had nine ordinary Pods and no isolated canary. T022, T027, T035 open. |
-| Latest capacity and isolated canary | [05:49 UTC read-only Acer recheck](#october-27-capacity-rechecks) on `99abc4f`; last full-node sample at 05:20 UTC | — | The failed Renovate Job's Pod is gone, returning Acer to 2,895 MiB request headroom, still 1,201 MiB short of Enterprise's 4 GiB budget. A Langfuse+Dispatcharr pause would leave 1,487 MiB after modeled burst/replacement, by requests only; recovery, peak and canary proof remain absent. T022, T027, T035 open. |
+| Earlier capacity and isolated canary | [05:49 UTC read-only Acer recheck](#october-27-capacity-rechecks) on `99abc4f`; last full-node sample at 05:20 UTC | — | The failed Renovate Job's Pod was gone, returning Acer to 2,895 MiB request headroom, still 1,201 MiB short of Enterprise's 4 GiB budget. A Langfuse+Dispatcharr pause would leave 1,487 MiB after modeled burst/replacement, by requests only; recovery, peak and canary proof remained absent. T022, T027, T035 open. |
+| Latest capacity and isolated canary | [07:30 UTC read-only recheck](#october-27-capacity-rechecks) on `99abc4f` | — | An hourly Renovate ImagePullBackOff Job again reserves 512 MiB on Acer: 2,383 MiB free by request, 1,713 MiB short of Enterprise's 4 GiB budget. A Langfuse+Dispatcharr pause leaves only 975 MiB after the modeled burst/replacement while it persists. Zima2 has 423 MiB request margin and 447 MiB physical working-set margin before the 346 MiB-request/704 MiB-limit canary. No peak, restart, recovery or isolation proof. T022, T027, T035 open. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -752,6 +753,39 @@ set leaves 454 MiB below physical capacity, not an isolated canary margin.
 No service was paused or moved. None of the screened Acer pause candidates
 has a complete independent whole-service offsite restore. T022, T027 and
 T035 remain open.
+
+At 2026-10-27 07:30 UTC on the same `main` revision, a fresh read-only
+node/Pod, Metrics Server and kubelet filesystem sample found:
+
+| Node | Memory requested / allocatable | Memory used | Root filesystem free |
+| --- | ---: | ---: | ---: |
+| `acer` | 12,878 / 15,261 MiB | 10,382 MiB | 382.39 GiB |
+| `zimaboard-0` | 6,635 / 7,282 MiB | 5,472 MiB | 11.17 GiB |
+| `zimaboard-1` | 5,908 / 7,282 MiB | 6,076 MiB | 8.26 GiB |
+| `zimaboard-2` | 885 / 1,308 MiB | 1,345 MiB | 7.43 GiB |
+
+Another hourly Renovate Job started at 07:00 UTC and remained active in
+`ImagePullBackOff`, reserving 512 MiB on `acer` until its 40-minute active
+deadline or earlier completion. Acer's 2,383 MiB current request margin is
+1,713 MiB short of Enterprise's 4,096 MiB budget. If that Job leaves and no
+other Pod moves, the margin returns to 2,895 MiB, still 1,201 MiB short.
+Current Acer placement has 2,816 MiB of Langfuse, 1,664 MiB of Dispatcharr,
+1,152 MiB of Mastodon and 512 MiB of Multica runtime requests. Grafana is on
+`zimaboard-1` and releases no Acer request if paused. No verified stateless
+single-service pause covers even the stable 1,201 MiB deficit.
+
+Hypothetically pausing Langfuse and Dispatcharr would leave 2,767 MiB on
+`acer` after Enterprise's 4 GiB reservation, or 975 MiB after the modeled
+1,280 MiB Gateway burst and one 512 MiB replacement while Renovate is
+scheduled. Both applications lack complete independent whole-service restores;
+the calculation proves no safe suspension, peak or restart fit. On
+`zimaboard-2`, the proposed enforcer plus three fixtures add 346 MiB requests
+and 704 MiB limits. Its 423 MiB request margin would fall to 77 MiB; the
+current 1,345 MiB node working set leaves 447 MiB under 1,792 MiB physical
+capacity, 257 MiB less than those fixture limits before any existing Pod grows.
+The ordinary 32 MiB Harbor exporter is the only material non-system request
+there. A taint alone would not evict current Pods, and no reviewed placement
+frees restart and limit headroom. T022, T027 and T035 remain open.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
