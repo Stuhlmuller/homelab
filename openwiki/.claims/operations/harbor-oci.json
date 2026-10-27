@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b366be2949a437509cbeef14bcd3eb2054e0fa0406661b1c161a2340670fed43",
+  "pageVersion": "sha256:4e739069e6710a02902e96b678951648ddfb299b4ee5b8f6225662fa5ad69a96",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -746,7 +746,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
+          "version": "repo-file-v1:sha256:7cc98a0b431f7410dccb2e73180bec2e40948b502a31f0fd0b43eee4f53f86e9"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -1013,6 +1013,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:39:20.858Z"
+    "at": "2026-10-27T22:53:30.669Z"
   }
 }

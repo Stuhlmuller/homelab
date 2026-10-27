@@ -84,6 +84,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-bf69918d51d510f8b19906f1
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
+  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -200,6 +202,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
+  - id: openwiki-source-2b592454bee3d706931b5357
+    resource: repo://scripts/ci/openclaw-enterprise-reader-policy-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -226,10 +230,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
+generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:39:20.858Z
+    at: 2026-10-27T22:53:30.669Z
 ---
 
 # Workload Inventory
@@ -511,6 +515,11 @@ command, environment or probe. The Pods are excluded from Kustomization and
 workflows. No reader Pod is applied, and no coordinator, enforced egress fence,
 recipient projection, scheduled backup, fifth-image receipt or
 independent restore exists yet.
+The foundation now also declares an empty ingress/egress policy for each
+reader label set. These policies are unapplied and additive; another matching
+allow would still grant traffic. The local source overlap fixture passes,
+including a separate clean pinned-chart render, but protected CI does not run
+that chart path. Live policy overlap and isolated enforcement remain gates.
 The reconciler now stages a separate journaled backup stop/resume helper. It
 records intent before each native Agent POST, adopts exact outcomes after lost
 responses without reposting, requires a future trusted capture proof before a

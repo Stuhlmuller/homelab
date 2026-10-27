@@ -6,6 +6,8 @@ tags: ["architecture", "storage", "stateful"]
 sources:
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
+  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -52,6 +54,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
+  - id: openwiki-source-2b592454bee3d706931b5357
+    resource: repo://scripts/ci/openclaw-enterprise-reader-policy-test.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -70,10 +74,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
+generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:39:20.858Z
+    at: 2026-10-27T22:53:30.669Z
 ---
 
 # Storage And State
@@ -403,6 +407,13 @@ packaged in the unpublished restore image, but the Pods are excluded from
 Kustomization and workflows. No coordinator, enforced egress fence, UID 1000
 claim-access proof, recipient projection, off-node publication receipt or
 independent restore is declared; T051 remains open.
+The foundation now includes two source-owned, reader-specific policies with
+empty ingress and egress rules. Source fixtures reject an overlapping allow in
+foundation and chart-adjacent renders; a clean local render of the pinned stock
+chart also passed. Kubernetes policies are additive, and the pinned-chart
+check is not a protected CI gate yet. A future coordinator must inspect every
+live policy selecting those labels and prove an enforcing egress canary before
+creating either reader Pod.
 The dormant reconciler now has a journaled backup stop/resume transaction.
 It records stop intent before the native stop request, adopts an exact stopped
 outcome after a lost response, and blocks uncertain outcomes without reposting.

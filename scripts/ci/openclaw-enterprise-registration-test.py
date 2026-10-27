@@ -190,6 +190,7 @@ class Registration(unittest.TestCase):
                   if namespace(item) == AGENTS}
         self.assertEqual(tenant, {
             ("ExternalSecret", "occ-model-api-key"),
+            ("NetworkPolicy", "occ-tenant-reader-isolation"),
             ("RoleBinding", "openclaw-enterprise-api-configuration"),
             ("RoleBinding", "openclaw-enterprise-api-secrets"),
             ("RoleBinding", "openclaw-enterprise-worker")})
