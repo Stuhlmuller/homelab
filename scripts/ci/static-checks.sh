@@ -34,6 +34,7 @@ python3 -I scripts/ci/openclaw-enterprise-bind-installation-test.py
 python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-active-test.py
+python3 -I scripts/ci/openclaw-enterprise-backup-transaction-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
