@@ -15,6 +15,11 @@ SPEC = importlib.util.spec_from_file_location(
     "oce_backup_coordinator", ROOT / "scripts/ci/openclaw-enterprise-backup-coordinator.py")
 COORDINATOR = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(COORDINATOR)
+CAPTURE_SPEC = importlib.util.spec_from_file_location(
+    "oce_capture_coordinator_fixture",
+    ROOT / "scripts/ci/openclaw-enterprise-capture-test.py")
+CAPTURE_FIXTURE = importlib.util.module_from_spec(CAPTURE_SPEC)
+CAPTURE_SPEC.loader.exec_module(CAPTURE_FIXTURE)
 OCE = COORDINATOR.OCE
 SHA = "a" * 40
 BACKUP_ID = "b" * 64
@@ -61,6 +66,7 @@ class BackupCoordinator(unittest.TestCase):
         private.mkdir(mode=0o700)
         self.config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         self.config["privateJournal"]["mountPath"] = str(private / "journal.json")
+        self.marker_path = private / "recovery.json"
         self.state = {"installationId": "ins_one", "namespaceId": "ns_one",
                       "agentId": "agt_one", "configurationId": "cfg_one",
                       "configurationGeneration": 2, "firstRevisionId": "rev_one",
@@ -98,7 +104,10 @@ class BackupCoordinator(unittest.TestCase):
             transaction = {"backupId": BACKUP_ID,
                            "namespaceId": "ns_one", "agentId": "agt_one",
                            "revisionId": "rev_two"}
-        fence.bind_capture_reference(marker, observations, transaction)
+        self.marker_path.write_text(json.dumps(marker, sort_keys=True,
+                                               separators=(",", ":")))
+        self.marker_path.chmod(0o600)
+        fence.bind_capture_reference(self.marker_path, observations, transaction)
         return digest
 
     @staticmethod
@@ -128,6 +137,39 @@ class BackupCoordinator(unittest.TestCase):
         self.assertEqual(COORDINATOR.select_backup_id(self.config, BACKUP_ID), BACKUP_ID)
         with self.assertRaisesRegex(COORDINATOR.Blocked, "differs from unfinished"):
             COORDINATOR.select_backup_id(self.config, OTHER_ID)
+
+    def test_real_assembler_marker_is_bound_to_watch_only_receipt(self):
+        fixture = CAPTURE_FIXTURE.CaptureAssembler(
+            "test_assembles_complete_private_tree_without_authorizing_publication")
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        reader = fixture.tenant_pod
+        reader["kind"] = "Pod"
+        reader["metadata"].update({
+            "name": "occ-reader-tenant-" + BACKUP_ID[:40],
+            "resourceVersion": "11",
+            "annotations": {"homelab.dev/source-sha": SHA,
+                            "homelab.dev/backup-id": BACKUP_ID}})
+        fixture.observations["readers"]["tenant"] = reader
+        fixture.observations["duringTenantPods"]["items"] = [reader]
+        marker = fixture.run_assemble()
+        self.assertFalse(marker["continuousFenceVerified"])
+        watch = FakeWatch([[], [event("ADDED", reader)],
+                           [event("DELETED", reader, "17")]])
+        fence = COORDINATOR.TenantWriterFence(SHA, BACKUP_ID, watch)
+        fence.start(listing("10"))
+        fence.bind_reader(reader)
+        fence.checkpoint(listing("16", [reader]))
+        fence.bind_capture_reference(
+            fixture.output / "recovery.json", fixture.observations,
+            {"backupId": BACKUP_ID, "namespaceId": "ns_one",
+             "agentId": "agt_one", "revisionId": "rev_two"})
+        receipt = fence.finish(listing("17"))
+        self.assertEqual(receipt["observationSha256"],
+                         marker["observationSha256"])
+        self.assertEqual(receipt["markerSha256"],
+                         hashlib.sha256((fixture.output / "recovery.json").read_bytes()).hexdigest())
+        self.assertFalse(receipt["publishable"])
 
     def test_completed_idempotent_retry_needs_same_explicit_id(self):
         self.state["revisionId"] = "rev_three"
@@ -159,6 +201,7 @@ class BackupCoordinator(unittest.TestCase):
             "sourceSha": SHA, "backupId": BACKUP_ID,
             "tenantReaderPodUid": POD_UID,
             "observationSha256": digest,
+            "markerSha256": hashlib.sha256(self.marker_path.read_bytes()).hexdigest(),
             "startResourceVersion": "10", "endResourceVersion": "14"})
         with self.assertRaises(COORDINATOR.Blocked):
             fence.checkpoint(listing("15", [self.reader]))
@@ -181,6 +224,57 @@ class BackupCoordinator(unittest.TestCase):
         with self.assertRaisesRegex(COORDINATOR.Blocked, "phase is invalid"):
             fence.continuity_checkpoint("after-independent-restore", listing("17"))
         self.assertTrue(fence.failed)
+
+    def test_marker_must_be_private_and_unchanged_across_watch(self):
+        for changed_phase in ("before-transfer", "after-transfer"):
+            with self.subTest(changed_phase=changed_phase):
+                watch = FakeWatch([[], [event("ADDED", self.reader)],
+                                   [event("DELETED", self.reader, "14")], []])
+                fence = COORDINATOR.TenantWriterFence(SHA, BACKUP_ID, watch)
+                fence.start(listing("10"))
+                fence.bind_reader(self.reader)
+                fence.checkpoint(listing("12", [self.reader]))
+                self.bind_capture(fence)
+                if changed_phase == "after-transfer":
+                    fence.finish(listing("14"))
+                self.marker_path.write_text(self.marker_path.read_text() + " ")
+                with self.assertRaises(COORDINATOR.Blocked):
+                    if changed_phase == "before-transfer":
+                        fence.finish(listing("14"))
+                    else:
+                        fence.continuity_checkpoint("after-publication", listing("15"))
+                self.assertTrue(fence.failed)
+
+    def test_marker_symlink_hardlink_and_open_permissions_block_binding(self):
+        for damage in ("symlink", "hardlink", "world-readable"):
+            with self.subTest(damage=damage):
+                watch = FakeWatch([[], [event("ADDED", self.reader)]])
+                fence = COORDINATOR.TenantWriterFence(SHA, BACKUP_ID, watch)
+                fence.start(listing("10"))
+                fence.bind_reader(self.reader)
+                fence.checkpoint(listing("12", [self.reader]))
+                self.marker_path.unlink(missing_ok=True)
+                if damage == "symlink":
+                    self.marker_path.symlink_to(self.config["privateJournal"]["mountPath"])
+                else:
+                    self.marker_path.write_text("{}")
+                    self.marker_path.chmod(0o600)
+                    if damage == "hardlink":
+                        alias = self.marker_path.with_name("marker-alias.json")
+                        alias.unlink(missing_ok=True)
+                        alias.hardlink_to(self.marker_path)
+                    else:
+                        self.marker_path.chmod(0o644)
+                transaction = {"backupId": BACKUP_ID, "namespaceId": "ns_one",
+                               "agentId": "agt_one", "revisionId": "rev_two"}
+                with self.assertRaises(COORDINATOR.Blocked):
+                    fence.bind_capture_reference(self.marker_path,
+                                                 self.observations(), transaction)
+                self.assertTrue(fence.failed)
+                if damage == "symlink":
+                    self.marker_path.unlink()
+                if damage == "hardlink":
+                    alias.unlink()
 
     def test_post_transfer_foreign_event_and_skipped_phase_poison(self):
         for post_events, phase, message in (

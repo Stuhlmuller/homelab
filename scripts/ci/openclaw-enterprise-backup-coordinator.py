@@ -10,9 +10,11 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 from functools import wraps
+import stat
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -96,6 +98,50 @@ def _pod_list(listing, expected_reader):
     return metadata["resourceVersion"]
 
 
+def _private_marker(path):
+    """Read the staged marker from one owned file, without following a link."""
+    path = Path(path)
+
+    def identity(info):
+        return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+                info.st_ctime_ns, info.st_mode, info.st_uid, info.st_nlink)
+
+    try:
+        parent = path.parent.lstat()
+        require(path.is_absolute() and path.name == "recovery.json" and
+                path.parent.resolve() == path.parent and
+                stat.S_ISDIR(parent.st_mode) and parent.st_uid == os.getuid() and
+                stat.S_IMODE(parent.st_mode) == 0o700,
+                "Enterprise staged recovery marker path is unsafe")
+        before = path.lstat()
+        require(stat.S_ISREG(before.st_mode) and before.st_uid == os.getuid() and
+                stat.S_IMODE(before.st_mode) == 0o600 and before.st_nlink == 1 and
+                0 < before.st_size <= 16 * 1024,
+                "Enterprise staged recovery marker file is unsafe")
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW |
+                             os.O_CLOEXEC | os.O_NONBLOCK)
+        with os.fdopen(descriptor, "rb") as stream:
+            opened = os.fstat(stream.fileno())
+            require(identity(opened) == identity(before),
+                    "Enterprise staged recovery marker changed")
+            content = stream.read(16 * 1024 + 1)
+            after = os.fstat(stream.fileno())
+        current = path.lstat()
+        require(len(content) == before.st_size and
+                identity(after) == identity(before) and
+                identity(current) == identity(before),
+                "Enterprise staged recovery marker changed")
+        marker = json.loads(content)
+        require(isinstance(marker, dict) and
+                content == json.dumps(marker, sort_keys=True,
+                                      separators=(",", ":"),
+                                      allow_nan=False).encode(),
+                "Enterprise staged recovery marker is not canonical")
+    except (OSError, UnicodeError, ValueError):
+        raise Blocked("Enterprise staged recovery marker is unavailable") from None
+    return marker, hashlib.sha256(content).hexdigest()
+
+
 class TenantWriterFence:
     """Fail closed on any foreign Pod event or gap in a live watch.
 
@@ -125,6 +171,8 @@ class TenantWriterFence:
         self.during = False
         self.capture_bound = False
         self.observation_sha256 = None
+        self.marker_path = None
+        self.marker_sha256 = None
         self.finished = False
         self.continuity_phase = None
         self.failed = False
@@ -212,8 +260,12 @@ class TenantWriterFence:
         self.during = True
 
     @_poison_on_rejection
-    def bind_capture_reference(self, marker, observations, transaction):
-        """Bind a staged marker digest, without validating the full recovery set."""
+    def bind_capture_reference(self, marker_path, observations, transaction):
+        """Bind the assembler's private marker file, not a detached JSON object.
+
+        This only proves marker-file identity and its observation reference;
+        other recovery bytes, publication and restore remain unverified.
+        """
         require(self.during and not self.failed and not self.finished and
                 not self.capture_bound,
                 "Enterprise tenant fence has no active capture")
@@ -221,6 +273,7 @@ class TenantWriterFence:
                 set(transaction) == {"backupId", "namespaceId", "agentId", "revisionId"} and
                 transaction["backupId"] == self.backup_id,
                 "Enterprise backup transaction changed")
+        marker, marker_sha256 = _private_marker(marker_path)
         required = {"schemaVersion", "sourceSha", "identity", "before", "after",
                     "readers", "duringTenantPods"}
         readers = observations.get("readers") if isinstance(observations, dict) else None
@@ -279,7 +332,15 @@ class TenantWriterFence:
                 marker.get("continuousFenceVerified") is False,
                 "Enterprise staged recovery marker changed")
         self.observation_sha256 = digest
+        self.marker_path = Path(marker_path)
+        self.marker_sha256 = marker_sha256
         self.capture_bound = True
+
+    def _assert_marker_unchanged(self):
+        marker, digest = _private_marker(self.marker_path)
+        require(isinstance(marker, dict) and digest == self.marker_sha256 and
+                marker.get("observationSha256") == self.observation_sha256,
+                "Enterprise staged recovery marker changed")
 
     @_poison_on_rejection
     def finish(self, listing):
@@ -291,6 +352,7 @@ class TenantWriterFence:
         require(self.during and self.capture_bound and
                 not self.failed and not self.finished,
                 "Enterprise tenant fence has no bound capture")
+        self._assert_marker_unchanged()
         resource_version = _pod_list(listing, None)
         self._drain(resource_version)
         require(self.reader_deleted, "Enterprise tenant reader watch missed deletion")
@@ -299,6 +361,7 @@ class TenantWriterFence:
                 "sourceSha": self.source_sha, "backupId": self.backup_id,
                 "tenantReaderPodUid": self.reader["metadata"]["uid"],
                 "observationSha256": self.observation_sha256,
+                "markerSha256": self.marker_sha256,
                 "startResourceVersion": self.started,
                 "endResourceVersion": resource_version}
 
@@ -316,11 +379,13 @@ class TenantWriterFence:
                 self.continuity_phase != "after-independent-restore" and
                 phase == expected,
                 "Enterprise tenant continuity phase is invalid")
+        self._assert_marker_unchanged()
         resource_version = _pod_list(listing, None)
         self._drain(resource_version)
         self.continuity_phase = phase
         return {"scope": "tenant-pod-watch", "publishable": False,
                 "sourceSha": self.source_sha, "backupId": self.backup_id,
+                "markerSha256": self.marker_sha256,
                 "throughPhase": phase,
                 "startResourceVersion": self.started,
                 "endResourceVersion": resource_version}
