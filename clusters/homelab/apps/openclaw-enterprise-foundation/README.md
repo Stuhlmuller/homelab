@@ -58,15 +58,17 @@ T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup
 mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
 archive directory before creating anything; the future Job must still prove
 that the volume is the reviewed off-node destination.
-The current [packager](backup.sh) writes the database dump, bootstrap SQL and
-copied recovery material in plaintext under
-`/backup/openclaw-enterprise/.*.partial` before renaming the directory.
-The QNAP [NFS export](../../../../docs/storage-nfs.md) uses NFSv3 `sec=sys`
-and maps clients to one guest identity; an NFS claim alone does not prove an
-encrypted backup. Encrypt before the first off-node write, then independently
-decrypt and restore the completed set before using NFS for T051.
-No declared producer assembles the identity-checked recovery tree or exposes an
-encrypted off-node POSIX mount. A suspended CronJob with placeholder PVCs would
+The current [packager](backup.sh) stages plaintext database and recovery bytes
+only on a verified local `/scratch` mount. It streams a bounded tar through
+pinned age v1.3.1 into a `.tar.age.partial` file on `/backup`, rechecks the
+source material, then renames completed ciphertext. The QNAP
+[NFS export](../../../../docs/storage-nfs.md) uses NFSv3 `sec=sys` and maps
+clients to one guest identity; an NFS claim alone is not an off-node recovery
+receipt. Independently decrypt and restore the completed set before T051.
+The source-only capture assembler below can stage an identity-checked tree but
+leaves `continuousFenceVerified:false`. No declared live reader or coordinator,
+recipient projection, approved off-node mount, protected publication receipt,
+or independent restore exists. A suspended CronJob with placeholder PVCs would
 have no runnable recovery path; keep T051 open until both inputs and an
 independent scheduled restore are verified. Stock Agent stop clears its
 active revision; the [pinned API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md#L328-L334)

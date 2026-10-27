@@ -19,6 +19,7 @@ python3 -I scripts/ci/openclaw-discord-cache-publication-test.py
 python3 -I scripts/ci/openclaw-enterprise-resume-test.py
 python3 -I scripts/ci/openclaw-enterprise-journal-operator-test.py
 python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
+python3 -I scripts/ci/openclaw-enterprise-restore-image-test.py
 python3 -I scripts/ci/openclaw-enterprise-full-sync-test.py
 python3 -I scripts/ci/openclaw-enterprise-foundation-test.py
 python3 -I scripts/ci/openclaw-enterprise-encrypted-backup-test.py

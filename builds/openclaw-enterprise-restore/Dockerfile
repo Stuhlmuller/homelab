@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1.7
-# Dormant T051/T045 runtime source. Publish through a protected image workflow,
-# record its immutable Harbor digest, then pin restore-drill.yaml before use.
-FROM --platform=linux/amd64 harbor.stinkyboi.com/mirror/docker.io/library/postgres:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+# Dormant T051/T045 runtime source. Build before private registry credentials;
+# publish, scan and pin its immutable Harbor digest before use.
+FROM --platform=linux/amd64 docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
 
 # The restore helper uses Python's streaming tar parser; this image is
 # unpublished and must be pinned by its resulting Harbor digest before use.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 \
+ && apt-get install -y --no-install-recommends python3 jq util-linux \
  && rm -rf /var/lib/apt/lists/*
 
 # FiloSottile/age v1.3.1 official Linux amd64 release asset.

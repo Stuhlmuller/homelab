@@ -31,6 +31,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-resume-test.py",
                          "openclaw-enterprise-journal-operator-test.py",
                          "openclaw-enterprise-operator-image-test.py",
+                         "openclaw-enterprise-restore-image-test.py",
                          "openclaw-enterprise-full-sync-test.py",
                          "openclaw-enterprise-access-test.py",
                          "renovate-config-test.js",
