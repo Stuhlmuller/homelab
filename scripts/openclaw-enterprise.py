@@ -42,7 +42,7 @@ JOURNAL_FIELDS = frozenset({
     "installationId", "namespaceId", "secretId", "configurationId",
     "configurationGeneration", "agentId", "servicePrincipalId", "roleId",
     "bindingId", "revisionId", "firstRevisionId", "desiredHash", "pending", "secretName",
-    "roleName", "modelKeyVersion",
+    "roleName", "modelKeyVersion", "revisionIds", "backup",
 })
 ID_PREFIXES = {
     "installationId": "ins_", "namespaceId": "ns_", "secretId": "sec_",
@@ -1376,6 +1376,8 @@ def reconcile_active(config, api, kube, model_credential):
         state = dict(journal.state)
         _require(state.get("installationId") == installation["installationId"],
                  "journaled Installation identity changed")
+        _require(state.get("backup", {}).get("phase") in (None, "complete"),
+                 "Enterprise backup transaction is incomplete")
         if config["privateOrigins"]["nativeOrigin"] is not None:
             _require(model_credential["version"] == state.get("modelKeyVersion"),
                      "Enterprise model key version changed without a reviewed rotation")
@@ -1576,7 +1578,8 @@ def verify_active(config, api, kube):
     return _verify_active_state(config, api, kube)
 
 
-def _verify_active_state(config, api, kube, *, allow_transitional=False):
+def _verify_active_state(config, api, kube, *, allow_transitional=False,
+                         allow_backup=False):
     installation = check(config, api, kube)
     path = config["privateJournal"]["mountPath"]
     state, raw = read_journal(path, config["source"]["revision"], _identity_hash(config))
@@ -1584,6 +1587,9 @@ def _verify_active_state(config, api, kube, *, allow_transitional=False):
              state.get("pending") is None and
              type(state.get("modelKeyVersion")) is int,
              "Enterprise active journal is incomplete")
+    _require(state.get("backup", {}).get("phase") in (None, "complete") or
+             allow_backup,
+             "Enterprise backup transaction is incomplete")
     agent = _read_registered(config, api, kube, state)
     namespace_id, agent_id, secret_id = state["namespaceId"], state["agentId"], state.get("secretId")
     _safe_segment(secret_id, "model Secret")
@@ -1621,7 +1627,8 @@ def _verify_active_state(config, api, kube, *, allow_transitional=False):
     native_origin = config["privateOrigins"]["nativeOrigin"]
     first_id = state.get("firstRevisionId")
     if native_origin is None:
-        _require(first_id is None and len(revisions) == 1 and
+        _require(first_id is None and state.get("revisionIds") is None and
+                 len(revisions) == 1 and
                  revisions[0].get("id") == revision_id,
                  "Enterprise revision history changed")
     else:
@@ -1636,9 +1643,12 @@ def _verify_active_state(config, api, kube, *, allow_transitional=False):
                      "post-origin revision is not deployed")
             first_id = revision_id
         else:
+            history = state.get("revisionIds", [first_id, revision_id])
             _require(_valid_resource_id(first_id, "rev_") and first_id != revision_id and
-                     len(revisions) == 2 and
-                     {item["id"] for item in revisions} == {first_id, revision_id},
+                     len(history) >= 2 and history[0] == first_id and
+                     history[-1] == revision_id and
+                     len(revisions) == len(history) and
+                     {item["id"] for item in revisions} == set(history),
                      "Enterprise revision history changed")
         first_state = {**state, "revisionId": first_id,
                        "configurationGeneration": state["configurationGeneration"] - 1}
@@ -1651,6 +1661,17 @@ def _verify_active_state(config, api, kube, *, allow_transitional=False):
                  first_deployment.get("agentId") == agent_id and
                  first_deployment.get("status") == "succeeded",
                  "first Enterprise deployment changed")
+        if state.get("revisionIds") is not None:
+            for historical_id in state["revisionIds"][1:-1]:
+                _assert_active_revision(api.get(base + "/revisions/" + historical_id), config,
+                                        {**state, "revisionId": historical_id})
+                historical_deployment = api.get(base + "/deployments/" + historical_id)
+                _require(isinstance(historical_deployment, dict) and
+                         historical_deployment.get("deploymentId") == historical_id and
+                         historical_deployment.get("namespaceId") == namespace_id and
+                         historical_deployment.get("agentId") == agent_id and
+                         historical_deployment.get("status") == "succeeded",
+                         "historical Enterprise deployment changed")
     if native_origin is None or first_id != revision_id:
         _assert_active_revision(api.get(base + "/revisions/" + revision_id), config, state)
     deployment = api.get(base + "/deployments/" + revision_id)
@@ -1684,6 +1705,202 @@ def _assert_stopped_runtime(api, base, revision_id):
              "Enterprise stopped runtime still has Pods or cannot be proved")
 
 
+def _backup_context(backup, state):
+    return {"backupId": backup["id"], "namespaceId": state["namespaceId"],
+            "agentId": state["agentId"], "revisionId": backup["sourceRevisionId"]}
+
+
+def begin_backup_stop(config, api, kube, expected_sha, backup_id):
+    """Journal one stop before POST; the caller must reuse its durable backup ID.
+
+    This source-only API has no CLI or workflow entry. A later protected
+    coordinator must own the ID and writer fence, and apply the existing
+    exact-main and reviewed-config guards before calling it.
+    """
+    _validate_config(config)
+    _require(isinstance(expected_sha, str) and SHA.fullmatch(expected_sha) and
+             isinstance(backup_id, str) and HEX64.fullmatch(backup_id),
+             "Enterprise backup source or transaction ID is invalid")
+    _require(config["activationEnabled"] and
+             config["privateOrigins"]["nativeOrigin"] is not None,
+             "Enterprise backup needs the reviewed active Agent")
+    installation = prove_driver_identity(config, api, kube)
+    with ProtectedJournal(config["privateJournal"]["mountPath"],
+                          config["source"]["revision"], _identity_hash(config)) as journal:
+        state = dict(journal.state)
+        _require(state.get("installationId") == installation["installationId"] and
+                 state.get("pending") is None,
+                 "Enterprise backup journal is incomplete")
+        backup = state.get("backup")
+        _require(backup is None or backup["id"] == backup_id or
+                 backup["phase"] == "complete",
+                 "another Enterprise backup transaction is incomplete")
+        if backup is not None and backup["id"] == backup_id and backup["phase"] == "complete":
+            current = _verify_active_state(config, api, kube)
+            _require(current["desiredRuntimeState"] == "running" and
+                     current["revisionId"] == backup["resumedRevisionId"],
+                     "completed Enterprise backup changed")
+            return {**_backup_context(backup, state), "phase": "complete",
+                    "revisionId": current["revisionId"]}
+        if backup is None or backup["id"] != backup_id:
+            current = _verify_active_state(config, api, kube)
+            _require(current["desiredRuntimeState"] == "running" and
+                     state.get("firstRevisionId") is not None,
+                     "Enterprise backup source revision is not running")
+            history = state.get("revisionIds", [state["firstRevisionId"],
+                                                current["revisionId"]])
+            _require(history[-1] == current["revisionId"],
+                     "Enterprise backup revision history changed")
+            _require(len(history) < 100,
+                     "Enterprise backup revision history has no resume headroom")
+            state["revisionIds"] = history
+            backup = {"id": backup_id, "phase": "stopping",
+                      "sourceRevisionId": current["revisionId"],
+                      "baselineRevisionIds": list(history)}
+            state["backup"] = backup
+            journal.save(state)
+            base = f"/namespaces/{state['namespaceId']}/agents/{state['agentId']}"
+            try:
+                accepted = api.post_accepted(base + "/stop")
+            except DefinitiveRejection:
+                unchanged = _verify_active_state(config, api, kube,
+                                                  allow_backup=True)
+                _require(unchanged["desiredRuntimeState"] == "running" and
+                         unchanged["revisionId"] == backup["sourceRevisionId"],
+                         "backup stop outcome changed after rejection")
+                state.pop("backup")
+                journal.save(state)
+                raise
+            _require(isinstance(accepted, dict) and accepted.get("id") == state["agentId"] and
+                     accepted.get("desiredRuntimeState") == "stopped",
+                     "Enterprise backup stop response changed")
+        else:
+            _require(backup["phase"] in ("stopping", "stopped") and
+                     state.get("revisionId") == backup["sourceRevisionId"] and
+                     state.get("revisionIds") == backup["baselineRevisionIds"],
+                     "Enterprise backup stop state changed")
+        current = _verify_active_state(config, api, kube, allow_backup=True)
+        _require(current["desiredRuntimeState"] == "stopped" and
+                 current["revisionId"] == backup["sourceRevisionId"],
+                 "Enterprise backup stop outcome is unknown")
+        if backup["phase"] == "stopping":
+            backup["phase"] = "stopped"
+            state["backup"] = backup
+            journal.save(state)
+        return {**_backup_context(backup, state), "phase": "stopped"}
+
+
+def resume_backup(config, api, kube, expected_sha, backup_id, verify_capture):
+    """Deploy one new revision only after the caller proves a fenced capture.
+
+    `verify_capture` is a trusted future coordinator callback. It receives the
+    exact backup identity and must verify capture, off-node publication, and
+    independent restore, returning the verified manifest SHA-256. No deployed
+    entrypoint currently calls this source-only method; a later coordinator
+    must apply the existing exact-main and reviewed-config guards.
+    """
+    _validate_config(config)
+    _require(isinstance(expected_sha, str) and SHA.fullmatch(expected_sha) and
+             isinstance(backup_id, str) and HEX64.fullmatch(backup_id),
+             "Enterprise backup source or transaction ID is invalid")
+    _require(config["activationEnabled"] and
+             config["privateOrigins"]["nativeOrigin"] is not None,
+             "Enterprise backup needs the reviewed active Agent")
+    installation = prove_driver_identity(config, api, kube)
+    with ProtectedJournal(config["privateJournal"]["mountPath"],
+                          config["source"]["revision"], _identity_hash(config)) as journal:
+        state = dict(journal.state)
+        backup = state.get("backup")
+        _require(state.get("installationId") == installation["installationId"] and
+                 state.get("pending") is None and backup is not None and
+                 backup["id"] == backup_id,
+                 "Enterprise backup transaction is missing or changed")
+        if backup["phase"] == "complete":
+            current = _verify_active_state(config, api, kube)
+            _require(current["desiredRuntimeState"] == "running" and
+                     current["revisionId"] == backup["resumedRevisionId"],
+                     "completed Enterprise backup changed")
+            return current
+        _require(backup["phase"] in ("stopped", "resuming") and
+                 state.get("revisionId") == backup["sourceRevisionId"] and
+                 state.get("revisionIds") == backup["baselineRevisionIds"],
+                 "Enterprise backup stop has not completed")
+        if backup["phase"] == "stopped":
+            current = _verify_active_state(config, api, kube, allow_backup=True)
+            _require(current["desiredRuntimeState"] == "stopped" and
+                     current["revisionId"] == backup["sourceRevisionId"],
+                     "Enterprise backup stop proof changed")
+        _require(callable(verify_capture), "Enterprise backup capture proof is missing")
+        capture_digest = verify_capture(_backup_context(backup, state))
+        _require(isinstance(capture_digest, str) and HEX64.fullmatch(capture_digest),
+                 "Enterprise backup capture proof is invalid")
+        _require(backup.get("captureDigest", capture_digest) == capture_digest,
+                 "Enterprise backup capture proof changed")
+        namespace_id, agent_id = state["namespaceId"], state["agentId"]
+        base = f"/namespaces/{namespace_id}/agents/{agent_id}"
+        if backup["phase"] == "stopped":
+            backup["phase"] = "resuming"
+            backup["captureDigest"] = capture_digest
+            state["backup"] = backup
+            journal.save(state)
+            try:
+                created = api.post_accepted(base + "/deploy")
+            except DefinitiveRejection:
+                unchanged = _verify_active_state(config, api, kube,
+                                                  allow_backup=True)
+                _require(unchanged["desiredRuntimeState"] == "stopped" and
+                         unchanged["revisionId"] == backup["sourceRevisionId"],
+                         "backup deploy outcome changed after rejection")
+                backup = {key: value for key, value in backup.items()
+                          if key != "captureDigest"}
+                backup["phase"] = "stopped"
+                state["backup"] = backup
+                journal.save(state)
+                raise
+            _require(isinstance(created, dict) and
+                     created.get("namespaceId") == namespace_id and
+                     created.get("agentId") == agent_id and
+                     created.get("configurationId") == state["configurationId"] and
+                     created.get("configurationGeneration") == state["configurationGeneration"],
+                     "Enterprise backup deploy response changed")
+            response_id = created.get("id")
+        else:
+            response_id = None
+        _read_registered(config, api, kube, state)
+        revisions = list_agent_revisions(api, namespace_id, agent_id)
+        candidate_id = recover_revision(revisions, set(backup["baselineRevisionIds"]),
+                                        agent_id, state["configurationId"],
+                                        state["configurationGeneration"])
+        _require(response_id is None or response_id == candidate_id,
+                 "Enterprise backup deploy response differs from revision history")
+        _require(len(revisions) == len(backup["baselineRevisionIds"]) + 1 and
+                 set(backup["baselineRevisionIds"]).issubset({item["id"] for item in revisions}),
+                 "Enterprise backup revision history changed")
+        revision = api.get(base + "/revisions/" + candidate_id)
+        _assert_active_revision(revision, config, {**state, "revisionId": candidate_id})
+        deployment = api.get(base + "/deployments/" + candidate_id)
+        _require(isinstance(deployment, dict) and
+                 deployment.get("deploymentId") == candidate_id and
+                 deployment.get("namespaceId") == namespace_id and
+                 deployment.get("agentId") == agent_id and
+                 deployment.get("status") == "succeeded",
+                 "Enterprise backup deployment is not complete")
+        agent = api.get(base)
+        _assert_agent(agent, config, namespace_id, state["configurationId"], agent_id)
+        _require(agent.get("servicePrincipalId") == state["servicePrincipalId"] and
+                 agent.get("harnessAuth") == _model_auth(namespace_id, state["secretId"]) and
+                 agent.get("desiredRuntimeState") == "running" and
+                 agent.get("activeRevisionId") == candidate_id,
+                 "Enterprise backup active revision changed")
+        state["revisionId"] = candidate_id
+        state["revisionIds"] = backup["baselineRevisionIds"] + [candidate_id]
+        backup["phase"] = "complete"
+        backup["resumedRevisionId"] = candidate_id
+        state["backup"] = backup
+        journal.save(state)
+        return _verify_active_state(config, api, kube)
+
+
 def stop_agent(config, api, kube, expected_sha):
     """Request native stop once, then wait for exact revision termination."""
     _validate_config(config)
@@ -1695,6 +1912,8 @@ def stop_agent(config, api, kube, expected_sha):
         state = dict(journal.state)
         _require(state.get("installationId") == installation["installationId"],
                  "journaled Installation identity changed")
+        _require(state.get("backup", {}).get("phase") in (None, "complete"),
+                 "Enterprise backup transaction is incomplete")
         agent = _read_registered(config, api, kube, state)
         pending = state.get("pending")
         _require(pending is None or pending == {"operation": "stop"},
@@ -2193,7 +2412,7 @@ class ProtectedJournal:
         if not isinstance(state, dict) or not set(state).issubset(JOURNAL_FIELDS):
             raise Blocked("Journal contains unexpected fields")
         for field, value in state.items():
-            if field == "pending":
+            if field in ("pending", "revisionIds", "backup"):
                 continue
             if field in ("configurationGeneration", "modelKeyVersion"):
                 if type(value) is not int or not 1 <= value <= 9007199254740991:
@@ -2206,6 +2425,49 @@ class ProtectedJournal:
                   (field in ID_PREFIXES and
                    not _valid_resource_id(value, ID_PREFIXES[field]))):
                 raise Blocked("Journal resource identity is invalid")
+        history = state.get("revisionIds")
+        if "revisionIds" in state and history is None:
+            raise Blocked("Journal revision history is invalid")
+        if history is not None and (not isinstance(history, list) or
+                                    not 2 <= len(history) <= 100 or
+                                    any(not _valid_resource_id(item, "rev_") for item in history) or
+                                    len(set(history)) != len(history)):
+            raise Blocked("Journal revision history is invalid")
+        backup = state.get("backup")
+        if "backup" in state and backup is None:
+            raise Blocked("Journal backup transaction is invalid")
+        if backup is not None:
+            if (not isinstance(backup, dict) or
+                    set(backup) - {"id", "phase", "sourceRevisionId", "baselineRevisionIds",
+                                   "captureDigest", "resumedRevisionId"} or
+                    not isinstance(backup.get("id"), str) or
+                    not HEX64.fullmatch(backup["id"]) or
+                    backup.get("phase") not in ("stopping", "stopped", "resuming", "complete") or
+                    not _valid_resource_id(backup.get("sourceRevisionId"), "rev_") or
+                    not isinstance(backup.get("baselineRevisionIds"), list) or
+                    not 2 <= len(backup["baselineRevisionIds"]) <= 100 or
+                    history is None or backup["baselineRevisionIds"] !=
+                    history[:len(backup["baselineRevisionIds"])] or
+                    backup["baselineRevisionIds"][-1] != backup["sourceRevisionId"]):
+                raise Blocked("Journal backup transaction is invalid")
+            phase = backup["phase"]
+            if phase in ("stopping", "stopped"):
+                if set(backup) != {"id", "phase", "sourceRevisionId", "baselineRevisionIds"}:
+                    raise Blocked("Journal backup transaction is invalid")
+            elif phase == "resuming":
+                if (set(backup) != {"id", "phase", "sourceRevisionId",
+                                    "baselineRevisionIds", "captureDigest"} or
+                        not isinstance(backup["captureDigest"], str) or
+                        not HEX64.fullmatch(backup["captureDigest"])):
+                    raise Blocked("Journal backup capture digest is invalid")
+            elif (set(backup) != {"id", "phase", "sourceRevisionId",
+                                  "baselineRevisionIds", "captureDigest", "resumedRevisionId"} or
+                  not isinstance(backup["captureDigest"], str) or
+                  not HEX64.fullmatch(backup["captureDigest"]) or
+                  not _valid_resource_id(backup["resumedRevisionId"], "rev_") or
+                  history[-1] != backup["resumedRevisionId"] or
+                  len(history) != len(backup["baselineRevisionIds"]) + 1):
+                raise Blocked("Journal completed backup is invalid")
         pending = state.get("pending")
         if pending is not None:
             if (not isinstance(pending, dict) or

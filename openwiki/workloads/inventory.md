@@ -220,10 +220,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
+generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:04:19.774Z
+    at: 2026-10-27T22:23:45.554Z
 ---
 
 # Workload Inventory
@@ -499,6 +499,13 @@ ciphertext to a separate backup mount. A fifth restore runtime is staged for
 protected build, scan, signing and authenticated pull. No reader Job,
 coordinator, recipient projection, scheduled backup, fifth-image receipt or
 independent restore exists yet.
+The reconciler now stages a separate journaled backup stop/resume helper. It
+records intent before each native Agent POST, adopts exact outcomes after lost
+responses without reposting, requires a future trusted capture proof before a
+new revision, and refuses to stop when the journal's 100-revision limit leaves
+no resume slot. The helper has no CLI or workflow caller. T051 remains open;
+normal no-change reconciliation must not redeploy to work around missing backup
+coordination.
 It declares no running PostgreSQL, local volumes, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,

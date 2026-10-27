@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7556b3f959e3f500cfd3f5ec9039f7d320657418f7c2103c37c45c1f9b2af510",
+  "pageVersion": "sha256:e0ebec7632dc9170e04d718292b48e72718f1352541c828c0f94c9b79af1d605",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -781,11 +781,11 @@
           "version": "repo-lines-v1:sha256:ab9b76cd0cd928357694e3ddb42b3954d7b93bfc091bc6167935bf7a1f10d7af:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYTZkYzQ3NWIzYmM1MzUyMmNlZTEyMDFmMmNkNGFjNWFkMzM2NTVhYWQxNTg3MWI3Mzc3OWUwYWUxODZiMmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYTZkYzQ3NWIzYmM1MzUyMmNlZTEyMDFmMmNkNGFjNWFkMzM2NTVhYWQxNTg3MWI3Mzc3OWUwYWUxODZiMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5NWMyYTQ4MTU5MjNkYTllMzgyMmIxOTU1ZmMzOGVjMDNiNmQ5NDBjYmNhMzI4NTI4MjIwNDUwZTNhZTkyMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwODI0OTFmNWMxODI1MzFmMGQ0MWYzNDYzYjBhNWNkNTUzMWJjOGI0MDgzNWQ2Njc0Y2Q0MmI1MWIwZWNlMmMifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1665-L1670",
+          "resource": "repo://scripts/openclaw-enterprise.py#L1686-L1691",
           "version": "repo-lines-v1:sha256:69ab560cd31df25783ddea75db40eb67130e57255c11fdb5c2edb7c4ad177546:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTljNzE0OTdjZmM4MmU2ZmUwZmZmZjBiMDYyMzY1ZWY0OTcxNTM4OGE2NTQ3Yjk3YTEzMDBmN2VlYTI4ZjAyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZlMWE2ZDY3MTY0OGU0N2ZlMzJkMzBmZDMwYjljNjJhNTJkMmFkN2YzOWVlY2MyYzY3ZmFlMTEyNTJlMDIxNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDQzYmQ1ZWM0NzU5MzcxNTAwMGM1Y2JjOGM5ZjAxZjRlOTAxOTg1Y2RjOGRhNzFiZmQ0OTBkNjExMWEzOTkyYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWYyZTU2MGMyMTdmMzg0ZDk5MzQxMDM5YjNiZmEyZDcyMWZiNDViN2UzN2ZlYmQ5YmUxMmNmMmI5MzhhZmFlMyJ9"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1736-L1741",
+          "resource": "repo://scripts/openclaw-enterprise.py#L1955-L1960",
           "version": "repo-lines-v1:sha256:2d3af5e9ec43bd863e55a3e9c53982573b270a189e24ef6c98dcfe5141977aa9:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzEzZmFhN2IwMTlkMjJhNTk0NmVkYTlkZTY2YWE3ZTc3YzA3MjBlNTA0ZDcyYWQ0M2IwYzFkMWJmNDRjMTVmZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY0YzkwNWE3ZDdhODFmNWFiZjUzZTFjMjg5YTRjZjJmZGY3MjlmNWRhMTk5ODllNWEwYzdlZjhjMzUyYmJlZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBjZjRkMWIyODdhN2EzOWU0YzUwNmYyYTUzYTJiYjQxMzlkYTJiZmZkNmQwYWUwOGQxNjI1OTJlOTVkNmViYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjc2ZDM3MWJkNjkwMWI3OGRkN2I2YTEzMDA3MDljNTc5MzA5ZjQ3MDdhMmRkMzJlNjhmNTRhYzQ5OTJjM2QwMSJ9"
         },
         {
@@ -829,10 +829,28 @@
           "version": "repo-file-v1:sha256:1258c2ecda053fb2c8c0cf2e34f53e304d6a9387fc98e23e0aff62011fdacded"
         }
       ]
+    },
+    {
+      "id": "claim_83b0731a091b41c0a94f02328134c4c9",
+      "statement": "The Enterprise reconciler now includes dormant journaled backup stop/resume helpers that avoid reposting uncertain native requests, require a future trusted capture proof before deployment, and block stop when 100 revision IDs leave no resume slot; no CLI or workflow calls them, and T051 remains open.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L1713-L1900",
+          "version": "repo-lines-v1:sha256:f102ab87e71c2a338eb5d0b30c9006b2920ed9494bb19aef874cbba63f35c910:eyJzZWxlY3RlZExpbmVDb3VudCI6MTg4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZjUwYzgxMWFlYjhjMTMzZWU1NzZlOGY3OGExZDlhMmFlZjY4NjFiOGZjYzZjOThkNTFhNTFiZjI5NzYwOTQ1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3ZmFjNWMwOWIwNmM5OGYwY2VkZTI2OWEzMDRiMzdlODM0NDJmMjNlMTRmZTY2NGFiNmJlMWUwOWI3NWVmMmQyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlYWVlMjliNTYwM2VlYWFjZDFiYjUyYjRmMWI3YjkwM2Q4MDRkMDU3ZjI5ODgyODY2YWYyNDA0ODYzMWI2YTlmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyNDJiMGM3ZGIwZjdmMGM5ZWRhNTIzZTc4YjNlMWZkYTg2NGI4ZjMwMzRlMmE5NzlmYjk2OWQ1ZDljOWY0MjdjIn0"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L2640-L2685",
+          "version": "repo-lines-v1:sha256:7ae96bb5c41cc6b0f0040f8828c20260f85f4b55e7dd4df2e7b4ea910d7add63:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4YjRhMTBmYTZlYzQ4Yzk0NjU3NDU3MmU4MDc1YTFjOTkwMjdiYjhkYjMxMWViMzI5NGJjMTBmNmMxNmEyZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxZTdkZTViMmU5N2I2MWY2MTc2YTZkM2UwNzM5MWI4NThjOTVkMzZkODI0MWJkNDgzNTMyZWQzYzhjM2NhMDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4Y2Y2NmNkMzMzNzQ3MGE3M2JhNjBlNmFkNzZlMGFhNTQ0MGFmOGI1ZWZhNDlhZmZlNDExNjk0YTQ2MDkyODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5NWRkYjhlOTY3ZWVkYTI4ZGM3MWNiYmUzYjlhNjU1OGUwODQxNWJkNTg1N2I3ZjIzNTU3ZGY1YzIzNThlNTQifQ"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md#L185-L195",
+          "version": "repo-lines-v1:sha256:62d0dfaf7794468c1a279fa3cb2dc770ad0d662694956f87c570f0ab40777e58:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3MDQzODJkZWI0YTM4NTA3NzA0ZDFmYWZiMzU4MjA4YThhYWIyOGY1N2VmN2Y3MmU4YTFjZWQ5ZjQyMzkwOTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhYWYzZDBkNWY5MTE3MTg4NjljMGZiMTEzN2RmNjQwOTAwZGYzZGFmNDAyMmM4YzE1MWFhYWMxNzc3NzA2MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2M2Y4OGFkNzZkOTY1MDFhZjYzOWVkNTYzMjYxMTY1ZjY1YTk0MjU1Y2M4YWJlNzAyYTU0MzVjMjQ2OTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlZDk1MWE0ZmM1MzEwYjU0OWY2N2IzMDNiYmQxOTZkNWI1OWE4ODc1NGE0MWU0NmIxNzIyYjdjMDJiZWRlN2UifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:04:19.774Z"
+    "at": "2026-10-27T22:23:45.554Z"
   }
 }
