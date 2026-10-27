@@ -1,0 +1,50 @@
+# Staged only. Select only this Job for the reviewed restore step.
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-cache-capacity-restore
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate-cache-capacity-drill
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate-cache-capacity-drill
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 0
+        runAsNonRoot: true
+        fsGroup: 12021
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: restore
+          image: busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+          command: [/bin/sh, /drill/drill.sh, restore]
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
+            limits: {cpu: 500m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - {name: drill, mountPath: /drill, readOnly: true}
+            - {name: cache, mountPath: /cache}
+      volumes:
+        - name: drill
+          configMap: {name: renovate-cache-capacity-drill}
+        - name: cache
+          persistentVolumeClaim: {claimName: renovate-cache-dedicated}

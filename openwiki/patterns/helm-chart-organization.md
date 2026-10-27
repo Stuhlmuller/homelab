@@ -12,14 +12,14 @@ sources:
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c4a1630a18962f8a58f367ec
-    resource: repo://IaC/openclaw-enterprise/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-9828d67d6c8e28f372b28e0d
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
-    resource: repo://IaC/traefik/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-24T03:50:35.181Z
 ---
 
 # Helm Chart Organization
@@ -32,8 +32,8 @@ must read for an ordinary deployment.
 ## Source Layout
 
 ```text
-IaC/terragrunt.stack.hcl                    # unit identity and output-path index
-IaC/<app>/stack.hcl                  # app registration inputs and chart pins
+IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl                    # unit identity and output-path index
+IaC/homelab/us-west-2/apps/<app>/stack.hcl                  # app registration inputs and chart pins
 IaC/stack-defaults.hcl                      # shared Application defaults
 IaC/terragrunt-catalog/units/live/argocd-app/          # shared Application construction
 clusters/homelab/apps/<app>/
@@ -46,7 +46,7 @@ clusters/homelab/apps/<app>/
 Platform resources keep their existing `clusters/homelab/platform/<service>`
 ownership. The inspected repository has no committed `Chart.yaml` or
 `Chart.lock`; it already references remote charts directly. Its
-[application stack](../../IaC/traefik/stack.hcl),
+[application stack](../../IaC/homelab/us-west-2/apps/traefik/stack.hcl),
 [OpenClaw values and extras](../../clusters/homelab/apps/openclaw/README.md), and
 [Harbor values and extras](../../clusters/homelab/apps/harbor/README.md) demonstrate
 this layout.
@@ -60,7 +60,7 @@ Argo explicitly discourages using multiple sources to combine unrelated apps.
 ## Reuse Boundaries
 
 - Keep chart name, repository, exact revision, release name, and exceptional
-  Helm parameters explicit in `IaC/<app>/stack.hcl`. Generate common Application metadata,
+  Helm parameters explicit in `IaC/homelab/us-west-2/apps/<app>/stack.hcl`. Generate common Application metadata,
   destination, sync policy, and repository defaults. Inspect the evaluated
   manifest rather than copying a previous generated unit.
 - Use the existing `app-template` chart for suitable generic container apps.
@@ -142,12 +142,12 @@ extraction for dependencies outside built-in managers.
 ## Small Context for the Next Deployment
 
 Read [New Application Pattern](new-application.md), the target app directory, and its
-`IaC/<app>/stack.hcl` inputs.
+`IaC/homelab/us-west-2/apps/<app>/stack.hcl` inputs.
 Generate once, then inspect only that app's effective sources and policy:
 
 ```sh
 terragrunt --working-dir IaC stack generate
-terragrunt --log-disable --working-dir IaC/live/argocd-apps/descheduler \
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/descheduler/argocd \
   render --json --write=false --no-color \
   | jq '{manifest: .inputs.manifest, dependencies: .dependencies.paths}'
 ```

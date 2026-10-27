@@ -8,7 +8,9 @@ case "$stage" in
   *) echo 'Invalid Enterprise operation stage' >&2; exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
-   "${EXPECTED_SHA:-}" == "$GITHUB_SHA" ]] || exit 2
+   "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
+   "${GITHUB_REF:-}" == refs/heads/main &&
+   "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]] || exit 2
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || exit 2
 jq -e '
   .schemaVersion == 1 and
@@ -20,6 +22,8 @@ jq -e '
   .privateArchives.legacy.mountPath == "/private/openclaw-enterprise/legacy-archive" and
   .privateArchives.enterprise.mountPath == "/private/openclaw-enterprise/new-archive"
 ' scripts/config/openclaw-enterprise.json >/dev/null
+[[ "${GH_REPO:-}" == Stuhlmuller/homelab && -n "${GH_TOKEN:-}" ]] || exit 2
+[[ "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" == "$EXPECTED_SHA" ]] || exit 2
 
 if [[ "$stage" == full-sync ]]; then
   [[ -n "${OCTELIUM_AUTH_TOKEN:-}" && "${GH_REPO:-}" == Stuhlmuller/homelab &&

@@ -13,7 +13,7 @@ terraform {
 locals {
   stack_values = jsondecode(read_tfvars_file("terragrunt.values.hcl"))
   defaults     = local.stack_values.defaults
-  name         = basename(get_terragrunt_dir())
+  name         = basename(dirname(get_terragrunt_dir()))
   metadata     = try(local.stack_values.metadata, {})
   spec         = try(local.stack_values.spec, {})
   sync_policy  = try(local.spec.syncPolicy, {})
@@ -46,7 +46,7 @@ locals {
 dependencies {
   paths = [
     for dependency in try(local.stack_values.dependencies, []) :
-    "${get_terragrunt_dir()}/../${dependency}"
+    "${get_terragrunt_dir()}/${dependency == "../langfuse-blob-storage" ? "../blob-storage" : startswith(dependency, "../") ? "../../../shared/${replace(dependency, "../", "")}" : "../../${dependency}/argocd"}"
   ]
 }
 

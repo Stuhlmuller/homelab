@@ -49,9 +49,14 @@ It accepts a backend error for an intentionally stopped app only when reviewed
 source and the live Deployment both declare zero replicas.
 Confirm the owner's restricted `stinkyboi.com` nameserver is active, then test
 all 29 names through an ordinary client's OS DNS path, including a concrete
-Cordium wildcard child. Record Fleet setup denial and device check-in, fresh
-Harbor node pulls, native API, Cordium reconnect, and public callback results
+Cordium wildcard child. Record Fleet setup denial and an off-LAN iPhone MDM
+check-in through the [one-shot Fleet verifier](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+Also record fresh Harbor node pulls, native API, Cordium reconnect, and public callback results
 using the [ingress runbook](../../clusters/homelab/apps/traefik/CUTOVER.md).
+For the callback gate, retire the unused Codex Review Helper hook through the
+reviewed `scripts/n8n-github-webhooks.py --retire-helper --execute` path, then
+require its ID and callback path to be absent and fresh successful Emergency
+Bot and Policy Bot deliveries. Do not publish the inactive helper workflow.
 Review known off-tailnet callers of each of the 26 names and record
 `migrated` or `accepted_loss` for each name in the private evidence. Do not
 mark a confirmation true merely because a script ran.

@@ -38,8 +38,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -68,8 +68,10 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-  - id: openwiki-source-856035e595a8b9b128dcb0a8
-    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -84,8 +86,6 @@ sources:
     resource: repo://scripts/ci/terragrunt-plan-stage-test.py
   - id: openwiki-source-60b00db0363e7f9e27d7fa7f
     resource: repo://scripts/ci/terragrunt-plan.sh
-  - id: openwiki-source-d2206c7f78c1ec59c3551c13
-    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # CI/CD
@@ -169,7 +169,10 @@ The protected [Enterprise images workflow](../../.github/workflows/openclaw-ente
 builds the stock controller, runtime, and CLI plus the source-bound journal
 operator from exact current `main`. The operator build and non-root smoke checks
 run before registry credentials; publication signs and completely pulls all
-four images. No signed operator digest has been accepted yet. A failed run
+four images. Protected
+[run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+passed all four authenticated pulls and signatures from source `fda0d68`; its
+operator digest is pinned in the disabled declaration. A failed run
 reports only a fixed publication phase in its job summary; private transport
 and registry output remains encrypted. A failure produces no accepted image
 receipt. Retry from current `main` after resolving that phase.
@@ -197,7 +200,9 @@ The binding lane pins the reviewed binder and requires an owner-controlled 0600
 bootstrap service-key file; no hosted-runner delivery is declared. The other
 stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh).
 Its `full-sync` branch invokes the pinned
-[helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), but the committed
+[helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), which rechecks current
+`main` after the final Argo sync and health readback; a forced-race fixture
+requires a blocked result when `main` advances during sync. The committed
 `unselected` installation phase blocks sync before Kubernetes access.
 `reconcile`, `stop`, and `verification` now call the pinned
 [one-shot Job dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py)
@@ -211,12 +216,49 @@ does not mount the private journal. `restore` and `acceptance` still exit before
 mutation pending separate recovery and owner-session proof. No Enterprise
 stage has passed live acceptance.
 
-For legacy `publish-archive`, the workflow now reports fixed public
-post-upload phases for archive metadata, receipt publication and both restore
-transfers while withholding private diagnostics. Run `39466313228` completed
-the bounded upload but failed under the former broad `publication-version`
-phase. No final offsite restore receipt exists; independent `verify` was not
-dispatched. Retry only from a fresh exact-current-`main` source after review.
+For legacy `publish-archive`, the workflow reports fixed public pre-upload and
+post-upload phases while withholding private diagnostics. Run `39466313228`
+completed bounded upload but failed under the former broad
+`publication-version` phase; that attempt produced no final receipt.
+
+Detached archive worker `39366476872` produced the private source result.
+Protected [publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+used that worker and succeeded after versioned offsite upload, restore, archive
+verification and private final receipt. Later retries `39700564687` and
+`39908653791` incorrectly used the publication run as the source worker; both
+failed before upload, with the latter reporting `publication-archive-result`.
+The separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+succeeded at 2026-10-23 09:52 UTC against publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. Its protected
+stage retrieved the exact versioned archive and receipt and restored the full
+local/NAS trees, both SQLite databases and historical backups. T013 is complete;
+compatible legacy boot remains open under T014.
+
+Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) added the fixed
+legacy `prepare-restore` choice to the protected operations workflow. Dispatch
+requires the exact current `main` SHA and the successful publication SHA/run ID
+as `archive_ref`. The worker rechecks stopped writers and source identities,
+fetches the recorded S3 object versions and retains a separate verified tree
+and private symlink report under `/archive/private/rehearsal-<RUN_ID>`. Its first
+[protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
+left an incomplete, unverified archive in scratch. The [retry
+`39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker. The [third run
+`39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+failed in the same broad phase, before receipt download or worker start. It did
+not identify whether the source range, reader transfer or finalization failed;
+those three runs produced no accepted copy. The source
+repair fetches pinned S3 versions in at most 128 MiB ranges, validates version,
+interval and length, then uploads at most 8 MiB reader slices with SHA-256
+checks. Interrupted appends roll back; full size and digest checks precede
+no-clobber promotion. Future failures report fixed source-range,
+reader-transfer or finalization subphases for either versioned download, plus
+the restore phase, without private diagnostics. Guarded
+[`resume-restore` run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+later verified the cached archive and receipt and prepared a separate private
+NAS scratch recovery tree. That copy did not boot or accept the old gateway;
+T014 remains open.
 
 The startup and operations [workflow policy](../../policy/workflows.rego) rules
 accept only `workflow_dispatch`. Regression fixtures reject an added

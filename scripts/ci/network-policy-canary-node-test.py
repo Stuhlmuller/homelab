@@ -151,9 +151,9 @@ class CanaryNodeTests(unittest.TestCase):
 
     def test_release_accepts_invariant_history_with_fresh_receipts(self):
         manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
-        application = "IaC/platform-network-policy/stack.hcl"
+        application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
         canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
-        canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+        canary_application = "IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in (manifest, application, canary_manifest, canary_application):
@@ -288,18 +288,21 @@ class CanaryNodeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
-    def test_ztunnel_platform_daemonset_can_be_receipt_bound(self):
-        ztunnel = system_pod()
-        ztunnel["metadata"].update({"namespace": "istio-system", "name": "ztunnel-1",
-                                    "uid": "ztunnel-uid"})
-        ztunnel["metadata"]["ownerReferences"][0]["name"] = "ztunnel"
-        receipt = placement()
-        receipt["systemDaemonSetPods"] = [{"namespace": "istio-system",
-                                           "name": "ztunnel-1", "uid": "ztunnel-uid"}]
-        SUT["validate_placement"](receipt, CONFIG, SHA, True)
-        with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
-                         {"metadata": {}, "items": [ztunnel]}}):
-            SUT["verify_live_pods"](CONFIG, receipt)
+    def test_istio_platform_daemonsets_can_be_receipt_bound(self):
+        for owner in ("ztunnel", "istio-cni-node"):
+            with self.subTest(owner=owner):
+                pod = system_pod()
+                pod["metadata"].update({"namespace": "istio-system",
+                                        "name": f"{owner}-1", "uid": f"{owner}-uid"})
+                pod["metadata"]["ownerReferences"][0]["name"] = owner
+                receipt = placement()
+                receipt["systemDaemonSetPods"] = [{"namespace": "istio-system",
+                                                   "name": f"{owner}-1",
+                                                   "uid": f"{owner}-uid"}]
+                SUT["validate_placement"](receipt, CONFIG, SHA, True)
+                with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
+                                 {"metadata": {}, "items": [pod]}}):
+                    SUT["verify_live_pods"](CONFIG, receipt)
 
     def test_other_istio_daemonset_is_rejected_even_with_exact_uid(self):
         pod = system_pod()

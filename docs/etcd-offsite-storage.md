@@ -1,6 +1,6 @@
 # Dedicated Etcd Offsite Storage
 
-`IaC/operator/etcd-backup-storage` declares a dedicated S3 bucket for verified
+`IaC/homelab/us-west-2/operator/etcd-backup-storage` declares a dedicated S3 bucket for verified
 etcd snapshots. It uses the existing AWS account and shared encrypted state
 backend, while owning its bucket independently of the backend bucket's objects
 and lifecycle rules. The unit declares storage only. The separate
@@ -59,7 +59,7 @@ terragrunt --log-disable run --no-auto-init -- test -no-color
 Tests use dummy credentials and override identity reads. They reject the wrong
 account, region, or shared bucket name, and check retention and private storage
 controls without accessing AWS. The normal static gate runs these tests. The
-GitHub plan/apply workflows **do not traverse `IaC/operator`**: green generic CI
+GitHub plan/apply workflows **do not traverse `IaC/homelab/us-west-2/operator`**: green generic CI
 is not a live plan or deployment receipt for this bucket.
 
 Use the existing administrator session through the default AWS credential

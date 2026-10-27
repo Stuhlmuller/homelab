@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm' >&2
+[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus' >&2
   exit 2
 }
 mode="$1"
@@ -65,6 +65,9 @@ elif [[ "$mode" == mirror-dns ]]; then
 elif [[ "$mode" == mirror-litellm ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-litellm-images.json
+elif [[ "$mode" == mirror-prometheus ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-prometheus-images.json
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
@@ -107,6 +110,9 @@ if [[ "$mode" == mirror ]]; then
   fi
   if [[ "$manifest" == scripts/config/harbor-litellm-images.json ]]; then
     jq --exit-status '.images == [{"source":"ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-prometheus-images.json ]]; then
+    jq --exit-status '.images == [{"source":"quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"}]' "$manifest" >/dev/null
   fi
   if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.
@@ -172,6 +178,10 @@ cleanup() {
       mirror_category="authentication-denied"
     elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then
       mirror_category="transport-failed"
+    elif [[ "$mirror_phase" == destination-copy ]] && grep -Eiq 'writing blob:|uploading blob:' "$scratch/mirror-error"; then
+      mirror_category="blob-upload-failed"
+    elif [[ "$mirror_phase" == destination-copy ]] && grep -Eiq 'writing manifest:|uploading manifest:' "$scratch/mirror-error"; then
+      mirror_category="manifest-upload-failed"
     elif grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error"; then
       mirror_category="manifest-missing"
     fi
@@ -320,9 +330,14 @@ if [[ "$mode" == mirror ]]; then
   # Only anonymous upstream reads may populate this public project. Publish real
   # artifacts, not proxy-cache entries that remain dependent on upstream state.
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
-  mirror_retryable_transport() {
-    grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error" &&
-      ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status|status code' "$scratch/mirror-error"
+  mirror_retryable_server_error() {
+    grep -Eiq 'HTTP status(:| code:?)?[[:space:]]*5[0-9]{2}|status code:?[[:space:]]*5[0-9]{2}|50[234] (Bad Gateway|Service Unavailable|Gateway Timeout)' "$scratch/mirror-error"
+  }
+  mirror_retryable_read_error() {
+    ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status(:| code:?)?[[:space:]]*4[0-9]{2}|status code:?[[:space:]]*4[0-9]{2}' "$scratch/mirror-error" &&
+      { mirror_retryable_server_error ||
+        { ! grep -Eiq 'HTTP status|status code' "$scratch/mirror-error" &&
+          grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; }; }
   }
   while IFS= read -r source; do
     oci_index_copy=false
@@ -418,7 +433,7 @@ if [[ "$mode" == mirror ]]; then
             grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
           break
         fi
-        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
           exit "$lookup_status"
         fi
         sleep "$attempt"
@@ -455,7 +470,7 @@ if [[ "$mode" == mirror ]]; then
         else
           read_status=$?
         fi
-        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_read_error; then
           exit "$read_status"
         fi
         sleep "$attempt"
@@ -498,12 +513,12 @@ if [[ "$mode" == mirror ]]; then
         pull_directory=""
       fi
       if [[ "$attempt" == "${#pull_attempts[@]}" ]]; then
-        if "$oci_index_copy" && mirror_retryable_transport; then
+        if "$oci_index_copy" && mirror_retryable_read_error && ! mirror_retryable_server_error; then
           mirror_category="transport-retries-exhausted"
         fi
         exit "$read_status"
       fi
-      if ! mirror_retryable_transport; then
+      if ! mirror_retryable_read_error; then
         exit "$read_status"
       fi
       if "$oci_index_copy"; then

@@ -14,6 +14,9 @@ python3 -I scripts/ci/nix-cache-signature-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
+python3 -I scripts/ci/openclaw-legacy-netns-preflight-test.py
+python3 -I scripts/ci/openclaw-discord-cache-publication-test.py
+python3 -I scripts/ci/openclaw-enterprise-resume-test.py
 python3 -I scripts/ci/openclaw-enterprise-journal-operator-test.py
 python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
 python3 -I scripts/ci/openclaw-enterprise-full-sync-test.py
@@ -29,10 +32,28 @@ python3 -I scripts/ci/openclaw-enterprise-active-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
+node --test scripts/ci/renovate-cache-corruption-drill-test.mjs
+python3 -I scripts/ci/renovate-cache-capacity-drill-test.py
+python3 -I scripts/ci/renovate-acceptance-app-test.py
+node --test scripts/ci/renovate-acceptance-observer-test.js
+node --test scripts/ci/renovate-acceptance-schedule-collector-test.js
+node --test scripts/ci/renovate-acceptance-inventory-test.js
+python3 -I scripts/ci/renovate-acceptance-review-test.py
+python3 -I scripts/ci/renovate-acceptance-schedule-test.py
+python3 -I scripts/ci/renovate-acceptance-schedule-assemble-test.py
+python3 -I scripts/ci/renovate-acceptance-schedule-job-test.py
+node --test scripts/ci/renovate-acceptance-report-test.js
+node --test scripts/ci/renovate-acceptance-pr-proof-test.js
+node --test scripts/ci/renovate-acceptance-policy-proof-test.js
+node --test scripts/ci/renovate-acceptance-source-review-test.js
+python3 -I scripts/ci/renovate-acceptance-secret-boundary-test.py
+python3 -I scripts/ci/renovate-acceptance-final-report-test.py
+python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
 python3 -I scripts/ci/platform-maintenance-credentials-test.py
+python3 -I scripts/ci/istio-image-overlays-test.py
 python3 -I scripts/ci/network-policy-canary-node-test.py
 python3 -I scripts/ci/network-policy-enforcement-test.py
 python3 -I scripts/ci/network-policy-qualification-test.py
@@ -79,13 +100,13 @@ for parameter in \
   rg -Fq 'reader_access = false' <<<"$parameter_block"
 done
 (
-  cd IaC/operator/github-actions-role-policy
+  cd IaC/homelab/us-west-2/operator/github-actions-role-policy
   terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
 )
 (
-  cd IaC/operator/azuread-ci-identities
+  cd IaC/homelab/us-west-2/operator/azuread-ci-identities
   terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
 )
@@ -105,7 +126,7 @@ rg -Fq 'homelab-emergency-admin' IaC/terragrunt-catalog/modules/entra-emergency-
 rg -Fq '62e90394-69f5-4237-9190-012177145e10' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 rg -Fq 'azuread_directory_role_assignment' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 rg -Fq 'disable_password_expiration = true' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
-gate_unit="IaC/operator/entra-emergency-global-admin"
+gate_unit="IaC/homelab/us-west-2/operator/entra-emergency-global-admin"
 gate_config="$gate_unit/terragrunt.hcl"
 if rg -Fq 'feature "emergency_global_admin"' "$gate_config"; then
   echo "The emergency administrator activation must remain source-controlled." >&2
@@ -155,7 +176,7 @@ rg -Fq 'from = msgraph_update_resource.mail' IaC/terragrunt-catalog/modules/entr
 rg -Fq 'destroy = false' IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
 for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-emergency-global-admin entra-owner-mail entra-google-workspace-federation; do
   (
-    cd "IaC/operator/${operator_unit}"
+    cd "IaC/homelab/us-west-2/operator/${operator_unit}"
     terragrunt --log-disable init -backend=false -no-color
     terragrunt --log-disable run --no-auto-init -- validate -no-color
   )
@@ -167,7 +188,7 @@ echo "::endgroup::"
 
 echo "::group::Etcd offsite bucket offline guards"
 (
-  cd IaC/operator/etcd-backup-storage
+  cd IaC/homelab/us-west-2/operator/etcd-backup-storage
   terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
@@ -176,7 +197,7 @@ echo "::endgroup::"
 
 echo "::group::Octelium bootstrap node containment"
 (
-  cd IaC/live/kubernetes-node-labels
+  cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
   terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
 )
@@ -280,6 +301,6 @@ else
 fi
 echo "::endgroup::"
 
-echo "::group::Whitespace"
-git diff --check
-echo "::endgroup::"
+if [[ "${GITHUB_ACTIONS:-}" != true ]]; then
+  git diff --check HEAD
+fi

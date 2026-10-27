@@ -16,11 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 PILOTS = {
     "stinkyboi": {
-        "unit": "IaC/live/azuread-applications/fleet-pilot-user",
+        "unit": "IaC/homelab/us-west-2/apps/fleet/pilot-user",
         "upn": "rodman.mac@stinkyboi.com",
     },
     "stuhlmuller": {
-        "unit": "IaC/operator/entra-stuhlmuller-pilot-user",
+        "unit": "IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user",
         "upn": "rodman.mac@stuhlmuller.net",
     },
 }

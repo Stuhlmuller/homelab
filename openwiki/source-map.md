@@ -44,24 +44,28 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
-    resource: repo://IaC/mastodon/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
-    resource: repo://IaC/openclaw-enterprise/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
-    resource: repo://IaC/tailnet-dns/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
@@ -76,8 +80,12 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
     resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-67b7023614bb46ffd2f06e85
@@ -116,10 +124,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
+generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Source Map
@@ -146,10 +154,11 @@ desired state.
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
-| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
+| `clusters/homelab/apps/bulldozer/README.md`, `.github/workflows/bulldozer-credential.yml`, and `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl` | [Staged Bulldozer workload](workloads/inventory.md), [GitHub App secret contract](runbooks/secrets-aws-ssm.md#bulldozer-github-app), and [Funnel callback](runbooks/tailnet-ingress.md#route-boundaries) |
+| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
-| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale tailnet DNS, settings, contacts, policy, and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
@@ -180,25 +189,29 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Source-declared, unsynced workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
 | `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
 | `clusters/homelab/apps/openclaw-enterprise-operator/` | [Unregistered journal claim, scoped proof RBAC, and private Job network intent](workloads/inventory.md); static PV, placement, and activation remain pending |
-| `IaC/openclaw-enterprise-foundation/stack.hcl`, `IaC/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl`, `IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
 | `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
-| `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding, phase-gated full-sync, and disabled-by-default operator dispatch](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding, guarded legacy restore-copy dispatch, phase-gated full-sync, and disabled-by-default operator dispatch](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/ci/openclaw-enterprise-operations.sh`, `scripts/ci/openclaw-enterprise-download.py`, `clusters/homelab/apps/openclaw/retirement/retirement.py`, and `scripts/ci/openclaw-retirement-test.py` | [Versioned legacy archive verification and bounded ranged restore-copy transfer](architecture/storage-and-state.md), [three failed attempts, source-bound prepared scratch copy in run `40050057926`, and pending T014 compatible boot](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound one-shot Job dispatcher and failure/restart fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
-| `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); signed Harbor digest and activation remain pending |
-| `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper and offline dependency-order fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
+| `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe, offline checks and signed exact-source digest from run `40056484158`](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled pending placement and bootstrap-key proof |
+| `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
 | `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
-| `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
+| `IaC/homelab/us-west-2/apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 
 Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
-[registration](../IaC/mastodon/stack.hcl),
+[registration](../IaC/homelab/us-west-2/apps/mastodon/stack.hcl),
 [secret declarations](../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
 [protected SMTP injection](../.github/workflows/mastodon-smtp-credential.yml), and
 [public DNS publication](../.github/workflows/mastodon-public-dns.yml).
 See the [inventory](workloads/inventory.md),
 [credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
 and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
+Database role provisioning: [SQL and initial extensions](../clusters/homelab/apps/mastodon/initdb-configmap.yaml),
+[ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
+[PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).

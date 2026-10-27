@@ -25,12 +25,15 @@ Current enforced controls are therefore:
 - namespace Pod Security labels that are explicit in repo-owned namespace
   manifests.
 
-Non-privileged runtime namespaces use the `baseline` Pod Security profile so
-new workloads cannot silently add privileged containers, host networking,
-hostPath mounts, or other host-level access. Move a namespace to `privileged`
-only with the documented justification and owner below. These namespaces warn
-and audit against the stricter `restricted` profile so future chart changes
-surface before becoming production assumptions.
+Most existing non-privileged runtime namespaces use the `baseline` Pod Security
+profile so new workloads cannot silently add privileged containers, host
+networking, hostPath mounts, or other host-level access. The staged Enterprise
+foundation declares `restricted` enforcement for `openclaw-system` and
+`openclaw-agents`; neither namespace is active until its Application is synced.
+Move a namespace to `privileged` only with the documented justification and
+owner below. Baseline namespaces warn and audit against the stricter
+`restricted` profile so future chart changes surface before becoming runtime
+assumptions.
 
 ## Istio Ambient Service Access
 

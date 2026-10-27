@@ -1,6 +1,6 @@
 # Operator-owned infrastructure
 
-`IaC/operator` contains declarative prerequisites that require focused operator
+`IaC/homelab/us-west-2/operator` contains declarative prerequisites that require focused operator
 review, including automation identity permissions and recovery storage. These
 units use the shared remote state and repository modules, but the GitHub
 plan/apply workflows do not traverse this directory.
@@ -115,7 +115,7 @@ administrator credentials:
 set -euo pipefail
 operator_profile="<administrator-profile>"
 aws sso login --profile "$operator_profile"
-cd IaC/operator/github-actions-role-policy
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
@@ -455,7 +455,7 @@ and a fresh full-unit plan was a no-op. The CI policy simulation allows
 ### Langfuse blob-storage bootstrap
 
 On September 30, 2026 PDT (October 1 UTC), an administrator applied the
-reviewed 12-resource `IaC/live/langfuse-blob-storage` bootstrap through that
+reviewed 12-resource `IaC/homelab/us-west-2/apps/langfuse/blob-storage` bootstrap through that
 unit's normal remote state. A fresh plan was a no-op; live checks confirmed all
 four bucket public-access blocks, bucket versioning, and both exact S3 SSM
 parameters as current SecureStrings under `alias/aws/ssm`. Future reconciliation
@@ -485,7 +485,7 @@ cordium-agent-auth -o yaml` reports `Ready=True` and a new refresh time within
 five minutes. Cordium polls SSM periodically; unchanged `OnChange` secrets can
 retain older success statuses without exercising current KMS permissions.
 
-Do not destroy this unit while `IaC/live/aws-ssm-parameters` still manages that
+Do not destroy this unit while `IaC/homelab/us-west-2/shared/aws-ssm-parameters` still manages that
 policy family or the cluster uses the External Secrets IAM user. The user has
 `prevent_destroy`; removing the bootstrap grant or boundary first would prevent
 safe reconciliation or restore the broader direct-policy risk.
