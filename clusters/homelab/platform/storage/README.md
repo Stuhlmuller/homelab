@@ -24,10 +24,10 @@ The NAS-side setup is documented in `docs/storage-nfs.md`. Do not depend on
 stateful workloads until the provisioner is healthy and the PVC write, delete,
 and recreate validation in that runbook has passed.
 
-The staged `renovate-cache-pv.yaml` declares only the cluster-scoped PV for a
-separate QNAP cache volume. It stays outside this Kustomization until the
-isolated export exists. Renovate's namespaced Argo project owns the matching
-PVC and a read-only capacity probe after this platform PV reconciles.
+`renovate-cache-pv.yaml` declares only the cluster-scoped PV for the separate
+QNAP cache volume and is included in this Kustomization. Verify the isolated
+export before merging this phase. Renovate's namespaced PVC and read-only
+capacity probe remain staged until this PV reconciles.
 
 `renovate-acceptance-ledger-platform.yaml` stages a separate static Talos-local
 StorageClass and PV for the temporary private Renovate acceptance ledger on
