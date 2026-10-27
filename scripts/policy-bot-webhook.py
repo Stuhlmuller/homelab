@@ -22,6 +22,7 @@ PREVIOUS_URL = 'https://policy-bot-hook.stinkyboi.com/api/github/hook'
 URL = 'https://policy-bot-hook.tail67beb.ts.net/api/github/hook'
 CONFIG_PATH = '/app/hook/config'
 RECEIPT = Path.home() / '.local/state/homelab/policy-bot-webhook-cutover.json'
+RECOVERY_RECEIPT = Path.home() / '.local/state/homelab/policy-bot-webhook-recovery.json'
 
 
 def command(*args, **kwargs):
@@ -31,15 +32,31 @@ def command(*args, **kwargs):
     return result.stdout
 
 
-def verify_reviewed_main(expected):
+def verify_reviewed_main(expected, recovery_pr=None):
     if not expected or not re.fullmatch(r'[0-9a-f]{40}', expected):
-        raise RuntimeError('Execution requires the full reviewed main commit in --expected-sha')
+        raise RuntimeError('Execution requires the full reviewed commit in --expected-sha')
     if command('git', '-C', str(ROOT), 'status', '--porcelain=v1', '--untracked-files=all', '--ignore-submodules=none'):
         raise RuntimeError('Execution requires a clean checkout, including untracked files')
     head = command('git', '-C', str(ROOT), 'rev-parse', 'HEAD').decode().strip()
     remote = command('git', 'ls-remote', 'https://github.com/Stuhlmuller/homelab.git', 'refs/heads/main').decode().split()[0]
-    if head != expected or remote != expected:
-        raise RuntimeError('Checkout and remote main must match the reviewed execution commit')
+    if head != expected:
+        raise RuntimeError('Checkout must match the reviewed execution commit')
+    if recovery_pr is None:
+        if remote != expected:
+            raise RuntimeError('Checkout and remote main must match the reviewed execution commit')
+    else:
+        if recovery_pr <= 0:
+            raise RuntimeError('Recovery requires a positive pull request number')
+        parent = command('git', '-C', str(ROOT), 'rev-parse', 'HEAD^').decode().strip()
+        pr_ref = command('git', 'ls-remote', 'https://github.com/Stuhlmuller/homelab.git',
+                         f'refs/pull/{recovery_pr}/head').decode().split()
+        if parent != remote or len(pr_ref) != 2 or pr_ref[0] != expected:
+            raise RuntimeError('Recovery PR must be a single reviewed commit on current main')
+        commit = json.loads(command('curl', '--disable', '--noproxy', '*', '--silent', '--show-error',
+                                    '--fail', '--max-time', '12', '--proto', '=https',
+                                    'https://api.github.com/repos/Stuhlmuller/homelab/commits/' + expected))
+        if commit.get('sha') != expected or commit.get('commit', {}).get('verification', {}).get('verified') is not True:
+            raise RuntimeError('Recovery PR head must have a GitHub-verified signature')
     command('git', '-C', str(ROOT), 'cat-file', '-e', 'HEAD:scripts/policy-bot-webhook.py')
 
 
@@ -120,6 +137,21 @@ def preflight_target():
                 raise RuntimeError('Funnel callback routing preflight failed; webhook configuration unchanged')
 
 
+def preflight_recovery():
+    for url, hook in ((PREVIOUS_URL, True), (PREVIOUS_URL.removesuffix('/api/github/hook') + '/', False)):
+        headers = command('curl', '--disable', '--noproxy', '*', '--silent', '--show-error', '--max-time', '12',
+                          '--proto', '=https', '--max-redirs', '0', '--doh-url', 'https://1.1.1.1/dns-query',
+                          '--dump-header', '-', '--output', '/dev/null', url).decode()
+        blocks = [block for block in re.split(r'\r?\n\r?\n', headers) if block.startswith('HTTP/')]
+        if len(blocks) != 1 or not re.match(r'^HTTP/\S+ 404(?:\s|$)', blocks[0]):
+            raise RuntimeError('Recovery callback routing preflight failed; webhook configuration unchanged')
+        request_ids = [line.split(':', 1)[1].strip() for line in blocks[0].splitlines()[1:]
+                       if line.lower().startswith('x-request-id:')]
+        backend = len(request_ids) == 1 and re.fullmatch(r'[0-9a-v]{20}', request_ids[0])
+        if (hook and not backend) or (not hook and request_ids):
+            raise RuntimeError('Recovery callback routing preflight failed; webhook configuration unchanged')
+
+
 def timestamp(value):
     parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
     if parsed.tzinfo is None:
@@ -152,6 +184,26 @@ def save_receipt(path, value):
             temporary.unlink(missing_ok=True)
 
 
+def preflight_receipt_write(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    source = target = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, delete=False) as handle:
+            source = Path(handle.name)
+            json.dump(value, handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+            target = Path(handle.name)
+        source.chmod(0o600)
+        source.replace(target)
+    finally:
+        if source is not None:
+            source.unlink(missing_ok=True)
+        if target is not None:
+            target.unlink(missing_ok=True)
+
+
 def new_cutover(api, url, delivery_path='/app/hook/deliveries'):
     deliveries = api('GET', delivery_path + '?per_page=10')
     if any(not isinstance(item.get('id'), int) or item['id'] <= 0 for item in deliveries):
@@ -177,29 +229,31 @@ def delivery_status(api, url, cutover=None, delivery_path='/app/hook/deliveries'
     return False
 
 
-def reconcile(api, execute=False, require_delivery=False, receipt_path=None):
-    receipt_path = RECEIPT if receipt_path is None else receipt_path
-    cutover = read_receipt(receipt_path)
+def reconcile(api, execute=False, require_delivery=False, receipt_path=None, rollback=False):
+    target = PREVIOUS_URL if rollback else URL
+    receipt_path = (RECOVERY_RECEIPT if rollback else RECEIPT) if receipt_path is None else receipt_path
+    cutover = read_receipt(receipt_path, target)
     previous = api('GET', CONFIG_PATH)
     if previous.get('url') not in (PREVIOUS_URL, URL):
         raise RuntimeError('Current webhook URL is outside the reviewed migration; refusing to change it')
     print('Current callback: ' + previous['url'])
-    print('Declared callback: ' + URL)
+    print('Declared callback: ' + target)
     if execute:
-        preflight_target()
-        if previous['url'] != URL or cutover is None:
-            cutover = new_cutover(api, URL)
-        if previous['url'] != URL:
-            api('PATCH', CONFIG_PATH, {'url': URL})
+        (preflight_recovery if rollback else preflight_target)()
+        if previous['url'] != target or cutover is None:
+            cutover = new_cutover(api, target)
+        preflight_receipt_write(receipt_path, cutover)
+        if previous['url'] != target:
+            api('PATCH', CONFIG_PATH, {'url': target})
         current = api('GET', CONFIG_PATH)
-        if current.get('url') != URL or any(current.get(key) != previous.get(key)
+        if current.get('url') != target or any(current.get(key) != previous.get(key)
                                           for key in ('content_type', 'insecure_ssl', 'secret')):
             raise RuntimeError('Webhook readback did not preserve the declared URL and existing settings')
         save_receipt(receipt_path, cutover)
         print('Verified callback URL; existing secret and delivery settings preserved')
     else:
         print('Preview only; webhook configuration unchanged')
-    delivered = delivery_status(api, URL if execute else previous['url'], cutover)
+    delivered = delivery_status(api, target if execute else previous['url'], cutover)
     if require_delivery and not delivered:
         raise RuntimeError('Successful delivery newer than this cutover is not yet verified; no event or redelivery was triggered')
     return delivered
@@ -208,17 +262,21 @@ def reconcile(api, execute=False, require_delivery=False, receipt_path=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config-file', help='Existing file-backed policy-bot.yml; otherwise read only the Kubernetes Secret into memory')
-    parser.add_argument('--execute', action='store_true', help='Apply only the fixed Funnel callback URL after exact-main checks')
-    parser.add_argument('--expected-sha', help='Full reviewed main SHA required for execution')
-    parser.add_argument('--require-delivery', action='store_true', help='Require a successful Funnel delivery newer than the saved cutover timestamp and delivery ID; never triggers events')
+    parser.add_argument('--execute', action='store_true', help='Apply only the fixed declared callback after checkout checks')
+    parser.add_argument('--rollback-to-previous', action='store_true', help='Use the fixed retained public callback for emergency recovery')
+    parser.add_argument('--recovery-pr', type=int, help='Signed recovery PR number, required for rollback execution before main can merge')
+    parser.add_argument('--expected-sha', help='Full reviewed main or recovery PR head SHA required for execution')
+    parser.add_argument('--require-delivery', action='store_true', help='Require a fresh successful delivery newer than the saved cutover; never triggers events')
     args = parser.parse_args()
     if args.execute:
-        verify_reviewed_main(args.expected_sha)
+        if args.rollback_to_previous != (args.recovery_pr is not None):
+            raise RuntimeError('Rollback execution requires --recovery-pr; normal execution forbids it')
+        verify_reviewed_main(args.expected_sha, args.recovery_pr)
     app_id, key = credentials(args.config_file)
     api = github_client(app_jwt(app_id, key))
     if str(api('GET', '/app').get('id')) != app_id:
         raise RuntimeError('GitHub App identity does not match the configured Policy Bot identity')
-    reconcile(api, args.execute, args.require_delivery)
+    reconcile(api, args.execute, args.require_delivery, rollback=args.rollback_to_previous)
 
 
 if __name__ == '__main__':
