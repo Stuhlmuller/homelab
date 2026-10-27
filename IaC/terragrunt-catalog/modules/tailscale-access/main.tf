@@ -48,18 +48,21 @@ resource "tailscale_dns_configuration" "homelab" {
   }
 }
 
-resource "tailscale_tailnet_settings" "homelab" {
-  acls_externally_managed_on                  = false
-  devices_approval_on                         = false
-  devices_auto_updates_on                     = true
-  devices_key_duration_days                   = 180
-  https_enabled                               = true
-  network_flow_logging_on                     = false
-  posture_identity_collection_on              = false
-  regional_routing_on                         = false
-  users_approval_on                           = true
-  users_role_allowed_to_join_external_tailnet = "none"
-}
+# Temporarily disabled: networkFlowLoggingOn feature not available
+# on this Tailscale billing plan (400). Keep this resource commented out.
+#
+# resource "tailscale_tailnet_settings" "homelab" {
+#   acls_externally_managed_on                  = false
+#   devices_approval_on                         = false
+#   devices_auto_updates_on                     = true
+#   devices_key_duration_days                   = 180
+#   https_enabled                               = true
+#   network_flow_logging_on                     = false
+#   posture_identity_collection_on              = false
+#   regional_routing_on                         = false
+#   users_approval_on                           = true
+#   users_role_allowed_to_join_external_tailnet = "none"
+# }
 
 resource "tailscale_contacts" "homelab" {
   account {
