@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:db193fd60bec24f41c1bec67709a3d7cbe0c5c8213b31671a5b8e0567b407311",
+  "pageVersion": "sha256:a3ca6e2938bb67a1a61dc218f7775f923a4b5873a9a045f4bad4c7fecf8cd433",
   "claims": [
     {
       "id": "claim_387c6dac73fc4932ade43a20ef912aef",
-      "statement": "Current OpenClaw bootstrap replaces provider/model maps, limits configured agents to the gateway model, disables OpenAI/Codex plugins and removes their active auth-profile references while preserving private credentials and original backups; the older additive retirement gap is historical.",
+      "statement": "The retained legacy OpenClaw bootstrap replaces provider/model maps, limits configured agents to the gateway model, disables OpenAI/Codex plugins and removes active subscription auth-profile references while preserving private credentials and original backups; its gateway is currently stopped by GitOps.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L3-L11",
+          "version": "repo-lines-v1:sha256:1ee315c903aeb08aa93a9330a0005d9a11f2b73f4749cfe420833829cc99ac4b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGY1OGJlZWQ0NmNiZWI5NjgyYWNkNTZlYmJmZWZiYmMwNTViMzZkZTQ5YzdmMmFkOTEzMThkZGNmOTM4NDNmOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGM2NGUxZDY4MDBkNWI4NWU5MDljMmFkNjUzMWU5ZmVmNjQwMjI1NThmYzIxYjI1NzQwMjljMDNmYWI4NGViMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjIsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGU2MTc3ZjExOWRkM2E4ZmJhZWU4MDY5Y2JmNzQ1YjA1YWFlMjRkYzI4MzY2MDg3NTA1MzI2MGU4NmM0YmNmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2U4NWM2YmUxMmYyY2IxYzdiZDZlZTI4YjcyNmM4NDhkNzY3MTk5MDRhOTc5NmNjZDhkM2VkN2QyNzdmZGQyYSJ9"
+        },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py#L63-L83",
           "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
@@ -33,6 +37,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-27T09:54:29.479Z"
   }
 }

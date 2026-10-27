@@ -60,10 +60,10 @@ sources:
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # Runtime Isolation
@@ -122,12 +122,15 @@ broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
 limited capacity, system DaemonSets, and a live backup workload.
 
-The reviewed 214-image catalog passed protected publication and authenticated
-Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+Historical protected [214-image run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+and [215-image run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
+passed publication and authenticated Harbor pulls. Recheck the strict
+publication bundle against current `main` before accepting T004.
 Before activation, finish policy owner/render review, then admit an isolated
 tainted canary with measured capacity and local-storage
-placement. No existing worker currently qualifies without risking unrelated
-stateful workloads. The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+placement. No worker has an accepted current canary placement; later
+outage-affected rescheduling invalidates earlier request arithmetic as admission
+evidence. The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
 found about 3,398 MiB unreserved on the best worker against an initial
 4,096 MiB Enterprise reservation, 6,308 MiB actual memory use, and 9.74 GB
 root-filesystem space free. Every worker's `/var` uses eMMC and has less than
