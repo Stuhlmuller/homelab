@@ -8,6 +8,7 @@ resources:
   - acceptance-schedule-collector-rbac.yaml
   - acceptance-schedule-collector-networkpolicy.yaml
   - acceptance-source-review-networkpolicy.yaml
+  - acceptance-outcome-amend-networkpolicy.yaml
   - acceptance-final-report-networkpolicy.yaml
   - cronjob.yaml
   - externalsecret.yaml
@@ -25,6 +26,7 @@ configMapGenerator:
       - acceptance-policy-proof.js
       - acceptance-schedule-collector.js
       - acceptance-source-review.js
+      - acceptance-outcome-amend.js
       - renovate-acceptance-schedule.py
       - renovate-acceptance-schedule-assemble.py
   - name: renovate-config
