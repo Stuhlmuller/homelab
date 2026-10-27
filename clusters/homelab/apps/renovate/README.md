@@ -300,14 +300,15 @@ a planned no-writer gap.
 
 ## Temporary acceptance observer
 
-The acceptance ledger is staged as a dedicated 64 GiB static Talos-local PV at
+The acceptance ledger uses a dedicated 64 GiB static Talos-local PV at
 `/var/lib/renovate-acceptance-ledger` on `acer`. The StorageClass and PV are in
 `clusters/homelab/platform/storage/renovate-acceptance-ledger-platform.yaml`;
-the namespaced claim is in `acceptance-ledger-pvc.yaml`. Neither file is in its
-Kustomization yet. Renovate's `homelab-workloads` Argo project cannot create
-cluster-scoped storage. First reconcile the class and PV through a reviewed
-`platform-storage` change and verify their identities. Then bind the claim
-through a separate reviewed Renovate change and verify it reaches `Bound`.
+this phase includes them in the `platform-storage` Kustomization. The namespaced
+claim remains staged in `acceptance-ledger-pvc.yaml`, outside Renovate's
+Kustomization. Renovate's `homelab-workloads` Argo project cannot create
+cluster-scoped storage. Verify the class and PV identities after this phase
+reconciles, then bind the claim through a separate reviewed Renovate change and
+verify it reaches `Bound`.
 Every acceptance worker has
 an `acer` node selector; the PV has the same node affinity. The shared QNAP
 NFS export squashes clients to one guest identity and cannot enforce private
