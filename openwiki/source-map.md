@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-c0ca5e405a32db452e0a5896
@@ -22,6 +24,8 @@ sources:
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-db51338c65d164109e183154
+    resource: repo://builds/openclaw-enterprise-restore/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-bb7ca8a5177e874fa05bda90
@@ -34,6 +38,8 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-4b551d11e16fb851a8676ce2
@@ -80,6 +86,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-0ec224257fa3d91c69b2b9f1
+    resource: repo://scripts/ci/openclaw-enterprise-capture.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
@@ -94,6 +102,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
+  - id: openwiki-source-e9e65f5a163d93923cf250f7
+    resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -126,10 +136,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Source Map
@@ -198,6 +208,9 @@ desired state.
 | `scripts/ci/openclaw-enterprise-operations.sh`, `scripts/ci/openclaw-enterprise-download.py`, `clusters/homelab/apps/openclaw/retirement/retirement.py`, and `scripts/ci/openclaw-retirement-test.py` | [Versioned legacy archive verification and bounded ranged restore-copy transfer](architecture/storage-and-state.md), [three failed attempts, source-bound prepared scratch copy in run `40050057926`, and pending T014 compatible boot](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound one-shot Job dispatcher and failure/restart fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
 | `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe, offline checks and signed exact-source digest from run `40056484158`](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled pending placement and bootstrap-key proof |
+| `builds/openclaw-enterprise-restore/`, `.github/workflows/openclaw-enterprise-images.yml`, and `scripts/ci/harbor-publish.sh` | [Source-only fifth restore image, pre-credential audit, signed publication and authenticated-pull gates](operations/harbor-oci.md); no fifth-image receipt yet |
+| `clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh` | [Stopped-writer marker, local scratch, age encryption and off-node recovery contract](architecture/storage-and-state.md); no scheduled or independently restored set |
+| `scripts/ci/openclaw-enterprise-reader-archive.py` and `scripts/ci/openclaw-enterprise-capture.py` | [Namespace-local full claim readers, identity-bound archive assembly and intentionally unverified continuous fence](architecture/storage-and-state.md) |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |

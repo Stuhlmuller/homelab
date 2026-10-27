@@ -14,6 +14,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -44,10 +46,10 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # AWS SSM Secret References
@@ -133,6 +135,15 @@ Pods, and patches only the Secret annotation with a guarded readback. Its
 rechecks exact current `main` and pins this source, but the hosted runner has
 no declared delivery of the owner-controlled 0600 bootstrap-key file. No live
 binding is proven.
+
+T051 recovery also needs the stock chart's generated
+`occ-gateway-654a256bceae-root` CA Secret, including its private key, alongside
+database passwords, tenant Secrets, bootstrap output, and the journal. The
+source-only packager requires a projected age recipient at
+`/run/backup-recipient/age.pub` and a local scratch mount before it writes
+ciphertext to a separate backup mount. No recipient projection, reader Job,
+continuous writer fence, or independent restore is declared. Do not treat
+these committed names as evidence that recovery credentials have been captured.
 
 ## Protected Talos upgrade inputs
 

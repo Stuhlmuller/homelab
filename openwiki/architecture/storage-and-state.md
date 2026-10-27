@@ -40,10 +40,14 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-0ec224257fa3d91c69b2b9f1
+    resource: repo://scripts/ci/openclaw-enterprise-capture.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-e9e65f5a163d93923cf250f7
+    resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -56,16 +60,14 @@ sources:
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-  - id: openwiki-source-4f1f492ff2ee386585deee86
-    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Storage And State
@@ -373,12 +375,20 @@ StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
 restore fixtures are source-only; node placement, live role initialization,
 complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
 this source alone. The [backup script](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
-now requires exactly one recovery marker object with `writerStopped: true` and a
-nonempty `claimUid`. The [offline fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
-rejects stopped-writer and UID failures, malformed JSON and concatenated markers.
-This file check does not prove the UID matches the live claim or hold writers
-stopped during capture; T051 still needs those controls and a scheduled,
-encrypted off-node backup with restore proof. The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
+now requires exactly one recovery marker object with `writerStopped: true`,
+`continuousFenceVerified: true`, and a nonempty `claimUid`. The
+[offline fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
+rejects false, missing, malformed and concatenated markers. The source-only
+[reader](../../scripts/ci/openclaw-enterprise-reader-archive.py) validates exact
+read-only Pod/PVC identity and full claim mounts in each namespace, while the
+[assembler](../../scripts/ci/openclaw-enterprise-capture.py) checks the two
+archive manifests and before/after claim, PV and Secret observations. Its
+output deliberately sets `continuousFenceVerified:false`: the marker cannot
+prove a live UID match or continuous writer exclusion by itself. The packager
+uses a local scratch mount and pinned age recipient to publish ciphertext on a
+separate backup mount. No reader Job, coordinator, recipient projection, off-node
+publication receipt or independent restore is declared; T051 remains open.
+The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
 about 3,398 MiB unreserved on the best worker, `zimaboard-1`, below the
 4,096 MiB initial Enterprise reservation before transient and host headroom.
 Its root filesystem had 9.74 GB free. Talos confirmed each worker's `/var`

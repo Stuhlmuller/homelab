@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a8ab04ddde5eb4e3be5377cfee765016b82e9a74f5e9bbb56ff339973852928d",
+  "pageVersion": "sha256:0813fb1b400535368791a5e43bd8831da2de2f484a7dbdf01c8454a864e6268e",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:178b1c19d578f11014be522d29f07ef0bedd5d1370dd5327986bcba0c454cdb6"
+          "version": "repo-file-v1:sha256:34633574fd107772a0b510c9e446b8dfe006ce907c3f38b1921b418d7e491e7e"
         }
       ]
     },
@@ -82,7 +82,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:7fb83fae5af30412d3fba031d434565be317fe4712c65f4ef4bd60ddf33219d8"
+          "version": "repo-file-v1:sha256:7fe9a51f99041af134b32804bfde5b66c99fdb43e7de2274eb3e57b8a7a5a7b4"
         }
       ]
     },
@@ -302,33 +302,29 @@
       "evidence": [
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:c8d42d8eb298134f83ca0770fcb4a20456ba0fd8423b0390e61465700904f5dc"
+          "version": "repo-file-v1:sha256:7a4b852cbdd14662687e68401817d8748bb78d72c219b49c53fc8a973fec039a"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:fe5f753d00f77811b20cfc4e89b397ecec0518d7067bceed3078673711aba8af"
+          "version": "repo-file-v1:sha256:07d3c9ad41fe7c4d488c157a46a876922820f571d8407b6a39aa6ea6ad2d0dfb"
         }
       ]
     },
     {
       "id": "claim_35cb8a5abd254928acb6408cf1b2eb8e",
-      "statement": "The protected OpenClaw Enterprise image workflow builds stock controller, runtime, and CLI plus the source-bound journal operator only from exact current main, runs non-root operator smoke checks before credentials, then signs and fully pulls all four images; on failure it writes a fixed phase to the job summary while private registry logs remain encrypted and no accepted image receipt is produced.",
+      "statement": "The protected Enterprise image workflow builds stock controller, runtime, and CLI plus source-bound journal operator and restore runtime only from exact current main; operator smoke checks and a complete restore-image audit precede credentials, then it signs and fully pulls all five fixed images and emits a pinned restore reference only after success. The historical four-image run predates this restore image; a failed new run reports only a fixed phase and retains private logs encrypted.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
-          "version": "repo-file-v1:sha256:d55163c42044caef70d3b141068c43126ec0e6865f13bdd615475cb3781fc461"
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml#L1-L174",
+          "version": "repo-lines-v1:sha256:3113ef81f22ca903461cf4aeaba9a61a3d07fe704a63264c5274ee6a3b53356a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTc0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNTBjYzc2Zjg2MGU4MGI0ZDRiYWVlY2MxODVmNGMzMGI0NjU1NTZjNjc0MjYwZjE2MDRmYWE0Mzk4NjhhOWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4YjBmNTNiZTVkMDk4MTY2NGU0MTEwYzg5OGU3NzRkYjUxNDMxNDgzZDc5OWQyNjc0MDM3ZjJmYTkxMTEwYTMxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjMjJmOTVmYmU0NmU5ZmRkNmUxYmQ4NTQ4MDlkYTg0ODNjMjEwYTViNzE0ZjZhYTY0MDAzOWQ3MmM2NzIwNjliIn0"
         },
         {
-          "resource": "repo://builds/openclaw-enterprise/build-operator.sh#L1-L64",
-          "version": "repo-lines-v1:sha256:f13433ae9373cb1e6a201408a326b0eccf2c7ce0e38c224509b0d22e8b94daa4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViZTk1MzlkZjgyOWVhYzM4YTlkMzNiODk2NjIxOTEzYjdhYmQ5ZTA3ZThlZDhjMzdmMjhkYWJkMjQwYzI0ODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://builds/openclaw-enterprise-restore/README.md",
+          "version": "repo-file-v1:sha256:1258c2ecda053fb2c8c0cf2e34f53e304d6a9387fc98e23e0aff62011fdacded"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L100-L116",
-          "version": "repo-lines-v1:sha256:374109d8eff058b90a27c16d9c15c296545f84596324ce865f40ff7fb01329e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3"
+          "resource": "repo://scripts/ci/harbor-publish.sh#L14-L40",
+          "version": "repo-lines-v1:sha256:ee3b885187914c033ba05413c031ca4315f109e49602b3e3da0e1070860d35ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyN2FhYmQ5OWUzZTk1NGZjZTc0OTg4ZjdkMWIwNTVlZTJkYjFmOGIxOTM5YmI5ODg4NmEwYjVlYzYyN2M4YTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3OWRhZTllYmIxZjc1ZmI4Y2U1MWJhMThiYWRhMWI4YzZkMGRhMTVhYzI1YWExNGFhNWI2YjAxODhkMDJlMzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4OGZjYTY0YjkzODNjZmZhYzhkYTEzZWQyZjY3NThhYzliNDliOTRjOWU3Zjc3NjEyYmYxODA2Mjk2MmE0MDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NGMwZWYzY2U5ZTI4NTUwOGMyODc1NWU5Yjk2ZGNkYjhjOTU5MTliZTgwZjg4MGNkOWQwYWFkNDA3N2NjMzkifQ"
         }
       ]
     },
@@ -385,6 +381,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-27T22:04:19.774Z"
   }
 }

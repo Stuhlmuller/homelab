@@ -230,6 +230,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-eadf2ab2c03e6bff89609ca7
+    resource: repo://scripts/ci/openclaw-enterprise-capture-test.py
   - id: openwiki-source-18423e8d68f98d1e991a1691
     resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
@@ -252,6 +254,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-9549cd0a19920c757058b380
+    resource: repo://scripts/ci/openclaw-enterprise-reader-archive-test.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -364,10 +368,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Validation Gates
@@ -1770,7 +1774,7 @@ passed the historical 214-image catalog. Later
 [run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
 passed the expanded 215-source catalog and authenticated pulls, with its
 six-file publication bundle matching then-current `main`. T004 remains open
-for the changed Enterprise operator source and requires current-source proof.
+for the changed Enterprise operator and restore source and requires current-source proof.
 The isolated canary, platform upgrades, compatible legacy boot and new-state
 restore remain acceptance gates. Source-only static
 checks do not activate the agent.
@@ -1974,8 +1978,11 @@ auth table but cannot create schema objects or read a new ungranted table.
 The offline [recovery fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
 executes the [backup preflight](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
 against false, missing, empty-UID, malformed and concatenated writer markers,
-and accepts exactly one valid stopped-writer object. This does not attest a live
-claim UID, sustained writer fence or scheduled off-node backup.
+and accepts exactly one object with `writerStopped` and
+`continuousFenceVerified` true. The static gate also runs source-only reader,
+capture, safe-extraction and restore-image fixtures, including rejection of
+partial `subPath` and `subPathExpr` claim mounts. These tests do not attest a
+live claim UID, sustained writer fence, published ciphertext or independent restore.
 Local results do not establish live PVC, TLS or restore acceptance. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
@@ -2530,7 +2537,8 @@ category, and no retry for HTTP 404, auth or digest failures.
 
 Enterprise image publisher fixtures also check fixed preflight, authenticated
 pull, signing and cleanup failure-phase labels without exposing private output.
-These local checks do not replace a successful protected four-image receipt.
+These local checks do not replace a successful protected five-image receipt;
+the historical four-image run predates the T051 restore runtime.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child

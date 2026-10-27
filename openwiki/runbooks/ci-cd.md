@@ -36,8 +36,8 @@ sources:
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
-  - id: openwiki-source-cd4f78e3208dc4d64a31699a
-    resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-db51338c65d164109e183154
+    resource: repo://builds/openclaw-enterprise-restore/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -46,8 +46,6 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
-  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
-    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -96,10 +94,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # CI/CD
@@ -167,11 +165,13 @@ journal check. Required pull-request checks retain their existing producers.
 
 The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
 builds the stock controller, runtime, and CLI plus the source-bound journal
-operator from exact current `main`. The operator build and non-root smoke checks
-run before registry credentials; publication signs and completely pulls all
-four images. Protected
+operator and T051 restore runtime from exact current `main`. The operator
+smoke checks and complete restore-image audit run before registry credentials;
+publication signs and completely pulls all five images and emits a pinned
+restore reference only after success. No fifth-image publication receipt exists.
+Protected
 [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
-passed all four authenticated pulls and signatures from source `fda0d68`; its
+passed the earlier four authenticated pulls and signatures from source `fda0d68`; its
 operator digest is pinned in the disabled declaration. A failed run
 reports only a fixed publication phase in its job summary; private transport
 and registry output remains encrypted. A failure produces no accepted image

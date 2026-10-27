@@ -174,10 +174,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Harbor Private OCI Registry
@@ -512,7 +512,7 @@ passed the expanded 215-source catalog on 2026-10-25 with matching digests and
 complete authenticated Harbor pulls. Its six-file publication bundle matched
 the then-current `main` at acceptance. Recheck that bundle against current
 `main` before using this receipt for a new rollout; T004 remains open for the
-changed Enterprise operator source. Neither catalog receipt proves an uncached
+changed Enterprise operator and restore source. Neither catalog receipt proves an uncached
 pull on every Talos node or Harbor-only application consumption.
 
 The fixed `renovate` scope selects seven cataloged update digests from
@@ -907,8 +907,8 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Their consuming Renovate PRs remain held until that
-publication and pull acceptance finish.
+complete Harbor pulls. A consumer update needs that publication and pull
+acceptance before merge.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
@@ -962,11 +962,14 @@ The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. Protected
 [`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
 passed the 214-image platform catalog with complete authenticated pulls.
-The source-declared four-image publisher builds the repository-owned journal
-operator from an exact clean `main` checkout before registry credentials, then
-signs and completely pulls the controller, runtime, CLI and operator images.
+The source-declared publisher now builds five images from an exact clean `main`
+checkout before registry credentials: stock controller and runtime, CLI,
+repository-owned journal operator, and the T051 restore runtime. It audits the
+complete restore image before publication and requires signatures and complete
+authenticated Harbor pulls for all five. This is a dormant candidate; its
+fifth-image receipt has not been produced.
 Protected [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
-passed all four authenticated pulls and signatures from source `fda0d68`; the
+passed the earlier four authenticated pulls and signatures from source `fda0d68`; the
 selected disabled operator is pinned at
 `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
 The protected workflow reports one fixed failure phase, including preflight

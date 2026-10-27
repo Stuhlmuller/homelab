@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1c659f9d6729dc51f235e0ddec72a5022e4b0687188d2c9e4e7a04e6b4c69f19",
+  "pageVersion": "sha256:7556b3f959e3f500cfd3f5ec9039f7d320657418f7c2103c37c45c1f9b2af510",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -326,7 +326,7 @@
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:1d9bb1d16ef4524b0d3a3d579e01cf5b539998284504dace54db92cf44ccb65e"
         }
       ]
     },
@@ -358,23 +358,19 @@
     },
     {
       "id": "claim_6ea097967f8f4bb9a330a1be2cbf70a1",
-      "statement": "LiteLLM's reviewed consumer pins the Linux amd64 child of a repeated-descriptor OCI index rejected by Harbor 2.15.2. Protected scoped run 39210811031 published that exact child before the consumer changed; all four observed nodes were amd64 on October 19. The revised catalog passed historical protected all runs 40011909180 (214 images) and 40172274517 (215 images), with matching digests and authenticated pulls. The changed Enterprise operator source still lacks a current T004 receipt; arm64 needs separate review before node expansion.",
+      "statement": "LiteLLM's reviewed consumer pins the Linux amd64 child of a repeated-descriptor OCI index rejected by Harbor 2.15.2. Protected scoped run 39210811031 published that child before the consumer changed; the historical revised catalogs passed all runs 40011909180 (214 images) and 40172274517 (215 images) with matching digests and authenticated pulls. The changed Enterprise operator and restore source still lack a current T004 receipt; arm64 needs separate review before node expansion.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/litellm/README.md",
-          "version": "repo-file-v1:sha256:d17f4dd191f38107aa4cfc513de05df88fba7aea063f9212d5fa743f515ccc9b"
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
+          "version": "repo-file-v1:sha256:50841f5280ae0275a0576bb9a54a55bad47fabec15f479987730b455ced428c3"
         },
         {
           "resource": "repo://clusters/homelab/apps/litellm/values.yaml",
           "version": "repo-file-v1:sha256:6c2a4c6cbcf3e553821f915ae8890faf341f25c45b3aaa207f6826b16e29600d"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
-        },
-        {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
+          "version": "repo-file-v1:sha256:87a467653a613f3233e3234805e46653e1818f795b9f54bdf6d7e6b3a895a070"
         }
       ]
     },
@@ -388,7 +384,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
+          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -432,7 +428,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6ab7376353fad6debdb7c743e5f8206bcd4bc3abeb33b3f7d319418baef76940"
+          "version": "repo-file-v1:sha256:94a04d00ee338810020478fa307602aaf9193fbdee17c63c914f0f99cafcb4ac"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -476,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:178b1c19d578f11014be522d29f07ef0bedd5d1370dd5327986bcba0c454cdb6"
+          "version": "repo-file-v1:sha256:34633574fd107772a0b510c9e446b8dfe006ce907c3f38b1921b418d7e491e7e"
         }
       ]
     },
@@ -598,7 +594,7 @@
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:1d9bb1d16ef4524b0d3a3d579e01cf5b539998284504dace54db92cf44ccb65e"
         }
       ]
     },
@@ -626,7 +622,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
-          "version": "repo-file-v1:sha256:d55163c42044caef70d3b141068c43126ec0e6865f13bdd615475cb3781fc461"
+          "version": "repo-file-v1:sha256:50841f5280ae0275a0576bb9a54a55bad47fabec15f479987730b455ced428c3"
         },
         {
           "resource": "repo://builds/openclaw-enterprise/build-operator.sh",
@@ -650,7 +646,7 @@
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:1d9bb1d16ef4524b0d3a3d579e01cf5b539998284504dace54db92cf44ccb65e"
         }
       ]
     },
@@ -728,19 +724,19 @@
     },
     {
       "id": "claim_d0294ea2ad664c5d91b923725fd4fc53",
-      "statement": "The dormant Enterprise backup candidate requires exactly one stopped-writer marker with a nonempty claim UID, but there is no scheduled backup, live UID proof, or sustained writer fence.",
+      "statement": "The dormant Enterprise packager requires exactly one marker with writerStopped and continuousFenceVerified true and a nonempty claim UID. Source-only reader and capture scripts assemble identity-bound namespace-local archives but leave the continuous fence false; no reader Job, coordinator, recipient projection, scheduled encrypted off-node backup or independent restore is declared.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L48-L105",
+          "version": "repo-lines-v1:sha256:176abd3e7e5baccdee68d7333edb939fc073f0437c532ae99cd21f99b6e65822:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOWMyMzJlNjAyMzRmOTNmNGNlOTU1ZmM5Zjc0MWIzNDY0OGFlOThiMmYwNjdlM2RlYjlkOGQ0OWI4MzkwZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlYTcwNjM3MmMwOTczYjIwYzc3OWMyYjFjODUwNGNjNTFjMmRlOWYyODNjZTU0ODg4ZjBhOGY0NmI0ZDVjYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:12d468da123124f2d1bfcf69e3daa6deef7c279240c0fc4c097b209b5a2cfd8d"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L20-L24",
+          "version": "repo-lines-v1:sha256:e30449b9f2bcbb435bebeb8ae7498150eb1aedf706dbdaeebec8f99defc5ca07:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzU1ZTUyZjc3ZDRiOGVhNWExZDAwNjhlMzg5ZTQzNzA4ZjYxYWQyZGIzYjc3YWJlZGVkZWY1ZjFiYzAxY2YzNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGQ3M2EzOTdhM2U1NDE2YTM0MWRmNmExNGU0NmVkZDU0ZDhkYWQ3NjQ3MTU1MmM4ZWY4NjBlMTQzOTljOGVhNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjc3OWRhNjRjMzc3Nzk3ODk5YTFjYzdkYzE1MGI0YTRlNzkzYTI3ZmMzMGZjYzRiZTVjMmFjM2UzODk2NmFiMyJ9"
         },
         {
-          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:1eb05dd5facaeda3619e28a1de9d2aee528ca8cc10745c74edf43f35723847ae"
+          "resource": "repo://scripts/ci/openclaw-enterprise-capture.py#L578-L590",
+          "version": "repo-lines-v1:sha256:dd36dba73323b8b5a386e563ec047fe620778c493c6d3afef1aefe3b57ecd584:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMjMyNTUzODRhNWZjOWZkNzI1MzM3NTY3MTA5ZWU3MTExMDU1MGFjNWE0ODI3N2E3OTQ0OTkzNDQwNmI3NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjODAyNzY2N2Q4NWQyODcwM2Y0NzIzYTE0Y2U5MGIwYTY0ZjViZDcyZDg5N2UyNTI3ODBmZGMwMDhmMTgzZjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkNmU5MzE2M2Q2MzRjMjU5YTY0MzcyMWIwNzRkYjM0NTAzNTU0OTg0OTdmNTc2ZmFhNTY3Y2I0YzljMDI3ODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MmFhMTdlMzFiY2VmZmViZGQ5MDI0ZjI5Y2NkOGY1Y2M4Yjk1MjdhN2ZkZGQwNDU4ZDhhY2Y2ODBhYzQ4NmEifQ"
         }
       ]
     },
@@ -819,10 +815,24 @@
           "version": "repo-file-v1:sha256:1eb05dd5facaeda3619e28a1de9d2aee528ca8cc10745c74edf43f35723847ae"
         }
       ]
+    },
+    {
+      "id": "claim_7b9754605a28470a9a5a0e8b464e6ff3",
+      "statement": "The Enterprise images workflow now stages a fifth restore runtime for pre-credential audit, signing and complete authenticated Harbor pull; the earlier protected four-image run does not qualify that fifth image.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml#L1-L174",
+          "version": "repo-lines-v1:sha256:3113ef81f22ca903461cf4aeaba9a61a3d07fe704a63264c5274ee6a3b53356a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTc0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNTBjYzc2Zjg2MGU4MGI0ZDRiYWVlY2MxODVmNGMzMGI0NjU1NTZjNjc0MjYwZjE2MDRmYWE0Mzk4NjhhOWMyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4YjBmNTNiZTVkMDk4MTY2NGU0MTEwYzg5OGU3NzRkYjUxNDMxNDgzZDc5OWQyNjc0MDM3ZjJmYTkxMTEwYTMxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjMjJmOTVmYmU0NmU5ZmRkNmUxYmQ4NTQ4MDlkYTg0ODNjMjEwYTViNzE0ZjZhYTY0MDAzOWQ3MmM2NzIwNjliIn0"
+        },
+        {
+          "resource": "repo://builds/openclaw-enterprise-restore/README.md",
+          "version": "repo-file-v1:sha256:1258c2ecda053fb2c8c0cf2e34f53e304d6a9387fc98e23e0aff62011fdacded"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-27T22:04:19.774Z"
   }
 }

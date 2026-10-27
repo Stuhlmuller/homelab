@@ -42,6 +42,8 @@ sources:
     resource: repo://clusters/homelab/apps/multica/README.md
   - id: openwiki-source-846efb58b681f5ac619edfd7
     resource: repo://clusters/homelab/apps/multica/runtime/bootstrap.py
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
@@ -102,8 +104,12 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
     resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
+  - id: openwiki-source-0ec224257fa3d91c69b2b9f1
+    resource: repo://scripts/ci/openclaw-enterprise-capture.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
+  - id: openwiki-source-e9e65f5a163d93923cf250f7
+    resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
     resource: repo://scripts/ci/platform-maintenance-credentials-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -140,10 +146,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Secrets And Identity
@@ -356,6 +362,17 @@ workload proofs. Reconcile and stop require the chart's bootstrap service key
 as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
 is not registered in Argo CD, that file ownership is unproved, and the operator
 gate remains disabled; these permissions are source intent, not live access.
+
+The T051 recovery path is source-only. Namespace-local readers can emit complete
+bootstrap and tenant claim archives after exact Pod/PVC identity checks; they
+reject partial `subPath` and `subPathExpr` mounts and never send recovery bytes
+to logs. The assembler checks selected Secret identities, including the stock
+Gateway CA, but leaves `continuousFenceVerified:false` until a coordinator
+proves the writer stayed stopped. The packager rejects that marker, requires a
+projected age recipient and local scratch, and writes only encrypted output to
+the backup mount. No reader Job, fence coordinator, recipient projection, or
+independent restore is declared yet; this source does not make a recoverable
+Enterprise installation.
 
 ## Identity Notes
 

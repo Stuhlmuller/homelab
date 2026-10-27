@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-db51338c65d164109e183154
+    resource: repo://builds/openclaw-enterprise-restore/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -44,8 +46,6 @@ sources:
     resource: repo://clusters/homelab/apps/kiali/values.yaml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
-  - id: openwiki-source-99b01b3b79f53a385f98fdf8
-    resource: repo://clusters/homelab/apps/litellm/README.md
   - id: openwiki-source-bd06d6b0499111fbfe3b1e84
     resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-bb71538b4bc75dd401bfc1ec
@@ -186,6 +186,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-0ec224257fa3d91c69b2b9f1
+    resource: repo://scripts/ci/openclaw-enterprise-capture.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-fc079e0e542f990a412aa90f
@@ -218,10 +220,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Workload Inventory
@@ -488,9 +490,15 @@ declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, eight retained `OnChange` secret projections,
 a system ingress deny, retained PostgreSQL CA, private server certificate,
 and a dormant PostgreSQL 18.6 StatefulSet with a 10Gi local claim template.
-Its source-only backup candidate requires exactly one stopped-writer marker
-object with a nonempty claim UID. No scheduled backup, live UID proof or writer
-fence exists yet.
+Its source-only backup candidate requires exactly one marker with
+`writerStopped: true`, `continuousFenceVerified: true` and a nonempty claim
+UID. Namespace-local reader and capture scripts can assemble identity-bound
+claim and Secret archives but deliberately leave the continuous fence false.
+The packager requires local scratch and an age recipient before writing
+ciphertext to a separate backup mount. A fifth restore runtime is staged for
+protected build, scan, signing and authenticated pull. No reader Job,
+coordinator, recipient projection, scheduled backup, fifth-image receipt or
+independent restore exists yet.
 It declares no running PostgreSQL, local volumes, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,

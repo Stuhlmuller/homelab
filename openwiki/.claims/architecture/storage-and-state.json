@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:938da516b6156110615d1c1bee5af4ee905faef1a2fad86dbef4b923697831d0",
+  "pageVersion": "sha256:e1552737a32bbb154b38c51afaaa539398e3e677c8aa568b72f7e1c8ca9b8d40",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
+          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -124,7 +124,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:6ab7376353fad6debdb7c743e5f8206bcd4bc3abeb33b3f7d319418baef76940"
+          "version": "repo-file-v1:sha256:94a04d00ee338810020478fa307602aaf9193fbdee17c63c914f0f99cafcb4ac"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
@@ -192,7 +192,7 @@
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:1d9bb1d16ef4524b0d3a3d579e01cf5b539998284504dace54db92cf44ccb65e"
         }
       ]
     },
@@ -244,19 +244,19 @@
     },
     {
       "id": "claim_17f851a39fcf458fa74b29afc798661f",
-      "statement": "The source-only Enterprise backup script requires exactly one recovery marker with writerStopped true and a nonempty claimUid; its offline fixture rejects missing, false, malformed, or concatenated markers, while live claim-UID proof, sustained writer fencing, scheduled encrypted off-node backup, and restore acceptance remain pending.",
+      "statement": "The source-only Enterprise backup packager requires exactly one recovery marker with writerStopped and continuousFenceVerified true and a nonempty claimUid; offline tests reject absent, false, malformed, or concatenated markers. This marker alone does not prove a live claim UID or continuous writer exclusion.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:12d468da123124f2d1bfcf69e3daa6deef7c279240c0fc4c097b209b5a2cfd8d"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L50-L66",
+          "version": "repo-lines-v1:sha256:e675d227f3e687f18869d56d094d01cffcebacdc65290294f5d9a1d5ae626609:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjOTg3YWZkNzAyZThmNDcxODU0Yjk1MmNkOThlZTM4MmQ4Y2E0OWRkYzA4ZDVlZjI0MTQ2ZjNiOTE4ODk0ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxYTU1YWRiNTFhZjFkNzRmOTRlMGM4ZjIyOTJmNmJlMGQ2YTQ3YjNiZjM3YTVkODRiMWYwNzA2MjI2YjA2YzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxMWZiNGRkODJkZWM0ZTAyMmM2OWI4OTk5MzFlMGRjZWZjMjJhNzJmZTZjMDkyY2NhMDZlNWE5MDkxMGExNjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5NzQ0NTBkZDVlMTRkMGZmMGEwYTNiMDI4M2Y3MmNmZTEyMDBjM2RiNDE4Mzc0MzQ0NTZlZjQyNWYwMDY4MWMifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
-          "version": "repo-file-v1:sha256:629395257abca59c372e435d7bac3fd122a14efcecb1a7b92a17c98107809800"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L20-L24",
+          "version": "repo-lines-v1:sha256:e30449b9f2bcbb435bebeb8ae7498150eb1aedf706dbdaeebec8f99defc5ca07:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzU1ZTUyZjc3ZDRiOGVhNWExZDAwNjhlMzg5ZTQzNzA4ZjYxYWQyZGIzYjc3YWJlZGVkZWY1ZjFiYzAxY2YzNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGQ3M2EzOTdhM2U1NDE2YTM0MWRmNmExNGU0NmVkZDU0ZDhkYWQ3NjQ3MTU1MmM4ZWY4NjBlMTQzOTljOGVhNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjc3OWRhNjRjMzc3Nzk3ODk5YTFjYzdkYzE1MGI0YTRlNzkzYTI3ZmMzMGZjYzRiZTVjMmFjM2UzODk2NmFiMyJ9"
         },
         {
-          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:1eb05dd5facaeda3619e28a1de9d2aee528ca8cc10745c74edf43f35723847ae"
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py#L367-L386",
+          "version": "repo-lines-v1:sha256:a030f725fd4631ef7c2959df0f30f2510e10f92b3d1c633db2f3a1f1baaa69b4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmMmQ5ZmI2OTUzZmEwOTY2YTY2MmY1ZjY2ZDBmNjEyYzVlZDNmODZlNTZhYTAxNDllMTE5NmVkMzE0OTgzYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMTMxNDk4ZjM2MDRiMTI5NTUyMzZkNzk5YTZkMmQ5NWNlOWEyZDJhMDQ4ZjcyZGUwMDJjNjkyZTVhZjI4ZjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmNGI1ODE5NjcwM2YyZmYzYmZmNjc5MmU1NWIyNjVlM2MxMWViYzE0NzI5ZGNkMzlmM2MyZjMxNTY2NTFlNWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVmOGY3NzU1Y2EyZGRmYTZhOTBmYmRmNGJhZDRhMWI2OGNjZjZmMjE4N2QxNDc1YWY0MWIwZDk4NDVlNDU0YWYifQ"
         }
       ]
     },
@@ -309,10 +309,50 @@
           "version": "repo-lines-v1:sha256:be84b23282a5fac98b1dda1dcb591aa935fc459befd8835bbb1b95cfa9442b58:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MjBjMzM3MWY0Zjk1YmRhZmUwMDllN2U2Y2UyYWRhMzIwN2U2M2U2ZTFhZTJmNjc5MjI2N2U2MTdkNzg2NDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0N2IzNGNhY2E0NTk3ZDU4MTgyMDNmNWQ0ZDA5YmUyMTBjYzgzZTYxMjQ2MGNkNDNjOTk5MGI4YWQ3MWFhNWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkODc2ODQwYWFjMDc0ZTUyMWE5MGU0OTljNTY3MTM0YTMxNjkxYTIzN2IxOWI4OGU5MzhiZDcxMzNhYmZiYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_ffc8f50f40224b0f96879b1b0de1a444",
+      "statement": "The source-only Enterprise reader emits namespace-local complete claim archives bound to exact source, reader Pod and PVC UIDs; the assembler verifies both manifests and before/after observations but deliberately leaves continuousFenceVerified false pending a live fence coordinator.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-capture.py#L196-L229",
+          "version": "repo-lines-v1:sha256:a517bac5ffdf0b6c16cfc71e82ed18075a30673ace1b7c509d638ca8accb848d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzYjA1MTNlNWZmNjZmZjRhYzM2ZjkzNmJlNjFhMzcwMzU5MTk0ZTcyNDJmZjg5OGVhYTY5NGY2ZWU3OTliMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkN2ZhNWI1MDVlYTNlNWFiMTc0YjU4MDg2M2FkODlmYWNkYzIyMTM4NGY2NTBjZmZlNmJmMTFiOWM5MDI5ZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwNGM5N2EwMzRhN2Q5NGQ5MzEzYWZhMWYyMTlhOGJkMDAzMjlmYjYxMjk3YjI5OWNmZjI4ZDg3MDBjYTBmMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNGVjYmQ1ZDY5ODQ3YWRhMDFhZDM4OTU0N2QzN2I1OGVkMjJlNmEwNTA0OWNhYmNiZGJmODFkMjI2YzcxYTQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-capture.py#L506-L590",
+          "version": "repo-lines-v1:sha256:c6ae87287cc03845f6cdbc1c5ce2c09193c5259505622f0949f012aebb8361b4:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiOGNkNWFjMGEzNjgyYzNiODczYTUzYjI3NWIzYWMyMGUzYjRmNmY2N2U3M2E3MjE0Y2ViOGI3YzU0MDUxYWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjODAyNzY2N2Q4NWQyODcwM2Y0NzIzYTE0Y2U5MGIwYTY0ZjViZDcyZDg5N2UyNTI3ODBmZGMwMDhmMTgzZjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0M2VlYWYxOTNmZmE5OWYxMzg0ZTZjYmMxZDIzZmQ1ZGIwMGE2MTMzNGFmMmRmODlhZTliZjcxZjZiOTU5YTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE4MmFhMTdlMzFiY2VmZmViZGQ5MDI0ZjI5Y2NkOGY1Y2M4Yjk1MjdhN2ZkZGQwNDU4ZDhhY2Y2ODBhYzQ4NmEifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-archive.py#L269-L297",
+          "version": "repo-lines-v1:sha256:fd6c293ba834a507ae3fe72b6a8924ca9f5ce529364c462904ee8f60e416034f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwZmFhNDJhNDdlYjIwNmY0YzQ3MDkzNzkyZWNhYWQzZTFlZjVlZDRhM2JhMWY5MTEzZGQyYTcyOTBlNDg4NjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNmFlYTMwM2VkZWQwMWRiZDRmYTdkN2JhNjUxMjlkNTA1ODczN2E3ZDliOTI0MDlhZjU5NzU3NWM4ZTdjNDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1OTBlYmY5Zjc0YWVlNzFjOTgwN2RlNDM3MjM5OTRlY2VjNGU5NWFiN2NiMDhhOGQwODFiMjQ0MWVmZDgyNWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyY2ZiNWFhMWM2ZGUwZDVjN2M4MzczNjk0ZjE5ZWY1MjIxNTkxMDIxOGMxZjY0YTZlM2M3ODNkYjRiMjAxNDYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-archive.py#L63-L143",
+          "version": "repo-lines-v1:sha256:cce7f045568c257bc24b8c2dc46038b8fe16af92912c95f56f0d21461a7bc3f2:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZjU5ODk0MmEwNDU2MDVlNzc5ZTgyOWQxYTllMWIzOWE5MWM5MGFiNzg3OWRiZTJmM2IzZDhlOTZiNTM5ZGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwNzE1N2E0NGUxNDM4M2U3NmZlMWE4M2EzZmNiNTA3YmI0NjcxYzU0NjIzNmFmY2U5NWE1Y2VhNzg0Y2E3MWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlMjI2ZjM4ODIzZTNhMzE3NDQzZDU1NGYwYjhiY2E0MTNjMGI5MTFmZTBlMmUxMmExMGVmNmNmZmJmYzRiNmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlNjc1YzhjOTI0ZTYxMjRlY2M0NWE3YTYwOGIzMTMwM2E4MTVlNTliM2I1MTZhYjAxODgwMzY2Njk1NjI3M2MifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_52fd8bd5581c4488993b3c87b81c0835",
+      "statement": "The dormant Enterprise packager requires mounted local scratch, an age recipient projection and a separate backup mount, and publishes ciphertext only after source-material checks; no live off-node publication or independent restore receipt has been produced.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L66-L105",
+          "version": "repo-lines-v1:sha256:1b5778fa04a1c9573b016911e8a06a75f3d839f6cba94f62e40e187813715516:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxYTU1YWRiNTFhZjFkNzRmOTRlMGM4ZjIyOTJmNmJlMGQ2YTQ3YjNiZjM3YTVkODRiMWYwNzA2MjI2YjA2YzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1ZWIyMjk3ZTk1YWZlMWJjMTg2MTVmZDFkOWFiN2UwYjYyOWMyMTUzZGJlMGNmM2E0NDEyOWU2MmQ5YjI5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L186-L229",
+          "version": "repo-lines-v1:sha256:6d0b5e17b4bc9f5aa970ecbb4b621e263a4952730db9e6567e13b7f0a5396f72:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2YjA3NWMzOTBmMzY5M2RlZmE0OWRhMTFkNzI0MjcxM2ZjMjUzOWUyNDkzYWU1YWZiODZlMzlhMjQ3ODg4NTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyYTU3ZjYzZTQxOWY4MzBmZmJhY2FhNmE3NGMzM2IzODFhMGQ2ZTBiNTc2Y2U3YjUxM2U2OGM5OTA3NzQxMTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiMDA3MmNhNjdlYmIzNDlmMmE2M2M0ZmMwZWI2YWJjYTc1Mjc1ZGYyM2FlNTA4NjRhMzM4YjYyMmMyNzllYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMxNDA5ZjU3N2I5ZjZhZDcyNWE1MjJhNzVlYmI5NWZkNjNhZmM2MWI3ZWVlNWFiMzFmZTY3NTdhNjNlYTViZGUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L76-L112",
+          "version": "repo-lines-v1:sha256:aea9603e016c9dd5bcf50850f131897c1e692730b2aea83ad9ea0711e74d4029:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzZGE2OWU5MDBjNzBiYmE3M2E0NThlZTQxY2MzYmFlYTk5Nzc4NGJmNjU4NWQxNGM1OWQ2ZDA2MGEyOWZjYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3ZTE1NjYyMjAwNGMyNjk4ZmNhMzJiZmU3NjZmM2E3NTc0MjFmYzQ2ZjYzODlhYmNiMjgxOTE5YTQ3OTliYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlZThlZjdmZTIwMTk3NmNkMTRkZTZhNzBmNGRmMmQwMmE5ZDdlNTY0MjkyNzI1MWE5NGYxM2MyNDU0YWQzZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5ODE2M2YwZDg0MTA0Mzc4NmFjZjk1MzUxN2JjMDVhZmI2ZDlmYjQ5YmNkZDI5NTJlMzQ3ODMwOWI1YjJmZWYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-27T22:04:19.774Z"
   }
 }
