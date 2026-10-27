@@ -3,6 +3,8 @@ kind: Kustomization
 namespace: automation
 resources:
   - acceptance-ledger-pvc.yaml
+  - acceptance-ledger-init-networkpolicy.yaml
+  - acceptance-ledger-init-job.yaml
   - acceptance-observer-cronjob.yaml
   - acceptance-pr-proof-cronjob.yaml
   - acceptance-schedule-assemble-networkpolicy.yaml

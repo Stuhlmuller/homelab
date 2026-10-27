@@ -604,6 +604,8 @@ test('private acceptance data binds only to initialized acer-local storage', () 
     'renovate-acceptance-ledger-platform.yaml'), 'utf8');
   const platformKustomization = fs.readFileSync(path.join(platform, 'kustomization.yaml'), 'utf8');
   const initializer = fs.readFileSync(path.join(root, 'acceptance-ledger-init-job.yaml'), 'utf8');
+  const initNetworkPolicy = fs.readFileSync(path.join(root,
+    'acceptance-ledger-init-networkpolicy.yaml'), 'utf8');
   const runner = fs.readFileSync(path.join(root, 'cronjob.yaml'), 'utf8');
   const kustomization = fs.readFileSync(path.join(root, 'kustomization.yaml'), 'utf8');
   assert.match(storage, /storageClassName: renovate-acceptance-ledger-local/);
@@ -617,10 +619,21 @@ test('private acceptance data binds only to initialized acer-local storage', () 
   assert.doesNotMatch(storage, /nfs-default/);
   assert.match(kustomization, /- acceptance-ledger-pvc.yaml/);
   assert.match(platformKustomization, /- renovate-acceptance-ledger-platform.yaml/);
-  assert.match(initializer, /^  suspend: true$/m);
+  assert.match(initializer, /^  suspend: false$/m);
+  assert.match(initializer, /automountServiceAccountToken: false/);
+  assert.match(initializer, /kubernetes.io\/hostname: acer/);
+  assert.match(initializer, /claimName: renovate-acceptance-ledger/);
+  assert.doesNotMatch(initializer, /secretName:|claimName: renovate-cache/);
+  assert.match(initializer, /entries=\$\(find \/ledger -mindepth 1 -maxdepth 1 -print -quit\)\n\s+test -z "\$entries"/);
   assert.match(initializer, /chown 12021:12021 \/ledger/);
   assert.match(initializer, /chmod 0700 \/ledger/);
-  assert.doesNotMatch(kustomization, /- acceptance-ledger-init-job.yaml/);
+  assert.match(kustomization, /- acceptance-ledger-init-networkpolicy.yaml/);
+  assert.match(kustomization, /- acceptance-ledger-init-job.yaml/);
+  assert.match(initNetworkPolicy, /argocd.argoproj.io\/sync-wave: "-1"/);
+  assert.match(initNetworkPolicy, /app.kubernetes.io\/component: acceptance-ledger-init/);
+  assert.match(initNetworkPolicy, /policyTypes: \[Ingress, Egress\]/);
+  assert.match(initNetworkPolicy, /ingress: \[\]/);
+  assert.match(initNetworkPolicy, /egress: \[\]/);
   for (const filename of ['acceptance-inventory-job.yaml', 'acceptance-observer-cronjob.yaml',
     'acceptance-pr-proof-job.yaml', 'acceptance-pr-proof-cronjob.yaml']) {
     const manifest = fs.readFileSync(path.join(root, filename), 'utf8');
@@ -637,6 +650,25 @@ test('private acceptance data binds only to initialized acer-local storage', () 
         assert.doesNotMatch(kustomization, /- acceptance-inventory-job.yaml/);
       }
     }
+  }
+});
+
+test('ledger initializer fails closed when find cannot read the directory', () => {
+  const initializer = fs.readFileSync(path.resolve(__dirname,
+    '../../clusters/homelab/apps/renovate/acceptance-ledger-init-job.yaml'), 'utf8');
+  const guard = initializer.match(/^\s+(entries=\$\(find \/ledger[^\n]+\)\n\s+test -z "\$entries")$/m)?.[1];
+  assert.ok(guard);
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'renovate-ledger-find-'));
+  try {
+    fs.writeFileSync(path.join(directory, 'find'), '#!/bin/sh\nexit 13\n', { mode: 0o755 });
+    const result = spawnSync('/bin/sh', ['-ec', guard], {
+      env: { ...process.env, PATH: `${directory}:${process.env.PATH}` },
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 13, result.stderr);
+    assert.equal(result.stdout, '');
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
   }
 });
 
