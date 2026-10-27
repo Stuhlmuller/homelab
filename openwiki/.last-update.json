@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-27T23:16:46.282Z",
+  "updatedAt": "2026-10-27T23:20:54.660Z",
   "command": "update",
-  "gitHead": "5963ab7c7cf5d2f50d35850591474183f8045d9e",
-  "visibleSourceFingerprint": "sha256:e0121cba02e4a92e7510e9b064b98ab9f5b089af4f6ce7e8b02c1c1b64068134",
+  "gitHead": "780e05ee1a806bb17d1cf2ce834503798e2e321f",
+  "visibleSourceFingerprint": "sha256:60064962e434855b6e45fa830b4cc281c2ac40732b6ffe5174fea1c2c55d205d",
   "model": "host-agent/codex",
   "status": "complete",
   "language": "en"

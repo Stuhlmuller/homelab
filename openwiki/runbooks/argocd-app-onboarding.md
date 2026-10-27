@@ -43,7 +43,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:04:19.774Z
+    at: 2026-10-27T23:18:56.056Z
 ---
 
 # Argo CD App Onboarding
