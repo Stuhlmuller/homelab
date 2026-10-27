@@ -224,14 +224,23 @@ class PostgresFoundation(unittest.TestCase):
                              ).stdout.strip(), "drizzle:occ_migrator,occ:occ_migrator")
 
         backups = self.root / "backups"
+        scratch = self.root / "backup-scratch"
+        scratch.mkdir()
+        identity = self.root / "backup-age.key"
+        run("age-keygen", "-o", str(identity))
+        identity.chmod(0o600)
+        recipient = self.root / "backup-age.pub"
+        recipient.write_text(run("age-keygen", "-y", str(identity)).stdout)
         script = (APP / "backup.sh").read_text()
         script = script.replace("/recovery-material", str(self.material))
         script = script.replace("/backup/openclaw-enterprise", str(backups))
+        script = script.replace("/scratch/openclaw-enterprise",
+                                str(scratch / "openclaw-enterprise"))
+        script = script.replace("/run/backup-recipient/age.pub", str(recipient))
         script = script.replace("/run/secrets/occ-postgres-backup/password",
                                 str(self.material / "postgres-backup/password"))
         script = script.replace("/run/postgres-ca/tls.crt", str(self.cert))
         script = script.replace("/scripts/database-bootstrap.sql", str(self.bootstrap))
-        script = script.replace("/tmp/occ-pgpass", str(self.root / "backup.pgpass"))
         script = script.replace("occ-postgres.openclaw-system.svc.cluster.local:5432",
                                 f"localhost:{self.port}")
         script = script.replace("host=occ-postgres.openclaw-system.svc.cluster.local port=5432",
@@ -249,26 +258,42 @@ class PostgresFoundation(unittest.TestCase):
                       "PATH": f"{fake_bin}{os.pathsep}{POSTGRES_ENV['PATH']}"}
         gateway = self.material / "gateway/occ"
         gateway.rename(self.root / "missing-gateway")
-        incomplete = run("sh", str(candidate), check=False, env=backup_env)
+        incomplete = run("bash", str(candidate), check=False, env=backup_env)
         self.assertNotEqual(incomplete.returncode, 0)
         self.assertFalse(backups.exists())
         (self.root / "missing-gateway").rename(gateway)
-        backup = run("sh", str(candidate), env=backup_env)
-        self.assertIn("verified OpenClaw Enterprise recovery set", backup.stdout)
-        complete = next(backups.iterdir())
+        backup = run("bash", str(candidate), env=backup_env)
+        self.assertIn("encrypted OpenClaw Enterprise recovery set", backup.stdout)
+        encrypted = next(backups.iterdir())
+        self.assertEqual(encrypted.name, "20261019T000000Z.tar.age")
+        self.assertTrue(encrypted.is_file())
+        self.assertNotIn(b"fixture-secret", encrypted.read_bytes())
+        clear_backups = self.root / "decrypted-backups"
+        complete = clear_backups / "20261019T000000Z"
+        complete.mkdir(parents=True)
+        tarball = self.root / "decrypted-backup.tar"
+        run("age", "--decrypt", "--identity", str(identity), "--output",
+            str(tarball), str(encrypted))
+        run("tar", "-xf", str(tarball), "-C", str(complete))
         self.assertTrue((complete / "database.dump").is_file())
         self.assertTrue((complete / "database-bootstrap.sql").is_file())
         checksum = (complete / "SHA256SUMS").read_bytes()
-        duplicate = run("sh", str(candidate), check=False, env=backup_env)
+        duplicate = run("bash", str(candidate), check=False, env=backup_env)
         self.assertNotEqual(duplicate.returncode, 0)
         self.assertIn("backup destination already exists", duplicate.stderr)
-        self.assertEqual(list(backups.iterdir()), [complete])
+        self.assertEqual(list(backups.iterdir()), [encrypted])
         self.assertEqual((complete / "SHA256SUMS").read_bytes(), checksum)
+        receipt = self.root / "private-publication-receipt"
+        receipt.mkdir()
+        receipt_archive = receipt / "archive"
+        receipt_sha = receipt / "sha256"
+        receipt_archive.write_text(encrypted.name + "\n")
+        receipt_sha.write_text(hashlib.sha256(encrypted.read_bytes()).hexdigest() + "\n")
 
         job = json.loads(run("yq", "-o=json", "-I=0", str(APP / "restore-drill.yaml")).stdout)
         self.assertEqual(job["metadata"]["name"], "occ-postgres-restore-drill")
         self.assertEqual(job["spec"]["template"]["spec"]["containers"][0]
-                         ["resources"]["requests"]["ephemeral-storage"], "24Gi")
+                         ["resources"]["requests"]["ephemeral-storage"], "96Gi")
         self.assertTrue(job["spec"]["template"]["spec"]["volumes"][0]
                         ["persistentVolumeClaim"]["readOnly"])
         self.assertTrue(job["spec"]["template"]["spec"]["containers"][0]
@@ -277,15 +302,20 @@ class PostgresFoundation(unittest.TestCase):
         script = script.replace("/backup/openclaw-enterprise", str(backups))
         script = script.replace("/scratch/restore", str(self.root / "drill"))
         script = script.replace("/run/secrets", str(self.restored_secrets))
+        script = script.replace("/run/restore-identity/identity", str(identity))
+        script = script.replace("/run/restore-receipt/archive", str(receipt_archive))
+        script = script.replace("/run/restore-receipt/sha256", str(receipt_sha))
+        script = script.replace("/usr/local/libexec/occ-safe-extract.py",
+                                str(ROOT / "builds/openclaw-enterprise-restore/safe-extract.py"))
         self.restored_secrets.rename(self.root / "source-secrets")
-        restored = run("sh", "-ec", script, check=False)
+        restored = run("bash", "-c", script, check=False)
         if restored.returncode:
             details = (self.root / "drill/details.log").read_text()
             self.fail(f"isolated restore failed: {details[-1800:]}")
         self.assertEqual(restored.stdout, "")
         self.assertEqual(restored.stderr, "OpenClaw Enterprise isolated restore passed\n")
-        self.assertFalse((self.root / "drill/backup").exists(),
-                         "the read-only recovery archive must stay off scratch")
+        self.assertTrue((self.root / "drill/backup/material/gateway-ca/tls.key").is_file())
+        self.assertTrue(encrypted.is_file(), "restore must leave the off-node ciphertext intact")
         self.assertFalse((self.root / "drill/pgdata/postmaster.pid").exists())
         socket_dir = self.root / "drill/socket"
         run("pg_ctl", "-D", str(self.root / "drill/pgdata"), "-l",
@@ -305,17 +335,27 @@ class PostgresFoundation(unittest.TestCase):
         try:
             for index, invalid in enumerate((
                     {"claimUid": "fixture", "writerStopped": False},
-                    {"claimUid": "", "writerStopped": True}), start=1):
+                    {"claimUid": "", "writerStopped": True},
+                    {"claimUid": "fixture", "writerStopped": True,
+                     "continuousFenceVerified": False}), start=1):
                 marker.write_text(json.dumps(invalid))
                 checksums.write_text(run("sh", "-ec",
                     "find database.dump database-bootstrap.sql material -type f -print0 "
                     "| sort -z | xargs -0 sha256sum", cwd=complete).stdout)
                 run("sha256sum", "--check", "SHA256SUMS", cwd=complete)
+                variant_tar = self.root / f"invalid-{index}.tar"
+                variant = backups / f"20261019T00000{index}Z.tar.age"
+                run("tar", "-C", str(complete), "-cf", str(variant_tar),
+                    "database.dump", "database-bootstrap.sql", "material", "SHA256SUMS")
+                run("age", "--recipient", recipient.read_text().strip(),
+                    "--output", str(variant), str(variant_tar))
+                receipt_archive.write_text(variant.name + "\n")
+                receipt_sha.write_text(hashlib.sha256(variant.read_bytes()).hexdigest() + "\n")
                 invalid_script = script.replace(str(self.root / "drill"),
                                                 str(self.root / f"invalid-drill-{index}"))
                 invalid_script = invalid_script.replace(str(self.restored_secrets),
                                                         str(self.root / f"invalid-secrets-{index}"))
-                result = run("sh", "-ec", invalid_script, check=False)
+                result = run("bash", "-c", invalid_script, check=False)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, "")
                 self.assertEqual(result.stderr,
@@ -323,11 +363,12 @@ class PostgresFoundation(unittest.TestCase):
         finally:
             marker.write_bytes(original_marker)
             checksums.write_bytes(original_checksums)
+            receipt_archive.write_text(encrypted.name + "\n")
+            receipt_sha.write_text(hashlib.sha256(encrypted.read_bytes()).hexdigest() + "\n")
 
         # An archive changed after the first checksum must fail the final hash
         # check, even when database restore itself succeeds.
-        metadata = complete / "material/tenant/metadata.json"
-        original_metadata = metadata.read_bytes()
+        metadata = self.root / "changed-drill/backup/material/tenant/metadata.json"
         wrapper_dir = self.root / "wrapper"
         wrapper_dir.mkdir()
         real_pg_restore = Path(POSTGRES_ENV["PATH"].split(os.pathsep)[0]) / "pg_restore"
@@ -343,18 +384,16 @@ class PostgresFoundation(unittest.TestCase):
         changed = changed.replace(str(self.restored_secrets), str(self.root / "changed-secrets"))
         changed_env = POSTGRES_ENV.copy()
         changed_env["PATH"] = f"{wrapper_dir}{os.pathsep}{changed_env['PATH']}"
-        try:
-            result = run("sh", "-ec", changed, check=False, env=changed_env)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertEqual(result.stdout, "")
-            self.assertEqual(result.stderr,
-                             "OpenClaw Enterprise isolated restore failed at archive-stability\n")
-        finally:
-            metadata.write_bytes(original_metadata)
+        result = run("bash", "-c", changed, check=False, env=changed_env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr,
+                         "OpenClaw Enterprise isolated restore failed at archive-stability\n")
 
-        (complete / "material/auth/secret").write_text("tampered")
+        with encrypted.open("ab") as output:
+            output.write(b"tampered")
         corrupted = script.replace(str(self.root / "drill"), str(self.root / "corrupt-drill"))
-        result = run("sh", "-ec", corrupted, check=False)
+        result = run("bash", "-c", corrupted, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "OpenClaw Enterprise isolated restore failed at integrity\n")
