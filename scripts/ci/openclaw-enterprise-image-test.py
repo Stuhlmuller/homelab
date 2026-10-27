@@ -34,9 +34,10 @@ class ImageBuildTest(unittest.TestCase):
         contract["cliBinarySha256"] = hashlib.sha256(cli_bytes).hexdigest()
         self.archive = self.root / "source.tar.gz"
         with tarfile.open(self.archive, "w:gz") as archive:
+            runtime_base = f"ARG NODE_RUNTIME_BASE_IMAGE={contract['nodeRuntimeBaseImage']}\n".encode()
             files = {
-                "Dockerfile": b"FROM scratch\n",
-                "deploy/runtime/Dockerfile": b"FROM scratch\n",
+                "Dockerfile": runtime_base + b"FROM scratch\n",
+                "deploy/runtime/Dockerfile": runtime_base + b"FROM scratch\n",
                 "package.json": b'{"version":"0.1.0"}\n',
             }
             for name, data in files.items():
@@ -85,6 +86,9 @@ class ImageBuildTest(unittest.TestCase):
         builds = [call for call in calls if call.startswith("buildx build ")]
         self.assertEqual(len(builds), 3)
         self.assertTrue(all(f"OCC_BUILD_REVISION={REVISION}" in call for call in builds[:2]))
+        contract = json.loads((self.root / "builds/openclaw-enterprise/source.json").read_text())
+        self.assertTrue(all(f"NODE_RUNTIME_BASE_IMAGE={contract['nodeRuntimeBaseImage']}" in call
+                            for call in builds[:2]))
         self.assertIn("--target runtime", builds[0])
         self.assertIn("--file deploy/runtime/Dockerfile", builds[1])
         self.assertIn("occ.Dockerfile", builds[2])
@@ -106,6 +110,16 @@ class ImageBuildTest(unittest.TestCase):
         self.archive.write_bytes(b"changed")
         result = self.run_build()
         self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.calls.exists())
+
+    def test_mismatched_upstream_runtime_base_fails_before_docker(self):
+        contract = self.root / "builds/openclaw-enterprise/source.json"
+        value = json.loads(contract.read_text())
+        value["nodeRuntimeBaseImage"] = value["nodeRuntimeBaseImage"].split("@", 1)[0] + "@sha256:" + "0" * 64
+        contract.write_text(json.dumps(value))
+        result = self.run_build()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Pinned upstream runtime base differs", result.stderr)
         self.assertFalse(self.calls.exists())
 
     def test_mismatched_cli_revision_fails_before_download(self):

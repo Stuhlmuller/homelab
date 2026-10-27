@@ -8,6 +8,7 @@ source_contract=builds/openclaw-enterprise/source.json
 revision="$(jq -er '.revision | select(test("^[0-9a-f]{40}$"))' "$source_contract")"
 expected_hash="$(jq -er '.archiveSha256 | select(test("^[0-9a-f]{64}$"))' "$source_contract")"
 node_base="$(jq -er '.nodeBaseImage | select(test("^docker.io/library/node:24-bookworm@sha256:[0-9a-f]{64}$"))' "$source_contract")"
+node_runtime_base="$(jq -er '.nodeRuntimeBaseImage | select(test("^docker.io/library/node:24-bookworm-slim@sha256:[0-9a-f]{64}$"))' "$source_contract")"
 cli_toolchain="$(jq -er '.cliGoToolchain | select(. == "go1.27.1")' "$source_contract")"
 cli_hash="$(jq -er '.cliBinarySha256 | select(test("^[0-9a-f]{64}$"))' "$source_contract")"
 [[ "$(jq -er '.source.revision' scripts/config/openclaw-enterprise.json)" == "$revision" ]]
@@ -27,14 +28,22 @@ mkdir "$context/source"
 tar -xzf "$context/source.tar.gz" -C "$context/source" --strip-components=1
 rm "$context/source.tar.gz"
 cd "$context/source"
+for dockerfile in Dockerfile deploy/runtime/Dockerfile; do
+  grep -Fxq "ARG NODE_RUNTIME_BASE_IMAGE=$node_runtime_base" "$dockerfile" || {
+    echo "Pinned upstream runtime base differs from source contract: $dockerfile" >&2
+    exit 1
+  }
+done
 
 docker buildx build --load --platform linux/amd64 --target runtime \
   --build-arg "NODE_BASE_IMAGE=$node_base" \
+  --build-arg "NODE_RUNTIME_BASE_IMAGE=$node_runtime_base" \
   --build-arg "OCC_BUILD_REVISION=$revision" \
   --label "org.opencontainers.image.revision=$revision" \
   --tag homelab-oce-controller:build .
 docker buildx build --load --platform linux/amd64 \
   --build-arg "NODE_BASE_IMAGE=$node_base" \
+  --build-arg "NODE_RUNTIME_BASE_IMAGE=$node_runtime_base" \
   --build-arg "OCC_BUILD_REVISION=$revision" \
   --file deploy/runtime/Dockerfile \
   --tag homelab-oce-runtime:build .

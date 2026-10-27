@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:430f86fbe68ddd0338e09aba102e45fbc75ed4747d5f91707dd3014fb54a59ce",
+  "pageVersion": "sha256:b84413b8138908408e050eaa6eed5cfff5159131f8c57a70e148fef0d5e5346c",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -322,7 +322,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -352,14 +352,22 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         }
       ]
     },
     {
       "id": "claim_6ea097967f8f4bb9a330a1be2cbf70a1",
-      "statement": "LiteLLM's reviewed consumer pins the Linux amd64 child of a repeated-descriptor OCI index rejected by Harbor 2.15.2. Protected scoped run 39210811031 published that exact child before the consumer changed; all four observed nodes were amd64 on October 19. The revised catalog passed historical protected all runs 40011909180 (214 images) and 40172274517 (215 images), with matching digests and authenticated pulls. The changed Enterprise operator source still lacks a current T004 receipt; arm64 needs separate review before node expansion.",
+      "statement": "LiteLLM pins the Linux amd64 child of a repeated-descriptor OCI index rejected by Harbor 2.15.2. Protected scoped run 39210811031 published that child before the consumer changed, and all four observed nodes were amd64 on October 19. Protected all runs 40011909180 and 40172274517 passed the historical 214- and 215-source catalogs. The current source-only 217-entry candidate adds pinned Enterprise Node build/slim runtime bases and a changed static CLI base but has no full mirror receipt or new signed CLI pin; arm64 needs separate review before node expansion.",
       "evidence": [
+        {
+          "resource": "repo://builds/openclaw-enterprise/occ.Dockerfile",
+          "version": "repo-file-v1:sha256:f7b3abb0e49d23b0b5c045d92c1e6daa8c9a2edac1bfd0844c8ac7b52f336a41"
+        },
+        {
+          "resource": "repo://builds/openclaw-enterprise/source.json",
+          "version": "repo-file-v1:sha256:6991e5b4d9b5f9e21e9097a891c4b88b5a9077d9cb8775b6fa064fe21eec8efe"
+        },
         {
           "resource": "repo://clusters/homelab/apps/litellm/README.md",
           "version": "repo-file-v1:sha256:d17f4dd191f38107aa4cfc513de05df88fba7aea063f9212d5fa743f515ccc9b"
@@ -369,12 +377,12 @@
           "version": "repo-file-v1:sha256:6c2a4c6cbcf3e553821f915ae8890faf341f25c45b3aaa207f6826b16e29600d"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L55",
+          "version": "repo-lines-v1:sha256:337c95750776be6ee16f3713c164fbf2ac9675384944c42cc9b6834cbdd35c9e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ODY4NDFjYWU1Y2JjOGQyNDc5YWE4YTQ5ZmUzMDE5MmRhYmM1MjIwOTRjMjAxZTJkYTE4NjVmY2E0ZThjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViOTk4MTZiM2YwNGU4YWVmODMyYmFjZjkyMThjYjM5M2Q0M2IzZjkyN2Y5ZTA3YjZhNDdlNTg3YTUyMzJkOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3YWNkZGIwZTRhYTA0ODAxZDI3ZGQyYmNhMDdkZGI2MTM4MGIxMWJhNDNlZTMyZmYxNDU1YzQzZjRkOTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlZTc3YmM0ZGJkMmQyZDM0NmMzMTc5OTBiYWY3ZTM3OGZhY2FmZGJmZDI2ODE0ZGZlNzZlZTgzMjdhYTUyMWQifQ"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -468,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -539,7 +547,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L326-L352",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L331-L357",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -638,7 +646,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -722,7 +730,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/research.md",
@@ -812,7 +820,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -827,6 +835,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T10:41:09.582Z"
   }
 }

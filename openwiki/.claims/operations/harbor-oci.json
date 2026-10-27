@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:172d9b0db1838f5c5472cadb8b02d5a8c1627fb9c0e581c91b257a4694989096",
+  "pageVersion": "sha256:d2ea555023fba2b2c9677f275f9afd519cb263d20ad854eb0259a2a4c92d668e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -142,7 +142,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -366,11 +366,11 @@
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
-          "version": "repo-file-v1:sha256:e89c7229d1ffb9b53cd601fcb9c7d12c9d0ef02f4a0ed0300f6ea7736fd56627"
+          "version": "repo-file-v1:sha256:ea9a9ddc3245a1be79c788169fe626607788d351c812eca7352e2c29fff54477"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -496,33 +496,37 @@
     },
     {
       "id": "claim_f2ba66acbd8f47958829bb4b5bb0a900",
-      "statement": "The full Harbor catalog stages the newer digest-pinned Dispatcharr and n8n sources while retaining their former digests for rollback. The consuming Renovate PRs remain held until protected publication and complete authenticated Harbor pulls verify the new destinations.",
+      "statement": "The full Harbor catalog stages newer digest-pinned Dispatcharr and n8n sources while retaining older digest-only pins for rollback. The latest and stable aliases move only after protected publication and complete authenticated pulls; each consuming revision requires separate source review and acceptance.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
+          "resource": "repo://docs/harbor-image-mirroring.md#L250-L275",
+          "version": "repo-lines-v1:sha256:db8fac300687103ce5b72fe5e7ed50a42ac2c3703de239a007363caee67c9b8d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3ODFlMmFjNGFiNzBlYzI0NzdjNDA2ZmE1MTc3MzI2ZGE1NDE4N2ViZGMwOTgxZGVmOGFkNzgwNzM3M2Y3YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0YTBjYzM1NWQyY2I1Nzk0MjdhYjI2MmMwNmRlY2M5NDliM2IyMDUxNzVmY2E2YTJiNGJiMjM2YjYzZWQ1NTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIxNTkxMzU0MjA3MGU5NzFiMTYyZGU3N2U5NTEwMGExNDQ5NzNkMTlkOTkxMDFmNTBjZTJlMWQ1ODFkZjBlNDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1MTgxMGJiNTE4YzRmNmFmYjA0Y2FkZWIxZThjZjhlMDdmZmZlZjI5ZDYyNTg5NDYxYWNlZTQzNTI5MWRhOTgifQ"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
     {
       "id": "claim_3131fdd2b83d414b86f72c057b3d1d13",
-      "statement": "The full Harbor catalog stages nine Harbor 2.15.4 component digests beside active 2.15.2 entries without changing running Pods; protected fixed Harbor-scope publication and authenticated pull acceptance precede the separate consumer upgrade, which must preserve singleton nginx rolling-update availability. The scoped receipt does not prove full-catalog coverage, so the revised LiteLLM catalog still needs a successful all-scope run.",
+      "statement": "The full Harbor catalog stages nine Harbor 2.15.4 component digests beside active 2.15.2 entries without changing running Pods. Fixed Harbor-scope publication and authenticated pulls gate the separate consumer upgrade, which must retain singleton nginx availability. That scoped proof is not full-catalog acceptance: protected 214- and 215-source all runs passed their dated catalogs, while the current 217-source candidate has no full receipt.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:62eb670c43c6451a95dc7b0a4e08f9950ea07b367dad4910d6b2a27a7d50f9ea"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L52",
+          "version": "repo-lines-v1:sha256:ce51e27531632b31e76103b122c498d43423532837ef46cd405b16a66f9181db:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ODY4NDFjYWU1Y2JjOGQyNDc5YWE4YTQ5ZmUzMDE5MmRhYmM1MjIwOTRjMjAxZTJkYTE4NjVmY2E0ZThjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNTQ2OTZlNTJiMWU4ZTE2MzA5Y2U5MTFhNTg2MWVjMWJmNTRlZGFkZmQ4NzlkM2VkZDc0NDQ1MzE2ZTI2MzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3YWNkZGIwZTRhYTA0ODAxZDI3ZGQyYmNhMDdkZGI2MTM4MGIxMWJhNDNlZTMyZmYxNDU1YzQzZjRkOTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyYTJlNGFlNTQwYWU3M2U2Mjg2MDI3YzczZTAzNDMyYTU5NDA0YTQwMzQ2ZGYwMWFmNDlmM2Y2MjljYTU4YzEifQ"
+        },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
           "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
-        },
-        {
-          "resource": "repo://scripts/config/harbor-runtime-images.json",
-          "version": "repo-file-v1:sha256:e69efee20a05e1b789cd7ee0d3915bf3e7686997e292d2de7b9051ad57b9a466"
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -706,7 +710,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -714,7 +718,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:33248418d45ca71395375b84fa4d42f9f2ae92ffed4c2c5591a73ab8a2bc58b9"
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -724,19 +728,19 @@
     },
     {
       "id": "claim_5d8e4ef4cd5d4a04b5ece1dedd461ec5",
-      "statement": "A protected stock OpenClaw Enterprise controller/runtime publication signed and fully pulled the earlier pair. Protected all run 40011909180 passed the 214-image platform catalog with matching digests and complete authenticated pulls. Source-built four-image publisher run 40056484158 built controller, runtime, CLI and exact-source operator, then passed four complete authenticated Harbor pulls and signature checks; the selected operator digest is pinned in the disabled declaration.",
+      "statement": "The signed stock Enterprise controller/runtime pair and later exact-source four-image publisher passed complete authenticated Harbor pulls and signature checks; the selected operator digest from run 40056484158 remains pinned in the disabled declaration. That run's CLI digest predates the changed Chainguard static base, so a new signed CLI publication and pin remain required.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
           "version": "repo-file-v1:sha256:d55163c42044caef70d3b141068c43126ec0e6865f13bdd615475cb3781fc461"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "resource": "repo://builds/openclaw-enterprise/occ.Dockerfile",
+          "version": "repo-file-v1:sha256:f7b3abb0e49d23b0b5c045d92c1e6daa8c9a2edac1bfd0844c8ac7b52f336a41"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L18",
+          "version": "repo-lines-v1:sha256:5fa9f0ddae2fa259e33b4be51fdfe4640e0584b5dd5d54e4525005ef79050c36:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmYyOTFmODlhMGY5M2MzMWI5ZTIyYTNhNTE3ZjY2ZDU3MGQ2MWQzYjJkMGYyOGJmMDlmNmQ1M2JiZGZlZjRjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkMDBlZDJlYWE4NzUwZTJhYzBiMjY3ZWJhNzE1YzI2ZDQ3M2RmM2QwZjMyMDU3M2VmYzVhNjJjZWVkYmY3ZSJ9"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -754,13 +758,13 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         }
       ]
     },
     {
       "id": "claim_89190b43dbc541a481683f14a327fc0b",
-      "statement": "The dormant Enterprise chart candidate references pinned Harbor controller/runtime digests and one EnvoyProxy mirrored-image override. The reviewed full catalog passed publication and authenticated pulls in protected run 40011909180, but local render comparison and publication do not prove any Enterprise Pod has pulled from Harbor.",
+      "statement": "The dormant Enterprise chart candidate references pinned Harbor controller/runtime digests and one EnvoyProxy mirrored-image override. Historical 214- and 215-source catalogs passed publication and authenticated pulls, but the current 217-source candidate has no full receipt; local render comparison does not prove that any Enterprise Pod pulled from Harbor.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
@@ -775,8 +779,12 @@
           "version": "repo-file-v1:sha256:b745c6866df832e1a7ba272f4ef8905612fe998babb83820920fa04aa4670ccb"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L52",
+          "version": "repo-lines-v1:sha256:ce51e27531632b31e76103b122c498d43423532837ef46cd405b16a66f9181db:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ODY4NDFjYWU1Y2JjOGQyNDc5YWE4YTQ5ZmUzMDE5MmRhYmM1MjIwOTRjMjAxZTJkYTE4NjVmY2E0ZThjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNTQ2OTZlNTJiMWU4ZTE2MzA5Y2U5MTFhNTg2MWVjMWJmNTRlZGFkZmQ4NzlkM2VkZDc0NDQ1MzE2ZTI2MzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3YWNkZGIwZTRhYTA0ODAxZDI3ZGQyYmNhMDdkZGI2MTM4MGIxMWJhNDNlZTMyZmYxNDU1YzQzZjRkOTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyYTJlNGFlNTQwYWU3M2U2Mjg2MDI3YzczZTAzNDMyYTU5NDA0YTQwMzQ2ZGYwMWFmNDlmM2Y2MjljYTU4YzEifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -846,7 +854,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         }
       ]
     },
@@ -946,25 +954,25 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         }
       ]
     },
     {
       "id": "claim_962f4c7ca79d46c4a1762005e4ac1968",
-      "statement": "Harbor-only application pulls remain a target rather than a live cluster-wide result. Protected all run 40011909180 passed the historical 214-image catalog; protected all run 40172274517 passed the expanded 215-source catalog with matching digests and complete authenticated pulls, and its six-file publication bundle matched then-current main at acceptance. T004 remains open for the changed Enterprise operator source; consuming-reference cutover and node-level mirror enforcement remain pending.",
+      "statement": "Harbor-only application pulls remain a target, not a live cluster-wide result. Protected all runs passed the historical 214- and 215-source catalogs with matching digests and complete authenticated pulls, and the latter six-file publication bundle matched then-current main. The new 217-source catalog remains unpublished; T004 also requires a freshly signed and pinned CLI digest, while consuming-reference cutover and node-level mirror enforcement remain pending.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L18",
-          "version": "repo-lines-v1:sha256:756699aec97328f16a9943a192aff1db35a3f2f1f0ac387481052bab43c0fcf1:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmYyOTFmODlhMGY5M2MzMWI5ZTIyYTNhNTE3ZjY2ZDU3MGQ2MWQzYjJkMGYyOGJmMDlmNmQ1M2JiZGZlZjRjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkMDBlZDJlYWE4NzUwZTJhYzBiMjY3ZWJhNzE1YzI2ZDQ3M2RmM2QwZjMyMDU3M2VmYzVhNjJjZWVkYmY3ZSJ9"
-        },
-        {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L45-L52",
-          "version": "repo-lines-v1:sha256:9f4a35059848084c9c2d2e6dd237c80d2c222b53a5fcbe23b301d33c7abbb0ea:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFkMTIwNzIwMzc0NjEyOTFiYTNkMmEwODEyZTgwM2VjNmZlMzQ5NTY4NDRlZDE1YTQ1YzQ4NTU5YTEzOGY3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDIyZTJlNjNlODNkMWNkMmIxZDE3MGZjYjhiMGJhODIzNmIyMjhjNjVjMzcyZjA0NDFhZGE1MjVlNmRmMTY0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODI5NzYxOGI4OGZhYTE2ODUxYjE4MjYzNjY5ZGU5MTk1ZThkNmE0MzQxNjNkMTBhM2E2NGZlMzNjZTJmOGY2MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODA4YzBkZmQ5ZGFhMmVkOGE5Nzk5ZjJhOWViY2VkNGJiZDI5Y2M1ZmNmYzA4NjU4NmVmZTVhMzdjNDI0OWZiOSJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L52",
+          "version": "repo-lines-v1:sha256:ce51e27531632b31e76103b122c498d43423532837ef46cd405b16a66f9181db:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ODY4NDFjYWU1Y2JjOGQyNDc5YWE4YTQ5ZmUzMDE5MmRhYmM1MjIwOTRjMjAxZTJkYTE4NjVmY2E0ZThjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNhNTQ2OTZlNTJiMWU4ZTE2MzA5Y2U5MTFhNTg2MWVjMWJmNTRlZGFkZmQ4NzlkM2VkZDc0NDQ1MzE2ZTI2MzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3YWNkZGIwZTRhYTA0ODAxZDI3ZGQyYmNhMDdkZGI2MTM4MGIxMWJhNDNlZTMyZmYxNDU1YzQzZjRkOTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyYTJlNGFlNTQwYWU3M2U2Mjg2MDI3YzczZTAzNDMyYTU5NDA0YTQwMzQ2ZGYwMWFmNDlmM2Y2MjljYTU4YzEifQ"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L1-L55",
           "version": "repo-lines-v1:sha256:ced9518a19db20dda009d361bdaac2dc5b83a0e799521fcbd4f23099d9654798:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MjNkMzg3MjZiYTk2MzExYmIyYTMzYmQwNTVhZWNjNmFiNTY0YzJkMDE5YTA2OGMxOGEzODEwNmE0ZTEzNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlOThjNDJiZmRiMDZjNjIyOTMyMGU4ZjFmMmY1YjVlYjI2MmMxNTVmOTVjYjJhMjQ4M2E2NDg2M2FiZDk5MjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5YjQxYmYwOTRiMzc3YzdkNzRkMjc0YzE1ZTYxYWYxMjhlZDVhNDVhMGUyMjE1YTA0MDFmNzQ2ZTVhNjdjYjcifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:bf00cc1a46b9e13a43c30e3152323b94043f2c7e6596c3774923e41c65fac57f"
         }
       ]
     },
@@ -981,10 +989,40 @@
           "version": "repo-lines-v1:sha256:76e7a005a1dff9350fe26c2b3d657c790fed69697061aa38257134a8b983fa19:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZDU2ZmM4ODYxZGZkNDI1ZGQyOGM1NTNkN2M3MjBiMWU0ODRmZGJmYWM5YjY0Yjk5MTFlN2RmOTdiYzFjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyMWQ4MjM3NTQ4ODdiMjFjMGM3ZWZhYjExY2Y1MWE3ZmU1ZmM3MGVhNGY1MGY5YjdiM2UyNTUyMGY2NmRiNjgifQ"
         }
       ]
+    },
+    {
+      "id": "claim_cb063472213041d7bd86472366ef4b71",
+      "statement": "The current source-only 217-entry Harbor catalog adds pinned Enterprise Node 24 build and slim runtime bases and selects the newer Chainguard static CLI base. Its offline checker includes the pinned Enterprise source and local Dockerfile bases; the build validates upstream controller/runtime defaults after archive hash verification. No full mirror receipt covers this current bundle.",
+      "evidence": [
+        {
+          "resource": "repo://builds/openclaw-enterprise/build.sh#L7-L50",
+          "version": "repo-lines-v1:sha256:03374a511e346ed8bb35d35a6e980160790ca9f7fa2f63421c2ff622389ad98b:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhNGU0NDgxNDU3MDc1MTllNjg1ZWY3MTEyZjYyYTUyZGRkNDA0YjI2YmY3NWRiMDc3NzVmMzkzYTdkNWM2ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ZmQ2NTBmNzk2Y2M3Y2Y3ZTYzZTBkZTVmNWFjMmQxN2YyZWViYTg1NmE0ZDIyOWMzZGEyMmYyNjlkYjZmOTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzOGExZDk3NDA1OGI4ZTM5M2YyYTE0NjI3Y2FlN2Y1NDgyZmZlZjNhNTkyNmVhODk3NGU1MjU1ZDM5YTlkNDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNiNzdiNWUwN2E5ZTM0MWVhYzRkYTc5ODJkMDU2MzExNWQwOTU5ZDVjOTI2NzIzYzRjYjhmY2U2ZGMzN2E0ZGUifQ"
+        },
+        {
+          "resource": "repo://builds/openclaw-enterprise/source.json",
+          "version": "repo-file-v1:sha256:6991e5b4d9b5f9e21e9097a891c4b88b5a9077d9cb8775b6fa064fe21eec8efe"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L45-L55",
+          "version": "repo-lines-v1:sha256:4a9941d85a7664760f1a143aecc6a38553900be97efafcdaa2cba53ee855f660:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhZDEyMDcyMDM3NDYxMjkxYmEzZDJhMDgxMmU4MDNlYzZmZTM0OTU2ODQ0ZWQxNWE0NWM0ODU1OWExMzhmNzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViOTk4MTZiM2YwNGU4YWVmODMyYmFjZjkyMThjYjM5M2Q0M2IzZjkyN2Y5ZTA3YjZhNDdlNTg3YTUyMzJkOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgyOTc2MThiODhmYWExNjg1MWIxODI2MzY2OWRlOTE5NWU4ZDZhNDM0MTYzZDEwYTNhNjRmZTMzY2UyZjhmNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlZTc3YmM0ZGJkMmQyZDM0NmMzMTc5OTBiYWY3ZTM3OGZhY2FmZGJmZDI2ODE0ZGZlNzZlZTgzMjdhYTUyMWQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py#L120-L145",
+          "version": "repo-lines-v1:sha256:e1a221a421e09b7a43422991b8409d07451dbe12caa639ff6ed3b52de8856c96:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NWZhMmViMjJiNWYyOGQ5NGY4ZDExYzk1NzI3Yjg3YjZjMjY4OTRlZDY5YWY3Zjg4ZmRlNjNmNmYzNjQzMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ZjU1YzQyNjVlNTZiZDNiYzdjNzIxOTEyOTQ3Y2ZkYzE1MjVmMzgyZWJiNGQxMzgwZTIyZDA2MTQ1YmZmMjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzZmE3ZTI5MmUwNmJhNzQ3ZDE5NWIyZDgzYjI3ZGUzMGY3MTc3ZmU4MDUzNjQyOGU4NDNhZTM4YzM3YjU4ZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkMDBlODViOTBmODM4Nzk3MmQwMzhhOWNhZWVjYzYxZGI5MmEyZWU2NTQwMWExYmJkODBmNDEwNWQxYTM4N2QifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json#L210-L224",
+          "version": "repo-lines-v1:sha256:62cdf0d2f11e7b5adee8754836d804df63cfe87a6fcd4a0029960f96a7caec94:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2E4OTFiZmY3YWMxZjdjZWFhZTQwZWYwNTEwNjZiZTllZmU0N2I0ZTQyODFlODZjMzE5YmUyYzU1ZWJjZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmMGNkYjk3MmE3YmZiN2VkMjQ2ZjlmZjY3MjM4NWU1NWY0OTY4ZmMxMTA0M2RjNWI2ODRkNTFkZmEzMWRiY2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxMzgzNDYxZDcwZTlhNGQ5NmUwZGE3MzQ4MTQyMmMxMjAxYmEyODk0YjU2MTczMzU0MGExNDQwM2VkNzQ5MjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhOWU1ODBiY2UzY2M4OWFkODdjMmJiNDQzOTYwMzMwNTViZGJkMmQ5Y2ZmYTNmOGU3N2I2ZDQ2ODU5OGJkOGUifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json#L25-L40",
+          "version": "repo-lines-v1:sha256:3890f8d42a777060095d133e0204b4062dd0a73237c702a5fef71c0ea376516d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNjExNjkwMzAzM2I3ZDlhYmZjNGY1N2NmYTFmNmVjMjA5YWFiM2M2YjViMDI2ZTY2OTJjMmFkZjBjYjYxNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlYjVjYzczODY5ZGZmZWY0Njc1N2JjN2NjODI5MDMyOTMwMjJhOTY2MWJiNzIwN2Q3M2I4MTU5YTFkYzUzZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5MjVhZmI0ZTVjNTQ5M2RlNjg3MTQ5MTI3YTYwNDk3NmI0ZGM0MzFlZjgwNmJmNzY4NDIyNGI1NzY5MGEzNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5NDM0ZjQwN2MwODQ1YjE1NTYyYmM2NDg4MDAwMjc2OWRkOGM2YTdjOTU4MDZmZjA1OWY0YjBkZjU4ODdlNjEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T10:41:09.582Z"
   }
 }

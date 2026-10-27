@@ -120,6 +120,24 @@ def declared_images(value):
     return images, digests
 
 
+def enterprise_build_base_images():
+    """Include pinned build inputs that do not appear in Kubernetes manifests."""
+    build = ROOT / "builds/openclaw-enterprise"
+    if not build.is_dir():
+        return set()
+    source = json.loads((build / "source.json").read_text())
+    images = {source["nodeBaseImage"], source["nodeRuntimeBaseImage"]}
+    for name in ("occ.Dockerfile", "operator.Dockerfile"):
+        bases = re.findall(r"(?mi)^FROM[ \t]+([^ \t\r\n]+)[ \t]*$", (build / name).read_text())
+        if not bases:
+            raise SystemExit(f"{name}: no literal build base image")
+        images.update(bases)
+    for image in images:
+        if not re.fullmatch(r"[^\s@]+@sha256:[0-9a-f]{64}", image):
+            raise SystemExit(f"Enterprise build base must be pinned: {image}")
+    return images
+
+
 def yaml_documents(paths):
     return json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0",
@@ -395,6 +413,7 @@ def check():
     paths = manifest_paths()
     documents = yaml_documents(paths)
     images, digests = declared_images(documents)
+    images.update(enterprise_build_base_images())
     declared_native = native_references_by_path(paths)
     # Direct Harbor mirror references must retain the reviewed digest. Upstream
     # provenance refs may use a reviewed tag because Talos resolves them through

@@ -16,6 +16,10 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-8d11b9ffac7ad3f863ae5f91
+    resource: repo://builds/openclaw-enterprise/occ.Dockerfile
+  - id: openwiki-source-f2d13cd7fa1f5fefef8c2a4a
+    resource: repo://builds/openclaw-enterprise/source.json
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
   - id: openwiki-source-d9e93037542f56be8db8a431
@@ -194,6 +198,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
+  - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
+    resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -220,10 +226,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T10:41:09.582Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T10:41:09.582Z
 ---
 
 # Workload Inventory
@@ -252,7 +258,10 @@ October 19; re-evaluate this pin before adding arm64 nodes. The revised catalog
 later passed protected `all` publication and authenticated Harbor pulls in
 [214-image run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
 and [215-image run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517).
-Both are dated receipts; T004 still needs current-source publication proof.
+Both are dated receipts. The current source-only 217-entry catalog adds pinned
+Enterprise Node build/slim runtime bases and a new Chainguard static CLI base.
+T004 still needs exact-current-main full publication and a newly signed,
+completely pulled and pinned CLI image; no 217-source receipt exists.
 
 ## Import Note
 

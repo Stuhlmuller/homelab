@@ -50,6 +50,14 @@ sources:
     resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-e09cefb018101171817db22b
+    resource: repo://builds/openclaw-enterprise/build.sh
+  - id: openwiki-source-8d11b9ffac7ad3f863ae5f91
+    resource: repo://builds/openclaw-enterprise/occ.Dockerfile
+  - id: openwiki-source-bb7ca8a5177e874fa05bda90
+    resource: repo://builds/openclaw-enterprise/operator.Dockerfile
+  - id: openwiki-source-f2d13cd7fa1f5fefef8c2a4a
+    resource: repo://builds/openclaw-enterprise/source.json
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -360,10 +368,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T10:41:09.582Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T10:41:09.582Z
 ---
 
 # Validation Gates
@@ -1756,8 +1764,11 @@ multi-root restore verification are complete. Protected `all`
 passed the historical 214-image catalog. Later
 [run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
 passed the expanded 215-source catalog and authenticated pulls, with its
-six-file publication bundle matching then-current `main`. T004 remains open
-for the changed Enterprise operator source and requires current-source proof.
+six-file publication bundle matching then-current `main`. The current
+217-source catalog adds pinned Enterprise Node build/slim runtime bases and a
+new Chainguard static CLI base. T004 remains open until a protected full mirror
+passes at exact current `main` and the changed CLI is signed, completely pulled
+and pinned from that source.
 The isolated canary, platform upgrades, compatible legacy boot and new-state
 restore remain acceptance gates. Source-only static
 checks do not activate the agent.
@@ -2423,6 +2434,13 @@ selected-image pull verification. A successful scoped run proves only those nine
 components. The revised LiteLLM catalog later passed protected `all` run
 `40011909180` for full-catalog acceptance.
 
+The offline full-catalog check now reads pinned Enterprise Node build and slim
+runtime bases from `source.json` and literal bases in the local CLI/operator
+Dockerfiles. Missing, digestless or unlisted build bases fail before protected
+publication. The source build verifies the controller/runtime upstream
+Dockerfile defaults against the pinned runtime base after archive SHA checking.
+These fixtures establish source coverage, not a 217-source mirror receipt.
+
 The fixed LiteLLM scope selects the one reviewed Linux amd64 child digest
 from the repeated-descriptor index. The consumer source now pins that child and
 the catalog excludes the failing root index. Coverage and publisher fixtures
@@ -2444,8 +2462,8 @@ copy errors terminal as `command-failed`. These source checks and the one-image
 receipt do not pass T004. Full run
 [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
 failed at this Prometheus image. The later protected 214-image and 215-source
-`all` runs passed at their dated revisions; changed Enterprise operator source
-still needs current-source publication and a pinned digest.
+`all` runs passed at their dated revisions; the current 217-source Enterprise
+build-base catalog still needs full publication and a newly signed CLI pin.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image

@@ -48,6 +48,12 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-e09cefb018101171817db22b
+    resource: repo://builds/openclaw-enterprise/build.sh
+  - id: openwiki-source-8d11b9ffac7ad3f863ae5f91
+    resource: repo://builds/openclaw-enterprise/occ.Dockerfile
+  - id: openwiki-source-f2d13cd7fa1f5fefef8c2a4a
+    resource: repo://builds/openclaw-enterprise/source.json
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -60,6 +66,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-bd06d6b0499111fbfe3b1e84
@@ -136,6 +144,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-audit-status.sh
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-6044cd3de00b52da78c6cf44
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
@@ -172,10 +182,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T10:41:09.582Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T10:41:09.582Z
 ---
 
 # Harbor Private OCI Registry
@@ -508,6 +518,15 @@ the then-current `main` at acceptance. Recheck that bundle against current
 changed Enterprise operator source. Neither catalog receipt proves an uncached
 pull on every Talos node or Harbor-only application consumption.
 
+The current source-only catalog has 217 digest-pinned entries. It adds the
+Enterprise controller/runtime Node 24 build and slim runtime bases and replaces
+the CLI's Chainguard static base digest. The offline catalog check now reads
+the pinned Enterprise build source and local Dockerfiles; the build checks the
+upstream controller/runtime Dockerfile defaults after verifying its archive.
+No protected `all` run has published this 217-source bundle. The existing CLI
+image digest predates its new static base, so T004 still needs current-main
+full-catalog publication and a newly signed, completely pulled CLI image.
+
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
 Fleet, Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the
@@ -572,7 +591,8 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage; the revised LiteLLM catalog passed protected `all` run `40011909180`.
+coverage. Protected 214- and 215-source `all` runs passed their dated catalogs;
+the current 217-source candidate still needs its own full receipt.
 That upgrade must verify singleton nginx retains a rolling update, so its existing
 Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
@@ -895,13 +915,15 @@ sources. Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six
 additions to the original seven-image scope. Earlier seven-image receipts exclude
 those additions, so expanded publication requires protected approval and complete
 authenticated Harbor-pull acceptance before a consuming change. Public sources belong
-in the catalog; application runtime references must use Harbor.
+in the catalog; application runtime references must use Harbor. The selected
+static base now uses digest `c12f0107…`, after the signed CLI image was built;
+its old receipt does not cover the changed base.
 
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Their consuming Renovate PRs remain held until that
-publication and pull acceptance finish.
+complete Harbor pulls. Each consuming Renovate revision needs its own source
+review and acceptance; catalog membership alone does not establish cutover.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
@@ -962,6 +984,9 @@ Protected [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/run
 passed all four authenticated pulls and signatures from source `fda0d68`; the
 selected disabled operator is pinned at
 `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
+That run's CLI digest predates the changed static base and does not qualify the
+current 217-source candidate. A fresh signed CLI publication and pin remain
+open after full-catalog mirror acceptance.
 The protected workflow reports one fixed failure phase, including preflight
 and cleanup, in its job summary; private transport output stays withheld, and
 a failed run supplies no acceptance receipt.
@@ -973,8 +998,9 @@ has not been applied, and deploys neither image.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the
 stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. The
-catalog publication passed, but its local render comparison does not prove
-that any Enterprise Pod has pulled from Harbor.
+historical catalog publication passed, but the 217-source candidate has no
+full receipt and local render comparison does not prove any Enterprise Pod has
+pulled from Harbor.
 See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned
