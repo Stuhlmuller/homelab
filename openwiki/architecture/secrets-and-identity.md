@@ -507,14 +507,16 @@ gate remains disabled; these permissions are source intent, not live access.
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The pinned daemon asks the backend to renew that token in place
   when seven days or less remain; revoked or expired tokens fail startup rather
-  than silently creating a replacement. The main container exposes only
-  its own profile, including native ChatGPT OAuth state retained on the runtime
-  PVC; it does not mount the backend JWT, database password, fixed code, or a
-  model API key. This remains a trusted operator runtime because tasks can read
-  that profile. Its dedicated ServiceAccount has no Kubernetes token and
-  receives explicit Istio access only to the Multica backend. OAuth is created
-  through an interactive Codex device login and must not be copied into SSM or
-  a Kubernetes Secret.
+  than silently creating a replacement. A Ready daemon starts the renewal loop
+  but does not prove a successful renewal; verify expiry metadata during the
+  eligible window without exposing token material. The main container retains
+  its own profile and mounts the dedicated `multica-litellm` token as a read-only
+  file for model access. The committed OpenCode configuration routes through
+  LiteLLM; no ChatGPT/Codex OAuth runtime is configured. It does not mount the
+  backend JWT, database password, fixed code, or upstream OpenRouter key.
+  This remains a trusted operator runtime because tasks can read that profile.
+  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
+  Istio access only to the Multica backend.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
