@@ -92,6 +92,16 @@ spec:
               started=true
               pg_ctl -D "$work/pgdata" -l "$work/postgres.log" -w \
                 -o "-c listen_addresses= -c unix_socket_directories=$work/socket" start
+              stage=recovery-marker
+              psql -X -v ON_ERROR_STOP=1 \
+                -v marker_path="$backup/material/recovery.json" \
+                -h "$work/socket" -U occ_admin -d postgres -At <<'SQL' | grep -qx t
+              SELECT jsonb_typeof(marker) = 'object'
+                 AND marker->'writerStopped' = 'true'::jsonb
+                 AND jsonb_typeof(marker->'claimUid') = 'string'
+                 AND length(marker->>'claimUid') > 0
+              FROM (SELECT pg_read_file(:'marker_path')::jsonb AS marker) recovered;
+              SQL
               stage=globals
               # Roles come from committed bootstrap SQL and recovered password
               # material. Do not replay arbitrary global role grants from a dump.

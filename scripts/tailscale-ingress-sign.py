@@ -22,6 +22,7 @@ TARGETS = (
     ("traefik", "svc", "traefik-private", "homelab-ingress", "tag:homelab-ingress"),
     ("traefik", "ingress", "n8n-webhook", "n8n-webhook", "tag:homelab-funnel"),
     ("traefik", "ingress", "policy-bot-hook", "policy-bot-hook", "tag:homelab-funnel"),
+    ("traefik", "ingress", "bulldozer-hook", "bulldozer-hook", "tag:homelab-funnel"),
     ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress"),
 )
 

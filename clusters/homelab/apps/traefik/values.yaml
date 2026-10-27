@@ -2,10 +2,17 @@ serviceAccount:
   traefik: {}
 controllers:
   traefik:
+    strategy: RollingUpdate
+    rollingUpdate:
+      surge: 1
+      unavailable: "0%"
     serviceAccount:
       identifier: traefik
     pod:
       automountServiceAccountToken: false
+      # shortcut: keep ingress on a node with healthy ztunnel, remove after four-node recovery.
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       securityContext:
         runAsUser: 65532
         runAsGroup: 65532
@@ -15,6 +22,7 @@ controllers:
     containers:
       app:
         image:
+          # Traefik serves the node route to Harbor; pre-pull its Harbor image before self-cutover.
           repository: docker.io/library/traefik
           tag: v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
         args:

@@ -1,7 +1,7 @@
 # Held Istio 1.28.10 hop
 
-The live-owned `IaC/istio/stack.hcl` stays at Istio 1.27.3 with its existing
-auto-sync and self-heal behavior. This directory's
+The live-owned `IaC/homelab/us-west-2/apps/istio/stack.hcl` stays at Istio
+1.27.3 with its existing auto-sync and self-heal behavior. This directory's
 [`upgrade-1.28.10.json`](upgrade-1.28.10.json) records a **disabled** candidate
 for the first adjacent hop. It is not included in `kustomization.yaml` or the
 Argo Application. Even if this preparation merges, it changes no Istio
@@ -18,11 +18,13 @@ resource labeled with its release name and no resource-identity changes except
 that the 1.28.10 istiod chart omits the old `istiod` PodDisruptionBudget.
 The candidate uses [Istio's replacement chart repository](https://istio.io/latest/blog/2026/retirement-of-gcp/)
 at `https://blob.istio.io/istio-release/charts`; its downloaded archives match
-these pins. A later activation PR must allow that repository in the Argo
-AppProject and update the active source and chart mirror inventory together.
-The active 1.27.3 sources still use the GCS endpoint scheduled for retirement
-in December 2026, so that source migration is required even if the version
-hop stays on hold.
+these pins. The declared 1.27.3 sources and chart inventories use that same
+repository with unchanged versions and package hashes. Apply the Application
+source change through a reviewed scoped Terragrunt plan, then require the
+`istio` Application Synced/Healthy with unchanged workload images and no
+unexpected resource diff. Keep the old GCS AppProject entry for rollback until
+that live check passes. A failed chart fetch blocks the 1.28 hop; restore the
+previous source only through another reviewed plan and apply.
 The gateway chart keeps `image: auto`; verify the injected proxy's live image
 ID against the published `proxyv2` digest during rollout.
 

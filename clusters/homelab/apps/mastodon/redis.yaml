@@ -58,7 +58,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redis
-          image: docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
+          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -131,6 +131,9 @@ spec:
         - name: auth
           secret:
             secretName: mastodon-datastores
+            items:
+              - key: REDIS_PASSWORD
+                path: REDIS_PASSWORD
         - name: runtime-data
           persistentVolumeClaim:
             claimName: mastodon-redis-local
@@ -139,7 +142,7 @@ spec:
             sizeLimit: 64Mi
       initContainers:
         - name: own-local-directory
-          image: docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
+          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh

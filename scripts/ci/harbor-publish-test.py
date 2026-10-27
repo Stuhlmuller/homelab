@@ -672,7 +672,10 @@ class HarborPublicationGates(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
-        self.assertIn("main-v1.80.8-stable@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8",
+        digest = source.split("@", 1)[1]
+        self.assertIn("harbor.stinkyboi.com/mirror/" + source.split("@", 1)[0],
+                      (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
+        self.assertIn(digest.removeprefix("sha256:") + "@" + digest,
                       (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
         self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
                          json.dumps(catalog))
@@ -961,11 +964,16 @@ class HarborPublicationGates(unittest.TestCase):
                                                    + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-harbor")
 
-    def test_renovate_scope_has_seven_reviewed_digests(self):
+    def test_renovate_scope_has_eight_reviewed_sources(self):
         selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
-        self.assertEqual(len(selected), 7)
+        self.assertEqual(len(selected), 8)
         self.assertTrue(all(item in catalog for item in selected))
+        self.assertEqual(len({item["source"].split("@", 1)[0] for item in selected}), len(selected))
+        for item in selected:
+            alias = item["source"].split("@", 1)[0]
+            self.assertEqual(next(entry["source"] for entry in reversed(catalog)
+                                  if entry["source"].split("@", 1)[0] == alias), item["source"])
         self.assertEqual(sum(item["source"].startswith("ghcr.io/renovatebot/renovate:")
                              for item in selected), 1)
 
