@@ -92,6 +92,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py
   - id: openwiki-source-dbc7fbf24949971e26fb097e
     resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator.py
+  - id: openwiki-source-0053e9531465478cba8895090
+    resource: repo://scripts/ci/openclaw-enterprise-pod-watch-test.py
+  - id: openwiki-source-2279c01ce0a340a1b800c42fc
+    resource: repo://scripts/ci/openclaw-enterprise-pod-watch.py
   - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
     resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
@@ -227,7 +231,7 @@ desired state.
 | `builds/openclaw-enterprise-restore/`, `.github/workflows/openclaw-enterprise-images.yml`, and `scripts/ci/harbor-publish.sh` | [Source-only fifth restore image with embedded reader and UID 1000 hash smoke, pre-credential audit, signed publication and authenticated-pull gates](operations/harbor-oci.md); no fifth-image receipt yet |
 | `clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh` | [Stopped-writer marker, local scratch, age encryption and off-node recovery contract](architecture/storage-and-state.md); no scheduled or independently restored set |
 | `scripts/ci/openclaw-enterprise-reader-pod.py`, `scripts/ci/openclaw-enterprise-reader-archive.py`, and `scripts/ci/openclaw-enterprise-capture.py` | [Excluded namespace-local reader Pod specs, exact expected image and claim identity checks, full claim archives and intentionally unverified continuous fence](architecture/storage-and-state.md); no reader is applied |
-| `scripts/ci/openclaw-enterprise-backup-coordinator.py` and `scripts/ci/openclaw-enterprise-backup-coordinator-test.py` | [Source-only durable backup ID and tenant Pod watch boundary](architecture/storage-and-state.md); its reader-transfer receipt is unpublishable, with no live adapter, publication or restore caller |
+| `scripts/ci/openclaw-enterprise-backup-coordinator.py`, `scripts/ci/openclaw-enterprise-pod-watch.py`, and tests | [Source-only durable backup ID, authenticated tenant Pod watch adapter, and post-transfer empty-Pod checkpoints](architecture/storage-and-state.md); all receipts remain unpublishable, with no live publication or restore caller |
 | `clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml`, `scripts/ci/openclaw-enterprise-reader-policy-test.py`, and `scripts/ci/openclaw-enterprise-reader-chart-check.py` | [Reader-specific empty ingress/egress source and required pinned-chart additive-overlap gate](operations/validation-gates.md#openclaw-enterprise-replacement-gates); live enforcement and canary pending |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |

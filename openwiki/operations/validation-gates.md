@@ -232,6 +232,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py
   - id: openwiki-source-dbc7fbf24949971e26fb097e
     resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator.py
+  - id: openwiki-source-0053e9531465478cba8895090
+    resource: repo://scripts/ci/openclaw-enterprise-pod-watch-test.py
+  - id: openwiki-source-2279c01ce0a340a1b800c42fc
+    resource: repo://scripts/ci/openclaw-enterprise-pod-watch.py
   - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
     resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
@@ -2019,12 +2023,13 @@ checks. It covers durable stop/resume intent, lost API responses, crashes
 before and after POST, duplicate or foreign revisions, missing or changed
 capture proof, no-change reconciliation, and refusal to stop at the 100-revision
 journal cap. It does not call a live workflow or authenticate recovery material.
-The static gate also runs ten source-only backup coordinator fixtures. They
+The static gate also runs source-only backup coordinator and Pod watch fixtures. They
 check durable backup ID retry, tenant Pod watch barriers and foreign events,
-reader identity, incomplete staged observation references, and permanent
-failure after a rejected watch step. The helper returns only a watch-scoped
-`publishable: false` receipt. It neither validates a complete recovery tree
-nor holds a live fence through publication and independent restore.
+reader identity, complete unfiltered Lists, exact watch RV, 410, EOF, timeout,
+ordering, missing bookmarks, post-transfer checkpoints, and permanent failure
+after rejection. The helper returns only a watch-scoped `publishable: false`
+receipt. It does not validate a complete recovery tree or establish a live
+fence through publication and independent restore.
 Local results do not establish live PVC, TLS or restore acceptance. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable

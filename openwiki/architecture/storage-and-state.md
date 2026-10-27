@@ -48,6 +48,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py
   - id: openwiki-source-dbc7fbf24949971e26fb097e
     resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator.py
+  - id: openwiki-source-0053e9531465478cba8895090
+    resource: repo://scripts/ci/openclaw-enterprise-pod-watch-test.py
+  - id: openwiki-source-2279c01ce0a340a1b800c42fc
+    resource: repo://scripts/ci/openclaw-enterprise-pod-watch.py
   - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
     resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-0ec224257fa3d91c69b2b9f1
@@ -414,9 +418,17 @@ the backup ID and a reviewed source SHA to the exact immutable Harbor restore
 image reference. Reader and assembler reject a different image digest or a
 command that could stream private bytes into Pod logs. The reader executable is
 packaged in the unpublished restore image, but the Pods are excluded from
-Kustomization and workflows. No coordinator, enforced egress fence, UID 1000
+Kustomization and workflows. No live coordinator, enforced egress fence, UID 1000
 claim-access proof, recipient projection, off-node publication receipt or
 independent restore is declared; T051 remains open.
+The source-only [tenant Pod watch adapter](../../scripts/ci/openclaw-enterprise-pod-watch.py)
+uses a protected kubeconfig for an unfiltered namespace `PodList` and an exact
+resource-version watch. It requires [Kubernetes 1.35 or newer](https://v1-35.docs.kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions)
+for numeric Pod resource-version ordering. It rejects watch loss and missing
+barriers and never reconnects. The [coordinator](../../scripts/ci/openclaw-enterprise-backup-coordinator.py)
+can continue the same empty-Pod watch after publication and independent
+restore; both checkpoints remain watch-only and unpublishable. There is no
+protected live caller or complete backup receipt.
 The foundation now includes two source-owned, reader-specific policies with
 empty ingress and egress rules. The required protected `validate / repo` job
 fetches the pinned stock chart commit and rejects overlapping allows in its
