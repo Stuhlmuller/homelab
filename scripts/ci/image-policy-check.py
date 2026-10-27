@@ -88,7 +88,9 @@ def main():
             cluster_attempted = True
             run("kind", "create", "cluster", "--name", CLUSTER, "--image", NODE_IMAGE,
                 "--kubeconfig", kubeconfig, "--wait", "120s")
-            run(*kubectl, "apply", "-k", str(ROOT / "clusters/homelab/platform/image-policy"))
+            policy_dir = ROOT / "clusters/homelab/platform/image-policy"
+            run(*kubectl, "apply", "-f", str(policy_dir / "policy.yaml"))
+            run(*kubectl, "apply", "-f", str(policy_dir / "binding.yaml"))
 
             def type_checked():
                 policy_resource = json.loads(run(*kubectl, "get", "validatingadmissionpolicy", POLICY, "-o", "json"))

@@ -1,0 +1,22 @@
+# Staged only: add to Renovate after platform storage reconciles the local class and PV.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: renovate-acceptance-ledger
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-observer
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: renovate-acceptance-ledger-local
+  volumeMode: Filesystem
+  volumeName: renovate-acceptance-ledger-local
+  resources:
+    requests:
+      storage: 64Gi

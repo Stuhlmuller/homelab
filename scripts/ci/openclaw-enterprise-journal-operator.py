@@ -86,11 +86,13 @@ def contract(config, stage, expected):
         "node", "runAsUser", "image", "imageSourceSha"},
         "operator declaration is invalid")
     require(operator["enabled"] is True, "operator remains disabled pending placement and credential proofs")
+    # Upstream writes the bootstrap service key as UID 1000 with mode 0600.
+    require(type(operator["runAsUser"]) is int and operator["runAsUser"] == 1000,
+            "operator UID differs from upstream private bootstrap key owner")
     require(operator["namespace"] == "openclaw-system" and
             operator["serviceAccount"] == "oce-journal-operator" and
             operator["journalClaim"] == "occ-operator-journal" and
             operator["bootstrapClaim"] == "occ-bootstrap-admin-password" and
-            type(operator["runAsUser"]) is int and operator["runAsUser"] == 10001 and
             isinstance(operator["journalClaimUid"], str) and
             UID.fullmatch(operator["journalClaimUid"]) and
             isinstance(operator["journalVolumeUid"], str) and

@@ -37,6 +37,10 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=verify \
   -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
+# After final.json exists, prepare a separate private copy for compatibility review.
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=prepare-restore \
+  -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
 ```
 
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
@@ -125,6 +129,48 @@ archive. T014 compatible recovery must classify those targets and prove any
 needed data is separately retained or rebuilt before acceptance. Do not
 blindly extract this tar into a live filesystem.
 
+`prepare-restore` downloads the exact versioned archive, checks free scratch
+space, and retains a verified copy at `/archive/private/rehearsal-<RUN_ID>/tree`.
+Each versioned transfer fetches the pinned S3 version in at most 128 MiB ranges
+and sends it to the reader in at most 8 MiB slices. The range response must
+match the requested version, byte interval and length; each reader slice must
+match its runner SHA-256 before append. Failed appends roll back to the last
+committed offset. The reader promotes the aggregate only after its full size
+and SHA-256 match; an incomplete transfer never becomes a restore input.
+The archive digest comes from the published final receipt. The receipt digest
+comes from a separate local download of the exact S3 version named in that
+final receipt, so same-size transport corruption also fails closed.
+The protected workflow reports fixed archive-download, receipt-download, and
+restore failure phases without exposing private transport output. Versioned
+downloads further distinguish `source-range` fetch/metadata failure,
+`reader-transfer` exec or write failure, and `finalize` full-digest or
+promotion failure. A category identifies the failed boundary, not the private
+underlying error; inspect private diagnostics before changing the transfer path.
+The one-off `resume-restore` stage is bound to the six-hour cancelled protected run
+`39988927652` and publication
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. It reads the
+existing detached worker's stable completion marker and rechecks its cached
+archive, receipt, restored database report and stopped-source identity. It
+never starts a second worker; an incomplete or failed result stays private and
+blocks recovery. See the [rollout runbook](../../../../docs/openclaw-enterprise-rollout.md)
+for the dispatch gate.
+[Protected resume `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+passed these checks on 2026-10-24 and prepared the separate private NAS scratch
+copy. It did not boot the legacy image or complete T014.
+Its private `link-classification.json` records raw targets as `contained`,
+`link-chain`, `missing-in-archive`, or `external`. Its `lexicalPath` is a hint,
+not proof that symlink components resolve there. `completed.json` records
+only extraction and database integrity; its absence means the retained copy is
+incomplete. Neither file belongs in Git or public CI logs. Absolute
+links can still point at the original reader mounts: inspect every dependency
+without following it, then mount isolated copies at the legacy paths before an
+old-image boot. The NAS scratch copy has all-squash ownership, so local SQLite
+state needs a separate UID 1000 filesystem and the parent/child bind-mount
+identity from `values.yaml`. Keep all original claims read-only and the old
+gateway at zero replicas. This preparation alone does not accept T014; prove
+the isolated gateway can start without ingress or deliveries and recheck the
+stopped production state and retained credentials first.
+
 For compatible legacy recovery after a later Enterprise failure, first stop
 the new agent through its supported API and prove its runtime is terminated.
 Run the `verify` stage above, then restore the old Deployment replica count and
@@ -134,6 +180,24 @@ the scheduled-job state before declaring recovery. Never import the legacy
 archive into Enterprise.
 
 ### T014 isolated legacy boot gate
+
+The protected `network-preflight` legacy stage checks whether the existing
+read-only retirement reader can create a rootless network namespace. Dispatch it
+only on exact current `main` with empty `baseline_ref` and `archive_ref`. It
+checks the stopped writer and reader identity, starts a disposable process
+namespace with only loopback, rejects routable interfaces and routes, and
+requires direct IPv4/IPv6 egress probes to return `ENETUNREACH` (an unsupported
+IPv6 address family is accepted only when the IPv4 probes and route checks pass).
+Inside `Run Legacy Stage`, failures expose only a fixed category: Nix shell
+entry, kubeconfig install, Kubernetes version check, source integrity, current
+main, stopped reader, namespace proof, or post-check. Earlier setup steps have
+their own check status. Private diagnostics stay on the protected runner. It
+does not copy state, start the old gateway, create a Kubernetes object, or
+prove that a later rehearsal Pod has the same seccomp and namespace behavior.
+A failed stage leaves
+T014 blocked; a successful stage is capability evidence only. The eventual
+isolated boot must repeat these checks in the same namespace that runs the
+pinned old image, with separate writable copies and no external deliveries.
 
 A read-only stopped-source review found 37 NAS symlinks. Nine absolute targets
 leave both archived roots. Six point into `/app`: `plugin-skills` links for
@@ -149,7 +213,12 @@ remain unclassified until compared with retained evidence. The other three
 external targets are dangling in the reader; their individual dependencies
 and disposition also remain unclassified. The archive preserves each link,
 but no external target payload. Do not assume the baseline image recovers the
-gateway's exact contents or that the dangling links are harmless.
+gateway's exact contents or that the dangling links are harmless. The three
+dangling links point into absent `/home/node/.cache` Terraform provider caches.
+The pinned 2026.9.5 image lacks `@openclaw/discord`; the archived package is
+2026.5.22. A compatible boot also needs the complete global npm install tree
+and metadata for `@openclaw/discord@2026.9.5`, with the former writable
+overlay classified before claiming an exact recovery.
 
 Archive verification and the retained original PVCs do not pass T014. The
 reader restores into NAS scratch and does not start the old image. A rehearsal
@@ -166,6 +235,52 @@ but it still needs a proven container host, space for separate restored copies,
 the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run.
 Without evidence of the former writable overlay, do not claim exact compatible
 recovery from the image baseline alone.
+
+The 2026.9.5 image does not contain the matching external Discord package;
+the retained install is 2026.5.22. The
+[offline cache builder](../../../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image digest and the npm tarball integrity, installs the exact
+package in a disposable state, then tests a fresh state with `--network none`
+using only an archive round-trip of npm's content cache. The warm home and state
+are removed from the Docker bind mount before that test. The fresh pinned CLI
+creates its own SQLite install record and must report the expected global npm
+origin, spec and version. It also requires the online and offline npm project
+lockfiles to agree, except for npm's generated project-root name. Package paths,
+versions, integrity hashes, dependency edges and other metadata remain exact.
+Its output is a private-transfer contract:
+`npm-cache.tar`, `dependency-lock.json`, and `manifest.json` with both SHA-256
+hashes. It contains no
+retained OpenClaw state, credentials, or install records. The
+[CI check](../../../../.github/workflows/openclaw-discord-offline-cache.yml)
+builds and tests but discards that output. After its pinned-image offline proof
+passes on protected `main`, the `publish-discord-cache` stage of the
+[protected operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
+rebuilds the public package closure and stores all three files under a fresh
+`openclaw-enterprise/legacy-discord-cache/<SOURCE_SHA>/<RUN_ID>/` prefix in the
+versioned KMS backup bucket. It verifies exact downloaded object versions and
+writes `final.json` last. Do not reuse a partial prefix. `transfer-discord-cache`
+accepts that exact SHA/run ID as `cache_ref`, checks the final receipt, each
+version, manifest, lock and tar safety, then copies exact versions into new
+owner-only `/archive/private/discord-cache-<TRANSFER_RUN_ID>` scratch through
+bounded reader slices. It writes `completed.json` only after all copied hashes
+match. Both stages require the stopped legacy writer and unchanged reader/PVC
+identity. They never mount or edit the retained source claims. Run each stage
+from a fresh exact current `main` SHA; keep private receipts out of Git and
+public CI logs. A successful transfer does not prove a no-egress old-image
+boot, real turn, or scheduled job, so T014 remains open.
+
+```sh
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-discord-cache
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=transfer-discord-cache \
+  -f cache_ref=<PUBLICATION_SHA>/<PUBLICATION_RUN_ID>
+```
+
+The first run must finish successfully before transfer. A failed or partial run
+keeps its unique prefix or scratch directory for private diagnosis; retry with
+a new workflow run after fixing the cause. Neither stage should be dispatched
+until the pinned offline cache check and protected review have passed.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium

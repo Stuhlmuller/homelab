@@ -147,7 +147,7 @@ and the policy present before native-key migration. Do not bypass admission.
 
 The Application enables
 [server-side diff](https://argo-cd.readthedocs.io/en/stable/user-guide/diff-strategies/)
-through `IaC/litellm/stack.hcl`. Argo's older structured-merge comparison
+through `IaC/homelab/us-west-2/apps/litellm/stack.hcl`. Argo's older structured-merge comparison
 reported the Ready PostgreSQL StatefulSet OutOfSync while both the normal CLI
 diff and Kubernetes server-side dry run were empty (including Argo tracking
 metadata). This setting uses admission-aware dry runs without ignoring fields

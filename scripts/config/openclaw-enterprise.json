@@ -9,18 +9,18 @@
       "requiredRevisionLabel": "org.opencontainers.image.revision",
       "controller": {
         "repository": "harbor.stinkyboi.com/homelab/homelab-oce-controller",
-        "digest": "sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164"
+        "digest": "sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2"
       },
       "runtime": {
         "repository": "harbor.stinkyboi.com/homelab/homelab-oce-runtime",
-        "digest": "sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6"
+        "digest": "sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1"
       }
     },
     "cli": {
       "sourcePath": "cmd/occ",
       "buildRevision": "33bb74590a749f37934da4502fca6035cd234a55",
       "imageRepository": "harbor.stinkyboi.com/homelab/homelab-oce-cli",
-      "artifactDigest": null
+      "artifactDigest": "sha256:9d77fddb3f099f329494910609459e7bc8076d74ab797ca3382fe80edf9f12d2"
     },
     "imagePairingPolicy": "all-artifacts-built-from-source-revision-and-verified-by-publication-receipt"
   },
@@ -86,8 +86,8 @@
     "bootstrapClaimUid": null,
     "node": null,
     "runAsUser": 10001,
-    "image": null,
-    "imageSourceSha": null
+    "image": "harbor.stinkyboi.com/homelab/homelab-oce-operator@sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08",
+    "imageSourceSha": "fda0d68cd2fc5d4689b6f1b048d329ae66ef3727"
   },
   "privateArchives": {
     "legacy": {
@@ -129,7 +129,6 @@
     ]
   },
   "executionBlockers": [
-    "Full platform image catalog and source-built CLI are not verified",
     "Dedicated OpenRouter credential is not configured",
     "Storage placement and private recovery paths are not validated"
   ],

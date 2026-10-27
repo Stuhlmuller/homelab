@@ -12,20 +12,20 @@ workload README and only the storage, secret or ingress runbooks the app needs.
 ## Minimal registration
 
 Add runtime desired state under `clusters/homelab/apps/<app>` or the appropriate
-platform directory. Register it in the root `IaC/terragrunt.stack.hcl` index
+platform directory. Register it in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`
 through the shared Application template:
 
 ```hcl
 unit "argocd_apps_example" {
-  source                 = "./terragrunt-catalog/units/live/argocd-app"
-  path                   = "live/argocd-apps/example"
+  source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/live/argocd-app"
+  path                    = "argocd"
   no_dot_terragrunt_stack = true
 
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/example/stack.hcl").inputs
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stack.hcl").inputs
 }
 ```
 
-Create `IaC/example/stack.hcl`; do not copy a generated live unit or a
+Create `IaC/homelab/us-west-2/apps/example/stack.hcl`; do not copy a generated live unit or a
 full CRD:
 
 ```hcl

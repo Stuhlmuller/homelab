@@ -31,15 +31,17 @@ generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
 # NOFX
 
 NOFX is deployed as a homelab trading app at `https://nofx.stinkyboi.com`.
-Tailnet DNS already answers this name privately, and Traefik routes its HTTPS
-requests. The public address record remains until the guarded
+Tailnet DNS answers this name privately, and Traefik routes its HTTPS
+requests. The guarded
 [26-name retirement](../../specs/005-retire-public-app-dns/quickstart.md)
-passes and is executed. The retained Cloudflare Tunnel and Octelium WEB
-Service support legacy callers; Octelium requires `homelab-human-web-access`
-before NOFX's own login and passes its application `Authorization` header for
-the session JWT. The GitOps source is `clusters/homelab/apps/nofx`. The Argo CD
-Application uses `IaC/nofx/stack.hcl` registration inputs, indexed by
-`IaC/terragrunt.stack.hcl`.
+removed its public address record on 2026-10-25; authoritative and public
+recursive answers were empty after the old 60-second TTL. The retained
+Cloudflare Tunnel and Octelium WEB Service remain staged; Octelium requires
+`homelab-human-web-access` before NOFX's own login and passes its application
+`Authorization` header for the session JWT. The GitOps source is
+`clusters/homelab/apps/nofx`. The Argo CD
+Application uses `IaC/homelab/us-west-2/apps/nofx/stack.hcl` registration inputs, indexed by
+`IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`.
 
 The [declared frontend policy](../../clusters/homelab/apps/nofx/networkpolicy.yaml)
 allows egress only to CoreDNS on TCP/UDP 53 and the NOFX backend on TCP
@@ -186,12 +188,12 @@ contract from AWS SSM:
   The separate `nofx-registry-auth` ExternalSecret refreshes every five minutes
   into a retained recovery Docker config Secret, without mounting it in NOFX.
 
-The retained Cloudflare/Octelium route supports legacy callers during the
-[staged private ingress cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
-The separate tailnet DNS resolver, private Tailscale, and Traefik carry the
-current private path at the canonical hostname. Public record retirement is
-pending; NOFX has no public Funnel route. The old Istio `VirtualService`
-remains migration state until final retirement.
+The retained Cloudflare/Octelium resources remain staged migration state; the
+canonical NOFX name no longer has a public address answer. The separate
+tailnet DNS resolver, private Tailscale, and Traefik carry its current HTTPS
+path. NOFX has no public Funnel route. The old Istio `VirtualService` remains
+until separately reviewed retirement; see the
+[ingress cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
 
 Live validation on 2026-08-22 found the Argo CD Application synced and healthy,
 both deployments ready with zero restarts, the 10 GiB claim bound, and the

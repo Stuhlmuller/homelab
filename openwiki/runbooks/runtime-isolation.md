@@ -24,8 +24,14 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-f8f5d3b6cb788d6762c27993
     resource: repo://clusters/homelab/apps/octelium/generated-networkpolicies.json
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-1765d2b8de68537c36f7221e
     resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
+  - id: openwiki-source-007543776318a4afbd5fc1b0
+    resource: repo://clusters/homelab/platform/network-policy/daemonset.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -52,10 +58,12 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-20T21:42:24.095Z" }
+  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
+    resource: repo://specs/003-replace-openclaw-enterprise/research.md
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Runtime Isolation
@@ -66,6 +74,10 @@ Pod Security, service accounts, Istio authorization, and workload security
 contexts are enforced desired state. Existing `NetworkPolicy` objects remain
 intent-only while Flannel is the sole active CNI and the staged firewall-only
 kube-router Application selects no node.
+Most existing non-privileged namespaces declare baseline Pod Security. The
+unsynced Enterprise foundation declares restricted enforcement for both
+`openclaw-system` and `openclaw-agents`; this is source intent, not live
+namespace acceptance.
 
 Kiali's [repository ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 replaced the operator-generated `monitoring/kiali` rule without changing its
@@ -110,8 +122,10 @@ broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
 limited capacity, system DaemonSets, and a live backup workload.
 
-Before activation, finish image publication and policy owner/render review, then
-admit an isolated tainted canary with measured capacity and local-storage
+The reviewed 214-image catalog passed protected publication and authenticated
+Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+Before activation, finish policy owner/render review, then admit an isolated
+tainted canary with measured capacity and local-storage
 placement. No existing worker currently qualifies without risking unrelated
 stateful workloads. The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
 found about 3,398 MiB unreserved on the best worker against an initial
@@ -121,8 +135,22 @@ root-filesystem space free. Every worker's `/var` uses eMMC and has less than
 `acer` has only 1,802 MiB unreserved against the 2,304 MiB database and gateway
 minimum. Unrelated Pods remain on every worker. A `NoSchedule` taint would
 leave those Pods in place;
-it is not an isolation proof. Compare private read-only Pod/NetworkPolicy snapshots and
-all rendered policies with `scripts/network-policy-inventory.py`. Its review
+it is not an isolation proof.
+The 2026-10-23 recheck still finds `acer` 503 MiB short of the minimum request
+despite enough local disk, while the best worker has only 9.00 GiB filesystem
+free. Relocating its 38 non-DaemonSet Pods needs about 3,342 MiB against
+2,036 MiB combined free on the other nodes. Crossplane's separate 512 MiB
+source/live replica drift does not create an isolated canary. Enforcement
+remains disabled. The 08:18 UTC recheck on `main` `bcc08cb` separates this
+2,304 MiB declared floor from the [initial 4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway: if co-located on `acer`, that
+budget exceeds unreserved requests by about 2,295 MiB before startup or peak
+margin. `zimaboard-2` has four unrelated Pods, including single-replica
+`Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
+requests after the enforcer and fixtures, without measured peak or continuity
+proof. T022 still has no admitted canary or storage placement.
+Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
+with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
 generated policies fail the inventory. Obtain exact generator renders and a
 fresh read-only snapshot before the canary. The [source-owner ledger](../../docs/evidence/openclaw-enterprise-policy-review.json)

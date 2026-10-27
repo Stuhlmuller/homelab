@@ -114,6 +114,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -125,11 +127,13 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-e3e84b128839afbc47f478f7
-    resource: repo://IaC/platform-network-policy/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-2891520885ecf43be10fd7b5
+    resource: repo://scripts/ci/harbor-core-audit-status.sh
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-6044cd3de00b52da78c6cf44
@@ -154,32 +158,52 @@ sources:
     resource: repo://scripts/config/harbor-litellm-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
+  - id: openwiki-source-d8592edfd3a777f41c6b1623
+    resource: repo://scripts/config/harbor-prometheus-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-21T00:34:35.293Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Harbor Private OCI Registry
 
+## Helm chart publication
+
+The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
+the package SHA-256 for every Argo CD chart source, including the dormant
+OpenClaw Enterprise Git Helm chart. The protected
+`harbor-helm-charts.yml` dispatch publishes the exact packages to
+`harbor.stinkyboi.com/mirror/helm` and verifies each with the separate reader
+robot. Run it on current `main` before moving any Argo CD chart source to
+Harbor. The repository credential is owned by Argo CD self-management and
+reads only the mirror pull robot password. Terraform's Argo CD bootstrap chart
+remains upstream for a cold-cluster restore.
+
 ## Ownership And Access
 
-Harbor registration inputs are declared in `IaC/harbor/stack.hcl`;
+Harbor registration inputs are declared in `IaC/homelab/us-west-2/apps/harbor/stack.hcl`;
 runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
 (Harbor `2.15.2`). Upstream component references remain digest-pinned; the
 Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
 bootstrap and registry recovery use the reviewed upstream rollback path.
+Harbor-only application pulls are a target, not a live cluster-wide result:
+the reviewed full catalog passed protected publication and authenticated Harbor
+pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180),
+while consuming-reference cutover remains pending.
 
 The retained legacy `https://harbor.stinkyboi.com` path uses Cloudflare Tunnel,
 the Octelium `harbor` WEB Service, and the shared Istio gateway until private
@@ -320,7 +344,7 @@ The reviewed Stage A saved plan created and metadata-verified
 only the reader parameter and identified exact-ARN reader-policy changes;
 unexpected shared dependency changes remain outside scope. On clean reviewed
 main, run `(cd IaC && terragrunt stack generate)` before entering the generated
-`IaC/live/aws-ssm-parameters` unit for reader-plan review. The plan may create
+`IaC/homelab/us-west-2/shared/aws-ssm-parameters` unit for reader-plan review. The plan may create
 the reader parameter and change only identified exact-ARN reader-policy entries,
 including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
@@ -424,7 +448,8 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, or `dns`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, `dns`, `litellm`, or
+`prometheus`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -458,6 +483,22 @@ Protected run [39161113974](https://github.com/Stuhlmuller/homelab/actions/runs/
 completed at exact `main` `5558f8c1` with matching digest and a complete
 authenticated Harbor pull. It does not prove full-catalog coverage or live
 resolver health.
+
+The fixed `prometheus` scope selects only the catalog's pinned
+`quay.io/prometheus/prometheus:v3.11.3-distroless` digest through
+[`harbor-prometheus-images.json`](../../scripts/config/harbor-prometheus-images.json).
+It preserves the normal source digest, destination digest, alias, and fresh
+complete authenticated Harbor pull checks. Full run
+[39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
+stopped at this image with public `destination-copy` / `command-failed` at item
+196/214; that run produced no complete catalog receipt. The later protected
+[`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+passed all 214 reviewed images and authenticated Harbor pulls. The earlier
+scoped success alone qualified only this image, not the full-catalog Talos gate
+or the other Prometheus stack images. Destination-copy failures with private
+Skopeo `writing blob` or `writing manifest` diagnostics now emit fixed `blob-upload-failed` or
+`manifest-upload-failed` categories; unknown failures remain `command-failed`
+and do not trigger another copy client or an automatic write retry.
 
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
@@ -505,12 +546,13 @@ passed the source digest check and complete authenticated Harbor pull. The
 [consumer source](../../clusters/homelab/apps/litellm/values.yaml) now pins this
 child and the full catalog excludes the failing index. This retains the image
 selected by the current amd64 nodes, but omits arm64 and attestation
-descriptors; re-evaluate before adding arm64 nodes. Re-run the full catalog
-after this consumer/catalog change merges. The scoped receipt alone does not
+descriptors; re-evaluate before adding arm64 nodes. The later protected
+[`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+passed the revised 214-image catalog. The earlier scoped receipt alone did not
 prove full coverage or authorize strict Talos mirrors.
 
 The two-image Traefik scope can publish the native probe independently of the
-pending full-catalog receipt. A scoped receipt still proves only selected image
+full-catalog receipt. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
@@ -522,8 +564,8 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage; the revised LiteLLM catalog still needs a successful `all` run. That
-upgrade must verify singleton nginx retains a rolling update, so its existing
+coverage; the revised LiteLLM catalog passed protected `all` run `40011909180`.
+That upgrade must verify singleton nginx retains a rolling update, so its existing
 Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
@@ -631,15 +673,32 @@ All five raw Grype matches remain recorded. These assessments cover this core
 binary only: registry daemon/configuration, the final container, changed future
 dependencies and deployed workloads still need independent verification.
 
-The [full-runtime audit](../../builds/harbor-core/scan.sh) now saves the exact
-Linux candidate from Docker after registry acceptance and scans the complete
-archive with lock-pinned Grype. Its [report checker](../../scripts/ci/harbor-core-scan-check.py)
-verifies the config hash against the inspected image ID, platform/distro,
-fresh report/database and absence of filtering, exclusions or VEX input.
-Available fixes fail this audit. Unfixed/unknown matches remain counted;
-successful collection does not mean CVE clearance or authorize publication.
-CI emits only an identity/report-hash/database/severity-count receipt while
-raw metadata and transport logs stay private and temporary inputs are removed.
+The [full-runtime audit](../../builds/harbor-core/scan.sh) exports the
+inspected Linux candidate by image ID after registry acceptance and scans its
+complete Docker archive with lock-pinned Grype. Its [report checker](../../scripts/ci/harbor-core-scan-check.py)
+accepts legacy JSON and current blob-path Docker-save config layouts. It
+checks that the archive config path digest matches its bytes. For Docker's
+classic image store, that config digest must equal the inspected ID. For the
+containerd image store, the inspected ID must equal the saved OCI index's
+single root descriptor; the checker verifies its blob hash, the unique Linux
+amd64 manifest's blob hash, and the selected config descriptor against the
+Docker-save config bytes. Grype's raw config hash and reported image ID must
+equal that selected config digest. This preserves the immutable export binding
+when Docker inspect reports an index or manifest digest instead of a config
+digest. It also verifies platform/distro, a fresh report/database,
+and absence of filtering, exclusions or VEX input. Available fixes fail this
+audit. Unfixed/unknown matches remain counted; successful collection does not
+mean CVE clearance or authorize publication. CI emits only an identity/report-
+hash/database/severity-count receipt while raw metadata and transport logs stay
+private and temporary inputs are removed. On failure, the [bounded diagnostic
+helper](../../scripts/ci/harbor-core-audit-status.sh) prints only a fixed scan
+stage or report-validation category from a separate temporary status file.
+Malformed status becomes `unknown`; the private log and report remain withheld.
+The category narrows investigation but does not relax the audit or establish
+vulnerability clearance. Identity failures distinguish archive structure,
+archive path/byte hash mismatch, missing inspected root descriptor, invalid
+descriptor graph, report config, reported image ID, platform and distro without
+printing any of those values.
 
 The [full-container receipt](../../docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json)
 records successful Linux audit CI at `279092e6`, with exact image/config identity
@@ -742,8 +801,8 @@ mirror rollout below extends this to third-party images.
 1. Validate static checks, rendered chart/manifests and Terragrunt plan. Merge
    through the repository's signed-commit and review gates.
 2. From a clean checkout of exact merged main, regenerate the Terragrunt stack
-   and plan/apply only `IaC/live/aws-ssm-parameters`, then
-   `IaC/live/argocd-apps/harbor`. Review saved plans and run Conftest before
+   and plan/apply only `IaC/homelab/us-west-2/shared/aws-ssm-parameters`, then
+   `IaC/homelab/us-west-2/apps/harbor/argocd`. Review saved plans and run Conftest before
    applying; reject deletes, replacements, or unrelated changes. The shared
    SSM unit must be inspected for earlier drift before calling it Harbor-only.
    The earlier Azure credential gap is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
@@ -848,14 +907,17 @@ Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
 `regctl` for the fresh complete authenticated pull. Other copy errors stop
 publication, and every selected artifact still needs digest and alias checks.
 Before copying an alias, the publisher retries a transient Harbor alias lookup
-up to three times. An expected missing-alias response proceeds to copy; an
+up to three times, including HTTP 5xx responses. An expected missing-alias
+response proceeds to copy; an
 authentication error or other hard lookup failure stops publication. A retry
 does not replace the final digest, alias, and authenticated pull checks.
 For an OCI index, the final authenticated Harbor pull retries classified
-transport failures up to five times with one temporary OCI directory and 2,
+transport and Harbor HTTP 5xx failures up to five times with one temporary OCI
+directory and 2,
 4, 8, then 16 seconds of backoff. `regctl --force-recursive` rechecks nested
 manifests and blobs while retaining completed content across attempts.
-Authentication, content, and other hard errors stop immediately; the pulled
+HTTP 4xx, authentication, content, and digest errors stop immediately; exhausted
+HTTP 5xx reads retain the public `server-error` category. The pulled
 index must still match the original digest. Full-catalog acceptance remains
 pending a protected receipt.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
@@ -882,16 +944,19 @@ Missing-artifact publication verifies source bytes before upload and independent
 checks the complete destination download.
 
 The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
-protected publication with complete Harbor pulls. The full platform image
-catalog and transitive render still lack a complete publication receipt;
-publishing the stock pair alone does not release the Enterprise rollout.
-The source-declared four-image publisher now builds the repository-owned journal
+protected publication with complete Harbor pulls. Protected
+[`all` run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+passed the 214-image platform catalog with complete authenticated pulls.
+The source-declared four-image publisher builds the repository-owned journal
 operator from an exact clean `main` checkout before registry credentials, then
 signs and completely pulls the controller, runtime, CLI and operator images.
-The new operator image has no publication receipt yet. The protected workflow
-reports one fixed failure phase, including preflight and cleanup, in its job
-summary; private transport output stays withheld, and a failed run supplies no
-acceptance receipt.
+Protected [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+passed all four authenticated pulls and signatures from source `fda0d68`; the
+selected disabled operator is pinned at
+`sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
+The protected workflow reports one fixed failure phase, including preflight
+and cleanup, in its job summary; private transport output stays withheld, and
+a failed run supplies no acceptance receipt.
 The [post-shutdown capacity receipt](../../docs/evidence/openclaw-enterprise-acceptance.md)
 also leaves isolated canary placement blocked; a mirror receipt cannot clear
 that independent gate.
@@ -899,8 +964,8 @@ The Enterprise foundation Application is declared with automatic sync disabled,
 has not been applied, and deploys neither image.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 references the published controller/runtime digests and overrides only the
-stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. Its local
-render comparison does not prove that every transitive image is published or
+stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. The
+catalog publication passed, but its local render comparison does not prove
 that any Enterprise Pod has pulled from Harbor.
 See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
@@ -917,6 +982,9 @@ reboot checks. Preserve DNS, API, HBONE, webhook, storage, and recovery paths an
 prove direct-IP, alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
+The pinned Cordium `ws-main` and Octelium `svc-upstream` generators still allow
+public IPv4/IPv6 traffic on every port; another NetworkPolicy cannot narrow
+those rules. Generator corrections and isolated-canary traffic remain open.
 
 The staged `harbor-only-images` ValidatingAdmissionPolicy audits Pod create and
 update, including init and ephemeral containers, across namespaces. Its binding
@@ -931,9 +999,9 @@ requires authenticated Harbor pulls and signatures before emitting immutable
 digests. Publication and cold-pull acceptance remain pending; the runner pool
 stays disabled. See the [runner contract](../../builds/cordium-runner/README.md).
 
-No consumer migration, full-catalog publication, zero-CVE result or live egress
-enforcement is established by these prerequisites. Image pulls remain
-node/containerd traffic, outside Istio pod interception.
+No consumer migration, zero-CVE result or live egress enforcement is
+established by these prerequisites. The full catalog has a protected receipt;
+image pulls remain node/containerd traffic, outside Istio pod interception.
 
 ## Proposed Chainguard automation
 

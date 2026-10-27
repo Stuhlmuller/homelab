@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: reconcile
-          image: ghcr.io/linuxserver/bazarr:1.6.2@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c
+          image: harbor.stinkyboi.com/mirror/ghcr.io/linuxserver/bazarr:1.6.2@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c
           command: [/lsiopy/bin/python3, /bootstrap/bootstrap.py, reconcile]
           resources:
             requests:

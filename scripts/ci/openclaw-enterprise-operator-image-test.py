@@ -35,6 +35,23 @@ class OperatorImageBuild(unittest.TestCase):
             shutil.copyfile(ROOT / path, self.root / path)
         self.calls = self.root / "docker-calls"
         self.context = self.root / "context-record"
+        self.nix_calls = self.root / "nix-calls"
+        self.static_yq = self.root / "static-yq"
+        (self.static_yq / "bin").mkdir(parents=True)
+        static_binary = self.static_yq / "bin" / "yq"
+        static_binary.write_text("#!/bin/sh\necho pinned static yq\n")
+        static_binary.chmod(0o700)
+        static_readelf = self.static_yq / "bin" / "readelf"
+        static_readelf.write_text('''#!/usr/bin/env bash
+set -euo pipefail
+[[ "$1" == -l && "$2" == "$STATIC_YQ_ROOT/bin/yq" ]] || exit 97
+if [[ "${FIXTURE_DYNAMIC:-}" == true ]]; then
+  printf '%s\\n' 'INTERP Requesting program interpreter'
+else
+  printf '%s\\n' 'ELF program headers without an interpreter'
+fi
+''')
+        static_readelf.chmod(0o700)
         self.executable("git", f'''case "$1" in
   rev-parse) printf '%s\\n' {SHA} ;;
   status) [[ "${{FIXTURE_DIRTY:-}}" != true ]] || printf ' M scripts/openclaw-enterprise.py\\n' ;;
@@ -48,10 +65,17 @@ esac
 esac
 ''')
         self.executable("kubectl", "printf 'fixture kubectl\\n'\n")
-        self.executable("yq", "printf 'fixture yq\\n'\n")
+        self.executable("yq", "printf 'fixture dynamic yq\\n'\n")
+        self.executable("nix", '''printf '%s\\n' "$*" >>"$NIX_CALLS"
+[[ "$1" == build && "$*" == *'CGO_ENABLED = "0"'* &&
+   "$*" == *'flake.inputs.nixpkgs'* && "$*" == *'x86_64-linux'* &&
+   "$*" == *'pkgs.binutils-unwrapped'* ]] || exit 97
+printf '%s\\n' "$STATIC_YQ_ROOT"
+''')
         self.executable("docker", '''printf '%s\\n' "$*" >>"$DOCKER_CALLS"
 if [[ "$1 $2" == 'buildx build' ]]; then
   context="${@: -1}"
+  cmp "$context/bin/yq" "$STATIC_YQ_ROOT/bin/yq"
   sha256sum "$context/scripts/openclaw-enterprise.py" >"$CONTEXT_RECORD"
   cat "$context/operator-source.sha" >>"$CONTEXT_RECORD"
   test -s "$context/clusters/homelab/apps/openclaw-enterprise/installation.yaml"
@@ -74,7 +98,9 @@ fi
             cwd=self.root,
             env={**os.environ, "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
                  "TMPDIR": str(self.root), "DOCKER_CALLS": str(self.calls),
-                 "CONTEXT_RECORD": str(self.context), "FIXTURE_SHA": SHA, **extra},
+                 "CONTEXT_RECORD": str(self.context), "FIXTURE_SHA": SHA,
+                 "NIX_CALLS": str(self.nix_calls),
+                 "STATIC_YQ_ROOT": str(self.static_yq), **extra},
             capture_output=True, text=True, timeout=20, check=False,
         )
 
@@ -90,6 +116,10 @@ fi
                             and "--help" in call for call in calls))
         self.assertTrue(any("--entrypoint kubectl" in call for call in calls))
         self.assertTrue(any("--entrypoint yq" in call for call in calls))
+        self.assertTrue(any("--entrypoint yq" in call and
+                            "-o=json . /opt/homelab/clusters/homelab/apps/"
+                            "openclaw-enterprise/values.yaml" in call for call in calls))
+        self.assertIn('CGO_ENABLED = "0"', self.nix_calls.read_text())
         self.assertEqual(self.context.read_text().splitlines()[-1], SHA)
         dockerfile = (self.root / "builds/openclaw-enterprise/operator.Dockerfile").read_text()
         self.assertIn("python:3.13-bookworm@sha256:", dockerfile)
@@ -102,6 +132,18 @@ fi
         result = self.build(FIXTURE_LABEL_SHA="b" * 40)
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(self.calls.exists())
+
+    def test_missing_static_yq_blocks_before_docker(self):
+        result = self.build(STATIC_YQ_ROOT=str(self.root / "missing"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Static operator yq build tools are unavailable", result.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_dynamic_yq_blocks_before_docker(self):
+        result = self.build(FIXTURE_DYNAMIC="true")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dynamic ELF interpreter", result.stderr)
+        self.assertFalse(self.calls.exists())
 
     def test_embedded_source_marker_must_match_reviewed_sha(self):
         with mock.patch.object(source, "ROOT", self.root):

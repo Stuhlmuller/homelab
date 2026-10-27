@@ -1,0 +1,35 @@
+name: OpenClaw Discord Offline Cache
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/openclaw-discord-offline-cache.yml
+      - scripts/openclaw-discord-offline-cache.py
+      - scripts/ci/openclaw-discord-offline-cache-test.py
+      - scripts/config/openclaw-enterprise.json
+      - clusters/homelab/apps/openclaw/values.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-install:
+    name: Fresh State Offline Install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Build Public Package Cache And Prove Offline Install
+        run: |
+          set -euo pipefail
+          python3 -I scripts/ci/openclaw-discord-offline-cache-test.py
+          output="${RUNNER_TEMP}/openclaw-discord-cache"
+          trap 'rm -rf "$output"' EXIT
+          python3 -I scripts/openclaw-discord-offline-cache.py --output-dir "$output"
+          test -s "$output/npm-cache.tar"
+          test -s "$output/dependency-lock.json"
+          test -s "$output/manifest.json"

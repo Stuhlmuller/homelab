@@ -16,7 +16,7 @@ and a target-account `/me` response from the same Graph token. `userType:
 Member` and the historical `creationType: Invitation` alone do not prove
 local-tenant authentication.
 
-`IaC/operator/azuread-ci-identities` owns two applications, their service
+`IaC/homelab/us-west-2/operator/azuread-ci-identities` owns two applications, their service
 principals, exact GitHub federation subjects, requested Microsoft Graph
 permissions and the corresponding permission grants. This operator unit uses
 the shared encrypted remote state and is excluded from normal CI traversal.
@@ -45,8 +45,8 @@ principal; it is not limited to assigning Fleet administrators.
 
 ## Custom-domain and Mac-pilot boundary
 
-`IaC/operator/entra-stuhlmuller-domain` and
-`IaC/operator/entra-stuhlmuller-pilot-user` remain outside the CI credential
+`IaC/homelab/us-west-2/operator/entra-stuhlmuller-domain` and
+`IaC/homelab/us-west-2/operator/entra-stuhlmuller-pilot-user` remain outside the CI credential
 boundary. The former uses a human Entra operator to read and verify the
 existing non-default, managed `stuhlmuller.net` domain; the latter retains only
 the separate cloud-only `rodman.mac@stuhlmuller.net` pilot. The exact
@@ -66,7 +66,7 @@ saved-plan sequence.
 
 ## Google Workspace federation
 
-`IaC/operator/entra-google-workspace-federation` is a separate, human-operated
+`IaC/homelab/us-west-2/operator/entra-google-workspace-federation` is a separate, human-operated
 Terraform unit. It creates the Graph `internalDomainFederation` only after the
 Google Workspace Microsoft Office 365 SAML app has supplied validated metadata
 through the operator-only SSM contract. Google Workspace auto-provisioning must
