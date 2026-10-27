@@ -130,7 +130,7 @@ test_rejects_unreviewed_platform_stage_helper if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	changed := object.union(steps[5], {"run": replace(
 		platform_maintenance_private_run,
-		"6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312",
+		"c76e06e32214a2f9525725c6b09987a9ab4d12b5dacd83a9a0f04ff4ccfedd31",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 	)})
 	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
@@ -196,6 +196,8 @@ platform_maintenance_fixture := {
 		"evidence_source_sha": {},
 		"capture_run_id": {},
 		"reviewed_snapshot_sha256": {},
+		"direct_recovery_receipt_id": {"description": "Non-secret opaque direct-LAN recovery proof ID for upgrade stages", "required": false, "type": "string"},
+		"off_node_etcd_receipt_id": {"description": "Non-secret opaque off-node etcd publication ID for upgrade stages", "required": false, "type": "string"},
 	}}},
 	"jobs": {
 		"static-policy": {"name": "Validate Platform Stage Source", "permissions": {"contents": "read"}, "runs-on": "ubuntu-24.04", "steps": [
@@ -227,6 +229,59 @@ platform_maintenance_fixture := {
 
 platform_maintenance_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 platform_maintenance_owner_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+
+platform_etcd_fixture := {
+	"name": "Platform Etcd Prerequisite Publication",
+	"permissions": {},
+	"true": {"workflow_dispatch": {"inputs": {
+		"expected_sha": {"description": "Exact current main commit", "required": true, "type": "string"},
+		"snapshot_sha256": {"description": "Non-secret SHA-256 selector from reviewed offsite manifest", "required": true, "type": "string"},
+		"publication_id": {"description": "Non-secret opaque offsite publication ID (32 lowercase hex)", "required": true, "type": "string"},
+	}}},
+	"jobs": {
+		"static-policy": {"name": "Validate Etcd Prerequisite Source", "runs-on": "ubuntu-24.04", "permissions": {"contents": "read"}, "steps": [
+			{"name": "Verify Reviewed Dispatch", "env": platform_etcd_dispatch_env, "run": platform_etcd_dispatch_check},
+			platform_maintenance_private_checkout,
+			platform_maintenance_install_nix,
+			{"name": "Run Reviewed Static Checks", "run": platform_etcd_static_checks},
+		]},
+		"publish": {"name": "Publish Reviewed Off-Node Proof", "needs": ["static-policy"],
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"runs-on": "ubuntu-24.04", "timeout-minutes": 120,
+			"concurrency": {"group": "platform-etcd-prerequisite-production", "cancel-in-progress": false},
+			"environment": {"name": "homelab-production"},
+			"permissions": {"contents": "read", "id-token": "write"},
+			"steps": [
+				{"name": "Verify Exact Main Before Credentials", "env": platform_etcd_main_env, "run": platform_etcd_main_check},
+				platform_maintenance_private_checkout,
+				platform_maintenance_install_nix,
+				{"name": "Recheck Exact Main Before AWS Credentials", "env": platform_etcd_main_env, "run": platform_etcd_main_check},
+				platform_etcd_aws_credentials,
+				{"name": "Restore And Publish Exact Off-Node Proof", "env": platform_etcd_private_env, "run": platform_etcd_private_run},
+			],
+		},
+	},
+}
+
+test_allows_exact_platform_etcd_publication if {
+	violations := deny with input as platform_etcd_fixture
+	count(violations) == 0
+}
+
+test_rejects_unreviewed_platform_etcd_publication if {
+	every candidate in [
+		object.union(platform_etcd_fixture, {"true": object.union(platform_etcd_fixture["true"], {"workflow_call": {}})}),
+		object.union(platform_etcd_fixture, {"jobs": object.union(platform_etcd_fixture.jobs, {"publish": object.union(platform_etcd_fixture.jobs.publish, {"steps": [object.union(platform_etcd_fixture.jobs.publish.steps[0], {"run": replace(platform_etcd_main_check, "test \"$GITHUB_EVENT_NAME\" = workflow_dispatch\n", "")}), platform_etcd_fixture.jobs.publish.steps[1], platform_etcd_fixture.jobs.publish.steps[2], platform_etcd_fixture.jobs.publish.steps[3], platform_etcd_fixture.jobs.publish.steps[4], platform_etcd_fixture.jobs.publish.steps[5]]})})}),
+		object.union(platform_etcd_fixture, {"defaults": {"run": {"shell": "python"}}}),
+		object.union(platform_etcd_fixture, {"jobs": object.union(platform_etcd_fixture.jobs, {"publish": object.union(platform_etcd_fixture.jobs.publish, {"environment": {"name": "homelab-plan"}})})}),
+		object.union(platform_etcd_fixture, {"jobs": object.union(platform_etcd_fixture.jobs, {"publish": object.union(platform_etcd_fixture.jobs.publish, {"steps": [platform_etcd_fixture.jobs.publish.steps[0], platform_etcd_fixture.jobs.publish.steps[1], platform_etcd_fixture.jobs.publish.steps[2], platform_etcd_fixture.jobs.publish.steps[3], object.union(platform_etcd_aws_credentials, {"with": object.union(platform_etcd_aws_credentials.with, {"role-to-assume": "arn:aws:iam::716182248480:role/Github-TF-State"})}), platform_etcd_fixture.jobs.publish.steps[5]]})})}),
+		object.union(platform_etcd_fixture, {"jobs": object.union(platform_etcd_fixture.jobs, {"publish": object.union(platform_etcd_fixture.jobs.publish, {"steps": [platform_etcd_fixture.jobs.publish.steps[0], platform_etcd_fixture.jobs.publish.steps[1], platform_etcd_fixture.jobs.publish.steps[2], platform_etcd_fixture.jobs.publish.steps[3], platform_etcd_fixture.jobs.publish.steps[4], object.union(platform_etcd_fixture.jobs.publish.steps[5], {"run": replace(platform_etcd_private_run, "scripts/platform-etcd-prerequisite-publish.py", "scripts/platform-etcd-prerequisite.py")})]})})}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "off-node etcd publication requires exact owner-reviewed main dispatch")
+	}
+}
 
 test_allows_exact_openclaw_legacy_operation if {
 	candidate := workflow_with_openclaw_legacy_operation(

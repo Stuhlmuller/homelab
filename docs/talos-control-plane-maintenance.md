@@ -489,24 +489,42 @@ serial workers and the sole control plane. It never applies the Kubernetes
 version patches to live nodes.
 
 Before execution, the helper downloads exactly one checksummed, KMS-encrypted
-S3 version of each `placement`, `direct-recovery`, `off-node-etcd-backup`, and
-`artifact-publication` receipt from
-`openclaw-enterprise/platform/receipts/<current-main-sha>/`. The placement
+S3 version of each prerequisite. `placement.json` and
+`artifact-publication.json` stay at
+`openclaw-enterprise/platform/receipts/<current-main-sha>/`. The two expiring
+proofs use explicit immutable keys under that prefix:
+`direct-recovery/<direct_recovery_receipt_id>.json` and
+`off-node-etcd-backup/<off_node_etcd_receipt_id>.json`. Upgrade dispatches
+must supply both 32-character lowercase hex IDs; the reader never selects the
+newest object implicitly or accepts a second version or delete marker. Both IDs
+are non-secret opaque selectors visible in public Actions metadata; receipt
+contents and S3 version IDs stay private. The placement
 receipt must attest measured capacity and the admitted isolated canary. Direct
 recovery must attest authenticated Talos access to `10.1.0.199:50000` and all
-four named nodes from the LAN. The off-node etcd receipt must bind a snapshot
+four named nodes from the LAN; its client certificate must still have at least
+three hours of validity when a stage starts, covering the 120-minute workflow
+and one hour of margin. The off-node etcd receipt must bind a snapshot
 SHA-256 and versioned object with an offline restore check. The latter two
 checks must be at most six hours old; all four receipts must be verified and
-bound to the dispatched SHA. A source-owned candidate producer for the off-node
-etcd receipt is `scripts/platform-etcd-prerequisite.py`. It requires a clean,
-exact-current-main GitHub Actions dispatch context, reads one immutable version
-each of the committed offsite snapshot and manifest, checks S3 KMS/checksum
-metadata, and runs the pinned `etcdutl` offline restore before staging a
-private candidate. It never writes S3 or tests control-plane recovery. No
-protected workflow or dedicated IAM role yet reads raw etcd bytes and
-publishes this candidate under the platform receipt key. The other three
-receipt producers and review paths are also pending T023. Keep
-`activationEnabled` false and the canary node unset.
+bound to the dispatched SHA. The source-owned off-node producer is
+`scripts/platform-etcd-prerequisite-publish.py`, invoked only by the protected
+`Platform Etcd Prerequisite Publication` workflow. Its dispatch accepts the
+exact current main SHA, snapshot SHA-256, and random offsite publication ID as
+**non-secret selectors visible in public Actions metadata**. Never enter a
+snapshot, manifest, object version ID, credential, or private receipt in those
+inputs. After owner dispatch and production-environment checks, the dedicated
+`platform-etcd-receipt-role` reads only the committed etcd bucket prefix,
+verifies one version of each snapshot/manifest, runs the pinned `etcdutl`
+offline restore, then conditionally publishes one checksummed, KMS-encrypted
+small receipt to the application bucket. It re-enumerates the exact key and
+reads back that version; an existing, second, deleted, stale, or partial proof
+blocks completion. Freshness comes from the original snapshot manifest time,
+so restoring an old snapshot cannot renew it. A later fresh backup gets a new
+publication ID and key. The dedicated IAM role and workflow remain unapplied
+and undispatched pending protected review and operator Plan. This offline proof
+does not test direct control-plane recovery. The other three receipt producers
+and review paths remain T023 work. Keep `activationEnabled` false and the
+canary node unset.
 
 The executor writes a `started` marker to the KMS-encrypted, versioned backup
 bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its

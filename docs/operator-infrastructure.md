@@ -74,6 +74,18 @@ with an existing administrator session. Generic CI validates this unit offline
 but does not live-plan or apply it. Bucket creation does not publish snapshots
 or prove offsite recovery; those verification steps remain separate.
 
+`platform-etcd-receipt-role` is a separate operator unit for the protected
+`Platform Etcd Prerequisite Publication` workflow. Its OIDC trust is restricted
+to this repository's production environment, exact main ref, repository ID,
+and workflow name. Its inline policy and permissions boundary allow read-only
+versioned access under the dedicated bucket's `etcd/` prefix and write/readback
+only under the application bucket's
+`openclaw-enterprise/platform/receipts/*/off-node-etcd-backup/` prefix. KMS
+use is limited to S3 with each bucket's encryption context. It grants no raw
+etcd reads to `Github-TF-State` or the unprotected plan environment. Review a
+saved operator Plan and apply this unit before dispatching the workflow; the
+source change itself does not create the role or publish a receipt.
+
 ## GitHub Actions apply-role policy
 
 `github-actions-role-policy` owns the existing `Github-TF-State` role trust and

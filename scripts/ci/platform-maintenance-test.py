@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -58,6 +58,7 @@ class PlatformMaintenance(unittest.TestCase):
     def prerequisites(self, sha, config=None):
         config = config or self.config
         captured = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        cert_expiry = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         return {
             "placement": {"sourceSha": sha, "verified": True,
                           "canaryNode": config["canary"]["node"], "measured": True,
@@ -65,11 +66,16 @@ class PlatformMaintenance(unittest.TestCase):
             "direct-recovery": {"sourceSha": sha, "verified": True,
                                 "capturedAt": captured, "transport": "direct-lan-authenticated-talos",
                                 "endpoint": "10.1.0.199:50000", "nodes": list(self.module.NODES),
-                                "talosMtls": True},
+                                "publicationId": "b" * 32,
+                                "clientCertNotAfter": cert_expiry, "talosMtls": True},
             "off-node-etcd-backup": {"sourceSha": sha, "verified": True,
                                      "capturedAt": captured, "offNode": True,
                                      "offlineRestoreVerified": True,
-                                     "snapshotSha256": "a" * 64, "objectVersionId": "version-1"},
+                                     "snapshotSha256": "a" * 64, "objectVersionId": "version-1",
+                                     "manifestVersionId": "manifest-v1",
+                                     "objectPrefix": f"etcd/{'a' * 64}/{'c' * 32}/",
+                                     "offlineRestore": "etcdutl-offline-database-restore",
+                                     "controlPlaneRecoveryTested": False},
             "artifact-publication": {"sourceSha": sha, "verified": True,
                                      "talosImages": {f"talos-{item['to']}": item["installerImage"]
                                                      for item in config["talosStages"]},
@@ -900,6 +906,7 @@ class PlatformMaintenance(unittest.TestCase):
 
     def test_current_sha_prerequisites_are_restored_from_one_verified_version(self):
         sha = "a" * 40
+        references = {"direct-recovery": "b" * 32, "off-node-etcd-backup": "c" * 32}
         target = self.module.receipt_target()
         store = self.module.DurableReceipts(target)
         records = self.prerequisites(sha)
@@ -907,27 +914,88 @@ class PlatformMaintenance(unittest.TestCase):
         def versions(_service, operation, arguments=()):
             self.assertEqual(operation, "list-object-versions")
             key = arguments[-1]
+            self.assertIn(key, {self.module.prerequisite_key(sha, name,
+                          references.get(name)) for name in records})
             return {"IsTruncated": False, "Versions": [
                 {"Key": key, "VersionId": "version-1", "IsLatest": True}]}
 
         def download(key, version, _directory):
             self.assertEqual(version, "version-1")
-            return json.dumps(records[Path(key).stem]).encode()
+            name = next(name for name in records if key ==
+                self.module.prerequisite_key(sha, name, references.get(name)))
+            return json.dumps(records[name]).encode()
 
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(store, "call", side_effect=versions), \
                 patch.object(store, "download", side_effect=download):
-            store.load_prerequisites(sha, Path(directory))
+            store.load_prerequisites(sha, Path(directory), references)
             self.assertEqual(self.module.read_receipts(Path(directory)), records)
             with self.assertRaisesRegex(ValueError, "differs"):
                 (Path(directory) / "placement.json").write_text("{}")
-                store.load_prerequisites(sha, Path(directory))
+                store.load_prerequisites(sha, Path(directory), references)
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(store, "call", return_value={"IsTruncated": False,
                     "Versions": [{"Key": f"{self.module.PREREQUISITE_PREFIX}/{sha}/placement.json",
                                   "VersionId": "v1", "IsLatest": False}]}), \
                 self.assertRaisesRegex(ValueError, "ambiguous"):
-            store.load_prerequisites(sha, Path(directory))
+            store.load_prerequisites(sha, Path(directory), references)
+
+    def test_expiring_prerequisite_requires_explicit_exact_publication_ids(self):
+        sha = "a" * 40
+        expected = (f"{self.module.PREREQUISITE_PREFIX}/{sha}/"
+                    f"off-node-etcd-backup/{'c' * 32}.json")
+        self.assertEqual(self.module.prerequisite_key(
+            sha, "off-node-etcd-backup", "c" * 32), expected)
+        self.assertEqual(self.module.prerequisite_key(
+            sha, "placement"), f"{self.module.PREREQUISITE_PREFIX}/{sha}/placement.json")
+        for references in ({}, {"direct-recovery": "b" * 32},
+                           {"direct-recovery": "b" * 32,
+                            "off-node-etcd-backup": "../c"},
+                           {"direct-recovery": "b" * 32,
+                            "off-node-etcd-backup": "c" * 32,
+                            "placement": "d" * 32}):
+            with self.subTest(references=references), tempfile.TemporaryDirectory() as directory:
+                with self.assertRaisesRegex(ValueError, "explicit expiring"):
+                    self.module.DurableReceipts(self.module.receipt_target()).load_prerequisites(
+                        sha, Path(directory), references)
+        with self.assertRaisesRegex(ValueError, "fixed prerequisite"):
+            self.module.prerequisite_key(sha, "placement", "d" * 32)
+
+    def test_expiring_receipt_content_must_bind_selected_key(self):
+        sha = "a" * 40
+        references = {"direct-recovery": "b" * 32, "off-node-etcd-backup": "c" * 32}
+        for name, field, value in (
+            ("direct-recovery", "publicationId", "d" * 32),
+            ("off-node-etcd-backup", "objectPrefix", f"etcd/{'a' * 64}/{'d' * 32}/"),
+        ):
+            records = self.prerequisites(sha)
+            records[name][field] = value
+            def versions(_service, operation, arguments=()):
+                key = arguments[-1]
+                return {"IsTruncated": False, "Versions": [
+                    {"Key": key, "VersionId": "v1", "IsLatest": True}]}
+            def download(key, _version, _directory):
+                selected = next(item for item in records if key ==
+                    self.module.prerequisite_key(sha, item, references.get(item)))
+                return json.dumps(records[selected]).encode()
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                store = self.module.DurableReceipts(self.module.receipt_target())
+                with patch.object(store, "call", side_effect=versions), \
+                        patch.object(store, "download", side_effect=download), \
+                        self.assertRaisesRegex(ValueError, "selected key"):
+                    store.load_prerequisites(sha, Path(directory), references)
+
+    def test_kubernetes_still_loads_separate_istio_completions(self):
+        store = self.module.DurableReceipts(self.module.receipt_target())
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(store, "load_one") as load:
+            store.load_istio_completions(self.config, Path(directory))
+            self.assertEqual(load.call_count, len(self.config["istioStages"]))
+            for item, call in zip(self.config["istioStages"], load.call_args_list):
+                stage = f"istio-{item['to']}"
+                self.assertEqual(call.args, (
+                    f"openclaw-enterprise/platform/stages/{stage}/verified.json",
+                    Path(directory).resolve() / f"{stage}.json"))
 
     def test_recovery_prerequisites_require_fresh_direct_and_off_node_proof(self):
         sha = "a" * 40
@@ -936,8 +1004,12 @@ class PlatformMaintenance(unittest.TestCase):
         for name, field, value in (
             ("direct-recovery", "transport", "octelium"),
             ("direct-recovery", "capturedAt", "2000-01-01T00:00:00Z"),
+            ("direct-recovery", "publicationId", "invalid"),
+            ("direct-recovery", "clientCertNotAfter", "2000-01-01T00:00:00Z"),
             ("off-node-etcd-backup", "offlineRestoreVerified", False),
             ("off-node-etcd-backup", "objectVersionId", "null"),
+            ("off-node-etcd-backup", "manifestVersionId", "null"),
+            ("off-node-etcd-backup", "objectPrefix", "etcd/other/"),
             ("placement", "measured", False),
         ):
             changed = copy.deepcopy(receipts)

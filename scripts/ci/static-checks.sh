@@ -52,6 +52,7 @@ python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-etcd-prerequisite-test.py
+python3 -I scripts/ci/platform-etcd-prerequisite-publish-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
 python3 -I scripts/ci/platform-maintenance-credentials-test.py
 python3 -I scripts/ci/istio-image-overlays-test.py
