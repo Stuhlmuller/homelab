@@ -188,8 +188,10 @@ checks the stopped writer and reader identity, starts a disposable process
 namespace with only loopback, rejects routable interfaces and routes, and
 requires direct IPv4/IPv6 egress probes to return `ENETUNREACH` (an unsupported
 IPv6 address family is accepted only when the IPv4 probes and route checks pass).
-It does not copy
-state, start the old gateway, create a Kubernetes object, or prove that a later
+Failures expose only a fixed stage category: access, source integrity, current
+main, stopped reader, namespace proof, or post-check. Private diagnostics stay
+on the protected runner. It does not copy state, start the old gateway, create a
+Kubernetes object, or prove that a later
 rehearsal Pod has the same seccomp and namespace behavior. A failed stage leaves
 T014 blocked; a successful stage is capability evidence only. The eventual
 isolated boot must repeat these checks in the same namespace that runs the

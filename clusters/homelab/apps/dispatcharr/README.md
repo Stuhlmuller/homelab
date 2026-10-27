@@ -52,6 +52,12 @@ before relying on the service. The database has 30-minute startup and runtime
 liveness windows plus a 120-second termination grace so NFS-backed recovery can
 complete without a restart loop.
 
+The dormant [application-backup publisher](../../../../scripts/application-backup.py)
+accepts only a paired `globals.sql`, `dispatcharr.dump`, `data.tar` and
+`capture.json` with a reviewed stopped-writer reference. It does not capture
+these files or prove a restore. Keep both Pods running and both claims retained
+until a separate capture and isolated recovery drill pass.
+
 The QNAP export maps writes from container root to UID/GID `65534`. The web
 container sets upstream `PUID`/`PGID` to that owner so nginx and Django can use
 the data directories without a forbidden `chown`. Its short wrapper gives the
