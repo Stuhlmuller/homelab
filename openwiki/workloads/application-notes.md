@@ -68,6 +68,16 @@ Live recovery remains unverified until the GitOps change rolls out. Grafana's
 frontend-settings endpoint also returned 401; dashboard integration is a separate
 follow-up requiring its existing authentication contract to be checked.
 
+On 2026-10-27, the Kiali CR reported `Failure` while the operator rejected a
+ServiceAccount label derived from `deployment.image_version` containing
+`v2.26.0@sha256:`. No server Deployment or endpoints existed, so the private
+`kiali.stinkyboi.com` route returned 502 despite working DNS and ingress.
+The repository fix puts the bare mirror digest in `image_version` and `sha256`
+in `image_digest`, as required by the
+[Kiali installation FAQ](https://kiali.io/docs/faq/installation/). The static
+gate checks that the digest matches the Harbor catalog. Live recovery still
+requires GitOps reconciliation and the Kiali README validation after merge.
+
 ## Dispatcharr
 
 Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
