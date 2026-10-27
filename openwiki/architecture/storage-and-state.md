@@ -450,11 +450,13 @@ restored 75 tables using the older workflow; it lacks source-volume identity
 and does not qualify the pending move. A fresh receipt matching the still-bound
 PVC/PV is required before placement changes. This covers PostgreSQL only;
 ClickHouse, Valkey, raw objects, secrets, and whole-service recovery remain
-separate. The draft PostgreSQL change pins its `Recreate` Deployment to `acer`
-with the existing NFS claim. The rollout stops the old Pod before remounting on
+separate. A read-only 2026-10-26 check found the source Pod on
+`zimaboard-1`; verify its placement again before rollout. The draft PostgreSQL
+change pins its `Recreate` Deployment to `acer` with the existing NFS claim.
+The rollout stops the old Pod before remounting on
 `acer`, interrupts database access, and requires current capacity, claim-binding,
 and post-move ingestion checks. It has not run. See the
-[Langfuse move runbook](../../clusters/homelab/apps/langfuse/README.md#postgresql-move-off-zimaboard-2).
+[Langfuse move runbook](../../clusters/homelab/apps/langfuse/README.md#postgresql-placement-on-acer).
 The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
 and permanently detaches them without deleting their files. Repeated merge
 failures caused shared-NAS metadata pressure; application tables remain attached.

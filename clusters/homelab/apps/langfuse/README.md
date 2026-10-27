@@ -81,12 +81,14 @@ Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
 startup and ingestion. Keep the existing PVC and require a separate reviewed
 cutover and rollback before moving the database.
 
-## PostgreSQL move off `zimaboard-2`
+## PostgreSQL placement on `acer`
 
-The PostgreSQL Deployment pins to `acer` and keeps its existing NFS PVC and
-`Recreate` strategy. This changes only Pod placement; it does not copy or reset
-database files. `acer` has mounted other NFS workloads, but recheck its free
-memory, node health, and the claim's live binding immediately before rollout.
+A read-only check on 2026-10-26 found the running PostgreSQL Pod on
+`zimaboard-1`. Recheck its source node immediately before rollout; scheduling
+can change. The proposed Deployment pins to `acer` and keeps its existing NFS
+PVC and `Recreate` strategy. This changes only Pod placement; it does not copy
+or reset database files. Recheck `acer` memory, node health, and the claim's
+live binding immediately before rollout.
 
 Before merging the placement change, run a fresh protected checkpoint from
 exact current `main` for the independently inspected Bound, Retain NFS source
@@ -103,15 +105,15 @@ The `Recreate` rollout stops the old Pod before starting it on `acer`. Database
 access stays down until NFS remount and PostgreSQL startup finish; the duration
 is not guaranteed. Verify the new Pod is Ready on `acer`, the same PVC is mounted,
 Langfuse web and worker recover, and a fresh event is ingested. If remount fails,
-keep the canary taint disabled and use a reviewed GitOps change to pin PostgreSQL
-back to `zimaboard-2` while preserving the PVC. Do not restore a dump over a
-running database.
+keep the canary taint disabled and use a reviewed GitOps change to restore
+the verified pre-move placement while preserving the PVC. Do not restore a dump
+over a running database.
 
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
-The worker cannot schedule on `zimaboard-2`: its 1 GiB limit can overwhelm that
-worker's 1.28 GiB allocatable memory alongside node services and PostgreSQL.
+The worker is unsafe on `zimaboard-2`: its 1 GiB limit can overwhelm that
+node's 1.28 GiB allocatable memory alongside system services.
 The pinned image uses Node 24 with no runtime heap override. Reserve the full
 container budget so scheduling accounts for memory beyond the JavaScript heap.
 The pinned-chart check verifies both rendered web memory values.
