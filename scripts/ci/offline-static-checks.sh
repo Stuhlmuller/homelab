@@ -365,8 +365,18 @@ yq -e '
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"
 
-echo "::group::Kiali shell-free Prometheus readiness"
+echo "::group::Kiali server digest and Prometheus readiness"
 kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e --slurpfile catalog scripts/config/harbor-images.json '
+    .cr.spec.deployment as $deployment |
+    $deployment.image_name == "harbor.stinkyboi.com/mirror/quay.io/kiali/kiali" and
+    $deployment.image_digest == "sha256" and
+    ($deployment.image_version | test("^[0-9a-f]{64}$")) and
+    ([$catalog[0].images[] |
+      select(.source == ("quay.io/kiali/kiali:v2.26.0@sha256:" + $deployment.image_version))
+    ] | length == 1)
+  ' >/dev/null
 yq -o=json '.' "$kiali_values" |
   jq -e '
     [
