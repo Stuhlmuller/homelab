@@ -39,6 +39,7 @@ python3 -I scripts/ci/openclaw-enterprise-active-test.py
 python3 -I scripts/ci/openclaw-enterprise-backup-transaction-test.py
 python3 -I scripts/ci/openclaw-enterprise-backup-coordinator-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-chain-test.py
+python3 -I scripts/ci/openclaw-enterprise-s3-proof-test.py
 python3 -I scripts/ci/openclaw-enterprise-pod-watch-test.py
 python3 -I scripts/ci/openclaw-enterprise-recovery-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py

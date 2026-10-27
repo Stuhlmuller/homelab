@@ -83,6 +83,7 @@ class RecoveryChain(unittest.TestCase):
         self.assertEqual(receipt["scope"], "source-only-recovery-chain")
         self.assertFalse(material["publishable"] or receipt["publishable"])
         self.assertEqual(receipt["materialSha256"], material["materialSha256"])
+        self.assertEqual(receipt["ciphertextBytes"], self.ciphertext.stat().st_size)
         self.assertEqual(receipt["namespaceId"], "ns_one")
         self.assertEqual(receipt["restoreRunId"], 102)
 

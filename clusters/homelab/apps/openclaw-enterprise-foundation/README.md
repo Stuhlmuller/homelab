@@ -96,6 +96,11 @@ hashes all staged files and directories, checks journal/tenant/Agent identity,
 and binds proposed ciphertext, exact bucket/key/version and distinct publisher
 and isolated-restore run references. It does not authenticate S3 or workflow
 runs, prove a restore, promote the marker or return a publishable receipt.
+The source-only [S3 version readback](../../../../scripts/ci/openclaw-enterprise-s3-proof.py)
+requires the dedicated production publisher role, declared versioned KMS
+bucket and exact object metadata. It hashes every byte of the immutable
+ciphertext version in bounded ranges and returns only an unpublishable receipt.
+No protected caller, upload, independent restore or schedule uses it yet.
 The source-only
 [reader emitter](../../../../scripts/ci/openclaw-enterprise-reader-archive.py)
 streams each namespace's complete read-only claim tree over a private exec
