@@ -208,7 +208,8 @@ def stage(source_sha, talosconfig, output_directory, runner=subprocess.run,
         if len(set(local_sources.values())) != 1:
             raise ProbeFailure("direct-lan-source-changed")
         candidate = {
-            "sourceSha": source_sha, "verified": True,
+            "sourceSha": source_sha, "verified": False,
+            "candidateVerified": True,
             "capturedAt": now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "publicationId": publication_id,
             "transport": "direct-lan-authenticated-talos",

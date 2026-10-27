@@ -511,7 +511,8 @@ identity/version for that address. It retains only a bounded private failure
 category. The current GitHub-hosted Octelium tunnel cannot establish this LAN
 source path. This socket check supports operator review; it is not a
 cryptographic attestation of the physical network route. The helper issues no
-credential and no T023 receipt. Its random publication ID is for a future
+credential and no T023 receipt: the private candidate has `verified: false`.
+Its random publication ID is for a future
 immutable per-run key; a protected owner-attested ingestion path and direct
 recovery drill are still required before maintenance.
 

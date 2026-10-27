@@ -119,7 +119,8 @@ class DirectRecoveryCandidateTests(unittest.TestCase):
         self.assertEqual(record["nodes"], list(target.platform.NODES))
         self.assertEqual(record["endpoint"], "10.1.0.199:50000")
         self.assertEqual(record["transport"], "direct-lan-authenticated-talos")
-        self.assertTrue(record["verified"] and record["talosMtls"])
+        self.assertFalse(record["verified"])
+        self.assertTrue(record["candidateVerified"] and record["talosMtls"])
         self.assertEqual(record["clientRole"], "os:admin")
         self.assertEqual(record["serverVersions"], {
             name: "v1.11.3" for name in target.platform.NODES
