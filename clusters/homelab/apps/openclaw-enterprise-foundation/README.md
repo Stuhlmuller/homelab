@@ -87,10 +87,10 @@ for both archives' uncompressed contents plus 2Gi; no hosted runner capacity is
 assumed. The operator archive contains `manifest.json`, the full `journal/`
 and `bootstrap/` claim copies; the tenant archive contains `manifest.json`
 and the full `state/` claim copy. Each manifest binds the source SHA, exact
-reader Pod UID, claim UIDs and payload digest. The private observation input
-contains pre/post claim, PV, Secret and stopped-runtime reads, plus the exact
-reader Pods and tenant Pod list during transfer. Archive paths must be plain
-relative names without `./` prefixes. The configured
+reader Pod UID, claim UIDs, file bytes and explicit directory paths. The
+private observation input contains pre/post claim, PV, Secret and stopped-runtime
+reads, plus the exact reader Pods and tenant Pod list during transfer. Archive
+paths must be plain relative names without `./` prefixes. The configured
 `occ-gateway-654a256bceae-root` CA Secret is produced by the stock chart;
 the committed gateway CA name must match it before capture can pass.
 The current reconciler validates only the first one or two revisions; it

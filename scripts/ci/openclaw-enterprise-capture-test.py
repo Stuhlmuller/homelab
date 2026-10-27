@@ -7,7 +7,6 @@ import hashlib
 import importlib.util
 import io
 import json
-import os
 from pathlib import Path
 import tarfile
 import tempfile
@@ -205,7 +204,7 @@ class CaptureAssembler(unittest.TestCase):
         self.output = self.root / "material"
 
     def archive(self, name, files, namespace, pod_uid, claims, directories=()):
-        payload = CAPTURE.payload_digest(files)
+        payload = CAPTURE.payload_digest(files, directories)
         manifest = {"schemaVersion": 1, "sourceSha": SHA,
                     "namespace": namespace, "readerPodUid": pod_uid,
                     "claimUids": claims, "payloadSha256": payload}
@@ -410,6 +409,24 @@ class CaptureAssembler(unittest.TestCase):
         with self.assertRaises(CAPTURE.Blocked):
             CAPTURE.assemble(self.config, SHA, self.observations,
                              operator, archive, self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_unmanifested_empty_directory_blocks_without_output(self):
+        operator = self.archive("operator.tar", self.operator_files,
+                                "openclaw-system", UIDS["operatorPod"],
+                                {"journal": UIDS["journal"],
+                                 "bootstrap": UIDS["bootstrap"]})
+        tenant = self.archive("tenant.tar", self.tenant_files,
+                              "openclaw-agents", UIDS["tenantPod"],
+                              {"gateway": UIDS["gateway"]},
+                              directories=("state/workspace/empty",))
+        with tarfile.open(tenant, "a") as tar:
+            info = tarfile.TarInfo("state/workspace/unchecked-empty/")
+            info.type = tarfile.DIRTYPE
+            tar.addfile(info)
+        with self.assertRaises(CAPTURE.Blocked):
+            CAPTURE.assemble(self.config, SHA, self.observations,
+                             operator, tenant, self.output)
         self.assertFalse(self.output.exists())
 
     def test_cli_failure_does_not_print_private_diagnostics(self):

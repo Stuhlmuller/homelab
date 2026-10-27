@@ -75,12 +75,17 @@ def canonical(value):
         raise Blocked("Enterprise capture JSON is invalid") from None
 
 
-def payload_digest(files):
-    """Commit every regular payload path, byte count and digest, excluding manifest."""
+def payload_digest(files, directories=()):
+    """Commit payload file bytes and explicit directory paths, excluding manifest."""
     records = []
     for path, data in files.items():
         require(isinstance(path, str) and isinstance(data, bytes))
-        records.append((path, len(data), hashlib.sha256(data).hexdigest()))
+        records.append(("file", str(_archive_path(path)), len(data),
+                        hashlib.sha256(data).hexdigest()))
+    for path in directories:
+        require(isinstance(path, str))
+        records.append(("directory", str(_archive_path(path))))
+    require(len({record[1] for record in records}) == len(records))
     return hashlib.sha256(canonical(sorted(records))).hexdigest()
 
 
@@ -119,6 +124,8 @@ def _checked_member(member, seen):
             not any(key.startswith("GNU.sparse") for key in member.pax_headers) and
             (member.type in (tarfile.REGTYPE, tarfile.AREGTYPE) or member.isdir()),
             "Enterprise reader archive has unsafe entries")
+    require(not member.isdir() or member.size == 0,
+            "Enterprise reader archive has unsafe directory metadata")
     path = _archive_path(member.name.rstrip("/") if member.isdir() else member.name)
     require(len(seen) < MAX_ARCHIVE_FILES and str(path) not in seen,
             "Enterprise reader archive has duplicate or too many entries")
@@ -161,6 +168,7 @@ def extract_reader(archive, destination):
                 if member.isdir():
                     target.mkdir(parents=True, exist_ok=True, mode=0o700)
                     target.chmod(0o700)
+                    files[str(path)] = None
                     continue
                 require(member.size >= 0 and member.size <= MAX_ARCHIVE_BYTES and
                         len(files) < MAX_ARCHIVE_FILES)
@@ -196,24 +204,27 @@ def _reader_manifest(root, files, expected_sha, namespace, pod_uid, claims, kind
         HEX.fullmatch(manifest["payloadSha256"]))
     payload = {name: values for name, values in files.items() if name != "manifest.json"}
     require(len(payload) + 1 == len(files))
-    digest = hashlib.sha256(canonical(sorted((name, size, sha)
-                                          for name, (size, sha) in payload.items()))).hexdigest()
+    records = [("directory", name) if values is None else
+               ("file", name, values[0], values[1])
+               for name, values in payload.items()]
+    digest = hashlib.sha256(canonical(sorted(records))).hexdigest()
     require(manifest["payloadSha256"] == digest,
             "Enterprise reader bytes differ from private manifest")
     if kind == "operator":
-        require(all(name == "manifest.json" or
-                    name.startswith(("journal/", "bootstrap/")) for name in files) and
+        require(all((name in ("journal", "bootstrap") and values is None) or
+                    name.startswith(("journal/", "bootstrap/"))
+                    for name, values in payload.items()) and
                 {"journal/journal.json", "bootstrap/output.json",
                  "bootstrap/initial-admin-password",
                  "bootstrap/initial-admin-service-key.json"} <= set(payload))
-        require(all(payload[name][0] > 0 for name in (
+        require(all(payload[name] is not None and payload[name][0] > 0 for name in (
             "journal/journal.json", "bootstrap/output.json",
             "bootstrap/initial-admin-password",
             "bootstrap/initial-admin-service-key.json")))
     else:
-        require(all(name == "manifest.json" or name.startswith("state/")
-                    for name in files) and
-                any(name.startswith("state/") and values[0] > 0
+        require(all((name == "state" and values is None) or
+                    name.startswith("state/") for name, values in payload.items()) and
+                any(name.startswith("state/") and values is not None and values[0] > 0
                     for name, values in payload.items()))
     return manifest
 
