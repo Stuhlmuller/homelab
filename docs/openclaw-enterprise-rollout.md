@@ -71,6 +71,11 @@ Job fails and blocks later dispatches. Its exact failed Job requires read-only
 inspection against its Pod-template Secret baseline and a separate reviewed,
 identity-checked cleanup workflow before
 a new exact-main attempt; no automatic Job deletion is included here.
+If the Secret patch commits but the Job or post-patch proof fails, the Secret
+may already be bound. The pre-patch cleanup path cannot handle that state.
+Do not retry binding, automatically delete the Job, activate the agent or
+accept the Installation until T041 adds a separately reviewed post-patch
+identity check and recovery path.
 
 The fixed `full-sync` lane can sync both Applications only after a reviewed
 `installationPhase` and source registration; the current `unselected` phase

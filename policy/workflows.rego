@@ -522,7 +522,7 @@ private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
   sha256sum --check --status <<<'806a0f51a6efcb1923f54f8618e26a7cca27c3128145c9330460b47627b4b2fb  scripts/ci/openclaw-enterprise-stage.sh' &&
-  sha256sum --check --status <<<'3fe456e1e8db5efb2b060d5239d8221444b8afc62f3a0b1ea667f131cdfd26cc  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
@@ -539,7 +539,7 @@ trap 'rm -f "$private_log"' EXIT
 if ! {
   ulimit -f 1024 &&
   sha256sum --check --status <<<'806a0f51a6efcb1923f54f8618e26a7cca27c3128145c9330460b47627b4b2fb  scripts/ci/openclaw-enterprise-stage.sh' &&
-  sha256sum --check --status <<<'3fe456e1e8db5efb2b060d5239d8221444b8afc62f3a0b1ea667f131cdfd26cc  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   timeout 40m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh bind-installation
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise Installation binding blocked; private diagnostics withheld.'

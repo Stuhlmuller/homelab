@@ -95,6 +95,12 @@ def binding_objects():
            "status": {"phase": "Running", "containerStatuses": [
                {"name": "operator", "state": {"running": {"startedAt": "now"}}}]}}
     pod["spec"]["nodeName"] = operator["node"]
+    pod["spec"]["tolerations"] = [
+        {"effect": "NoExecute", "key": "node.kubernetes.io/not-ready",
+         "operator": "Exists", "tolerationSeconds": 300},
+        {"effect": "NoExecute", "key": "node.kubernetes.io/unreachable",
+         "operator": "Exists", "tolerationSeconds": 300},
+    ]
     pod["metadata"]["labels"].update({
         "batch.kubernetes.io/job-name": job["metadata"]["name"],
         "batch.kubernetes.io/controller-uid": UUID})
@@ -224,10 +230,31 @@ class JournalOperator(unittest.TestCase):
         self.assertEqual(operations[1]["value"], "100")
         self.assertEqual(operations[2]["value"], "ins_one")
 
+    def test_binding_waits_for_unassigned_pending_pod_but_rejects_wrong_node(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        pending = copy.deepcopy(pod)
+        pending["spec"].pop("nodeName")
+        pending["status"] = {"phase": "Pending"}
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pending]}, {"items": [pod]}, secret, pod,
+                running_job(actual)]), \
+             mock.patch.object(runner, "command", side_effect=lambda argv, **kwargs:
+                               "OCE_BIND_READY:" + json.dumps(proof) if "logs" in argv else ""), \
+             mock.patch.object(runner, "exact_main"), \
+             mock.patch.object(runner.time, "sleep") as sleep:
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        sleep.assert_called_once_with(2)
+        wrong_node = copy.deepcopy(pending)
+        wrong_node["spec"]["nodeName"] = "foreign-node"
+        with mock.patch.object(runner, "kubectl_json", return_value={"items": [wrong_node]}), \
+             self.assertRaisesRegex(runner.Blocked, "Pod source or owner"):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+
     def test_binding_rejects_foreign_pod_and_stale_receipt_before_patch(self):
         operator, job, actual, pod, secret, proof = binding_objects()
         for change in ("owner", "image", "volume", "init", "ephemeral", "host",
-                       "security", "env_from", "bootstrap_mount", "baseline"):
+                       "security", "env_from", "bootstrap_mount", "baseline",
+                       "toleration_extra", "toleration_seconds", "toleration_missing"):
             altered = copy.deepcopy(pod)
             if change == "owner":
                 altered["metadata"]["ownerReferences"][0]["uid"] = POD_UID
@@ -248,6 +275,14 @@ class JournalOperator(unittest.TestCase):
                 altered["spec"]["containers"][0]["volumeMounts"][1]["readOnly"] = False
             elif change == "baseline":
                 altered["metadata"]["annotations"][runner.BINDING_VERSION] = "101"
+            elif change == "toleration_extra":
+                altered["spec"]["tolerations"].append(
+                    {"key": "node-role.kubernetes.io/control-plane",
+                     "operator": "Exists", "effect": "NoSchedule"})
+            elif change == "toleration_seconds":
+                altered["spec"]["tolerations"][0]["tolerationSeconds"] = 301
+            elif change == "toleration_missing":
+                altered["spec"]["tolerations"].pop()
             else:
                 altered["spec"]["securityContext"]["runAsUser"] = 0
             with self.subTest(change=change), \

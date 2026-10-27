@@ -25,6 +25,12 @@ BINDING_UID = "homelab.stuhlmuller.dev/startup-secret-uid"
 BINDING_VERSION = "homelab.stuhlmuller.dev/startup-secret-resource-version"
 BINDING_DIGEST = "homelab.stuhlmuller.dev/startup-candidate-sha256"
 BINDING_IMMUTABLE = "homelab.stuhlmuller.dev/startup-secret-immutable"
+DEFAULT_JOB_POD_TOLERATIONS = (
+    {"effect": "NoExecute", "key": "node.kubernetes.io/not-ready",
+     "operator": "Exists", "tolerationSeconds": 300},
+    {"effect": "NoExecute", "key": "node.kubernetes.io/unreachable",
+     "operator": "Exists", "tolerationSeconds": 300},
+)
 
 
 class Blocked(RuntimeError):
@@ -34,6 +40,11 @@ class Blocked(RuntimeError):
 def require(condition, reason):
     if not condition:
         raise Blocked(reason)
+
+
+def admitted_job_pod_tolerations(value):
+    return (isinstance(value, list) and len(value) == 2 and
+            all(expected in value for expected in DEFAULT_JOB_POD_TOLERATIONS))
 
 
 def command(args, *, body=None, timeout=30):
@@ -420,6 +431,8 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
             spec = pod.get("spec", {})
             require(isinstance(metadata, dict) and isinstance(spec, dict),
                     "binding Pod identity is invalid")
+            status = pod.get("status")
+            phase = status.get("phase") if isinstance(status, dict) else None
             owners = metadata.get("ownerReferences") or []
             containers = spec.get("containers")
             wanted = intended_job["spec"]["template"]["spec"]
@@ -447,7 +460,8 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
                     spec.get("automountServiceAccountToken") is False and
                     spec.get("restartPolicy") == "Never" and
                     spec.get("nodeSelector") == wanted["nodeSelector"] and
-                    spec.get("nodeName") == operator["node"] and
+                    (spec.get("nodeName") == operator["node"] or
+                     (phase == "Pending" and spec.get("nodeName") in (None, ""))) and
                     spec.get("securityContext") == wanted["securityContext"] and
                     spec.get("volumes") == wanted["volumes"] and
                     not spec.get("initContainers") and
@@ -459,7 +473,8 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
                     spec.get("hostUsers") in (None, False) and
                     spec.get("dnsPolicy") in (None, "ClusterFirst") and
                     spec.get("schedulerName") in (None, "default-scheduler") and
-                    not spec.get("tolerations") and not spec.get("hostAliases") and
+                    admitted_job_pod_tolerations(spec.get("tolerations")) and
+                    not spec.get("hostAliases") and
                     not spec.get("dnsConfig") and not spec.get("runtimeClassName") and
                     isinstance(containers, list) and len(containers) == 1 and
                     isinstance(containers[0], dict) and
@@ -473,10 +488,10 @@ def bind_proof_and_patch(actual_job, intended_job, expected, operator, environ):
                     not containers[0].get("ports") and
                     not containers[0].get("volumeDevices"),
                     "binding Pod source or owner changed")
-            require(pod.get("status", {}).get("phase") in ("Pending", "Running", "Succeeded"),
+            require(phase in ("Pending", "Running", "Succeeded"),
                     "binding Pod failed before the protected patch")
-            if pod["status"]["phase"] in ("Running", "Succeeded"):
-                states = pod["status"].get("containerStatuses") or []
+            if phase in ("Running", "Succeeded"):
+                states = status.get("containerStatuses") or []
                 if not (len(states) == 1 and states[0].get("name") == "operator" and
                         (states[0].get("state", {}).get("running") is not None or
                          states[0].get("state", {}).get("terminated", {}).get("exitCode") == 0)):

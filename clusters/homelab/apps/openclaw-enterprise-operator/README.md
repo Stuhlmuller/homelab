@@ -68,9 +68,12 @@ performs private Installation proof. Before creating that Job, the runner
 verifies the exact immutable startup Secret and reviewed candidate bytes, then
 pins its UID, resource version, candidate digest and immutable state in the
 Job's Pod template. Job and Pod identity checks reject a changed baseline or
-resources pending deletion.
-The protected runner rechecks current
-`main` immediately before its UID/resourceVersion-guarded patch of the one
+resources pending deletion. Pod readback admits only the two Kubernetes default
+not-ready/unreachable `NoExecute` tolerations for 300 seconds. An unassigned
+`Pending` Pod may wait within the bounded proof loop; a running Pod must be on
+the pinned node before its proof is accepted.
+The protected runner rechecks current `main` immediately before its
+UID/resourceVersion-guarded patch of the one
 startup Secret annotation, then requires an in-cluster post-patch proof. The
 operator ServiceAccount has no Secret patch grant, and no key crosses to the
 runner or public logs. The committed disabled operator and unenforced network
@@ -81,7 +84,13 @@ If `main` advances after Job creation but before the Secret patch, the Job
 times out without binding. The dispatcher then refuses any fresh attempt while
 that failed Job remains. Inspect its private log, Pod and Job UIDs, and the
 startup Secret against the pinned Pod-template baseline read-only. A separate
-reviewed cleanup workflow must prove those identities and remove only that failed Job
-before a fresh exact-main dispatch. No automatic deletion or patch retry is
-authorized by this source slice. T041 stays open until this recovery path and
-the live prerequisites are proven.
+reviewed cleanup workflow must prove those identities and remove only that
+failed Job before a fresh exact-main dispatch. No automatic deletion or patch
+retry is authorized by this source slice. T041 stays open until this recovery
+path and the live prerequisites are proven.
+
+If the Secret patch commits but the Job or its post-patch proof fails, the
+startup Secret may already name the Installation. The pre-patch cleanup path
+cannot recover that state. Keep binding, retry, automatic Job cleanup, agent
+activation and acceptance blocked until T041 supplies a separately reviewed
+post-patch identity check and recovery path.
