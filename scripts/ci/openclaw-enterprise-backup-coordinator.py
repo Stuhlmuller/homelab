@@ -105,10 +105,10 @@ class TenantWriterFence:
     checkpoint List's resourceVersion, and raise on EOF, timeout, 410 Gone,
     reconnect, or a missed bookmark. A rejected step poisons this instance;
     retry only from a fresh authenticated List and watch. This class covers
-    reader transfer only. A future coordinator must extend watch continuity
-    through publication and independent restore before promoting a recovery
-    marker. The adapter is not implemented here, so this class cannot certify
-    a complete live fence.
+    reader transfer plus caller-ordered empty-Pod checkpoints after publication
+    and independent restore. Those checkpoints cover only tenant Pod events:
+    they do not validate publication, restore, or the full recovery set, and
+    cannot promote a recovery marker.
     """
 
     def __init__(self, source_sha, backup_id, watch):
@@ -126,10 +126,11 @@ class TenantWriterFence:
         self.capture_bound = False
         self.observation_sha256 = None
         self.finished = False
+        self.continuity_phase = None
         self.failed = False
 
     def _drain(self, resource_version):
-        require(not self.failed and not self.finished,
+        require(not self.failed,
                 "Enterprise tenant watch is no longer usable")
         try:
             events = self.watch.drain_until(resource_version)
@@ -298,5 +299,28 @@ class TenantWriterFence:
                 "sourceSha": self.source_sha, "backupId": self.backup_id,
                 "tenantReaderPodUid": self.reader["metadata"]["uid"],
                 "observationSha256": self.observation_sha256,
+                "startResourceVersion": self.started,
+                "endResourceVersion": resource_version}
+
+    @_poison_on_rejection
+    def continuity_checkpoint(self, phase, listing):
+        """Observe empty tenant Pods after each external publication/restore step.
+
+        The caller must retain the same watch and invoke these in order, after
+        the respective protected operation completed. This is watch-only
+        evidence, not a publication or independent-restore attestation.
+        """
+        expected = ("after-publication" if self.continuity_phase is None
+                    else "after-independent-restore")
+        require(self.finished and self.reader_deleted and not self.failed and
+                self.continuity_phase != "after-independent-restore" and
+                phase == expected,
+                "Enterprise tenant continuity phase is invalid")
+        resource_version = _pod_list(listing, None)
+        self._drain(resource_version)
+        self.continuity_phase = phase
+        return {"scope": "tenant-pod-watch", "publishable": False,
+                "sourceSha": self.source_sha, "backupId": self.backup_id,
+                "throughPhase": phase,
                 "startResourceVersion": self.started,
                 "endResourceVersion": resource_version}

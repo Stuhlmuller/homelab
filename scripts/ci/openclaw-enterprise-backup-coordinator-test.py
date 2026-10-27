@@ -163,6 +163,43 @@ class BackupCoordinator(unittest.TestCase):
         with self.assertRaises(COORDINATOR.Blocked):
             fence.checkpoint(listing("15", [self.reader]))
 
+    def test_same_watch_covers_post_publication_and_restore_checkpoints(self):
+        watch = FakeWatch([[], [event("ADDED", self.reader)],
+                           [event("DELETED", self.reader, "14")], [], []])
+        fence = COORDINATOR.TenantWriterFence(SHA, BACKUP_ID, watch)
+        fence.start(listing("10"))
+        fence.bind_reader(self.reader)
+        fence.checkpoint(listing("12", [self.reader]))
+        self.bind_capture(fence)
+        transfer = fence.finish(listing("14"))
+        publication = fence.continuity_checkpoint("after-publication", listing("15"))
+        restored = fence.continuity_checkpoint("after-independent-restore", listing("16"))
+        self.assertEqual(watch.barriers, ["10", "12", "14", "15", "16"])
+        self.assertFalse(transfer["publishable"] or publication["publishable"] or
+                         restored["publishable"])
+        self.assertEqual(restored["throughPhase"], "after-independent-restore")
+        with self.assertRaisesRegex(COORDINATOR.Blocked, "phase is invalid"):
+            fence.continuity_checkpoint("after-independent-restore", listing("17"))
+        self.assertTrue(fence.failed)
+
+    def test_post_transfer_foreign_event_and_skipped_phase_poison(self):
+        for post_events, phase, message in (
+                ([event("ADDED")], "after-publication", "writer appeared"),
+                ([], "after-independent-restore", "phase is invalid")):
+            with self.subTest(phase=phase, post_events=post_events):
+                watch = FakeWatch([[], [event("ADDED", self.reader)],
+                                   [event("DELETED", self.reader, "14")],
+                                   post_events])
+                fence = COORDINATOR.TenantWriterFence(SHA, BACKUP_ID, watch)
+                fence.start(listing("10"))
+                fence.bind_reader(self.reader)
+                fence.checkpoint(listing("12", [self.reader]))
+                self.bind_capture(fence)
+                fence.finish(listing("14"))
+                with self.assertRaisesRegex(COORDINATOR.Blocked, message):
+                    fence.continuity_checkpoint(phase, listing("15"))
+                self.assertTrue(fence.failed)
+
     def test_transient_foreign_pod_blocks_even_when_final_list_is_empty(self):
         foreign = {"kind": "Pod", "metadata": {"name": "writer",
                    "namespace": "openclaw-agents",
