@@ -1,0 +1,12 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: media
+resources:
+  - backup-pvc.yaml
+  - capture-job.yaml
+  - networkpolicy.yaml
+configMapGenerator:
+  - name: dispatcharr-paired-capture
+    files:
+      - capture.sh

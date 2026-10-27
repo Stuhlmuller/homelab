@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dispatcharr-paired-backup
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    app.kubernetes.io/name: dispatcharr-paired-backup
+    app.kubernetes.io/part-of: dispatcharr
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 20Gi

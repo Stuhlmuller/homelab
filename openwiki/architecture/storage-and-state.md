@@ -730,6 +730,9 @@ Octelium/media source dumps remain on QNAP; the new dedicated application bucket
 IAM profiles, operator schedule and freshness rules are candidates only. The
 publisher never expires retained data. AFFiNE/Multica adapters require a reviewed
 writer fence; they do not automate capture. Other workload gaps remain explicit.
+The excluded [Dispatcharr capture](../../clusters/homelab/apps/dispatcharr/recovery-capture-candidate/capture.sh)
+remains local and unverified; the [paired publisher](../../scripts/application-backup.py)
+rejects Dispatcharr until a protected durable writer-fence receipt exists.
 Operator-managed independent backups are unverified. Real-data drills require
 HOME-3 containment and separate approval; HOME-4 owns independent alert delivery.
 No operational RPO/RTO or application recovery is proven by synthetic tests.
