@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f51db0c6af754e583b8f0d5898eec0b667999503142a12d06582574f3b2c55b5",
+  "pageVersion": "sha256:3aa855c4faf5de1147a80262bea9664d50e0a9639de26dbaa82b54489a9cbb9f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1972,19 +1972,19 @@
     },
     {
       "id": "claim_11b9bda1c5bd4ed78414f6f6b294040c",
-      "statement": "Static and offline reader policy fixtures reject ingress or egress allows selecting either reader label set; the required protected validate job fetches the exact pinned stock chart and runs the combined overlap check before credentials, while live NetworkPolicy enforcement and isolated canary traffic remain unproven.",
+      "statement": "Static and offline reader policy fixtures reject ingress or egress allows selecting either reader label set; the required protected validate job uses repository read access without cloud credentials to fetch the exact pinned stock chart and run the combined overlap check, while live NetworkPolicy enforcement and isolated canary traffic remain unproven.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/validate.yml#L80-L91",
-          "version": "repo-lines-v1:sha256:5833d1f018522e0fa7411e1b36f7dc6bfb9dfe81f4c40b9f32f06d01f996e6fc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0NDU4ZTU1M2M2MGU0M2QyZDk5MzQ4NmRjY2MzZmQ5Y2M0ZWNlYzAxOTg4MmUyOTE0MDI5Y2UxODc2NzU2NjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZWMwNDFlZDQ2NDM1NGVjYTkwOTYzY2NmMzg1MTZlM2U1ZTVmNTdmYjg3ZTlkM2MxY2QxNGJlODNkZTQyYTkifQ"
+          "resource": "repo://.github/workflows/validate.yml#L69-L91",
+          "version": "repo-lines-v1:sha256:2cbee95b5ebc25aef2e9594ac99fb62032adae838d6a478a908be2376c5d8544:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwNDAzMmM0MDhlMmYxYzUxYjljYTA3ODMzMjdhM2FkNTQ1NTZkZjc4Y2FkNGMzM2Q0OTZiYTEzYWQyZTkzZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMjk1YWMzZWY2M2Y0NWNhN2JhMWY0N2QwOTQzNGFjMDVkM2M4MWVmNTZmMzVhM2RhNjk0OGEzNzIwNjgxMzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZWMwNDFlZDQ2NDM1NGVjYTkwOTYzY2NmMzg1MTZlM2U1ZTVmNTdmYjg3ZTlkM2MxY2QxNGJlODNkZTQyYTkifQ"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
           "version": "repo-file-v1:sha256:f9ad9271a5c2fc82763f0dcbbd5e641c54f78d45c72e3d6d96c1534377383f83"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L24-L56",
-          "version": "repo-lines-v1:sha256:bd2e96cb2bde49722204e858b712335c3e5f2d81699ead3c81680c912e664264:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZjFkYzdjMWNiOTk4ZTlhMjEzMWI1ZjQxYWI4NTdmYzU4NDY0NDljZDAzZTdkYWY5ZTdkYjk1YjQxYTUzMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzOTFkZjNkMDlkYTVmYTk0NTRiMjBkNDRhMTk0ZDA4MTQwNjUzOTRiZDNjMTVlOTQ1NzQ5ODhmZWVmNTY1NGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L1-L59",
+          "version": "repo-lines-v1:sha256:3f133ab4a52b02222735011f6b2322e926304b6c6d5f5d963b5229c89f224a00:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ODJjYmRiNGM4YjA3NTE4YmY0ODZjNTg5OTBmYzM5MTc4M2FhMjBhOTE2YmZiMjdhZDIxMWViMWQ1YzM2NDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-reader-policy-test.py#L60-L145",
@@ -1995,6 +1995,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T23:04:53.760Z"
+    "at": "2026-10-27T23:09:14.121Z"
   }
 }

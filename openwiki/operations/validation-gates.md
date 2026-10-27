@@ -378,10 +378,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
+generated: { by: "codex", at: "2026-10-27T23:09:14.121Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T23:04:53.760Z
+    at: 2026-10-27T23:09:14.121Z
 ---
 
 # Validation Gates
@@ -2007,8 +2007,9 @@ requires their exact empty ingress/egress policies, and rejects any additive
 matching allow. With a clean checkout at pinned upstream `33bb745`, its
 separate chart render also passes locally. The required protected `validate /
 repo` job fetches that exact pinned commit and runs the combined overlap check
-before any credentialed operation. Controller-generated and live policies,
-network-policy enforcement, and isolated canary traffic remain unproven.
+with repository read access and no cloud credentials. Controller-generated and
+live policies, network-policy enforcement, and isolated canary traffic remain
+unproven.
 The new source-only backup transaction fixture runs in static and offline
 checks. It covers durable stop/resume intent, lost API responses, crashes
 before and after POST, duplicate or foreign revisions, missing or changed
