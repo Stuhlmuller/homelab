@@ -223,16 +223,10 @@
       "source": "docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
     },
     {
-      "source": "docker.io/library/postgres:18-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc"
-    },
-    {
       "source": "docker.io/library/postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382"
     },
     {
       "source": "docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
-    },
-    {
-      "source": "docker.io/library/postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc"
     },
     {
       "source": "docker.io/library/postgres@sha256:7d3852670a11f0cb9cb1cd50916dc02a0021143fb22d96b78eeef26348abe55c"
@@ -247,10 +241,10 @@
       "source": "docker.io/library/postgres@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa"
     },
     {
-      "source": "docker.io/library/python:3.13-bookworm@sha256:073ffebb96ae4d0ed73ccad59f08c47bd84af8a79f5258130f8458ac50ad9ff4"
+      "source": "docker.io/library/postgres@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc"
     },
     {
-      "source": "docker.io/library/python:3.13-bookworm@sha256:a3799099b64fd333f262768c7a64733f6e4edb7bc569813710a100214bdcf278"
+      "source": "docker.io/library/python:3.13-bookworm@sha256:073ffebb96ae4d0ed73ccad59f08c47bd84af8a79f5258130f8458ac50ad9ff4"
     },
     {
       "source": "docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d"
@@ -262,13 +256,13 @@
       "source": "docker.io/library/python@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
     },
     {
+      "source": "docker.io/library/python@sha256:a3799099b64fd333f262768c7a64733f6e4edb7bc569813710a100214bdcf278"
+    },
+    {
       "source": "docker.io/library/redis:7.2.16-alpine@sha256:29e8589c3f9ba699b5f7aa4b3c7733c58852a3626439e619aa0ee78de08c6ca0"
     },
     {
       "source": "docker.io/library/redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499"
-    },
-    {
-      "source": "docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541"
     },
     {
       "source": "docker.io/library/redis:8.10.1-alpine@sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79"
@@ -284,6 +278,9 @@
     },
     {
       "source": "docker.io/library/redis@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576"
+    },
+    {
+      "source": "docker.io/library/redis@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541"
     },
     {
       "source": "docker.io/library/traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c"
@@ -373,10 +370,10 @@
       "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:fb0437897eaa7f96cf6ac42f795f8dcc208d34ec969eac5d366454e767304eb9"
     },
     {
-      "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c"
+      "source": "ghcr.io/linuxserver/bazarr@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
     },
     {
-      "source": "ghcr.io/linuxserver/bazarr@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
+      "source": "ghcr.io/linuxserver/bazarr@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c"
     },
     {
       "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b"
@@ -394,13 +391,13 @@
       "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
     },
     {
-      "source": "ghcr.io/n8n-io/n8n:stable@sha256:d02752c6ab446ae9db8deec2f9cc887c378f77cdcad31650814df936b7386dfb"
-    },
-    {
       "source": "ghcr.io/n8n-io/n8n@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
     },
     {
       "source": "ghcr.io/n8n-io/n8n@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n@sha256:d02752c6ab446ae9db8deec2f9cc887c378f77cdcad31650814df936b7386dfb"
     },
     {
       "source": "ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7"
