@@ -26,8 +26,9 @@ and recreate validation in that runbook has passed.
 
 `renovate-cache-pv.yaml` declares only the cluster-scoped PV for the separate
 QNAP cache volume and is included in this Kustomization. Verify the isolated
-export before merging this phase. Renovate's namespaced PVC and read-only
-capacity probe remain staged until this PV reconciles.
+export and this PV's reconciliation before the namespaced Renovate Application
+creates its matching PVC and read-only probe. The writer still uses its
+existing claim.
 
 `renovate-acceptance-ledger-platform.yaml` stages a separate static Talos-local
 StorageClass and PV for the temporary private Renovate acceptance ledger on

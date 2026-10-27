@@ -18,7 +18,7 @@ assert "name: renovate-cache-dedicated" in pv and "name: renovate-cache-dedicate
 assert "path: /renovate-cache" in pv and "server: 10.1.0.2" in pv
 assert "volumeName: renovate-cache-dedicated" in pvc
 assert "  - renovate-cache-pv.yaml\n" in (platform / "kustomization.yaml").read_text()
-assert "dedicated-cache-pvc.yaml" not in (app / "kustomization.yaml").read_text()
+assert "  - dedicated-cache-pvc.yaml\n" in (app / "kustomization.yaml").read_text()
 base = (app / "cache-capacity-drill-base.yaml").read_text()
 fill = (app / "cache-capacity-drill-fill.yaml").read_text()
 restore = (app / "cache-capacity-drill-restore.yaml").read_text()
@@ -56,10 +56,14 @@ for wrong in (
 ):
     assert parsed(wrong, probe_program) != "nfs 10.1.0.2:/renovate-cache"
 assert probe.count("kind: Job") == 1 and probe.count("kind: NetworkPolicy") == 1
-assert "  suspend: true" in probe and "automountServiceAccountToken: false" in probe
+assert "  suspend: false" in probe and "automountServiceAccountToken: false" in probe
+assert 'argocd.argoproj.io/sync-wave: "-1"' in probe
 assert probe.count("readOnly: true") == 2 and "*,ro,*" in probe
 assert "16777216" in probe and "25165824" in probe
-assert "dedicated-cache-claim-probe.yaml" not in (app / "kustomization.yaml").read_text()
+assert "  - dedicated-cache-claim-probe.yaml\n" in (app / "kustomization.yaml").read_text()
+cronjob = (app / "cronjob.yaml").read_text()
+assert "claimName: renovate-cache\n" in cronjob
+assert "claimName: renovate-cache-dedicated" not in cronjob
 
 assert re.search(r'\[ "\$source" = \'nfs 10\.1\.0\.2:/renovate-cache\' \]', base)
 assert "16777216" in base and "25165824" in base

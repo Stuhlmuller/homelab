@@ -111,10 +111,11 @@ through a reviewed PR, restore share capacity through a declared path, and
 verify the next scheduled Job after resuming. If no declared NAS capacity path
 exists, add one before changing live state. Increasing the PVC request will
 not restore writes. No verified QNAP `/homelab` capacity-restoration operation
-is declared yet. The platform `renovate-cache-pv.yaml` and staged workload
+is declared yet. The platform `renovate-cache-pv.yaml` and workload
 `dedicated-cache-pvc.yaml` define a static PV and new claim for a separate
-20 GiB QTS thick volume exported as `/renovate-cache`. Only the PV is included
-in live GitOps; the current Renovate cache claim remains unchanged.
+20 GiB QTS thick volume exported as `/renovate-cache`. The PV, PVC, and
+read-only probe are declared in this phase's GitOps source; the writer still
+uses its old claim.
 A bounded, isolated tmpfs `ENOSPC` drill can test failure
 visibility and later normal PVC use, but cannot prove recovery from an actual
 full NAS export. T024/T042 and writer cutover remain blocked on a declared
@@ -138,9 +139,9 @@ failed cycle and verify the next scheduled run and freshness alerts recover.
 ### Staged dedicated-cache cutover
 
 `clusters/homelab/platform/storage/renovate-cache-pv.yaml` is included in
-platform storage. The workload PVC and probe remain outside Renovate's
-Kustomization, so the writer still uses the old claim. The target is a 20 GiB
-QTS thick volume on Storage Pool 1 with one NFSv3 export at
+platform storage. The workload PVC and read-only probe are included in
+Renovate's Kustomization; the writer still uses the old claim. The target is a
+20 GiB QTS thick volume on Storage Pool 1 with one NFSv3 export at
 `10.1.0.2:/renovate-cache`, the same four Talos node allow-list and guest
 all-squash mapping as `/homelab`, and no snapshots or recycle bin for this
 rebuildable cache. A folder under `/homelab` is not an isolated capacity limit.
@@ -155,25 +156,27 @@ and the network recycle bin for this rebuildable cache, and grant NFSv3
 read/write access only to the four Talos node addresses in
 [`docs/storage-nfs.md`](../../../../docs/storage-nfs.md), with `sys` security
 and all-squash to guest. Do not create a pool or change existing exports.
-Before GitOps activation, verify in QTS that this is a separate 20 GiB volume,
+Before the PV phase merges, verify in QTS that this is a separate 20 GiB volume,
 `showmount -e 10.1.0.2` lists `/renovate-cache`, and the four-node allow-list
-is exact. This first reviewed GitOps phase includes only
-`renovate-cache-pv.yaml`; verify its cluster-scoped PV reconciles.
+is exact. The first reviewed GitOps phase includes only
+`renovate-cache-pv.yaml`; verify its cluster-scoped PV reconciles before this
+second phase merges.
 Each activation PR must update `scripts/ci/renovate-cache-capacity-drill-test.py`
 to assert that phase's intended Kustomization membership and Job suspension;
 its staging assertions deliberately fail after a resource is activated.
 The [`platform-storage` stack](../../../../IaC/homelab/us-west-2/apps/platform-storage/stack.hcl)
 inherits the [`homelab` AppProject](../../argocd/self-management/appproject.yaml),
 which whitelists PVs; Renovate's `homelab-workloads` project cannot own one.
-In a second reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
-`dedicated-cache-claim-probe.yaml` to Renovate's Kustomization; set the Job's
-`suspend` to `false` in that same change. The probe has no GitHub credential
-or Kubernetes API token, mounts only the new claim read-only, and denies Pod
-network traffic. Verify the claim is Bound and the Job succeeds with its
-source, read-only mount, and 16–24 GiB capacity check against exactly
-`10.1.0.2:/renovate-cache`. Keep the live CronJob on `renovate-cache` if the
-probe fails. Remove the completed probe and its NetworkPolicy through a later
-reviewed change.
+The second reviewed phase adds `dedicated-cache-pvc.yaml` and
+`dedicated-cache-claim-probe.yaml` to Renovate's Kustomization and unsuspends
+the Job. The probe has no GitHub credential or Kubernetes API token. It mounts
+only the new claim read-only. Its deny-all NetworkPolicy declares intent but
+does not enforce isolation under the current Flannel CNI; see
+[runtime isolation](../../../../openwiki/runbooks/runtime-isolation.md).
+Verify the claim is Bound and the Job succeeds with a read-only mount of
+`10.1.0.2:/renovate-cache` and 16–24 GiB capacity. Keep the live CronJob on
+`renovate-cache` if the probe fails. Remove the completed probe and its
+NetworkPolicy through a later reviewed change.
 Suspend the CronJob through a
 reviewed PR and confirm Argo CD synced to exact `main` with no active Renovate
 Job or Pod. Switch the CronJob claim to `renovate-cache-dedicated` and unsuspend

@@ -712,11 +712,17 @@ runbook](../../clusters/homelab/apps/renovate/README.md).
 
 The proposed separate 20 GiB QTS `/renovate-cache` volume has a static PV in
 [`platform-storage`](../../clusters/homelab/platform/storage/renovate-cache-pv.yaml)
-GitOps source. This PV-only phase needs proof of the separate volume and exact
-four-node NFSv3 export before merge, then Argo CD PV reconciliation. The new
-PVC and read-only probe remain outside Renovate's Kustomization; its writer
-still uses `renovate-cache`. The PV has `Retain` and `Prune=false`, so removing
-it from Kustomize does not delete the live PV.
+GitOps source. The PV-only phase needs proof of the separate volume and exact
+four-node NFSv3 export before merge, then Argo CD PV reconciliation. The
+second phase includes the dedicated PVC and a read-only claim probe in
+[Renovate's Kustomization](../../clusters/homelab/apps/renovate/kustomization.yaml).
+Keep it draft until the PV phase merges and reconciles. The probe checks the
+exact export, read-only mount, and 16–24 GiB capacity. It has no GitHub
+credential or Kubernetes API token; its deny-all NetworkPolicy is intent-only
+under the current Flannel CNI. See
+[Runtime Isolation](../runbooks/runtime-isolation.md).
+The writer still uses `renovate-cache`. The PV has `Retain` and `Prune=false`,
+so removing it from Kustomize does not delete the live PV.
 
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
