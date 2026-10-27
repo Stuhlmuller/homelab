@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c7b889b622ff164fb8b97cf4a75e3a245c5e00c522e3146b2f7240a0562a6d91",
+  "pageVersion": "sha256:7b5889243ce6e024cdf008b8c244739ab2a355b249d3d9230adfa3f9a19adb0b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -906,7 +906,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
+          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -1464,7 +1464,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
+          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
@@ -1973,6 +1973,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:35:17.744Z"
+    "at": "2026-10-27T22:39:20.858Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4546c19de2e95fa955cfc5cb0c1b76671a5a95e73f552a3be1f590a1aa639b78",
+  "pageVersion": "sha256:b78dbbe131b0752723878933d3d96d960865f1abc69d4db869e04b15c98e82ab",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
+          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -727,8 +727,8 @@
       "statement": "The dormant Enterprise packager requires exactly one marker with writerStopped and continuousFenceVerified true and a nonempty claim UID. Source-only reader and capture scripts assemble identity-bound namespace-local archives but leave the continuous fence false; no reader Job, coordinator, recipient projection, scheduled encrypted off-node backup or independent restore is declared.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L48-L105",
-          "version": "repo-lines-v1:sha256:176abd3e7e5baccdee68d7333edb939fc073f0437c532ae99cd21f99b6e65822:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOWMyMzJlNjAyMzRmOTNmNGNlOTU1ZmM5Zjc0MWIzNDY0OGFlOThiMmYwNjdlM2RlYjlkOGQ0OWI4MzkwZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlYTcwNjM3MmMwOTczYjIwYzc3OWMyYjFjODUwNGNjNTFjMmRlOWYyODNjZTU0ODg4ZjBhOGY0NmI0ZDVjYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L48-L112",
+          "version": "repo-lines-v1:sha256:5afb0a556a6070c4980643d537890848e40f5a0d6e68fa9928b368e556d7d05e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOWMyMzJlNjAyMzRmOTNmNGNlOTU1ZmM5Zjc0MWIzNDY0OGFlOThiMmYwNjdlM2RlYjlkOGQ0OWI4MzkwZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlYTcwNjM3MmMwOTczYjIwYzc3OWMyYjFjODUwNGNjNTFjMmRlOWYyODNjZTU0ODg4ZjBhOGY0NmI0ZDVjYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L20-L24",
@@ -826,7 +826,7 @@
         },
         {
           "resource": "repo://builds/openclaw-enterprise-restore/README.md",
-          "version": "repo-file-v1:sha256:1258c2ecda053fb2c8c0cf2e34f53e304d6a9387fc98e23e0aff62011fdacded"
+          "version": "repo-file-v1:sha256:7f37e2986a3c723ff8cbca3924d8cfb0922dbe4e8947b9e9265947d461618467"
         }
       ]
     },
@@ -869,6 +869,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:35:17.744Z"
+    "at": "2026-10-27T22:39:20.858Z"
   }
 }

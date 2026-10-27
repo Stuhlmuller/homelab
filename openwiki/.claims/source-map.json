@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:094ecc67a077614f28429d0a50fb307cd244c1491655600ed6014ea670d09d65",
+  "pageVersion": "sha256:065ebc8078403ea8ae2a1fbfd95f1866c61ba45c4e11d5cc170bc4db26ab3b35",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
+          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -408,7 +408,7 @@
         },
         {
           "resource": "repo://builds/openclaw-enterprise-restore/README.md",
-          "version": "repo-file-v1:sha256:1258c2ecda053fb2c8c0cf2e34f53e304d6a9387fc98e23e0aff62011fdacded"
+          "version": "repo-file-v1:sha256:7f37e2986a3c723ff8cbca3924d8cfb0922dbe4e8947b9e9265947d461618467"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L76-L112",
@@ -433,6 +433,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:35:17.744Z"
+    "at": "2026-10-27T22:39:20.858Z"
   }
 }

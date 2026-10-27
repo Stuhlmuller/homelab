@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:08bbd3d097ee26bac71d77745a15e9756284642f1213b73be3fe9d964273e918",
+  "pageVersion": "sha256:e7dd9dbd742025eda8d4aac7fca345d26991ecadf95d0cea2d60d0dccdfedb27",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
+          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -345,8 +345,8 @@
       "statement": "The dormant Enterprise packager requires mounted local scratch, an age recipient projection and a separate backup mount, and publishes ciphertext only after source-material checks; no live off-node publication or independent restore receipt has been produced.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L66-L105",
-          "version": "repo-lines-v1:sha256:1b5778fa04a1c9573b016911e8a06a75f3d839f6cba94f62e40e187813715516:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxYTU1YWRiNTFhZjFkNzRmOTRlMGM4ZjIyOTJmNmJlMGQ2YTQ3YjNiZjM3YTVkODRiMWYwNzA2MjI2YjA2YzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1ZWIyMjk3ZTk1YWZlMWJjMTg2MTVmZDFkOWFiN2UwYjYyOWMyMTUzZGJlMGNmM2E0NDEyOWU2MmQ5YjI5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L66-L112",
+          "version": "repo-lines-v1:sha256:83434142313c4d77877eb9462de851fa775eeefd11f5a6bd91d76125f48218a1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxYTU1YWRiNTFhZjFkNzRmOTRlMGM4ZjIyOTJmNmJlMGQ2YTQ3YjNiZjM3YTVkODRiMWYwNzA2MjI2YjA2YzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA1ZWIyMjk3ZTk1YWZlMWJjMTg2MTVmZDFkOWFiN2UwYjYyOWMyMTUzZGJlMGNmM2E0NDEyOWU2MmQ5YjI5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L186-L229",
@@ -379,6 +379,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:35:17.744Z"
+    "at": "2026-10-27T22:39:20.858Z"
   }
 }
