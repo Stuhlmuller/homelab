@@ -126,7 +126,7 @@ def enterprise_build_base_images():
     if not build.is_dir():
         return set()
     source = json.loads((build / "source.json").read_text())
-    images = {source["nodeBaseImage"]}
+    images = {source["nodeBaseImage"], source["nodeRuntimeBaseImage"]}
     for name in ("occ.Dockerfile", "operator.Dockerfile"):
         bases = re.findall(r"(?mi)^FROM[ \t]+([^ \t\r\n]+)[ \t]*$", (build / name).read_text())
         if not bases:

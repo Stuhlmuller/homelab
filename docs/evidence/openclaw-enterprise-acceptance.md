@@ -50,10 +50,12 @@ matched main `8877b3b73f74a1d023456f46ad9510a3d88b22ed` byte for byte:
 `scripts/config/harbor-images.json`, `.github/workflows/harbor-mirror.yml`,
 `scripts/ci/harbor-publish.sh`, `scripts/ci/install-kubeconfig.sh`, `flake.nix`
 and `flake.lock`. Since that receipt, `flake.nix` changed and the pinned
-Enterprise CLI base changed from the image bundle's build source. The operator
-has a later exact-source publication below, but T004 remains open until a new
-full-catalog mirror matches current main and the CLI receives a new signed,
-authenticated-pull publication with its digest pinned in source.
+Enterprise CLI base changed from the image bundle's build source. The pinned
+upstream controller/runtime Dockerfiles also use a slim Node runtime base that
+was absent from the public mirror catalog. The operator has a later exact-source
+publication below, but T004 remains open until a new full-catalog mirror
+matches current main and the CLI receives a new signed, authenticated-pull
+publication with its digest pinned in source.
 
 The successful Enterprise bundle's [job summary](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867#summary-120734188450) records these immutable references:
 

@@ -23,12 +23,14 @@ with tempfile.TemporaryDirectory() as directory:
     build = check.ROOT / "builds/openclaw-enterprise"
     build.mkdir(parents=True)
     node = "docker.io/library/node:24-bookworm@sha256:" + "a" * 64
+    runtime_node = "docker.io/library/node:24-bookworm-slim@sha256:" + "d" * 64
     static = "cgr.dev/chainguard/static:latest@sha256:" + "b" * 64
     python = "docker.io/library/python:3.13-bookworm@sha256:" + "c" * 64
-    (build / "source.json").write_text(json.dumps({"nodeBaseImage": node}))
+    (build / "source.json").write_text(json.dumps({"nodeBaseImage": node,
+                                                   "nodeRuntimeBaseImage": runtime_node}))
     (build / "occ.Dockerfile").write_text(f"FROM {static}\n")
     (build / "operator.Dockerfile").write_text(f"FROM {python}\n")
-    assert check.enterprise_build_base_images() == {node, static, python}
+    assert check.enterprise_build_base_images() == {node, runtime_node, static, python}
     (build / "occ.Dockerfile").write_text("FROM cgr.dev/chainguard/static:latest\n")
     try:
         check.enterprise_build_base_images()
