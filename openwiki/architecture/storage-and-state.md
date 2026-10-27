@@ -721,6 +721,14 @@ hit the same key, refreshed its record, and selected the new public canary
 branch proposal. T022 is complete. A live cache-failure cycle and next-slot
 recovery remain open.
 
+The temporary [Renovate acceptance ledger](../../clusters/homelab/apps/renovate/README.md)
+is separate from this cache: a retained static `acer` hostPath PV holds private
+seven-day evidence. After the reviewed report, a digest-guarded PVC cleanup
+erases the private tree; a separately reviewed PVC-mounted finalizer verifies
+its marker and empties the root before the PV is retired. Read-only Talos
+inspection must confirm the backing path remains empty after retirement. No
+privileged hostPath cleanup Pod is needed.
+
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
