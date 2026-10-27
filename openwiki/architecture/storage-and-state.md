@@ -44,6 +44,10 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-610ba0ec5710da199363de3c
+    resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py
+  - id: openwiki-source-dbc7fbf24949971e26fb097e
+    resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator.py
   - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
     resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-0ec224257fa3d91c69b2b9f1
@@ -68,6 +72,8 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-2eea896f325c470e4979019b
@@ -78,10 +84,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
+generated: { by: "codex", at: "2026-10-27T23:14:51.773Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T23:04:53.760Z
+    at: 2026-10-27T23:18:56.056Z
 ---
 
 # Storage And State
@@ -428,6 +434,13 @@ when the journal's 100-revision limit leaves no resume slot. Ordinary no-change
 reconciliation does not redeploy. These helpers have no CLI or workflow entry;
 a coordinator must still prove continuous writer exclusion, encrypted off-node
 publication, independent restore, and exact-main source/config binding.
+A source-only backup helper selects the unfinished transaction ID from the
+protected journal and requires an explicit ID for a new cycle. Its tenant Pod
+watch rejects foreign events, gaps, changed reader identity, and incomplete
+staged observation references. It returns a `publishable: false` receipt scoped
+only to reader transfer. No watch adapter, live capture, publication, or restore
+caller is declared; a future coordinator must hold the fence through those
+steps before changing the recovery marker or resuming an Agent.
 The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
 about 3,398 MiB unreserved on the best worker, `zimaboard-1`, below the
 4,096 MiB initial Enterprise reservation before transient and host headroom.

@@ -192,6 +192,10 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d070446e78bc2444fe729dec
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
+  - id: openwiki-source-610ba0ec5710da199363de3c
+    resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py
+  - id: openwiki-source-dbc7fbf24949971e26fb097e
+    resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-0ec224257fa3d91c69b2b9f1
@@ -234,10 +238,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
+generated: { by: "codex", at: "2026-10-27T23:14:51.773Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T23:04:53.760Z
+    at: 2026-10-27T23:18:56.056Z
 ---
 
 # Workload Inventory
@@ -516,7 +520,7 @@ specs with exact read-only claim mounts, no service-account token and an
 immutable source-tagged Harbor digest. Both reader and assembler require the
 future coordinator's exact expected image reference; they reject a changed
 command, environment or probe. The Pods are excluded from Kustomization and
-workflows. No reader Pod is applied, and no coordinator, enforced egress fence,
+workflows. No reader Pod is applied, and no live coordinator, enforced egress fence,
 recipient projection, scheduled backup, fifth-image receipt or
 independent restore exists yet.
 The foundation now also declares an empty ingress/egress policy for each
@@ -531,6 +535,11 @@ new revision, and refuses to stop when the journal's 100-revision limit leaves
 no resume slot. The helper has no CLI or workflow caller. T051 remains open;
 normal no-change reconciliation must not redeploy to work around missing backup
 coordination.
+A source-only coordinator helper now reuses an unfinished backup ID from the
+protected journal and tests a tenant Pod watch across reader transfer. Its
+receipt is explicitly unpublishable; no authenticated live watch adapter,
+complete capture verification, off-node publication or independent restore is
+connected. It cannot make the recovery marker true or resume the Agent.
 It declares no running PostgreSQL, local volumes, or Installation
 workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 adds reviewed Installation bytes, versioned immutable startup Secret contract,

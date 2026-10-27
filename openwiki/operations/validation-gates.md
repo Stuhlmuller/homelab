@@ -228,6 +228,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
   - id: openwiki-source-d070446e78bc2444fe729dec
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
+  - id: openwiki-source-610ba0ec5710da199363de3c
+    resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py
+  - id: openwiki-source-dbc7fbf24949971e26fb097e
+    resource: repo://scripts/ci/openclaw-enterprise-backup-coordinator.py
   - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
     resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
@@ -378,10 +382,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T23:09:14.121Z" }
+generated: { by: "codex", at: "2026-10-27T23:14:51.773Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T23:09:14.121Z
+    at: 2026-10-27T23:18:56.056Z
 ---
 
 # Validation Gates
@@ -2015,6 +2019,12 @@ checks. It covers durable stop/resume intent, lost API responses, crashes
 before and after POST, duplicate or foreign revisions, missing or changed
 capture proof, no-change reconciliation, and refusal to stop at the 100-revision
 journal cap. It does not call a live workflow or authenticate recovery material.
+The static gate also runs ten source-only backup coordinator fixtures. They
+check durable backup ID retry, tenant Pod watch barriers and foreign events,
+reader identity, incomplete staged observation references, and permanent
+failure after a rejected watch step. The helper returns only a watch-scoped
+`publishable: false` receipt. It neither validates a complete recovery tree
+nor holds a live fence through publication and independent restore.
 Local results do not establish live PVC, TLS or restore acceptance. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable

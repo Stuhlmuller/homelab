@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:690bf40b3dd264a2434395c625bbfdf115dca5924a734ce6b70926659601b97f",
+  "pageVersion": "sha256:bd972938d13787dbd6bc055f77f7d597e9fc6424c5536d95e6355d41a2e6ddfd",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -702,7 +702,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -728,7 +728,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -750,7 +750,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         }
       ]
     },
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         }
       ]
     },
@@ -842,7 +842,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         }
       ]
     },
@@ -942,7 +942,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:4036014adf467dbf2f256fe53e88c2493db8a80d2f38a964aa5395dc1005fbc3"
         }
       ]
     },
@@ -955,7 +955,7 @@
           "version": "repo-lines-v1:sha256:756699aec97328f16a9943a192aff1db35a3f2f1f0ac387481052bab43c0fcf1:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmYyOTFmODlhMGY5M2MzMWI5ZTIyYTNhNTE3ZjY2ZDU3MGQ2MWQzYjJkMGYyOGJmMDlmNmQ1M2JiZGZlZjRjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkMDBlZDJlYWE4NzUwZTJhYzBiMjY3ZWJhNzE1YzI2ZDQ3M2RmM2QwZjMyMDU3M2VmYzVhNjJjZWVkYmY3ZSJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L65-L72",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L67-L74",
           "version": "repo-lines-v1:sha256:9f4a35059848084c9c2d2e6dd237c80d2c222b53a5fcbe23b301d33c7abbb0ea:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFkMTIwNzIwMzc0NjEyOTFiYTNkMmEwODEyZTgwM2VjNmZlMzQ5NTY4NDRlZDE1YTQ1YzQ4NTU5YTEzOGY3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDIyZTJlNjNlODNkMWNkMmIxZDE3MGZjYjhiMGJhODIzNmIyMjhjNjVjMzcyZjA0NDFhZGE1MjVlNmRmMTY0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODI5NzYxOGI4OGZhYTE2ODUxYjE4MjYzNjY5ZGU5MTk1ZThkNmE0MzQxNjNkMTBhM2E2NGZlMzNjZTJmOGY2MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODA4YzBkZmQ5ZGFhMmVkOGE5Nzk5ZjJhOWViY2VkNGJiZDI5Y2M1ZmNmYzA4NjU4NmVmZTVhMzdjNDI0OWZiOSJ9"
         },
         {
@@ -1013,6 +1013,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T23:04:53.760Z"
+    "at": "2026-10-27T23:18:56.056Z"
   }
 }
