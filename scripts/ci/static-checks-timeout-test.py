@@ -70,6 +70,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-test.py",
                          "openclaw-enterprise-active-test.py",
                          "openclaw-enterprise-backup-transaction-test.py",
+                         "openclaw-enterprise-backup-coordinator-test.py",
                          "openclaw-enterprise-recovery-test.py",
                          "platform-maintenance-test.py",
                          "platform-maintenance-stage-test.py",
