@@ -145,10 +145,23 @@ remains disabled. The 08:18 UTC recheck on `main` `bcc08cb` separates this
 2,304 MiB declared floor from the [initial 4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
 for API, worker, database, Envoy and gateway: if co-located on `acer`, that
 budget exceeds unreserved requests by about 2,295 MiB before startup or peak
-margin. `zimaboard-2` has four unrelated Pods, including single-replica
-`Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
-requests after the enforcer and fixtures, without measured peak or continuity
-proof. T022 still has no admitted canary or storage placement.
+margin. The 2026-10-23 snapshot found four unrelated Pods on `zimaboard-2`,
+including single-replica `Recreate` Langfuse PostgreSQL. The proposed moves
+could leave only 428 MiB by requests after the enforcer and fixtures, without
+measured peak or continuity proof. T022 still has no admitted canary or storage
+placement.
+The [evacuation manifests](../../clusters/homelab/apps/multica/values.yaml)
+move Multica frontend to `acer`, the [Harbor exporter](../../clusters/homelab/apps/harbor/vulnerability-exporter.yaml)
+to `zimaboard-1`, and [Cloudflared](../../clusters/homelab/apps/octelium-public/deployment.yaml)
+across those two nodes. The [admission check](../../scripts/network-policy-canary-node.py)
+allows `istio-cni-node` only as a system DaemonSet; it still rejects unrelated
+Pods. A read-only 2026-10-26 check found Langfuse PostgreSQL on
+`zimaboard-1`; this stage leaves its source placement unchanged. It also
+found `zimaboard-2` at 1,330 MiB used (101% of allocatable) with 885 MiB
+requested and Harbor exporter plus system Pods still present. A later
+PostgreSQL move to `acer` remains backup-gated. After source merges, verify
+Argo, endpoints, client paths, and fresh node capacity before treating the
+evacuation as live or admitting a canary.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
