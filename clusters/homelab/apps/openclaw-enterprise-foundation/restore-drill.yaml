@@ -26,14 +26,18 @@ spec:
           type: RuntimeDefault
       containers:
         - name: restore
+          # This base image lacks age. Keep the candidate excluded until the
+          # reviewed builds/openclaw-enterprise-restore runtime is published
+          # and this field is replaced by its verified immutable Harbor digest.
           image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
           imagePullPolicy: IfNotPresent
           terminationMessagePath: /root/restore-termination-log
           terminationMessagePolicy: File
           command:
-            - /bin/sh
-            - -ec
+            - /bin/bash
+            - -c
             - |
+              set -euo pipefail
               umask 0077
               work=/scratch/restore
               mkdir "$work"
@@ -59,17 +63,43 @@ spec:
               }
               trap cleanup EXIT
               trap 'exit 1' HUP INT TERM
-              find /backup/openclaw-enterprise -mindepth 1 -maxdepth 1 -type d \
-                -name '20[0-9][0-9][01][0-9][0-3][0-9]T[0-2][0-9][0-5][0-9][0-5][0-9]Z' \
-                -printf '%f\n' | LC_ALL=C sort > "$work/backup-ids"
-              backup_id="$(tail -n 1 "$work/backup-ids")"
-              test -n "$backup_id"
-              backup="/backup/openclaw-enterprise/$backup_id"
-              test ! -L "$backup"
+              # A future protected publisher must provide this private receipt.
+              # Its expected digest binds the off-node ciphertext before decryption.
+              test -s /run/restore-receipt/archive
+              test -s /run/restore-receipt/sha256
+              test -s /run/restore-identity/identity
+              test "$(wc -l < /run/restore-receipt/archive)" -eq 1
+              test "$(wc -l < /run/restore-receipt/sha256)" -eq 1
+              backup_id="$(cat /run/restore-receipt/archive)"
+              expected_sha="$(cat /run/restore-receipt/sha256)"
+              case "$backup_id" in *[!0-9A-Za-z.-]*|'') exit 1 ;; esac
+              printf '%s\n' "$backup_id" | grep -Eq '^20[0-9]{6}T[0-9]{6}Z\.tar\.age$'
+              case "$expected_sha" in *[!0-9a-f]*|'') exit 1 ;; esac
+              test "${#expected_sha}" -eq 64
+              age --version | grep -qx v1.3.1
+              encrypted="/backup/openclaw-enterprise/$backup_id"
+              test -f "$encrypted" && test ! -L "$encrypted"
               stage=integrity
+              cp -- "$encrypted" "$work/backup.tar.age"
+              printf '%s  %s\n' "$expected_sha" "$work/backup.tar.age" \
+                | sha256sum --check --status -
+              # Validate every member before extracting any bytes. Re-decrypt
+              # the same local, digest-bound ciphertext for exclusive writes.
+              max_unpacked_bytes=34359738368
+              age --decrypt --identity /run/restore-identity/identity \
+                "$work/backup.tar.age" \
+                | python3 /usr/local/libexec/occ-safe-extract.py check \
+                    "$max_unpacked_bytes" "$work/backup"
+              age --decrypt --identity /run/restore-identity/identity \
+                "$work/backup.tar.age" \
+                | python3 /usr/local/libexec/occ-safe-extract.py extract \
+                    "$max_unpacked_bytes" "$work/backup"
+              printf '%s  %s\n' "$expected_sha" "$work/backup.tar.age" \
+                | sha256sum --check --status -
+              rm "$work/backup.tar.age"
+              backup="$work/backup"
               test -z "$(find "$backup" ! -type f ! -type d -print -quit)"
-              # The completed archive is read-only; do not duplicate the
-              # potentially full DB and agent snapshot onto local scratch.
+              test -z "$(find "$backup" -type f -links +1 -print -quit)"
               cd "$backup" || exit 1
               find database.dump database-bootstrap.sql material -type f -print0 \
                 | sort -z | xargs -0 sha256sum > "$work/recomputed"
@@ -77,7 +107,10 @@ spec:
               pg_restore --list database.dump >/dev/null
               for file in recovery.json postgres-root/tls.crt postgres-root/tls.key \
                 postgres-admin/password postgres-migrator/password postgres-app/password \
-                postgres-backup/password auth/secret gateway/occ bootstrap/output.json \
+                postgres-backup/password auth/secret gateway/occ \
+                gateway-ca/tls.crt gateway-ca/tls.key bootstrap/output.json \
+                bootstrap/initial-admin-password \
+                bootstrap/initial-admin-service-key.json \
                 journal/journal.json tenant/metadata.json agent/identity.json; do
                 test -s "material/$file"
               done
@@ -98,6 +131,7 @@ spec:
                 -h "$work/socket" -U occ_admin -d postgres -At <<'SQL' | grep -qx t
               SELECT jsonb_typeof(marker) = 'object'
                  AND marker->'writerStopped' = 'true'::jsonb
+                 AND marker->'continuousFenceVerified' = 'true'::jsonb
                  AND jsonb_typeof(marker->'claimUid') = 'string'
                  AND length(marker->>'claimUid') > 0
               FROM (SELECT pg_read_file(:'marker_path')::jsonb AS marker) recovered;
@@ -145,8 +179,10 @@ spec:
               pg_ctl -D "$work/pgdata" -m fast -w stop
               started=false
           resources:
-            requests: {cpu: 100m, memory: 256Mi, ephemeral-storage: 24Gi}
-            limits: {cpu: "1", memory: 1Gi, ephemeral-storage: 25Gi}
+            # Provisional fail-closed floor. A measured ciphertext, extracted
+            # set, and restored DB capacity receipt is required before use.
+            requests: {cpu: 100m, memory: 256Mi, ephemeral-storage: 96Gi}
+            limits: {cpu: "1", memory: 1Gi, ephemeral-storage: 128Gi}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -160,6 +196,12 @@ spec:
               mountPath: /scratch
             - name: secrets
               mountPath: /run/secrets
+            - name: restore-receipt
+              mountPath: /run/restore-receipt
+              readOnly: true
+            - name: restore-identity
+              mountPath: /run/restore-identity
+              readOnly: true
       volumes:
         - name: backup
           persistentVolumeClaim:
@@ -167,7 +209,18 @@ spec:
             readOnly: true
         - name: scratch
           emptyDir:
-            sizeLimit: 24Gi
+            sizeLimit: 128Gi
         - name: secrets
           emptyDir:
             medium: Memory
+        - name: restore-receipt
+          secret:
+            secretName: occ-backup-publication-receipt
+            items:
+              - {key: archive, path: archive}
+              - {key: sha256, path: sha256}
+        - name: restore-identity
+          secret:
+            secretName: occ-backup-restore-identity
+            items:
+              - {key: identity, path: identity}

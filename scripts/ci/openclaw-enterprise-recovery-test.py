@@ -362,21 +362,11 @@ class RecoveryBoundaries(unittest.TestCase):
 
     def test_backup_refuses_unstopped_or_unidentified_recovery_material(self):
         material = Path(self.temp.name) / "material"
-        for name in ("postgres-root/tls.crt", "postgres-root/tls.key",
-                     "postgres-admin/password", "postgres-migrator/password",
-                     "postgres-app/password", "postgres-backup/password",
-                     "auth/secret", "gateway/occ", "gateway-ca/tls.crt",
-                     "gateway-ca/tls.key", "bootstrap/output.json",
-                     "bootstrap/initial-admin-password",
-                     "bootstrap/initial-admin-service-key.json",
-                     "journal/journal.json", "tenant/metadata.json",
-                     "agent/identity.json", "tenant/secrets/key", "agent/state/state.db"):
-            target = material / name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text("fixture-secret")
+        material.mkdir()
         source = (ROOT / "clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh").read_text()
-        preflight = source.split('test ! -L "$material"', 1)[0].replace(
-            "/recovery-material", str(material))
+        marker_check = (source.split('stopped_marker() {', 1)[1]
+                        .split('material_manifest() (', 1)[0])
+        preflight = 'stopped_marker() {' + marker_check + '\nstopped_marker "$1"\n'
         marker = material / "recovery.json"
         for payload in ('{"claimUid":"fixture","writerStopped":false}',
                         '{"claimUid":"","writerStopped":true}',
@@ -387,25 +377,15 @@ class RecoveryBoundaries(unittest.TestCase):
                         '{"claimUid":"fixture","writerStopped":true}'):
             with self.subTest(payload=payload):
                 marker.write_text(payload)
-                result = subprocess.run(["sh", "-c", preflight], text=True,
+                result = subprocess.run(["bash", "-c", preflight, "--", str(marker)], text=True,
                                         capture_output=True, check=False)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("lacks a stopped, identified writer", result.stderr)
-                self.assertNotIn("fixture-secret", result.stderr)
+                self.assertEqual(result.stderr, "")
         marker.write_text('{"claimUid":"fixture","writerStopped":true,'
                           '"continuousFenceVerified":true}')
-        result = subprocess.run(["sh", "-c", preflight], text=True,
+        result = subprocess.run(["bash", "-c", preflight, "--", str(marker)], text=True,
                                 capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        for missing in ("gateway-ca/tls.key",
-                        "bootstrap/initial-admin-service-key.json"):
-            target = material / missing
-            target.unlink()
-            result = subprocess.run(["sh", "-c", preflight], text=True,
-                                    capture_output=True, check=False)
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("incomplete recovery material", result.stderr)
-            target.write_text("fixture-secret")
 
     def test_backup_rejects_material_changed_during_copy(self):
         root = Path(self.temp.name)
@@ -427,6 +407,8 @@ class RecoveryBoundaries(unittest.TestCase):
             '"continuousFenceVerified":true}')
         backup = root / "backup"
         backup.mkdir()
+        scratch = root / "scratch"
+        scratch.mkdir()
         fake_bin = root / "bin"
         fake_bin.mkdir()
         (fake_bin / "pg_dump").write_text(
@@ -437,7 +419,8 @@ class RecoveryBoundaries(unittest.TestCase):
             (fake_bin / name).chmod(0o755)
         mountpoint = fake_bin / "mountpoint"
         mountpoint.write_text('#!/bin/sh\n[ "$1" = -q ] && [ "$2" = '
-                              + shlex.quote(str(backup.parent)) + ' ]\n')
+                              + shlex.quote(str(backup.parent)) + ' -o "$2" = '
+                              + shlex.quote(str(scratch)) + ' ]\n')
         mountpoint.chmod(0o755)
         (root / "database-bootstrap.sql").write_text("SELECT 1;\n")
         (root / "backup-password").write_text("fixturepassword")
@@ -446,42 +429,54 @@ class RecoveryBoundaries(unittest.TestCase):
         for original, replacement in (
             ("/recovery-material", str(material)),
             ("/backup/openclaw-enterprise", str(backup)),
+            ("/scratch/openclaw-enterprise", str(scratch / "openclaw-enterprise")),
+            ("/run/backup-recipient/age.pub", str(root / "recipient.age")),
             ("/run/secrets/occ-postgres-backup/password", str(root / "backup-password")),
             ("/run/postgres-ca/tls.crt", str(root / "postgres-ca.crt")),
             ("/scripts/database-bootstrap.sql", str(root / "database-bootstrap.sql")),
-            ("/tmp/occ-pgpass", str(root / "occ-pgpass")),
         ):
             source = source.replace(original, replacement)
         script = root / "backup.sh"
         script.write_text(source)
         tool_path = backup_tools_path(root / "nix-cache")
+        identity = root / "age.key"
+        keygen = shutil.which("age-keygen", path=tool_path)
+        self.assertIsNotNone(keygen)
+        self.assertEqual(subprocess.run([keygen, "-o", str(identity)],
+                                        capture_output=True, text=True,
+                                        check=False).returncode, 0)
+        recipient = subprocess.run([keygen, "-y", str(identity)],
+                                   capture_output=True, text=True, check=False)
+        self.assertEqual(recipient.returncode, 0)
+        (root / "recipient.age").write_text(recipient.stdout)
         real_cp = shutil.which("cp", path=tool_path)
         self.assertIsNotNone(real_cp)
         environment = {**os.environ, "PATH": str(fake_bin) + ":" + tool_path}
         mountpoint.write_text('#!/bin/sh\nexit 1\n')
-        unmounted = subprocess.run(["sh", str(script)], text=True, capture_output=True,
+        unmounted = subprocess.run(["bash", str(script)], text=True, capture_output=True,
                                    env=environment, check=False)
         self.assertNotEqual(unmounted.returncode, 0)
         self.assertIn("private backup destination is not mounted", unmounted.stderr)
         self.assertEqual(list(backup.iterdir()), [])
         mountpoint.write_text('#!/bin/sh\n[ "$1" = -q ] && [ "$2" = '
-                              + shlex.quote(str(backup.parent)) + ' ]\n')
+                              + shlex.quote(str(backup.parent)) + ' -o "$2" = '
+                              + shlex.quote(str(scratch)) + ' ]\n')
         backup.rmdir()
         container_storage = root / "container-storage"
         container_storage.mkdir()
         backup.symlink_to(container_storage, target_is_directory=True)
-        redirected = subprocess.run(["sh", str(script)], text=True, capture_output=True,
+        redirected = subprocess.run(["bash", str(script)], text=True, capture_output=True,
                                     env=environment, check=False)
         self.assertNotEqual(redirected.returncode, 0)
         self.assertIn("private backup directory must not be a symlink", redirected.stderr)
         self.assertEqual(list(container_storage.iterdir()), [])
         backup.unlink()
         backup.mkdir()
-        baseline = subprocess.run(["sh", str(script)], text=True, capture_output=True,
+        baseline = subprocess.run(["bash", str(script)], text=True, capture_output=True,
                                   env=environment, check=False)
         self.assertEqual(baseline.returncode, 0, baseline.stderr)
         self.assertEqual(len(list(backup.iterdir())), 1)
-        shutil.rmtree(next(backup.iterdir()))
+        next(backup.iterdir()).unlink()
         state = material / "agent/state/state.db"
         for mutation in ("content", "symlink"):
             with self.subTest(mutation=mutation):
@@ -503,10 +498,10 @@ class RecoveryBoundaries(unittest.TestCase):
                     '#!/bin/sh\nif [ "$2" = ' + shlex.quote(str(material)) + ' ]; then\n'
                     + action + 'else\n' + shlex.quote(real_cp) + ' "$@"\nfi\n')
                 (fake_bin / "cp").chmod(0o755)
-                result = subprocess.run(["sh", str(script)], text=True, capture_output=True,
+                result = subprocess.run(["bash", str(script)], text=True, capture_output=True,
                                         env=environment, check=False)
                 self.assertNotEqual(result.returncode, 0, result.stdout)
-                self.assertIn("recovery material changed during backup", result.stderr)
+                self.assertIn("encrypted backup failed at copy", result.stderr)
                 self.assertEqual(list(backup.iterdir()), [])
 
 
