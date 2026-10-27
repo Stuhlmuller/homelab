@@ -13,6 +13,8 @@ resources:
   - externalsecret.yaml
   - networkpolicy.yaml
   - pvc.yaml
+  - dedicated-cache-pvc.yaml
+  - dedicated-cache-claim-probe.yaml
   - serviceaccount.yaml
 configMapGenerator:
   - name: renovate-acceptance-observer

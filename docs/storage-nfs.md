@@ -134,11 +134,10 @@ exceptions are:
 - Renovate's proposed `renovate-cache-dedicated` static claim on a separate
   20 GiB QTS thick volume and `/renovate-cache` NFS export. Its PV is included
   in platform storage after the separate volume and exact export are verified;
-  the PVC and read-only claim probe remain staged. The owner authorized one
-  QTS setup after the staging PR merges. Activate the PVC and probe through
-  a separate reviewed GitOps change. The current `renovate-cache`
-  continues to use `nfs-default` until a later reviewed claim switch. See
-  `clusters/homelab/apps/renovate/README.md`.
+  its PVC and read-only probe are included in the Renovate Kustomization. The
+  owner authorized one QTS setup after the staging PR merged. The current
+  `renovate-cache` continues to use `nfs-default` until a reviewed claim
+  switch. See `clusters/homelab/apps/renovate/README.md`.
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
 - `deluge-config-local`, `radarr-config-local`, and `sonarr-config-local`,
