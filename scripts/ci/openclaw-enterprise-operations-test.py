@@ -769,7 +769,8 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             self.assertEqual(result.returncode, 2)
             self.assertFalse(phase.exists())
             workflow = WORKFLOW.read_text()
-            self.assertIn('preflight|network-access|network-source|network-current-main|'
+            self.assertIn('preflight|network-nix-entry|network-kubeconfig|'
+                          'network-kubectl-version|network-source|network-current-main|'
                           'network-stopped-reader|network-namespace|network-postcheck|'
                           'baseline|baseline-s3-read|baseline-mounted-compare|'
                           'baseline-source-status|publication|publication-lookup|'
@@ -849,8 +850,12 @@ false
         run = textwrap.dedent(workflow.split('      - name: Run Legacy Stage\n', 1)[1]
                               .split('\n  enterprise:\n', 1)[0]
                               .split('        run: |\n', 1)[1])
-        self.assertLess(run.index("printf '%s\\n' network-access"),
+        self.assertLess(run.index("printf '%s\\n' network-nix-entry"),
+                        run.index('if ! nix develop --command bash'))
+        self.assertLess(run.index("printf '%s\\n' network-kubeconfig"),
                         run.index('bash scripts/ci/install-kubeconfig.sh'))
+        self.assertLess(run.index("printf '%s\\n' network-kubectl-version"),
+                        run.index('kubectl --request-timeout=15s version'))
         self.assertLess(run.index("printf '%s\\n' network-source"),
                         run.index("sha256sum --check --status"))
 
@@ -859,11 +864,14 @@ false
             fake_nix.write_text('''#!/bin/sh
 cat >/dev/null
 printf '%s\\n' PRIVATE_CLUSTER_DETAIL >&2
-printf '%s\\n' "$TEST_PHASE" >"$OPENCLAW_PHASE_FILE"
+if [ -n "$TEST_PHASE" ]; then
+  printf '%s\\n' "$TEST_PHASE" >"$OPENCLAW_PHASE_FILE"
+fi
 exit 1
 ''')
             fake_nix.chmod(0o755)
-            for phase in ('network-access', 'network-source', 'network-current-main',
+            for phase in ('', 'network-nix-entry', 'network-kubeconfig',
+                          'network-kubectl-version', 'network-source', 'network-current-main',
                           'network-stopped-reader', 'network-namespace', 'network-postcheck',
                           'network-namespace\nPRIVATE_CLUSTER_DETAIL'):
                 with self.subTest(phase=phase):
@@ -879,11 +887,44 @@ exit 1
                                             check=False)
                     self.assertEqual(result.returncode, 1)
                     self.assertNotIn('PRIVATE_CLUSTER_DETAIL', result.stdout + result.stderr)
-                    expected = phase if '\n' not in phase else None
+                    expected = (phase or 'network-nix-entry') if '\n' not in phase else None
                     message = (f'Legacy operation failed in {expected}; '
                                if expected else 'Legacy operation failed; ')
                     self.assertIn(message + 'private cluster and archive diagnostics withheld.',
                                   result.stdout)
+                    self.assertEqual(list(Path(directory).glob('tmp.*')), [])
+
+            fake_nix.write_text('#!/bin/sh\nexec /bin/bash\n')
+            fake_bash = Path(directory) / 'bash'
+            fake_bash.write_text('''#!/bin/sh
+if [ "$1" = scripts/ci/install-kubeconfig.sh ]; then
+  printf '%s\\n' PRIVATE_CLUSTER_DETAIL >&2
+  exit "$TEST_INSTALL_EXIT"
+fi
+exec /bin/bash "$@"
+''')
+            fake_bash.chmod(0o755)
+            fake_kubectl = Path(directory) / 'kubectl'
+            fake_kubectl.write_text('#!/bin/sh\nprintf "%s\\n" PRIVATE_CLUSTER_DETAIL >&2\nexit 1\n')
+            fake_kubectl.chmod(0o755)
+            for install_exit, expected in (('1', 'network-kubeconfig'),
+                                           ('0', 'network-kubectl-version')):
+                with self.subTest(expected=expected):
+                    (Path(directory) / 'openclaw-phase').unlink(missing_ok=True)
+                    result = subprocess.run(['/bin/bash', '-c', run], cwd=ROOT,
+                                            env={**os.environ, 'PATH': directory + os.pathsep +
+                                                 os.environ['PATH'], 'TMPDIR': directory,
+                                                 'RUNNER_TEMP': directory,
+                                                 'RUN_STAGE': 'network-preflight',
+                                                 'TEST_INSTALL_EXIT': install_exit,
+                                                 'OPENCLAW_RESUME_PROVENANCE': directory +
+                                                 '/absent'},
+                                            capture_output=True, text=True, timeout=5,
+                                            check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertNotIn('PRIVATE_CLUSTER_DETAIL', result.stdout + result.stderr)
+                    self.assertIn(f'Legacy operation failed in {expected}; private cluster '
+                                  'and archive diagnostics withheld.', result.stdout)
                     self.assertEqual(list(Path(directory).glob('tmp.*')), [])
 
     def test_versioned_restore_maps_only_fixed_public_failure_categories(self):
