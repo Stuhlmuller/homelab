@@ -678,7 +678,7 @@ reviewed placement would leave roughly 472 MiB physical margin at those
 limits in this static screen; it would also move DNS, certificate, access and
 inference components, whose placement and restart effects are unproved. A
 `NoSchedule` taint alone would leave those Pods in place. The
-Langfuse/Dispatcharr pause did not vacate
+Langfuse/Dispatcharr pause would not have vacated
 `zimaboard-2` in that layout. Recheck every node and the exact
 backup/restore path after any reviewed placement change; keep T022, T027 and
 T035 blocked until measured peaks, restart overlap and enforced isolation pass.
