@@ -224,6 +224,11 @@ Stock Enterprise's required public TCP/443 access remains a broad-egress
 finding: Kubernetes NetworkPolicy cannot turn that into an FQDN allowlist.
 Pinned Cordium `ws-main` and Octelium `svc-upstream` generators also allow
 public IPv4/IPv6 egress on every port; an additional NetworkPolicy cannot
-narrow those allows. Correct the generators and qualify their traffic on the
-isolated canary before enforcement.
+narrow those allows. The reviewed source patches are staged, and the protected
+[`policy-generator-images.yml`](../.github/workflows/policy-generator-images.yml)
+lane can build and publish three patched images from the exact current `main`.
+It has not run, so there are no accepted Harbor digests or deployed consumers.
+After publication, pin the authenticated-pull and signature-verified digests,
+update the Octelium bootstrap wrapper, render the real generated policies, and
+qualify required and denied traffic on the isolated canary before enforcement.
 Publication and offline fixture tests alone do not establish live isolation.

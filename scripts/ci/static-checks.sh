@@ -236,6 +236,10 @@ echo "::group::Octelium bootstrap node containment"
 )
 echo "::endgroup::"
 
+echo "::group::Octelium Genesis image pin"
+bash scripts/ci/octelium-genesis-pin-test.sh
+echo "::endgroup::"
+
 echo "::group::Harbor chart, credentials and cold bootstrap"
 bash scripts/ci/harbor-check.sh
 echo "::endgroup::"

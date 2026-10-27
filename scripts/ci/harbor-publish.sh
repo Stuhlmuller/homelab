@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus' >&2
+[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == publish-policy-generators || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|publish-policy-generators|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus' >&2
   exit 2
 }
 mode="$1"
@@ -16,6 +16,13 @@ if [[ "$mode" == publish-openclaw-enterprise ]]; then
   trap 'if [[ $? -ne 0 && -n "${GITHUB_STEP_SUMMARY:-}" ]]; then printf "Enterprise image publication failed at phase: %s\n" "$publish_phase" >>"$GITHUB_STEP_SUMMARY"; fi' EXIT
 fi
 publish_names=(homelab-nofx-backend homelab-nofx-frontend)
+if [[ "$mode" == publish-policy-generators ]]; then
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/policy-generator-images.yml@refs/heads/main ]]
+  mode=publish
+  publish_names=(homelab-cordium-genesis homelab-octelium-genesis homelab-octops)
+  publish_outputs=(cordium_genesis octelium_genesis octops)
+fi
 if [[ "$mode" == publish-harbor-core ]]; then
   core_publication=true
   mode=publish

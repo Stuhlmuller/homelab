@@ -194,11 +194,14 @@ Its pinned Cordium and Octelium patches remove those two generated public
 all-port rules. Run
 `python3 builds/network-policy-generators/verify-source.py` to verify the
 upstream commits, apply both patches, and run their targeted tests. This
-checks source only: no corrected image has been published or deployed, and the
-current Octelium bootstrap wrapper cannot pass the patched Genesis image.
-Before strict enforcement, publish and pin reviewed generator images, use the
-patched bootstrap path, refresh expected-spec fixtures from actual renders,
-and qualify required destinations and private-range denial on the isolated
+checks source only: no corrected image has been published or deployed. The
+Octelium bootstrap wrapper now has a fail-closed `--genesis-image` consumer
+path, but its reviewed Harbor digest is still `null` and the patched `octops`
+binary is not installed by this repository. Before strict enforcement,
+publish and pin reviewed generator images, install the patched binary from
+its authenticated and signed Octops image digest through a reviewed path,
+refresh expected-spec fixtures from actual renders, and qualify required
+destinations and private-range denial on the isolated
 canary. The current live policies and fixtures still contain the broad rules.
 
 The ten Octelium Enterprise Genesis policies have a separate [v0.22.0

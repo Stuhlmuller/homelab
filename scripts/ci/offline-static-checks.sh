@@ -1039,6 +1039,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/platform-maintenance.yml:maintenance' \
     '.github/workflows/platform-maintenance.yml:static-policy' \
+    '.github/workflows/policy-generator-images.yml:publish' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -1092,7 +1093,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 6997115e75b9ed25943f9878cb8402fa6840a06de5783e8d7c47c362acb8f6e9
+.github/workflows/harbor-mirror.yml 3e35ae2880808591e184a7ca1c06d495c1e3924057a785377c7f6b575dcaf170
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
@@ -1104,6 +1105,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
+.github/workflows/policy-generator-images.yml f5f648ed0fae35b464906a25592eb1bc761a70c8a68e2016086c7d34c69dd09c
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -1134,6 +1136,7 @@ for workflow_job in \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
   '.github/workflows/platform-maintenance.yml:static-policy' \
+  '.github/workflows/policy-generator-images.yml:publish' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \

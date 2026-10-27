@@ -145,7 +145,7 @@ class HarborPublicationGates(unittest.TestCase):
     def transport_mocks(self, failure=None, mirror=False, resume=False, oci_index=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", destination_error="502 Bad Gateway",
-                        core=False, cordium=False, enterprise=False,
+                        core=False, cordium=False, enterprise=False, policy_generators=False,
                         forward_start_delay=0):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
@@ -156,6 +156,9 @@ class HarborPublicationGates(unittest.TestCase):
             names = ["homelab-oce-controller", "homelab-oce-runtime", "homelab-oce-cli",
                      "homelab-oce-operator"]
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main"
+        if policy_generators:
+            names = ["homelab-cordium-genesis", "homelab-octelium-genesis", "homelab-octops"]
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/policy-generator-images.yml@refs/heads/main"
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name,
@@ -406,9 +409,9 @@ class HarborPublicationGates(unittest.TestCase):
                     raw = FIXTURE["manifests"][reference] if FIXTURE["mirror"] else FIXTURE["published_manifests"][name]
                     if upstream and FIXTURE["failure"] == "upstream-digest":
                         raw += "corrupted upstream index"
-                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith(("frontend", "core", "controller")):
+                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith(("frontend", "core", "controller", "genesis")):
                         raw += "corrupted download"
-                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith(("frontend", "core", "controller")):
+                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith(("frontend", "core", "controller", "genesis")):
                         raise SystemExit(15)
                     directory = Path(args[-1][4:])
                     assert list(directory.iterdir()) == []
@@ -1751,6 +1754,33 @@ class HarborPublicationGates(unittest.TestCase):
         pulls = [args for args in self.calls_for("skopeo")
                  if args[0] == "copy" and args[-1].startswith("dir:")]
         self.assertEqual(len(pulls), 4)
+        self.assert_cleaned()
+
+    def test_policy_generators_require_workflow_and_verified_digests(self):
+        self.transport_mocks(policy_generators=True)
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/other.yml@refs/heads/main"
+        self.rejected(mode="publish-policy-generators")
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/policy-generator-images.yml@refs/heads/main"
+        result = self.run_helper(mode="publish-policy-generators")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for name, key in (("homelab-cordium-genesis", "cordium_genesis"),
+                          ("homelab-octelium-genesis", "octelium_genesis"),
+                          ("homelab-octops", "octops")):
+            reference = f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@{self.published_digests[name]}"
+            self.assertIn(f"{key}={reference}", (self.root / "outputs").read_text())
+            self.assertIn(reference, (self.root / "summary").read_text())
+        pulls = [args for args in self.calls_for("skopeo")
+                 if args[0] == "copy" and args[-1].startswith("dir:")]
+        self.assertEqual(len(pulls), 3)
+        self.assertTrue(all("--all" in args and "--preserve-digests" in args and "--src-authfile" in args for args in pulls))
+        self.assertEqual(len(self.calls_for("cosign")), 3)
+        self.assert_cleaned()
+
+    def test_policy_generator_pull_failure_withholds_receipt(self):
+        self.transport_mocks(policy_generators=True, failure="pull")
+        result = self.run_helper(mode="publish-policy-generators")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "outputs").exists())
         self.assert_cleaned()
 
     def test_enterprise_failure_reports_only_fixed_public_phase(self):

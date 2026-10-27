@@ -1,5 +1,10 @@
 {
   "goToolchain": "go1.25.8",
+  "runtimeBaseImages": {
+    "cordiumGenesis": "ghcr.io/octelium/cordium-genesis:0.12.7@sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401",
+    "octeliumGenesis": "ghcr.io/octelium/octelium-genesis:0.35.0@sha256:c8bb94c38171bcb134405b7bf151260d88d6f08a847dcebd6b724d2b3ed2e72f",
+    "octops": "ghcr.io/octelium/octops:0.35.0@sha256:ec745f774fff622846410fe8849b4fed8e8a8f23ab9a1fdce4529fd35aa19459"
+  },
   "cordium": {
     "url": "https://github.com/octelium/cordium.git",
     "tag": "v0.12.7",
@@ -17,6 +22,7 @@
     "revision": "5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce",
     "patch": "octelium-v0.35.0.patch",
     "patchSha256": "7b2adf913b5f14f225d5913adbc5c3420dab74da6f91d9c2434d8139b4866da5",
+    "publishedGenesisImage": null,
     "licenses": [
       "cluster/genesis/LICENSE",
       "client/octops/LICENSE"
