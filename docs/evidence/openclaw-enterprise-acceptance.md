@@ -26,7 +26,9 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy compatible recovery rehearsal | [read-only image/mount review on `90f7338`](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c); [failed transfer attempts `39942297939`, `39951803625`, `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305); [cancelled protected copy run `39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652); [successful protected resume on main `efb6a3a`, run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926); [failed protected network preflight 40207428612](https://github.com/Stuhlmuller/homelab/actions/runs/40207428612); [failed protected network preflight 40217814422](https://github.com/Stuhlmuller/homelab/actions/runs/40217814422); [registry recovery PR #1679](https://github.com/Stuhlmuller/homelab/pull/1679) | — | Partial. The first three attempts failed before a verified copy. Run `39988927652` downloaded the pinned versioned archive and receipt and started a detached restore worker, then the six-hour protected job was cancelled. Its source-bound `resume-restore` run passed exact-main, prior-job provenance and the protected legacy stage at 2026-10-24 02:04 UTC. The stage required a stable worker success marker, exact cached archive/receipt size and SHA-256, a completed restored-database report, source identity and zero stopped-production writers; it prepared a separate private NAS scratch recovery tree. Original claims and credentials remain retained; the reader mounts originals read-only. Both protected network-preflight runs passed the exact-main guard, then failed in the sanitized preflight category; neither produced a rootless capability receipt. After registry recovery merged, a read-only check found the reader 1/1 Ready, the legacy gateway 0/0, the backup CronJob suspended, and id -u inside the reader returned 1000. T014 remains open: the old image has not booted in isolation, a UID 1000 local copy and enforced offline network boundary have not been proven, six external `/app` links may depend on unretained writable-overlay contents, and three dangling external targets remain unclassified. |
 | Historical capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-25 17:48 UTC post-recovery recheck below | — | Blocked at the 2026-10-25 sample. Acer had 2,807 MiB unreserved, 1,289 MiB short of the initial 4 GiB Enterprise reservation. Suspending Langfuse and Dispatcharr would leave 1,399 MiB after that reservation, a 3 GiB Gateway burst, and one 512 MiB replacement by request arithmetic, but no complete independent restore or measured peak/restart proof exists. `zimaboard-2` hosted eight ordinary Pods at that sample, so the canary is not isolated. T022, T027 and T035 remain pending. |
 | Legacy network capability retry | [guard-race run `40221941143` on `fb8b436`](https://github.com/Stuhlmuller/homelab/actions/runs/40221941143); [protected run `40450455658` on `54bcbd9`](https://github.com/Stuhlmuller/homelab/actions/runs/40450455658) | — | No T014 receipt. The former stopped at the current-main guard before credentials. The latter passed static validation, then failed in the sanitized `network-access` category in Protected Legacy Retention. Rootless capability and isolated old-image recovery remain unproved. |
-| Current capacity and isolated canary | [04:49 UTC read-only recheck](#current-capacity-recheck) on `54bcbd9` | — | Blocked. Acer is 1,201 MiB short of Enterprise's 4 GiB request budget. Pausing Langfuse and Dispatcharr leaves 1,487 MiB after modeled burst and replacement, by requests only. `zimaboard-2` has nine ordinary Pods and no isolated canary. T022, T027 and T035 remain open. |
+| Legacy link classification | [protected run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926), private report/marker recheck | — | 37 links: 27 contained, 9 external, 1 missing in archive. Three external cache targets and the separate NAS skill target are absent. Six image targets exist lexically; old overlay and boot behavior remain unproved. T014 open. |
+| 04:49 capacity sample | [read-only recheck](#october-27-capacity-rechecks) on `54bcbd9` | — | Acer was 1,201 MiB short of Enterprise's 4 GiB request budget. Pausing Langfuse and Dispatcharr would have left 1,487 MiB after modeled burst and replacement, by requests only. `zimaboard-2` had nine ordinary Pods and no isolated canary. T022, T027, T035 open. |
+| Latest capacity and isolated canary | [05:20 UTC read-only recheck](#october-27-capacity-rechecks) on `99abc4f` | — | Acer has 2,383 MiB request headroom, 1,713 MiB short of Enterprise's 4 GiB budget. A Pending Renovate Job reserves 512 MiB. Pausing Langfuse and Dispatcharr would leave 975 MiB after modeled burst/replacement; recovery and canary proof remain absent. T022, T027, T035 open. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -683,7 +685,7 @@ Langfuse/Dispatcharr pause would not have vacated
 backup/restore path after any reviewed placement change; keep T022, T027 and
 T035 blocked until measured peaks, restart overlap and enforced isolation pass.
 
-## Current capacity recheck
+## October 27 capacity rechecks
 
 At 2026-10-27 04:49 UTC on `main` `54bcbd9`, read-only node description,
 Pod JSON, Metrics Server and kubelet Summary API checks found all four nodes
@@ -697,21 +699,49 @@ working-set sample, not peaks; root free space is not allocated PV capacity.
 | `zimaboard-1` | 5,908 / 7,282 MiB | 5,637 MiB | 8.26 GiB |
 | `zimaboard-2` | 885 / 1,308 MiB | 1,329 MiB | 7.43 GiB |
 
-`acer` has 2,895 MiB request headroom, 1,201 MiB short of the 4,096 MiB
-Enterprise planning budget. Its current Langfuse web, worker and ClickHouse
-Pods request 2,816 MiB; the Dispatcharr app/Celery/Redis Pod requests 1,664
-MiB. Pausing both would leave 3,279 MiB after that budget, then 1,487 MiB
+At that sample, `acer` had 2,895 MiB request headroom, 1,201 MiB short of the
+4,096 MiB Enterprise planning budget. Its Langfuse web, worker and ClickHouse
+Pods requested 2,816 MiB; the Dispatcharr app/Celery/Redis Pod requested 1,664
+MiB. Pausing both would have left 3,279 MiB after that budget, then 1,487 MiB
 after the modeled 1,280 MiB Gateway burst and one 512 MiB replacement. This
-request arithmetic does not prove peak, restart or recovery safety. Neither
-service has a complete coordinated offsite backup and independent restore.
+request arithmetic did not prove peak, restart or recovery safety. Neither
+service had a complete coordinated offsite backup and independent restore.
 
-`zimaboard-2` has 423 MiB request headroom and nine running ordinary Pods,
+`zimaboard-2` had 423 MiB request headroom and nine running ordinary Pods,
 including LiteLLM, DNS, certificate, metrics and access components. Its
-1,329 MiB observed node working set includes host use and leaves 463 MiB
-below its 1,792 MiB physical capacity in this sample. The proposed enforcer
-and fixtures are not isolated there. Neither the Langfuse/Dispatcharr pause
-nor a `NoSchedule` taint vacates those Pods. No service was paused or moved.
-T022, T027 and T035 remain open.
+1,329 MiB observed node working set included host use and left 463 MiB
+below its 1,792 MiB physical capacity. The proposed enforcer and fixtures
+were not isolated there. Neither the Langfuse/Dispatcharr pause nor a
+`NoSchedule` taint would have vacated those Pods.
+
+At 2026-10-27 05:20:34–05:20:35 UTC on `main` `99abc4f`, a second read-only
+node, Pod, Metrics Server and kubelet Summary API sample found:
+
+| Node | Memory requested / allocatable | Memory used | Root filesystem free |
+| --- | ---: | ---: | ---: |
+| `acer` | 12,878 / 15,261 MiB | 10,476 MiB | 382.39 GiB |
+| `zimaboard-0` | 6,507 / 7,282 MiB | 5,521 MiB | 11.17 GiB |
+| `zimaboard-1` | 5,908 / 7,282 MiB | 5,689 MiB | 8.26 GiB |
+| `zimaboard-2` | 885 / 1,308 MiB | 1,338 MiB | 7.43 GiB |
+
+An hourly Renovate Job Pod, scheduled to `acer` and Pending in
+`ImagePullBackOff`, requests 512 MiB. Its scheduler reservation reduced Acer's
+headroom from 2,895 to 2,383 MiB even though the container had not started.
+That is 1,713 MiB short of Enterprise's 4,096 MiB planning budget. Pausing
+Langfuse and Dispatcharr would leave 975 MiB after that budget, the modeled
+1,280 MiB Gateway burst and one 512 MiB replacement; this falls below the
+illustrative 1 GiB residual filter. The Job may clear, so remeasure before
+admission rather than treating either sample as a durable allocation.
+The Pod's read-only event stream included a registry transport
+`connection refused` error; Harbor and Traefik Deployment readiness does not
+prove this pull route.
+
+`zimaboard-2` still has only 423 MiB request headroom and 7.43 GiB root free,
+short of one proposed 10 GiB local claim. Its 1,338 MiB observed node working
+set leaves 454 MiB below physical capacity, not an isolated canary margin.
+No service was paused or moved. None of the screened Acer pause candidates
+has a complete independent whole-service offsite restore. T022, T027 and
+T035 remain open.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
