@@ -328,7 +328,11 @@ class RecoveryBoundaries(unittest.TestCase):
         for name in ("postgres-root/tls.crt", "postgres-root/tls.key",
                      "postgres-admin/password", "postgres-migrator/password",
                      "postgres-app/password", "postgres-backup/password",
-                     "auth/secret", "gateway/occ", "bootstrap/output.json",
+                     "auth/secret", "gateway/occ",
+                     "gateway/tls/root/tls.crt", "gateway/tls/root/tls.key",
+                     "gateway/tls/listener/tls.crt", "gateway/tls/listener/tls.key",
+                     "bootstrap/initial-admin-password",
+                     "bootstrap/initial-admin-service-key.json",
                      "journal/journal.json", "tenant/metadata.json",
                      "agent/identity.json", "tenant/secrets/key", "agent/state/state.db"):
             target = material / name
@@ -338,11 +342,16 @@ class RecoveryBoundaries(unittest.TestCase):
         preflight = source.split('test ! -L "$material"', 1)[0].replace(
             "/recovery-material", str(material))
         marker = material / "recovery.json"
-        for payload in ('{"claimUid":"fixture","writerStopped":false}',
-                        '{"claimUid":"","writerStopped":true}',
-                        '{"claimUid":"fixture"}', '{',
-                        '{"claimUid":"fixture","writerStopped":false}'
-                        '{"claimUid":"fixture","writerStopped":true}'):
+        valid = {"claimNamespace": "openclaw-agents",
+                 "claimName": "gateway-state-0123456789ab",
+                 "claimUid": "fixture", "writerStopped": True}
+        for payload in (json.dumps({**valid, "writerStopped": False}),
+                        json.dumps({**valid, "claimUid": ""}),
+                        json.dumps({**valid, "claimNamespace": "ai"}),
+                        json.dumps({**valid, "claimName": "openclaw-runtime-local"}),
+                        json.dumps({**valid, "writerStopped": None}), '{',
+                        json.dumps({**valid, "writerStopped": False}) +
+                        json.dumps(valid)):
             with self.subTest(payload=payload):
                 marker.write_text(payload)
                 result = subprocess.run(["sh", "-c", preflight], text=True,
@@ -350,10 +359,33 @@ class RecoveryBoundaries(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("lacks a stopped, identified writer", result.stderr)
                 self.assertNotIn("fixture-secret", result.stderr)
-        marker.write_text('{"claimUid":"fixture","writerStopped":true}')
+        marker.write_text(json.dumps(valid))
         result = subprocess.run(["sh", "-c", preflight], text=True,
                                 capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
+        for name in ("bootstrap/initial-admin-password",
+                     "bootstrap/initial-admin-service-key.json",
+                     "gateway/tls/root/tls.key",
+                     "gateway/tls/listener/tls.key"):
+            with self.subTest(missing=name):
+                required = material / name
+                parked = required.with_name(required.name + ".parked")
+                required.rename(parked)
+                try:
+                    if name.startswith("bootstrap/"):
+                        # The earlier synthetic placeholder must not stand in
+                        # for either file written by the pinned chart.
+                        old = material / "bootstrap/output.json"
+                        old.write_text('{"bootstrap":true}')
+                    result = subprocess.run(["sh", "-c", preflight], text=True,
+                                            capture_output=True, check=False)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("incomplete recovery material", result.stderr)
+                    self.assertNotIn("fixture-secret", result.stderr)
+                finally:
+                    parked.rename(required)
+                    old = material / "bootstrap/output.json"
+                    old.unlink(missing_ok=True)
 
     def test_backup_rejects_material_changed_during_copy(self):
         root = Path(self.temp.name)
@@ -361,14 +393,20 @@ class RecoveryBoundaries(unittest.TestCase):
         for name in ("postgres-root/tls.crt", "postgres-root/tls.key",
                      "postgres-admin/password", "postgres-migrator/password",
                      "postgres-app/password", "postgres-backup/password",
-                     "auth/secret", "gateway/occ", "bootstrap/output.json",
+                     "auth/secret", "gateway/occ",
+                     "gateway/tls/root/tls.crt", "gateway/tls/root/tls.key",
+                     "gateway/tls/listener/tls.crt", "gateway/tls/listener/tls.key",
+                     "bootstrap/initial-admin-password",
+                     "bootstrap/initial-admin-service-key.json",
                      "journal/journal.json", "tenant/metadata.json",
                      "agent/identity.json", "tenant/secrets/key", "agent/state/state.db"):
             target = material / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("fixture-secret")
         (material / "recovery.json").write_text(
-            '{"claimUid":"fixture","writerStopped":true}')
+            '{"claimNamespace":"openclaw-agents",'
+            '"claimName":"gateway-state-0123456789ab",'
+            '"claimUid":"fixture","writerStopped":true}')
         backup = root / "backup"
         backup.mkdir()
         fake_bin = root / "bin"

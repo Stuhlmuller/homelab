@@ -46,13 +46,17 @@ this namespace exists and before the Enterprise Application's first sync.
 The application PreSync hook checks its exact bytes and chart checksum. No raw
 Secret is rendered or committed. `backup.sh` refuses an incomplete
 `/recovery-material` tree: `recovery.json`, all four DB password references,
-root CA key/certificate, session auth, private gateway key, bootstrap output,
-journal, tenant metadata/secrets and an identity-checked agent state snapshot.
-It requires `jq` and rejects a recovery marker unless `writerStopped` is true
-and `claimUid` is nonempty. The future T051 capture must verify that UID against
-the live claim and hold the writer fence throughout backup; the marker alone is
-not a live quiescence proof. The packager requires ordinary single-link files
-and discards a partial set when pre-copy, post-copy, and captured path/content
+PostgreSQL root CA key/certificate, session auth, private gateway key, generated
+gateway root and listener TLS pairs, the bootstrap PVC's
+`initial-admin-password` and `initial-admin-service-key.json`, journal, tenant
+metadata/secrets and a claim-identified agent state snapshot.
+It requires `jq` and rejects a recovery marker unless `writerStopped` is true,
+`claimNamespace` is `openclaw-agents`, `claimName` matches the OCE-owned
+`gateway-state-<agent-hash>` claim, and `claimUid` is nonempty. The future T051
+capture must verify those fields against the live claim and hold the writer fence
+throughout backup; the marker alone is not a live quiescence proof. The packager
+requires ordinary single-link files and discards a partial set when pre-copy,
+post-copy, and captured path/content
 manifests differ.
 T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup`
 mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
@@ -69,16 +73,17 @@ still required before T045/T049 can accept recurring restore evidence. Its Pod
 logs report only the fixed success/failure stage; raw restore details remain
 inside scratch and are not emitted to cluster logs. The Job reads the completed
 recovery set from a read-only mount, checks its hashes before and after restore,
-rejects a marker without a stopped writer and claim UID, and keeps only the
-restored database and private diagnostics in scratch. T051
+rejects a marker without a stopped writer and identified agent claim. It keeps
+only the restored database and private diagnostics in scratch. T051
 must publish completed directories without further writes; any change detected
 during a drill fails its final hash check. Storage
 placement and 24Gi restore scratch headroom need measured admission;
 private routes, applying the registration and live recovery remain gated.
 
-The current `bootstrap/output.json` packager input is not a producer for the
-pinned chart's bootstrap PVC: that PVC holds separate `initial-admin-password`
-and `initial-admin-service-key.json` files. The fresh Embedded Agent's SQLite,
+The former `bootstrap/output.json` placeholder was not a producer for the
+pinned chart's bootstrap PVC. The packager now requires its separate
+`initial-admin-password` and `initial-admin-service-key.json` files, but no
+declared capture produces them. The fresh Embedded Agent's SQLite,
 sessions and workspace live on an OCE-owned `gateway-state-<agent-hash>` claim in
 `openclaw-agents`; the bootstrap and operator-journal claims are in
 `openclaw-system`. No source path captures these claims together with tenant

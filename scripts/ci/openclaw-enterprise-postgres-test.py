@@ -93,7 +93,9 @@ class PostgresFoundation(unittest.TestCase):
             raise AssertionError(f"fixture server must be PostgreSQL 18, found {server_version}")
         cls.material = cls.root / "material"
         files = {
-            "recovery.json": "{\"claimUid\":\"fixture\",\"writerStopped\":true}",
+            "recovery.json": ("{\"claimNamespace\":\"openclaw-agents\","
+                              "\"claimName\":\"gateway-state-0123456789ab\","
+                              "\"claimUid\":\"fixture\",\"writerStopped\":true}"),
             "postgres-root/tls.crt": cls.cert.read_text(),
             "postgres-root/tls.key": key.read_text(),
             "postgres-admin/password": "A" * 40,
@@ -101,7 +103,12 @@ class PostgresFoundation(unittest.TestCase):
             "postgres-app/password": "P" * 40,
             "postgres-backup/password": "B" * 40,
             "auth/secret": "auth-fixture", "gateway/occ": "gateway-fixture",
-            "bootstrap/output.json": "{\"bootstrap\":true}",
+            "bootstrap/initial-admin-password": "bootstrap-password-fixture",
+            "bootstrap/initial-admin-service-key.json": "{\"key\":\"fixture\"}",
+            "gateway/tls/root/tls.crt": "gateway-root-certificate-fixture",
+            "gateway/tls/root/tls.key": "gateway-root-private-key-fixture",
+            "gateway/tls/listener/tls.crt": "gateway-listener-certificate-fixture",
+            "gateway/tls/listener/tls.key": "gateway-listener-private-key-fixture",
             "journal/journal.json": "{\"status\":\"complete\"}",
             "tenant/metadata.json": "{\"tenant\":\"fixture\"}",
             "tenant/secrets/agent-key": "tenant-fixture",
@@ -300,8 +307,12 @@ class PostgresFoundation(unittest.TestCase):
         original_checksums = checksums.read_bytes()
         try:
             for index, invalid in enumerate((
-                    {"claimUid": "fixture", "writerStopped": False},
-                    {"claimUid": "", "writerStopped": True}), start=1):
+                    {"claimNamespace": "openclaw-agents", "claimName": "gateway-state-0123456789ab",
+                     "claimUid": "fixture", "writerStopped": False},
+                    {"claimNamespace": "openclaw-agents", "claimName": "gateway-state-0123456789ab",
+                     "claimUid": "", "writerStopped": True},
+                    {"claimNamespace": "ai", "claimName": "gateway-state-0123456789ab",
+                     "claimUid": "fixture", "writerStopped": True}), start=1):
                 marker.write_text(json.dumps(invalid))
                 checksums.write_text(run("sh", "-ec",
                     "find database.dump database-bootstrap.sql material -type f -print0 "
