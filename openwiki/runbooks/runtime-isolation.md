@@ -257,11 +257,24 @@ protected PR or add a reviewed recovery path; do not hand-remove the taint.
 An orphaned abort probe uses
 `firewall-baseline-recover` with the abort run and original admission IDs.
 [The canary Node stage](../../scripts/network-policy-canary-node.py) cannot
-retry `canary-release` after an
-interrupted unlabel leaves only the taint. Before activation, add protected
-release recovery bound to reviewed ownership/cleanup receipts and the exact
-admission marker; require fresh empty owned-firewall, absent-runtime, and
-Node/Pod identity proof before removing the taint. Manual untaint is barred.
+retry `canary-release` after an interrupted unlabel leaves only the taint.
+Owner-only `canary-release-recover` selects the immutable original release
+attempt, cleanup, ownership, and placement receipts. The attempt binds the
+cleanup run and Pod UID; an older attempt without this binding fails closed.
+The original release SHA must be on current first-parent `main`, with its
+runtime manifests, canary settings, and activation state unchanged. Recovery
+requires the same unlabeled, tainted Node and admission marker, reviewed
+cleanup DaemonSet with no Pods anywhere and absent enforcer and fixtures.
+Before untaint, the original system Pod UIDs must match.
+A same-run UID-owned host probe must prove the firewall empty and be deleted
+before one guarded patch removes the marker and taint. An orphaned probe uses
+protected `firewall-baseline-recover` with the recovery run ID. Manual untaint
+is barred. If the Node was cleared but the final receipt was lost, the same
+selected receipts can produce a read-only `observedClean` receipt after a
+fresh empty firewall probe and complete, unchanged current Pod inventory.
+It permits ordinary post-untaint workloads but rejects firewall and cleanup
+Pods. It records `mutationPerformed: false` without attributing the earlier
+patch.
 After a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
