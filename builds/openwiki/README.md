@@ -25,6 +25,9 @@ Claims set and explicitly confirm, update, or retract every existing Claim ID.
 The run refuses deletion, skip, source drift, or an unreachable target Git commit;
 only a completed page job with new durable provenance can replace its baseline.
 Omit this option for ordinary updates. Fetch available historical objects first.
+Pages absent from the page manifest or lacking a Git baseline automatically
+require the same inspected full-review job. A complete `.last-update.json`
+cannot seed missing per-page coverage.
 
 Completed pages also record a content-addressed map of verified, model-visible
 source paths and per-path digests. The map covers file bytes, symlink targets,

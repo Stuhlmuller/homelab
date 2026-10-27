@@ -59,7 +59,7 @@ const {
   packageRoot,
   "libexec/openwiki/node_modules/openwiki/dist/agent/utils.js",
 )));
-const { recordRepositoryPageCompletion } = await import(pathToFileURL(path.join(
+const { recordRepositoryPageCompletion, replaceRepositoryPageManifest } = await import(pathToFileURL(path.join(
   packageRoot,
   "libexec/openwiki/node_modules/openwiki/dist/generation/page-manifest.js",
 )));
@@ -193,6 +193,82 @@ try {
   await assertCoverageBlocked(missingHistory);
 } finally {
   await rm(missingHistory.historyRepo, { recursive: true, force: true });
+}
+
+// A factual page without a manifest baseline requires an inspected PageJob.
+// Neither replacement path may stamp its old verified Markdown/Claims pair as
+// current-source coverage merely because it was left untouched.
+const uncovered = await createHistoryRepo(false, true);
+try {
+  const manifest = JSON.parse(await readFile(uncovered.manifestPath, "utf8"));
+  const oldEntry = { ...manifest.pages[uncovered.page] };
+  delete manifest.pages[uncovered.page];
+  await writeFile(uncovered.manifestPath, JSON.stringify(manifest));
+  await writeFile(path.join(uncovered.historyRepo, "openwiki/.last-update.json"), JSON.stringify({
+    updatedAt: "2026-10-27T00:00:00.000Z",
+    command: "update",
+    gitHead: uncovered.baseline,
+    visibleSourceFingerprint: uncovered.sourceSnapshot.visibleSourceFingerprint,
+    model: "host-agent/codex",
+    status: "complete",
+    language: "en",
+  }));
+  execFileSync("git", ["add", "."], { cwd: uncovered.historyRepo });
+  execFileSync("git", [
+    "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test",
+    "-c", "commit.gpgsign=false", "commit", "-qm", "fixture: missing page baseline",
+  ], { cwd: uncovered.historyRepo });
+  const source = await createRepositorySourceSnapshot(
+    uncovered.historyRepo, new OpenWikiIgnore([]),
+  );
+  const checkpoint = {
+    gitHead: source.gitHead,
+    sourceFingerprint: source.fingerprint,
+    visibleSourceFingerprint: source.visibleSourceFingerprint,
+  };
+  await replaceRepositoryPageManifest(uncovered.historyRepo, [uncovered.page], checkpoint,
+    new Set(), new Set([uncovered.page]));
+  assert.equal(Object.hasOwn(JSON.parse(await readFile(uncovered.manifestPath, "utf8")).pages,
+    uncovered.page), false);
+  await replaceRepositoryPageManifest(uncovered.historyRepo, [uncovered.page], checkpoint);
+  assert.equal(Object.hasOwn(JSON.parse(await readFile(uncovered.manifestPath, "utf8")).pages,
+    uncovered.page), false);
+  const noHead = JSON.parse(await readFile(uncovered.manifestPath, "utf8"));
+  noHead.pages[uncovered.page] = oldEntry;
+  delete noHead.pages[uncovered.page].gitHead;
+  delete noHead.pages[uncovered.page].visibleSourceFingerprint;
+  await writeFile(uncovered.manifestPath, JSON.stringify(noHead));
+  await replaceRepositoryPageManifest(uncovered.historyRepo, [uncovered.page], checkpoint);
+  assert.equal(Object.hasOwn(JSON.parse(await readFile(uncovered.manifestPath, "utf8")).pages,
+    uncovered.page), false);
+  assert.equal((await getUpdateNoopStatus(uncovered.historyRepo)).shouldSkip, true);
+  assert.deepEqual(Object.keys(JSON.parse(await readFile(uncovered.manifestPath, "utf8")).pages), []);
+  const session = HostSessionManager.create({ host: "codex", producerActor: "codex" });
+  const begun = await session.begin({ root: uncovered.historyRepo, mode: "update" });
+  assert.deepEqual(begun.requiredBaselineRecoveryPages, [uncovered.page]);
+  assert.deepEqual(begun.pageUpdateWindows, [{ pages: [uncovered.page], changedPaths: [], fullReview: true }]);
+  const plan = await session.submitPlan({ runId: begun.runId, pages: [] });
+  assert.equal(plan.totalPages, 1);
+  const next = await session.nextPage({ runId: begun.runId });
+  assert.equal(next.job.path, uncovered.page);
+  await assert.rejects(session.finish({ runId: begun.runId }), /pending or skipped page jobs/);
+  await assert.rejects(session.submitPage({ runId: begun.runId, jobId: next.job.id, claims: [] }),
+    /requires openwiki_inspect_page_claims/);
+} finally {
+  await rm(uncovered.historyRepo, { recursive: true, force: true });
+}
+
+const noHeadCoverage = await createHistoryRepo(false, true);
+try {
+  const manifest = JSON.parse(await readFile(noHeadCoverage.manifestPath, "utf8"));
+  delete manifest.pages[noHeadCoverage.page].gitHead;
+  await writeFile(noHeadCoverage.manifestPath, JSON.stringify(manifest));
+  const session = HostSessionManager.create({ host: "codex", producerActor: "codex" });
+  const begun = await session.begin({ root: noHeadCoverage.historyRepo, mode: "update" });
+  assert.deepEqual(begun.requiredBaselineRecoveryPages, [noHeadCoverage.page]);
+  assert.equal(begun.pageUpdateWindows[0].fullReview, true);
+} finally {
+  await rm(noHeadCoverage.historyRepo, { recursive: true, force: true });
 }
 
 // Squash can remove the old commit without changing the model-visible source.

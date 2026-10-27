@@ -295,7 +295,7 @@ index a3228c3..40e0848 100644
  /**
   * Creates an empty V1 manifest.
 diff --git a/dist/generation/page-manifest.js b/dist/generation/page-manifest.js
-index 914b7dc..dac383d 100644
+index 914b7dc..4d72fbf 100644
 --- a/dist/generation/page-manifest.js
 +++ b/dist/generation/page-manifest.js
 @@ -4,16 +4,26 @@ import path from "node:path";
@@ -391,8 +391,28 @@ index 914b7dc..dac383d 100644
                  }, previousEntry.completedBy, previousEntry.completedRunId);
                  next.pages[canonicalPage] =
                      refreshedEntry.pageVersion === previousEntry.pageVersion
-@@ -203,8 +225,51 @@ export async function replaceRepositoryPageManifest(root, pages, source, preserv
+@@ -187,24 +209,59 @@ export async function replaceRepositoryPageManifest(root, pages, source, preserv
+                         : refreshedEntry;
+                 continue;
+             }
+-            // No prior coverage exists for this untouched page. Try to seed a
+-            // first coverage entry from its current durable state, but never fail
+-            // the whole run over a page it did not touch; leave it uncovered for
+-            // full review instead, matching legacy/never-covered page handling.
+-            try {
+-                next.pages[canonicalPage] = await buildManifestEntry(root, canonicalPage, source);
+-            }
+-            catch (error) {
+-                if (error instanceof RepositoryRunError)
+-                    continue;
+-                throw error;
+-            }
++            // A verified old Markdown/Claims pair cannot prove that an
++            // unreviewed page covers the current source.
+             continue;
          }
++        if (!previous.pages[canonicalPage]?.gitHead)
++            continue;
          next.pages[canonicalPage] = await buildManifestEntry(root, canonicalPage, source, previous.pages[canonicalPage]?.completedBy, previous.pages[canonicalPage]?.completedRunId);
      }
 +    await attachRepositoryVisibleSource(root, next, source);
@@ -443,7 +463,7 @@ index 914b7dc..dac383d 100644
  /**
   * Checks whether committed coverage proves one page completed for a source.
   *
-@@ -238,6 +303,10 @@ export async function getCurrentRepositoryPageCompletion(root, page, source) {
+@@ -238,6 +295,10 @@ export async function getCurrentRepositoryPageCompletion(root, page, source) {
      if (source.gitHead !== undefined && entry.gitHead !== source.gitHead) {
          return null;
      }
@@ -454,7 +474,7 @@ index 914b7dc..dac383d 100644
      try {
          const store = new ClaimsStore(root);
          const sidecar = await store.loadPage(canonicalPage);
-@@ -286,6 +355,9 @@ async function buildManifestEntry(root, page, source, completedBy, completedRunI
+@@ -286,6 +347,9 @@ async function buildManifestEntry(root, page, source, completedBy, completedRunI
          ...(source.sourceFingerprint
              ? { sourceFingerprint: source.sourceFingerprint }
              : {}),
@@ -465,7 +485,7 @@ index 914b7dc..dac383d 100644
  }
  /**
 diff --git a/dist/generation/repository-run.js b/dist/generation/repository-run.js
-index 78cb6d7..1b2b6f6 100644
+index 78cb6d7..28a01df 100644
 --- a/dist/generation/repository-run.js
 +++ b/dist/generation/repository-run.js
 @@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
@@ -477,6 +497,15 @@ index 78cb6d7..1b2b6f6 100644
  import { deserializePreparedWikiState, finalizeWikiArtifacts, prepareWikiForAuthoring, serializePreparedWikiState, } from "../agent/wiki-finalizer.js";
  import { beginRepositoryWikiReplacement } from "../agent/wiki-replacement.js";
  import { prepareClaimsRuntime, } from "../claims/brains/code/runtime.js";
+@@ -14,7 +14,7 @@ import { resolveConceptTypeLabel, resolveIndexLabels, } from "../okf/index-label
+ import { getPrimaryLanguageSubtag, requireResolvedLanguage, resolveLanguage, } from "../platform/language.js";
+ import { isFileNotFoundError } from "../platform/fs-errors.js";
+ import { RepositoryRunError } from "./errors.js";
+-import { getCurrentRepositoryPageCompletion, readRepositoryPageManifest, recordRepositoryPageCompletion, replaceRepositoryPageManifest, seedRepositoryPageManifest, } from "./page-manifest.js";
++import { getCurrentRepositoryPageCompletion, readRepositoryPageManifest, recordRepositoryPageCompletion, replaceRepositoryPageManifest, } from "./page-manifest.js";
+ import { createRepositoryPlan, reconcilePageClaims, } from "./page-jobs.js";
+ import { readRepositoryRunState, removeRepositoryRunState, writeRepositoryRunState, } from "./run-state.js";
+ /**
 @@ -80,6 +80,7 @@ function requirePendingJob(run, jobId, action) {
  export function getRepositoryRunSourceCheckpoint(state) {
      return {
@@ -496,15 +525,30 @@ index 78cb6d7..1b2b6f6 100644
      const replacement = input.mode === "init"
          ? await beginRepositoryWikiReplacement(input.root)
          : undefined;
-@@ -141,7 +146,6 @@ export async function beginRepositoryRun(input) {
+@@ -141,16 +146,23 @@ export async function beginRepositoryRun(input) {
          }
          const claimsStore = new ClaimsStore(input.root);
          const initialPages = await claimsStore.discoverPages();
 -        const source = await createRepositorySourceSnapshot(input.root, ignore);
-         if (input.mode === "update" &&
-             context.lastUpdate?.gitHead &&
-             context.lastUpdate.status === "complete") {
-@@ -151,6 +155,7 @@ export async function beginRepositoryRun(input) {
+-        if (input.mode === "update" &&
+-            context.lastUpdate?.gitHead &&
+-            context.lastUpdate.status === "complete") {
+-            await seedRepositoryPageManifest(input.root, initialPages, context.lastUpdate.gitHead);
+-        }
+-        const requiredBaselineRecoveryPages = await validateRequestedRecoveryPages(input, initialPages, source.gitHead);
++        const requestedBaselineRecoveryPages = await validateRequestedRecoveryPages(input, initialPages, source.gitHead);
++        const priorCoverage = input.mode === "update"
++            ? await readRepositoryPageManifest(input.root)
++            : undefined;
++        // A page with no Git baseline cannot inherit current-source coverage
++        // from an old verified Markdown/Claims pair. Make every such page a
++        // mandatory, inspected full-review job before any replacement writes.
++        const requiredBaselineRecoveryPages = [...new Set([
++            ...requestedBaselineRecoveryPages,
++            ...(input.mode === "update"
++                ? initialPages.filter((page) => !priorCoverage?.pages[page]?.gitHead)
++                : []),
++        ])].sort(compareCodeUnits);
          if (input.mode === "update") {
              await fastForwardUnchangedRepositoryPageCoverage(input.root, ignore, initialPages, {
                  sourceFingerprint: source.fingerprint,
@@ -512,7 +556,7 @@ index 78cb6d7..1b2b6f6 100644
                  ...(source.gitHead ? { gitHead: source.gitHead } : {}),
              }, new Set(requiredBaselineRecoveryPages));
          }
-@@ -159,6 +164,9 @@ export async function beginRepositoryRun(input) {
+@@ -159,6 +171,9 @@ export async function beginRepositoryRun(input) {
              : undefined;
          const hasCompleteBaselineCoverage = input.mode !== "update" ||
              initialPages.every((page) => seededManifest?.pages[page] !== undefined);
@@ -522,7 +566,7 @@ index 78cb6d7..1b2b6f6 100644
          // Claims validation precedes update no-op detection. A clean Git status
          // cannot hide stale or unresolved grounding state.
          if (input.mode === "update" &&
-@@ -167,13 +175,15 @@ export async function beginRepositoryRun(input) {
+@@ -167,13 +182,15 @@ export async function beginRepositoryRun(input) {
              const preflight = await getUpdateNoopStatus(input.root, ignore, input.language);
              if (preflight.shouldSkip &&
                  claimsRuntime.issueCount === 0 &&
@@ -539,7 +583,7 @@ index 78cb6d7..1b2b6f6 100644
                          ...(source.gitHead ? { gitHead: source.gitHead } : {}),
                      });
                      const publishedSource = await createRepositorySourceSnapshot(input.root, ignore);
-@@ -211,6 +221,7 @@ export async function beginRepositoryRun(input) {
+@@ -211,6 +228,7 @@ export async function beginRepositoryRun(input) {
              requiredBaselineRecoveryPages,
              initialPages,
              sourceFingerprint: source.fingerprint,
@@ -547,7 +591,7 @@ index 78cb6d7..1b2b6f6 100644
              ...(source.gitHead ? { targetGitHead: source.gitHead } : {}),
              ...(input.planningContext
                  ? { planningContext: input.planningContext }
-@@ -311,6 +322,12 @@ async function resumeRepositoryRun(input, state) {
+@@ -311,6 +329,12 @@ async function resumeRepositoryRun(input, state) {
      if (sourceChanged) {
          nextState.phase = "planning";
          nextState.sourceFingerprint = currentSource.fingerprint;
@@ -560,7 +604,7 @@ index 78cb6d7..1b2b6f6 100644
          if (currentSource.gitHead) {
              nextState.targetGitHead = currentSource.gitHead;
          }
-@@ -320,6 +337,9 @@ async function resumeRepositoryRun(input, state) {
+@@ -320,6 +344,9 @@ async function resumeRepositoryRun(input, state) {
          delete nextState.plan;
      }
      else {
@@ -570,7 +614,7 @@ index 78cb6d7..1b2b6f6 100644
          if (!nextState.targetGitHead && currentSource.gitHead) {
              nextState.targetGitHead = currentSource.gitHead;
          }
-@@ -472,7 +492,8 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
+@@ -472,7 +499,8 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
      for (const page of pages) {
          if (recoveryPages.has(page))
              continue;
@@ -580,7 +624,7 @@ index 78cb6d7..1b2b6f6 100644
          const group = pagesByBaseline.get(baseline) ?? [];
          group.push(page);
          pagesByBaseline.set(baseline, group);
-@@ -480,11 +501,14 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
+@@ -480,11 +508,14 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
      const windows = [];
      const baselines = [...pagesByBaseline.keys()].sort(compareCodeUnits);
      for (const baseline of baselines) {
@@ -599,7 +643,7 @@ index 78cb6d7..1b2b6f6 100644
          });
      }
      if (recoveryPages.size > 0) {
-@@ -496,6 +520,24 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
+@@ -496,6 +527,24 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
      }
      return windows;
  }
@@ -624,7 +668,7 @@ index 78cb6d7..1b2b6f6 100644
  /** Binds an explicit recovery request to current, factual manifest entries. */
  async function validateRequestedRecoveryPages(input, initialPages, targetGitHead) {
      const requested = input.recoverPageBaselines ?? [];
-@@ -558,13 +600,12 @@ async function fastForwardUnchangedRepositoryPageCoverage(root, ignore, pages, s
+@@ -558,13 +607,12 @@ async function fastForwardUnchangedRepositoryPageCoverage(root, ignore, pages, s
          const entry = manifest.pages[page];
          if (!entry?.gitHead || entry.gitHead === source.gitHead)
              continue;
