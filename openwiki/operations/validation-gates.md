@@ -1801,6 +1801,17 @@ receipt, and prepared a separate private NAS scratch recovery tree and link
 report. This source-bound copy does not prove an isolated old-image boot or
 complete T014.
 
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image and npm package integrity, then checks a fresh pinned-CLI
+install and runtime inspection from a restored npm cache under Docker
+`--network none`. The
+[fixture](../../scripts/ci/openclaw-discord-offline-cache-test.py)
+checks integrity and dependency-lock comparison; the
+[PR workflow](../../.github/workflows/openclaw-discord-offline-cache.yml)
+runs the proof and discards the artifacts. This validates public-package
+installation feasibility only. It does not publish a private cache, verify a
+transfer to the recovery host, or boot the retained state, so T014 stays open.
+
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a

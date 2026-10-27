@@ -141,7 +141,7 @@ def verify_live_pods(config, placement):
                 not any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
                         owner.get("controller") is True and
                         isinstance(owner.get("name"), str) and owner["name"] and
-                        (owner["name"] in {"ztunnel", "istio-cni-node"} if
+                        (owner["name"] in CLEANUP["ISTIO_SYSTEM_DAEMONSETS"] if
                          metadata["namespace"] == "istio-system" else
                          owner["name"] not in {CLEANUP["ENFORCER"], CLEANUP["CLEANUP"]})
                         for owner in owners)):

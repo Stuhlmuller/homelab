@@ -31,6 +31,18 @@ inputs = {
           valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
           parameters = [
             {
+              name  = "pilot.image"
+              value = "harbor.stinkyboi.com/mirror/docker.io/istio/pilot:1.27.3-distroless@sha256:70f4f8ccf75ba51187f0920b3f40a6517ba98c068b1b88399a342cbd5e31b857"
+            },
+            {
+              name  = "global.proxy.image"
+              value = "harbor.stinkyboi.com/mirror/docker.io/istio/proxyv2:1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1"
+            },
+            {
+              name  = "global.proxy_init.image"
+              value = "harbor.stinkyboi.com/mirror/docker.io/istio/proxyv2:1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1"
+            },
+            {
               name  = "pilot.resources.requests.memory"
               value = "512Mi"
             }
@@ -44,8 +56,14 @@ inputs = {
         path           = "."
         targetRevision = "1.27.3"
         helm = {
-          releaseName          = "istio-cni"
-          valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+          releaseName = "istio-cni"
+          valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+          parameters = [
+            {
+              name  = "image"
+              value = "harbor.stinkyboi.com/mirror/docker.io/istio/install-cni:1.27.3-distroless@sha256:cfe35258547be35aed2f3c94b56949d5460c0dd3810b94a16d3310c7e9337e62"
+            }
+          ]
           skipSchemaValidation = true
         }
       },
@@ -58,6 +76,10 @@ inputs = {
           releaseName = "ztunnel"
           valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
           parameters = [
+            {
+              name  = "image"
+              value = "harbor.stinkyboi.com/mirror/docker.io/istio/ztunnel:1.27.3-distroless@sha256:3837029816e78cb6fc88d928dc5c6c58522ab9346772a1409b7f7da00d9de4ce"
+            },
             {
               name  = "resources.requests.memory"
               value = "256Mi"

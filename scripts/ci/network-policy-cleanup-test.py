@@ -513,31 +513,28 @@ class FirewallCleanupTests(unittest.TestCase):
                             SUT["require_reviewed_node_pods"](
                                 "zimaboard-1", placement, cleanup, "cleanup-ds-uid")
 
-    def test_cleanup_admits_only_reviewed_istio_daemonsets(self):
-        cleanup = {"metadata": {"namespace": "kube-system", "name": "cleanup-pod",
-                                "uid": "cleanup-uid", "ownerReferences": [{
-                                    "kind": "DaemonSet", "name": SUT["CLEANUP"],
-                                    "uid": "cleanup-ds-uid", "controller": True}]},
-                   "spec": {"nodeName": "zimaboard-2"}}
-        for owner_name, allowed in (("ztunnel", True), ("istio-cni-node", True),
-                                    ("rogue-istio", False)):
-            with self.subTest(owner_name=owner_name):
-                pod = {"metadata": {"namespace": "istio-system", "name": "ambient-pod",
-                                    "uid": "ambient-uid", "ownerReferences": [{
-                                        "kind": "DaemonSet", "name": owner_name,
-                                        "controller": True}]},
-                       "spec": {"nodeName": "zimaboard-2"}}
-                placement = {"systemDaemonSetPods": [{"namespace": "istio-system",
-                                                       "name": "ambient-pod", "uid": "ambient-uid"}]}
+        for owner in ("ztunnel", "istio-cni-node", "foreign"):
+            with self.subTest(istio_owner=owner):
+                pod = {"metadata": {"namespace": "istio-system",
+                                    "name": f"{owner}-pod", "uid": f"{owner}-uid",
+                                    "ownerReferences": [{"kind": "DaemonSet",
+                                                         "name": owner,
+                                                         "controller": True}]},
+                       "spec": {"nodeName": "zimaboard-1"}}
+                reviewed = {"systemDaemonSetPods": [
+                    *placement["systemDaemonSetPods"],
+                    {"namespace": "istio-system", "name": f"{owner}-pod",
+                     "uid": f"{owner}-uid"}]}
                 with patch.dict(SUT["require_reviewed_node_pods"].__globals__, {
-                        "kubernetes_json": lambda *args: {"metadata": {}, "items": [pod, cleanup]}}):
-                    if allowed:
-                        SUT["require_reviewed_node_pods"](
-                            "zimaboard-2", placement, cleanup, "cleanup-ds-uid")
-                    else:
+                        "kubernetes_json": lambda *args: {"metadata": {},
+                                                           "items": [system, pod, cleanup]}}):
+                    if owner == "foreign":
                         with self.assertRaisesRegex(ValueError, "unreviewed Pod"):
                             SUT["require_reviewed_node_pods"](
-                                "zimaboard-2", placement, cleanup, "cleanup-ds-uid")
+                                "zimaboard-1", reviewed, cleanup, "cleanup-ds-uid")
+                    else:
+                        SUT["require_reviewed_node_pods"](
+                            "zimaboard-1", reviewed, cleanup, "cleanup-ds-uid")
 
     def test_unknown_prefix_other_backend_and_nonfilter_reference_block(self):
         for field, value in (("nft", ":KUBE-POD-FW-UNKNOWN - [0:0]\n"),

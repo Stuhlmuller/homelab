@@ -10,6 +10,8 @@ resources:
   - redis.yaml
   - networkpolicy.yaml
   - backup-cronjob.yaml
+  - initial-backup-job.yaml
+  - restore-verification-job.yaml
   - configmap.yaml
   - runtime-externalsecret.yaml
   - database-role-job.yaml
@@ -18,6 +20,16 @@ resources:
   - workloads.yaml
   - virtualservice.yaml
   - authorizationpolicy.yaml
+replacements:
+  - source:
+      kind: CronJob
+      name: mastodon-backup
+      fieldPath: spec.jobTemplate.spec
+    targets:
+      - select:
+          kind: Job
+          name: mastodon-initial-backup-v1
+        fieldPaths: [spec]
 configMapGenerator:
   - name: mastodon-launcher
     namespace: mastodon

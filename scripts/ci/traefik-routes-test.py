@@ -55,7 +55,7 @@ class RouteTests(unittest.TestCase):
                     "octelium-api", "octelium-console", "oce-console",
                     "oce-native-admin"}
         self.assertEqual(set(ROUTERS), set(APPS) | controls |
-                         {"n8n-webhook", "policy-bot-hook", "harbor-registry"})
+                         {"n8n-webhook", "policy-bot-hook", "bulldozer-hook", "harbor-registry"})
         for app, backend in APPS.items():
             with self.subTest(app=app):
                 router = ROUTERS[app]
@@ -103,10 +103,11 @@ class RouteTests(unittest.TestCase):
     def test_funnel_is_only_the_reviewed_callbacks(self):
         public = {name: route for name, route in ROUTERS.items()
                   if "funnel" in route["entryPoints"]}
-        self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook"})
+        self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook", "bulldozer-hook"})
         expected = {
             "n8n-webhook": ("n8n", "PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`)"),
             "policy-bot-hook": ("policy-bot", "Path(`/api/github/hook`)"),
+            "bulldozer-hook": ("bulldozer", "Path(`/api/github/hook`)"),
         }
         for name, (service, paths) in expected.items():
             self.assertEqual(public[name], {
@@ -225,7 +226,8 @@ class RouteTests(unittest.TestCase):
         for app, name, port in (("affine", "affine-server", 3010),
                                 ("nofx", "nofx-frontend", 80),
                                 ("openclaw", "openclaw", 8080),
-                                ("policy-bot", "policy-bot", 8080)):
+                                ("policy-bot", "policy-bot", 8080),
+                                ("bulldozer", "bulldozer", 8080)):
             with self.subTest(app=app):
                 policies = json.loads(subprocess.check_output([
                     "yq", "ea", "-o=json", "[.]",

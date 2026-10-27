@@ -5,6 +5,9 @@ crds:
   keep: true
 
 replicaCount: 0
+image:
+  repository: harbor.stinkyboi.com/mirror/quay.io/argoprojlabs/argocd-image-updater
+  tag: v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b
 extraArgs:
   - --git-commit-method=api
 config:

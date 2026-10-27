@@ -120,7 +120,7 @@ flowchart LR
     TLS --> Cordium[Octelium Cordium and control]
     Public[Public callback] --> Funnel[Tailscale Funnel]
     Funnel --> HTTP[Traefik callback listener]
-    HTTP --> Hooks[n8n and Policy Bot webhooks]
+    HTTP --> Hooks[n8n, Policy Bot, and Bulldozer webhooks]
     Nodes[Talos nodes] --> Registry[Traefik registry listener]
     Renovate[Renovate Pod] --> Registry
     Registry --> Harbor[Harbor OCI and token endpoints]
@@ -149,9 +149,10 @@ authoritative NODATA for approved AAAA; it does not use the peer's other
 addresses. See the
 [IP-family contract and pinned upstream sources](../../docs/networking-tailnet-ingress.md#dns-model).
 
-Only `n8n-webhook.tail67beb.ts.net` and `policy-bot-hook.tail67beb.ts.net` use
-Funnel. The former accepts the three declared webhook path families; the latter
-accepts exactly `/api/github/hook`. Application webhook authentication remains
+`n8n-webhook.tail67beb.ts.net`, `policy-bot-hook.tail67beb.ts.net`, and the
+staged `bulldozer-hook.tail67beb.ts.net` use Funnel. n8n accepts the three
+declared webhook path families; each GitHub App callback accepts exactly
+`/api/github/hook`. Application webhook authentication remains
 required. Root/admin paths and spoofed private Host headers fail at the callback
 listener. Encoded reserved path characters are rejected on these sensitive routes.
 
@@ -204,11 +205,11 @@ python3 -I scripts/tailscale-ingress-sign.py
 python3 -I scripts/tailscale-ingress-sign.py --execute
 ```
 
-The fixed signer checks the private Service, two Funnel Ingresses, and the
+The fixed signer checks the private Service, three Funnel Ingresses, and the
 separate `tailnet-dns` Service against
 controller-owned Ready Pods, exact parent UID, hostname, tag, addresses and
 local lock-peer identity. It reads public node/rotation keys from those Pods and
-signs only those four targets. For the DNS handoff, `--dns-only` previews or
+signs only those five targets. For the DNS handoff, `--dns-only` previews or
 signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.

@@ -289,16 +289,16 @@ class CanaryNodeTests(unittest.TestCase):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
     def test_istio_platform_daemonsets_can_be_receipt_bound(self):
-        for owner_name in ("ztunnel", "istio-cni-node"):
-            with self.subTest(owner_name=owner_name):
+        for owner in ("ztunnel", "istio-cni-node"):
+            with self.subTest(owner=owner):
                 pod = system_pod()
-                pod["metadata"].update({"namespace": "istio-system", "name": f"{owner_name}-1",
-                                        "uid": f"{owner_name}-uid"})
-                pod["metadata"]["ownerReferences"][0]["name"] = owner_name
+                pod["metadata"].update({"namespace": "istio-system",
+                                        "name": f"{owner}-1", "uid": f"{owner}-uid"})
+                pod["metadata"]["ownerReferences"][0]["name"] = owner
                 receipt = placement()
                 receipt["systemDaemonSetPods"] = [{"namespace": "istio-system",
-                                                   "name": pod["metadata"]["name"],
-                                                   "uid": pod["metadata"]["uid"]}]
+                                                   "name": f"{owner}-1",
+                                                   "uid": f"{owner}-uid"}]
                 SUT["validate_placement"](receipt, CONFIG, SHA, True)
                 with patch.dict(SUT["CLEANUP"], {"kubernetes_json": lambda *args:
                                  {"metadata": {}, "items": [pod]}}):
