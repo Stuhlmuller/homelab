@@ -51,6 +51,7 @@ class Timeout(unittest.TestCase):
                          "renovate-acceptance-secret-boundary-test.py",
                          "renovate-acceptance-final-report-test.py",
                          "renovate-acceptance-ledger-cleanup-test.py",
+                         "renovate-acceptance-ledger-finalize-test.py",
                          "tailnet-dns-test.py",
                          "openclaw-enterprise-foundation-test.py",
                          "openclaw-enterprise-postgres-test.py",

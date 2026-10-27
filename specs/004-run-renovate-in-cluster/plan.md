@@ -76,6 +76,7 @@ The repository's .specify/memory/constitution.md is v1.0.0 and derives from AGEN
     clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
     clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml
     clusters/homelab/apps/renovate/acceptance-ledger-cleanup-job.yaml
+    clusters/homelab/apps/renovate/acceptance-ledger-finalize-job.yaml
     scripts/config/harbor-images.json
     docs/secrets-aws-ssm.md
     docs/image-automation.md

@@ -759,17 +759,42 @@ the Pod or files directly.
 Verify the Job has `Complete=True` and its restricted log contains exactly the
 `private-ledger-empty` result; the Job checks the recreated directory is empty
 before logging success. Keep all acceptance writers suspended during this check.
-Next remove `Prune=false`
-from the PVC and PV and `Delete=false` from the PV through their respective
-GitOps Applications; verify the live annotations are gone. Remove the CronJob,
-script, init/cleanup Jobs, and PVC from Renovate first, then remove the PV and
-local StorageClass from platform-storage through reviewed changes; verify the
-claim and PV are gone.
-The retained local PV does not erase its hostPath on deletion. Use a separate
-reviewed exact-path storage cleanup on `acer` and verify
-`/var/lib/renovate-acceptance-ledger` has no retained files before closing
-T035. This later hostPath cleanup also removes the Job's digest marker; the
-Job itself never touches the backing path directly.
+Then activate the staged `acceptance-ledger-finalize-job.yaml` in a separate
+reviewed PR with the same reviewed ledger digest, while the claim remains
+bound. It mounts only that claim and refuses to run unless the first Job's
+matching digest marker and, when present, empty private directory are the only
+entries. Marker-only state permits a retry interrupted after removing the
+private directory. It removes those entries and verifies the mounted root is
+empty. An already-empty retry logs `already-empty-prior-receipt-required`;
+accept that result only with the prior reviewed report, successful cleanup
+receipt, and a recorded prior same-digest finalizer attempt. It is not fresh
+digest proof. Unknown files, symlinks, permissions, or nested mounts stop the
+Job without deleting them.
+
+Verify the finalizer Job has `Complete=True` and its restricted log contains
+`ledger-root-empty`, or the qualified retry result described above. The static
+claim is bound to the `acer` hostPath, so a read-only listing with the
+configured authenticated Talos client must also show
+`/var/lib/renovate-acceptance-ledger` empty before retiring storage:
+
+```sh
+talosctl --nodes 10.1.0.199 list /var/lib/renovate-acceptance-ledger
+```
+
+The listing must contain no child entries. This PVC-mounted finalizer avoids
+privileged hostPath access. Next remove
+`Prune=false` from the PVC and PV and `Delete=false` from the PV through their
+respective GitOps Applications; verify the live annotations are gone. Remove
+the CronJob, script, init/cleanup/finalizer Jobs, and PVC from Renovate first,
+then remove the PV and local StorageClass from platform-storage through
+reviewed changes; verify the claim and PV are gone. The retained hostPath
+directory may remain on `acer`; repeat the read-only Talos empty check after
+PV deletion. If it is already absent, cleanup is complete. Any retained file
+requires a new reviewed change; do not mutate the node by hand.
+The erased ledger cannot be restored by suspending these Jobs. If a finalizer
+guard fails, keep the claim and PV bound, preserve the report and receipts,
+and repair the staged source through another reviewed PR before retirement.
+
 Remove the suspended proof CronJob, one-shot Job manifests, inventory Job,
 report patch, and acceptance scripts through the same reviewed GitOps change.
 Prune the acceptance ExternalSecret and target `renovate-acceptance` Secret
