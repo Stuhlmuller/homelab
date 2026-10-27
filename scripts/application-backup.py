@@ -78,6 +78,9 @@ def prepare(source, workspace, app):
     """Copy only the existing CronJob's completed, checksummed file allowlist."""
     if app not in CONTRACTS:
         raise ValueError('unsupported application')
+    # A capture Pod's reference cannot prove that all writers stayed stopped.
+    if app == 'dispatcharr':
+        raise ValueError('Dispatcharr publication requires a protected durable writer-fence receipt')
     fresh(source.name)
     names = CONTRACTS[app]
     safe_source(source / 'SHA256SUMS')
@@ -211,6 +214,8 @@ def download(aws, key, item, path):
 
 def publish(directory, workspace, aws):
     record = load(directory)
+    if record['app'] == 'dispatcharr':
+        raise ValueError('Dispatcharr publication requires a protected durable writer-fence receipt')
     fresh(record['captured_at'])
     aws.check()
     prefix = f"applications/{record['app']}/{directory.name}"

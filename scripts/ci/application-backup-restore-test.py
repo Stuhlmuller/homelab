@@ -47,7 +47,7 @@ def main():
                 run('pg_ctl', '-D', data, '-l', root / (name + '.log'), '-w', '-t', '30',
                     '-o', f'-c listen_addresses= -c unix_socket_directories={socket} -c shared_buffers=16MB', 'start')
             source_socket, restore_socket = root / 'source-socket', root / 'restored-socket'
-            for app in ('octelium', 'multica', 'dispatcharr'):
+            for app in ('octelium', 'multica'):
                 run('createdb', '-h', source_socket, '-U', 'octelium', app)
                 sql = '''CREATE TABLE recovery_records (uid text PRIMARY KEY, payload jsonb, blob_sha256 text);
                     INSERT INTO recovery_records VALUES ('fixture-resource', '{"metadata":{"uid":"fixture-resource"}}', '%s');
@@ -62,7 +62,7 @@ def main():
                 source.mkdir()
                 (source / 'globals.sql').write_text(run('pg_dumpall', '-h', source_socket, '-U', 'octelium', '--no-role-passwords', '--globals-only').stdout)
                 run('pg_dump', '-h', source_socket, '-U', 'octelium', '--format=custom', '--file', source / (app + '.dump'), app)
-                archive_name = {'multica': 'uploads.tar', 'dispatcharr': 'data.tar'}.get(app)
+                archive_name = 'uploads.tar' if app == 'multica' else None
                 if archive_name:
                     with tarfile.open(source / archive_name, 'w') as archive:
                         entry = tarfile.TarInfo('fixture-upload.txt')

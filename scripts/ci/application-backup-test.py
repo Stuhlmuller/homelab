@@ -179,32 +179,59 @@ class PublicationTests(unittest.TestCase):
                     self.prepare()
 
     def test_paired_sets_require_matching_capture_fence(self):
-        for app in ('multica', 'dispatcharr'):
-            self.make_source(app)
-            with self.assertRaises(ValueError):
-                self.prepare(app)
-            capture = {'captured_at': self.source.name, 'writers_fenced': True,
-                       'approved_fence_reference': 'fixture-only-fence'}
-            for fenced in (False, True):
-                capture['writers_fenced'] = fenced
-                (self.source / 'capture.json').write_text(json.dumps(capture))
-                (self.source / 'SHA256SUMS').write_text(''.join(
-                    f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
-                    for name in APP.CONTRACTS[app]))
-                if not fenced:
-                    with self.assertRaises(ValueError):
-                        self.prepare(app)
-                    continue
-                prepared = self.prepare(app)
-                APP.publish(prepared, self.workspace, self.aws)
-                restored = APP.retrieve(app, prepared.name, self.workspace, self.aws)
-                self.assertEqual(set(APP.CONTRACTS[app]), set(json.loads(
-                    (restored / 'complete.json').read_text())['objects']))
-                self.assertFalse(json.loads((restored / 'retrieval.json').read_text())['application_restore_tested'])
-            if app == 'dispatcharr':
-                (self.source / 'data.tar').unlink()
-                with self.assertRaises(OSError):
+        app = 'multica'
+        self.make_source(app)
+        with self.assertRaises(ValueError):
+            self.prepare(app)
+        capture = {'captured_at': self.source.name, 'writers_fenced': True,
+                   'approved_fence_reference': 'fixture-only-fence'}
+        for fenced in (False, True):
+            capture['writers_fenced'] = fenced
+            (self.source / 'capture.json').write_text(json.dumps(capture))
+            (self.source / 'SHA256SUMS').write_text(''.join(
+                f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
+                for name in APP.CONTRACTS[app]))
+            if not fenced:
+                with self.assertRaises(ValueError):
                     self.prepare(app)
+                continue
+            prepared = self.prepare(app)
+            APP.publish(prepared, self.workspace, self.aws)
+            restored = APP.retrieve(app, prepared.name, self.workspace, self.aws)
+            self.assertEqual(set(APP.CONTRACTS[app]), set(json.loads(
+                (restored / 'complete.json').read_text())['objects']))
+            self.assertFalse(json.loads((restored / 'retrieval.json').read_text())['application_restore_tested'])
+
+    def test_dispatcharr_self_asserted_fence_cannot_be_published(self):
+        self.make_source('dispatcharr')
+        (self.source / 'capture.json').write_text(json.dumps({
+            'captured_at': self.source.name,
+            'writers_fenced': True,
+            'approved_fence_reference': 'a' * 40,
+        }))
+        (self.source / 'SHA256SUMS').write_text(''.join(
+            f'{hashlib.sha256((self.source / name).read_bytes()).hexdigest()}  {name}\n'
+            for name in APP.CONTRACTS['dispatcharr']))
+        with self.assertRaisesRegex(ValueError, 'protected durable writer-fence receipt'):
+            self.prepare('dispatcharr')
+        self.assertEqual(list(self.workspace.iterdir()), [])
+
+        # A fabricated prepared set must not bypass the prepare-time fence gate.
+        for name in APP.CONTRACTS['dispatcharr']:
+            (self.source / name).chmod(0o600)
+        objects = {name: APP.OFFSITE.digest(self.source / name)
+                   for name in APP.CONTRACTS['dispatcharr']}
+        record = {'format': 1, 'app': 'dispatcharr', 'captured_at': self.source.name,
+                  'objects': objects}
+        identifier = self.source.name + '-' + hashlib.sha256(APP.canonical(record)).hexdigest()
+        prepared = self.workspace / identifier
+        prepared.mkdir(mode=0o700)
+        for name in objects:
+            APP.write(prepared / name, (self.source / name).read_bytes())
+        APP.write(prepared / 'source.json', APP.canonical(record))
+        with self.assertRaisesRegex(ValueError, 'protected durable writer-fence receipt'):
+            APP.publish(prepared, self.workspace, self.aws)
+        self.assertEqual(self.aws.calls, [])
 
     def test_all_six_media_databases_required(self):
         self.make_source('media-postgres')

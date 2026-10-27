@@ -50,7 +50,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | n8n (`apps/n8n`, `apps/n8n-postgres`) | NFS DB, config and file-backed state; no independent scheduled set | 24h / 8h | Quiesce workflows/webhook writers, pair dump and files, retain the exact credential encryption key; disable outbound workflows during drill |
 | Harbor (`apps/harbor`) | Local DB with logical backups to QNAP, NFS registry blobs | 24h / 8h | Fence pushes/GC and pair DB/blobs; restore encryption key and signing Secret separately; retain public verification key. DB dump excludes private signing key |
 | Langfuse (`apps/langfuse`) | NFS PostgreSQL/ClickHouse/Valkey; S3 raw events expire after 30d; protected one-shot PostgreSQL checkpoint and isolated restore [passed on October 25, 2026](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316) | 24h / 8h | Before a move or retirement, coordinate fresh stopped-writer PostgreSQL, ClickHouse, Valkey and raw-object-version captures; independently restore them with the application encryption/salt secrets and verify startup/ingestion. Decide queue losses. The PostgreSQL-only receipt and lifecycle-managed raw-event bucket do not establish whole-service recovery |
-| Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files; paired publication contract is dormant | 24h / 8h | Capture `globals.sql`, `dispatcharr.dump`, `data.tar` and a reviewed writer-fence attestation from one stopped state; independently restore with private provider credentials. No producer, offsite receipt or restore drill exists |
+| Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files; blocked paired publication contract and excluded one-shot capture candidate | 24h / 8h | First prove a reviewed stopped-writer fence and activate the capture Job in a separate PR; bind its new backup PVC to an exact offsite-host mount and prefix grant; publish, retrieve and independently restore with private provider credentials. No live capture or offsite/restore receipt exists |
 | OpenClaw, NOFX (`apps/openclaw`, `apps/nofx`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
 
 <!-- markdownlint-enable MD013 -->
@@ -63,8 +63,10 @@ Paths abbreviated `apps/…` above mean `clusters/homelab/apps/…`. See
 [storage coverage](storage-nfs.md), the workload READMEs and
 [knowledge-base inventory](../openwiki/workloads/inventory.md) for source
 ownership. Automatic **capture** beyond existing Octelium/media jobs remains a
-gap. The paired adapters provide publication, not an approved writer-fencing or
-capture workflow. Do not enable them until that capture change is reviewed.
+gap. The paired adapters provide publication contracts, not an approved
+writer-fencing or capture workflow. Dispatcharr publication is blocked until a
+protected durable fence receipt exists. Do not enable capture until that change
+is reviewed.
 
 ## Publication and retention design
 
@@ -89,7 +91,10 @@ the completed directory. Its exact shape is:
 ```
 
 This is an operator attestation, not proof that a workload is actually stopped.
-A successful upload cannot convert inconsistent input into a consistent backup.
+The excluded Dispatcharr candidate records `writers_fenced: false` because it
+cannot prove live writer state; its publisher rejects even a forged `true` until
+an independent protected pre/post fence receipt is implemented. A successful
+upload cannot convert inconsistent input into a consistent backup.
 Blobs are opaque objects here; real extraction requires the containment gate.
 
 A content-derived ID prevents retries from creating new object names. The code
