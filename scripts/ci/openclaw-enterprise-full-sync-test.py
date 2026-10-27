@@ -20,7 +20,7 @@ class FullSync(unittest.TestCase):
     def test_workflow_runs_only_full_sync_without_a_journal(self):
         workflow = (ROOT / ".github/workflows/openclaw-enterprise-operations.yml").read_text()
         stage = (ROOT / "scripts/ci/openclaw-enterprise-stage.sh").read_text()
-        self.assertIn('options: [none, bind-installation, cleanup-failed-bind, full-sync, reconcile, stop,', workflow)
+        self.assertIn('options: [none, bind-installation, cleanup-failed-bind, recover-bound-bind, full-sync, reconcile, stop,', workflow)
         self.assertIn('nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"', workflow)
         self.assertIn('if [[ "$stage" == full-sync ]]; then', stage)
         self.assertIn('bash scripts/ci/openclaw-enterprise-full-sync.sh', stage)
