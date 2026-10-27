@@ -2,6 +2,22 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+## Helm charts
+
+`scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
+chart in `scripts/config/harbor-image-charts.json`, including local-path and
+OpenClaw Enterprise charts packaged from pinned Git revisions. The protected
+`harbor-helm-charts.yml` workflow accepts only the exact current `main` SHA,
+fetches those upstream packages, checks their identity and bytes, and pushes
+them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
+separate mirror reader robot and compares the package SHA-256. A retry checks
+existing artifacts before pushing; a mismatched artifact stops publication.
+
+Publish and verify all chart packages before changing Argo CD sources. Argo CD
+uses the repository Secret in `clusters/homelab/argocd/self-management` and its
+read-only mirror credential. If Harbor cannot serve charts, restore its registry
+and re-run the protected publication workflow before asking Argo CD to sync.
+
 ## Chainguard source provenance
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
@@ -92,11 +108,11 @@ publishes, signs and completely pulls all four images in the private `homelab`
 project. Dispatch it only with the current `main` SHA; use its immutable digest
 receipts for the Enterprise chart, CLI and later operator activation. The
 operator remains disabled until placement, journal PV, bootstrap file ownership
-and network-policy proofs pass. On failure, the job summary reports one fixed
-publisher phase;
-private transport and registry output remains encrypted, and no successful
-digest receipt is issued. A source revision change requires a new reviewed
-archive hash.
+and network-policy proofs pass. On failure, the job summary and public error
+annotation report one allowlisted publisher phase, or `unclassified` when the
+phase is absent or invalid. Private transport and registry output remains
+encrypted, and no successful digest receipt is issued. A source revision change
+requires a new reviewed archive hash.
 
 Talos 1.14.4 [`upgrade-k8s`](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L177)
 appends `:v1.35.9` to the five component image bases,
@@ -139,14 +155,16 @@ digest-tag hashes stop publication. Source-tag aliases are copied
 from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
-Authenticated OCI-index pulls retry classified transport failures up to five
-times, with 2/4/8/16-second delays. Before each transport retry, the
+Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
+read failures up to five times, with 2/4/8/16-second delays. Other authenticated
+reads have at most three attempts. Before each retry, the
 publisher replaces its Kubernetes port-forward and requires a fresh TLS/401
 registry challenge. Failed forward readiness is retried at most twice, stopping
 the failed process between attempts. It retains completed content in one
 temporary OCI directory and forces a recursive check of nested manifests and
 blobs on each attempt.
-Auth, missing-content, and digest failures still stop immediately; the complete
+HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
+exhausted HTTP 5xx reads keep the public `server-error` category. The complete
 pull and root digest checks remain mandatory.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
 digest, the mirror uses `regctl` for that exact copy error. It also retries an
@@ -195,8 +213,20 @@ retain registry blobs together with Harbor database/encryption-key backups.
    k8s_gateway image. Require a successful digest-preserving copy and complete
    authenticated Harbor pull before merging the resolver Application.
 
+   To qualify the exact Prometheus digest after a full-catalog copy failure,
+   use the fixed one-image scope:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=prometheus
+   ```
+
+   `scripts/config/harbor-prometheus-images.json` selects only the reviewed
+   `v3.11.3-distroless` source digest already in the full catalog. A successful
+   scoped run proves that image's preserved digest and complete authenticated
+   pull, not the full catalog or other Prometheus stack images.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `litellm`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -226,17 +256,18 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
-   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
-   those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require seven
-   complete authenticated pulls before merging any consuming Renovate PR:
+   The `renovate` scope selects eight pinned source references in
+   `scripts/config/harbor-renovate-images.json`. Five new digests cover
+   #1607, #1606, #1537, #1535, #1533, and #1492; the two PostgreSQL tags
+   share one digest. These candidates use digest-only source references so
+   the existing tag aliases keep their current mapping. It copies and
+   verifies only those eight entries while the unrelated full catalog is held.
+   After this catalog change merges, dispatch
+   it at exact current `main` and require eight complete authenticated
+   pulls before merging any consuming Renovate PR.
 
-   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
-   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
-   catalog by digest, and the same new index was verified in the earlier
-   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+   The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
+   `afc7e2d` and `7d38526` pins remain for existing consumers.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
@@ -322,6 +353,12 @@ retain registry blobs together with Harbor database/encryption-key backups.
    time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
+   During `destination-copy`, fixed `blob-upload-failed` and
+   `manifest-upload-failed` categories distinguish Skopeo's write stage when
+   its private diagnostic says so. Unknown copy errors remain
+   `command-failed`; no write is retried or handed to another client on that
+   basis. A scoped receipt never substitutes for a required full-catalog
+   receipt.
    Transient authenticated pull failures restart the private Harbor port-forward
    and recheck its TLS registry challenge before retrying either Docker manifests
    or OCI indexes. Hard authentication, missing-content and digest errors stop.
@@ -527,7 +564,7 @@ dependencies:
 
 ```sh
 (cd IaC && terragrunt stack generate)
-cd IaC/live/aws-ssm-parameters
+cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-push-password"]' \
   -out /path/to/private/mirror-publisher-secret.plan
@@ -554,7 +591,7 @@ first stage. It has a separate saved plan from the publisher bootstrap:
 
 ```sh
 (cd IaC && terragrunt stack generate)
-cd IaC/live/aws-ssm-parameters
+cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-pull-password"]' \
   -out /path/to/private/mirror-reader-secret.plan

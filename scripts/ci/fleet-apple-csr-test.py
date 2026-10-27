@@ -121,6 +121,16 @@ class CSRTest(unittest.TestCase):
         self.assertEqual(self.calls[-1][0:2], ("POST", "/api/v1/fleet/logout"))
         self.assertEqual(self.calls[-1][3]["Authorization"], "Bearer " + TOKEN)
 
+    def test_request_passes_short_poll_timeout_to_http_client(self):
+        opener = MagicMock()
+        response = opener.open.return_value.__enter__.return_value
+        response.status = 200
+        response.read.return_value = b"{}"
+        with patch.object(helper.urllib.request, "build_opener", return_value=opener):
+            self.assertEqual(helper.request("GET", "/api/v1/fleet/hosts/2", timeout=0.5), {})
+            self.assertEqual(helper.request("GET", "/api/v1/fleet/config"), {})
+        self.assertEqual([call.kwargs["timeout"] for call in opener.open.call_args_list], [0.5, 60])
+
     def test_decodes_once_writes_private_file_and_logs_out(self):
         status, _, kubectl = self.run_command()
         self.assertEqual(status, 0)

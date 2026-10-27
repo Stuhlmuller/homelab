@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bd047f653194dad893ea6d8b66e385889a300e728adf324e37ff83abf9da4f17",
+  "pageVersion": "sha256:2e49c4134896ecaa8966d293c2f9b158ef1eef82fda0a51e73f5e857fb8c2689",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:211f3230bc0844e4402db5453d2bc4b6df4c874a44b53bdcfdacb243d8e1b7e0"
+          "version": "repo-file-v1:sha256:72653e540cd6e644c3308a0c7a244d26f82c75316f5da19aeea6e35ee2625ec2"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -74,21 +74,21 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
+          "version": "repo-file-v1:sha256:f0527f3f96861beaf460a297338e8d4af4b452c4ca234b73c4aaaa447a13f6c6"
         }
       ]
     },
     {
       "id": "claim_516b7fbb362c46cc97b9f4d412c8e9fc",
-      "statement": "Legacy OpenClaw is stopped with its NAS and local runtime claims retained, its backup CronJob suspended, and a full independent archive/restore and new Enterprise recovery set still unverified.",
+      "statement": "Legacy OpenClaw is stopped with local and NAS claims retained and its backup CronJob suspended. Its protected off-NAS multi-root archive and separate restore verification passed, while compatible legacy boot and the new Enterprise recovery set remain unverified.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:87586e53c835110d98f95383384fc5f0cf2f084817371e97c05ea5ccec6e56b3"
+          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:4db20b26994f00ad6558d8fe840679803b0897bb24908775b53e1c2b5c45300b"
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         }
       ]
     },
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:5889a823950130f7adc554070661d868ae7767cc4bbef0559ec7e6dc3894c829"
+          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml",
@@ -124,7 +124,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:9fe06521075af1d34d28e57edf85cccc61ddad17aaa822b53947504e1f6dd4e5"
+          "version": "repo-file-v1:sha256:e8bc3a7ce13355d37351296f7830bdbf8e4b689978df9630cfc1c8823599c65e"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs",
@@ -169,7 +169,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise local storage and an isolated canary unadmitted: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady reservation and 9.74 GB root-filesystem space free, all workers have less than 10.74 GB for a 10 GiB local claim under the existing /var/lib pattern, and acer has only 1,802 MiB unreserved versus the 2,304 MiB database-plus-gateway minimum.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L276-L302",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L309-L335",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -187,36 +187,108 @@
           "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L23-L46",
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L27-L50",
           "version": "repo-lines-v1:sha256:2bb2a90e863f614bdd8d2d0bdee1d2ec3fa93f44fe07c525755362e84fcf53f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzMGM2ZWEyMmNjYTBjNDJiZmM3MTMyYjA5YWQ5NTdkMGE1MmI0M2YxNjAyZWQ2MzY2OTcyMzFmMTZiMDFjMDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:319f5490d934727591975c4e57d0168d81d297028728cf6dc00cd82faa086a2f"
+          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
         }
       ]
     },
     {
       "id": "claim_4afe0e2f538940f5bd4c5287ef5e169a",
-      "statement": "The stopped legacy archive retains nine NAS symlinks outside its roots. Six /app links resolve to five nonempty directories in the pinned image baseline, but the former gateway had a writable root, so its original overlay contents remain unclassified. Three dangling targets also remain unclassified. T014 still needs source disposition, verified offsite receipt, separate writable UID 1000 local and isolated NAS copies, and a compatible old-image boot behind an enforced offline network boundary; Flannel does not enforce the declared NetworkPolicies.",
+      "statement": "The verified legacy archive retains nine NAS symlinks outside its roots: six /app links resolve to five nonempty directories in the pinned image baseline, the former writable gateway overlay remains unclassified, and three dangling targets remain unclassified. T014 still needs writable UID 1000 local and isolated NAS copies plus an old-image boot behind an enforced offline network boundary, because Flannel does not enforce the declared NetworkPolicies.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L138-L170",
-          "version": "repo-lines-v1:sha256:fe72151206478591b71dbd11bcb4ca7693adaad83accc270cb84300b1521a3c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkMDUwZTE0MTJmMjM0ZmEyZjc0YjJlYTZhMDkyM2Y3Zjc1YzJjMmVlODhkMDA1OGEwYTE1Yzg3NTI3MWVmMDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhNDE2NDVhNTc2MjNkNTZhNDBjMDUwZDk4ZjQ2OGY2MTU5MTVlNGE3NGUwMmEyMTgwNjdkNzUyNzRiZmUyNzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwNGExM2MwMjNkM2NiZTcwMjUzOWE4N2VkYmMzNzE1ZmMxMzc2YTc2NGQ2OTU5NmJiYjc2NmRjYjE0NGM5YWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiMTYzMTljNDUxODk4MGFjMThhOGYxZWYxY2U5MWM5NGNkMjBiZDIxNzlhMjNiM2U0NDZmODAwMTM1NjYyNWUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L455-L466",
-          "version": "repo-lines-v1:sha256:15c6b326d99989ad731766298c3059c5af3de605539b5265855de6d60438dba2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlMDJjZDllNDFiNWI2ZWU2MzYzNzk2NmRmZTFkODY3ZjE5YjNhODZlMGE2MDMyMzc1MjBiNTk1M2IwY2JkMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZjk5MGRjYTY0YTgzMmViYmI3NDk3MmFlMDUwNDkwYTZkNWNjNWUyNzM1YWQ0OTNjNzg5ZjM5MTcyMzgxNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRiMGM2ZDJlZjY5ZDkxNjVhNmExODdiNTdmOGY2ZjlhNWFiMTU5MzJjZThmYzBkY2Q4NjZiZDBhNWE3M2E0MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllOGNlOGMzNzc1NTYyZWQ0OWQxNDlmOTZkNWU5ZWY0ZTcxM2VmYTQ3NDk0ODAwNGFiNGYzNjFkMTMzOTY2OGEifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+        }
+      ]
+    },
+    {
+      "id": "claim_4d45904b7c6644d1a937fc8129db03aa",
+      "statement": "Protected publish-archive run 39501240221 used source archive run 39366476872 and succeeded after versioned off-NAS upload, restore, archive verification and a private final receipt. Later runs 39700564687 and 39908653791 used the publication run as a worker reference and failed before upload. Separate verify run 39910018168 succeeded against the exact publication reference and restored the versioned archive and receipt again.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L23-L23",
-          "version": "repo-lines-v1:sha256:cd43aa98398d18b9291822b8b76c5305426c44f391655857d88a838b31063fc6:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q0M2FhOTgzOThkMThiOTI5MTgyMmI4Yjc2YzUzMDU0MjZjNDRmMzkxNjU1ODU3ZDg4YTgzOGIzMTA2M2ZjNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2Q0M2FhOTgzOThkMThiOTI5MTgyMmI4Yjc2YzUzMDU0MjZjNDRmMzkxNjU1ODU3ZDg4YTgzOGIzMTA2M2ZjNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDljYzNiZTIxMzgyNDJhMGRiZGMyZTQwNjJkNWNiZGMwZGM3YmUyZTg5M2Q0MmYwNDRmNTM2NmY4MDI3NzBkMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2MwMzAwMTgxZjcyOWE0M2NlNGY0ZmM2YzA3OTY4MGJlM2FmNTg1NzJkZTBiZDM2Y2RjZTM4NzI0YzJkYzIwMCJ9"
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
+          "version": "repo-file-v1:sha256:a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611"
+        }
+      ]
+    },
+    {
+      "id": "claim_c980e4cfbd6347118de5f304fdaca4bf",
+      "statement": "The current Embedded OpenClaw profile creates one 1,792 MiB Gateway Pod on the agents selector with a 10 GiB local state claim; the separate 768 MiB Harness request is Dedicated-only. On the 2026-10-23 09:32 UTC read-only check, only acer had disk for the Gateway and database claims, yet its 1,802 MiB unreserved memory was 502 MiB below their 2,304 MiB floor. A 4,096 MiB co-located planning reservation and an isolated tainted canary remain unadmitted.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json#L61-L66",
+          "version": "repo-lines-v1:sha256:1b65e73dec72885a328c8f136fc42bf9271f59d985c6eb416cb9ba6759d867f5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGU0Y2VkYzhlMDQzYWU5MzdjMzk0NjJkYjczMDg3NTk1YTJmYmZjZDkxOTFlYjZhMmRjMzE5NThlNzdmM2ZkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODRlNTc1MDJiNmFkZDk5Zjg3NWRmMDJkYzA3MjA0MTc0MGE1OTRhZmNiNWJmMGM3OTc4NmI0MGYzZjkxN2M1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNmE5NTEzMGY0Zjc0ZTQ0NDIzNmU3NTE4MzFmMDk0MmQ1ODhiMDdlOGNmYmNlMDExODg2OWQ2MzhlNjBjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGY3MzlhMDZjMWNiYjEyNDRlMzM2M2QzOGJjZjlmYTUwY2U4NGZlZDM5OWMyMTkzYTNjN2YwOGQ1OTkxOGIyYSJ9"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L373-L421",
+          "version": "repo-lines-v1:sha256:555a986bda319c70b49e5adeaa062467f3862549863a7f38c582c318d33279d6:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmMmY3YmE1YzU4N2JjMWI4OWZhMDFmZDEwNDRmZGQ4Mjk4MWU1MjAwMDZjMDQxZGM5MWE3NzI0MmU3MWIxNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZiNTYwYmUxYzJmOTg0ZjdkYmFhNmZiNjRiNWQ2YjJmMGMwYTVjNjBiOGViM2NlNDZiYjdjNDNmOWQ1YWQyNGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZDU2MGM5ZDEyNDYxN2YzOTg3ZjcyNTdiY2VlMjFjNmY1MjAxNWMyZDQ1ZGQ3YWIyMzU4YWJkZTM5MTZlZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/research.md#L150-L153",
+          "version": "repo-lines-v1:sha256:7234126d60dc7803de8f87f9d6a8c991178998943c91ab8746e8948257708ef7:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzFjMDk2MTA5YzBjNjk1OGUzMjE3YzBhMDhmMzFiMzg4MTYzOTRhYjNjNzRmN2U4MzhlZjhiNTkwMTkwZGNmYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM5YjcyZjM4MjYxMDcyNTBjNTdkZDY1OTBhNTY1MmNiNzk0MzE1YTExYzAzZDNmNzQxOTBhMTRlY2E2YjVkYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTc1NDYwNjAzNDVmYzBhM2FlNmY3NWI5MDNhMDc5YWQ5NmI1N2MzZTdmYzIwZDdlNTkyOTlmMmEzNDFhZDE4NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWViZGJiNTNkZWRlNTMxYTg5NmU0YWEyYjFkYzZlN2ZiOWRhZTIyZmY1M2RhOWE3N2U4ODdhOTY3YzI4YTg5YiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_17f851a39fcf458fa74b29afc798661f",
+      "statement": "The source-only Enterprise backup script requires exactly one recovery marker with writerStopped true and a nonempty claimUid; its offline fixture rejects missing, false, malformed, or concatenated markers, while live claim-UID proof, sustained writer fencing, scheduled encrypted off-node backup, and restore acceptance remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
+          "version": "repo-file-v1:sha256:04bcadde4d22cd0e83fab58e385f2d4d7b16d8d4d3e8c9aae29b9a9c9ef146ec"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
+          "version": "repo-file-v1:sha256:95baa44ed471d8efc23d3d652cc8c78d320cf6874fc3982514ce8acbc201ced9"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
+          "version": "repo-file-v1:sha256:d5ee8f6a5ae91e2157a80ec5f1471f93e8157b8a94cac1147db38390f292c0f5"
+        }
+      ]
+    },
+    {
+      "id": "claim_91150f5538e845cd9c585b5964d0539e",
+      "statement": "The protected prepare-restore stage checks stopped legacy writers, source identities and scratch headroom, and its bounded transfer verifies pinned S3 ranges, reader slices and final hashes. Three early runs failed before a verified copy; run 39988927652 downloaded the pinned archive and receipt and started a detached worker but was cancelled, while source-bound resume 40050057926 passed exact-main and prior-job provenance, worker marker, archive and receipt hashes, restored database report and zero-writer checks to prepare a separate private NAS scratch recovery tree. T014 old-image boot and compatible recovery remain unproved.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
+          "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
+          "version": "repo-file-v1:sha256:a04080b2ed38ea4112605c8027b9fb17025a658dfd1f8fc38487adb726fc7611"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-21T00:09:16.180Z"
+    "at": "2026-10-25T04:28:23.381Z"
   }
 }

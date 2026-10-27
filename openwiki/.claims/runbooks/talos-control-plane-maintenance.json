@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3d94d35325ca8464d7cc02c391f73d139803a77a83bc2134e01e8003c54f4b66",
+  "pageVersion": "sha256:c981c552e484401b95ee7e57efc70d57c9ad09255e7778f286ad81cb83a666f6",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
@@ -128,7 +128,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:dd22fad7bb267904ce481c12aa9a3138c22828d3d68df80ef870714c1cc4ea15"
+          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
@@ -142,7 +142,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/platform-maintenance-test.py",
-          "version": "repo-file-v1:sha256:d99eefb0b53d893792280fd9a0f4715ce3e78460ce2fa6f630f1fa17453b52c2"
+          "version": "repo-file-v1:sha256:6d2487ddcd1acd2837a1c8a337663f03673e0a1558ae2765bf1495b13ad97c06"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -150,7 +150,7 @@
         },
         {
           "resource": "repo://scripts/platform-maintenance.py",
-          "version": "repo-file-v1:sha256:d5b2cb22239b9c6d9c196f238af71a0a06038e537f3af65501b57031ed021714"
+          "version": "repo-file-v1:sha256:c448a2dddfdbe019109a3b09afd776bffd90ff0b5bca24a231efb5405265bd0d"
         }
       ]
     },
@@ -163,7 +163,7 @@
           "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
-          "resource": "repo://scripts/ci/platform-maintenance-test.py#L985-L1065",
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L992-L1072",
           "version": "repo-lines-v1:sha256:4ccb1c85028c8db039eaec2d99492d183e523823f46817ece3da7b3a547af4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YzhkY2Q2MzI5M2E1OTczZDMyNjMwNjJmYTM2MjViNjVhMGE3MGJhNmExZDVjYmFmNGNhMjdmNWUxZDE4N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmJiYTM4YTA0MWE5ZjdhOTdjZDlkZTRkN2U0YWUwYTZhYmRmOGJkZTFkNTNiYWFiNDJhNjdmZjUwODBmNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjYwNTdmNGQzNTdmNGE2NjFjODVmNzMyZmU5ZDY0MDIwMjRjOTYzYjQ2ZTkwY2EwNjEyZmQxMjMzZDQ5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2MTdhZmI4YjQxZmNkN2FlMDFlYjRlMTM0YTA3N2Q5NDA0NWJjNTMwYjhiNzVmZjJmNTIxZmI1NWM2M2YwMGYifQ"
         },
         {
@@ -178,7 +178,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:dd22fad7bb267904ce481c12aa9a3138c22828d3d68df80ef870714c1cc4ea15"
+          "version": "repo-file-v1:sha256:2fc9d11d8492fed2d64ae80aa6cf84f17b1c3ada858e4f70c08c1b949e172aec"
         },
         {
           "resource": "repo://scripts/ci/network-policy-registration-test.py",
@@ -197,6 +197,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T22:27:13.661Z"
+    "at": "2026-10-23T18:25:34.713Z"
   }
 }

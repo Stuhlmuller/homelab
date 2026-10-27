@@ -22,7 +22,7 @@ Bot and CI checks to pass before merge.
 - Public GitHub webhook:
   `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel.
 
-Traefik exposes only the exact `/api/github/hook` callback path. Policy Bot
+Traefik and the retained Cloudflare route expose only the exact `/api/github/hook` callback path. Policy Bot
 retains GitHub HMAC verification; its UI and callback root stay private or denied.
 After Funnel readiness, preview `python3 -I scripts/policy-bot-webhook.py`, then
 follow the [guarded callback cutover](../traefik/CUTOVER.md) from clean reviewed

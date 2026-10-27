@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -31,20 +33,35 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-7941d9a35910fdb69c63e9c1
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-20T19:36:50.176Z" }
+generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:34:35.293Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # AWS SSM Secret References
+
+## Bulldozer GitHub App
+
+The [Bulldozer contract](../../clusters/homelab/apps/bulldozer/README.md)
+declares the `/homelab/bulldozer/github-app/` SSM SecureStrings for
+`integration-id`, `webhook-secret`, and `private-key`. Terragrunt generates the webhook secret;
+the protected `bulldozer-credential.yml` workflow writes the App ID and private
+key from homelab Actions environment secrets after the placeholders exist.
+`bulldozer-config` projects them into files with `refreshPolicy: OnChange`.
+Keep the Deployment at zero replicas until credentials, Funnel routing, and
+the GitHub App webhook are ready; then activate it through reviewed GitOps.
 
 Canonical runbook: [`docs/secrets-aws-ssm.md`](../../docs/secrets-aws-ssm.md)
 
@@ -117,6 +134,14 @@ rechecks exact current `main` and pins this source, but the hosted runner has
 no declared delivery of the owner-controlled 0600 bootstrap-key file. No live
 binding is proven.
 
+## Protected Talos upgrade inputs
+
+The fixed platform upgrade stages read `OCE_CONTROLPLANE_CONFIG_B64` and
+`OCE_WORKER_CONFIG_B64` from protected workflow secrets, decode private
+role-specific Talos configs, and pass them to strict validation and ordered
+execution. `activationEnabled` remains false; accepted placement, recovery,
+and publication receipts are still required before a live upgrade.
+
 ## Harbor native receipt prerequisite
 
 The generated `/homelab/harbor/robot-scan-password` parameter is present as a
@@ -133,7 +158,7 @@ directory is initialized. On a retained, already-initialized PVC, refreshing
 `multica-secrets` does not change the existing `multica` database role
 password. The generated SSM value is declared in the committed
 `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
-rendered into the `IaC/live/aws-ssm-parameters` OpenTofu stack, so do not
+rendered into the `IaC/homelab/us-west-2/shared/aws-ssm-parameters` OpenTofu stack, so do not
 hand-edit
 `/homelab/multica/postgres-password`; the next apply would restore the
 repository-owned generated value.

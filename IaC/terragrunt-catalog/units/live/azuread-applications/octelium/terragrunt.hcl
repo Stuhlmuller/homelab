@@ -20,7 +20,7 @@ terraform {
 
 dependencies {
   paths = [
-    "../../aws-ssm-parameters",
+    "${dirname(find_in_parent_folders("root.hcl"))}/homelab/us-west-2/shared/aws-ssm-parameters",
   ]
 }
 

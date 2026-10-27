@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-3cae87753a0e502a1e05c1f3
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
@@ -16,12 +18,12 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-20275bab1ec480742e28a50f
     resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
+  - id: openwiki-source-8918085c21c3a103803f7fbe
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
-  - id: openwiki-source-b26876230e53fd853d7bcbea
-    resource: repo://clusters/homelab/apps/openclaw/values.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
@@ -32,10 +34,18 @@ sources:
     resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
+  - id: openwiki-source-b3bdcadf54edf75020440bdd
+    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-91161c3887f6aa107b3c0d6b
+    resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-b7865f8f7c461f149710edda
@@ -44,14 +54,18 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
+    resource: repo://specs/003-replace-openclaw-enterprise/research.md
+  - id: openwiki-source-4f1f492ff2ee386585deee86
+    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-21T00:09:16.180Z" }
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-21T00:09:16.180Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Storage And State
@@ -82,7 +96,7 @@ still reported Synced/Healthy. Kubernetes recreated PostgreSQL on
 without manual mutation. Check database and dependent workload readiness, not
 Argo status alone, during release acceptance.
 
-The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
+The operator-owned `IaC/homelab/us-west-2/operator/state-bucket-encryption` unit manages only
 the existing S3 state bucket's encryption configuration, enabling S3 Bucket
 Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
 [State Encryption](../operations/state-encryption.md) for configuration, recovery, and rollback.
@@ -290,8 +304,51 @@ native bindings across Pod replacement. The backup CronJob is suspended;
 historical SQLite snapshots remain on the NAS. The local hostPath survives Pod replacement
 but not node-disk loss; there is no automatic node failover and recovery can lose
 writes since the last backup. Native caches are reconstructed on disaster restore.
-The post-shutdown inventory passed, but a complete independent archive/restore
-and any new Enterprise recovery set remain unverified; keep all retained claims.
+The post-shutdown inventory, protected off-NAS archive publication and separate
+multi-root restore verification passed. [Publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+restored the versioned upload before its private final receipt. The separate
+[verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+succeeded at 2026-10-23 09:52 UTC against publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. It fetched the
+exact archived versions and rechecked full local/NAS tree content, both SQLite
+databases and required historical backups. The new Enterprise recovery set and
+compatible legacy boot remain unverified; keep all retained claims. Later
+`publish-archive` retries `39700564687` and
+`39908653791` used the publication ID as a source worker ID and failed before
+upload. They do not invalidate the successful publication.
+The declared `prepare-restore` stage rechecks stopped writers, retained volume
+and root identities, and private scratch capacity before fetching the
+publication's exact versioned archive and receipt. The source-only transfer
+repair fetches pinned S3 versions in at most 128 MiB ranges, verifies version,
+interval and length metadata, then sends at most 8 MiB SHA-256-checked slices
+to the reader. It rolls back interrupted appends and promotes only after a full
+size and SHA-256 match. The first [protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
+left an incomplete, unverified archive in scratch. The [retry
+`39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker. The next [retry
+`39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+also failed in `verification-archive-download` before receipt download or
+restore-worker start. Its protected download helper did not distinguish the
+S3 source range from reader transport or finalization, so the cause remains
+unclassified. The later [protected copy run
+`39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652)
+downloaded the pinned archive and receipt and started a detached restore
+worker, then its six-hour job was cancelled. Its source-bound [resume run
+`40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+passed exact-main and prior-job provenance checks, verified the stable worker
+success marker, cached archive and receipt hashes, restored database report,
+source identity and zero production writers, and prepared a separate private
+NAS scratch recovery tree. This is a partial T014 copy receipt, not an old-image
+boot or compatible recovery proof.
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+produces a public npm content-cache tar, dependency lock, and digest manifest
+without legacy state or credentials. Its
+[CI proof](../../.github/workflows/openclaw-discord-offline-cache.yml)
+deletes those artifacts after a fresh `--network none` install and runtime
+inspection. A later recovery operation still needs reviewed private publication,
+digest-checked transfer, and a compatible boot from separate writable copies
+behind an enforced offline boundary; this cache proof does not accept T014.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
@@ -299,7 +356,7 @@ gateway had a writable root, so its overlay may have changed those targets;
 their original contents remain unclassified until compared with retained
 evidence. Three dangling external targets also remain unclassified. T014 still
 needs their disposition, a separate writable UID 1000 local-state copy, an
-isolated NAS copy, the verified offsite archive receipt and an old-image boot
+isolated NAS copy and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
 declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
@@ -311,7 +368,13 @@ has not been applied. Its PostgreSQL 18.6
 StatefulSet, role bootstrap, 10Gi local claim template and guarded backup and
 restore fixtures are source-only; node placement, live role initialization,
 complete backup material and isolated restore remain pending. No new Enterprise PVC or live database exists from
-this source alone. The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
+this source alone. The [backup script](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
+now requires exactly one recovery marker object with `writerStopped: true` and a
+nonempty `claimUid`. The [offline fixture](../../scripts/ci/openclaw-enterprise-recovery-test.py)
+rejects stopped-writer and UID failures, malformed JSON and concatenated markers.
+This file check does not prove the UID matches the live claim or hold writers
+stopped during capture; T051 still needs those controls and a scheduled,
+encrypted off-node backup with restore proof. The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
 about 3,398 MiB unreserved on the best worker, `zimaboard-1`, below the
 4,096 MiB initial Enterprise reservation before transient and host headroom.
 Its root filesystem had 9.74 GB free. Talos confirmed each worker's `/var`
@@ -320,6 +383,33 @@ claim if T035 uses the existing `/var/lib` pattern. New node paths are not yet
 committed. `acer` has only 1,802 MiB unreserved, below the 2,304 MiB database
 and gateway minimum. This does not admit local storage or an isolated canary; see the
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
+The 2026-10-23 read-only recheck still finds only `acer` with room for a new
+10 GiB local claim; it has about 1,801 MiB unreserved, 503 MiB below the
+database-plus-gateway request. The best worker has 9.00 GiB filesystem free.
+Its 38 non-DaemonSet Pods request about 3,342 MiB, exceeding the other nodes'
+combined 2,036 MiB headroom, so workload rebalancing cannot clear an isolated
+canary. Crossplane source declares two zero-replica controllers, while live
+Deployments still request 256 MiB each on `acer`; reconciling that separate
+drift would leave only about 9 MiB after the minimum and no isolation.
+An 08:18 UTC recheck on `main` `bcc08cb` still found 383.07 GiB filesystem
+free on `acer` but only about 1,802 MiB unreserved RAM. The 503 MiB gap is
+only the declared database-plus-gateway floor. If the [initial 4,096 MiB
+planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
+for API, worker, database, Envoy and gateway is co-located on `acer`, it
+exceeds unreserved requests by about 2,295 MiB before startup, backup,
+and peak margin. This is a planning scenario, not selected placement. The
+[pinned Embedded Gateway source](../../docs/evidence/openclaw-enterprise-acceptance.md)
+uses `oce-role: agents`, requests 1,792 MiB in one Pod, and needs its own 10 GiB
+local state claim. The configured 768 MiB Harness request applies to Dedicated
+mode only; adding it to Embedded capacity was incorrect.
+At 09:32 UTC on `main` `111b58f`, `acer` had 1,802 MiB unreserved and 383.01 GiB
+filesystem free, while every worker had less than 10 GiB free. Both the 10 GiB
+database and Gateway claims therefore need `acer` under the proposed local
+storage pattern; their 2,304 MiB request is 502 MiB above its headroom.
+Splitting API, worker and the full Envoy planning allowance to `zimaboard-1`
+would leave only 122 MiB against its observed memory margin before peaks.
+No existing node has an admitted Enterprise storage and isolated-canary
+placement.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
@@ -559,7 +649,7 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/octelium-storage`
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
-- `IaC/live/argocd-apps/platform-storage`
+- `IaC/homelab/us-west-2/apps/platform-storage/argocd`
 
 ## OpenClaw identity coordinator ownership
 

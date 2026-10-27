@@ -10,13 +10,16 @@ not patch Enterprise behavior or restore the legacy assistant into it.
 and images, installation phase, logical Namespace/agent names, private origins,
 storage class, native model configuration, credential references, and
 `activationEnabled`. It contains no secret values or operator shell inputs.
-The source-to-image pairing policy and image repository names are fixed in T003;
-the controller/runtime pair is published and pinned. The CLI build pins the
-Go 1.27.1 toolchain and exact Linux amd64 binary hash from `cmd/occ`, then
-packages it with the same source revision in a signed Harbor image. Its
-`artifactDigest` stays null until the protected image workflow verifies the
-complete pull and signature; the remaining platform images still require T004
-receipts. Activation remains false.
+The source-to-image pairing policy and image repository names are fixed in T003.
+Protected [publisher `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867)
+signed and fully pulled the paired controller/runtime and CLI images; their
+verified digests are pinned in source. The CLI build pins the Go 1.27.1
+toolchain and exact Linux amd64 binary hash from `cmd/occ`, then packages it
+with the same source revision. Protected [full mirror `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+verified the 214-image platform catalog. The journal operator image was also
+published, but its digest remains unselected because the Installation and
+values changed after that build; exact-source rebuild is required before use.
+Activation remains false.
 
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
 Sandbox, optional broker/collector, or configured Codex Harness. The pinned OCE
@@ -117,7 +120,7 @@ Use these actual upstream operations:
 | Agent | Agent collection/exact GET, POST create and PATCH `harnessAuth`; bind only one logical Claw |
 | Runtime transport | `POST /namespaces/:ns/agents/:agent/runtime-credentials`; track its resulting state |
 | Deploy | `POST /namespaces/:ns/agents/:agent/deploy`; persist returned revision; paginate revision history and inspect exact deployment before retry |
-| Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state and runtime termination |
+| Stop | `POST /namespaces/:ns/agents/:agent/stop`; require `operate`, preserve revision/state, verify stopped desired state, API runtime termination and an unfiltered empty tenant Pod list |
 | Native UI | `GET /namespaces/:ns/agents/:agent/native-admin` requires a human session with exact Agent `administer`; service keys cannot inspect it. T048 records returned `data.origin` through authenticated human-session acceptance, outside the service-key reconciler. |
 | IAM | Exact role/grant tuples; agent ServicePrincipal gets `operate` on its own model Secret, never installation administration |
 
@@ -167,10 +170,9 @@ runner also lacks a declared persistent
 `/private/openclaw-enterprise/journal.json` volume; T043 keeps reconcile and
 recovery stages disabled until an in-cluster durable mount is declared and
 verified. The separate full-sync stage uses no journal and requires a reviewed
-installation phase before Argo can sync. A source-built `occ` CLI digest is
-still absent under T004; this
-reconciler uses the pinned public HTTP Agent routes and never executes an
-ambient binary.
+installation phase before Argo can sync. The source-built `occ` CLI digest is
+pinned under T004; this reconciler uses the pinned public HTTP Agent routes and
+never executes an ambient binary.
 
 Pinned source: [first-Agent Configuration builder](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/first-agent.mjs),
 [Agent create/deploy/stop API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md),

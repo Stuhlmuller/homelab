@@ -62,7 +62,7 @@ class ChartHooksContract(unittest.TestCase):
         expected = "occ-installation-startup-" + self.digest[:32]
         self.assertFalse(any(item["kind"] == "Secret" for item in self.foundation))
         self.assertEqual(self.digest,
-                         "980de11bbc688a33741a19c9093f613e74e464d2aae897571ac61d0056593c71")
+                         "86641419e595a5c812a8c8565d5cb027a3e406e38ec6278f704c263e310d0019")
         self.assertEqual(self.values["installation"]["secretName"], expected)
         self.assertEqual(self.values["controlPlane"]["installationChecksum"], self.digest)
         self.assertFalse(self.config["activationEnabled"])

@@ -4,6 +4,7 @@
 import os
 import json
 import hashlib
+import importlib.util
 import re
 import runpy
 import subprocess
@@ -12,16 +13,16 @@ import tempfile
 import unittest
 import stat
 import textwrap
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from threading import Thread
 from unittest import mock
-from urllib.parse import parse_qs, urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 UPLOAD = ROOT / 'scripts/ci/openclaw-enterprise-upload.py'
+DOWNLOAD = ROOT / 'scripts/ci/openclaw-enterprise-download.py'
+DISCORD_BUILDER = ROOT / 'scripts/openclaw-discord-offline-cache.py'
+DISCORD_PUBLICATION = ROOT / 'scripts/ci/openclaw-discord-cache-publication.py'
 ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
 JOURNAL_OPERATOR = ROOT / 'scripts/ci/openclaw-enterprise-journal-operator.py'
 BINDER = ROOT / 'scripts/openclaw-enterprise-bind-installation.py'
@@ -278,7 +279,7 @@ sys.stdout.buffer.write(chunk)
         guard = textwrap.dedent(dispatch.group(1))
         base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
                 'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
-                'BASELINE_REF': '', 'ARCHIVE_REF': ''}
+                'BASELINE_REF': '', 'ARCHIVE_REF': '', 'CACHE_REF': '', 'PRIOR_RUN_ID': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
             ('none', 'bind-installation', '', True),
@@ -295,9 +296,18 @@ sys.stdout.buffer.write(chunk)
 
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                       text=True).strip()
+        fake_gh_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(fake_gh_dir.cleanup)
+        fake_gh = Path(fake_gh_dir.name) / 'gh'
+        fake_gh.write_text('#!/bin/sh\nprintf "%s\\n" "$FAKE_MAIN_SHA"\n')
+        fake_gh.chmod(0o755)
         run_env = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha,
+                   'GITHUB_REF': 'refs/heads/main',
+                   'GITHUB_REPOSITORY': 'Stuhlmuller/homelab',
                    'EXPECTED_SHA': sha, 'OCTELIUM_AUTH_TOKEN': '',
-                   'GH_REPO': '', 'GH_TOKEN': ''}
+                   'GH_REPO': 'Stuhlmuller/homelab', 'GH_TOKEN': 'test',
+                   'FAKE_MAIN_SHA': sha,
+                   'PATH': f'{fake_gh_dir.name}:{os.environ["PATH"]}'}
         full_sync = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), 'full-sync'], cwd=ROOT,
                                    env=run_env, capture_output=True, text=True, timeout=5)
         self.assertEqual(full_sync.returncode, 2)
@@ -319,6 +329,44 @@ sys.stdout.buffer.write(chunk)
                                env={**run_env, 'EXPECTED_SHA': '0' * 40},
                                capture_output=True, text=True, timeout=5)
         self.assertEqual(stale.returncode, 2)
+
+    def test_enterprise_stage_rechecks_current_main_before_kubeconfig(self):
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                                      text=True).strip()
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory)
+            marker = fake / 'kubeconfig-started'
+            (fake / 'gh').write_text(
+                '#!/bin/sh\n'
+                'test "$1" = api && '
+                'test "$2" = repos/Stuhlmuller/homelab/git/ref/heads/main && '
+                'test "$3" = --jq && test "$4" = .object.sha || exit 99\n'
+                'printf "%s\\n" "$FAKE_MAIN_SHA"\n')
+            (fake / 'jq').write_text('#!/bin/sh\nexit 0\n')
+            (fake / 'bash').write_text('#!/bin/sh\n: > "$STAGE_MARKER"\nexit 77\n')
+            for name in ('gh', 'jq', 'bash'):
+                (fake / name).chmod(0o755)
+            base = {**os.environ, 'PATH': f'{fake}:{os.environ["PATH"]}',
+                    'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha, 'EXPECTED_SHA': sha,
+                    'GITHUB_REF': 'refs/heads/main',
+                    'GITHUB_REPOSITORY': 'Stuhlmuller/homelab',
+                    'OCTELIUM_AUTH_TOKEN': 'test', 'GH_REPO': 'Stuhlmuller/homelab',
+                    'GH_TOKEN': 'test', 'FAKE_MAIN_SHA': 'b' * 40,
+                    'STAGE_MARKER': str(marker)}
+            for stage, overrides in (
+                    ('full-sync', {}), ('reconcile', {}), ('stop', {}),
+                    ('verification', {}), ('restore', {}), ('acceptance', {}),
+                    ('full-sync', {'GITHUB_REF': 'refs/heads/feature',
+                                   'FAKE_MAIN_SHA': sha}),
+                    ('full-sync', {'GITHUB_REPOSITORY': 'foreign/homelab',
+                                   'FAKE_MAIN_SHA': sha})):
+                with self.subTest(stage=stage, overrides=overrides):
+                    marker.unlink(missing_ok=True)
+                    result = subprocess.run(['/bin/bash', str(ENTERPRISE_SCRIPT), stage],
+                                            cwd=ROOT, env={**base, **overrides},
+                                            capture_output=True, text=True, timeout=5)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertFalse(marker.exists())
 
     def test_installation_binding_is_pinned_protected_and_requires_private_file(self):
         workflow = WORKFLOW.read_text()
@@ -394,6 +442,15 @@ sys.stdout.buffer.write(chunk)
             WORKFLOW.read_text(),
         )
         self.assertEqual(upload_pins, [hashlib.sha256(UPLOAD.read_bytes()).hexdigest()])
+        download_pins = re.findall(
+            r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-download\.py'",
+            WORKFLOW.read_text(),
+        )
+        self.assertEqual(download_pins, [hashlib.sha256(DOWNLOAD.read_bytes()).hexdigest()])
+        for path in (DISCORD_BUILDER, DISCORD_PUBLICATION):
+            pattern = rf"sha256sum --check --status <<<'([0-9a-f]{{64}})  {re.escape(path.relative_to(ROOT).as_posix())}'"
+            pins = re.findall(pattern, WORKFLOW.read_text())
+            self.assertEqual(pins, [hashlib.sha256(path.read_bytes()).hexdigest()])
 
     def test_inventory_worker_finishes_without_exec_stream_and_records_failure_privately(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -456,6 +513,7 @@ output.write_text('verified')
         shell = '''set -euo pipefail
 work="$1"
 status_refresh_count=0
+stage=verify
 reader_input=(true)
 python3() { cp "$TEST_STATUS" "${@: -1}"; }
 source <(sed -n '/^refresh_status() {/,/^}/p' "$2")
@@ -476,60 +534,192 @@ refresh_status "$3"
                                         check=False)
                 self.assertEqual(result.returncode == 0, expected == 0, result.stderr)
 
-    def test_versioned_restore_streams_exact_bytes(self):
-        payload = b'archive\x00bytes'
-
-        class S3(BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.server.paths.append(self.path)
-                if self.server.fail:
-                    self.send_error(404)
-                    return
-                self.send_response(200)
-                self.send_header('Content-Length', str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
-
-            def log_message(self, *args):
-                pass
-
-        with HTTPServer(('127.0.0.1', 0), S3) as server, tempfile.TemporaryDirectory() as directory:
-            server.paths = []
-            server.fail = False
-            Thread(target=server.serve_forever, daemon=True).start()
-            destination = Path(directory) / 'archive'
-            shell = '''set -euo pipefail
-bucket=test
-reader_input=()
-if [[ "${TEST_READER_FAIL:-}" == true ]]; then reader_input=(false); fi
-aws() { command aws --endpoint-url "$TEST_ENDPOINT" --no-sign-request "$@"; }
-source <(sed -n '/^restore_version() (/,/^)/p' "$1")
-restore_version key version-1 "$2"
+    def test_prepare_restore_requires_archived_volume_and_root_identity(self):
+        script = SCRIPT.read_text()
+        prepare = script.split('  verify|prepare-restore|resume-restore)\n    phase=verification', 1)[1]
+        preflight = 'validate_archive_identity "$work/receipt.json" "$recheck"'
+        self.assertLess(prepare.index(preflight),
+                        prepare.index('restore_version "$prefix/legacy.tar.gz"'))
+        self.assertIn('refresh_status stopped\n      ' + preflight, prepare)
+        claims = {'localClaim': 'local', 'nasClaim': 'nas'}
+        volumes = {claim: {'pvcUid': 'pvc-' + claim, 'pvName': claim,
+                           'pvUid': 'pv-' + claim} for claim in claims.values()}
+        roots = {'local': {'device': 1, 'inode': 2, 'uid': 3},
+                 'nas': {'device': 4, 'inode': 5, 'uid': 6}}
+        receipt = {'format': 1, 'inventory': {'claims': claims,
+                   'kubernetes': {'volumes': volumes}, 'rootIdentity': roots}}
+        status = {'claims': claims, 'volumes': volumes, 'roots': roots}
+        shell = '''set -euo pipefail
+source <(sed -n '/^validate_archive_identity() {/,/^}/p' "$1")
+validate_archive_identity "$2" "$3"
 '''
-            try:
-                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
-                                        cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
-                                                       f'http://127.0.0.1:{server.server_port}'},
-                                        capture_output=True, timeout=20, check=False)
-                self.assertEqual(result.returncode, 0, result.stderr.decode())
-                self.assertEqual(destination.read_bytes(), payload)
-                self.assertEqual(parse_qs(urlsplit(server.paths[0]).query),
-                                 {'versionId': ['version-1']})
-                server.fail = True
-                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
-                                        cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
-                                                       f'http://127.0.0.1:{server.server_port}'},
-                                        capture_output=True, timeout=20, check=False)
-                self.assertNotEqual(result.returncode, 0)
-                server.fail = False
-                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
-                                        cwd=ROOT, env={**os.environ, 'TEST_READER_FAIL': 'true',
-                                                       'TEST_ENDPOINT':
-                                                       f'http://127.0.0.1:{server.server_port}'},
-                                        capture_output=True, timeout=20, check=False)
-                self.assertNotEqual(result.returncode, 0)
-            finally:
-                server.shutdown()
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory)
+            receipt_path, status_path = private / 'receipt.json', private / 'status.json'
+            receipt_path.write_text(json.dumps(receipt))
+            for changed, succeeds in (({}, True),
+                                      ({'volumes': {**volumes, 'local':
+                                                    {**volumes['local'], 'pvUid': 'changed'}}}, False),
+                                      ({'volumes': {**volumes, 'nas':
+                                                    {**volumes['nas'], 'pvcUid': 'changed'}}}, False),
+                                      ({'roots': {**roots, 'local':
+                                                  {**roots['local'], 'device': 7}}}, False),
+                                      ({'roots': {**roots, 'nas':
+                                                  {**roots['nas'], 'inode': 8}}}, False)):
+                status_path.write_text(json.dumps({**status, **changed}))
+                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT),
+                                         str(receipt_path), str(status_path)], cwd=ROOT,
+                                        capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode == 0, succeeds, result.stderr)
+
+    def test_versioned_restore_uses_bounded_range_helper(self):
+        script = SCRIPT.read_text()
+        self.assertIn('python3 scripts/ci/openclaw-enterprise-download.py', script)
+        self.assertIn('restore_version "$prefix/legacy.tar.gz"', script)
+        self.assertIn('restore_version "$prefix/receipt.json"', script)
+
+    def test_versioned_restore_retries_ranges_and_reader_slices_without_partial_commit(self):
+        spec = importlib.util.spec_from_file_location('openclaw_download', DOWNLOAD)
+        download = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(download)
+        payload = b'archive-bytes-with-several-ranges'
+        digest = hashlib.sha256(payload).hexdigest()
+        fake_aws = r'''#!/usr/bin/env python3
+import json, os, pathlib, sys
+args = sys.argv[1:]
+assert args[:2] == ['s3api', 'get-object']
+version = args[args.index('--version-id') + 1]
+value = args[args.index('--range') + 1]
+start, end = map(int, value.removeprefix('bytes=').split('-'))
+body = pathlib.Path(os.environ['FAKE_SOURCE']).read_bytes()[start:end + 1]
+with open(os.environ['FAKE_AWS_LOG'], 'a') as log:
+    log.write(value + '\n')
+marker = os.environ.get('FAKE_SHORT_ONCE')
+if os.environ.get('FAKE_SHORT_ALWAYS') or marker and not pathlib.Path(marker).exists():
+    if marker:
+        pathlib.Path(marker).touch()
+    body = body[:-1]
+if os.environ.get('FAKE_CORRUPT') and body:
+    body = bytes([body[0] ^ 1]) + body[1:]
+pathlib.Path(args[args.index('--range') + 2]).write_bytes(body)
+print(json.dumps({'VersionId': 'wrong' if os.environ.get('FAKE_WRONG_VERSION') else version,
+                  'ContentRange': 'wrong' if os.environ.get('FAKE_WRONG_RANGE') else
+                      f'bytes {start}-{end}/{len(pathlib.Path(os.environ["FAKE_SOURCE"]).read_bytes())}',
+                  'ContentLength': end - start if os.environ.get('FAKE_WRONG_LENGTH') else end - start + 1}))
+'''
+        fake_kubectl = r'''#!/usr/bin/env python3
+import os, pathlib, subprocess, sys
+args = sys.argv[1:]
+assert args[:3] == ['-n', 'ai', 'exec']
+command = args[args.index('--') + 1:]
+assert command[:2] == ['python3', '-c']
+operation = command[3]
+root = os.environ['FAKE_REMOTE_ROOT']
+mapped = [value.replace('/archive/private/offsite-123', root) for value in command[4:]]
+marker = os.environ.get('FAKE_INIT_LOST_ONCE')
+if operation == 'init' and marker and not pathlib.Path(marker).exists():
+    pathlib.Path(marker).touch()
+    subprocess.run([sys.executable, '-c', command[2], operation, *mapped], check=True)
+    sys.exit(1)
+if operation == 'upload' and os.environ.get('FAKE_UPLOAD_ALWAYS'):
+    sys.stdin.buffer.read()
+    sys.exit(1)
+marker = os.environ.get('FAKE_UPLOAD_ONCE')
+if operation == 'upload' and marker and not pathlib.Path(marker).exists():
+    pathlib.Path(marker).touch()
+    sys.stdin.buffer.read()
+    sys.exit(1)
+marker = os.environ.get('FAKE_APPEND_ONCE')
+if operation == 'commit' and marker and not pathlib.Path(marker).exists():
+    pathlib.Path(marker).touch()
+    with open(mapped[1], 'ab') as output:
+        output.write(pathlib.Path(mapped[0]).read_bytes()[:1])
+    sys.exit(1)
+if operation == 'finish' and os.environ.get('FAKE_DESTINATION_RACE'):
+    pathlib.Path(mapped[1]).write_bytes(b'foreign destination')
+os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            aws, kubectl = root / 'aws', root / 'kubectl'
+            aws.write_text(fake_aws)
+            kubectl.write_text(fake_kubectl)
+            aws.chmod(0o755)
+            kubectl.chmod(0o755)
+            source = root / 'source'
+            source.write_bytes(payload)
+            remote = root / 'remote'
+            remote.mkdir()
+            log = root / 'aws-log'
+            destination = '/archive/private/offsite-123/legacy.tar.gz'
+            local_destination = remote / 'legacy.tar.gz'
+            base = {**os.environ, 'PATH': str(root) + os.pathsep + os.environ['PATH'],
+                    'FAKE_SOURCE': str(source), 'FAKE_REMOTE_ROOT': str(remote),
+                    'FAKE_AWS_LOG': str(log)}
+
+            def restore(**changes):
+                with (mock.patch.dict(os.environ, {**base, **changes}, clear=True),
+                      mock.patch.object(download, 'RANGE_SIZE', 11),
+                      mock.patch.object(download, 'SLICE_SIZE', 4)):
+                    download.restore_version('test-bucket', 'key', 'version-1',
+                                             destination, len(payload), digest,
+                                             'openclaw-retirement-reader-test')
+
+            restore(FAKE_SHORT_ONCE=str(root / 'short-once'),
+                    FAKE_UPLOAD_ONCE=str(root / 'upload-once'),
+                    FAKE_APPEND_ONCE=str(root / 'append-once'))
+            self.assertEqual(local_destination.read_bytes(), payload)
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            self.assertEqual(list(remote.glob('*.chunk-*')), [])
+            self.assertEqual(log.read_text().splitlines()[:2], ['bytes=0-10'] * 2)
+            local_destination.unlink()
+            log.unlink()
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_SHORT_ALWAYS='1')
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_WRONG_VERSION='1')
+            self.assertFalse(local_destination.exists())
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_WRONG_RANGE='1')
+            self.assertFalse(local_destination.exists())
+            with self.assertRaises(download.SourceReadError):
+                restore(FAKE_WRONG_LENGTH='1')
+            self.assertFalse(local_destination.exists())
+            with self.assertRaises(download.ReaderTransferError):
+                restore(FAKE_INIT_LOST_ONCE=str(root / 'init-lost'))
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.ReaderTransferError):
+                restore(FAKE_UPLOAD_ALWAYS='1')
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.FinalizationError):
+                restore(FAKE_CORRUPT='1')
+            self.assertFalse(local_destination.exists())
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            with self.assertRaises(download.FinalizationError):
+                restore(FAKE_DESTINATION_RACE='1')
+            self.assertEqual(local_destination.read_bytes(), b'foreign destination')
+            self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
+            local_destination.unlink()
+            for failure, code in (({'FAKE_SHORT_ALWAYS': '1'}, 10),
+                                  ({'FAKE_UPLOAD_ALWAYS': '1'}, 20),
+                                  ({'FAKE_DESTINATION_RACE': '1'}, 30)):
+                result = subprocess.run(
+                    [sys.executable, str(DOWNLOAD),
+                     'homelab-application-backups-123456789012-us-east-1', 'key',
+                     'version-1', destination, str(len(payload)), digest,
+                     'openclaw-retirement-reader-test'],
+                    cwd=ROOT,
+                    env={**base, **failure, 'GITHUB_ACTIONS': 'true', 'GITHUB_RUN_ID': '123'},
+                    capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, code)
+                self.assertEqual(result.stdout + result.stderr, b'')
+                if local_destination.exists():
+                    local_destination.unlink()
+                self.assertEqual(list(remote.glob('legacy.tar.gz.partial-*')), [])
 
     def test_unreviewed_stage_or_receipt_reference_stops_before_credentials(self):
         base = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': 'a' * 40,
@@ -542,6 +732,12 @@ restore_version key version-1 "$2"
             ('publish-archive', {}),
             ('publish-archive', {'BASELINE_REF': 'a' * 40 + '/123', 'ARCHIVE_REF': '../secret'}),
             ('verify', {}), ('verify', {'ARCHIVE_REF': 'abc/123'}),
+            ('prepare-restore', {}), ('prepare-restore', {'ARCHIVE_REF': '../secret'}),
+            ('network-preflight', {'BASELINE_REF': 'a' * 40 + '/123'}),
+            ('network-preflight', {'ARCHIVE_REF': 'a' * 40 + '/123'}),
+            ('publish-discord-cache', {'CACHE_REF': 'a' * 40 + '/123'}),
+            ('transfer-discord-cache', {}),
+            ('transfer-discord-cache', {'CACHE_REF': '../private'}),
         ):
             with self.subTest(stage=stage, extra=extra):
                 result = subprocess.run(['bash', str(SCRIPT), stage], cwd=ROOT,
@@ -573,16 +769,26 @@ restore_version key version-1 "$2"
             self.assertEqual(result.returncode, 2)
             self.assertFalse(phase.exists())
             workflow = WORKFLOW.read_text()
-            self.assertIn('preflight|baseline|publication|publication-lookup|'
+            self.assertIn('preflight|network-nix-entry|network-kubeconfig|'
+                          'network-kubectl-version|network-source|network-current-main|'
+                          'network-stopped-reader|network-namespace|network-postcheck|'
+                          'baseline|baseline-s3-read|baseline-mounted-compare|'
+                          'baseline-source-status|publication|publication-lookup|'
                           'publication-lookup-denied|publication-lookup-failed|'
-                          'publication-lookup-response|publication-upload|'
+                          'publication-lookup-response|publication-archive-result|'
+                          'publication-source-validation|publication-destination-absence|'
+                          'publication-source-size|publication-upload|'
                           'publication-source-read|publication-s3-create|publication-s3-part|'
                           'publication-s3-complete|publication-digest|'
                           'publication-version|publication-archive-head|'
                           'publication-archive-metadata|publication-receipt-upload|'
                           'publication-receipt-head|publication-restore-prepare|'
-                          'publication-restore-archive|publication-restore-receipt|'
-                          'verification', workflow)
+                          'publication-restore-archive|', workflow)
+            for base in ('publication-restore-archive', 'publication-restore-receipt',
+                         'verification-archive-download', 'verification-receipt-download'):
+                for category in ('source-range', 'reader-transfer', 'finalize'):
+                    self.assertIn(f'|{base}-{category}|', workflow)
+            self.assertIn('|verification-restore|cache-build|cache-publication|cache-transfer)', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
             self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
@@ -592,6 +798,9 @@ restore_version key version-1 "$2"
                                 (13, 's3-complete'), (14, 'digest')):
                 self.assertIn(f'{code}) phase=publication-{stage} ;;', script)
             self.assertIn('phase=publication-version\n    version=', script)
+            self.assertIn('phase=verification-archive-download\n      restore_version', script)
+            self.assertIn('phase=verification-receipt-download\n      restore_version', script)
+            self.assertIn('phase=verification-restore\n      if [[ "$stage" == prepare-restore ]]', script)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
             shell = '''set -euo pipefail
 source <(sed -n '/^on_exit() {/,/^}/p' "$1")
@@ -615,6 +824,209 @@ false
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(phase.read_text(), 'preflight\n')
+
+    def test_network_preflight_phases_mask_private_runner_output(self):
+        source = SCRIPT.read_text()
+        block = source.split('if [[ "$stage" == network-preflight ]]; then\n', 1)[1].split(
+            '\nfi\n', 1)[0]
+        boundaries = (
+            ('network-current-main', 'bash scripts/ci/terragrunt-current-main.sh'),
+            ('network-stopped-reader', 'python3 -I scripts/openclaw-retirement-status.py'),
+            ('network-namespace', 'proof="$(timeout 45s kubectl'),
+            ('network-postcheck', 'python3 -I scripts/openclaw-retirement-status.py'),
+        )
+        for phase, command in boundaries:
+            with self.subTest(phase=phase):
+                start = block.index('phase=' + phase)
+                self.assertIn(command, block[start:])
+        self.assertLess(block.index('phase=network-current-main'),
+                        block.index('phase=network-stopped-reader'))
+        self.assertLess(block.index('phase=network-stopped-reader'),
+                        block.index('phase=network-namespace'))
+        self.assertLess(block.index('phase=network-namespace'),
+                        block.index('phase=network-postcheck'))
+
+        workflow = WORKFLOW.read_text()
+        run = textwrap.dedent(workflow.split('      - name: Run Legacy Stage\n', 1)[1]
+                              .split('\n  enterprise:\n', 1)[0]
+                              .split('        run: |\n', 1)[1])
+        self.assertLess(run.index("printf '%s\\n' network-nix-entry"),
+                        run.index('if ! nix develop --command bash'))
+        self.assertLess(run.index("printf '%s\\n' network-kubeconfig"),
+                        run.index('bash scripts/ci/install-kubeconfig.sh'))
+        self.assertLess(run.index("printf '%s\\n' network-kubectl-version"),
+                        run.index('kubectl --request-timeout=15s version'))
+        self.assertLess(run.index("printf '%s\\n' network-source"),
+                        run.index("sha256sum --check --status"))
+
+        with tempfile.TemporaryDirectory() as directory:
+            fake_nix = Path(directory) / 'nix'
+            fake_nix.write_text('''#!/bin/sh
+cat >/dev/null
+printf '%s\\n' PRIVATE_CLUSTER_DETAIL >&2
+if [ -n "$TEST_PHASE" ]; then
+  printf '%s\\n' "$TEST_PHASE" >"$OPENCLAW_PHASE_FILE"
+fi
+exit 1
+''')
+            fake_nix.chmod(0o755)
+            for phase in ('', 'network-nix-entry', 'network-kubeconfig',
+                          'network-kubectl-version', 'network-source', 'network-current-main',
+                          'network-stopped-reader', 'network-namespace', 'network-postcheck',
+                          'network-namespace\nPRIVATE_CLUSTER_DETAIL'):
+                with self.subTest(phase=phase):
+                    result = subprocess.run(['bash', '-c', run], cwd=ROOT,
+                                            env={**os.environ, 'PATH': directory + os.pathsep +
+                                                 os.environ['PATH'], 'TMPDIR': directory,
+                                                 'RUNNER_TEMP': directory,
+                                                 'RUN_STAGE': 'network-preflight',
+                                                 'TEST_PHASE': phase,
+                                                 'OPENCLAW_RESUME_PROVENANCE': directory +
+                                                 '/absent'},
+                                            capture_output=True, text=True, timeout=5,
+                                            check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertNotIn('PRIVATE_CLUSTER_DETAIL', result.stdout + result.stderr)
+                    expected = (phase or 'network-nix-entry') if '\n' not in phase else None
+                    message = (f'Legacy operation failed in {expected}; '
+                               if expected else 'Legacy operation failed; ')
+                    self.assertIn(message + 'private cluster and archive diagnostics withheld.',
+                                  result.stdout)
+                    self.assertEqual(list(Path(directory).glob('tmp.*')), [])
+
+            fake_nix.write_text('#!/bin/sh\nexec /bin/bash\n')
+            fake_bash = Path(directory) / 'bash'
+            fake_bash.write_text('''#!/bin/sh
+if [ "$1" = scripts/ci/install-kubeconfig.sh ]; then
+  printf '%s\\n' PRIVATE_CLUSTER_DETAIL >&2
+  exit "$TEST_INSTALL_EXIT"
+fi
+exec /bin/bash "$@"
+''')
+            fake_bash.chmod(0o755)
+            fake_kubectl = Path(directory) / 'kubectl'
+            fake_kubectl.write_text('#!/bin/sh\nprintf "%s\\n" PRIVATE_CLUSTER_DETAIL >&2\nexit 1\n')
+            fake_kubectl.chmod(0o755)
+            for install_exit, expected in (('1', 'network-kubeconfig'),
+                                           ('0', 'network-kubectl-version')):
+                with self.subTest(expected=expected):
+                    (Path(directory) / 'openclaw-phase').unlink(missing_ok=True)
+                    result = subprocess.run(['/bin/bash', '-c', run], cwd=ROOT,
+                                            env={**os.environ, 'PATH': directory + os.pathsep +
+                                                 os.environ['PATH'], 'TMPDIR': directory,
+                                                 'RUNNER_TEMP': directory,
+                                                 'RUN_STAGE': 'network-preflight',
+                                                 'TEST_INSTALL_EXIT': install_exit,
+                                                 'OPENCLAW_RESUME_PROVENANCE': directory +
+                                                 '/absent'},
+                                            capture_output=True, text=True, timeout=5,
+                                            check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertNotIn('PRIVATE_CLUSTER_DETAIL', result.stdout + result.stderr)
+                    self.assertIn(f'Legacy operation failed in {expected}; private cluster '
+                                  'and archive diagnostics withheld.', result.stdout)
+                    self.assertEqual(list(Path(directory).glob('tmp.*')), [])
+
+    def test_versioned_restore_maps_only_fixed_public_failure_categories(self):
+        source = SCRIPT.read_text()
+        function = 'restore_version() {\n' + source.split('restore_version() {\n', 1)[1].split('\n}\n', 1)[0] + '\n}\n'
+        shell = '''set -euo pipefail
+phase="$TEST_BASE"
+bucket=test-bucket
+pod=test-reader
+python3() { return "$TEST_RC"; }
+''' + function + '''
+if restore_version key version destination 1 "$TEST_SHA"; then
+  exit 99
+else
+  result=$?
+fi
+printf '%s\\n' "$phase"
+exit "$result"
+'''
+        for base in ('publication-restore-archive', 'publication-restore-receipt',
+                     'verification-archive-download', 'verification-receipt-download'):
+            for code, suffix in ((10, 'source-range'), (20, 'reader-transfer'),
+                                 (30, 'finalize'), (42, None)):
+                result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
+                                        env={**os.environ, 'TEST_BASE': base,
+                                             'TEST_RC': str(code), 'TEST_SHA': 'a' * 64},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout.strip(),
+                                 base + ('-' + suffix if suffix else ''))
+                self.assertEqual(result.stderr, '')
+
+    def test_archive_publication_reports_exact_fixed_pre_upload_phase(self):
+        source = SCRIPT.read_text()
+        block = ("    phase='baseline-s3-read'\n" + source.split(
+            "    phase='baseline-s3-read'\n", 1)[1].split(
+            '    phase=publication-upload\n', 1)[0] + '    fi\n')
+        categories = (
+            'baseline-s3-read', 'baseline-mounted-compare',
+            'baseline-source-status', 'publication-archive-result',
+            'publication-source-validation', 'publication-destination-absence',
+            'publication-source-size',
+        )
+        workflow = WORKFLOW.read_text()
+        for category in categories:
+            self.assertIn('|' + category + '|', workflow)
+        shell = '''set -euo pipefail
+work="$TEST_WORK"
+bucket=test-bucket
+baseline=/archive/private/baseline-123.json
+archive_result=/private/legacy/archive-result-456.json
+archive_id=456
+stage=publish-archive
+BASELINE_REF=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/123
+GITHUB_SHA=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+GITHUB_RUN_ID=789
+reader=(reader_stub)
+receipt_path="/archive/private/legacy-$(printf 'a%.0s' {1..64})/receipt.json"
+trap 'result=$?; printf "%s\\n" "$phase" >"$TEST_PHASE"; exit "$result"' EXIT
+aws() {
+  [[ "$TEST_FAIL" != baseline-s3-read ]] || return 7
+  printf 'baseline\\n'
+}
+reader_stub() {
+  case "$1" in
+    cat)
+      case "$2" in
+        "$baseline")
+          [[ "$TEST_FAIL" != baseline-mounted-compare ]] || return 7
+          printf 'baseline\\n' ;;
+        "$archive_result")
+          [[ "$TEST_FAIL" != publication-archive-result ]] || return 7
+          printf '{"receipt":"%s"}\\n' "$receipt_path" ;;
+        /private/legacy/baseline-456.json)
+          [[ "$TEST_FAIL" != publication-source-validation ]] || return 7
+          printf '{"source":"observed"}\\n' ;;
+        "$receipt_path")
+          printf '{"format":1,"inventory":{"source":"observed"},"sha256":"%s"}\\n' "$(printf 'b%.0s' {1..64})" ;;
+        *) return 7 ;;
+      esac ;;
+    stat)
+      [[ "$TEST_FAIL" != publication-source-size ]] || return 7
+      printf '10\\n' ;;
+    *) return 7 ;;
+  esac
+}
+refresh_status() { [[ "$TEST_FAIL" != baseline-source-status ]]; }
+validate_baseline() { :; }
+require_absent_object() { [[ "$TEST_FAIL" != publication-destination-absence ]]; }
+''' + block
+        with tempfile.TemporaryDirectory() as directory:
+            phase = Path(directory) / 'phase'
+            for failed in (*categories, 'none'):
+                result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
+                                        env={**os.environ, 'TEST_WORK': directory,
+                                             'TEST_PHASE': str(phase), 'TEST_FAIL': failed},
+                                        capture_output=True, text=True, timeout=10,
+                                        check=False)
+                self.assertEqual(result.returncode == 0, failed == 'none',
+                                 (failed, result.stderr))
+                self.assertEqual(phase.read_text().strip(),
+                                 failed if failed != 'none' else categories[-1])
 
     def test_archive_publication_reports_exact_fixed_post_upload_phase(self):
         source = SCRIPT.read_text()
@@ -670,7 +1082,7 @@ restore_version() {
 ''' + block
         with tempfile.TemporaryDirectory() as directory:
             private = Path(directory)
-            (private / 'receipt.json').write_text('{}')
+            (private / 'receipt.json').write_text('{"sha256":"' + 'a' * 64 + '"}')
             phase = private / 'phase'
             for failed in (*categories, 'publication-archive-version-none', 'none'):
                 result = subprocess.run(['bash', '-c', shell], cwd=ROOT,
@@ -715,7 +1127,7 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [none, inventory, publish-inventory, archive, publish-archive, verify]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore, network-preflight, publish-discord-cache, transfer-discord-cache]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',
@@ -725,7 +1137,16 @@ printf '%s\\n' "$phase"
         ):
             self.assertIn(required, workflow)
         self.assertNotIn('actions/upload-artifact@', workflow)
+        self.assertIn("if: inputs.legacy_stage != 'network-preflight'", workflow)
+        self.assertIn(hashlib.sha256((ROOT / 'scripts/ci/openclaw-legacy-netns-preflight.py').read_bytes()).hexdigest(), workflow)
         script = SCRIPT.read_text()
+        preflight = script.split('if [[ "$stage" == network-preflight ]]; then\n', 1)[1].split('\nfi\n\nbucket=', 1)[0]
+        self.assertIn('exec unshare --user --map-current-user --net -- python3 -', preflight)
+        self.assertIn('openclaw-retirement-status.py', preflight)
+        self.assertIn('LEGACY_NETNS_CAPABILITY_OK', preflight)
+        self.assertNotIn('aws ', preflight)
+        for mutation in ('kubectl apply', 'kubectl patch', 'kubectl delete'):
+            self.assertNotIn(mutation, preflight)
         self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
         self.assertIn('nohup sh /etc/openclaw-retirement/inventory-worker.sh', script)
         self.assertNotIn('"$worker" <scripts/ci/', script)
@@ -739,6 +1160,11 @@ printf '%s\\n' "$phase"
         self.assertNotIn('--expected-size 80000000000', script)
         self.assertIn('validate_baseline "$work/observed.json" "$work/status.json"', script)
         self.assertIn('verify_restored_archive "$restore/receipt.json"', script)
+        self.assertIn('verify_restored_archive "$restore/receipt.json" "$rehearsal"', script)
+        self.assertIn('free_kib * 1024 > archive_bytes + tree_bytes + 2147483648', script)
+        self.assertIn('refresh_status stopped\n      validate_archive_identity '
+                      '"$work/receipt.json" "$recheck"\n      '
+                      'verify_cached_restore_file "$restore" legacy.tar.gz', script)
         self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)
         self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
                       (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())
@@ -752,19 +1178,29 @@ printf '%s\\n' "$phase"
     def test_detached_verify_worker_records_completion(self):
         source = SCRIPT.read_text()
         helper = 'verify_restored_archive() {' + source.split('verify_restored_archive() {', 1)[1].split('\n}\n\ncase "$stage" in', 1)[0] + '\n}'
-        command = ('python3 /etc/openclaw-retirement/retirement.py verify-archive \\\n'
-                   '        --config /private/legacy/config.json --receipt "$1"')
-        for operation, expected in (('true', 'success'), ('false', 'failure')):
-            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as directory:
-                marker = Path(directory) / 'verify-123.state'
-                local = helper.replace('/private/legacy/verify-${GITHUB_RUN_ID}.state', str(marker))
-                local = local.replace(command, operation).replace('sleep 30', 'sleep 0.1')
-                shell = 'set -euo pipefail\nGITHUB_RUN_ID=123\nreader=()\n' + local + '\nverify_restored_archive /unused/receipt.json\n'
-                result = subprocess.run(['bash', '-c', shell], cwd=ROOT, capture_output=True,
-                                        text=True, timeout=5, check=False)
-                self.assertEqual(result.returncode, 0 if operation == 'true' else 1,
-                                 result.stderr)
-                self.assertEqual(marker.read_text().strip(), expected)
+        commands = (
+            'python3 /etc/openclaw-retirement/retirement.py verify-archive \\\n'
+            '            --config /private/legacy/config.json --receipt "$1"',
+            'env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py prepare-restore \\\n'
+            '            --config /private/legacy/config.json --receipt "$1" --destination "$3"',
+        )
+        for mode in ('verify', 'prepare'):
+            for operation, expected in (('true', 'success'), ('false', 'failure')):
+                with self.subTest(mode=mode, operation=operation), tempfile.TemporaryDirectory() as directory:
+                    marker = Path(directory) / 'verify-123.state'
+                    local = helper.replace('/private/legacy/verify-${GITHUB_RUN_ID}.state', str(marker))
+                    for command in commands:
+                        self.assertIn(command, local)
+                        local = local.replace(command, operation)
+                    local = local.replace('sleep 30', 'sleep 0.1')
+                    call = ('verify_restored_archive /unused/receipt.json' +
+                            (' /unused/rehearsal' if mode == 'prepare' else ''))
+                    shell = 'set -euo pipefail\nGITHUB_RUN_ID=123\nreader=()\n' + local + '\n' + call + '\n'
+                    result = subprocess.run(['bash', '-c', shell], cwd=ROOT, capture_output=True,
+                                            text=True, timeout=5, check=False)
+                    self.assertEqual(result.returncode, 0 if operation == 'true' else 1,
+                                     result.stderr)
+                    self.assertEqual(marker.read_text().strip(), expected)
 
     def test_publish_recovery_refuses_changed_baseline_identity(self):
         contract = json.loads((ROOT / 'scripts/config/openclaw-enterprise.json').read_text())[

@@ -14,7 +14,7 @@ rules:
   # This GET exposes the Secret body. Keep the reviewed Installation digest exact.
   - apiGroups: [""]
     resources: [secrets]
-    resourceNames: [occ-installation-startup-980de11bbc688a33741a19c9093f613e]
+    resourceNames: [occ-installation-startup-86641419e595a5c812a8c8565d5cb027]
     verbs: [get]
   - apiGroups: [apps]
     resources: [deployments]
@@ -60,6 +60,9 @@ rules:
     verbs: [list]
   - apiGroups: [""]
     resources: [configmaps]
+    verbs: [list]
+  - apiGroups: [""]
+    resources: [pods]
     verbs: [list]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

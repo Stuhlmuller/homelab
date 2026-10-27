@@ -88,6 +88,32 @@ class ActiveAgentReconciliation(unittest.TestCase):
         self.assertEqual(self._journal()["revisionId"], "rev_one")
         self.assertNotIn("pending", self._journal())
 
+    def test_duplicate_logical_namespace_blocks_active_mutation_verify_and_stop(self):
+        original_get = self.api.get
+
+        def competing_namespace(path):
+            result = original_get(path)
+            if path == "/namespaces":
+                result.append({**self.api.namespace, "id": "ns_other"})
+            return result
+
+        with patch.object(self.api, "get", side_effect=competing_namespace):
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._active()
+        self.assertFalse(self.api.secrets)
+        self.assertFalse(self.api.revisions)
+
+        self._active()
+        writes = [call for call in self.api.calls if call[0].startswith("POST") or
+                  call[0] == "PATCH"]
+        with patch.object(self.api, "get", side_effect=competing_namespace):
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._verify()
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._stop()
+        self.assertEqual([call for call in self.api.calls if call[0].startswith("POST") or
+                          call[0] == "PATCH"], writes)
+
     def test_active_gate_keeps_committed_config_off_and_needs_key(self):
         self.assertFalse(json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())[
             "activationEnabled"])
@@ -766,6 +792,18 @@ class ActiveAgentReconciliation(unittest.TestCase):
         with self.assertRaisesRegex(OCE.Blocked, "Configuration readback changed"):
             self._active()
 
+    def test_boolean_revision_generation_cannot_verify_or_redeploy(self):
+        self._active()
+        self.api.revisions["rev_one"]["configurationGeneration"] = True
+        writes = [call for call in self.api.calls if call[0].startswith("POST") or
+                  call[0] == "PATCH"]
+        with self.assertRaisesRegex(OCE.Blocked, "active revision changed"):
+            self._verify()
+        with self.assertRaisesRegex(OCE.Blocked, "active revision changed"):
+            self._active()
+        self.assertEqual([call for call in self.api.calls if call[0].startswith("POST") or
+                          call[0] == "PATCH"], writes)
+
     def test_stop_waits_for_pointer_and_pods(self):
         self._active()
         original_post = self.api.post_accepted
@@ -785,6 +823,19 @@ class ActiveAgentReconciliation(unittest.TestCase):
             self._stop()
         self.api.runtime_pods = []
         self.assertEqual(self._stop()["desiredRuntimeState"], "stopped")
+
+    def test_stop_rejects_kubernetes_pod_after_api_reports_empty(self):
+        self._active()
+        self.kube.tenant_pods = [{"metadata": {"name": "unlabelled-writer"}}]
+        with self.assertRaisesRegex(OCE.Blocked, "tenant still has Pods"):
+            self._stop()
+        self.assertEqual(self._journal()["pending"], {"operation": "stop"})
+        self.assertEqual(len([call for call in self.api.calls if call[1].endswith("/stop")]), 1)
+        self.kube.tenant_pods = []
+        self.assertEqual(self._stop()["desiredRuntimeState"], "stopped")
+        self.kube.tenant_pods = [{"metadata": {"name": "foreign-runtime"}}]
+        with self.assertRaisesRegex(OCE.Blocked, "tenant still has Pods"):
+            self._verify()
 
     def test_stop_without_journaled_revision_fails_closed(self):
         with self.assertRaisesRegex(OCE.Blocked, "requires a journaled revision"):

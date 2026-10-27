@@ -30,7 +30,8 @@ class FullSync(unittest.TestCase):
                   upstream=UPSTREAM, enterprise_enabled=False, foundation_path=None,
                   enterprise_path=None, enterprise_sync_exit=0,
                   foundation_sync_options=None, enterprise_sync_options=None,
-                  foundation_retry_limit=0, enterprise_retry_limit=0):
+                  foundation_retry_limit=0, enterprise_retry_limit=0,
+                  drift_after_enterprise_sync=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "scripts/config").mkdir(parents=True)
@@ -47,6 +48,12 @@ name = Path(sys.argv[0]).name
 args = sys.argv[1:]
 with open(os.environ["CALLS"], "a") as output:
     output.write(json.dumps([name, *args]) + "\\n")
+if name == "gh" and os.environ["DRIFT_AFTER_ENTERPRISE_SYNC"] == "true":
+    history = [json.loads(line) for line in Path(os.environ["CALLS"]).read_text().splitlines()]
+    if any(call[:4] == ["argocd", "app", "sync", "openclaw-enterprise"]
+           for call in history):
+        print("b" * 40)
+        raise SystemExit(0)
 if name in ("git", "gh"):
     print(os.environ["EXPECTED_SHA"])
 elif name == "argocd" and args[:3] == ["app", "sync", "openclaw-enterprise"]:
@@ -103,6 +110,7 @@ elif name == "kubectl":
                      "ENTERPRISE_PATH": enterprise_path or "clusters/homelab/apps/openclaw-enterprise",
                      "ENTERPRISE_ENABLED": str(enterprise_enabled).lower(),
                      "ENTERPRISE_SYNC_EXIT": str(enterprise_sync_exit),
+                     "DRIFT_AFTER_ENTERPRISE_SYNC": str(drift_after_enterprise_sync).lower(),
                      "FOUNDATION_SYNC_OPTIONS": json.dumps(foundation_sync_options or
                                                               ["CreateNamespace=false", "ServerSideApply=true"]),
                      "ENTERPRISE_SYNC_OPTIONS": json.dumps(enterprise_sync_options or
@@ -126,6 +134,7 @@ elif name == "kubectl":
         self.assertEqual(commands[3].count("--revisions"), 3)
         self.assertEqual(commands[3].count(SHA), 2)
         self.assertEqual(commands[3].count(UPSTREAM), 1)
+        self.assertEqual(len([call for call in calls if call[0] == "gh"]), 3)
         self.assertFalse(any(flag in call for call in commands for flag in
                              ("--force", "--prune", "--resource", "--skip-hooks",
                               "--apply-out-of-sync-only", "--async")))
@@ -154,6 +163,13 @@ elif name == "kubectl":
                     ["app", "wait", "openclaw-enterprise-foundation"],
                     ["app", "sync", "openclaw-enterprise"],
                 ])
+
+    def test_main_advances_during_enterprise_sync_blocks_success(self):
+        result, calls = self.run_stage(drift_after_enterprise_sync=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertTrue(any(call[:4] == ["argocd", "app", "sync", "openclaw-enterprise"]
+                            for call in calls))
+        self.assertEqual(calls[-1][:2], ["gh", "api"])
 
 
 if __name__ == "__main__":

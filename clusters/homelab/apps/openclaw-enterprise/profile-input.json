@@ -3,7 +3,7 @@
     "releaseName": "oce",
     "namespace": "openclaw-system",
     "clusterName": "homelab",
-    "controllerImage": "harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164",
+    "controllerImage": "harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2",
     "authBaseUrl": "https://console.oce.stinkyboi.com",
     "adminEmail": "operator@oce.example.invalid",
     "bootstrapPasswordClaimName": "occ-bootstrap-admin-password",
@@ -59,7 +59,7 @@
     }
   },
   "runtime": {
-    "image": "harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6",
+    "image": "harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1",
     "gatewayStorageClassName": "openclaw-enterprise-agent-local",
     "nodeSelector": {"oce-role": "agents"},
     "gatewayNodeSelector": {"oce-role": "control"},

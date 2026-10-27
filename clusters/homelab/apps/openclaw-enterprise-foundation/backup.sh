@@ -6,6 +6,22 @@ umask 0077
 
 material=/recovery-material
 backup_root=/backup/openclaw-enterprise
+backup_mount=${backup_root%/*}
+stopped_marker() {
+  jq -es 'length == 1 and (.[0] | type == "object" and .writerStopped == true and
+    (.claimUid | type == "string" and length > 0))' "$1" >/dev/null 2>&1
+}
+material_manifest() (
+  root="$1"
+  test -d "$root" && test ! -L "$root" || exit 1
+  find "$root" ! -type f ! -type d -exec false {} + >/dev/null 2>&1 || exit 1
+  find "$root" -type f -links +1 -exec false {} + >/dev/null 2>&1 || exit 1
+  cd "$root" || exit 1
+  find . -printf '%y %p\0' > "$partial/.material-paths" || exit 1
+  LC_ALL=C sort -z "$partial/.material-paths" || exit 1
+  find . -type f -exec sha256sum -- {} + > "$partial/.material-hashes" || exit 1
+  LC_ALL=C sort "$partial/.material-hashes"
+)
 for file in recovery.json postgres-root/tls.crt postgres-root/tls.key \
   postgres-admin/password postgres-migrator/password postgres-app/password \
   postgres-backup/password auth/secret gateway/occ bootstrap/output.json \
@@ -16,8 +32,21 @@ for directory in tenant/secrets agent/state; do
   test -d "$material/$directory" || exit 1
   test -n "$(find "$material/$directory" -type f -print -quit)" || exit 1
 done
+stopped_marker "$material/recovery.json" || {
+  echo 'recovery material lacks a stopped, identified writer' >&2
+  exit 1
+}
 test ! -L "$material"
 test -z "$(find "$material" ! -type f ! -type d -print -quit)" || exit 1
+if ! test -d "$backup_mount" || test -L "$backup_mount" ||
+   ! mountpoint -q "$backup_mount"; then
+  echo 'private backup destination is not mounted' >&2
+  exit 1
+fi
+if test -L "$backup_root"; then
+  echo 'private backup directory must not be a symlink' >&2
+  exit 1
+fi
 test -s /run/secrets/occ-postgres-backup/password
 test -s /run/postgres-ca/tls.crt
 mkdir -p /tmp /backup/openclaw-enterprise
@@ -39,10 +68,24 @@ if test -e "$complete" || test -L "$complete"; then
 fi
 mkdir "$partial"
 trap 'rm -f /tmp/occ-pgpass; rm -rf "$partial"' EXIT
+# Reject a changed or replaced recovery tree instead of publishing a mixed snapshot.
+material_manifest "$material" > "$partial/.material-before" || {
+  echo 'recovery material changed during backup' >&2; exit 1;
+}
 pg_dump --dbname="$connection" --format=custom --file="$partial/database.dump"
 pg_restore --list "$partial/database.dump" >/dev/null
 cp /scripts/database-bootstrap.sql "$partial/database-bootstrap.sql"
 cp -a "$material" "$partial/material"
+if ! material_manifest "$material" > "$partial/.material-after" ||
+   ! material_manifest "$partial/material" > "$partial/.material-copied" ||
+   ! cmp -s "$partial/.material-before" "$partial/.material-after" ||
+   ! cmp -s "$partial/.material-before" "$partial/.material-copied" ||
+   ! stopped_marker "$partial/material/recovery.json"; then
+  echo 'recovery material changed during backup' >&2
+  exit 1
+fi
+rm -f "$partial/.material-before" "$partial/.material-after" \
+  "$partial/.material-copied" "$partial/.material-paths" "$partial/.material-hashes"
 (
   cd "$partial"
   find database.dump database-bootstrap.sql material -type f -print0 \

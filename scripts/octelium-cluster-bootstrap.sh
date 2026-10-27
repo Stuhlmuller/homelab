@@ -35,7 +35,7 @@ Options:
 Prerequisites:
   - platform-multus Argo CD Application synced and healthy
   - octelium-storage Argo CD Application synced and healthy
-  - IaC/live/kubernetes-node-labels applied
+  - IaC/homelab/us-west-2/shared/kubernetes-node-labels applied
   - octops, kubectl, and base64 installed locally
   - octeliumctl and jq installed locally when upgrading an existing Cluster
   - Octelium admin login available to octeliumctl when upgrading

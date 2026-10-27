@@ -236,19 +236,26 @@ class PostgresFoundation(unittest.TestCase):
                                 'timestamp="20261019T000000Z"')
         candidate = self.root / "backup.sh"
         candidate.write_text(script)
+        fake_bin = self.root / "backup-bin"
+        fake_bin.mkdir(exist_ok=True)
+        mountpoint = fake_bin / "mountpoint"
+        mountpoint.write_text("#!/bin/sh\nexit 0\n")
+        mountpoint.chmod(0o755)
+        backup_env = {**POSTGRES_ENV,
+                      "PATH": f"{fake_bin}{os.pathsep}{POSTGRES_ENV['PATH']}"}
         gateway = self.material / "gateway/occ"
         gateway.rename(self.root / "missing-gateway")
-        incomplete = run("sh", str(candidate), check=False)
+        incomplete = run("sh", str(candidate), check=False, env=backup_env)
         self.assertNotEqual(incomplete.returncode, 0)
         self.assertFalse(backups.exists())
         (self.root / "missing-gateway").rename(gateway)
-        backup = run("sh", str(candidate))
+        backup = run("sh", str(candidate), env=backup_env)
         self.assertIn("verified OpenClaw Enterprise recovery set", backup.stdout)
         complete = next(backups.iterdir())
         self.assertTrue((complete / "database.dump").is_file())
         self.assertTrue((complete / "database-bootstrap.sql").is_file())
         checksum = (complete / "SHA256SUMS").read_bytes()
-        duplicate = run("sh", str(candidate), check=False)
+        duplicate = run("sh", str(candidate), check=False, env=backup_env)
         self.assertNotEqual(duplicate.returncode, 0)
         self.assertIn("backup destination already exists", duplicate.stderr)
         self.assertEqual(list(backups.iterdir()), [complete])
@@ -286,6 +293,32 @@ class PostgresFoundation(unittest.TestCase):
                                  "SELECT payload FROM occ.fixture").stdout.strip(), "restored")
         finally:
             run("pg_ctl", "-D", str(self.root / "drill/pgdata"), "-m", "immediate", "-w", "stop")
+
+        marker = complete / "material/recovery.json"
+        original_marker = marker.read_bytes()
+        checksums = complete / "SHA256SUMS"
+        original_checksums = checksums.read_bytes()
+        try:
+            for index, invalid in enumerate((
+                    {"claimUid": "fixture", "writerStopped": False},
+                    {"claimUid": "", "writerStopped": True}), start=1):
+                marker.write_text(json.dumps(invalid))
+                checksums.write_text(run("sh", "-ec",
+                    "find database.dump database-bootstrap.sql material -type f -print0 "
+                    "| sort -z | xargs -0 sha256sum", cwd=complete).stdout)
+                run("sha256sum", "--check", "SHA256SUMS", cwd=complete)
+                invalid_script = script.replace(str(self.root / "drill"),
+                                                str(self.root / f"invalid-drill-{index}"))
+                invalid_script = invalid_script.replace(str(self.restored_secrets),
+                                                        str(self.root / f"invalid-secrets-{index}"))
+                result = run("sh", "-ec", invalid_script, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(result.stderr,
+                                 "OpenClaw Enterprise isolated restore failed at recovery-marker\n")
+        finally:
+            marker.write_bytes(original_marker)
+            checksums.write_bytes(original_checksums)
 
         # An archive changed after the first checksum must fail the final hash
         # check, even when database restore itself succeeds.

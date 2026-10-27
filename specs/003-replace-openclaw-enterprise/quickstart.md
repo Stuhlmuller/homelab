@@ -8,7 +8,11 @@ Never skip a missing command or failed gate and report the stage complete.
 ## 1. Review Inputs and Read-Only Baseline
 
 ```sh
-python3 -B .specify/scripts/python/check_prerequisites.py --json
+feature_dir=specs/003-replace-openclaw-enterprise
+for required in spec.md plan.md tasks.md; do
+  test -f "${feature_dir}/${required}" || exit 1
+done
+printf 'FEATURE_DIR=%s\n' "$feature_dir"
 git diff --check
 kubectl --request-timeout=15s get nodes \
   -o custom-columns=NAME:.metadata.name,KUBELET:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage
@@ -19,6 +23,8 @@ kubectl --request-timeout=15s top nodes
 ```
 
 Expected current baseline is recorded in [research.md](research.md#r4--capacity-is-a-real-execution-gate).
+The generic prerequisite helper follows `.specify/feature.json`, which may
+select another feature; the checks above target this one explicitly.
 Refresh it before selecting actual nodes. No suitable canary or sufficient placement
 has been approved. Keep detailed Pod/policy snapshots and storage/credential
 inventories in private files; do not paste them into public logs or PRs.
