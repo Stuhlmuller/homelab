@@ -7,6 +7,18 @@ const inventory = require('./acceptance-inventory.js');
 const owner = 'Stuhlmuller';
 const privateDir = '/ledger/private';
 const podUidFile = '/var/run/podinfo/uid';
+const planUnavailable = Symbol('github-private-protection-plan-unavailable');
+const planMessage = 'Upgrade to GitHub Pro or make this repository public to enable this feature.';
+const entitlementRoutes = Object.freeze({
+  rules: {
+    route: /^\/repos\/Stuhlmuller\/[A-Za-z0-9_.-]+\/rules\/branches\/[^/?]+\?per_page=100$/,
+    documentation: 'https://docs.github.com/rest/repos/rules#get-rules-for-a-branch',
+  },
+  classic: {
+    route: /^\/repos\/Stuhlmuller\/[A-Za-z0-9_.-]+\/branches\/[^/?]+\/protection$/,
+    documentation: 'https://docs.github.com/rest/branches/branch-protection#get-branch-protection',
+  },
+});
 // Pinned Renovate 44.167.4 getConfigFileNames('github') order.
 const configFiles = Object.freeze([
   'renovate.json', 'renovate.jsonc', 'renovate.json5',
@@ -16,7 +28,7 @@ const configFiles = Object.freeze([
 ]);
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
-async function github(token, route, allow404 = false) {
+async function github(token, route, allow404 = false, entitlement = null) {
   let response;
   try {
     response = await fetch(`https://api.github.com${route}`, {
@@ -36,6 +48,22 @@ async function github(token, route, allow404 = false) {
     throw new Error('github-clock-unverified');
   }
   if (allow404 && response.status === 404) return null;
+  if (response.status === 403 && entitlement) {
+    const expected = entitlementRoutes[entitlement];
+    if (!expected?.route.test(route)) throw new Error('github-policy-read-failed');
+    const length = Number(response.headers.get('content-length'));
+    if (Number.isFinite(length) && length > 4096) throw new Error('github-policy-read-failed');
+    let error;
+    try {
+      const body = await response.text();
+      if (Buffer.byteLength(body) > 4096) throw new Error('oversized');
+      error = JSON.parse(body);
+    } catch {
+      throw new Error('github-policy-read-failed');
+    }
+    if (error?.message === planMessage && error.status === '403' &&
+        error.documentation_url === expected.documentation) return planUnavailable;
+  }
   if (!response.ok) throw new Error('github-policy-read-failed');
   if (response.headers.get('link')?.includes('rel="next"')) {
     throw new Error('github-policy-response-paginated');
@@ -73,12 +101,18 @@ async function snapshotRepository(repository, get) {
   }
   const route = `/repos/${repository.full_name}`;
   const branch = encodeURIComponent(repository.default_branch);
-  const rules = await get(`${route}/rules/branches/${branch}?per_page=100`);
-  if (!Array.isArray(rules) || rules.length >= 100 || rules.some((rule) =>
-    !rule || typeof rule.type !== 'string' || !rule.type)) throw new Error('invalid-branch-rules');
-  const classic = await get(`${route}/branches/${branch}/protection`, true);
-  if (classic !== null && (!classic || typeof classic !== 'object' || Array.isArray(classic))) {
-    throw new Error('invalid-classic-protection');
+  const rules = await get(`${route}/rules/branches/${branch}?per_page=100`, false, 'rules');
+  const classic = await get(`${route}/branches/${branch}/protection`, true, 'classic');
+  const unavailable = rules === planUnavailable || classic === planUnavailable;
+  if (unavailable && (rules !== planUnavailable || classic !== planUnavailable)) {
+    throw new Error('inconsistent-policy-entitlement');
+  }
+  if (!unavailable) {
+    if (!Array.isArray(rules) || rules.length >= 100 || rules.some((rule) =>
+      !rule || typeof rule.type !== 'string' || !rule.type)) throw new Error('invalid-branch-rules');
+    if (classic !== null && (!classic || typeof classic !== 'object' || Array.isArray(classic))) {
+      throw new Error('invalid-classic-protection');
+    }
   }
   const found = [];
   for (const file of configFiles) {
@@ -100,6 +134,8 @@ async function snapshotRepository(repository, get) {
   }
   const finalBranch = await get(`${route}/branches/${branch}`);
   if (finalBranch?.commit?.sha !== repository.headSha) throw new Error('policy-branch-changed');
+  if (typeof finalBranch.protected !== 'boolean') throw new Error('invalid-policy-branch');
+  if (unavailable && finalBranch.protected) throw new Error('policy-branch-protected');
   const finalRepository = await get(route);
   if (finalRepository?.private !== true || finalRepository.archived ||
       finalRepository.default_branch !== repository.default_branch) {
@@ -109,9 +145,14 @@ async function snapshotRepository(repository, get) {
     repository: repository.full_name,
     branch: repository.default_branch,
     headSha: repository.headSha,
-    rules: { sha256: sha256(JSON.stringify(rules)), count: rules.length,
+    defaultBranchProtected: finalBranch.protected,
+    rules: unavailable ? { available: false, reason: 'private-plan-entitlement',
+      storedConfiguration: 'unverified' } : {
+      available: true, sha256: sha256(JSON.stringify(rules)), count: rules.length,
       types: [...new Set(rules.map((rule) => rule.type))].sort() },
-    classic: classic === null ? { present: false } : {
+    classic: unavailable ? { available: false, reason: 'private-plan-entitlement',
+      storedConfiguration: 'unverified' } : classic === null ? { available: true, present: false } : {
+      available: true,
       present: true, sha256: sha256(JSON.stringify(classic)),
       strictStatusChecks: classic.required_status_checks?.strict ?? null,
       requiredApprovals: classic.required_pull_request_reviews?.required_approving_review_count ?? null,
@@ -120,6 +161,8 @@ async function snapshotRepository(repository, get) {
     config: { free: found.length === 0, selected: found[0]?.path ?? null,
       files: found, multiple: found.length > 1 },
     rulesetBypassActors: 'unknown-read-only',
+    effectiveBranchProtection: unavailable ? 'inactive-under-current-plan' :
+      finalBranch.protected ? 'active-needs-private-review' : 'not-active-on-default-branch',
     effectiveAutoMerge: 'requires-private-review',
   };
 }
@@ -176,8 +219,8 @@ async function run() {
   const startedAt = new Date().toISOString();
   const snapshots = [];
   for (const repository of owned.private) {
-    snapshots.push(await snapshotRepository(repository, (route, allow404) =>
-      github(token, route, allow404)));
+    snapshots.push(await snapshotRepository(repository, (route, allow404, entitlement) =>
+      github(token, route, allow404, entitlement)));
   }
   const receipt = { schema: 1, podUid: uid, owner, startedAt,
     completedAt: new Date().toISOString(), appVisibleRepositories: repositories.length,
@@ -188,7 +231,8 @@ async function run() {
   seal(receipt, uid);
   console.log(JSON.stringify({ mode: 'private-policy-proof',
     repositories: snapshots.length, configFree: snapshots.filter((entry) => entry.config.free).length,
-    classicProtected: snapshots.filter((entry) => entry.classic.present).length }));
+    planUnavailable: snapshots.filter((entry) => !entry.rules.available).length,
+    classicProtectedWhenReadable: snapshots.filter((entry) => entry.classic.present === true).length }));
 }
 
 if (require.main === module) run().catch(() => {
@@ -196,5 +240,5 @@ if (require.main === module) run().catch(() => {
   process.exitCode = 1;
 });
 
-module.exports = { configFiles, github, configBytes, snapshotRepository, seal,
+module.exports = { configFiles, planUnavailable, github, configBytes, snapshotRepository, seal,
   privateRepositories, run };
