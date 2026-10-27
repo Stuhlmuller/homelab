@@ -134,6 +134,17 @@ Separate listeners prevent public callbacks from selecting private routers.
 cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
+
+During the 2026-10-27 ztunnel bootstrap outage on `zimaboard-0`, the
+[Traefik values](../../clusters/homelab/apps/traefik/values.yaml) temporarily
+pin its only replica to `zimaboard-1`, whose ztunnel is Ready. Once merged and
+reconciled, this placement moves the private, callback, and registry listeners
+together; a failure of `zimaboard-1` then removes all three paths. Verify the
+replacement Pod, normal tailnet HTTPS, and Harbor `/v2/` before declaring
+recovery. Remove the pin through a reviewed PR after the upstream-image ztunnel
+fix restores all four nodes. Revert the placement through GitOps if the new Pod
+fails; do not patch the live Deployment.
+
 The staged OpenClaw Enterprise console uses `console.oce.stinkyboi.com` through
 an authenticated Octelium Service. Only exact
 `agent-<32 hex>.agents.oce.stinkyboi.com` hosts go directly to the OCE API on
