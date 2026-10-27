@@ -104,7 +104,6 @@ function renovatePolicy(token) {
     cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
-    dryRun: 'full',
   };
 }
 
