@@ -7,6 +7,13 @@ in `scripts/config/openclaw-enterprise.json`. The stock chart comes from upstrea
 commit `33bb74590a749f37934da4502fca6035cd234a55`; this directory supplies
 values, one EnvoyProxy image override, and Helm-style lifecycle hooks.
 
+The pinned stock chart uses cert-manager to create the internal gateway root
+`openclaw-system/occ-gateway-654a256bceae-root` and the separate Envoy listener
+certificate `openclaw-system/oce-private-gateway-tls`. API and worker Pods mount
+only the root's public `tls.crt`; T051 must preserve its private `tls.key` in the
+protected recovery set. Traefik's `*.agents.oce.stinkyboi.com` certificate
+terminates private user ingress and does not replace this internal CA.
+
 `profile-input.json` is the non-secret input to upstream's `openclaw` profile
 renderer. Its output is `installation.yaml` and `values.yaml`, with two reviewed
 site adjustments: the gateway name is `oce-private-gateway`, and the startup

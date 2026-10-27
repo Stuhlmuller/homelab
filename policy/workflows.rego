@@ -974,7 +974,7 @@ then
     if [[ "$phase_line" == "Enterprise image publication failed at phase: "* ]]; then
       candidate="${phase_line#*phase: }"
       case "$candidate" in
-        preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator)
+        preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|push-restore|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|upload-verify-restore|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator|authenticated-pull-restore)
           phase="$candidate" ;;
       esac
     fi
@@ -982,7 +982,7 @@ then
   echo "::error::Enterprise image publication failed at phase: $phase; private transport and registry output withheld."
   exit 1
 fi
-echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."`
+echo "Pinned Enterprise controller/runtime/CLI/operator/restore images published, signed, and fully pulled; private output withheld."`
 
 harbor_mirror_private_run := `set -euo pipefail
 umask 077
@@ -1031,7 +1031,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'d208aab51c3052a187f6c384caf0334af341bb1a817a982f64adbd8a72a07a74  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

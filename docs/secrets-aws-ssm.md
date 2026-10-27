@@ -219,9 +219,12 @@ pending; hold PostgreSQL password revisions until it exists and is tested.
 
 Bootstrap writes the initial administrator password and service key to the
 retained private bootstrap volume. Cert-manager owns the private gateway CA and
-listener certificate in separate Secrets; neither is an SSM password. Preserve
-the bootstrap files, CA Secret, auth key, gateway key, database roles and new
-agent state as one recovery set. The protected operations workflow must receive
+listener certificate in separate Secrets: the pinned chart creates
+`openclaw-system/occ-gateway-654a256bceae-root` for the internal Envoy gateway,
+and `openclaw-system/oce-private-gateway-tls` for its listener. API and worker
+Pods receive only the root's public `tls.crt`. Neither Secret is an SSM password.
+Preserve the bootstrap files, CA Secret, auth key, gateway key, database roles
+and new agent state as one recovery set. The protected operations workflow must receive
 Talos client identity through its protected credential path, never a repo file
 or an SSM value projected into application Pods. No live Talos projection or
 Enterprise model-credential write has occurred yet.

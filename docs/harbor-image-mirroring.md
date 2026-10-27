@@ -104,9 +104,13 @@ revision in `builds/openclaw-enterprise/source.json`. It also builds the
 repository-owned journal operator from the exact clean `main` checkout, with
 its source SHA embedded in the image. It verifies revision labels and the
 operator's non-root offline startup before using Harbor credentials, then
-publishes, signs and completely pulls all four images in the private `homelab`
-project. Dispatch it only with the current `main` SHA; use its immutable digest
-receipts for the Enterprise chart, CLI and later operator activation. The
+builds a dormant restore runtime from the catalog-pinned PostgreSQL base and
+checks a complete private Debian scan against its exact local image ID. It
+publishes, signs and completely pulls all five images in the private `homelab`
+project; the restore digest also gets a run-bound artifact. Dispatch it only
+with the current `main` SHA; use immutable digest receipts for the Enterprise
+chart, CLI and later operator activation. The restore image has no consumer
+until a separate reviewed digest pin. The
 operator remains disabled until placement, journal PV, bootstrap file ownership
 and network-policy proofs pass. On failure, the job summary and public error
 annotation report one allowlisted publisher phase, or `unclassified` when the

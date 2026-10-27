@@ -154,8 +154,9 @@ class HarborPublicationGates(unittest.TestCase):
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
         if enterprise:
             names = ["homelab-oce-controller", "homelab-oce-runtime", "homelab-oce-cli",
-                     "homelab-oce-operator"]
+                     "homelab-oce-operator", "homelab-oce-restore"]
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main"
+            self.env["EXPECTED_RESTORE_IMAGE_ID"] = "sha256:" + "a" * 64
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name,
@@ -540,6 +541,9 @@ class HarborPublicationGates(unittest.TestCase):
                     published[reference] = FIXTURE["published_manifests"][name]
                     path.write_text(json.dumps(published))
                 elif args[:2] == ["image", "inspect"]:
+                    if args[-1] == "homelab-oce-restore:build":
+                        print("sha256:" + "a" * 64)
+                        raise SystemExit(0)
                     repository = args[-1].split(":", 1)[0]
                     name = repository.rsplit("/", 1)[1]
                     print(json.dumps([repository + "@" + FIXTURE["published_digests"][name]]))
@@ -1740,13 +1744,23 @@ class HarborPublicationGates(unittest.TestCase):
         for name, key in (("homelab-oce-controller", "controller"),
                           ("homelab-oce-runtime", "runtime"),
                           ("homelab-oce-cli", "cli"),
-                          ("homelab-oce-operator", "operator")):
+                          ("homelab-oce-operator", "operator"),
+                          ("homelab-oce-restore", "restore")):
             self.assertIn(f"{key}=harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@", output)
-        self.assertEqual(len(self.calls_for("cosign")), 4)
+        self.assertEqual(len(self.calls_for("cosign")), 5)
         pulls = [args for args in self.calls_for("skopeo")
                  if args[0] == "copy" and args[-1].startswith("dir:")]
-        self.assertEqual(len(pulls), 4)
+        self.assertEqual(len(pulls), 5)
         self.assert_cleaned()
+
+    def test_enterprise_restore_publication_requires_scanned_image_id_before_credentials(self):
+        self.transport_mocks(enterprise=True)
+        self.env["EXPECTED_RESTORE_IMAGE_ID"] = "sha256:" + "b" * 64
+        result = self.run_helper(mode="publish-openclaw-enterprise")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.calls_for("docker"), [["image", "inspect", "--format", "{{.Id}}", "homelab-oce-restore:build"]])
+        self.assertFalse(self.calls_for("aws"))
+        self.assertFalse(self.calls_for("skopeo"))
 
     def test_enterprise_failure_reports_only_fixed_public_phase(self):
         for failure, phase in (("pull", "authenticated-pull-controller"),

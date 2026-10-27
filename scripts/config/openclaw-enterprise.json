@@ -146,6 +146,6 @@
   "gatewayIdentity": {
     "apiKeyParameter": "/homelab/openclaw-enterprise/gateway-api-key",
     "caProducer": "cert-manager",
-    "caSecretName": "occ-private-gateway-root"
+    "caSecretName": "occ-gateway-654a256bceae-root"
   }
 }

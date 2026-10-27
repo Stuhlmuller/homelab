@@ -34,8 +34,8 @@ if [[ "$mode" == publish-openclaw-enterprise ]]; then
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
   mode=publish
-  publish_names=(homelab-oce-controller homelab-oce-runtime homelab-oce-cli homelab-oce-operator)
-  publish_outputs=(controller runtime cli operator)
+  publish_names=(homelab-oce-controller homelab-oce-runtime homelab-oce-cli homelab-oce-operator homelab-oce-restore)
+  publish_outputs=(controller runtime cli operator restore)
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
@@ -83,6 +83,10 @@ repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repository_root"
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
 [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
+if "$enterprise_publication"; then
+  [[ "${EXPECTED_RESTORE_IMAGE_ID:-}" =~ ^sha256:[0-9a-f]{64}$ ]]
+  [[ "$(docker image inspect --format '{{.Id}}' homelab-oce-restore:build)" == "$EXPECTED_RESTORE_IMAGE_ID" ]]
+fi
 
 # Enroll the independently checked public key through review before publication.
 if [[ "$mode" == publish ]]; then
