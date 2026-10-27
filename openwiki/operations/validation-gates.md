@@ -260,6 +260,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive-test.py
   - id: openwiki-source-6afe7b13ab592ab9d7ebc90c
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod-test.py
+  - id: openwiki-source-2b592454bee3d706931b5357
+    resource: repo://scripts/ci/openclaw-enterprise-reader-policy-test.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -374,10 +376,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
+generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:39:20.858Z
+    at: 2026-10-27T22:53:30.669Z
 ---
 
 # Validation Gates
@@ -1997,6 +1999,13 @@ fixture checks that the embedded reader runs as UID 1000 and hashes to reviewed
 source. The assembler and reader require an explicit expected immutable Harbor
 reference; a future coordinator must derive it from a protected publication
 receipt. Neither fixture proves admission, actual PVC access or enforced egress.
+The source-only reader policy fixture renders foundation and local chart-adjacent
+resources, matches both reader label sets through the inventory selector logic,
+requires their exact empty ingress/egress policies, and rejects any additive
+matching allow. With a clean checkout at pinned upstream `33bb745`, its
+separate chart render also passes locally. Protected CI currently skips that
+optional chart check; controller-generated and live policies, network-policy
+enforcement, and isolated canary traffic remain unproven.
 The new source-only backup transaction fixture runs in static and offline
 checks. It covers durable stop/resume intent, lost API responses, crashes
 before and after POST, duplicate or foreign revisions, missing or changed

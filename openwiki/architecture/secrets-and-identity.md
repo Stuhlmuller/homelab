@@ -48,6 +48,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
   - id: openwiki-source-489371bb6baef577dc131a87
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -112,6 +114,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
+  - id: openwiki-source-2b592454bee3d706931b5357
+    resource: repo://scripts/ci/openclaw-enterprise-reader-policy-test.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
     resource: repo://scripts/ci/platform-maintenance-credentials-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -148,10 +152,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
+generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:39:20.858Z
+    at: 2026-10-27T22:53:30.669Z
 ---
 
 # Secrets And Identity
@@ -373,14 +377,20 @@ read-only PVC mounts and no service-account token. Both reader and assembler
 require the coordinator's exact published Harbor image reference, the reviewed
 source SHA, and an idle command without environment or probes; the reader
 emits only over a future private exec channel. The assembler checks selected
-Secret identities, including the stock
-Gateway CA, but leaves `continuousFenceVerified:false` until a coordinator
+Secret identities, including the stock Gateway CA, but leaves
+`continuousFenceVerified:false` until a coordinator
 proves the writer stayed stopped. The packager rejects that marker, requires a
 projected age recipient and local scratch, and writes only encrypted output to
 the backup mount. No reader Pod is applied, and no fence coordinator, recipient
-projection, or
-independent restore is declared yet; this source does not make a recoverable
-Enterprise installation.
+projection, or independent restore is declared yet; this source does not make
+a recoverable Enterprise installation.
+Two dormant, reader-specific policies declare empty ingress and egress rules
+in the system and tenant namespaces. They are additive Kubernetes policies:
+another matching allow would still grant traffic. Source fixtures reject such
+an allow in the local renders, and a local pinned-chart render passes; protected
+CI has no pinned-chart overlap gate yet. The reader cannot run until a
+coordinator checks every live matching policy and proves an enforcing egress
+fence on an isolated canary.
 
 ## Identity Notes
 

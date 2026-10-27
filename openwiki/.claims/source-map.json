@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:065ebc8078403ea8ae2a1fbfd95f1866c61ba45c4e11d5cc170bc4db26ab3b35",
+  "pageVersion": "sha256:4e7341015a5e06b5399c2a818189cbd161e7b6e18bd5d5054a82baf6d84d5b3a",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
+          "version": "repo-file-v1:sha256:7cc98a0b431f7410dccb2e73180bec2e40948b502a31f0fd0b43eee4f53f86e9"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -302,7 +302,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
-          "version": "repo-file-v1:sha256:7a6e901b38a4cf2a82e305a8fceac6b76ccf2f3b446967deee77351f7c0720bc"
+          "version": "repo-file-v1:sha256:3a43fb861a881963e2850da9e74b69be18c2b24cb9cd2cbed4bc3caac6b07808"
         }
       ]
     },
@@ -429,10 +429,24 @@
           "version": "repo-lines-v1:sha256:f102ab87e71c2a338eb5d0b30c9006b2920ed9494bb19aef874cbba63f35c910:eyJzZWxlY3RlZExpbmVDb3VudCI6MTg4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZjUwYzgxMWFlYjhjMTMzZWU1NzZlOGY3OGExZDlhMmFlZjY4NjFiOGZjYzZjOThkNTFhNTFiZjI5NzYwOTQ1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3ZmFjNWMwOWIwNmM5OGYwY2VkZTI2OWEzMDRiMzdlODM0NDJmMjNlMTRmZTY2NGFiNmJlMWUwOWI3NWVmMmQyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlYWVlMjliNTYwM2VlYWFjZDFiYjUyYjRmMWI3YjkwM2Q4MDRkMDU3ZjI5ODgyODY2YWYyNDA0ODYzMWI2YTlmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyNDJiMGM3ZGIwZjdmMGM5ZWRhNTIzZTc4YjNlMWZkYTg2NGI4ZjMwMzRlMmE5NzlmYjk2OWQ1ZDljOWY0MjdjIn0"
         }
       ]
+    },
+    {
+      "id": "claim_d763ce743e0549f2a8b8fb315664b333",
+      "statement": "The T051 reader policy source declares two label-scoped empty ingress and egress policies and a fixture that rejects other matching allows in rendered local source; pinned stock chart and live enforcement remain separate gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml#L47-L72",
+          "version": "repo-lines-v1:sha256:da91d9eef5def9da5d3cb0173b9593c5e7f60d16de742e03bd535d9849c5f274:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZDNiYzgyNzM0N2QwOWIwNzhiOTcwODEwOTU4NTRlYmY3NTg3ODk5MDM3M2IxZjI1YTExNmRmOWNkMGYwNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNmNhY2NiZWVmZWJiYzUzZDRhYzIxN2FlMzhlODQxMTg3YTc1ZDdkNDYyNjMzZDJmODlhOGYzMjhkMDcwNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-policy-test.py#L60-L146",
+          "version": "repo-lines-v1:sha256:aaaf61f9e721731a15d33899f84c1e74616941052975438bf4dfd962c32fbf6a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTY4Y2JiMjM3MDg3MWZkZmZlYTJlYTE5MjA3YjJjZTcwMGIxOTM5ZWM1Zjg3M2EwYmEwOTZmNjFkMzVlMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNmIyNzNlNzVhNTU3YzY0YTdhMmMwZThlNTdkZmE4NWY3N2Q1NjYzYzIzZDFjOGFlYWE4MzI1MzhjOTRkZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:39:20.858Z"
+    "at": "2026-10-27T22:53:30.669Z"
   }
 }
