@@ -2,6 +2,10 @@ require 'openssl'
 require 'base64'
 require 'fileutils'
 
+# fsGroup makes the mounted /tmp writable without a sticky bit; Ruby rejects it.
+FileUtils.mkdir_p('/tmp/mastodon', mode: 0700)
+ENV['TMPDIR'] = '/tmp/mastodon'
+
 # Mastodon expects raw P-256 Web Push keys; SSM retains the generated PEM key.
 key = OpenSSL::PKey.read(File.read('/run/mastodon/vapid.pem'))
 abort 'VAPID key must be a private P-256 key' unless key.private? && key.group.curve_name == 'prime256v1'

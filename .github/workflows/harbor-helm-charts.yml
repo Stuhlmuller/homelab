@@ -1,0 +1,87 @@
+name: Publish Reviewed Helm Charts To Harbor
+run-name: Helm charts @ ${{ github.sha }}
+
+# checkov:skip=CKV_GHA_7: expected_sha binds publication to reviewed current main.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit with reviewed chart hashes
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate reviewed inventory and publisher
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+          bash -n scripts/ci/harbor-chart-publish.sh
+          nix develop --command python3 -I scripts/ci/harbor-chart-publish.py --check
+          nix develop --command python3 -I scripts/ci/harbor-chart-publish-test.py
+
+  publish:
+    needs: validate
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    concurrency:
+      group: harbor-mirror-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-harbor-charts-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+      - name: Publish and independently verify chart packages
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/harbor-chart-publish.sh >"$private_log" 2>&1; then
+            echo '::error::Harbor chart publication failed; private transport output withheld.'
+            exit 1
+          fi
+          echo 'Reviewed Helm packages published with authenticated reader pulls and matching package hashes.'

@@ -14,7 +14,7 @@ controllers:
     initContainers:
       prepare-config:
         image:
-          repository: busybox
+          repository: harbor.stinkyboi.com/mirror/docker.io/library/busybox
           tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
         command:
           - /bin/sh
@@ -31,7 +31,7 @@ controllers:
       configure-postgres:
         dependsOn: prepare-config
         image:
-          repository: lscr.io/linuxserver/sonarr
+          repository: harbor.stinkyboi.com/mirror/lscr.io/linuxserver/sonarr
           tag: 4.0.19@sha256:82172b363f9eddc02aca544f880a044f2ceb9aaf190bc87e4454e2f705eb91d0
         envFrom:
           - secretRef:
@@ -164,7 +164,7 @@ controllers:
     containers:
       app:
         image:
-          repository: lscr.io/linuxserver/sonarr
+          repository: harbor.stinkyboi.com/mirror/lscr.io/linuxserver/sonarr
           tag: 4.0.19@sha256:82172b363f9eddc02aca544f880a044f2ceb9aaf190bc87e4454e2f705eb91d0
         command:
           - /bin/sh

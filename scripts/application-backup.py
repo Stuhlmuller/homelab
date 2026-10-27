@@ -21,6 +21,7 @@ CONTRACTS = {
     'octelium': ('globals.sql', 'octelium.dump'),
     'multica': ('globals.sql', 'multica.dump', 'uploads.tar', 'capture.json'),
     'affine': ('globals.sql', 'affine.dump', 'blobs.tar', 'config.tar', 'capture.json'),
+    'dispatcharr': ('globals.sql', 'dispatcharr.dump', 'data.tar', 'capture.json'),
     'media-postgres': ('globals.sql', 'sonarr-main.dump', 'sonarr-log.dump',
                        'radarr-main.dump', 'radarr-log.dump', 'prowlarr-main.dump', 'prowlarr-log.dump'),
 }
@@ -121,7 +122,7 @@ def prepare(source, workspace, app):
             raise ValueError('source checksum failure')
     if sum(item['bytes'] for item in objects.values()) > 5 * 1024**3:
         raise ValueError('recovery set exceeds 5 GiB publication budget')
-    if app in ('multica', 'affine'):
+    if app in ('multica', 'affine', 'dispatcharr'):
         if (pending / 'capture.json').stat().st_size > 16384:
             raise ValueError('oversized capture record')
         capture = json.loads((pending / 'capture.json').read_text())

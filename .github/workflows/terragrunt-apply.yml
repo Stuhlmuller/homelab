@@ -12,6 +12,11 @@ on:
         description: Optional exact Argo CD Application unit to reconcile
         required: false
         type: string
+      existing_argocd_only:
+        description: Reconcile only Argo CD Applications already registered live
+        required: false
+        default: false
+        type: boolean
       repair_argocd_app_state:
         description: Untaint the selected Argo CD Application before reconciling it
         required: false
@@ -89,6 +94,7 @@ jobs:
     timeout-minutes: 90
     env:
       TERRAGRUNT_ARGOCD_APP: ${{ inputs.argocd_app }}
+      TERRAGRUNT_EXISTING_ARGOCD_ONLY: ${{ inputs.existing_argocd_only }}
       TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
       TERRAGRUNT_APPLICATION_BACKUP_STORAGE: ${{ inputs.application_backup_storage }}
     steps:

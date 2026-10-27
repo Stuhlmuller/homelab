@@ -127,7 +127,7 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-e3e84b128839afbc47f478f7
-    resource: repo://IaC/platform-network-policy/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
@@ -175,14 +175,26 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Harbor Private OCI Registry
 
+## Helm chart publication
+
+The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
+the package SHA-256 for every Argo CD chart source, including the dormant
+OpenClaw Enterprise Git Helm chart. The protected
+`harbor-helm-charts.yml` dispatch publishes the exact packages to
+`harbor.stinkyboi.com/mirror/helm` and verifies each with the separate reader
+robot. Run it on current `main` before moving any Argo CD chart source to
+Harbor. The repository credential is owned by Argo CD self-management and
+reads only the mirror pull robot password. Terraform's Argo CD bootstrap chart
+remains upstream for a cold-cluster restore.
+
 ## Ownership And Access
 
-Harbor registration inputs are declared in `IaC/harbor/stack.hcl`;
+Harbor registration inputs are declared in `IaC/homelab/us-west-2/apps/harbor/stack.hcl`;
 runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
 (Harbor `2.15.2`). Upstream component references remain digest-pinned; the
@@ -332,7 +344,7 @@ The reviewed Stage A saved plan created and metadata-verified
 only the reader parameter and identified exact-ARN reader-policy changes;
 unexpected shared dependency changes remain outside scope. On clean reviewed
 main, run `(cd IaC && terragrunt stack generate)` before entering the generated
-`IaC/live/aws-ssm-parameters` unit for reader-plan review. The plan may create
+`IaC/homelab/us-west-2/shared/aws-ssm-parameters` unit for reader-plan review. The plan may create
 the reader parameter and change only identified exact-ARN reader-policy entries,
 including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
@@ -789,8 +801,8 @@ mirror rollout below extends this to third-party images.
 1. Validate static checks, rendered chart/manifests and Terragrunt plan. Merge
    through the repository's signed-commit and review gates.
 2. From a clean checkout of exact merged main, regenerate the Terragrunt stack
-   and plan/apply only `IaC/live/aws-ssm-parameters`, then
-   `IaC/live/argocd-apps/harbor`. Review saved plans and run Conftest before
+   and plan/apply only `IaC/homelab/us-west-2/shared/aws-ssm-parameters`, then
+   `IaC/homelab/us-west-2/apps/harbor/argocd`. Review saved plans and run Conftest before
    applying; reject deletes, replacements, or unrelated changes. The shared
    SSM unit must be inspected for earlier drift before calling it Harbor-only.
    The earlier Azure credential gap is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)

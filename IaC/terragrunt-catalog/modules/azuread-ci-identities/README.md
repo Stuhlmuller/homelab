@@ -8,7 +8,7 @@ The state key is
 `IaC/homelab/operator/azuread-ci-identities/terraform.tfstate`.
 Its committed unit source is
 `IaC/terragrunt-catalog/units/operator/azuread-ci-identities/terragrunt.hcl`;
-`IaC/terragrunt.stack.hcl` generates the ignored operator directory.
+`IaC/homelab/us-west-2/operator/terragrunt.stack.hcl` generates the ignored operator directory.
 
 | Application | Protected GitHub environment | Graph application permissions |
 | --- | --- | --- |

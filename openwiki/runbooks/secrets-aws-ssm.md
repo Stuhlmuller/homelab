@@ -33,7 +33,7 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -47,10 +47,21 @@ sources:
 generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # AWS SSM Secret References
+
+## Bulldozer GitHub App
+
+The [Bulldozer contract](../../clusters/homelab/apps/bulldozer/README.md)
+declares the `/homelab/bulldozer/github-app/` SSM SecureStrings for
+`integration-id`, `webhook-secret`, and `private-key`. Terragrunt generates the webhook secret;
+the protected `bulldozer-credential.yml` workflow writes the App ID and private
+key from homelab Actions environment secrets after the placeholders exist.
+`bulldozer-config` projects them into files with `refreshPolicy: OnChange`.
+Keep the Deployment at zero replicas until credentials, Funnel routing, and
+the GitHub App webhook are ready; then activate it through reviewed GitOps.
 
 Canonical runbook: [`docs/secrets-aws-ssm.md`](../../docs/secrets-aws-ssm.md)
 
@@ -147,7 +158,7 @@ directory is initialized. On a retained, already-initialized PVC, refreshing
 `multica-secrets` does not change the existing `multica` database role
 password. The generated SSM value is declared in the committed
 `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
-rendered into the `IaC/live/aws-ssm-parameters` OpenTofu stack, so do not
+rendered into the `IaC/homelab/us-west-2/shared/aws-ssm-parameters` OpenTofu stack, so do not
 hand-edit
 `/homelab/multica/postgres-password`; the next apply would restore the
 repository-owned generated value.

@@ -1128,7 +1128,7 @@ emergency Deployments in place. Inspect every Pod bound to `zimaboard-2`,
 including terminating Pods; if any mounts a PVC, stop and establish a separate
 writer-fencing and data-recovery plan before proceeding.
 
-Apply the reviewed `IaC/live/kubernetes-node-labels` unit through the
+Apply the reviewed `IaC/homelab/us-west-2/shared/kubernetes-node-labels` unit through the
 [documented saved-plan recovery path](ci-cd.md#octelium-ci-access-setup).
 Its `zimaboard-2 = {}` input removes the Terragrunt-owned dataplane label while
 retaining the label-management resource and Node. The expected plan updates

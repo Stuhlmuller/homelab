@@ -5,6 +5,14 @@ init, and ephemeral containers. An image must start with
 `harbor.stinkyboi.com/`; there are no namespace, account, mirror-Pod, or
 system-image exceptions.
 
+The `image-rewrite` mutating webhook handles reviewed images from controllers
+that force upstream Pod references. It is scoped to `octelium`, `monitoring`,
+and `ai`, uses two replicas and a cert-manager CA, and rejects unknown sources.
+Its catalog copy in `images.json` must exactly match
+`scripts/config/harbor-images.json`. A Harbor outage can block a fresh webhook
+image pull; keep both replicas Ready and validate the protected GitOps recovery
+path before enabling the scoped namespaces.
+
 ## Current phase
 
 The binding uses `Warn, Audit`. Public image references are accepted but produce
@@ -32,6 +40,8 @@ rollout.
 ```sh
 nix develop --command kubectl kustomize clusters/homelab/platform/image-policy
 nix develop --command python3 -I scripts/ci/image-policy-check.py
+nix develop --command python3 -I scripts/ci/image-rewrite-check.py
+nix develop --command python3 scripts/ci/harbor-rendered-images-check.py
 ```
 
 The second command creates a disposable Kind cluster. It sends server dry-run

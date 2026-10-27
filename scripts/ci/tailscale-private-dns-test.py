@@ -166,13 +166,19 @@ class Readiness(unittest.TestCase):
         source = {'controllers':{'openclaw':{'replicas':0}}}
         live = {'metadata':{'name':'openclaw','namespace':'ai'},'spec':{'replicas':0},
                 'status':{'replicas':0}}
-        with patch.object(check, 'run', side_effect=[json.dumps(source), json.dumps(live)]) as run, \
+        empty = {'kind':'List', 'items':[
+            {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                'kubernetes.io/service-name':'openclaw'}}, 'endpoints':None}]}
+        with patch.object(check, 'run', side_effect=[json.dumps(source), json.dumps(live), json.dumps(empty)]) as run, \
                 patch.object(check, 'probe', return_value=(502, [])), contextlib.redirect_stderr(io.StringIO()):
             check.routes({'hostnames':['openclaw.stinkyboi.com']}, '100.100.100.1')
         self.assertEqual(run.call_args_list[0].args,
                          ('yq', '-o=json', '.', str(ROOT/'clusters/homelab/apps/openclaw/values.yaml')))
         self.assertEqual(run.call_args_list[1].args,
                          ('kubectl', '-n', 'ai', 'get', 'deployment', 'openclaw', '-o', 'json'))
+        self.assertEqual(run.call_args_list[2].args,
+                         ('kubectl', '-n', 'ai', 'get', 'endpointslices', '-l',
+                          'kubernetes.io/service-name=openclaw', '-o', 'json'))
 
         invalid_sources = (None, {}, {'controllers':None}, {'controllers':{}},
                            {'controllers':{'openclaw':None}},
@@ -198,16 +204,46 @@ class Readiness(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
                     check.routes({'hostnames':['openclaw.stinkyboi.com']})
 
-        for responses in ([RuntimeError('source read failed')], [json.dumps(source), RuntimeError('live read failed')]):
+        for endpoints in ({'kind':'List', 'items':[]},
+                          {'kind':'List', 'items':[
+                              {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                                  'kubernetes.io/service-name':'openclaw'}},
+                               'endpoints':[{'addresses':['10.0.0.1']}]}]},
+                          {'kind':'List', 'items':[
+                              {'kind':'EndpointSlice', 'metadata':{'namespace':'ai', 'labels':{
+                                  'kubernetes.io/service-name':'other'}}, 'endpoints':None}]},
+                          {'kind':'List', 'items':[{'kind':'EndpointSlice', 'metadata':None, 'endpoints':None}]},
+                          {'kind':'List', 'items':[{'kind':'EndpointSlice', 'metadata':{'namespace':'ai',
+                              'labels':None}, 'endpoints':None}]}):
+            with self.subTest(endpoints=endpoints), patch.object(check, 'run', side_effect=[
+                    json.dumps(source), json.dumps(live), json.dumps(endpoints)]), \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+
+        for responses in ([RuntimeError('source read failed')], [json.dumps(source), RuntimeError('live read failed')],
+                          [json.dumps(source), json.dumps(live), RuntimeError('endpoint read failed')]):
             with self.subTest(failure=responses), patch.object(check, 'run', side_effect=responses), \
                     patch.object(check, 'probe', return_value=(502, [])):
                 with self.assertRaisesRegex(RuntimeError, 'read failed'):
                     check.routes({'hostnames':['openclaw.stinkyboi.com']})
 
+    def test_openclaw_500_requires_suspension(self):
+        for suspended in (False, True):
+            with self.subTest(suspended=suspended), patch.object(check, 'probe', return_value=(500, [])), \
+                    patch.object(check, 'openclaw_suspended', return_value=suspended) as guard, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                if suspended:
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+                else:
+                    with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                        check.routes({'hostnames':['openclaw.stinkyboi.com']})
+                guard.assert_called_once()
+
     def test_suspension_exception_does_not_allow_other_apps_or_other_5xx(self):
         for host in ('affine', 'openclaw', 'n8n', 'fleet', 'harbor'):
             for status in (500, 502, 503, 504):
-                if (host == 'affine' and status in (500, 502, 503)) or (host == 'openclaw' and status == 502):
+                if (host == 'affine' and status in (500, 502, 503)) or (host == 'openclaw' and status in (500, 502)):
                     continue
                 with self.subTest(host=host, status=status), patch.object(check, 'probe', return_value=(status, [])), \
                         patch.object(check, 'affine_suspended') as affine, \

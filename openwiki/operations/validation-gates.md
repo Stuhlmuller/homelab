@@ -141,11 +141,11 @@ sources:
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-d9c278a8e804b0d4053d6a6b
-    resource: repo://IaC/istio/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
-    resource: repo://IaC/openclaw-enterprise/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -363,7 +363,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Validation Gates
@@ -465,7 +465,7 @@ releases none of them.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
-`IaC/operator` are never retired by the workflow. Every saved destroy plan must
+`IaC/homelab/us-west-2/operator` are never retired by the workflow. Every saved destroy plan must
 pass the same Conftest policy as ordinary plans before production applies it;
 protected resource deletion cannot bypass policy through unit removal.
 Synthetic retirement units reuse the canonical Kubernetes and Helm connection
@@ -491,7 +491,7 @@ overridden Applications from the real shared template, checking default
 inheritance, list replacement, historical backend keys, changed-unit selection,
 Azure credential isolation, and retirement ownership. Catalog fixtures carry
 shape only; production defaults belong in `IaC/stack-defaults.hcl`, with app
-inputs in `IaC/<app>/stack.hcl`.
+inputs in `IaC/homelab/us-west-2/apps/<app>/stack.hcl`.
 For a stack refactor, also compare every affected generated unit's inputs,
 dependencies, backend configuration, provider generation, and module source
 against the pre-change revision. HCL validity alone does not prove equivalence.
@@ -519,7 +519,7 @@ Operator-owned AWS bootstrap units require a focused backend-free validation
 and an administrator-authenticated plan before apply:
 
 ```sh
-cd IaC/operator/github-actions-role-policy
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
@@ -544,7 +544,7 @@ the working directory detached from shared state, so the authenticated
 `init -reconfigure` must precede every import, production plan, or apply from
 that directory.
 
-The GitHub workflow role must not plan or apply `IaC/operator`; those units own
+The GitHub workflow role must not plan or apply `IaC/homelab/us-west-2/operator`; those units own
 the permissions that protect the workflow from self-administration.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
@@ -1009,12 +1009,14 @@ live replacement; fixture success alone is not production recovery.
 
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
-`scripts/ci/n8n-ai-migration-check.py` runs the rendered n8n init shell with
-synthetic exports. It checks the three exact target nodes, unchanged inactive
-state, idempotence, continued startup for absent workflows, validated removal
-of a target node or changed model settings, and startup failure for a failed ID
-listing, failed export of a present workflow, malformed JSON or node shape,
-duplicate target node, or write error.
+`scripts/ci/n8n-ai-migration-check.py` runs the staged n8n migration Job shell
+with synthetic exports and checks that the active Deployment has no migration
+init container or Job. It checks the three exact target nodes, unchanged
+inactive state, idempotence, no credential write for absent or already migrated
+workflows, preservation of a blank existing credential, and refusal on credential
+inspection errors, mismatched metadata or nonblank stored data. Failed ID
+listing, workflow export, malformed JSON or node shape, duplicate target node,
+or write error fails the Job without blocking app startup.
 It does not prove deployment or live workflow execution.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
@@ -1527,7 +1529,7 @@ terragrunt stack generate
 Focused unit validation:
 
 ```sh
-cd IaC/live/<stack>/<unit>
+cd IaC/homelab/us-west-2/shared/<stack>/<unit>
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 # Only before an authenticated live plan, reconnect to the intended backend:
@@ -1549,9 +1551,10 @@ terragrunt stack run plan
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
-then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
-details and live command output are withheld from the public PR and Actions
-logs. Run the same order locally when reproducing a failure.
+then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. The
+human-readable plan streams to the Actions log. Saved plan files and
+JSON policy inputs remain temporary and are removed on exit. Run the same
+order locally when reproducing a failure.
 
 The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
 stack or shared root sources, or plan inputs, change. Missing client and tenant
@@ -1561,7 +1564,7 @@ changes may skip AzureAD. Restore the environment secrets through the
 the PR plan and verify the protected gate before merging.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
-units. When `IaC/terragrunt.stack.hcl`, `IaC/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
+units. When `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl`, `IaC/homelab/us-west-2/apps/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
 `IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching
 generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
@@ -1613,7 +1616,7 @@ never relabel a targeted run or manually skip an unapplied range. See the
 
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
 that route is the failed dependency, restore reviewed
-`IaC/live/kubernetes-node-labels` state from a trusted LAN machine with a direct
+`IaC/homelab/us-west-2/shared/kubernetes-node-labels` state from a trusted LAN machine with a direct
 `https://10.1.0.199:6443` kubeconfig, shared-backend AWS credentials, a saved
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
 `docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
@@ -1799,6 +1802,17 @@ passed exact-main and prior-job provenance, verified the cached archive and
 receipt, and prepared a separate private NAS scratch recovery tree and link
 report. This source-bound copy does not prove an isolated old-image boot or
 complete T014.
+
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image and npm package integrity, then checks a fresh pinned-CLI
+install and runtime inspection from a restored npm cache under Docker
+`--network none`. The
+[fixture](../../scripts/ci/openclaw-discord-offline-cache-test.py)
+checks integrity and dependency-lock comparison; the
+[PR workflow](../../.github/workflows/openclaw-discord-offline-cache.yml)
+runs the proof and discards the artifacts. This validates public-package
+installation feasibility only. It does not publish a private cache, verify a
+transfer to the recovery host, or boot the retained state, so T014 stays open.
 
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
