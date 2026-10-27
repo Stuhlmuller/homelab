@@ -28,7 +28,7 @@ controllers:
     containers:
       migrate:
         image:
-          repository: ghcr.io/n8n-io/n8n
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/n8n-io/n8n
           tag: "stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
         env:
           DB_TYPE: postgresdb
