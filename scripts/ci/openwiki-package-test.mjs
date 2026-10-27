@@ -144,8 +144,9 @@ const markerPath = path.join(wrapperDir, "second-query-blocked");
 const wrapperPath = path.join(wrapperDir, "git");
 const originalPath = process.env.PATH;
 try {
+  // Linux Nix sandboxes do not provide /usr/bin/env.
   await writeFile(wrapperPath, [
-    "#!/usr/bin/env node",
+    `#!${process.execPath}`,
     'const { spawnSync } = require("node:child_process");',
     'const { writeFileSync } = require("node:fs");',
     "const args = process.argv.slice(2);",
