@@ -56,7 +56,7 @@ spec:
         octelium.com/node-mode-dataplane: ""
       containers:
         - name: octelium
-          image: ghcr.io/octelium/octelium:0.35.0@sha256:37bf93b69a6fb42d94909d840bc68542c13de5a60bf8d516ef80975daab053cb
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium:0.35.0@sha256:37bf93b69a6fb42d94909d840bc68542c13de5a60bf8d516ef80975daab053cb
           imagePullPolicy: IfNotPresent
           command:
             - octelium

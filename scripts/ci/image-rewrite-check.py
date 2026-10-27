@@ -53,7 +53,7 @@ resources = json.loads(subprocess.check_output(
     ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
 webhook = next(doc for doc in resources if doc.get("kind") == "MutatingWebhookConfiguration")["webhooks"][0]
 assert webhook["failurePolicy"] == "Fail" and webhook["timeoutSeconds"] <= 5
-assert webhook["namespaceSelector"]["matchExpressions"][0]["values"] == ["image-rewrite-canary"]
+assert webhook["namespaceSelector"]["matchExpressions"][0]["values"] == ["octelium", "monitoring", "ai"]
 assert webhook["rules"][0]["resources"] == ["pods"] and webhook["rules"][0]["operations"] == ["CREATE"]
 assert webhook["rules"][1]["resources"] == ["pods/ephemeralcontainers"] and webhook["rules"][1]["operations"] == ["UPDATE"]
 deployment = next(doc for doc in resources if doc.get("kind") == "Deployment"

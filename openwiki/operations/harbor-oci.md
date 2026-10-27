@@ -1140,6 +1140,14 @@ has created and metadata-verified the parameter, but it does not prove GitOps
 reconciliation, publication, or node authentication. Private `homelab` artifacts
 retain their existing authentication/signing contract.
 
+The staged [Octelium service-proxy rollout](../../clusters/homelab/apps/octelium-enterprise/README.md)
+uses an Argo Sync hook after a server dry-run Pod proves the scoped admission
+webhook rewrites the reviewed vigil image. Its namespace Role can inspect Pods
+and roll Deployments; the hook selects only active `svc-*` ConfigMap-owned
+proxies, replaces them one at a time, and waits for Harbor-image Pods to become
+Ready and old upstream Pods to exit. A failed proxy stops the hook. Live
+generated-Pod convergence still needs verification after GitOps sync.
+
 The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
 and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
 stopped during the second upstream copy used for PostgreSQL tag aliases (17.5,

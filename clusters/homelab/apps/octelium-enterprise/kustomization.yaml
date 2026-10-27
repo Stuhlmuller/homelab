@@ -3,3 +3,12 @@ kind: Kustomization
 resources:
   - emergency-dataplane.yaml
   - resources.yaml
+  - harbor-generated-rollout.yaml
+configMapGenerator:
+  - name: harbor-generated-rollout
+    namespace: octelium
+    files:
+      - harbor-generated-rollout.py
+generatorOptions:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"

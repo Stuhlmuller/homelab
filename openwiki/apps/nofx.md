@@ -7,7 +7,7 @@ workload_status: active
 updated: 2026-10-17
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:27:13.661Z
+    at: 2026-10-25T12:11:12.391Z
 sources:
   - id: openwiki-source-b7385f58821387de7a16f687
     resource: repo://clusters/homelab/apps/nofx/deployment.yaml

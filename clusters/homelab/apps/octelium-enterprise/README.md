@@ -63,6 +63,13 @@ therefore ignores only the `vigil` and `managed` container image fields on
 those four Deployments and uses `RespectIgnoreDifferences=true` so self-heal
 does not fight the controller-owned values.
 
+The `harbor-generated-rollout` Sync hook waits for a server dry-run Pod to be
+rewritten to the reviewed Harbor digest, then restarts only active Octelium
+service-proxy Deployments owned by `svc-*` ConfigMaps. It waits for each
+replacement to become Ready and for the old upstream-image Pod to exit before
+moving to the next proxy. The hook is idempotent on later syncs and stops on a
+failed rollout; inspect its Job log and the affected Deployment before retrying.
+
 `emergency-dataplane.yaml` reuses each existing Octelium Service selector and
 runs a uniquely named, digest-pinned fallback Deployment on the primary
 Kubernetes network. The recovery manifest includes 18 public WEB proxies.
