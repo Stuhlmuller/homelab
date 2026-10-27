@@ -48,6 +48,10 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-e9c3504a789b6a6bb6b2b948
+    resource: repo://builds/openclaw-enterprise-restore/build.sh
+  - id: openwiki-source-0ff63b5b5b53b49d967734f7
+    resource: repo://builds/openclaw-enterprise-restore/Dockerfile
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -148,6 +152,8 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
+    resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -174,10 +180,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
+generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:04:19.774Z
+    at: 2026-10-27T22:35:17.744Z
 ---
 
 # Harbor Private OCI Registry
@@ -968,6 +974,12 @@ repository-owned journal operator, and the T051 restore runtime. It audits the
 complete restore image before publication and requires signatures and complete
 authenticated Harbor pulls for all five. This is a dormant candidate; its
 fifth-image receipt has not been produced.
+The unpublished restore image now also copies the namespace-local recovery
+reader executable. Its clean-source build runs that reader as UID 1000 with
+network disabled and a read-only root, then compares the embedded reader hash
+to reviewed source before credentials. A source-only renderer accepts only the
+exact source-tagged Harbor reference with an immutable digest. No reader Pod is
+applied, and no current fifth-image publication receipt exists.
 Protected [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
 passed the earlier four authenticated pulls and signatures from source `fda0d68`; the
 selected disabled operator is pinned at

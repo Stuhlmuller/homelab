@@ -88,12 +88,19 @@ receipt are still absent. The source-only
 [reader emitter](../../../../scripts/ci/openclaw-enterprise-reader-archive.py)
 streams each namespace's complete read-only claim tree over a private exec
 channel. It requires a bounded authenticated Pod/PVC observation on stdin and
-the coordinator's expected source SHA and Pod/PVC UIDs, then rejects foreign or
+the coordinator's expected source SHA, exact published Harbor image reference,
+and Pod/PVC UIDs, then rejects foreign or
 continued tenant Pod lists, partial `subPath`/`subPathExpr` mounts, links,
 special files, changed bytes, and missing recovery files. It must never be a
 Pod command or workflow log source: stdout contains private recovery bytes.
-No image or Job includes it yet, so it cannot run before a reviewed private
-transport and continuous-fence coordinator exist.
+The unpublished restore image now embeds this reader; its build verifies the
+embedded bytes and UID 1000 execution. A source-only
+[renderer](../../../../scripts/ci/openclaw-enterprise-reader-pod.py) produces
+two idle, namespace-local reader Pod specs bound to the source-tagged immutable
+Harbor digest. They have only exact read-only claim mounts and are excluded
+from Kustomization and workflows. No reader Pod may run before image
+publication, UID 1000 access, continuous writer fencing, enforced egress and
+a reviewed private exec coordinator are proven.
 The assembler needs a private local scratch mount with free space
 for both archives' uncompressed contents plus 2Gi; no hosted runner capacity is
 assumed. The operator archive contains `manifest.json`, the full `journal/`

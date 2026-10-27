@@ -110,6 +110,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-e9e65f5a163d93923cf250f7
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
+  - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
+    resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
     resource: repo://scripts/ci/platform-maintenance-credentials-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -146,10 +148,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
+generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:04:19.774Z
+    at: 2026-10-27T22:35:17.744Z
 ---
 
 # Secrets And Identity
@@ -366,11 +368,17 @@ gate remains disabled; these permissions are source intent, not live access.
 The T051 recovery path is source-only. Namespace-local readers can emit complete
 bootstrap and tenant claim archives after exact Pod/PVC identity checks; they
 reject partial `subPath` and `subPathExpr` mounts and never send recovery bytes
-to logs. The assembler checks selected Secret identities, including the stock
+to logs. An excluded renderer now describes two idle, UID 1000 Pods with only
+read-only PVC mounts and no service-account token. Both reader and assembler
+require the coordinator's exact published Harbor image reference, the reviewed
+source SHA, and an idle command without environment or probes; the reader
+emits only over a future private exec channel. The assembler checks selected
+Secret identities, including the stock
 Gateway CA, but leaves `continuousFenceVerified:false` until a coordinator
 proves the writer stayed stopped. The packager rejects that marker, requires a
 projected age recipient and local scratch, and writes only encrypted output to
-the backup mount. No reader Job, fence coordinator, recipient projection, or
+the backup mount. No reader Pod is applied, and no fence coordinator, recipient
+projection, or
 independent restore is declared yet; this source does not make a recoverable
 Enterprise installation.
 

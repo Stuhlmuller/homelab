@@ -50,6 +50,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-e9e65f5a163d93923cf250f7
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
+  - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
+    resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -68,10 +70,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
+generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:23:45.554Z
+    at: 2026-10-27T22:35:17.744Z
 ---
 
 # Storage And State
@@ -390,8 +392,17 @@ archive manifests and before/after claim, PV and Secret observations. Its
 output deliberately sets `continuousFenceVerified:false`: the marker cannot
 prove a live UID match or continuous writer exclusion by itself. The packager
 uses a local scratch mount and pinned age recipient to publish ciphertext on a
-separate backup mount. No reader Job, coordinator, recipient projection, off-node
-publication receipt or independent restore is declared; T051 remains open.
+separate backup mount. A pure [reader Pod renderer](../../scripts/ci/openclaw-enterprise-reader-pod.py)
+now describes two idle, namespace-local UID 1000 Pods: only exact read-only
+journal/bootstrap or dynamic Gateway claim mounts, no service-account token,
+host namespaces, environment, probes or extra containers. The renderer binds
+the backup ID and a reviewed source SHA to the exact immutable Harbor restore
+image reference. Reader and assembler reject a different image digest or a
+command that could stream private bytes into Pod logs. The reader executable is
+packaged in the unpublished restore image, but the Pods are excluded from
+Kustomization and workflows. No coordinator, enforced egress fence, UID 1000
+claim-access proof, recipient projection, off-node publication receipt or
+independent restore is declared; T051 remains open.
 The dormant reconciler now has a journaled backup stop/resume transaction.
 It records stop intent before the native stop request, adopts an exact stopped
 outcome after a lost response, and blocks uncertain outcomes without reposting.
