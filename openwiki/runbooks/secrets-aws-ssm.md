@@ -60,8 +60,9 @@ declares the `/homelab/bulldozer/github-app/` SSM SecureStrings for
 the protected `bulldozer-credential.yml` workflow writes the App ID and private
 key from homelab Actions environment secrets after the placeholders exist.
 `bulldozer-config` projects them into files with `refreshPolicy: OnChange`.
-Keep the Deployment at zero replicas until credentials, Funnel routing, and
-the GitHub App webhook are ready; then activate it through reviewed GitOps.
+Bump its credential-refresh annotation after the protected workflow writes the
+identity, then start the Deployment through reviewed GitOps. Configure the
+GitHub App webhook privately with the generated secret before enabling events.
 
 Canonical runbook: [`docs/secrets-aws-ssm.md`](../../docs/secrets-aws-ssm.md)
 
