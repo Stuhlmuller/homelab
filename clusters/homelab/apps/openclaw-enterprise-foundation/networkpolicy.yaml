@@ -44,3 +44,29 @@ spec:
     matchLabels:
       app.kubernetes.io/name: occ-postgres-restore-drill
   policyTypes: [Ingress, Egress]
+---
+# Dormant T051 reader boundary. NetworkPolicy is additive: a future protected
+# coordinator must reject other matching egress allows and prove enforcement.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: occ-operator-reader-isolation
+  namespace: openclaw-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: occ-recovery-reader
+      app.kubernetes.io/component: operator
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: occ-tenant-reader-isolation
+  namespace: openclaw-agents
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: occ-recovery-reader
+      app.kubernetes.io/component: tenant
+  policyTypes: [Ingress, Egress]

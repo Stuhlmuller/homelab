@@ -26,6 +26,7 @@ python3 -I scripts/ci/openclaw-enterprise-encrypted-backup-test.py
 python3 -I scripts/ci/openclaw-enterprise-capture-test.py
 python3 -I scripts/ci/openclaw-enterprise-reader-archive-test.py
 python3 -I scripts/ci/openclaw-enterprise-reader-pod-test.py
+python3 -I scripts/ci/openclaw-enterprise-reader-policy-test.py
 python3 -I scripts/ci/openclaw-enterprise-safe-extract-test.py
 python3 -I scripts/ci/openclaw-enterprise-postgres-test.py
 python3 -I scripts/ci/openclaw-enterprise-chart-hooks-test.py

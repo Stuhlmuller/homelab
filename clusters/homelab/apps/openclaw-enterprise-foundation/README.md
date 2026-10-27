@@ -101,6 +101,14 @@ Harbor digest. They have only exact read-only claim mounts and are excluded
 from Kustomization and workflows. No reader Pod may run before image
 publication, UID 1000 access, continuous writer fencing, enforced egress and
 a reviewed private exec coordinator are proven.
+The foundation now declares selector-scoped empty ingress and egress
+NetworkPolicies for those two reader labels in `openclaw-system` and
+`openclaw-agents`. Kubernetes policies are additive: any other matching allow
+still grants traffic. The local source fixture rejects overlapping allows in
+foundation and chart-adjacent manifests; its pinned stock-chart check currently
+runs only when given a verified checkout, outside protected CI. Before any
+reader is created, a protected coordinator must recheck every live matching
+policy and prove denied egress through an enforcing isolated canary.
 The assembler needs a private local scratch mount with free space
 for both archives' uncompressed contents plus 2Gi; no hosted runner capacity is
 assumed. The operator archive contains `manifest.json`, the full `journal/`

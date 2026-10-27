@@ -28,7 +28,7 @@ class FoundationContract(unittest.TestCase):
         cls.resources = {(item["kind"], item["metadata"]["name"]): item
                          for item in documents(rendered)}
 
-    def test_existing_namespace_is_adoptable_but_not_policy_owned(self):
+    def test_existing_namespace_is_adoptable_with_scoped_reader_policy(self):
         agent = self.resources["Namespace", "openclaw-agents"]["metadata"]
         self.assertEqual(agent["annotations"]["openclaw.dev/namespace-lifecycle"], "external")
         for name in ("openclaw-system", "openclaw-agents"):
@@ -42,9 +42,15 @@ class FoundationContract(unittest.TestCase):
                     if kind == "NetworkPolicy"]
         self.assertEqual({item["metadata"]["name"] for item in policies}, {
             "openclaw-system-default-deny-ingress", "occ-postgres-ingress",
-            "occ-postgres-restore-drill-isolation"})
-        self.assertTrue(all(item["metadata"]["namespace"] == "openclaw-system"
-                            for item in policies))
+            "occ-postgres-restore-drill-isolation",
+            "occ-operator-reader-isolation", "occ-tenant-reader-isolation"})
+        self.assertEqual({item["metadata"]["name"]: item["metadata"]["namespace"]
+                          for item in policies}, {
+            "openclaw-system-default-deny-ingress": "openclaw-system",
+            "occ-postgres-ingress": "openclaw-system",
+            "occ-postgres-restore-drill-isolation": "openclaw-system",
+            "occ-operator-reader-isolation": "openclaw-system",
+            "occ-tenant-reader-isolation": "openclaw-agents"})
         self.assertEqual(self.resources["NetworkPolicy", "openclaw-system-default-deny-ingress"]["spec"],
                          {"podSelector": {}, "policyTypes": ["Ingress"]})
         ingress = self.resources["NetworkPolicy", "occ-postgres-ingress"]["spec"]
@@ -59,6 +65,13 @@ class FoundationContract(unittest.TestCase):
                          {"podSelector": {"matchLabels": {
                              "app.kubernetes.io/name": "occ-postgres-restore-drill"}},
                           "policyTypes": ["Ingress", "Egress"]})
+        for name, component in (("occ-operator-reader-isolation", "operator"),
+                                ("occ-tenant-reader-isolation", "tenant")):
+            self.assertEqual(self.resources["NetworkPolicy", name]["spec"], {
+                "podSelector": {"matchLabels": {
+                    "app.kubernetes.io/name": "occ-recovery-reader",
+                    "app.kubernetes.io/component": component}},
+                "policyTypes": ["Ingress", "Egress"]})
 
     def test_postgres_is_retained_tls_only_and_waits_for_local_claim(self):
         service = self.resources["Service", "occ-postgres"]["spec"]
