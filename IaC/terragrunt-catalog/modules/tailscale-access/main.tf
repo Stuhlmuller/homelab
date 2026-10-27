@@ -109,3 +109,37 @@ resource "tailscale_tailnet_key" "github" {
     create_before_destroy = true
   }
 }
+
+# Import existing federated identities and tailnet keys created manually in
+# the Tailscale admin console. Replace each placeholder ID with the actual
+# resource ID from https://login.tailscale.com/admin/settings/trust-credentials
+# then run: tofu plan -generate-config-out=generated.tf && tofu apply
+import {
+  to = tailscale_federated_identity.github["plan"]
+  id = "REPLACE_WITH_PLAN_FEDERATED_IDENTITY_ID"
+}
+
+import {
+  to = tailscale_federated_identity.github["apply"]
+  id = "REPLACE_WITH_APPLY_FEDERATED_IDENTITY_ID"
+}
+
+import {
+  to = tailscale_federated_identity.github["cordium"]
+  id = "REPLACE_WITH_CORDIUM_FEDERATED_IDENTITY_ID"
+}
+
+import {
+  to = tailscale_tailnet_key.github["plan"]
+  id = "REPLACE_WITH_PLAN_TAILNET_KEY_ID"
+}
+
+import {
+  to = tailscale_tailnet_key.github["apply"]
+  id = "REPLACE_WITH_APPLY_TAILNET_KEY_ID"
+}
+
+import {
+  to = tailscale_tailnet_key.github["cordium"]
+  id = "REPLACE_WITH_CORDIUM_TAILNET_KEY_ID"
+}
