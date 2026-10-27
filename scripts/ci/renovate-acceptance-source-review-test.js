@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const observer = require('../../clusters/homelab/apps/renovate/acceptance-observer.js');
 const proof = require('../../clusters/homelab/apps/renovate/acceptance-pr-proof.js');
 const reviewer = require('../../clusters/homelab/apps/renovate/acceptance-source-review.js');
+const amend = require('../../clusters/homelab/apps/renovate/acceptance-outcome-amend.js');
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 const uid = '12345678-1234-1234-1234-123456789abc';
@@ -96,6 +97,50 @@ test('replays a sealed report and exact GitHub snapshot without leaking source n
     assert.equal(result.humanReviewRequired, true);
     assert.equal(result.status, 'inconclusive'); // Seven healthy days are not in this fixture.
     assert.doesNotMatch(JSON.stringify(result), /Stuhlmuller\/example|fixture-package|1\.1\.0/);
+  } finally { fs.rmSync(data.directory, { recursive: true, force: true }); }
+});
+
+test('checks a reviewed manual exclusion against the frozen event and policy while requiring human review', () => {
+  const data = fixture();
+  try {
+    fs.unlinkSync(path.join(data.directory, 'outcomes.json'));
+    const record = { restrictedPolicyReceipt: 'fixture' };
+    const sampled = data.ledger.sample[0];
+    const input = { schema: 1, owner: 'Stuhlmuller',
+      inventorySha256: data.ledger.inventorySha256,
+      reviewSha256: data.ledger.reviewSha256,
+      configSha256: data.review.configSha256,
+      windowStart: data.ledger.windowStart, windowEnd: data.ledger.windowEnd,
+      classifications: [{ key: sampled.key, version: event.version,
+        lastAbsent: event.lastAbsent, firstPresent: event.firstPresent,
+        eligibility: { status: 'policy-ineligible', reason: 'reviewed policy',
+          verifiedAt: completedAt },
+        source: { ref: 'private://fixture/policy', observedAt: completedAt,
+          record, sha256: sha256(JSON.stringify(record)) } }] };
+    const inputFile = path.join(data.directory, 'input.json');
+    fs.writeFileSync(inputFile, JSON.stringify(input), { mode: 0o600 });
+    assert.equal(amend.amend(data.directory, inputFile).applied, 1);
+    const result = reviewer.sourceReview(data.directory);
+    assert.equal(result.manualReviewItems, 1);
+    assert.equal(result.sourceLinks, 1);
+    assert.equal(result.humanReviewRequired, true);
+    assert.equal(result.status, 'inconclusive');
+    const outcomesPath = path.join(data.directory, 'outcomes.json');
+    const outcomes = JSON.parse(fs.readFileSync(outcomesPath));
+    outcomes.receipts[0].outcome = { kind: 'proposal' };
+    fs.writeFileSync(outcomesPath, JSON.stringify(outcomes));
+    assert.throws(() => reviewer.sourceReview(data.directory), /invalid-manual-receipt/);
+    delete outcomes.receipts[0].outcome;
+    fs.writeFileSync(outcomesPath, JSON.stringify(outcomes));
+    const eligibility = outcomes.receipts[0].eligibility;
+    const evidencePath = path.join(data.directory, eligibility.source);
+    const envelope = JSON.parse(fs.readFileSync(evidencePath));
+    envelope.material.configSha256 = 'e'.repeat(64);
+    const bytes = Buffer.from(JSON.stringify(envelope));
+    fs.writeFileSync(evidencePath, bytes);
+    eligibility.sha256 = sha256(bytes);
+    fs.writeFileSync(outcomesPath, JSON.stringify(outcomes));
+    assert.throws(() => reviewer.sourceReview(data.directory), /manual-source-mismatch/);
   } finally { fs.rmSync(data.directory, { recursive: true, force: true }); }
 });
 

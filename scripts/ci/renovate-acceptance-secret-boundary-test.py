@@ -34,6 +34,18 @@ class AcceptanceSecretBoundary(unittest.TestCase):
                     self.assertNotIn('renovate-acceptance-review', content)
         self.assertGreaterEqual(len(workloads), 4)
 
+    def test_outcome_jobs_have_only_the_private_review_secret(self):
+        for name in ('acceptance-outcome-amend-job.yaml',
+                     'acceptance-outcome-preflight-job.yaml'):
+            with self.subTest(name=name):
+                manifest = (APP / name).read_text()
+                self.assertIn('secretName: renovate-acceptance-outcome-review', manifest)
+                self.assertEqual(manifest.count('mountPath: /review'), 1)
+                self.assertNotRegex(manifest, r'(?m)^\s+secretName: renovate(?:-acceptance)?\s*$')
+                self.assertNotIn('mountPath: /var/run/secrets/renovate', manifest)
+                self.assertNotIn('claimName: renovate-cache', manifest)
+                self.assertIn('automountServiceAccountToken: false', manifest)
+
 
 if __name__ == '__main__':
     unittest.main()

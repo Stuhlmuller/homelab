@@ -335,10 +335,14 @@ function classifyReceipt(receipt, event, evidence) {
   if (!eligibility || eligibility.status === 'unknown') return { kind: 'unknown' };
   if (!hasEvidenceFields(eligibility, evidence, receipt, 'eligibility')) return { kind: 'unknown', incomplete: true };
   if (eligibility.status === 'policy-ineligible') {
+    if (receipt.outcome !== undefined || receipt.exclusion !== undefined) {
+      return { kind: 'unknown', incomplete: true };
+    }
     return typeof eligibility.reason === 'string' && eligibility.reason.trim()
       ? { kind: 'policy-ineligible' } : { kind: 'unknown', incomplete: true };
   }
   if (eligibility.status === 'excluded-outage') {
+    if (receipt.outcome !== undefined) return { kind: 'unknown', incomplete: true };
     const interval = receipt.exclusion;
     const start = Date.parse(interval?.startAt);
     const end = Date.parse(interval?.endAt);
@@ -354,6 +358,7 @@ function classifyReceipt(receipt, event, evidence) {
     return { kind: 'excluded-outage' };
   }
   if (eligibility.status !== 'eligible') throw new Error('invalid-outcomes');
+  if (receipt.exclusion !== undefined) return { kind: 'eligible', missing: true, incomplete: true };
   const outcome = receipt.outcome;
   if (!outcome) return { kind: 'eligible', missing: true };
   const at = Date.parse(outcome.at);
@@ -659,7 +664,7 @@ if (require.main === module) {
 }
 
 module.exports = { selectSample, recordPoll, aggregate, aggregateReport, verifyFrozenSample,
-  windowBounds, windowHealth,
+  windowBounds, windowHealth, classifyReceipt,
   readPrivateOutcomes, privateDirectory,
   verifyPrivateEvidence,
   readToken, renovateRoot, datasourceApi, poll };

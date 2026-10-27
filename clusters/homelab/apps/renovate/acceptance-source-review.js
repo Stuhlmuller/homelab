@@ -8,6 +8,9 @@ const observer = require('./acceptance-observer.js');
 const proof = require('./acceptance-pr-proof.js');
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
+const canonicalTime = (value) => typeof value === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
+  Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 
 function privateBytes(file, limit = 16 * 1024 * 1024) {
   const metadata = fs.lstatSync(file);
@@ -57,6 +60,47 @@ function sourceReview(directory = '/ledger/private') {
     if (!entry) throw new Error('unknown-event');
     const { item, event } = entry;
     if (receipt.eligibility?.status !== 'eligible') {
+      if ((receipt.eligibility?.status === 'policy-ineligible' &&
+            (receipt.outcome !== undefined || receipt.exclusion !== undefined)) ||
+          (receipt.eligibility?.status === 'excluded-outage' &&
+            (receipt.outcome !== undefined || !receipt.exclusion)) ||
+          (['policy-ineligible', 'excluded-outage'].includes(receipt.eligibility?.status) &&
+            (!canonicalTime(receipt.eligibility.verifiedAt) ||
+              (receipt.exclusion &&
+                !['startAt', 'endAt', 'affectedAt', 'verifiedAt'].every((field) =>
+                  canonicalTime(receipt.exclusion[field])))))) {
+        throw new Error('invalid-manual-receipt');
+      }
+      if (['policy-ineligible', 'excluded-outage'].includes(receipt.eligibility?.status)) {
+        const kinds = receipt.eligibility.status === 'excluded-outage' ?
+          ['eligibility', 'exclusion'] : ['eligibility'];
+        let source;
+        for (const kind of kinds) {
+          const material = evidence(directory, receipt, kind, receipt[kind], verified);
+          if (material?.provenance !== 'owner-reviewed-private-source-v1' ||
+              material.inventorySha256 !== ledger.inventorySha256 ||
+              material.reviewSha256 !== ledger.reviewSha256 ||
+              material.configSha256 !== review.configSha256 ||
+              material.key !== receipt.key || material.version !== receipt.version ||
+              material.lastAbsent !== event.lastAbsent ||
+              material.firstPresent !== event.firstPresent ||
+              !material.source?.record || typeof material.source.record !== 'object' ||
+              Array.isArray(material.source.record) ||
+              !Object.keys(material.source.record).length ||
+              typeof material.source.ref !== 'string' ||
+              !/^private:\/\/[A-Za-z0-9][^\s]{0,199}$/.test(material.source.ref) ||
+              !canonicalTime(material.source.observedAt) ||
+              Date.parse(material.source.observedAt) > Date.parse(receipt.eligibility.verifiedAt) ||
+              (kind === 'exclusion' && Date.parse(material.source.observedAt) >
+                Date.parse(receipt.exclusion.verifiedAt)) ||
+              material.source.sha256 !== sha256(JSON.stringify(material.source.record)) ||
+              (source && !isDeepStrictEqual(source, material.source))) {
+            throw new Error('manual-source-mismatch');
+          }
+          source = material.source;
+          sourceLinks++;
+        }
+      }
       manual++;
       continue;
     }

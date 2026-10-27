@@ -684,6 +684,82 @@ the report inconclusive. The file binds a claim to material but does not prove
 that GitHub or a package registry supplied it; independent reviewed production
 and verification are required.
 
+The staged `acceptance-outcome-amend-job.yaml` supplies the missing private
+`policy-ineligible` and `excluded-outage` receipts. Its source stays suspended
+and outside Kustomize. After the observer, report, and PR-proof writers are
+suspended and drained, reconcile its deny-all NetworkPolicy. A separate
+reviewed GitOps change adds both the writer and
+`acceptance-outcome-preflight-job.yaml` still suspended; verify the writer has
+no start time before installing the private input. Unsuspend only the preflight
+Job through a reviewed GitOps change. Its `--check-only` mode mounts the ledger
+read-only and must complete with `valid: true` and the reviewed prospective
+count without creating outcomes or evidence. Both Jobs have no GitHub
+credential, Kubernetes token, cache mount, or network access. The writer accepts
+only exact sampled `[key, version]` events inside the frozen window, preserves
+eligible receipts, and refuses conflicting classifications. An exact replay is
+a no-op. It writes mode `0600` evidence bound to the frozen inventory, policy
+review hash, config hash, event bracket, and private source record, then
+atomically updates `outcomes.json`. Pod logs contain counts only.
+
+Prepare its private JSON input outside git as an owner-only mode `0600` file.
+Use `schema: 1`, `owner: "Stuhlmuller"`, the frozen `inventorySha256`,
+`reviewSha256`, `configSha256`, `windowStart`, `windowEnd`, and nonempty
+`classifications`. Each classification names the exact `key`, `version`,
+`lastAbsent`, and `firstPresent` from the frozen event, an `eligibility` with
+`status` and `verifiedAt`, and a `source` containing `ref` (`private://...`),
+`observedAt`, a nonempty `record`, and the SHA-256 of
+`JSON.stringify(record)`. `policy-ineligible` also needs a nonempty policy
+`reason`; `excluded-outage` needs the documented `exclusion` interval,
+reason, affected time, impact, and post-interval verification time. The record
+remains private and must be checked against its original policy or incident
+source by an independent reviewer. Retain that original private source until
+the review records a verified match; if it is unavailable, SC-002 remains
+inconclusive. The generated hash alone is not authentication.
+Deliver and later retire only the fixed immutable input Secret from clean,
+signed, current `main`:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py install \
+  --kind outcomes --private-file /private/path/outcomes-review.json \
+  --expected-sha <current-main-sha> --execute
+```
+
+The install command verifies the fixed Kubernetes API, signed remote `main`, the
+owner-only input, both pre-existing suspended Jobs, and the exact target
+Secret bound to their Kubernetes UIDs through nonprivate annotations. It checks
+post-write readback without printing private values. After the preflight PR
+merges, run this read-only binding gate from clean signed current `main`:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py verify-preflight \
+  --kind outcomes --expected-sha <current-main-sha>
+```
+
+The gate requires the preflight Job UID bound in the current immutable Secret,
+a start after Secret creation, successful `--check-only` execution, the read-only
+ledger mount, and the still-suspended writer. Unsuspend the writer through a
+separate reviewed GitOps change. Retire only after the writer Job succeeds:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py retire \
+  --kind outcomes --expected-sha <current-main-sha> --execute
+```
+
+If the writer has not consumed the input,
+`retract --kind outcomes` can remove that Secret under the same reviewed-main
+guard only while the same Job still exists, remains suspended, predates the
+Secret, and has never started. A missing, replaced, or failed started Job
+cannot justify retraction. If preflight fails, keep the writer suspended,
+review its bounded failure log, retract the input, and correct it privately.
+Remove the failed preflight Job through reviewed GitOps, then add a fresh
+suspended preflight Job before redelivery and rerun the gate. A failed writer
+may have partially written evidence: retain its Secret and the ledger for a
+separate reviewed recovery change. A wrong applied classification is not
+overwritten:
+keep the ledger private and use a separately reviewed reset/reseed or correction
+path. The local fixture and Job success do not establish genuine source
+authenticity or SC-002 acceptance.
+
 The report joins exact events, counts eligible events without an outcome in the
 denominator, and measures four hours from the conservative `lastAbsent` bound.
 It emits only aggregate counts and a rate. Unknown eligibility, incomplete
@@ -692,10 +768,10 @@ ten eligible natural releases
 make the result inconclusive. Below 95% on-time gives `criteria-not-met` using
 integer counts; the displayed rate is floored to two decimals. The best script
 status is `review-required`: locally bound receipts alone cannot prove their
-GitHub PR or restricted policy-log source. A reviewed
-private receipt-production and independent source-verification path remains a
-gate before any SC-002 acceptance claim; do not commit private receipt content
-or inject it through an ad hoc live command.
+GitHub PR or restricted policy-log source. The staged private receipt writers
+still need protected activation and independent source verification before any
+SC-002 acceptance claim; do not commit private receipt content or inject it
+through an ad hoc live command.
 The staged PR verifier checks an exact version in a GitHub diff and uses its
 first read time as the timing upper bound. The report worker binds explicit
 schedule or PR-approval deferrals to the sealed report completion time. A
