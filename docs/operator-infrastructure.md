@@ -86,6 +86,52 @@ etcd reads to `Github-TF-State` or the unprotected plan environment. Review a
 saved operator Plan and apply this unit before dispatching the workflow; the
 source change itself does not create the role or publish a receipt.
 
+After this source merges, select the existing administrator profile in the
+normal AWS credential chain, then generate and plan only this operator unit:
+
+```sh
+set -euo pipefail
+cd IaC
+terragrunt stack generate
+cd homelab/us-west-2/operator/platform-etcd-receipt-role
+umask 077
+test "$(aws sts get-caller-identity --query Account --output text)" = 716182248480
+role_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-etcd-role-plan.XXXXXX")"
+chmod 0700 "$role_plan_dir"
+terragrunt --log-disable run --download-dir "$role_plan_dir/cache" \
+  --disable-bucket-update --backend-bootstrap=false -- \
+  init -reconfigure -no-color \
+  >"$role_plan_dir/init.log" 2>&1
+terragrunt --log-disable run --download-dir "$role_plan_dir/cache" \
+  --disable-bucket-update --backend-bootstrap=false -- plan -input=false \
+  -lock-timeout=5m -out="$role_plan_dir/role.tfplan" -no-color \
+  >"$role_plan_dir/plan.log" 2>&1
+terragrunt --log-disable run --download-dir "$role_plan_dir/cache" \
+  --no-auto-init -- show -json "$role_plan_dir/role.tfplan" \
+  >"$role_plan_dir/role.json"
+terragrunt --log-disable run --download-dir "$role_plan_dir/cache" \
+  --no-auto-init -- show -no-color "$role_plan_dir/role.tfplan" \
+  >"$role_plan_dir/role.txt"
+jq -e '
+  ([.resource_changes[]?
+    | select(.mode == "managed" and .change.actions != ["no-op"])
+    | {address, actions: .change.actions}] | sort_by(.address))
+  == ([
+    {address: "aws_iam_policy.boundary", actions: ["create"]},
+    {address: "aws_iam_role.publisher", actions: ["create"]},
+    {address: "aws_iam_role_policy.publisher", actions: ["create"]}
+  ] | sort_by(.address))
+' "$role_plan_dir/role.json"
+```
+
+The generated state key is
+`IaC/homelab/operator/platform-etcd-receipt-role/terraform.tfstate`.
+Keep the plan directory private. Review the saved JSON and human-readable
+plan; stop unless the only changes are creation of `aws_iam_policy.boundary`,
+`aws_iam_role.publisher`, and `aws_iam_role_policy.publisher` with the reviewed
+trust, permission boundary, bucket prefixes, and KMS contexts. Do not apply a
+plan that changes existing IAM, buckets, KMS keys, or cluster resources.
+
 ## GitHub Actions apply-role policy
 
 `github-actions-role-policy` owns the existing `Github-TF-State` role trust and

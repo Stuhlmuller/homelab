@@ -197,6 +197,15 @@ echo "::group::Etcd offsite bucket offline guards"
 )
 echo "::endgroup::"
 
+echo "::group::Platform etcd prerequisite IAM offline guards"
+(
+  cd IaC/homelab/us-west-2/operator/platform-etcd-receipt-role
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+echo "::endgroup::"
+
 echo "::group::Octelium bootstrap node containment"
 (
   cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
