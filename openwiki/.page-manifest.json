@@ -30,20 +30,20 @@
       "completedRunId": "1ab5622d-2e95-4978-aa7b-cdb9101432c0"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "pageVersion": "sha256:8cb0870dab5e45e8978aab41f426961cbb25e0838e17837f59f30f7dbb8b134f",
+      "pageVersion": "sha256:7f3cce86f781fe6ee13ada770f72b237048a88173757e76b3a0ba10f239b7b58",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     },
     "/openwiki/architecture/storage-and-state.md": {
-      "pageVersion": "sha256:8459e833d6d19b7ea53e6e02854de649dc65e0889fdee831286f438cd18a4d72",
+      "pageVersion": "sha256:162c5206b9e5c5334bd7921ce781747dbac25ef9b4643a9481e1c018eba5de6b",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     },
     "/openwiki/operations/agent-workflows.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -140,12 +140,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/operations/harbor-oci.md": {
-      "pageVersion": "sha256:4e739069e6710a02902e96b678951648ddfb299b4ee5b8f6225662fa5ad69a96",
+      "pageVersion": "sha256:690bf40b3dd264a2434395c625bbfdf115dca5924a734ce6b70926659601b97f",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     },
     "/openwiki/operations/kubernetes-patch-maintenance-2026-09.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -235,12 +235,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:5af9cbc9a56fd35de8c91367b8160c7d0c002e6b15316cd34558a8607354ded4",
+      "pageVersion": "sha256:f51db0c6af754e583b8f0d5898eec0b667999503142a12d06582574f3b2c55b5",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -356,12 +356,12 @@
       "completedRunId": "f090a907-2244-4c26-b4af-0e2c4ed52fbb"
     },
     "/openwiki/runbooks/secrets-aws-ssm.md": {
-      "pageVersion": "sha256:218cf138a672f007704a6995fb42469bce63074d543ff5ca2946377f6d62590f",
+      "pageVersion": "sha256:928438f06516d0085d6c2ddf31b97a0ff81b008b904b46bcaf7694ec77529c12",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     },
     "/openwiki/runbooks/storage-nfs.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -395,12 +395,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/source-map.md": {
-      "pageVersion": "sha256:4e7341015a5e06b5399c2a818189cbd161e7b6e18bd5d5054a82baf6d84d5b3a",
+      "pageVersion": "sha256:4ac5fcd136a5b6b047a4b9a1e833cdb055597e88f6332b8485132b916b3995b5",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     },
     "/openwiki/workloads/application-notes.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -410,16 +410,16 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/workloads/inventory.md": {
-      "pageVersion": "sha256:b6d55218c4a02d4bbf578bff1d9a8ef4a69de63fa6f679407efaa50a8bf9bc57",
+      "pageVersion": "sha256:389eab8408ee8f2cab133446896121d8bf0f16ad6a6a02fbb14e0330946bffb1",
       "completedBy": "codex",
-      "completedRunId": "32151bbe-b43d-48ff-bd1a-8d5152faa67b",
-      "gitHead": "657ab4ce26641c576a5819fb5bb0276b701fbf82",
-      "sourceFingerprint": "sha256:2bed1079340f4817151b78d01dfcf0b6416d679dfefef006206cbf321e01e449",
-      "visibleSourceFingerprint": "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32"
+      "completedRunId": "37916571-4184-431e-8638-6abc34179798",
+      "gitHead": "32e869291df83bb55a482f0cbfc4a2b1050ef3fc",
+      "sourceFingerprint": "sha256:1f4e5d7d1b47efd6df0c56073a12855f729eaa74abcd5b26b033d0713c44cb5f",
+      "visibleSourceFingerprint": "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704"
     }
   },
   "visibleSources": {
-    "sha256:0bf04192b8689a5a7b23286302fb2396e5674c979ea3ccefc8cab8f317b83e32": {
+    "sha256:053585f7b00d8bb777c163226a2796b81533229bc19a24b0c8d9a0b75d8fb704": {
       ".agents/skills/aws-sso-login/SKILL.md": "sha256:82da5da14edd71c50b0f8c9775f946576a59902be3f3f8424120c53cc6d6d04c",
       ".agents/skills/homelab-app-onboarding/SKILL.md": "sha256:ab1c33b97c9ff215c16a18526b7c849ae991f23bc29b77508c796215eab0ddf7",
       ".agents/skills/homelab-harbor-images/SKILL.md": "sha256:b3c4ff80d49ee03794476575c99d73d2f4131b758663d5e9411faacb05f23afc",
@@ -507,7 +507,7 @@
       ".github/workflows/terragrunt-apply-request.yml": "sha256:6980df3cc47bf0bc71bac471e03e2c7aa73d5e6229f1cf58edc7cff912dfb474",
       ".github/workflows/terragrunt-apply.yml": "sha256:eece03a9e6e6e7254cd13a07a00cbb0c21ae267011910365cda7a6411ba5c288",
       ".github/workflows/terragrunt-plan.yml": "sha256:7391ad9ba476e4016dda12d74117b2f475d82b60f8af6687a92feda3e529472a",
-      ".github/workflows/validate.yml": "sha256:baed0302461de7aa76c9a6ceefff8c7207e2e0969b9404f1d0314a909dbb6842",
+      ".github/workflows/validate.yml": "sha256:523df4403a99da4cd21ba5c24452fba4f23c836325f52ba00211d3c01ad20f12",
       ".gitignore": "sha256:8a7989dafb6588cf0a05fe48289c40e33c801aee01ae7da7033ab14b81a58706",
       ".gitleaks.toml": "sha256:bf3932108120283d0b685522b2609a55eb63aa32527fdb38173b847c5ae4b3e1",
       ".markdownlintignore": "sha256:e2b53eccb6396321070091281e9f222d32c615f1a7994088475d406459c83344",
@@ -1157,7 +1157,7 @@
       "clusters/homelab/apps/octelium/kustomization.yaml": "sha256:74bbd78e764e5502f8c8afd35956ea508f13dcb67c992928df318a91ab9ce4cb",
       "clusters/homelab/apps/octelium/namespace.yaml": "sha256:146c7dd0e4f344d28b8081b53b8e45f25e66494239b39ad8f757c20ec07bd510",
       "clusters/homelab/apps/octelium/networkpolicy.yaml": "sha256:b48aa4969b1911e9c9347b0217e56d068033cb69cc45301263aa5745dcc9fd09",
-      "clusters/homelab/apps/openclaw-enterprise-foundation/README.md": "sha256:553fe214eb19e5b33390b559efe2128f6a344d5a5272226e10e40add75a7bd05",
+      "clusters/homelab/apps/openclaw-enterprise-foundation/README.md": "sha256:a5ef0739cb0417b1b1fedd6f35fa2dd5b271c52d589aa13dfa7fd351199c8816",
       "clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh": "sha256:dad43716b36ef2a4287b2deb7f5aed2ee3fafe2f13d755b34886b5e4e75fa413",
       "clusters/homelab/apps/openclaw-enterprise-foundation/database-bootstrap.sql": "sha256:3da96c42e71fc83d165b9692a74e1fee8e9339e14a75f518032912aa543a6b49",
       "clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml": "sha256:a60b7e57e5f9a8e6230ec40fca633b2c0009d3b576a8baa7acbe617a2e61a70f",
@@ -1603,9 +1603,11 @@
       "scripts/ci/openclaw-enterprise-quiesce-test.py": "sha256:4f17f5108f50d5c91a034ca50fec54bc1cd8c06202c2e33de49a11f69af18ed0",
       "scripts/ci/openclaw-enterprise-reader-archive-test.py": "sha256:5ae6c264b5f95aee9b1f2611c9627efea9843c2b1e07d8175bbf5f7789ea23b6",
       "scripts/ci/openclaw-enterprise-reader-archive.py": "sha256:8971e346fa077afe0ff567aeef4e9bceb3c927ce9df52f8f1ad1e8724f2c675a",
+      "scripts/ci/openclaw-enterprise-reader-chart-check-test.py": "sha256:234a66e1284d5907a38618210343cdd4e988c8b084ba11df3ddb36e3cd23eaa1",
+      "scripts/ci/openclaw-enterprise-reader-chart-check.py": "sha256:5f50c8938d12169f254730320c557475c907a19a60e2ddae61d83f398d88e433",
       "scripts/ci/openclaw-enterprise-reader-pod-test.py": "sha256:f3788cb60bad1138afccc0e2a997717809689b3aeb99f8e789c78f7c8efbb816",
       "scripts/ci/openclaw-enterprise-reader-pod.py": "sha256:0baade4fec382c9c883feea616300d76ace5661368f19dee5cea90210d90652c",
-      "scripts/ci/openclaw-enterprise-reader-policy-test.py": "sha256:6a0e4ac39ea6c6f07b8f8efa940ede49c9e9b7329f1072ff21ce9185cce750af",
+      "scripts/ci/openclaw-enterprise-reader-policy-test.py": "sha256:c00522b9e6ea945e5eca185404ddd93b520e7494880a1319ea2bac49cdb4ef2e",
       "scripts/ci/openclaw-enterprise-recovery-test.py": "sha256:6429e6fc5a6aa7be16cd1877b0b0509b9a4708d429e730e20d8c1c1cd8640059",
       "scripts/ci/openclaw-enterprise-registration-test.py": "sha256:0576a3eb92a82fdfbf3cb331b1bc189551bc518231894de62c890c1c512d883e",
       "scripts/ci/openclaw-enterprise-restore-image-test.py": "sha256:cfaef1b094c25b3c5b47b0b39d23b88e709345b982dfc172fa536744352bb779",

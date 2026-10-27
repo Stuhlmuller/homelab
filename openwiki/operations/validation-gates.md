@@ -258,6 +258,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-9549cd0a19920c757058b380
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive-test.py
+  - id: openwiki-source-5e0c81611c85d2d14785a38b
+    resource: repo://scripts/ci/openclaw-enterprise-reader-chart-check.py
   - id: openwiki-source-6afe7b13ab592ab9d7ebc90c
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod-test.py
   - id: openwiki-source-2b592454bee3d706931b5357
@@ -376,10 +378,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
+generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:53:30.669Z
+    at: 2026-10-27T23:04:53.760Z
 ---
 
 # Validation Gates
@@ -2003,9 +2005,10 @@ The source-only reader policy fixture renders foundation and local chart-adjacen
 resources, matches both reader label sets through the inventory selector logic,
 requires their exact empty ingress/egress policies, and rejects any additive
 matching allow. With a clean checkout at pinned upstream `33bb745`, its
-separate chart render also passes locally. Protected CI currently skips that
-optional chart check; controller-generated and live policies, network-policy
-enforcement, and isolated canary traffic remain unproven.
+separate chart render also passes locally. The required protected `validate /
+repo` job fetches that exact pinned commit and runs the combined overlap check
+before any credentialed operation. Controller-generated and live policies,
+network-policy enforcement, and isolated canary traffic remain unproven.
 The new source-only backup transaction fixture runs in static and offline
 checks. It covers durable stop/resume intent, lost API responses, crashes
 before and after POST, duplicate or foreign revisions, missing or changed

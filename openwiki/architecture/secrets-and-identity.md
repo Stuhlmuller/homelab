@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -112,6 +114,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-e9e65f5a163d93923cf250f7
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
+  - id: openwiki-source-5e0c81611c85d2d14785a38b
+    resource: repo://scripts/ci/openclaw-enterprise-reader-chart-check.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-2b592454bee3d706931b5357
@@ -152,10 +156,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
+generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:53:30.669Z
+    at: 2026-10-27T23:04:53.760Z
 ---
 
 # Secrets And Identity
@@ -386,11 +390,11 @@ projection, or independent restore is declared yet; this source does not make
 a recoverable Enterprise installation.
 Two dormant, reader-specific policies declare empty ingress and egress rules
 in the system and tenant namespaces. They are additive Kubernetes policies:
-another matching allow would still grant traffic. Source fixtures reject such
-an allow in the local renders, and a local pinned-chart render passes; protected
-CI has no pinned-chart overlap gate yet. The reader cannot run until a
-coordinator checks every live matching policy and proves an enforcing egress
-fence on an isolated canary.
+another matching allow would still grant traffic. The required protected
+`validate / repo` job fetches the exact pinned stock chart commit and rejects
+matching allows in its render alongside the local resources. The reader cannot
+run until a coordinator checks every live matching policy and proves an
+enforcing egress fence on an isolated canary.
 
 ## Identity Notes
 

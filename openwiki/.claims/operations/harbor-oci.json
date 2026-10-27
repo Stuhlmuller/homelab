@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4e739069e6710a02902e96b678951648ddfb299b4ee5b8f6225662fa5ad69a96",
+  "pageVersion": "sha256:690bf40b3dd264a2434395c625bbfdf115dca5924a734ce6b70926659601b97f",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -184,7 +184,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "version": "repo-file-v1:sha256:8e49edddf8080dda33426cf17379f6feb5b8a330bed63e774ec5dd0231e44f15"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -746,7 +746,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:7cc98a0b431f7410dccb2e73180bec2e40948b502a31f0fd0b43eee4f53f86e9"
+          "version": "repo-file-v1:sha256:b2a2abacb2e367784b6e4c71d7a3b0c9a284281c976508e41f1ce99365d84e77"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -888,7 +888,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "version": "repo-file-v1:sha256:8e49edddf8080dda33426cf17379f6feb5b8a330bed63e774ec5dd0231e44f15"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -1013,6 +1013,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:53:30.669Z"
+    "at": "2026-10-27T23:04:53.760Z"
   }
 }

@@ -12,6 +12,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-images.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-0ff63b5b5b53b49d967734f7
@@ -200,6 +202,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
+  - id: openwiki-source-5e0c81611c85d2d14785a38b
+    resource: repo://scripts/ci/openclaw-enterprise-reader-chart-check.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-2b592454bee3d706931b5357
@@ -230,10 +234,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
+generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:53:30.669Z
+    at: 2026-10-27T23:04:53.760Z
 ---
 
 # Workload Inventory
@@ -518,8 +522,8 @@ independent restore exists yet.
 The foundation now also declares an empty ingress/egress policy for each
 reader label set. These policies are unapplied and additive; another matching
 allow would still grant traffic. The local source overlap fixture passes,
-including a separate clean pinned-chart render, but protected CI does not run
-that chart path. Live policy overlap and isolated enforcement remain gates.
+and required protected `validate / repo` now checks the exact pinned stock
+chart render. Live policy overlap and isolated enforcement remain gates.
 The reconciler now stages a separate journaled backup stop/resume helper. It
 records intent before each native Agent POST, adopts exact outcomes after lost
 responses without reposting, requires a future trusted capture proof before a
