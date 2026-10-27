@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:01b098fd03d21fc06f87baab5f3d17242a149a1b4357d519aaa2a2949b740659",
+  "pageVersion": "sha256:4913b2a0acb67206ee5749f3b8b42f875e508282f5c44109892397d40868c057",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
       "statement": "The Tailscale ingress foundation registers Traefik through Argo CD while the operator-only Tailscale unit owns full-policy adoption and three scoped CI auth keys with committed rotation generations; Tailnet Lock remains enabled and dormant federated identities stay protected until final migration retirement.",
       "evidence": [
+        {
+          "resource": "repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl#L5-L44",
+          "version": "repo-lines-v1:sha256:3ddefd2471ed2b30e7672cc0fc149d3ff9df0ef26ed45fed2193830c055b42b2:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
         {
           "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md",
           "version": "repo-file-v1:sha256:9d74896c117ecad19849a7dc462fdb8dbd243166f90f28f70082dbd78ff30f38"
@@ -13,10 +17,6 @@
         {
           "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf",
           "version": "repo-file-v1:sha256:75fe9d47c5700e7b4ea37b46e9f915698c78f7feb4df5b1ae46087926240415a"
-        },
-        {
-          "resource": "repo://IaC/traefik/stack.hcl",
-          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
         }
       ]
     },
@@ -25,21 +25,21 @@
       "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L139",
-          "version": "repo-lines-v1:sha256:f5cbe033b6aa181782f292c8b2c960dafe9c5e8e0e386287719f34e74621c2ca:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L140",
+          "version": "repo-lines-v1:sha256:87eee066b9d9d5530f82ce0dd1aac21706f72a062ad4188ea9df44f55fc9769b:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+          "version": "repo-file-v1:sha256:5c08f09a8498a34621a6abaff6e4da3066f91d4e149a20d1f4715fd43882e7bf"
         }
       ]
     },
     {
       "id": "claim_631d627ab70d4b1b8bf926885a007682",
-      "statement": "The tailnet-dns Terragrunt Application depends on Tailscale and Traefik and lets Argo reconcile a stateless CoreDNS/k8s_gateway chart from repository values; public address retirement remains a separate guarded later step after owner DNS handoff.",
+      "statement": "The tailnet-dns Terragrunt Application depends on Tailscale and Traefik and lets Argo reconcile a stateless CoreDNS/k8s_gateway chart from repository values; public app record retirement uses a separate guarded operation after owner DNS handoff.",
       "evidence": [
         {
-          "resource": "repo://IaC/tailnet-dns/stack.hcl#L5-L39",
+          "resource": "repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl#L5-L39",
           "version": "repo-lines-v1:sha256:20609c02c260767c326070e2292d8c534ee94f031b32d6715cf219e9ded79b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
@@ -53,8 +53,8 @@
       "statement": "Feature 005 selects only the 26 non-apex names from the fixed first 27 migration entries for public A/AAAA/CNAME retirement; the private resolver serves all 29 current approved names, and the public apex, mail, certificate validation, and unrelated names are preserved.",
       "evidence": [
         {
-          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L34",
-          "version": "repo-lines-v1:sha256:e946754f3b740525429184e83d01cca7127e2937ac7b15567425f9743e1ed020:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMGE5NDJhMWQ0MzEwNGQyYTg0MWQ3MWIxYmJmZTYwZmJlYjIxN2NjNDRiMTQwMzJlNDE1NmVmODEyYTA3Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L37",
+          "version": "repo-lines-v1:sha256:7be042d276d13bf88979ce6ca4a6320e49cbb242eed45eca04dff648aa15b3b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkYTE0MDE1ZGQyYjBkOGUyOTk0NzkxYjEzMTVkYWMwZWVkMWZiMThjMGIzZTRmNjNjNDA3NzRkYzc2ZWFhNTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
         },
         {
           "resource": "repo://specs/005-retire-public-app-dns/data-model.md#L3-L25",
@@ -64,19 +64,23 @@
     },
     {
       "id": "claim_90db00b16de147d99fb8abbe69b2642c",
-      "statement": "The protected production Terragrunt path verifies current main before direct state writes and through a root before_hook for each apply unit; the bootstrap after_hook repeats the guard before each Argo CD self-management manifest write, so stale or unreadable main stops a later write.",
+      "statement": "The protected production Terragrunt path checks current main before state writes and through a root before_hook for each apply unit; the bootstrap after_hook repeats the guard before each Argo CD self-management manifest write, so stale or unreadable main stops later writes.",
       "evidence": [
         {
-          "resource": "repo://IaC/root.hcl#L41-L46",
-          "version": "repo-lines-v1:sha256:1be7d5f63b35894393624ea6dfad0fd1c183e1ffc54ae3d2614a0b4997ef7d7a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmI4YjM0NWU1MjQyNzZhZTFlMjdkNzVkMjYyY2RkZDkyMDNkZTY0MzM4YjllMWFlNGE5NGQ2MTAyODBkMTJjNSJ9"
+          "resource": "repo://IaC/root.hcl#L47-L51",
+          "version": "repo-lines-v1:sha256:c5f41f6b8359d00f2bd0d2d36743f174af94e24927fbb1b4908d04765246ac1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWM2MTYxZmJmZTViMzZlMDgwYWE5OGUwYjgwNDM0YjJmNTM0NzM3YTMzMTJiZWFhY2RiOTEyNTk4ZjFkNTBmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjM4ZDMyOTQxYzliYTQ1YzNlYmNmZjBjOTI2ZDFmZDAxYWJiOWJkNDgwY2FiNzdjZmZjZmE0ZDUwZTYyNDMyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzI5OTkwMzA3ZDI0ZGFjZjliNzk5MTNlYjdiYmM1NmVjYjM5MWI5N2IyODVkY2I4ODFmMWI3MWFjYjVkZWFlNCJ9"
         },
         {
           "resource": "repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl#L50-L69",
           "version": "repo-lines-v1:sha256:699f9c904000f3994346e3d2686fdbdeb41a0af31b3fb7c62c9626aae6c53073:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNjE2MWZiZmU1YjM2ZTA4MGFhOThlMGI4MDQzNGIyZjUzNDczN2EzMzEyYmVhYWNkYjkxMjU5OGYxZDUwZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYjlhOTkxNDk3ODc0MzE3MTQzNDBmZmU0MDQ4MTYyMzk4ZWVhOWRmZjVkNjU5MjYxYmY4MmNkODNmMjFjZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyOTk5MDMwN2QyNGRhY2Y5Yjc5OTEzZWI3YmJjNTZlY2IzOTFiOTdiMjg1ZGNiODgxZjFiNzFhY2I1ZGVhZTQifQ"
         },
         {
-          "resource": "repo://scripts/ci/terragrunt-apply.sh#L198-L222",
-          "version": "repo-lines-v1:sha256:ccdce2aad38554c029fe09303c77320d79b6f6c5d930c8431d8ae14af58724a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmMTU3MzA1NzJlYjM3OWY2MzMxZTJjZDI4YTdjYmQxNDg5N2NiYjE4MWFkYmI1MTQzMmU0Yzg0NDc2ZmIwMjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxY2Q2NjI1M2I3N2ZmM2NjNjc2MzczY2E4MTdhNTVmZjllMmI3NWQwZGU4YWFhMzlmOGJlMTZiNGMwM2VhMjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZWUyNjhmYmM0MzhmYTQ1ZDVjZGY0NTVlMDM4YWM4MmE5MmZiZDUxNzUxMmFlNDQ1ZWQ2MTc5Y2VlZDkwNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYWZiZjM1NWQxOGZlMzlhYzNkY2RmNzY1ZmUyNTY4NmQ2YjIyYzE3MDNjNDA0Y2ZlZjMyY2ZiYjE5MmU5YTkifQ"
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L240-L244",
+          "version": "repo-lines-v1:sha256:0db1656cb3d51e16fc63d0912a9910cd068c492dede2265150b58d9a6e527c3e:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMmYwY2ZlMWQxZjM3NmE3NGRiZGY4MjQwYzEzNTE1OTVjZDViODA1MTU4MGEwOTMxOGU2MjE4YmIzMWE5NmY1NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTRjZDNlNzEyM2JkNjEwMTk2ZGQwMmY2NWUzMjYxMWUwOTc2ZjlhZDIwODMxY2NkYWExNTJhOWMxMGIxZjA0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjM2N2Q5MWFjNzUzOTkwOWNlYzdmYzU3NDQ2N2NhNmJlMjk1NmYzMTlmM2UxOTM0ZTk5YWM0YTMyZGNlMmFjMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQwYzVkM2RjM2E3NzMwNzkzYzg5Mjc5NDhiNTU5NjY0MjA3Zjc5YmE4Nzc3M2MyMTUwMDQ0MzE5NjJmZDQ4OCJ9"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L37-L38",
+          "version": "repo-lines-v1:sha256:d4760c321b156cab8ed5ff081e7daa8cc5c14487a750dd595a311754fa78e45b:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTFjZmZkYjBiZThiODJhMWRlNjFiZTg4YmNmNjA0OTM4M2UxZmJjYjk4NTQ4NDllNGUwMzAzMjc1ZjMxZWRiNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWVjNmM2ZDRhNDMyMTk4NDAxNzEwZjhiOTRkNjRlNjRkNjdkOWNjMGNjZjhiYWY4MmUyOTMyZWU3NDdiZmFjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGMyZGQzNjEzMDA3NzVmNzdjZGU0ZTQ3NWI0YzUzMmE1YjM4YzI1NjU2MDFkNWIxYTRjZTY5NDhjMDQ4NjBhMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODcwYzZhNDU2MjdjMDk5NDRiM2EwYTE0Yjk2NDM3YjhkY2Y1NTJkOTcyZTRiNzQzMmMzOWM5ZWQ3OTMyMmMyNCJ9"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-current-main.sh#L4-L22",
@@ -86,19 +90,19 @@
     },
     {
       "id": "claim_47a9c9bf81fa48daacf8c28959e04afd",
-      "statement": "The OpenClaw Enterprise AppProject is in Argo CD self-management, while its foundation and chart Applications are declared in Terragrunt and require a later protected apply; both disable automatic sync, pruning, self-heal, and retries.",
+      "statement": "The OpenClaw Enterprise AppProject is declared in Argo CD self-management, while its foundation and chart Applications are declared in Terragrunt for later protected registration; both disable automatic sync, pruning, self-heal, and retries.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
-          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl#L5-L35",
+          "version": "repo-lines-v1:sha256:c965e67862a2b16ecd08e6bebc5a03e82e50cefcf94a7536253b74e35bf6d03c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
-          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
-          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl#L5-L59",
+          "version": "repo-lines-v1:sha256:9bbe6bb6c2a86bf8f4e8a8d46dcdadea0c34e60d598ba80dbde2357aadc4ee80:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
-          "resource": "repo://clusters/homelab/argocd/self-management/kustomization.yaml",
-          "version": "repo-file-v1:sha256:5d1ea47ef327933bfaa51615ae3d29ead6b462a1f15aa3a83adb66abc4173f23"
+          "resource": "repo://clusters/homelab/argocd/self-management/kustomization.yaml#L10-L10",
+          "version": "repo-lines-v1:sha256:5c611ab38a2d8144e8e27f43c7e1dee8cd836f653773b21d46e0fe403c22877b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWM2MTFhYjM4YTJkODE0NGU4ZTI3ZjQzYzdlMWRlZThjZDgzNmY2NTM3NzNiMjFkNDZlMGZlNDAzYzIyODc3YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNWM2MTFhYjM4YTJkODE0NGU4ZTI3ZjQzYzdlMWRlZThjZDgzNmY2NTM3NzNiMjFkNDZlMGZlNDAzYzIyODc3YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTI0YmUxNTU3MzNhNjgyZjU5MGI1MzkyZjU2ODMzNzc2MjZkYzU5ZGQ4MWY0NGRlOTQ1NWM1YmNiYWVlYWFlYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjFlMzdjNzdmOTY4OTI1NTRjZmFlMmM1Y2M1M2ViOWQ3YTFkODNmODcxOTI1ZTZhYzE3MGMyNDU0N2ViMDA5MCJ9"
         }
       ]
     },
@@ -123,6 +127,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T01:38:00.583Z"
+    "at": "2026-10-27T09:54:29.479Z"
   }
 }

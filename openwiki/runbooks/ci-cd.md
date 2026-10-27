@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # CI/CD
@@ -266,7 +266,7 @@ accept only `workflow_dispatch`. Regression fixtures reject an added
 without manual dispatch. They also reject unreviewed workflow or job run
 defaults and environment, step shell or working-directory overrides, and
 `BASH_ENV` or `ENV` on any step. The credentialed legacy stage binds its exact
-four-variable environment. This is source validation, not a live execution
+reviewed step environment. This is source validation, not a live execution
 receipt.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)

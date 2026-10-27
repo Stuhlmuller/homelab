@@ -26,10 +26,10 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-19T05:01:55.414Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T16:49:06.466Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -39,7 +39,9 @@ verified:
 ## Current Shape
 
 The homelab is a Talos Linux Kubernetes cluster with one active seed
-control-plane node and three Zimaboard workers.
+control-plane node and three Zimaboard workers. Dated incidents and capacity
+figures below are snapshots; check current node and Pod state before an
+operation.
 
 Verified on 2026-09-07 after the
 [Kubernetes patch maintenance](../operations/kubernetes-patch-maintenance-2026-09.md):
@@ -90,8 +92,8 @@ from severe thrashing. At that time, the available local Talos client
 certificate had expired and did not match the current cluster CA; authenticated
 access was restored on 2026-09-02.
 
-Sync the OpenClaw `4Gi` containment limit before recovering `zimaboard-1`.
-Recover these configured nodes with a current authenticated
+The historical recovery required the OpenClaw `4Gi` containment limit before
+recovering `zimaboard-1`. Recover configured nodes with a current authenticated
 `.talos/talosconfig` or physical console or power access. Do not use
 `--insecure`, and do not force-delete their single-writer workloads without
 first fencing the old node.
@@ -123,8 +125,8 @@ controllers and Prometheus on the 1.28 GiB-allocatable `zimaboard-2`; it then
 fell below 82 MiB available memory and stopped heartbeating. That worker later
 recovered after evictions released memory. `zimaboard-1` also resumed healthy
 heartbeats on its unchanged boot and kubelet reconciled the old Pods, so no
-reboot or cordon was justified. Keep it schedulable until OpenClaw rolls
-forward: current affinity excludes `acer` and the dataplane worker, while
+reboot or cordon was justified. At that time it stayed schedulable until
+OpenClaw rolled forward: its affinity excluded `acer` and the dataplane worker, while
 `zimaboard-2` cannot meet the 2 GiB init request. Any later drain or reboot is
 separate healthy maintenance.
 
@@ -319,7 +321,7 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 - Retained native Kubernetes Service: `kubernetes-api.homelab` through
   `octelium connect` and an Octelium-generated kubeconfig
 - Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
-  through Traefik; canonical custom hostnames move during staged DNS cutover
+  through Traefik; the separate tailnet resolver answers approved custom names
 - Declared private DNS proxy: `homelab-dns` through the separate `tailnet-dns`
   Tailscale LoadBalancer Service on UDP/TCP 53; use its observed tailnet IP for
   the later restricted `stinkyboi.com` tailnet nameserver
@@ -359,7 +361,8 @@ terminates HTTPS and routes requests. Cluster `kube-dns` remains separate.
 Approved A/AAAA answers are local; unmatched address queries and other record
 types use public resolvers. The owner adds the DNS proxy's observed IP to
 Tailscale only after direct UDP/TCP answers, signature, and client checks pass;
-public app address records stay until a later guarded retirement.
+the 26 approved non-apex public app address records have a separate guarded
+retirement path; preserve the public apex and unrelated names.
 
 ## Source Files
 

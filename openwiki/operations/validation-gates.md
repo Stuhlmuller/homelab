@@ -140,11 +140,11 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
@@ -360,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # Validation Gates
@@ -1217,13 +1217,14 @@ Rendered Kubernetes policy also enforces the access contract:
 `policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the three
 reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
 `homelab.rst.io/public-callback-*` annotations for unauthenticated callback
-hosts such as `n8n-webhook.stinkyboi.com` and
-`policy-bot-hook.stinkyboi.com`. Run `scripts/ci/conftest-policies.sh` after
+hosts such as `n8n-webhook.stinkyboi.com`,
+`policy-bot-hook.stinkyboi.com`, and `bulldozer-hook.stinkyboi.com`. Run
+`scripts/ci/conftest-policies.sh` after
 changing route manifests or the Octelium public tunnel/DNS host list.
 
 The script must report failed probes as `FAIL:` lines and finish with a nonzero
@@ -1238,12 +1239,13 @@ rollout. All must pass before closing the readiness finding; connector access
 alone is insufficient. Keep raw logs outside git.
 
 The [held 1.28.10 candidate](../../clusters/homelab/apps/istio/README.md)
-is disabled and outside Argo. The offline static gate pins all six active
-1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
-replacement chart URL and archive hashes. The active GCS chart source is due
-for retirement in December 2026. A later reviewed PR must migrate the Argo
-AppProject allowlist, active source, and chart mirror inventory even if the
-version hop remains held; this source gate is not a live upgrade receipt.
+is disabled and outside Argo. The six declared 1.27.3 chart sources and the
+candidate now use the replacement `blob.istio.io` repository; the offline
+static gate checks those URLs, revisions, automated self-heal, and candidate
+archive hashes. Live chart-source acceptance still requires a reviewed scoped
+Terragrunt plan and a Synced/Healthy `istio` Application with unchanged images
+and no unexpected resource diff. Retain the GCS AppProject entry for rollback
+until that check passes. This source gate is not a live upgrade receipt.
 
 Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:
@@ -1749,9 +1751,13 @@ The Enterprise model-credential workflow is protected by exact current-`main`
 source checks and validates an owner-supplied OpenRouter key before writing only
 `/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
 The stopped legacy inventory, off-NAS archive publication and separate
-multi-root restore verification are complete. The 214-image catalog passed
-protected `all` publication and authenticated pulls in
-[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+multi-root restore verification are complete. Protected `all`
+[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+passed the historical 214-image catalog. Later
+[run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
+passed the expanded 215-source catalog and authenticated pulls, with its
+six-file publication bundle matching then-current `main`. T004 remains open
+for the changed Enterprise operator source and requires current-source proof.
 The isolated canary, platform upgrades, compatible legacy boot and new-state
 restore remain acceptance gates. Source-only static
 checks do not activate the agent.
@@ -1875,8 +1881,8 @@ ownership-limited cleanup. The protected workflow wires fixed upgrade stages
 to that executor with a pinned helper hash and bounded private results. Its
 execute path also binds canonical platform inputs to the exact dispatched
 commit, rejecting a runner-local override before an upgrade. The activation
-flag and canary node remain unset. The full-catalog publication receipt
-passed; current-SHA recovery receipts, five-tag Harbor lock and an isolated
+flag and canary node remain unset. Dated full-catalog publication passed, but
+current-source T004, current-SHA recovery receipts, five-tag Harbor lock and an isolated
 canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 The static registration fixture accepts only five exact policy/canary GitOps
@@ -2434,9 +2440,12 @@ extra or caller-supplied images before credentials; workflow policy pins the
 same fixed dispatch and reviewed publisher hash. Destination-copy fixtures
 allow only fixed public blob/manifest write-stage categories when the private
 diagnostic matches, retain `server-error` for HTTP 5xx, and leave unknown
-copy errors terminal as `command-failed`. These source checks do not pass T004:
-full run [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
-failed at this Prometheus image, and no complete catalog receipt exists.
+copy errors terminal as `command-failed`. These source checks and the one-image
+receipt do not pass T004. Full run
+[39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
+failed at this Prometheus image. The later protected 214-image and 215-source
+`all` runs passed at their dated revisions; changed Enterprise operator source
+still needs current-source publication and a pinned digest.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image

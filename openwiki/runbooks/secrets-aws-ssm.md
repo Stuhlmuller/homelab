@@ -32,7 +32,7 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
@@ -47,7 +47,7 @@ sources:
 generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # AWS SSM Secret References

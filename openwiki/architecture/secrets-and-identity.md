@@ -140,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # Secrets And Identity
@@ -234,10 +234,10 @@ Apply retains cluster administration for existing bootstrap and RBAC ownership;
 Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
 until authenticated plan/apply and denial checks succeed over the new proxy.
 
-Phase 2a removes the old public DNS writer and restoration workflow while
+Phase 2a removed the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
 recovery. The separate tailnet resolver watches approved Kubernetes Services
-and needs no DNS write token. Only the later guarded retirement helper reads
+and needs no DNS write token. The separate guarded retirement helper reads
 the existing scoped cert-manager Cloudflare token. Feature 005 limits its
 public A/AAAA/CNAME deletion to the 26 non-apex names from the fixed migration
 set after owner tailnet DNS handoff and client acceptance. The private resolver
@@ -752,7 +752,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
 - Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
-  contract. OpenTofu generates five internal values; the model key stays a
+  contract. OpenTofu generates six internal values; the model key stays a
   placeholder until the owner supplies a distinct OpenRouter inference key to
   the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
   It verifies the key and writes only the new SSM path. The selected

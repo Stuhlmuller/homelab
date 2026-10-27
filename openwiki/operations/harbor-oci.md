@@ -126,7 +126,7 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
@@ -172,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # Harbor Private OCI Registry
@@ -499,6 +499,14 @@ or the other Prometheus stack images. Destination-copy failures with private
 Skopeo `writing blob` or `writing manifest` diagnostics now emit fixed `blob-upload-failed` or
 `manifest-upload-failed` categories; unknown failures remain `command-failed`
 and do not trigger another copy client or an automatic write retry.
+
+The later protected [`all` run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
+passed the expanded 215-source catalog on 2026-10-25 with matching digests and
+complete authenticated Harbor pulls. Its six-file publication bundle matched
+the then-current `main` at acceptance. Recheck that bundle against current
+`main` before using this receipt for a new rollout; T004 remains open for the
+changed Enterprise operator source. Neither catalog receipt proves an uncached
+pull on every Talos node or Harbor-only application consumption.
 
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):

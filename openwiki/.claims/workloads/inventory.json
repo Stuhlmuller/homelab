@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:34ff67707e3c44d10c664a3add7f9315961348ac92209fecb04a44b95dc379c9",
+  "pageVersion": "sha256:430f86fbe68ddd0338e09aba102e45fbc75ed4747d5f91707dd3014fb54a59ce",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/values.yaml",
-          "version": "repo-file-v1:sha256:378173f5cbd803316856898c4644517703355501f0d46bfd648ddcdde76a2751"
+          "version": "repo-file-v1:sha256:de0a55269568fcbe9cc9ab9594fca5159bd1e4b471749fca7d3c04f2e191c26f"
         }
       ]
     },
@@ -21,16 +21,16 @@
       "statement": "Traefik is a stateless Argo CD ingress application dependent on cert-manager, Istio and Tailscale; the staged Tailscale operator configuration enables its authenticated Kubernetes API proxy.",
       "evidence": [
         {
-          "resource": "repo://IaC/traefik/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl",
           "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
         },
         {
           "resource": "repo://clusters/homelab/apps/tailscale/values.yaml",
-          "version": "repo-file-v1:sha256:acf126bb0362a908906fbd122424b5b0848514a02310a08c8b0f96f35e87713d"
+          "version": "repo-file-v1:sha256:030e893ac06659e2d3b7e4ddf98c9dd6fb47715b2a9f33ebb1da8fa575bac130"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:cc67b37fc0d6b65dfeca3b95f733ecfca45f3a72adab2aa83a06d247be3b6b3d"
+          "version": "repo-file-v1:sha256:03cc3270b88b2e1d1868f3c5630d3bdc00593d8c04d94969209b48d5e4d1f22c"
         }
       ]
     },
@@ -39,16 +39,12 @@
       "statement": "Image Updater has staged Helm/Kustomize source configured with zero replicas but no root Terragrunt Application registration; its runbook records the Application and Deployment as absent on 2026-10-10.",
       "evidence": [
         {
-          "resource": "repo://IaC/argocd-image-updater/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/argocd-image-updater/stack.hcl",
           "version": "repo-file-v1:sha256:026a1c7562a1d4f1335f41c4285521aaa50b54da43592ca7a46a7926dd60b55e"
         },
         {
-          "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
-        },
-        {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:c563eebf9010f3d4473b8369f9070667a7b84f7c4c7d3fba1b3988bf8a0bfcbb"
+          "version": "repo-file-v1:sha256:613274434f22e67acfce34bc82366b8abc2a1a2f30eada3668304f8fcfb5c171"
         }
       ]
     },
@@ -57,16 +53,16 @@
       "statement": "cert-manager's registered Application uses chart v1.20.3 and its versioned digest-pinned values, while rollback to v1.19.2 restores matching values from the documented pre-upgrade Git revision.",
       "evidence": [
         {
-          "resource": "repo://IaC/cert-manager/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/cert-manager/stack.hcl",
           "version": "repo-file-v1:sha256:607da59a2a06fd6d7a351378ebfc5985efe479f9ee895e25dc39a60721c433a7"
         },
         {
           "resource": "repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml",
-          "version": "repo-file-v1:sha256:288c12e698c394a549175802f19aab69e86eca34a0f44c52040c9edede72673a"
+          "version": "repo-file-v1:sha256:fbc046734778d03b2710051c5ee61c775e66be3f20d5e57d70f434df2c2b1661"
         },
         {
-          "resource": "repo://docs/rollback-argocd-apps.md#L32-L48",
-          "version": "repo-lines-v1:sha256:de8c2d79a1add616514d8c7ea0d41a6ce55ae0968df1bf17b9f4de9ff97a39f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTM2ZjczMWVkYTgyZDY0OGZiZTFjNjJlMThmMTI1OGE1OGQ0YTIyYTYyOWUwNTg3YWQ5MDRmNjQ2MjNjYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNGRhNTllMzcxNzJjYmRmNjAzNzVkOTI3N2I0ZDA1MDM5MWE4N2YyNDc4YjE4ZWQwNDc2YjgxNjQ1OGZlMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3Mjc5MDk5OGRkNmFkNTUzOWUxMDNmODYzY2RiMTkxYjJkNzI1Y2RlYjA0Yjc1ZWMzYTlmZjdiYWJmNTVjMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzE2OWFhMmQ2ZmY2YjZlYTVkYzI3NTJkNzVhODRkYjhlM2JiMDc1MjhkYTE5ZTkyNWQxNGMyYTgwOGEyMDkifQ"
+          "resource": "repo://docs/rollback-argocd-apps.md",
+          "version": "repo-file-v1:sha256:611a6a8f3ddd4ccf66eb15e7ede1b0848efdef5fc83bd69f05b7626c78feea31"
         }
       ]
     },
@@ -79,38 +75,38 @@
           "version": "repo-file-v1:sha256:ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246"
         },
         {
-          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L210-L210",
-          "version": "repo-lines-v1:sha256:99318850c1f543624298c240bb03499865d6a3a220bd65878919258c3373b9fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTkzMTg4NTBjMWY1NDM2MjQyOThjMjQwYmIwMzQ5OTg2NWQ2YTNhMjIwYmQ2NTg3ODkxOTI1OGMzMzczYjlmZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTkzMTg4NTBjMWY1NDM2MjQyOThjMjQwYmIwMzQ5OTg2NWQ2YTNhMjIwYmQ2NTg3ODkxOTI1OGMzMzczYjlmZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2U0ODU5NDlkMzIwZmZhOTgzYjc3OTZlOTY2ZTc5MTM3ZTY0ZDhmYTM4MzJmYWE3ZjA3OTQ3YjA3ZmU4ZjU0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmJhZTgzZWJlNWFiYmExYzRlZWVhZGNmZWI0N2VkNWYxMWE2N2RkMmE0YTRmZDZkNjI5Y2Q2YjMyMDM2N2U5ZSJ9"
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
+          "version": "repo-file-v1:sha256:03a9f71825a19eb87f2c4e80a81aacc4319fc107dae9041954babb7f19132350"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
+          "version": "repo-file-v1:sha256:9162eeaa4c209ec37f7a6b38ef6b74eac620680f33b910b6ed61b054765b4997"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:f72a7cc4abffe677a2395d88775f7c04ea58cbc19cef0b27ab203f9bd6323bca"
         },
         {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
-          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
         }
       ]
     },
     {
       "id": "claim_ae53698aa9c64b9ebf0ff2796e4da4ea",
-      "statement": "Fleet's declared route stays private through Tailscale and Traefik with setup denied, while PolicyBot's fixed GitHub App callback migration requires Funnel preflight and a fresh signed delivery before legacy route retirement.",
+      "statement": "Fleet's declared route stays private through Tailscale and Traefik with setup denied. Policy Bot source declares a fixed GitHub App callback helper requiring Funnel preflight and fresh signed-delivery acceptance before retiring the legacy route; source alone does not establish the current external registration.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:9486eb3bffdf96bf1282499db66f9bca10236fc29af86940394158e339125c92"
+          "version": "repo-file-v1:sha256:bee0f1fea45b62b3f31e65d0fe76381b952d4b511fdbca62ed1ba2ce4a525f83"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:53b844d8a5914ad297e6e259d385a82509ad1e0dc8a5ac3cd76c763e9899f66e"
+          "version": "repo-file-v1:sha256:093b66be8d9c1b7cb1aea7e43d4d1eb039d952c2eac8727e1d3f32051e10b58c"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+          "version": "repo-file-v1:sha256:5c08f09a8498a34621a6abaff6e4da3066f91d4e149a20d1f4715fd43882e7bf"
         }
       ]
     },
@@ -133,16 +129,16 @@
       "statement": "Mastodon follows main through its shared Application stack, depends on SSM, External Secrets, cert-manager, Istio, public connector and platform storage, and routes its instance hostname to web port 3000 and streaming port 4000 while preserving the private apex portal.",
       "evidence": [
         {
-          "resource": "repo://IaC/mastodon/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl",
           "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/virtualservice.yaml",
-          "version": "repo-file-v1:sha256:ae4da97c540a55b79d2195916313133df28df3f503dd4df2b773dad203a3aa06"
+          "version": "repo-file-v1:sha256:b69bed3b67567611f401e684703bdc7abb07da9d4bc2b1e8a78e7629741498f6"
         },
         {
           "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
-          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
+          "version": "repo-file-v1:sha256:9f7405f792e3bd2ecbc230427f52297cf45976becea26f0573701326c11b998f"
         }
       ]
     },
@@ -152,11 +148,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:bb743191af5d81a378430caea6d4c72cf0cc248acc55ae1806afbf48f87c3be2"
+          "version": "repo-file-v1:sha256:3f06bb80d49c772e159ce17033555ebef98aa0fbf26ff3011719ef200ecf72f5"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml",
-          "version": "repo-file-v1:sha256:0b9e992f041c52ddccc9ea53ac2107d78fed70013817ded861037c1a27a9eba0"
+          "version": "repo-file-v1:sha256:1872feb27a159b2461b7aca426a774bef316f5ca9695e02ae75177b6e7dd021d"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/storage.yaml",
@@ -170,23 +166,23 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/mastodon/bootstrap-job.yaml",
-          "version": "repo-file-v1:sha256:b2fa88e328e2398d618be3668e49fc010bedd85a7f78ee509cac4a3b2c477816"
+          "version": "repo-file-v1:sha256:299d6ac7748ff3d244917997ef84146f4df0272d55a57d212a6108ea287d977f"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/launch.rb",
-          "version": "repo-file-v1:sha256:7b52882c4fda2a58d36c7c43c0bb05419833aa6fe9e8e5fc4e570ddb5be473c2"
+          "version": "repo-file-v1:sha256:ce3f684433ac10634ae164392a8d6a6a9e3b3aa2c3641751bbdb9e2d539218a8"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/migration.yaml",
-          "version": "repo-file-v1:sha256:b814d01d46c4606064443b4fe8a805a40694b3b44c623032f0c0f3993034620f"
+          "version": "repo-file-v1:sha256:a5d7d8fca53a9b0dc8c7f019ad535a45216bf8809df9c7c6f3e83bcc480a09e2"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/workloads.yaml",
-          "version": "repo-file-v1:sha256:6babb30ba9d79f334204db361b90fc4ae9a3817d16e2adf70a24b8fbf4964287"
+          "version": "repo-file-v1:sha256:ed2ef51b10a35e6f638d4ecd1670a69701a462562f399bf5a475ed97b784718a"
         },
         {
-          "resource": "repo://scripts/mastodon-public-dns.py#L51-L65",
-          "version": "repo-lines-v1:sha256:a3db34e670a0261935bd108c1cac35de4c7fbcacff549f6d1297a6c118800257:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNDA1MTNkMzk3ZjZkMDExYjI2NDBlYjI2MDQ2MmNmZDA2YzNlN2UwMmMyOTFiZmJkYmZlMTVjYTNhMmI2OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzNzIyY2FkNjg4ZDI2MWRjMmU2MjMzZGUwNzkyNDM3NjcwOGIwY2FhYWE1MzdhZDk4ZDZkN2YwNmYxYjY3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkNmY5NmEyMWNhYmMyYmRhMTNlMDMwYzdjNTlmMDg3ZTk1OWRmMWNlNjIwNmVlMjUwMDEyMzEwYmY1ZWNhMWYifQ"
+          "resource": "repo://scripts/mastodon-public-dns.py",
+          "version": "repo-file-v1:sha256:c19f7bd00fc7ac73ee72845b5072ec54dfefdcf05c873e6bd53801a423494233"
         }
       ]
     },
@@ -195,12 +191,12 @@
       "statement": "Langfuse web is a stateless Acer-pinned Pod with a 1280 MiB request and unchanged 2 GiB limit, freeing its former 2 GiB reservation on Cordium-eligible zimaboard-1; worker and CPU budgets are unchanged.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/langfuse/README.md",
-          "version": "repo-file-v1:sha256:1a6a0ba669f51bc8ca6e78afcdfd9d9579c24ac17427b3b05b64acf1f65229d9"
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
+          "version": "repo-file-v1:sha256:57b3dda23a2024b739e261c593bf8249f304b040311fed69ba3896f095bd2fdd"
         },
         {
-          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
-          "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
+          "resource": "repo://docs/evidence/acer-cordium-capacity-2026-10-17.json",
+          "version": "repo-file-v1:sha256:4bc47ef2f8b66ef0c2327b7b186c9486f8b3ae9ec641e37409f7062ffde7a863"
         }
       ]
     },
@@ -209,12 +205,12 @@
       "statement": "The root Terragrunt stack declares a platform image-policy Argo CD Application using Warn and Audit admission, with no storage or credentials; live audit evidence and any Deny promotion require separate acceptance.",
       "evidence": [
         {
-          "resource": "repo://IaC/platform-image-policy/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-image-policy/stack.hcl",
           "version": "repo-file-v1:sha256:233cafd787d1f0ec8701d736c0c1fb3f81571c1b90e27022ee355efb2fe0bff3"
         },
         {
-          "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-image-policy/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:473c210a9291d34f7d2988137240d09307391d63390ff726f48317426bb8a069"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -254,7 +250,7 @@
         },
         {
           "resource": "repo://scripts/fleet-free-setup.py",
-          "version": "repo-file-v1:sha256:e1dd68c104e64def1be7e4d0c0f905f9daa30960c5808af832dbe7e28cc61b65"
+          "version": "repo-file-v1:sha256:f6cb84870480b22635c353901a2096767e80a05a54f32505075013f27c099bd7"
         }
       ]
     },
@@ -267,7 +263,7 @@
           "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L6-L65",
+          "resource": "repo://docs/harbor-image-mirroring.md#L22-L81",
           "version": "repo-lines-v1:sha256:65cbd1e0e84e88a995173b618b06ad474b1f1468ae3a0595380abec441b6ed8e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
         }
       ]
@@ -277,7 +273,7 @@
       "statement": "Tailnet DNS is a separate stateless Argo CD resolver in its own namespace, backed by CoreDNS and k8s_gateway, exposed through a distinct signed Tailscale DNS proxy; its pinned Harbor image must be published before rollout.",
       "evidence": [
         {
-          "resource": "repo://IaC/tailnet-dns/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl",
           "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
         },
         {
@@ -295,12 +291,8 @@
       "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor alias to a registry-only Traefik listener. Protected App-key transfer and temporary writer-grant retirement are complete; the legacy GitHub Action remains the writer while eligible Harbor discovery, T024/T042 cache-fault and NAS-capacity recovery, full dry-run parity, and reviewed cutover remain open.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
-          "version": "repo-lines-v1:sha256:35b66f1c4e3dde01914dfeb0e0d1d0001d0c496a44e6b8998520828c0948a587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUxMzZhZTZiYTZmZmE2ZDJmMTY5OTc1ZTFiNmVjMTI0ZmQ0NTBjZTZjYTkwZGI4NjgwMzAyMWZiMGE4NWVjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L42-L117",
-          "version": "repo-lines-v1:sha256:9e28f9139d0e66a416326d1eca79e62db3588416d18568433e6d048431055089:eyJzZWxlY3RlZExpbmVDb3VudCI6NzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTRkNTU3NTJjMDliMzQwMDAyN2EzZjQyNTEwMjAyNmI5MzJhYWMzNjk2ZjQwZWJjODkzZDM4YWVmYzNiYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMWNjMWUyYWE5ZjA3ZDlkMGIwYTllODg0OWI1ZTM3NTQwZTU5NGEwYTZkZDVhOTk2OGNhZjk2MTg5Y2E1YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:d903f3f251151075bdae5c22da61d4a7dde7fbdef2c75c89578da8b4f7c5b778"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -315,22 +307,22 @@
           "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L78",
-          "version": "repo-lines-v1:sha256:b87211f2f028492ff8c514a060962cebcb7043c98044f1e093e31abd89a2bccb:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md",
+          "version": "repo-file-v1:sha256:3784db9dd5c37d04f9bf2025be343b09757c7d40bd3394a88610accb85099d87"
         }
       ]
     },
     {
       "id": "claim_af434c04a9eb4187b151af1658217b9b",
-      "statement": "Legacy OpenClaw's gateway and backup writer are stopped by GitOps; local and NAS state and four PVC/PV identities remain. Protected off-NAS archive publication and separate multi-root restore verification passed, while compatible old-image boot remains pending. Enterprise activation remains disabled and current capacity admits no isolated canary.",
+      "statement": "Legacy OpenClaw's gateway and backup writer are stopped by GitOps; local and NAS state and four PVC/PV identities remain. Protected off-NAS archive publication and separate multi-root restore verification passed, while compatible old-image boot remains pending. Enterprise activation remains disabled and no isolated canary placement has been admitted.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
+          "version": "repo-file-v1:sha256:18bb8ebe8e391f9bff3c3b9c79f8f6543e4e6e6b5ffde3a027c73048602717f9"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -343,46 +335,46 @@
       "statement": "The Enterprise platform branch registers NetworkPolicy, canary, cleanup and Envoy Gateway Argo Applications with automatic sync disabled; kube-router selects no node, canary fixtures stay empty before admission, and no private route or firewall enforcement is accepted from registration alone.",
       "evidence": [
         {
-          "resource": "repo://IaC/platform-envoy-gateway/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl",
           "version": "repo-file-v1:sha256:8d0d580140ed39bc371b9405cb7a30ac3ac617b77e73d70b85f7db69feffea60"
         },
         {
-          "resource": "repo://IaC/platform-network-policy/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl",
+          "version": "repo-file-v1:sha256:efe2f1593f159c4ac27fb0245c658fee7765606a21d7c0e1260fcda9dd31f998"
+        },
+        {
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-network-policy-cleanup/stack.hcl",
+          "version": "repo-file-v1:sha256:d8a5b59e80b6064b6b261d664c8f9219b1c07e2f14468a23457d440732d15589"
+        },
+        {
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl",
           "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
         },
         {
-          "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:40b3ee6d3a42b656998e4db9c68656079ed76d3b694f5f261bca2c0fbeaf928d"
-        },
-        {
-          "resource": "repo://docs/argocd-app-onboarding.md",
-          "version": "repo-file-v1:sha256:b31fb18c93b7fc9a82544bcf5e0284d31a73abf87a82c330fc5e801a34e381a6"
-        },
-        {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         }
       ]
     },
     {
       "id": "claim_6ea097967f8f4bb9a330a1be2cbf70a1",
-      "statement": "LiteLLM's reviewed consumer pins the Linux amd64 child of a repeated-descriptor OCI index rejected by Harbor 2.15.2. Protected scoped run 39210811031 published that exact child before the consumer changed; all four observed nodes were amd64 on October 19. The revised catalog later passed protected all run 40011909180 with matching digests and complete authenticated Harbor pulls; arm64 still needs separate review before node expansion.",
+      "statement": "LiteLLM's reviewed consumer pins the Linux amd64 child of a repeated-descriptor OCI index rejected by Harbor 2.15.2. Protected scoped run 39210811031 published that exact child before the consumer changed; all four observed nodes were amd64 on October 19. The revised catalog passed historical protected all runs 40011909180 (214 images) and 40172274517 (215 images), with matching digests and authenticated pulls. The changed Enterprise operator source still lacks a current T004 receipt; arm64 needs separate review before node expansion.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/litellm/README.md",
-          "version": "repo-file-v1:sha256:4673401d8ed0bb1a4a18325664bea1c43808aaae503f7832cd128370ae59ace0"
+          "version": "repo-file-v1:sha256:d17f4dd191f38107aa4cfc513de05df88fba7aea063f9212d5fa743f515ccc9b"
         },
         {
           "resource": "repo://clusters/homelab/apps/litellm/values.yaml",
-          "version": "repo-file-v1:sha256:645f0ab7cdb0241f19e9d6759dd24c22591354b58606ebd9d913e039db335dcd"
+          "version": "repo-file-v1:sha256:6c2a4c6cbcf3e553821f915ae8890faf341f25c45b3aaa207f6826b16e29600d"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a250b0595a4a3fb4803532da082dcfbba20945cac7c215a1fb0d1f0b036b188a"
+          "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
         }
       ]
     },
@@ -391,12 +383,12 @@
       "statement": "OpenClaw Enterprise's source-declared, unsynced foundation prepares restricted system and tenant namespaces, RoleBindings, eight retained SSM projections, ingress denial, PostgreSQL certificates, and a dormant PostgreSQL 18.6 StatefulSet with 10Gi local claim template; no database, PVC, route or Installation workload is running from this source.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl",
           "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
+          "version": "repo-file-v1:sha256:fa78908d59bbd488f25dd2d40ed6bf6db061f1310d494966a1805495f33042f5"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -414,15 +406,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+          "version": "repo-file-v1:sha256:5c08f09a8498a34621a6abaff6e4da3066f91d4e149a20d1f4715fd43882e7bf"
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+          "version": "repo-file-v1:sha256:ae866f2bb5498937d5732111d647a1e6ad3967e8a4bd5120522baa32f7cc1ed3"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
         }
       ]
     },
@@ -431,16 +423,16 @@
       "statement": "The dormant OpenClaw Enterprise stock-chart candidate declares reviewed Installation startup bytes, immutable Secret contract, Helm values and lifecycle hooks; separate auto-sync-disabled Terragrunt Applications declare foundation and chart registration but have not been applied or synced, and placement and database/storage gates prevent activation.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl",
           "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
-          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
           "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e8bc3a7ce13355d37351296f7830bdbf8e4b689978df9630cfc1c8823599c65e"
+          "version": "repo-file-v1:sha256:6ab7376353fad6debdb7c743e5f8206bcd4bc3abeb33b3f7d319418baef76940"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
@@ -448,7 +440,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
         }
       ]
     },
@@ -462,11 +454,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
-          "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+          "version": "repo-file-v1:sha256:06035a065ff89209aca83993145bd9b0994ab84e541e128f55bd33a3b8e8ccda"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         }
       ]
     },
@@ -476,15 +468,15 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c4b63d069880fed82d1d27d4504dd415300563d478e6ecf5bf312f21ff3ace82"
+          "version": "repo-file-v1:sha256:178b1c19d578f11014be522d29f07ef0bedd5d1370dd5327986bcba0c454cdb6"
         }
       ]
     },
@@ -498,7 +490,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+          "version": "repo-file-v1:sha256:b70f40f23e4716a435e4b9fa84babfdd578fb6cb4b72357162c3ceab2041f028"
         },
         {
           "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
@@ -519,12 +511,12 @@
       "statement": "Renovate T022 is complete: scheduled 19:00 and 20:00 Pods hit the same public canary cache key, and after protected v0.0.2 publication the 21:00 scheduled run refreshed the record and selected a new canary branch proposal.",
       "evidence": [
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L15-L22",
-          "version": "repo-lines-v1:sha256:a768a5a9e9329ec427117e4c44b870aa0bded8e22037b07d6a76c51b0a3ba4d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZhODdkNzA2OGExZDlhZGYyMjZlODc3YzBlOWQ5YjA3YWNkZTBmZjNiZTBkMDJmYjVjNTc5ZjI2ODJhODkzMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwMzJlMWZlZTU2YTI3MjNiODYxNjdlY2JlY2Y5NTVjNWJkMDMwNDZhYzIxMGYwYWNlZDk2NWZjYzA5M2ZkOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmNmNGJmMmNhMTEzMGY3YmEyYjEwZmY4MjU3NTczMDMyZmQ2NWUxZDVhOGJhZDY4MjcyNDFiM2U0ZjQ4MWVlMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDZmM2ExODU3NjU2NDFiYzIwMTFmNmQ5MWJjYjQxNjAzMmZiM2Y5NWQwMTE1ZTQ0M2ZmNjUxYWYwMmM4YjNjOSJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md",
+          "version": "repo-file-v1:sha256:b915f6687e3b1a8fe1d926652514a0ccc7b033e6ff3b4529ebeb0f9f01de53a1"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L75",
-          "version": "repo-lines-v1:sha256:688e58fa7162abea026b2d4980cce4c2fb37392ab18f699405cc731f2cb4d6ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTlkYmEzMDVkYTE0MjE5YTNjYjBlNTI1M2NmOGI0ZGJmNmZiZGUwYmFjNTdmZDA2OTA4OWJiNDhkMzk1YjFjNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDVkOGY2M2E0YmQ0YTI4ZjNkYmRkYzU3ODBmOTAyZTg0NjIyOTEzY2Q3ZGM2ZjZmNDEzYWRjNzk4ZjFiODQ1OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQxYmJhOWU2ODVlMDkyN2U4ZGI0NjE5ZjE1NWJiNmFlYzY4ZTVkM2ZmZWNiMmY3NTQ2Zjk3MGZkNGU1NDkxNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzU4MTMwM2M0ZDY5MzY0ZmEwNjU0NTZkNzVlNTNkOGQzODM0OGM2YTcxYjNkZmRhMjU3OGM2N2E0MGQ3MWFiMCJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md",
+          "version": "repo-file-v1:sha256:3784db9dd5c37d04f9bf2025be343b09757c7d40bd3394a88610accb85099d87"
         }
       ]
     },
@@ -533,12 +525,12 @@
       "statement": "Renovate T045 is complete: retained 17:00 repository-tagged lookup failures and alerts recovered in the 18:00 Job; the 03:00 missed-slot drill fired RenovateHourlyCycleMissing, and the restored 04:00 scheduled Job succeeded after alert clearance.",
       "evidence": [
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md#L19-L25",
-          "version": "repo-lines-v1:sha256:2315591deb2784921550b063e3ffb743fc67c8c7b106b9bc276820a0f8622985:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDE5OGI2Mjg2MTEzOTg0NjA2OTk3MjQ5ZjEzMmNhNTI1NTk0ZWJiZTY4Y2NjNWI1MTA2OTJmYmQ3NjdlNzNhYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQzNDllMjBjZDYyZTk3NjQ1MGZlMDhlMDhmODM4NWY5YjZlOWY4MmJjODVhMDQ4ODA4MmU0YWJkNWIzNzMyOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGMyY2EwNWI5NDgzODA5YmI4ODNlNGVmYTEyYmM3YzM4NDE1NDE5OThhZDI2NjZkMDNmYzRmNzg0MzgxMmVmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTgxMmZlOTk1ODY1ZmU4NTNmZDMxYzJjMWM1ZDNjZTQ4YTdmNTBiY2M1ZmU3ODMyZTVlNDRkYjJhYmVmZmM3NCJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md",
+          "version": "repo-file-v1:sha256:b915f6687e3b1a8fe1d926652514a0ccc7b033e6ff3b4529ebeb0f9f01de53a1"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L141-L142",
-          "version": "repo-lines-v1:sha256:06114a754a7662215d2c7c8d6f10990b4c72e9fad5ded30a6155cc8b62abc75c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2IyMjg0NTM0MzBiNWE4YzlhODFlYmM5OWE4NjZiMWExNmM3MWIyMGUxMjczOGQ2Y2Y1YmI2MjY0MWFlN2Y0YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3YjgxYTQ2Zjc2YzRmYjFiNTU4ZjdkNjEyOTAwYTVjZjBlYTkyMzZkMTI4NTFiZjYwZGExZmM2YWZjMjBkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE0NmU3MTQwY2Q5ODVhMjQ1OWNkMGU3MGI1MTY3Njc5YTM1Y2VlNjY1YTBjYTMyODIyY2FkNGI2N2FkYjkyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmNlNTIxNDIxOTQ4ZTQ2MDk4N2UzYzMwNjMyYzMyMzE2ZGMzODJhNjg0OWQwNGQwZGVlNjQ1OWE4MjE0OTc0MSJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md",
+          "version": "repo-file-v1:sha256:3784db9dd5c37d04f9bf2025be343b09757c7d40bd3394a88610accb85099d87"
         }
       ]
     },
@@ -547,7 +539,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L309-L335",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L326-L352",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -570,7 +562,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         }
       ]
     },
@@ -579,12 +571,12 @@
       "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode public IPv4 and IPv6 all-port egress without a configuration input; additive NetworkPolicies cannot narrow them. Reviewed upstream patches or forks, rebuilt pinned images, actual generator renders, and isolated canary traffic qualification remain required before enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2010-L2013",
-          "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md#L171-L196",
-          "version": "repo-lines-v1:sha256:1aef65d9c5acad4e5e9ce7e85f6538c959810dde4af9afff3667d341f6243d08:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZDczZmM1MmE0YmRhYzcxNTYyYzI3ZTdiNTYxOGU5NDNhZjM2OTY4ODZiODU5NTA5YmNkOWJlMTVlNzk0MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZTlkMzg5ZDJjYTkxMTlkMWZkMjY0MDljNzVmYzJhNThiOGE1MThmZGU4NTIzMmY3Y2RkNWE3YjM2NmYyZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0NDUwNzAyMjAxYmJhYzQ3MjcwNWY3MDU4NWM5ZjYyZTdiNzk4YTRmYjYzMjQ0NDE0NzQ2NDk0YTZmNjdmYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMTYxZmRmNWRmNmE1NjYxMDdhMmYwYTdhMDBmYTAzYTIzYTViYTdmZDRhMTkyMDQxYWFiMWM3OGQ5M2FhMDMifQ"
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
         }
       ]
     },
@@ -594,11 +586,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator-test.py",
-          "version": "repo-file-v1:sha256:c65724882178876bc8a995d7a329e20d805cbe8143a324a551d65bdf5b6cd965"
+          "version": "repo-file-v1:sha256:5610a0a5ec4ad00547c063588f47567d7f68aa7c85cfacc5b22babdcde63d0aa"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -616,7 +608,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -642,15 +634,15 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:cd7f00f1ddd34b26b78a23f497090e367007e7fdf8b0c76ebea7e350efa76d86"
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
-          "version": "repo-file-v1:sha256:3301427456e8b89e110f93f62ed440b3f848de64624c6d0d764de9d95c2a96c1"
+          "version": "repo-file-v1:sha256:2030cd2c47c73019487dd65a826bc18f7a25c014372e6d22f93f87f9e595ebaa"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
@@ -668,15 +660,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
-          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+          "version": "repo-file-v1:sha256:cf444c3fba8f1c4a64e598cb16f68d62eb3da36b8847d2e57ba03558d9a6fc40"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -690,11 +682,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         }
       ]
     },
@@ -704,7 +696,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:cd7f00f1ddd34b26b78a23f497090e367007e7fdf8b0c76ebea7e350efa76d86"
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml",
@@ -722,19 +714,19 @@
     },
     {
       "id": "claim_ce34030fb2a34d7881528f8d5831b832",
-      "statement": "The corrected 2026-10-23 check leaves Enterprise activation blocked. Embedded OpenClaw uses one 1,792 MiB Gateway on the agents selector with a 10 GiB local state claim; the 768 MiB Harness request is Dedicated-only. Only acer has disk for Gateway and database local claims, but their 2,304 MiB floor exceeds its 1,802 MiB free requests by 502 MiB. A 4,096 MiB co-located planning reservation, split peak margin, and isolated worker canary remain unadmitted.",
+      "statement": "The corrected 2026-10-23 pre-outage check left Enterprise activation blocked. Embedded OpenClaw uses one 1,792 MiB Gateway on the agents selector with a 10 GiB local state claim; the 768 MiB Harness request is Dedicated-only. At that snapshot only acer had disk for Gateway and database local claims, but their 2,304 MiB floor exceeded its 1,802 MiB free requests by 502 MiB. A 4,096 MiB co-located planning reservation, split peak margin and isolated worker canary were unadmitted; later outage rescheduling invalidates those numbers as current admission evidence.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json#L61-L66",
-          "version": "repo-lines-v1:sha256:1b65e73dec72885a328c8f136fc42bf9271f59d985c6eb416cb9ba6759d867f5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGU0Y2VkYzhlMDQzYWU5MzdjMzk0NjJkYjczMDg3NTk1YTJmYmZjZDkxOTFlYjZhMmRjMzE5NThlNzdmM2ZkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODRlNTc1MDJiNmFkZDk5Zjg3NWRmMDJkYzA3MjA0MTc0MGE1OTRhZmNiNWJmMGM3OTc4NmI0MGYzZjkxN2M1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNmE5NTEzMGY0Zjc0ZTQ0NDIzNmU3NTE4MzFmMDk0MmQ1ODhiMDdlOGNmYmNlMDExODg2OWQ2MzhlNjBjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGY3MzlhMDZjMWNiYjEyNDRlMzM2M2QzOGJjZjlmYTUwY2U4NGZlZDM5OWMyMTkzYTNjN2YwOGQ1OTkxOGIyYSJ9"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json",
+          "version": "repo-file-v1:sha256:c31eb368bc2d8e6505a527bc8d2a49cf07aef7c90704f6edf8b7acfe76c07395"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L373-L419",
-          "version": "repo-lines-v1:sha256:6b46795b72fdb8ad500dbe0fe8ca8598e640db30658ed7910aad99666eb2b983:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmMmY3YmE1YzU4N2JjMWI4OWZhMDFmZDEwNDRmZGQ4Mjk4MWU1MjAwMDZjMDQxZGM5MWE3NzI0MmU3MWIxNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOThmMGYwZjdlOGNmMjExYTVmNzNmOTYxNGRlMjVhOThhNWJjODI3NTdmNTQxY2ZkYjRkNDgyODY1ZTM4NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZDU2MGM5ZDEyNDYxN2YzOTg3ZjcyNTdiY2VlMjFjNmY1MjAxNWMyZDQ1ZGQ3YWIyMzU4YWJkZTM5MTZlZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlMWE1M2U5YmVhNjU5ODE4MTExYzZmMmJlNzAwNjNhMzYwZjc1ZDU0MWRmZDczMDFhMWViNTJlZTc0N2FmN2MifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
-          "resource": "repo://specs/003-replace-openclaw-enterprise/research.md#L150-L153",
-          "version": "repo-lines-v1:sha256:7234126d60dc7803de8f87f9d6a8c991178998943c91ab8746e8948257708ef7:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzFjMDk2MTA5YzBjNjk1OGUzMjE3YzBhMDhmMzFiMzg4MTYzOTRhYjNjNzRmN2U4MzhlZjhiNTkwMTkwZGNmYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTM5YjcyZjM4MjYxMDcyNTBjNTdkZDY1OTBhNTY1MmNiNzk0MzE1YTExYzAzZDNmNzQxOTBhMTRlY2E2YjVkYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTc1NDYwNjAzNDVmYzBhM2FlNmY3NWI5MDNhMDc5YWQ5NmI1N2MzZTdmYzIwZDdlNTkyOTlmMmEzNDFhZDE4NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWViZGJiNTNkZWRlNTMxYTg5NmU0YWEyYjFkYzZlN2ZiOWRhZTIyZmY1M2RhOWE3N2U4ODdhOTY3YzI4YTg5YiJ9"
+          "resource": "repo://specs/003-replace-openclaw-enterprise/research.md",
+          "version": "repo-file-v1:sha256:82b2dacc9ced3cf67465f72291ea31da54da637f8830a4318c38c976394e9612"
         }
       ]
     },
@@ -744,47 +736,47 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
+          "version": "repo-file-v1:sha256:fa78908d59bbd488f25dd2d40ed6bf6db061f1310d494966a1805495f33042f5"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
-          "version": "repo-file-v1:sha256:04bcadde4d22cd0e83fab58e385f2d4d7b16d8d4d3e8c9aae29b9a9c9ef146ec"
+          "version": "repo-file-v1:sha256:12d468da123124f2d1bfcf69e3daa6deef7c279240c0fc4c097b209b5a2cfd8d"
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:d5ee8f6a5ae91e2157a80ec5f1471f93e8157b8a94cac1147db38390f292c0f5"
+          "version": "repo-file-v1:sha256:d1df5fb92d933d465a00e7e0a3f2fb2af372f663ec98c1efe612a01d307c27c9"
         }
       ]
     },
     {
       "id": "claim_204e72b52f294fa5b27b973aa1c76d8d",
-      "statement": "The active Istio Application remains on 1.27.3 with automated self-heal, while the 1.28.10 chart candidate is disabled and outside the Argo source and Kustomize output.",
+      "statement": "The declared Istio Application stays on 1.27.3 with auto-sync and self-heal and now points to the replacement blob.istio.io chart source. The 1.28.10 chart candidate remains disabled outside the Argo source and Kustomize output; live parity of the chart-source move still needs acceptance.",
       "evidence": [
         {
-          "resource": "repo://IaC/istio/stack.hcl#L10-L111",
-          "version": "repo-lines-v1:sha256:97bad36036fad527abdb9a6c26075bfd4a48da9336721fe01587cec21973d997:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1ZjhkMmQ5Y2RmZjJlODA4ZDMxZjI5NjhmYjRhMmY0NjEyNzlmZmUzYTFkNDgwODY1YjlhNzU0NmJjMzc0ZDIxIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3MWQxYTNkNmJiNzllNTNhODg5MjBiNGJiYWM1NjE5M2NlOWY2NmVlZjFhMGJlN2VjODA5NGMyYWJhOTZlZWE1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkMzBjZGQ1ZDlkOTc2NmQyNWMzMjEyMDA0Yzc3Mzc2OGU5OTE4YjM4NjY2OTc5Mjg3NmRhZjE2MmJiOWMwMjFhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJmMGY2NWI2YzM3ZjVmYzJiNGNmMzBkMGViZmM2ZjZkMTIzNzJmNGRlNGQzNmYxYTVkZWYwNzY1NjQxMGFhMDZjIn0"
+          "resource": "repo://IaC/homelab/us-west-2/apps/istio/stack.hcl",
+          "version": "repo-file-v1:sha256:17d894707f98b0e498dc4a10d1ce992b0d9859b4e4bfdf5966134354777ee3b5"
         },
         {
-          "resource": "repo://clusters/homelab/apps/istio/README.md#L1-L8",
-          "version": "repo-lines-v1:sha256:625b55ea99f2a92977654ea82aa8eebe86312e4f8fc0709e727b8ff512f333d4:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzhjMTNmYmQ3NDlhYmI2YmZlYTA0MzgxZTk4NTBhY2M4YTI5ZWQxOTExMjU5M2Q2Zjc0NjMxNTVkMjg5YTljNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTAxMGFiNmUyOTE2MWE3NDE1NzQ3YzQ2ZTQ5YjFkMjdlZDdiMTMxYzNhM2YxZjkyMDExYTdlYzViMjBkYWQzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTU3MDEyZjg3NjJkYjFlNGVjZjk2ZmJiOTY0MTg1NTU3ZjA1Y2FjZGRlZTNhZmYyYmZjNWExYjc4NWE1MTg1NiJ9"
+          "resource": "repo://clusters/homelab/apps/istio/README.md",
+          "version": "repo-file-v1:sha256:cf9dcfe7c343b4587032103b28ec65f2c7bbbd91974679c5a68767948328b685"
         },
         {
-          "resource": "repo://clusters/homelab/apps/istio/upgrade-1.28.10.json#L1-L8",
-          "version": "repo-lines-v1:sha256:e130afa80c0e69f6c82a46a637279586dcc5fe4f9c5be89849172a73f4589bc3:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjljYTg5MWJmZjdhYzFmN2NlYWFlNDBlZjA1MTA2NmJlOWVmZTQ3YjRlNDI4MWU4NmMzMTliZTJjNTVlYmNlNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmU4MmU1MzVjNjVmMjEzMWMxNmM5ZGFlZmNmY2VlNDUzNzg3NDlkYjJmNTZmYzkwOWU0M2UwYjJkMTI3MTM0NiJ9"
+          "resource": "repo://clusters/homelab/apps/istio/upgrade-1.28.10.json",
+          "version": "repo-file-v1:sha256:0cdc9ef929f8f1e98ceb9de8c50665926b22e61641e3b2a9e453d1a9f0c7c7d6"
         }
       ]
     },
     {
       "id": "claim_02404d1353f440158d86843e10019538",
-      "statement": "The Istio runbook records a December 2026 retirement risk for the active GCS chart source and requires later AppProject, active source, and chart mirror migration even if the version upgrade stays held.",
+      "statement": "Istio's declared 1.27.3 chart sources have moved to the replacement blob.istio.io repository with versions unchanged. The old GCS AppProject entry is retained for rollback until a reviewed scoped apply and live Synced/Healthy source parity pass; the 1.28.10 hop remains held.",
       "evidence": [
         {
-          "resource": "repo://IaC/istio/stack.hcl#L10-L101",
-          "version": "repo-lines-v1:sha256:bf0e0f2e536365cddd45512fc35d3162e2ea1fad0c8da50a8a0bccc18b825562:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmOGQyZDljZGZmMmU4MDhkMzFmMjk2OGZiNGEyZjQ2MTI3OWZmZTNhMWQ0ODA4NjViOWE3NTQ2YmMzNzRkMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjYTVmZmY1ZTQ2MjIwZTJjYmRhODJhYmU4Njg2MmQxM2M1YWY5OWUxMzc3MDViMDA4MWExMzQyMWJjMjNmN2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQzMGNkZDVkOWQ5NzY2ZDI1YzMyMTIwMDRjNzczNzY4ZTk5MThiMzg2NjY5NzkyODc2ZGFmMTYyYmI5YzAyMWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmNDY0MTE1YmI0NTE2ODA4ODZlYWVmNjM4Yzg2MjI4ZjUyNTMwMDlhYjAzMjhiOTEwZmRkNGExODM5MDZjM2IifQ"
+          "resource": "repo://IaC/homelab/us-west-2/apps/istio/stack.hcl",
+          "version": "repo-file-v1:sha256:17d894707f98b0e498dc4a10d1ce992b0d9859b4e4bfdf5966134354777ee3b5"
         },
         {
-          "resource": "repo://clusters/homelab/apps/istio/README.md#L19-L25",
-          "version": "repo-lines-v1:sha256:a8e71fc307d980847d119b38dd8225122d9ca3518dee7ecad4c0dcf7ce8ce527:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWRlYjgwMjVhNDI2ODhhYzk5OTRlZWNhZTk0NGIxMzM0ZTQ4OGYxM2VkNjViMDY1MTBlNzQ0NjNkOTA5NTdjMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmU1ODM2NmFlM2ZhODBhY2IwNWUwNWExYmVkYzQ4OWI4OTRlNTBjM2FjZjk4NTFlNDgwMzdiZDc2NGE4MDYxNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjE2ZTQ1MzM4YzU5ZjVhMWFmYjdjNmM4YzcwYWE2ZGRjNjkzNTRlNDM1MDFmOWJlMzY0MmQ5YjJjYjllYTljMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2FjYWUzZTNjNzQ4YjBkYTVhYThlYjUwZWNkMjc4ZWYyMmI4ODJhOTVmNmYyZDhiMzRkMDY3MjkwYmQxMmMwNyJ9"
+          "resource": "repo://clusters/homelab/apps/istio/README.md",
+          "version": "repo-file-v1:sha256:cf9dcfe7c343b4587032103b28ec65f2c7bbbd91974679c5a68767948328b685"
         }
       ]
     },
@@ -797,11 +789,11 @@
           "version": "repo-lines-v1:sha256:ab9b76cd0cd928357694e3ddb42b3954d7b93bfc091bc6167935bf7a1f10d7af:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYTZkYzQ3NWIzYmM1MzUyMmNlZTEyMDFmMmNkNGFjNWFkMzM2NTVhYWQxNTg3MWI3Mzc3OWUwYWUxODZiMmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzYTZkYzQ3NWIzYmM1MzUyMmNlZTEyMDFmMmNkNGFjNWFkMzM2NTVhYWQxNTg3MWI3Mzc3OWUwYWUxODZiMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5NWMyYTQ4MTU5MjNkYTllMzgyMmIxOTU1ZmMzOGVjMDNiNmQ5NDBjYmNhMzI4NTI4MjIwNDUwZTNhZTkyMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwODI0OTFmNWMxODI1MzFmMGQ0MWYzNDYzYjBhNWNkNTUzMWJjOGI0MDgzNWQ2Njc0Y2Q0MmI1MWIwZWNlMmMifQ"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1662-L1667",
+          "resource": "repo://scripts/openclaw-enterprise.py#L1665-L1670",
           "version": "repo-lines-v1:sha256:69ab560cd31df25783ddea75db40eb67130e57255c11fdb5c2edb7c4ad177546:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTljNzE0OTdjZmM4MmU2ZmUwZmZmZjBiMDYyMzY1ZWY0OTcxNTM4OGE2NTQ3Yjk3YTEzMDBmN2VlYTI4ZjAyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjZlMWE2ZDY3MTY0OGU0N2ZlMzJkMzBmZDMwYjljNjJhNTJkMmFkN2YzOWVlY2MyYzY3ZmFlMTEyNTJlMDIxNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDQzYmQ1ZWM0NzU5MzcxNTAwMGM1Y2JjOGM5ZjAxZjRlOTAxOTg1Y2RjOGRhNzFiZmQ0OTBkNjExMWEzOTkyYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWYyZTU2MGMyMTdmMzg0ZDk5MzQxMDM5YjNiZmEyZDcyMWZiNDViN2UzN2ZlYmQ5YmUxMmNmMmI5MzhhZmFlMyJ9"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1733-L1738",
+          "resource": "repo://scripts/openclaw-enterprise.py#L1736-L1741",
           "version": "repo-lines-v1:sha256:2d3af5e9ec43bd863e55a3e9c53982573b270a189e24ef6c98dcfe5141977aa9:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzEzZmFhN2IwMTlkMjJhNTk0NmVkYTlkZTY2YWE3ZTc3YzA3MjBlNTA0ZDcyYWQ0M2IwYzFkMWJmNDRjMTVmZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY0YzkwNWE3ZDdhODFmNWFiZjUzZTFjMjg5YTRjZjJmZGY3MjlmNWRhMTk5ODllNWEwYzdlZjhjMzUyYmJlZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODBjZjRkMWIyODdhN2EzOWU0YzUwNmYyYTUzYTJiYjQxMzlkYTJiZmZkNmQwYWUwOGQxNjI1OTJlOTVkNmViYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjc2ZDM3MWJkNjkwMWI3OGRkN2I2YTEzMDA3MDljNTc5MzA5ZjQ3MDdhMmRkMzJlNjhmNTRhYzQ5OTJjM2QwMSJ9"
         },
         {
@@ -816,11 +808,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
+          "version": "repo-file-v1:sha256:18bb8ebe8e391f9bff3c3b9c79f8f6543e4e6e6b5ffde3a027c73048602717f9"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -828,13 +820,13 @@
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:d5ee8f6a5ae91e2157a80ec5f1471f93e8157b8a94cac1147db38390f292c0f5"
+          "version": "repo-file-v1:sha256:d1df5fb92d933d465a00e7e0a3f2fb2af372f663ec98c1efe612a01d307c27c9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T01:38:00.583Z"
+    "at": "2026-10-27T09:54:29.479Z"
   }
 }

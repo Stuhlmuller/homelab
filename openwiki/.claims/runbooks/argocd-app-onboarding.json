@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:35d2781819d7ef0ff4fb7b5d5fdd242662333c2fff609d837c7d338afe7c342f",
+  "pageVersion": "sha256:5ed91f176f94c49648182e02e442e6af9c6f410d8c2e2d2ce1b6d88367eaa6f6",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
       "statement": "The OpenClaw Enterprise platform NetworkPolicy, canary, cleanup and Envoy Gateway Applications are registered with automatic sync disabled; NetworkPolicy selects no node, while Envoy's CRD source owns shared CRDs ahead of the controller, so registration alone neither enforces policy nor serves a route.",
       "evidence": [
         {
-          "resource": "repo://IaC/platform-envoy-gateway/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl",
           "version": "repo-file-v1:sha256:8d0d580140ed39bc371b9405cb7a30ac3ac617b77e73d70b85f7db69feffea60"
         },
         {
-          "resource": "repo://IaC/platform-network-policy/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl",
           "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
-          "version": "repo-file-v1:sha256:b31fb18c93b7fc9a82544bcf5e0284d31a73abf87a82c330fc5e801a34e381a6"
+          "version": "repo-file-v1:sha256:efcea8c03a348042cb8e22051056a1032b4bd0bee6b43c4915d58779256a2461"
         }
       ]
     },
@@ -29,20 +29,20 @@
       "statement": "The canary lifecycle uses exact reviewed GitOps commits to prune fixtures and then the enforcer, verifies the fixture namespace and workloads are absent before ownership capture, and keeps the empty canary Application automated through cleanup and release. Private capture and owner approval gate rule deletion; assigned Pods must match reviewed system and cleanup Pod identities while cleanup runs, and release rechecks only reviewed system Pods after cleanup Pod deletion before removing the taint.",
       "evidence": [
         {
-          "resource": "repo://IaC/platform-network-policy-canary/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl",
           "version": "repo-file-v1:sha256:efe2f1593f159c4ac27fb0245c658fee7765606a21d7c0e1260fcda9dd31f998"
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
-          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+          "version": "repo-file-v1:sha256:cf444c3fba8f1c4a64e598cb16f68d62eb3da36b8847d2e57ba03558d9a6fc40"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -55,11 +55,11 @@
       "statement": "The Enterprise AppProject is in Argo CD self-management, while the foundation and chart Applications require a later protected Terragrunt apply and have automatic sync, pruning, self-heal and retries disabled.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl",
           "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
-          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
           "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
         },
         {
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
-          "version": "repo-file-v1:sha256:b31fb18c93b7fc9a82544bcf5e0284d31a73abf87a82c330fc5e801a34e381a6"
+          "version": "repo-file-v1:sha256:efcea8c03a348042cb8e22051056a1032b4bd0bee6b43c4915d58779256a2461"
         }
       ]
     },
@@ -77,8 +77,8 @@
       "statement": "The legacy OpenClaw Argo Application remains registered, but its gateway is declared with zero replicas and its backup CronJob is suspended while the read-only recovery reader remains.",
       "evidence": [
         {
-          "resource": "repo://IaC/terragrunt.stack.hcl#L240-L247",
-          "version": "repo-lines-v1:sha256:9add21411e680613b67d29bb87ab25e994ec31537eeeee015ee0365ed63cdc4f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2NmNTZiYWMwZTU2ZWMyNzEwNDU4NjBiYmRhYTU1ZjRlZjM2OTVmMWRkMjFiNmZmODRjNWJmMDczNDg2YzgwZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzBhNGMxNzI0MmE5NzNjNmIyNDg2Y2Q3YzFmNWUxZDE5NjJmNjQ1NjQ3N2QyMjdiM2FkYmZmMjQ0Zjc4NGZjOSJ9"
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw/stack.hcl",
+          "version": "repo-file-v1:sha256:5c382f0e488b8bf57b4f709c5f18b6365905749bf3a5829e8f3dd7ae9f174f30"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md#L1-L16",
@@ -100,15 +100,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:cd7f00f1ddd34b26b78a23f497090e367007e7fdf8b0c76ebea7e350efa76d86"
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md",
-          "version": "repo-file-v1:sha256:b31fb18c93b7fc9a82544bcf5e0284d31a73abf87a82c330fc5e801a34e381a6"
+          "version": "repo-file-v1:sha256:efcea8c03a348042cb8e22051056a1032b4bd0bee6b43c4915d58779256a2461"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -119,6 +119,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-27T09:54:29.479Z"
   }
 }
