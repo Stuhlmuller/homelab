@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:02ab88961dc46b14e8e996407777d0e0d393fe43fc6b40ba074d0b8c3bd39fbc",
+  "pageVersion": "sha256:197f8ada0953891084a9506998ada68268c9b174748e31455a9cc05b890ab33b",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -210,7 +210,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -342,7 +342,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -356,7 +356,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:cd8b03cd4dd90a870772faa0177c90f2599073eaff48d7668d79677400739dc3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -389,6 +389,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T10:41:09.582Z"
   }
 }
