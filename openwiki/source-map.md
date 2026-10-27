@@ -106,6 +106,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-e9e65f5a163d93923cf250f7
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
+  - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
+    resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -138,10 +140,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
+generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:23:45.554Z
+    at: 2026-10-27T22:39:20.858Z
 ---
 
 # Source Map
@@ -210,9 +212,9 @@ desired state.
 | `scripts/ci/openclaw-enterprise-operations.sh`, `scripts/ci/openclaw-enterprise-download.py`, `clusters/homelab/apps/openclaw/retirement/retirement.py`, and `scripts/ci/openclaw-retirement-test.py` | [Versioned legacy archive verification and bounded ranged restore-copy transfer](architecture/storage-and-state.md), [three failed attempts, source-bound prepared scratch copy in run `40050057926`, and pending T014 compatible boot](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound one-shot Job dispatcher and failure/restart fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
 | `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe, offline checks and signed exact-source digest from run `40056484158`](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled pending placement and bootstrap-key proof |
-| `builds/openclaw-enterprise-restore/`, `.github/workflows/openclaw-enterprise-images.yml`, and `scripts/ci/harbor-publish.sh` | [Source-only fifth restore image, pre-credential audit, signed publication and authenticated-pull gates](operations/harbor-oci.md); no fifth-image receipt yet |
+| `builds/openclaw-enterprise-restore/`, `.github/workflows/openclaw-enterprise-images.yml`, and `scripts/ci/harbor-publish.sh` | [Source-only fifth restore image with embedded reader and UID 1000 hash smoke, pre-credential audit, signed publication and authenticated-pull gates](operations/harbor-oci.md); no fifth-image receipt yet |
 | `clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh` | [Stopped-writer marker, local scratch, age encryption and off-node recovery contract](architecture/storage-and-state.md); no scheduled or independently restored set |
-| `scripts/ci/openclaw-enterprise-reader-archive.py` and `scripts/ci/openclaw-enterprise-capture.py` | [Namespace-local full claim readers, identity-bound archive assembly and intentionally unverified continuous fence](architecture/storage-and-state.md) |
+| `scripts/ci/openclaw-enterprise-reader-pod.py`, `scripts/ci/openclaw-enterprise-reader-archive.py`, and `scripts/ci/openclaw-enterprise-capture.py` | [Excluded namespace-local reader Pod specs, exact expected image and claim identity checks, full claim archives and intentionally unverified continuous fence](architecture/storage-and-state.md); no reader is applied |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |

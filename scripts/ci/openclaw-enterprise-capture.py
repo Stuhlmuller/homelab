@@ -31,6 +31,9 @@ SHA = re.compile(r"[0-9a-f]{40}\Z")
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 UID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 DNS = re.compile(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\Z")
+READER_IMAGE = re.compile(
+    r"harbor\.stinkyboi\.com/homelab/homelab-oce-restore:homelab-"
+    r"([0-9a-f]{40})@sha256:[0-9a-f]{64}\Z")
 SYSTEM_KEYS = {
     "occ-postgres-root": ("tls.crt", "tls.key"),
     "occ-postgres-admin": ("password",),
@@ -243,7 +246,7 @@ def _pod_list(value, expected=None):
                 "Enterprise tenant reader is not the only Pod")
 
 
-def _reader_pod(pod, namespace, uid, claims):
+def _reader_pod(pod, namespace, uid, claims, source_sha, expected_image):
     metadata = pod.get("metadata") if isinstance(pod, dict) else None
     spec = pod.get("spec") if isinstance(pod, dict) else None
     require(isinstance(metadata, dict) and metadata.get("namespace") == namespace and
@@ -254,6 +257,8 @@ def _reader_pod(pod, namespace, uid, claims):
             spec.get("hostNetwork") is False and spec.get("restartPolicy") == "Never" and
             spec.get("hostPID") in (None, False) and
             spec.get("hostIPC") in (None, False) and
+            spec.get("enableServiceLinks") is False and
+            spec.get("activeDeadlineSeconds") == 7200 and
             spec.get("initContainers") in (None, []) and
             spec.get("ephemeralContainers") in (None, []) and
             spec.get("securityContext") == {
@@ -265,6 +270,26 @@ def _reader_pod(pod, namespace, uid, claims):
     require(spec["containers"][0].get("securityContext") == {
         "allowPrivilegeEscalation": False, "readOnlyRootFilesystem": True,
         "capabilities": {"drop": ["ALL"]}})
+    container = spec["containers"][0]
+    image = container.get("image")
+    match = READER_IMAGE.fullmatch(image) if isinstance(image, str) else None
+    expected_match = (READER_IMAGE.fullmatch(expected_image)
+                      if isinstance(expected_image, str) else None)
+    require(container.get("name") == "reader" and match is not None and
+            match.group(1) == source_sha and
+            expected_match is not None and expected_match.group(1) == source_sha and
+            image == expected_image and
+            container.get("imagePullPolicy") == "IfNotPresent" and
+            container.get("command") == ["/bin/sleep", "7200"] and
+            container.get("resources") == {
+                "requests": {"cpu": "50m", "memory": "256Mi"},
+                "limits": {"cpu": "500m", "memory": "512Mi"}} and
+            all(field not in container for field in (
+                "args", "env", "envFrom", "lifecycle", "startupProbe",
+                "readinessProbe", "livenessProbe", "ports", "volumeDevices")) and
+            all(container.get(field) in (None, False)
+                for field in ("stdin", "stdinOnce", "tty")) and
+            container.get("terminationMessagePolicy") in (None, "File"))
     mounted = {item.get("name"): item.get("persistentVolumeClaim")
                for item in spec["volumes"] if isinstance(item, dict)}
     require(len(spec["volumes"]) == len(claims) and set(mounted) == set(claims) and all(
@@ -406,8 +431,14 @@ def _move_tree(root, relative, source):
     os.replace(source, target)
 
 
-def assemble(config, expected_sha, observations, operator_archive, tenant_archive, output):
+def assemble(config, expected_sha, observations, operator_archive, tenant_archive,
+             output, expected_reader_image):
     """Create one local tree after two snapshots; fence continuity stays false."""
+    image_match = (READER_IMAGE.fullmatch(expected_reader_image)
+                   if isinstance(expected_reader_image, str) else None)
+    require(isinstance(expected_sha, str) and SHA.fullmatch(expected_sha) and
+            image_match is not None and image_match.group(1) == expected_sha,
+            "Enterprise reader image receipt is invalid")
     OCE._validate_config(config)
     operator_contract = config.get("journalOperator")
     require(isinstance(operator_contract, dict) and
@@ -496,12 +527,14 @@ def assemble(config, expected_sha, observations, operator_archive, tenant_archiv
                     if isinstance(operator_pod, dict) and
                     isinstance(operator_pod.get("metadata"), dict) else None,
                     {"journal": "occ-operator-journal",
-                     "bootstrap": "occ-bootstrap-admin-password"})
+                     "bootstrap": "occ-bootstrap-admin-password"}, expected_sha,
+                    expected_reader_image)
         _reader_pod(tenant_pod, "openclaw-agents",
                     tenant_pod.get("metadata", {}).get("uid")
                     if isinstance(tenant_pod, dict) and
                     isinstance(tenant_pod.get("metadata"), dict) else None,
-                    {"gateway": claim_contract["gateway"][1]})
+                    {"gateway": claim_contract["gateway"][1]}, expected_sha,
+                    expected_reader_image)
         _pod_list(observations["duringTenantPods"], tenant_pod)
         _reader_manifest(operator_root, operator_files, expected_sha, "openclaw-system",
                          operator_pod["metadata"]["uid"],
@@ -602,6 +635,7 @@ def assemble(config, expected_sha, observations, operator_archive, tenant_archiv
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--expected-reader-image", required=True)
     parser.add_argument("--observations", required=True, type=Path)
     parser.add_argument("--operator-archive", required=True, type=Path)
     parser.add_argument("--tenant-archive", required=True, type=Path)
@@ -610,7 +644,8 @@ def main(argv=None):
     try:
         config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         assemble(config, args.expected_sha, read_json(args.observations),
-                 args.operator_archive, args.tenant_archive, args.output)
+                 args.operator_archive, args.tenant_archive, args.output,
+                 args.expected_reader_image)
     except (Blocked, OCE.Blocked, OSError, ValueError, KeyError, TypeError):
         print("Enterprise private capture assembly blocked", file=sys.stderr)
         return 1

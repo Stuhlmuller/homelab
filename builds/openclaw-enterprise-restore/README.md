@@ -7,6 +7,12 @@ validator/extractor. The protected `openclaw-enterprise-images.yml` workflow
 builds it from a clean exact-main checkout before credentials. A complete
 private Grype scan checks the exact local image ID, Linux amd64, Debian 12,
 scanner and database freshness, unfiltered findings, and available fixes.
+The same unpublished image embeds the namespace-local claim reader. Its
+clean-source build runs the reader as UID 1000 with network disabled and a
+read-only root, and compares the embedded bytes with reviewed source. A
+source-only Pod renderer requires the exact source-tagged Harbor digest; it is
+excluded from GitOps until a protected publication receipt, claim access,
+continuous writer fence and enforced egress are proven.
 The publisher accepts only that scanned image ID, pushes
 `homelab/homelab-oce-restore:homelab-<main-sha>`, verifies the remote digest
 and a full authenticated pull, and verifies its Harbor signature. The second

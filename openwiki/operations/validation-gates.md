@@ -258,10 +258,14 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
   - id: openwiki-source-9549cd0a19920c757058b380
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive-test.py
+  - id: openwiki-source-6afe7b13ab592ab9d7ebc90c
+    resource: repo://scripts/ci/openclaw-enterprise-reader-pod-test.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
+  - id: openwiki-source-617723ff25d50ba7fdb65ded
+    resource: repo://scripts/ci/openclaw-enterprise-restore-image-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-86a40ee4669b4b7843917e87
@@ -370,10 +374,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
+generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:23:45.554Z
+    at: 2026-10-27T22:39:20.858Z
 ---
 
 # Validation Gates
@@ -1985,6 +1989,14 @@ and accepts exactly one object with `writerStopped` and
 capture, safe-extraction and restore-image fixtures, including rejection of
 partial `subPath` and `subPathExpr` claim mounts. These tests do not attest a
 live claim UID, sustained writer fence, published ciphertext or independent restore.
+The new reader Pod fixture renders two excluded namespace-local Pods and passes
+their synthetic UID-bound observations through both reader and assembler
+validators. It rejects foreign namespace, claim, UID or image digest, extra or
+partial mounts, commands, environment, probes and ports. The restore-image
+fixture checks that the embedded reader runs as UID 1000 and hashes to reviewed
+source. The assembler and reader require an explicit expected immutable Harbor
+reference; a future coordinator must derive it from a protected publication
+receipt. Neither fixture proves admission, actual PVC access or enforced egress.
 The new source-only backup transaction fixture runs in static and offline
 checks. It covers durable stop/resume intent, lost API responses, crashes
 before and after POST, duplicate or foreign revisions, missing or changed

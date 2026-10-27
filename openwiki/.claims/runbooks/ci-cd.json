@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0813fb1b400535368791a5e43bd8831da2de2f484a7dbdf01c8454a864e6268e",
+  "pageVersion": "sha256:7d31bd1e355ecc658a8e8dd9eff81e85b89cde6251956f78f387b3f8dba0c763",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -320,7 +320,7 @@
         },
         {
           "resource": "repo://builds/openclaw-enterprise-restore/README.md",
-          "version": "repo-file-v1:sha256:1258c2ecda053fb2c8c0cf2e34f53e304d6a9387fc98e23e0aff62011fdacded"
+          "version": "repo-file-v1:sha256:7f37e2986a3c723ff8cbca3924d8cfb0922dbe4e8947b9e9265947d461618467"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh#L14-L40",
@@ -381,6 +381,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:04:19.774Z"
+    "at": "2026-10-27T22:39:20.858Z"
   }
 }

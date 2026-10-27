@@ -18,3 +18,4 @@ RUN tar -xzf /tmp/age-v1.3.1.tar.gz -C /tmp age/age age/LICENSE \
  && rm -rf /tmp/age /tmp/age-v1.3.1.tar.gz
 
 COPY --chmod=0555 builds/openclaw-enterprise-restore/safe-extract.py /usr/local/libexec/occ-safe-extract.py
+COPY --chmod=0555 scripts/ci/openclaw-enterprise-reader-archive.py /usr/local/libexec/occ-reader-archive.py

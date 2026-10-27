@@ -20,11 +20,14 @@ class RestoreImageBuild(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="oce-restore-image-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        for directory in ("builds/openclaw-enterprise-restore", "scripts/config", "bin"):
+        for directory in ("builds/openclaw-enterprise-restore", "scripts/config",
+                          "scripts/ci", "bin"):
             (self.root / directory).mkdir(parents=True)
         for name in ("build.sh", "Dockerfile", "safe-extract.py"):
             shutil.copyfile(ROOT / "builds/openclaw-enterprise-restore" / name,
                             self.root / "builds/openclaw-enterprise-restore" / name)
+        shutil.copyfile(ROOT / "scripts/ci/openclaw-enterprise-reader-archive.py",
+                        self.root / "scripts/ci/openclaw-enterprise-reader-archive.py")
         shutil.copyfile(ROOT / "scripts/config/harbor-images.json",
                         self.root / "scripts/config/harbor-images.json")
         self.calls = self.root / "docker-calls"
@@ -49,6 +52,12 @@ if [[ "$1 $2" == 'image inspect' ]]; then
 elif [[ "$1" == run ]]; then
   case "$*" in
     *'--entrypoint age '*) printf 'v1.3.1\\n' ;;
+    *'--entrypoint sha256sum '*'occ-reader-archive.py'*)
+      if [[ "${FIXTURE_READER_HASH_BAD:-}" == true ]]; then
+        printf '%064d\\n' 0
+      else
+        sha256sum scripts/ci/openclaw-enterprise-reader-archive.py
+      fi ;;
     *'--entrypoint sha256sum '*) sha256sum builds/openclaw-enterprise-restore/safe-extract.py ;;
   esac
 elif [[ "$1" == save ]]; then
@@ -97,9 +106,15 @@ test -s "$6" && test -s "$7"
         for command in ("age", "python3", "jq", "mountpoint", "pg_restore", "pg_dump", "sha256sum"):
             self.assertTrue(any(f"--network none --read-only --user 999:999 --entrypoint {command} " in call
                                 for call in calls), command)
+        self.assertTrue(any("--network none --read-only --user 1000:1000 --entrypoint python3 "
+                            in call and "occ-reader-archive.py --help" in call for call in calls))
+        self.assertTrue(any("--network none --read-only --user 1000:1000 --entrypoint sha256sum "
+                            in call and "occ-reader-archive.py" in call for call in calls))
         dockerfile = (self.root / "builds/openclaw-enterprise-restore/Dockerfile").read_text()
         self.assertIn("FROM --platform=linux/amd64 " + BASE, dockerfile)
         self.assertIn("--no-install-recommends python3 jq util-linux", dockerfile)
+        self.assertIn("COPY --chmod=0555 scripts/ci/openclaw-enterprise-reader-archive.py "
+                      "/usr/local/libexec/occ-reader-archive.py", dockerfile)
 
     def test_dirty_source_wrong_revision_and_wrong_base_block_before_publish(self):
         self.assertNotEqual(self.build(FIXTURE_DIRTY="true").returncode, 0)
@@ -115,6 +130,12 @@ test -s "$6" && test -s "$7"
         result = self.build(FIXTURE_LABEL_SHA="b" * 40)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(len(self.calls.read_text().splitlines()), 2)
+
+    def test_mismatched_embedded_reader_blocks_build(self):
+        result = self.build(FIXTURE_READER_HASH_BAD="true")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(any("occ-reader-archive.py" in call
+                            for call in self.calls.read_text().splitlines()))
 
     def test_scan_and_publication_bind_the_same_image_before_credentials(self):
         workflow = WORKFLOW.read_text()

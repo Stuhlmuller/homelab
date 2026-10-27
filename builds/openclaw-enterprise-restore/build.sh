@@ -35,3 +35,10 @@ source_hash="$(sha256sum builds/openclaw-enterprise-restore/safe-extract.py | cu
 image_hash="$("${run[@]}" --entrypoint sha256sum homelab-oce-restore:build \
   /usr/local/libexec/occ-safe-extract.py | cut -d ' ' -f 1)"
 [[ "$source_hash" == "$image_hash" ]]
+reader_run=(docker run --rm --network none --read-only --user 1000:1000)
+"${reader_run[@]}" --entrypoint python3 homelab-oce-restore:build \
+  -I /usr/local/libexec/occ-reader-archive.py --help >/dev/null
+reader_source_hash="$(sha256sum scripts/ci/openclaw-enterprise-reader-archive.py | cut -d ' ' -f 1)"
+reader_image_hash="$("${reader_run[@]}" --entrypoint sha256sum homelab-oce-restore:build \
+  /usr/local/libexec/occ-reader-archive.py | cut -d ' ' -f 1)"
+[[ "$reader_source_hash" == "$reader_image_hash" ]]

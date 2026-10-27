@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-0ff63b5b5b53b49d967734f7
+    resource: repo://builds/openclaw-enterprise-restore/Dockerfile
   - id: openwiki-source-db51338c65d164109e183154
     resource: repo://builds/openclaw-enterprise-restore/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
@@ -80,6 +82,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-bf69918d51d510f8b19906f1
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
   - id: openwiki-source-4aa900d84e01409d13d834a6
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
@@ -194,6 +198,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
+  - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
+    resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -220,10 +226,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
+generated: { by: "codex", at: "2026-10-27T22:35:17.744Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:23:45.554Z
+    at: 2026-10-27T22:39:20.858Z
 ---
 
 # Workload Inventory
@@ -496,8 +502,14 @@ UID. Namespace-local reader and capture scripts can assemble identity-bound
 claim and Secret archives but deliberately leave the continuous fence false.
 The packager requires local scratch and an age recipient before writing
 ciphertext to a separate backup mount. A fifth restore runtime is staged for
-protected build, scan, signing and authenticated pull. No reader Job,
-coordinator, recipient projection, scheduled backup, fifth-image receipt or
+protected build, scan, signing and authenticated pull. It now embeds the reader
+executable. A pure renderer produces two idle, namespace-local reader Pod
+specs with exact read-only claim mounts, no service-account token and an
+immutable source-tagged Harbor digest. Both reader and assembler require the
+future coordinator's exact expected image reference; they reject a changed
+command, environment or probe. The Pods are excluded from Kustomization and
+workflows. No reader Pod is applied, and no coordinator, enforced egress fence,
+recipient projection, scheduled backup, fifth-image receipt or
 independent restore exists yet.
 The reconciler now stages a separate journaled backup stop/resume helper. It
 records intent before each native Agent POST, adopts exact outcomes after lost

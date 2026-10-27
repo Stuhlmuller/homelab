@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:02eb84f2f62533aab825733f6bd32225c1893f381e82182bbcbd8da3dc8af1ff",
+  "pageVersion": "sha256:b366be2949a437509cbeef14bcd3eb2054e0fa0406661b1c161a2340670fed43",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -746,7 +746,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:81566786658aa4fd3bc41bd5516753794d89091e9a7a363abde5fe96602c9edf"
+          "version": "repo-file-v1:sha256:12c48bfa936fdfbe9410fd5bfbd6fcd7d240ac51f8bdc0a5e63e6135b0605881"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -991,10 +991,28 @@
           "version": "repo-lines-v1:sha256:fb2c5fec9c1d8a4d99e4e924a04d87ce7a2b8ea5b7e6b3848df37563e8898bbf:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjgyZDUwZjlmYmJlYjI5NzU5MjNhYmNjMTEzNzdiYmJkODQ2N2E5NzYyODQ2NzgzOGEyOTIyNDFhYTZkMGRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUwODRhZTI5Mzk5YWFiOTEzZWZkNWFiMzQzYTNlYjJkMjVhYjY3NjZkNzI4MDFiN2ZjZDFlNTgzYjFiY2JiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2NkMDBhYTk1YjZiOGY1ZTFhZjY5NzE3NzI2NmQyYmFhMWQ0ODk0OTJjNjRlMTcwNDYxMjI3ZDcxNzgyNTk5MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTkwZjZmNTY5OWZhY2JhM2M0Y2Y3NDg5ZTE0MjNkZmMzMWRkODRkNjc5Y2U1ZDJmMzI5ZjBiMjdkYTgwMDMxYSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_0ddc8f41e1db40e7b9c4ae662f545e7a",
+      "statement": "The dormant Enterprise restore image embeds the namespace-local reader and its build checks UID 1000 execution plus exact source/image bytes before publication credentials; the reader Pod renderer accepts only a source-tagged immutable Harbor digest and does not apply Pods.",
+      "evidence": [
+        {
+          "resource": "repo://builds/openclaw-enterprise-restore/Dockerfile#L1-L21",
+          "version": "repo-lines-v1:sha256:f48e41328bfe71e763c4e1f1a7c5306dbe68b995ce810463e414dfe7e77c6119:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmZTZlMjUxNmM5MjBmYzk1MGQyNDhlZGZmOTc3NDMxMDdiN2Y2NmI4YjYzZmEyMjVmMzhjYmZlMzc5ZWViYjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3MzgwNTE2ZTQ2MjE2ZWQwYzU4MzE0M2Q0NTBiZGQ3N2VmYWRmZDBmYWIxM2YwM2RiNWVkNmY1YzA0MTc3NTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://builds/openclaw-enterprise-restore/build.sh#L7-L44",
+          "version": "repo-lines-v1:sha256:daecc4a98b55633ae10a5fd5a78da62220d9a1ea42e47a055dbf0be57d3c53fc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlMDU2ZjY0MWJiOWMwMmJlNjBiYjI5ZGEzMzEwMDAwMzRhNmQyZGIxN2M1Y2JhYzJmMjU0MzlkMmNhMDU5MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ1OTBhNjdmZmEzMjA5YjFjMzU2MDI5MjdhY2U4YzdhNjk5NTdkYWJmZTBjNmI1N2Q1NjFiYTAyN2IwNWJlYzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-pod.py#L24-L81",
+          "version": "repo-lines-v1:sha256:05bf28db764a1453def0ff2a34d1357806a6e5c796cd0e702eb05f313dc68413:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0NWY2YjdiN2IwMTI1MWE0NGY4MGM3N2UzZDc5MzZjMjA4MjhhODIyZDFkZTA1Y2MxOGE1OGY0Mjc4ZTYyZTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1NDEyNzMwOWZkZTJiZWUxOWQzODY1MWRkOWU5ZmJiZmQzM2E5MGM2Yjc1ODk4NjY4MzM3N2U1YmNjNzUyOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:04:19.774Z"
+    "at": "2026-10-27T22:39:20.858Z"
   }
 }

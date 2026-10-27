@@ -57,6 +57,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-encrypted-backup-test.py",
                          "openclaw-enterprise-capture-test.py",
                          "openclaw-enterprise-reader-archive-test.py",
+                         "openclaw-enterprise-reader-pod-test.py",
                          "openclaw-enterprise-safe-extract-test.py",
                          "openclaw-enterprise-postgres-test.py",
                          "openclaw-enterprise-chart-hooks-test.py",
