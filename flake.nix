@@ -60,6 +60,8 @@
                 '    if (options.createWorkflow) await writeCodeModeAgentSnippets(cwd);'
               patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
                 < ${./builds/openwiki/coverage-history.patch}
+              patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
+                < ${./builds/openwiki/baseline-recovery.patch}
               makeWrapper ${pkgs.nodejs}/bin/node "$out/bin/openwiki" \
                 --add-flags "$out/libexec/openwiki/node_modules/openwiki/dist/cli/cli.js"
               runHook postInstall
@@ -167,6 +169,13 @@
             nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
           } ''
             node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
+          openwiki-recovery = pkgs.runCommand "homelab-openwiki-recovery-test" {
+            nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
+          } ''
+            node ${./scripts/ci/openwiki-baseline-recovery-test.mjs} ${self.packages.${system}.openwiki}
             mkdir "$out"
             printf 'passed\n' > "$out/result"
           '';
