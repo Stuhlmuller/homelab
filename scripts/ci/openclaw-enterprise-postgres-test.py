@@ -286,7 +286,7 @@ class PostgresFoundation(unittest.TestCase):
             details = (self.root / "drill/details.log").read_text()
             self.fail(f"isolated restore failed: {details[-1800:]}")
         self.assertEqual(restored.stdout, "")
-        self.assertEqual(restored.stderr, "OpenClaw Enterprise isolated restore passed\n")
+        self.assertEqual(restored.stderr, "OpenClaw Enterprise isolated PostgreSQL restore passed\n")
         self.assertFalse((self.root / "drill/backup").exists(),
                          "the read-only recovery archive must stay off scratch")
         self.assertFalse((self.root / "drill/pgdata/postmaster.pid").exists())
@@ -326,7 +326,7 @@ class PostgresFoundation(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, "")
                 self.assertEqual(result.stderr,
-                                 "OpenClaw Enterprise isolated restore failed at recovery-marker\n")
+                                 "OpenClaw Enterprise isolated PostgreSQL restore failed at recovery-marker\n")
         finally:
             marker.write_bytes(original_marker)
             checksums.write_bytes(original_checksums)
@@ -355,7 +355,7 @@ class PostgresFoundation(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(result.stdout, "")
             self.assertEqual(result.stderr,
-                             "OpenClaw Enterprise isolated restore failed at archive-stability\n")
+                             "OpenClaw Enterprise isolated PostgreSQL restore failed at archive-stability\n")
         finally:
             metadata.write_bytes(original_metadata)
 
@@ -364,7 +364,7 @@ class PostgresFoundation(unittest.TestCase):
         result = run("sh", "-ec", corrupted, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
-        self.assertEqual(result.stderr, "OpenClaw Enterprise isolated restore failed at integrity\n")
+        self.assertEqual(result.stderr, "OpenClaw Enterprise isolated PostgreSQL restore failed at integrity\n")
         self.assertNotIn("tampered", result.stderr)
 
     def test_stock_migration_app_dml_without_create_or_admin(self):

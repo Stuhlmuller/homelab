@@ -51,9 +51,9 @@ spec:
                   pg_ctl -D "$work/pgdata" -m immediate -w stop >/dev/null 2>&1 || result=1
                 fi
                 if [ "$result" -eq 0 ]; then
-                  echo 'OpenClaw Enterprise isolated restore passed' >&3
+                  echo 'OpenClaw Enterprise isolated PostgreSQL restore passed' >&3
                 else
-                  echo "OpenClaw Enterprise isolated restore failed at $stage" >&3
+                  echo "OpenClaw Enterprise isolated PostgreSQL restore failed at $stage" >&3
                 fi
                 exit "$result"
               }
