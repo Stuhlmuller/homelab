@@ -68,6 +68,35 @@ class PlatformStageTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertTrue(external)
 
+    def test_pre_enable_baseline_reaches_protected_entry_without_canary_node(self):
+        result, external = self.run_stage("firewall-baseline")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(external)
+
+    def test_baseline_retains_attempt_before_probe_and_private_capture(self):
+        source = STAGE.read_text()
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        self.assertIn("firewall-baseline", workflow)
+        for access in ("create pods", "create pods/exec", "delete pods"):
+            self.assertLess(source.index(f"kubectl auth can-i {access}"),
+                            source.index('retain_result "$work/baseline-attempt.json"'))
+        self.assertLess(source.index('retain_result "$work/baseline-attempt.json"'),
+                        source.index('python3 -I scripts/network-policy-firewall-baseline.py'))
+        self.assertIn('podToken: $podToken', source)
+        self.assertIn('--attempt "$work/baseline-attempt.json"', source)
+        self.assertIn('retain_result "$work/baseline.json" baseline', source)
+
+    def test_recovery_loads_private_owner_marker_before_deleting_pod(self):
+        source = STAGE.read_text().split('  firewall-baseline-recover)\n', 1)[1].split(
+            '  canary-admit|canary-release)\n', 1)[0]
+        workflow = (ROOT / ".github/workflows/platform-maintenance.yml").read_text()
+        self.assertIn('baseline_source_sha:', workflow)
+        self.assertIn('baseline_run_id:', workflow)
+        self.assertLess(source.index('load_receipt "openclaw-enterprise/platform/${BASELINE_SOURCE_SHA}/${BASELINE_RUN_ID}/baseline-attempt.json"'),
+                        source.index('retain_result "$work/baseline-recover-attempt.json"'))
+        self.assertLess(source.index('retain_result "$work/baseline-recover-attempt.json"'),
+                        source.index('python3 -I scripts/network-policy-firewall-baseline.py recover'))
+
     def test_upgrade_executor_requires_protected_inputs(self):
         source = STAGE.read_text()
         self.assertIn("platform-maintenance.py execute", source)
