@@ -44,6 +44,30 @@ class ScanTests(unittest.TestCase):
             scan.verify(report, IMAGE)
             self.assertEqual(report, original)
 
+    def test_fixed_debian_restore_profile_preserves_complete_scan_checks(self):
+        report = self.report()
+        report["distro"] = {"name": "debian", "version": "12.13"}
+        scan.verify(report, IMAGE, expected_distro="debian:12")
+        with self.assertRaisesRegex(AssertionError, "identity-distro"):
+            scan.verify(report, IMAGE)
+        report["distro"]["version"] = "13"
+        with self.assertRaisesRegex(AssertionError, "identity-distro"):
+            scan.verify(report, IMAGE, expected_distro="debian:12")
+
+    def test_debian_profile_is_fixed_and_rejects_fixable_findings(self):
+        report = self.report()
+        report["distro"] = {"name": "debian", "version": "12"}
+        report["matches"] = [{"vulnerability": {"severity": "High", "fix": {
+            "state": "fixed", "versions": ["PRIVATE_VERSION"]}}}]
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "report.json"
+            path.write_text(json.dumps(report))
+            error = io.StringIO()
+            with redirect_stderr(error):
+                self.assertEqual(scan.main(["--expected-distro", "debian:12", str(path), IMAGE]), 1)
+            self.assertIn("remediation", error.getvalue())
+            self.assertNotIn("PRIVATE_VERSION", error.getvalue())
+
     def test_refuses_available_fixes(self):
         for fix in ({"state": "fixed", "versions": ["fixed-version"]},
                     {"state": "", "versions": ["fixed-version"]},

@@ -164,6 +164,47 @@ class ChartHooksContract(unittest.TestCase):
                                 for volume in volumes))
 
     @unittest.skipUnless(UPSTREAM, "supply --upstream-root for pinned stock chart comparison")
+    def test_stock_chart_gateway_ca_is_produced_and_only_public_cert_is_mounted(self):
+        chart = {identity(item): item for item in self.chart}
+        namespace = "openclaw-system"
+        roots = [item for item in self.chart if item["kind"] == "Certificate"
+                 and item["metadata"]["namespace"] == namespace
+                 and item["spec"].get("isCA")]
+        self.assertEqual(len(roots), 1)
+        root = roots[0]
+        root_name = self.config["gatewayIdentity"]["caSecretName"]
+        self.assertEqual(root["metadata"]["name"], root_name)
+        self.assertEqual(root["spec"]["secretName"], root_name)
+        self.assertEqual(root["spec"]["privateKey"]["rotationPolicy"], "Never")
+        bootstrap = chart[("Issuer", root["spec"]["issuerRef"]["name"], namespace)]
+        self.assertEqual(bootstrap["spec"], {"selfSigned": {}})
+        ca_issuers = [item for item in self.chart if item["kind"] == "Issuer"
+                      and item["metadata"]["namespace"] == namespace
+                      and item["spec"].get("ca", {}).get("secretName") == root_name]
+        self.assertEqual(len(ca_issuers), 1)
+        listener_name = self.values["gatewayRouting"]["gatewayName"] + "-tls"
+        listener = chart[("Certificate", listener_name, namespace)]
+        self.assertEqual(listener["spec"]["secretName"], listener_name)
+        self.assertEqual(listener["spec"]["issuerRef"]["name"],
+                         ca_issuers[0]["metadata"]["name"])
+
+        for component in ("api", "worker"):
+            pod = chart[("Deployment", f"openclaw-enterprise-{component}", namespace)]["spec"]["template"]["spec"]
+            root_volumes = [volume for volume in pod["volumes"]
+                            if volume.get("secret", {}).get("secretName") == root_name]
+            self.assertEqual(root_volumes, [{
+                "name": "gateway-ca",
+                "secret": {"secretName": root_name,
+                           "items": [{"key": "tls.crt", "path": "ca.crt"}]},
+            }])
+            mounts = [mount for container in pod["containers"]
+                      for mount in container.get("volumeMounts", [])
+                      if mount["name"] == "gateway-ca"]
+            self.assertEqual(len(mounts), 1)
+            self.assertEqual(mounts[0]["mountPath"], "/etc/openclaw/gateway-ca")
+            self.assertTrue(mounts[0]["readOnly"])
+
+    @unittest.skipUnless(UPSTREAM, "supply --upstream-root for pinned stock chart comparison")
     def test_stock_chart_uses_exact_secret_keys_and_retained_file_mounts(self):
         chart = {(item["kind"], item["metadata"]["name"]): item for item in self.chart}
 

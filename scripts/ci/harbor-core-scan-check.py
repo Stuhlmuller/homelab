@@ -106,7 +106,7 @@ def verify_archive_config(archive_path, inspect_id):
         return config_id
 
 
-def verify(report, image_id, require_zero_matches=False):
+def verify(report, image_id, require_zero_matches=False, expected_distro="photon:5.0"):
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id), "identity"
     assert report["source"]["type"] == "image", "identity-source"
     target = report["source"]["target"]
@@ -119,7 +119,12 @@ def verify(report, image_id, require_zero_matches=False):
     # Docker archives omit these summary fields; the hashed config remains authoritative.
     assert target["os"] in ("", config_identity["os"]), "identity-platform"
     assert target["architecture"] in ("", config_identity["architecture"]), "identity-platform"
-    assert report["distro"]["name"] == "photon" and report["distro"]["version"] == "5.0", "identity-distro"
+    assert expected_distro in {"photon:5.0", "debian:12"}, "identity-distro"
+    distro = report["distro"]
+    if expected_distro == "photon:5.0":
+        assert distro["name"] == "photon" and distro["version"] == "5.0", "identity-distro"
+    else:
+        assert distro["name"] == "debian" and re.fullmatch(r"12(?:\.[0-9]+)?", distro["version"]), "identity-distro"
     descriptor = report["descriptor"]
     assert descriptor["name"] == "grype" and descriptor["version"] == "0.112.0", "scanner"
     assert descriptor["db"]["status"]["valid"] is True, "database"
@@ -154,6 +159,10 @@ def main(args):
     if len(args) >= 2 and args[0] == "--diagnostic-file":
         diagnostic_file = Path(args[1])
         args = args[2:]
+    expected_distro = "photon:5.0"
+    if len(args) >= 2 and args[0] == "--expected-distro":
+        expected_distro = args[1]
+        args = args[2:]
     archive_path = None
     if len(args) >= 2 and args[0] == "--archive":
         archive_path = Path(args[1])
@@ -166,7 +175,8 @@ def main(args):
         raw_report = Path(args[0]).read_bytes()
         report = json.loads(raw_report)
         config_id = verify_archive_config(archive_path, args[1]) if archive_path is not None else args[1]
-        verify(report, config_id, require_zero_matches=require_zero_matches)
+        verify(report, config_id, require_zero_matches=require_zero_matches,
+               expected_distro=expected_distro)
     except AssertionError as error:
         category = str(error)
         if category not in {"identity-source", "identity-image-id", "identity-archive", "identity-archive-structure",

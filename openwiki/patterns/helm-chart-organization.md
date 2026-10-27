@@ -19,7 +19,7 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T22:04:19.774Z
 ---
 
 # Helm Chart Organization
