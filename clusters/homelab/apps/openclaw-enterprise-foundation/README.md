@@ -90,6 +90,12 @@ A detached JSON object or changed
 marker cannot yield even a watch-only receipt. This does not attest the other
 recovery bytes or authorize packaging. Reader Jobs, exact-main dispatch,
 fresh observation collection and a trusted fence receipt are still absent.
+The assembler now seals every output directory to mode 0700. The source-only
+[recovery chain](../../../../scripts/ci/openclaw-enterprise-recovery-chain.py)
+hashes all staged files and directories, checks journal/tenant/Agent identity,
+and binds proposed ciphertext, exact bucket/key/version and distinct publisher
+and isolated-restore run references. It does not authenticate S3 or workflow
+runs, prove a restore, promote the marker or return a publishable receipt.
 The source-only
 [reader emitter](../../../../scripts/ci/openclaw-enterprise-reader-archive.py)
 streams each namespace's complete read-only claim tree over a private exec

@@ -431,6 +431,17 @@ def _move_tree(root, relative, source):
     os.replace(source, target)
 
 
+def _seal_directories(root):
+    """Keep every assembled parent private, including implicit archive parents."""
+    for directory, children, _ in os.walk(root, followlinks=False):
+        for name in children:
+            path = Path(directory) / name
+            info = path.lstat()
+            require(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid(),
+                    "Enterprise recovery directory is unsafe")
+            path.chmod(0o700)
+
+
 def assemble(config, expected_sha, observations, operator_archive, tenant_archive,
              output, expected_reader_image):
     """Create one local tree after two snapshots; fence continuity stays false."""
@@ -625,6 +636,7 @@ def assemble(config, expected_sha, observations, operator_archive, tenant_archiv
                   "tenantReaderPodUid": tenant_pod["metadata"]["uid"],
                   "observationSha256": hashlib.sha256(canonical(observations)).hexdigest()}
         _write_bytes(material, "recovery.json", canonical(marker))
+        _seal_directories(material)
         require(not output.exists() and not output.is_symlink())
         os.replace(material, output)
         return marker
