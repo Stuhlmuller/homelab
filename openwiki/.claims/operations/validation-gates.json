@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3aa855c4faf5de1147a80262bea9664d50e0a9639de26dbaa82b54489a9cbb9f",
+  "pageVersion": "sha256:053f799e8caa786f31cde03c5f18ffc10bc06a345e645850109fccaf6ebe3b6a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -914,7 +914,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -944,7 +944,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -1046,7 +1046,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -1454,7 +1454,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -1610,7 +1610,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -1641,8 +1641,8 @@
           "version": "repo-lines-v1:sha256:9eae0b9b8705ba4fb7e8e169efa0d0f04b0889cfcc1b3282e555b406bf7efa6b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxMTBmZWMyNGZkOGM5YTU4MzhlNTM1MDFiZGM3MmYwN2U0NjFlYjRjMGI4MjkzOWIyZTY4YWEwYzZmNTMzZjk1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzNjcwNGUwY2Q5N2M2YWFiNTY4ZWMwMTI3YjMxYTNlODE2OGY4ZGE0YWU2MWRiNDVmNTg5OTFkZTA4NjRkY2U5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI4ZDI5ZTcwZGE3OGU0ZTE2MzQ3YmM4MzdiNmZlNDRhM2MwODBlM2YzMTA1MDU0MDljOWEyM2JlYzRiMDM2NzAyIn0"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L35-L59",
-          "version": "repo-lines-v1:sha256:65f639a033f0170a6661cb8d719b27843d72cf396bf1ae3aa2c7fca4d7e25d3b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1YTBhOWYwODkwN2U5NTBmMzcxOTVlMDQ5ZDljNmJjMzkxMzI5NjM2MDQxMDBkN2E4Y2MzYjk2YWMyOGY4ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0MDI5OTZjOTU1YTIyY2UzOWRiYTdkNzhjNmQzNmY1YTc4MDAwMGYzMTAyZjIxYTdmNzExYWRkYmU0NjYxMDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwYjhhM2RhOGM5MGIzYzkwMWJmN2QwZTI3NjYwMGE2YjBiY2Y0NzZlMzhjNGUyMDM4NThiYWE2NjZmMDU1YjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFmNDI3YjA2MWQxYTVmNjY5MTFhOTBlOTU5ZWJlZGUxYmIxNzEwMjFmNzkxNWIzNGZjMDE3NjljZTcxY2Q1YWEifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L35-L60",
+          "version": "repo-lines-v1:sha256:9c5c4df51a2c113b6eff9acb3562018117f23cbf800be64dcf5b047569e20673:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1YTBhOWYwODkwN2U5NTBmMzcxOTVlMDQ5ZDljNmJjMzkxMzI5NjM2MDQxMDBkN2E4Y2MzYjk2YWMyOGY4ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0MDI5OTZjOTU1YTIyY2UzOWRiYTdkNzhjNmQzNmY1YTc4MDAwMGYzMTAyZjIxYTdmNzExYWRkYmU0NjYxMDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwYjhhM2RhOGM5MGIzYzkwMWJmN2QwZTI3NjYwMGE2YjBiY2Y0NzZlMzhjNGUyMDM4NThiYWE2NjZmMDU1YjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFmNDI3YjA2MWQxYTVmNjY5MTFhOTBlOTU5ZWJlZGUxYmIxNzEwMjFmNzkxNWIzNGZjMDE3NjljZTcxY2Q1YWEifQ"
         }
       ]
     },
@@ -1966,7 +1966,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "version": "repo-file-v1:sha256:5ce65edbad34baf6bb04cefe936f61410d0d87e4d1ebf20e0e10cd50a69a5cbe"
         }
       ]
     },
@@ -1991,10 +1991,28 @@
           "version": "repo-lines-v1:sha256:c998566c4c86b8a9602d6ae0468310ae46a971d98b5333c3b4c5ec2ef1fc8ffb:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNjBhNDkwMjU2YTEyYWYxNTI2MmViZTUxNDExODEzY2ZiY2Y5ZDVmYzM5NDYxMzNjYWU3NjZlN2RkYzRlYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1OGZiZjIxZGJmMWFmM2JiYWNkM2IwYjQxYTRhYjVmZDZjODI4MDQzZDQwYzVkODMzYWRhZTQ1OGM4MzE5Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_88a8b9d49c4e44d08fb38427762b0fe5",
+      "statement": "The static gate runs source-only backup coordinator fixtures for durable ID retry, authenticated-watch adapter contracts, tenant Pod continuity and fail-closed rejection, but the helper returns only an unpublishable reader-transfer watch receipt and has no live publication or independent restore caller.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py",
+          "version": "repo-file-v1:sha256:301dc867ce296df400b8d22dc41a9e2611ad96010e3b31a59daa4979a27dea54"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator.py",
+          "version": "repo-file-v1:sha256:41dbe5657f35dd343da6a2a3dea1ca6a009ea237d7654fee76c40c9ec148105e"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L34-L43",
+          "version": "repo-lines-v1:sha256:c15fa38b6544a14153bade15e9ac42d7735ac4aa80d213006629afcdb0486f31:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2YzFjN2EyYmFiMjM0NzljNjljZTM1MzYxYWRkOTg1YzEzMzVlYjI3NWQ0OTQ4YjgxN2Y5Y2RlZGYxM2RiNTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlNTU1YWE4NTAyODk1OGFkNGI4MWIzZWI3Y2ZiM2Q2MDNlNGI5ZTk1MGMzZWEwOTY5ODk0MzliYTkzMWY2ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJhNzk0MDc5MTliNzMzNWZlYzIzZTUyYjY2MmU4NGVjMTFjNTk0ZTQyNDUyMGZmNGIzZGYzOTk3YWZjOTQ5MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxMjFmNjg4NmQ5MTM1MjlmZWQ0MzA3NmQyNWJiNzdhZDZhODZhYzQ4M2IyZTI3NjZhYjMxYTc3MjU0M2E3NGUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T23:09:14.121Z"
+    "at": "2026-10-27T23:14:51.773Z"
   }
 }

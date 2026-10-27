@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4ac5fcd136a5b6b047a4b9a1e833cdb055597e88f6332b8485132b916b3995b5",
+  "pageVersion": "sha256:ac0dcb37957ec21e3a85e2298d273a73d80f5bc0a6a1ad5e75500e278d654d9c",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -443,7 +443,7 @@
           "version": "repo-lines-v1:sha256:da91d9eef5def9da5d3cb0173b9593c5e7f60d16de742e03bd535d9849c5f274:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZDNiYzgyNzM0N2QwOWIwNzhiOTcwODEwOTU4NTRlYmY3NTg3ODk5MDM3M2IxZjI1YTExNmRmOWNkMGYwNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNmNhY2NiZWVmZWJiYzUzZDRhYzIxN2FlMzhlODQxMTg3YTc1ZDdkNDYyNjMzZDJmODlhOGYzMjhkMDcwNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L24-L56",
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L27-L59",
           "version": "repo-lines-v1:sha256:bd2e96cb2bde49722204e858b712335c3e5f2d81699ead3c81680c912e664264:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZjFkYzdjMWNiOTk4ZTlhMjEzMWI1ZjQxYWI4NTdmYzU4NDY0NDljZDAzZTdkYWY5ZTdkYjk1YjQxYTUzMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzOTFkZjNkMDlkYTVmYTk0NTRiMjBkNDRhMTk0ZDA4MTQwNjUzOTRiZDNjMTVlOTQ1NzQ5ODhmZWVmNTY1NGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
@@ -451,10 +451,24 @@
           "version": "repo-lines-v1:sha256:c998566c4c86b8a9602d6ae0468310ae46a971d98b5333c3b4c5ec2ef1fc8ffb:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNjBhNDkwMjU2YTEyYWYxNTI2MmViZTUxNDExODEzY2ZiY2Y5ZDVmYzM5NDYxMzNjYWU3NjZlN2RkYzRlYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1OGZiZjIxZGJmMWFmM2JiYWNkM2IwYjQxYTRhYjVmZDZjODI4MDQzZDQwYzVkODMzYWRhZTQ1OGM4MzE5Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_98e272d39b734bb8a8a276ccef6cc3bb",
+      "statement": "The Enterprise backup coordinator source reuses journaled transaction IDs and checks a tenant Pod watch around staged observations, but its receipt is explicitly unpublishable and no live adapter, publication, or independent restore caller exists.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py",
+          "version": "repo-file-v1:sha256:301dc867ce296df400b8d22dc41a9e2611ad96010e3b31a59daa4979a27dea54"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator.py",
+          "version": "repo-file-v1:sha256:41dbe5657f35dd343da6a2a3dea1ca6a009ea237d7654fee76c40c9ec148105e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T23:04:53.760Z"
+    "at": "2026-10-27T23:14:51.773Z"
   }
 }

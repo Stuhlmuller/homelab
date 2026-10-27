@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:389eab8408ee8f2cab133446896121d8bf0f16ad6a6a02fbb14e0330946bffb1",
+  "pageVersion": "sha256:fc6e22e8c7c81b11bb495bcd72959e6b59180f916881b87169e8700c71be7ecd",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -724,11 +724,11 @@
     },
     {
       "id": "claim_d0294ea2ad664c5d91b923725fd4fc53",
-      "statement": "The dormant Enterprise packager requires exactly one marker with writerStopped and continuousFenceVerified true and a nonempty claim UID. Source-only reader and capture scripts assemble identity-bound namespace-local archives but leave the continuous fence false; no reader Job, coordinator, recipient projection, scheduled encrypted off-node backup or independent restore is declared.",
+      "statement": "The dormant Enterprise packager requires exactly one marker with writerStopped and continuousFenceVerified true and a nonempty claim UID. Source-only reader and capture scripts assemble identity-bound namespace-local archives but leave the continuous fence false; no live reader, backup coordinator, recipient projection, scheduled encrypted off-node backup or independent restore is declared.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L48-L121",
-          "version": "repo-lines-v1:sha256:4a9d73cf3d868f77bf56ecd32c4cc825babc6b6d9c493d71c1106d55aed64d77:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOWMyMzJlNjAyMzRmOTNmNGNlOTU1ZmM5Zjc0MWIzNDY0OGFlOThiMmYwNjdlM2RlYjlkOGQ0OWI4MzkwZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmY2QwZGFkNmEyZTM0YWFlZjQ1YzkyMTNlYTc2NTI1ZWUyMzA1ZTYxNTkzZjc3MzAzZDczYTRmMDA1NDM3N2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlYTcwNjM3MmMwOTczYjIwYzc3OWMyYjFjODUwNGNjNTFjMmRlOWYyODNjZTU0ODg4ZjBhOGY0NmI0ZDVjYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZGQ5MzNkYzMwMDM2NTgwNTBmNWNhMmIzM2E1MmM4MWU5MjEwYTQxMmYwMGU4N2UwMzdkNGJkMzQyOWMzMjYifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md#L48-L120",
+          "version": "repo-lines-v1:sha256:813d30d566a2d7f3f00cfabe01e10e54e4fdae6ba7955e11b22e9a2a73ea3338:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkOWMyMzJlNjAyMzRmOTNmNGNlOTU1ZmM5Zjc0MWIzNDY0OGFlOThiMmYwNjdlM2RlYjlkOGQ0OWI4MzkwZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmZTBlZjVlZTZlOWFhOTViYmM1MWNmNjY3YzBiNjM2Zjc5MWIzMTc5ZDAyOWRmNWMxNDgyMTBhZDJjZTJhZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlYTcwNjM3MmMwOTczYjIwYzc3OWMyYjFjODUwNGNjNTFjMmRlOWYyODNjZTU0ODg4ZjBhOGY0NmI0ZDVjYjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlMTIwZDRkM2JhZDkzZWU3ZTk3MGY4YzNmNGJmMjY3OTI3ZjI3MTg1ZjhiNjRkMWNlODBhYjU3MWY0MjQ1Y2QifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh#L20-L24",
@@ -879,7 +879,7 @@
           "version": "repo-lines-v1:sha256:da91d9eef5def9da5d3cb0173b9593c5e7f60d16de742e03bd535d9849c5f274:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZDNiYzgyNzM0N2QwOWIwNzhiOTcwODEwOTU4NTRlYmY3NTg3ODk5MDM3M2IxZjI1YTExNmRmOWNkMGYwNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNmNhY2NiZWVmZWJiYzUzZDRhYzIxN2FlMzhlODQxMTg3YTc1ZDdkNDYyNjMzZDJmODlhOGYzMjhkMDcwNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L24-L56",
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L27-L59",
           "version": "repo-lines-v1:sha256:bd2e96cb2bde49722204e858b712335c3e5f2d81699ead3c81680c912e664264:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZjFkYzdjMWNiOTk4ZTlhMjEzMWI1ZjQxYWI4NTdmYzU4NDY0NDljZDAzZTdkYWY5ZTdkYjk1YjQxYTUzMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzOTFkZjNkMDlkYTVmYTk0NTRiMjBkNDRhMTk0ZDA4MTQwNjUzOTRiZDNjMTVlOTQ1NzQ5ODhmZWVmNTY1NGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
@@ -887,10 +887,24 @@
           "version": "repo-lines-v1:sha256:c998566c4c86b8a9602d6ae0468310ae46a971d98b5333c3b4c5ec2ef1fc8ffb:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNjBhNDkwMjU2YTEyYWYxNTI2MmViZTUxNDExODEzY2ZiY2Y5ZDVmYzM5NDYxMzNjYWU3NjZlN2RkYzRlYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1OGZiZjIxZGJmMWFmM2JiYWNkM2IwYjQxYTRhYjVmZDZjODI4MDQzZDQwYzVkODMzYWRhZTQ1OGM4MzE5Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_55658c59b41649008da900db134c4dda",
+      "statement": "The source-only Enterprise backup coordinator reuses unfinished journaled backup IDs and returns only an unpublishable tenant Pod watch receipt; it has no live watch adapter or publication and restore caller, and cannot promote the recovery marker or resume an Agent.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py",
+          "version": "repo-file-v1:sha256:301dc867ce296df400b8d22dc41a9e2611ad96010e3b31a59daa4979a27dea54"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator.py",
+          "version": "repo-file-v1:sha256:41dbe5657f35dd343da6a2a3dea1ca6a009ea237d7654fee76c40c9ec148105e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T23:04:53.760Z"
+    "at": "2026-10-27T23:14:51.773Z"
   }
 }

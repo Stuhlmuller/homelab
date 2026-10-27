@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:162c5206b9e5c5334bd7921ce781747dbac25ef9b4643a9481e1c018eba5de6b",
+  "pageVersion": "sha256:601a6bb0eb477943ef77ee5880a1400d48c6acd3da78c3af2c6895571b1c7162",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -389,7 +389,7 @@
           "version": "repo-lines-v1:sha256:da91d9eef5def9da5d3cb0173b9593c5e7f60d16de742e03bd535d9849c5f274:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZDNiYzgyNzM0N2QwOWIwNzhiOTcwODEwOTU4NTRlYmY3NTg3ODk5MDM3M2IxZjI1YTExNmRmOWNkMGYwNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNmNhY2NiZWVmZWJiYzUzZDRhYzIxN2FlMzhlODQxMTg3YTc1ZDdkNDYyNjMzZDJmODlhOGYzMjhkMDcwNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L24-L56",
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L27-L59",
           "version": "repo-lines-v1:sha256:bd2e96cb2bde49722204e858b712335c3e5f2d81699ead3c81680c912e664264:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZjFkYzdjMWNiOTk4ZTlhMjEzMWI1ZjQxYWI4NTdmYzU4NDY0NDljZDAzZTdkYWY5ZTdkYjk1YjQxYTUzMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzOTFkZjNkMDlkYTVmYTk0NTRiMjBkNDRhMTk0ZDA4MTQwNjUzOTRiZDNjMTVlOTQ1NzQ5ODhmZWVmNTY1NGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
@@ -397,10 +397,28 @@
           "version": "repo-lines-v1:sha256:a8b5d5cdf8ab8fc218da9c9b45ebe135648947d7b7b7887e2b5531ba8441cc15:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNjBhNDkwMjU2YTEyYWYxNTI2MmViZTUxNDExODEzY2ZiY2Y5ZDVmYzM5NDYxMzNjYWU3NjZlN2RkYzRlYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1OGZiZjIxZGJmMWFmM2JiYWNkM2IwYjQxYTRhYjVmZDZjODI4MDQzZDQwYzVkODMzYWRhZTQ1OGM4MzE5Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjliOTE2ZDE4MDgyYjBlMWRkZTFkZGY1ODNjMDg5ODZkZjc1NWFkNGI2NDJkNjRhZjg4M2NmZDE2M2UwODkwOWUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_61a52862bdaf4b8da98be3628e8ccbcd",
+      "statement": "A source-only Enterprise backup helper reuses an unfinished protected-journal backup ID, requires an explicit new ID, and rejects tenant Pod watch gaps or foreign events; its receipt is scoped to reader transfer and explicitly unpublishable, with no live watch adapter, publication or independent restore caller.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator-test.py",
+          "version": "repo-file-v1:sha256:301dc867ce296df400b8d22dc41a9e2611ad96010e3b31a59daa4979a27dea54"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-coordinator.py",
+          "version": "repo-file-v1:sha256:41dbe5657f35dd343da6a2a3dea1ca6a009ea237d7654fee76c40c9ec148105e"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L34-L43",
+          "version": "repo-lines-v1:sha256:c15fa38b6544a14153bade15e9ac42d7735ac4aa80d213006629afcdb0486f31:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2YzFjN2EyYmFiMjM0NzljNjljZTM1MzYxYWRkOTg1YzEzMzVlYjI3NWQ0OTQ4YjgxN2Y5Y2RlZGYxM2RiNTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlNTU1YWE4NTAyODk1OGFkNGI4MWIzZWI3Y2ZiM2Q2MDNlNGI5ZTk1MGMzZWEwOTY5ODk0MzliYTkzMWY2ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJhNzk0MDc5MTliNzMzNWZlYzIzZTUyYjY2MmU4NGVjMTFjNTk0ZTQyNDUyMGZmNGIzZGYzOTk3YWZjOTQ5MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAxMjFmNjg4NmQ5MTM1MjlmZWQ0MzA3NmQyNWJiNzdhZDZhODZhYzQ4M2IyZTI3NjZhYjMxYTc3MjU0M2E3NGUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T23:04:53.760Z"
+    "at": "2026-10-27T23:14:51.773Z"
   }
 }
