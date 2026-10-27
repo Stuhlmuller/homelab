@@ -2047,13 +2047,102 @@
     "updateSemanticsRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/common/k8sutils/resources.go#L248-L265",
     "correctionDecision": "Both Genesis paths call CreateOrUpdateNetworkPolicy, which replaces an existing spec. Additive Kubernetes NetworkPolicies cannot subtract these all-port allows. No repository-only manifest correction is safe; retain strict broad-egress findings and keep T018 open until the owner contracts, reviewed generator changes, actual renders, and canary evidence exist."
   },
+  "latestReadOnlyRecheck": {
+    "capturedAt": "2026-10-27T07:31:31Z",
+    "sourceSha": "99abc4fce4733adc20a4c2dbda0c6e0b5504015f",
+    "method": "Read-only Pod and NetworkPolicy snapshots held in process memory; kubectl kustomize for all 55 repository Kustomizations; three pinned Genesis fixtures; scripts/network-policy-inventory.py normalized policy and Pod selection. Complete raw spec hashes use compact sorted-key JSON. No generator binary, packet capture, or enforced canary ran.",
+    "livePolicyCount": 71,
+    "distinctRenderedPolicyCount": 78,
+    "kustomizationCount": 55,
+    "inventoryCandidatePodCount": 213,
+    "liveOnlyPolicyIds": [],
+    "driftedPolicyIds": [],
+    "sourceOnlyPolicyIds": [
+      "media/media-postgres-restore",
+      "octelium-storage/octelium-postgres-restore-drill",
+      "openclaw-system/occ-postgres-ingress",
+      "openclaw-system/occ-postgres-restore-drill-isolation",
+      "openclaw-system/oce-journal-operator",
+      "openclaw-system/oce-lifecycle-hooks",
+      "openclaw-system/openclaw-system-default-deny-ingress"
+    ],
+    "strictWildcardRuleCount": 10,
+    "strictWildcardPolicyIds": [
+      "cordium/ws-main",
+      "mastodon/mastodon-datastores",
+      "mastodon/mastodon-federation-egress",
+      "nix-builder/nix-builder",
+      "nofx/nofx-backend",
+      "octelium-public/cloudflared-egress",
+      "octelium/cordium-cluster-config",
+      "octelium/cordium-genesis",
+      "octelium/svc-upstream"
+    ],
+    "unisolatedPodCount": 197,
+    "unreviewedEgressPolicyCount": 25,
+    "sourceOwnedRawSpecDifferencesNormalizedEqual": [
+      "ai/multica-postgres",
+      "ai/multica-runtime",
+      "automation/renovate",
+      "automation/renovate-acceptance-final-report",
+      "automation/renovate-acceptance-schedule-assemble",
+      "automation/renovate-acceptance-schedule-collector",
+      "automation/renovate-acceptance-source-review",
+      "nix-builder/nix-builder"
+    ],
+    "newlyLiveSourceOwnerHashes": {
+      "automation/bulldozer": {
+        "ownerKustomization": "clusters/homelab/apps/bulldozer/kustomization.yaml",
+        "sourceManifest": "clusters/homelab/apps/bulldozer/networkpolicy.yaml",
+        "sourceRenderSpecSha256": "4d607356e2dee8790a62ab1b52ee64e49919e5ac309448f2761f83cc6cfd2683",
+        "liveSpecSha256": "4d607356e2dee8790a62ab1b52ee64e49919e5ac309448f2761f83cc6cfd2683"
+      },
+      "automation/renovate-acceptance-final-report": {
+        "ownerKustomization": "clusters/homelab/apps/renovate/kustomization.yaml",
+        "sourceManifest": "clusters/homelab/apps/renovate/acceptance-final-report-networkpolicy.yaml",
+        "sourceRenderSpecSha256": "ddc7b8570746ff8bed7aad60534bf94ce84529b0c4aec540bd4c22895ceb35fc",
+        "liveSpecSha256": "7b6d2d42aeccf2e3ee451907260d7ea7ab9b0b468b79362d35e162801b70d30d"
+      },
+      "automation/renovate-acceptance-schedule-assemble": {
+        "ownerKustomization": "clusters/homelab/apps/renovate/kustomization.yaml",
+        "sourceManifest": "clusters/homelab/apps/renovate/acceptance-schedule-assemble-networkpolicy.yaml",
+        "sourceRenderSpecSha256": "5da19eb24bf5553119d867a96b3dfe7400e4d2d9f6568de7b73c24263b9aef4f",
+        "liveSpecSha256": "ac4bbcbabb8940e5c63c6dfe5e0a91b3d7b166e6ef9175e4be99552078641dd8"
+      },
+      "automation/renovate-acceptance-schedule-collector": {
+        "ownerKustomization": "clusters/homelab/apps/renovate/kustomization.yaml",
+        "sourceManifest": "clusters/homelab/apps/renovate/acceptance-schedule-collector-networkpolicy.yaml",
+        "sourceRenderSpecSha256": "c5f13817504f7c5d896c2893a7f7211a736142840f82dbe89a55c985bc56a8bb",
+        "liveSpecSha256": "f388e1b369ae417399fb45ece391faea218a48023b43a5a9b99bef8b0237fe4a"
+      },
+      "automation/renovate-acceptance-source-review": {
+        "ownerKustomization": "clusters/homelab/apps/renovate/kustomization.yaml",
+        "sourceManifest": "clusters/homelab/apps/renovate/acceptance-source-review-networkpolicy.yaml",
+        "sourceRenderSpecSha256": "190ff7ac3de8e5277047504f1575a6e46b8d20e7cd5d07bccc3c1b7f3366c70f",
+        "liveSpecSha256": "49f50915b9ed107d6d70770819e04b49d836a61f40a76fb9f02aa94872481f6f"
+      },
+      "monitoring/kiali-server-ingress": {
+        "ownerKustomization": "clusters/homelab/apps/kiali/kustomization.yaml",
+        "sourceManifest": "clusters/homelab/apps/kiali/networkpolicy.yaml",
+        "sourceRenderSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7",
+        "liveSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7"
+      }
+    },
+    "generatedBroadEgressLiveSpecSha256": {
+      "cordium/ws-main": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+      "octelium/svc-upstream": "09c86331a6a384a28f6ed34e5b185c3706efdf18395bd8ef82b44c374a69c4b9"
+    },
+    "enforcerStatus": "No kube-router or network-policy DaemonSet exists. Argo platform-network-policy is OutOfSync/Missing; the canary Application is Synced/Healthy but has an empty Kustomization.",
+    "correctionDecision": "No source-only additive policy can narrow Genesis-owned all-port public egress. Define accepted destination/port contracts, patch and pin the Cordium and Octelium generators and installer image selection, compare actual generator renders, then qualify traffic on an isolated canary before enforcement.",
+    "status": "Read-only inventory refreshed; T018 and T027 remain open. No policy correction or canary qualification receipt."
+  },
   "requiredCorrections": [
     "All 17 Cordium, Octelium and Octelium Enterprise generated policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has a source-owned replacement. Recheck complete live specs after any generator upgrade and qualify real ingress, egress, and lifecycle behavior on the isolated canary before enforcement.",
     "Pinned Cordium v0.12.7 ws-main and Octelium v0.35.0 svc-upstream constructors hardcode all-port public IPv4/IPv6 egress without an egress input; Cordium creates its policy in non-dev Genesis and Octelium InstallCommon always creates its policy. Patch the owning generators upstream or build reviewed forks, publish and pin corrected images; Octelium also needs reviewed octops image selection for both init and upgrade. Refresh expected-spec fixtures from actual generator renders, then prove required destinations and private-range denial on an isolated canary. Additive NetworkPolicies cannot narrow either current rule.",
     "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
     "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
-    "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
-    "Review all current strict wildcard-egress findings (ten rules across nine policies at the 2026-10-20 live audit), including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
+    "Decide explicit source-owned egress for the 197 Pods without egress isolation in the 2026-10-27 read-only inventory and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
+    "Review all current strict wildcard-egress findings (ten rules across nine policies at the 2026-10-27 live recheck), including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
     "The six source-corrected DNS policies now match live specs; prove TCP/UDP Service DNS through exact CoreDNS Pod peers on the isolated canary before enforcement.",
     "Qualify the full allowed/denied and lifecycle matrix on an isolated tainted Talos canary, then each expanded node; current render equality alone is insufficient."
   ],
