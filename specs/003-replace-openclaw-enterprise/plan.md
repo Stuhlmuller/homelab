@@ -102,11 +102,12 @@ specs/003-replace-openclaw-enterprise/
 └── checklists/requirements.md
 ```
 
-`tasks.md` sequences implementation and live acceptance; no task has been executed.
+`tasks.md` sequences implementation and live acceptance; its checked items and
+the acceptance ledger record the current evidence separately.
 
 ### Source Code (repository root)
 
-Proposed implementation surfaces; new paths below do not exist yet:
+Implementation surfaces in the deployment-oriented Terragrunt layout:
 
 ```text
 .talos/patches/                         # reviewed role/version inputs
@@ -114,25 +115,26 @@ scripts/config/platform-maintenance.json
 scripts/platform-maintenance.py         # bounded upgrade lane
 .github/workflows/platform-maintenance.yml
 clusters/homelab/platform/network-policy/
-IaC/stacks/platform-network-policy/stack.hcl
-IaC/stacks/istio/stack.hcl               # sequential version changes
+IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
+IaC/homelab/us-west-2/apps/istio/stack.hcl # sequential version changes
 clusters/homelab/apps/istio/
 clusters/homelab/platform/envoy-gateway/
-IaC/stacks/platform-envoy-gateway/stack.hcl
+IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
 clusters/homelab/apps/openclaw-enterprise-foundation/
-IaC/stacks/openclaw-enterprise-foundation/stack.hcl
+IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
 clusters/homelab/apps/openclaw-enterprise/ # local values and lifecycle hooks
-IaC/stacks/openclaw-enterprise/stack.hcl
+IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
 scripts/config/openclaw-enterprise.json
 scripts/openclaw-enterprise.py           # serialized API reconciliation/verification
 scripts/openclaw-retirement.py          # inventory/archive verification and handoff
 scripts/ci/*-test.py                    # focused boundary/failure tests
 ```
 
-Also change the existing root unit index, node placement declarations, scoped
-AppProject, exact SSM/ESO contracts, platform-storage PVs, Harbor image catalog,
-Octelium catalog/private DNS, old OpenClaw desired state, and CI workflow security
-hashes/policies as required. Do not edit generated `IaC/live` units.
+Also change each app's adjacent `terragrunt.stack.hcl` unit, node placement
+declarations, scoped AppProject, exact SSM/ESO contracts, platform-storage PVs,
+Harbor image catalog, Octelium catalog/private DNS, old OpenClaw desired state,
+and CI workflow security hashes/policies as required. Do not edit generated
+`terragrunt.hcl` or `terragrunt.values.hcl` under `IaC/homelab/us-west-2`.
 
 **Structure Decision**: Reuse existing shared Application registration, operator
 maintenance, backup, image publication and private access patterns. New helpers
