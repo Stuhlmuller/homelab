@@ -56,6 +56,14 @@ tailnet DNS names; private custom application hostnames retain the certificate
 from [`certificate.yaml`](certificate.yaml).
 [Tailscale Funnel documentation](https://tailscale.com/kb/1223/funnel).
 
+During the 2026-10-27 ztunnel image-pull outage on `zimaboard-0`, Traefik is
+temporarily pinned to `zimaboard-1`, whose ztunnel is Ready. This moves all four
+listeners together without changing their routes or Service addresses. Verify
+the replacement Pod, Argo CD health, a tailnet HTTPS request, and a Harbor
+registry request before treating access as restored. After the upstream-image
+ztunnel fix restores all four nodes, remove the pin through a reviewed PR; a
+node failure while pinned otherwise removes the only Traefik replica.
+
 | Public callback | Allowed paths | Application authentication |
 | --- | --- | --- |
 | `n8n-webhook.tail67beb.ts.net` | `/webhook`, `/webhook-test`, `/webhook-waiting`, and their slash-separated descendants | Workflow-specific webhook credentials/signatures |
