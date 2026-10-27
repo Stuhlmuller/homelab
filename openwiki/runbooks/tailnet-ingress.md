@@ -393,6 +393,17 @@ Fresh successful signed delivery remains the acceptance gate. The surviving
 Emergency Bot POST-only hook uses a non-executing OPTIONS probe before its URL
 change; the inactive helper workflow stays unpublished.
 
+On October 27, the owner-approved Policy Bot App recovery restored the retained
+`policy-bot-hook.stinkyboi.com` callback after Funnel deliveries returned HTTP
+502. From the reviewed recovery checkout, run
+`nix develop --command python3 -I scripts/policy-bot-webhook.py --rollback-to-previous --require-delivery`
+to check the separate recovery receipt and a newer successful delivery without
+changing the App or replaying an event. Bare `--require-delivery` checks the
+Funnel cutover receipt. A signed public delivery returned HTTP 200 and Policy
+Bot posted `policy-bot: main` on #1693; every other PR still needs that status
+on its own current head before a protected merge. The recovery source remains
+in draft PR #1685 until its normal gates pass.
+
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,
 including AFFiNE 502 under its then-declared suspension and an OpenClaw 200

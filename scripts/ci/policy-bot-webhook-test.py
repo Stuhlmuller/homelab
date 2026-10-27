@@ -25,17 +25,23 @@ class WebhookTests(unittest.TestCase):
         receipt = patch.object(webhook, 'RECEIPT', Path(temporary.name)/'receipt.json')
         receipt.start()
         self.addCleanup(receipt.stop)
+        recovery_receipt = patch.object(webhook, 'RECOVERY_RECEIPT', Path(temporary.name)/'recovery.json')
+        recovery_receipt.start()
+        self.addCleanup(recovery_receipt.stop)
         clock = patch.object(webhook.time, 'time', return_value=1791590400)
         clock.start()
         self.addCleanup(clock.stop)
         self.preflight = patch.object(webhook, 'preflight_target')
-        self.preflight.start()
+        self.preflight_mock = self.preflight.start()
         self.addCleanup(self.preflight.stop)
+        self.recovery_preflight = patch.object(webhook, 'preflight_recovery')
+        self.recovery_preflight_mock = self.recovery_preflight.start()
+        self.addCleanup(self.recovery_preflight.stop)
 
     def receipt(self):
         webhook.save_receipt(webhook.RECEIPT, {'url': webhook.URL, 'started_at': '2026-10-10T00:00:00+00:00', 'previous_delivery_id': 10})
 
-    def api(self, url=None, deliveries=None, readback_changed=False, before=None):
+    def api(self, url=None, deliveries=None, readback_changed=False, before=None, target=webhook.URL):
         config = {'url': url or webhook.PREVIOUS_URL, 'content_type': 'json', 'insecure_ssl': '0', 'secret': 'redacted'}
         deliveries = [] if deliveries is None else deliveries
         calls = []
@@ -45,7 +51,7 @@ class WebhookTests(unittest.TestCase):
             calls.append((method, path, body))
             if path == webhook.CONFIG_PATH:
                 if method == 'PATCH':
-                    self.assertEqual(body, {'url': webhook.URL})
+                    self.assertEqual(body, {'url': target})
                     config.update(body)
                     if readback_changed:
                         config['secret'] = 'changed'
@@ -74,6 +80,51 @@ class WebhookTests(unittest.TestCase):
                                     ('PATCH', webhook.CONFIG_PATH, {'url': webhook.URL}),
                                     ('GET', webhook.CONFIG_PATH, None)])
         self.assertNotIn('POST', [call[0] for call in calls])
+
+    def test_emergency_rollback_changes_only_fixed_url_and_uses_separate_receipt(self):
+        api, calls = self.api(url=webhook.URL, target=webhook.PREVIOUS_URL,
+                              deliveries=[{'id': 12, 'url': webhook.PREVIOUS_URL,
+                                           'status_code': 204, 'delivered_at': '2026-10-10T00:01:00Z'}], before=[])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertTrue(webhook.reconcile(api, execute=True, require_delivery=True, rollback=True))
+        self.recovery_preflight_mock.assert_called_once_with()
+        self.preflight_mock.assert_not_called()
+        self.assertEqual(calls[:4], [('GET', webhook.CONFIG_PATH, None),
+                                    ('GET', '/app/hook/deliveries?per_page=10', None),
+                                    ('PATCH', webhook.CONFIG_PATH, {'url': webhook.PREVIOUS_URL}),
+                                    ('GET', webhook.CONFIG_PATH, None)])
+        self.assertTrue(webhook.RECOVERY_RECEIPT.exists())
+        self.assertFalse(webhook.RECEIPT.exists())
+        self.assertNotIn('POST', [call[0] for call in calls])
+
+    def test_recovery_acceptance_uses_public_receipt_without_mutation(self):
+        webhook.save_receipt(webhook.RECOVERY_RECEIPT, {
+            'url': webhook.PREVIOUS_URL,
+            'started_at': '2026-10-10T00:00:00+00:00',
+            'previous_delivery_id': 10,
+        })
+        api, calls = self.api(deliveries=[{
+            'id': 11, 'url': webhook.PREVIOUS_URL,
+            'status_code': 200, 'delivered_at': '2026-10-10T00:01:00Z',
+        }])
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertTrue(webhook.reconcile(api, require_delivery=True, rollback=True))
+            with self.assertRaises(RuntimeError):
+                webhook.reconcile(api, require_delivery=True)
+        self.assertTrue(all(method == 'GET' for method, _, _ in calls))
+
+    def test_unwritable_receipt_parent_fails_before_either_webhook_patch(self):
+        blocked_parent = webhook.RECOVERY_RECEIPT.parent / 'not-a-directory'
+        blocked_parent.write_text('fixture')
+        receipt = blocked_parent / 'receipt.json'
+        for rollback, current, target in ((False, webhook.PREVIOUS_URL, webhook.URL),
+                                          (True, webhook.URL, webhook.PREVIOUS_URL)):
+            api, calls = self.api(url=current, target=target)
+            with self.subTest(rollback=rollback), self.assertRaises(OSError), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                webhook.reconcile(api, execute=True, receipt_path=receipt, rollback=rollback)
+            self.assertEqual(calls, [('GET', webhook.CONFIG_PATH, None),
+                                     ('GET', '/app/hook/deliveries?per_page=10', None)])
 
     def test_unexpected_url_and_changed_settings_fail_closed(self):
         api, calls = self.api(url='https://other.example.test/hook')
@@ -153,6 +204,36 @@ class WebhookTests(unittest.TestCase):
             webhook.reconcile(api, execute=True)
         self.assertEqual(calls, [('GET', webhook.CONFIG_PATH, None)])
 
+    def test_recovery_preflight_uses_public_doh_strict_tls_and_gates_patch(self):
+        self.recovery_preflight.stop()
+        valid = 'dbf16h2clnhc73dhuh60'
+        hook = f'HTTP/2 404\r\nX-Request-ID: {valid}\r\n\r\n'.encode()
+        root = b'HTTP/2 404\r\n\r\n'
+        calls = []
+        def run(*args):
+            calls.append(args)
+            self.assertEqual(args[0], 'curl')
+            self.assertEqual(args[1], '--disable')
+            self.assertIn(('--noproxy', '*'), list(zip(args, args[1:])))
+            self.assertIn(('--proto', '=https'), list(zip(args, args[1:])))
+            self.assertIn(('--doh-url', 'https://1.1.1.1/dns-query'), list(zip(args, args[1:])))
+            self.assertNotIn('--insecure', args)
+            self.assertTrue(args[-1].startswith('https://policy-bot-hook.stinkyboi.com/'))
+            return hook if args[-1] == webhook.PREVIOUS_URL else root
+        with patch.object(webhook, 'command', side_effect=run):
+            webhook.preflight_recovery()
+        self.assertEqual(len(calls), 2)
+        api, writes = self.api(url=webhook.URL, target=webhook.PREVIOUS_URL)
+        with patch.object(webhook, 'command', side_effect=RuntimeError('DoH unavailable')), \
+             contextlib.redirect_stdout(io.StringIO()), self.assertRaises(RuntimeError):
+            webhook.reconcile(api, execute=True, rollback=True)
+        self.assertEqual(writes, [('GET', webhook.CONFIG_PATH, None)])
+        with patch.object(webhook, 'command', return_value=root), \
+             contextlib.redirect_stdout(io.StringIO()), self.assertRaises(RuntimeError):
+            webhook.reconcile(api, execute=True, rollback=True)
+        self.assertEqual(writes, [('GET', webhook.CONFIG_PATH, None),
+                                  ('GET', webhook.CONFIG_PATH, None)])
+
     def test_execution_guard_checks_clean_checkout_head_and_remote_main(self):
         sha = 'a' * 40
         with patch.object(webhook, 'command', side_effect=[b'', sha.encode(), (sha+'\trefs/heads/main').encode(), b'']) as command:
@@ -165,6 +246,34 @@ class WebhookTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     webhook.verify_reviewed_main(expected)
         with patch.object(webhook.sys, 'argv', ['helper', '--execute']), \
+             patch.object(webhook, 'credentials') as credentials:
+            with self.assertRaises(RuntimeError):
+                webhook.main()
+            credentials.assert_not_called()
+
+    def test_recovery_guard_requires_signed_one_commit_pr_on_current_main(self):
+        head, main, pr = 'a' * 40, 'b' * 40, 1683
+        replies = [b'', head.encode(), (main + '\trefs/heads/main').encode(), main.encode(),
+                   (head + f'\trefs/pull/{pr}/head').encode(),
+                   json.dumps({'sha': head, 'commit': {'verification': {'verified': True}}}).encode(), b'']
+        with patch.object(webhook, 'command', side_effect=replies) as command:
+            webhook.verify_reviewed_main(head, pr)
+            self.assertTrue(any(call.args[0] == 'curl' and call.args[-1].endswith(head)
+                                and '--fail' in call.args and '--disable' in call.args
+                                for call in command.call_args_list))
+        for parent, ref in ((head, head), (main, main), (main, '')):
+            replies = [b'', head.encode(), main.encode(), parent.encode(),
+                       (ref + f'\trefs/pull/{pr}/head').encode() if ref else b'']
+            with self.subTest(parent=parent, ref=ref), \
+                 patch.object(webhook, 'command', side_effect=replies), self.assertRaises(RuntimeError):
+                webhook.verify_reviewed_main(head, pr)
+        replies = [b'', head.encode(), main.encode(), main.encode(),
+                   (head + f'\trefs/pull/{pr}/head').encode(),
+                   json.dumps({'sha': head, 'commit': {'verification': {'verified': False}}}).encode()]
+        with patch.object(webhook, 'command', side_effect=replies), self.assertRaises(RuntimeError):
+            webhook.verify_reviewed_main(head, pr)
+        with patch.object(webhook.sys, 'argv', ['helper', '--rollback-to-previous', '--execute',
+                                                 '--expected-sha', head]), \
              patch.object(webhook, 'credentials') as credentials:
             with self.assertRaises(RuntimeError):
                 webhook.main()
