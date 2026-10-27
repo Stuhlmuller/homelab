@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:430f86fbe68ddd0338e09aba102e45fbc75ed4747d5f91707dd3014fb54a59ce",
+  "pageVersion": "sha256:1c659f9d6729dc51f235e0ddec72a5022e4b0687188d2c9e4e7a04e6b4c69f19",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:03cc3270b88b2e1d1868f3c5630d3bdc00593d8c04d94969209b48d5e4d1f22c"
+          "version": "repo-file-v1:sha256:669882b8e6f8b1732af6ecd4325eecce776522f7936e7725027de4f1bd393313"
         }
       ]
     },
@@ -322,7 +322,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -352,7 +352,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         }
       ]
     },
@@ -370,7 +370,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:fa78908d59bbd488f25dd2d40ed6bf6db061f1310d494966a1805495f33042f5"
+          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -468,7 +468,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -512,7 +512,7 @@
       "evidence": [
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md",
-          "version": "repo-file-v1:sha256:b915f6687e3b1a8fe1d926652514a0ccc7b033e6ff3b4529ebeb0f9f01de53a1"
+          "version": "repo-file-v1:sha256:4cacfc82b972368f9f4219ffdab7bebfc089ef11b8cb18efb866f383d2a60b5c"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md",
@@ -526,7 +526,7 @@
       "evidence": [
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md",
-          "version": "repo-file-v1:sha256:b915f6687e3b1a8fe1d926652514a0ccc7b033e6ff3b4529ebeb0f9f01de53a1"
+          "version": "repo-file-v1:sha256:4cacfc82b972368f9f4219ffdab7bebfc089ef11b8cb18efb866f383d2a60b5c"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md",
@@ -539,7 +539,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L326-L352",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L346-L372",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -638,7 +638,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -714,19 +714,15 @@
     },
     {
       "id": "claim_ce34030fb2a34d7881528f8d5831b832",
-      "statement": "The corrected 2026-10-23 pre-outage check left Enterprise activation blocked. Embedded OpenClaw uses one 1,792 MiB Gateway on the agents selector with a 10 GiB local state claim; the 768 MiB Harness request is Dedicated-only. At that snapshot only acer had disk for Gateway and database local claims, but their 2,304 MiB floor exceeded its 1,802 MiB free requests by 502 MiB. A 4,096 MiB co-located planning reservation, split peak margin and isolated worker canary were unadmitted; later outage rescheduling invalidates those numbers as current admission evidence.",
+      "statement": "The 2026-10-27 post-recovery capacity recheck leaves Enterprise placement blocked: Acer had 2,895 MiB unreserved, 1,201 MiB short of the initial 4,096 MiB budget. The Embedded driver uses one 1,792 MiB Gateway with a 10 GiB local claim; the 768 MiB Harness request is Dedicated-only. Other workers lacked a safe memory/storage split, and no isolated policy canary was admitted. Pausing Langfuse and Dispatcharr fits requests on paper but lacks complete recovery and measured peak/restart proof.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/profile-input.json",
           "version": "repo-file-v1:sha256:c31eb368bc2d8e6505a527bc8d2a49cf07aef7c90704f6edf8b7acfe76c07395"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
-        },
-        {
-          "resource": "repo://specs/003-replace-openclaw-enterprise/research.md",
-          "version": "repo-file-v1:sha256:82b2dacc9ced3cf67465f72291ea31da54da637f8830a4318c38c976394e9612"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L816-L829",
+          "version": "repo-lines-v1:sha256:39e4c9beb4d6b7330b1aeca53b18172b4a6df2a1f944ebe9c067868c5da8f991:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MjBjMzM3MWY0Zjk1YmRhZmUwMDllN2U2Y2UyYWRhMzIwN2U2M2U2ZTFhZTJmNjc5MjI2N2U2MTdkNzg2NDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkODc2ODQwYWFjMDc0ZTUyMWE5MGU0OTljNTY3MTM0YTMxNjkxYTIzN2IxOWI4OGU5MzhiZDcxMzNhYmZiYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwYjBlYWE5NzUxYzhkOTFlOTc4NzMyNDdiODliNTI0MWZjN2RkZTJkNjFiMTNkOTE4ZWZhNjY3MDU4NmNhMDMifQ"
         }
       ]
     },
@@ -736,7 +732,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:fa78908d59bbd488f25dd2d40ed6bf6db061f1310d494966a1805495f33042f5"
+          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
@@ -744,7 +740,7 @@
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:d1df5fb92d933d465a00e7e0a3f2fb2af372f663ec98c1efe612a01d307c27c9"
+          "version": "repo-file-v1:sha256:1eb05dd5facaeda3619e28a1de9d2aee528ca8cc10745c74edf43f35723847ae"
         }
       ]
     },
@@ -812,7 +808,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -820,13 +816,13 @@
         },
         {
           "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md",
-          "version": "repo-file-v1:sha256:d1df5fb92d933d465a00e7e0a3f2fb2af372f663ec98c1efe612a01d307c27c9"
+          "version": "repo-file-v1:sha256:1eb05dd5facaeda3619e28a1de9d2aee528ca8cc10745c74edf43f35723847ae"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

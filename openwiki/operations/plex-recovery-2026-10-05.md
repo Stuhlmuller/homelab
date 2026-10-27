@@ -5,6 +5,14 @@ description: "October QNAP Plex crash and bounded recovery evidence, slow playba
 tags: [operations, qnap, plex]
 date: 2026-10-05
 incident_status: service-restored
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-ca326059051f964efd922366
+    resource: repo://clusters/homelab/apps/langfuse/datastores.yaml
+  - id: openwiki-source-0604eb305adde7faf401ff72
+    resource: repo://clusters/homelab/apps/langfuse/quarantine-system-logs.sh
 ---
 
 # QNAP Plex Recovery

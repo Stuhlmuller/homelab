@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9ef6d47bec669f8bce8345ba64d60dbd1366dac08bc989e2b4e560226f6127ba",
+  "pageVersion": "sha256:0e04b75576e88864d1c9e8f7111848fb5267d21367ec08bf95ca2a62632d11f0",
   "claims": [
     {
       "id": "claim_90504df127484cc1967cce8cc178ca30",
@@ -18,7 +18,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:49159fc15e3baf80077c6611ac078218890c3e7fe150d4a6ce60377f42eaef2d"
+          "version": "repo-file-v1:sha256:535ba8d5d5ed7d1cc0b3bd0d9b21553ff719b95aa740ad6b849916239e208829"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -29,6 +29,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

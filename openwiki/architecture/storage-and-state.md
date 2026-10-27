@@ -62,10 +62,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Storage And State
@@ -359,6 +359,10 @@ needs their disposition, a separate writable UID 1000 local-state copy, an
 isolated NAS copy and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
 declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
+The latest protected network preflight on 2026-10-27 passed fixed-operation
+validation and the exact-current-main guard, then failed the legacy retention
+stage in the sanitized `network-access` category. It produced no T014
+capability receipt; isolated old-image boot remains unproved.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
@@ -416,6 +420,12 @@ request release could fit a 4 GiB Acer planning budget on paper, but the
 Gateway burst and replacement margin remain too small, complete recovery for
 both services is unproved, and no isolated canary is admitted. Neither service
 has been paused for Enterprise.
+At the 2026-10-27 18:47 UTC read-only capacity recheck, `acer` had 2,895 MiB
+request headroom, 1,201 MiB short of the 4,096 MiB initial Enterprise budget.
+Splitting across the other workers still lacked safe memory and local-claim
+disk margin, and `zimaboard-2` was not an isolated canary. A Langfuse and
+Dispatcharr pause fit only request arithmetic; complete recovery, measured
+peaks and restart overlap remain unproved. No service was paused or moved.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to

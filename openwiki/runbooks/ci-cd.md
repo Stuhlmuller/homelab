@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # CI/CD
@@ -216,10 +216,9 @@ does not mount the private journal. `restore` and `acceptance` still exit before
 mutation pending separate recovery and owner-session proof. No Enterprise
 stage has passed live acceptance.
 
-For legacy `publish-archive`, the workflow reports fixed public pre-upload and
-post-upload phases while withholding private diagnostics. Run `39466313228`
-completed bounded upload but failed under the former broad
-`publication-version` phase; that attempt produced no final receipt.
+For legacy `publish-archive`, the workflow reports fixed public publication
+phases while withholding private diagnostics. The successful versioned
+publication and separate verification below supply the accepted T013 receipt.
 
 Detached archive worker `39366476872` produced the private source result.
 Protected [publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)

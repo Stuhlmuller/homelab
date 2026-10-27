@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:59279a176a9130d213ee73e195969e3e72554c73462fda8e121b90dfd28a5c90",
+  "claims": [
+    {
+      "id": "claim_fe7ba3b7314547919010bb1a5d018d4e",
+      "statement": "The Langfuse ClickHouse repair limits quarantine to six named system diagnostic tables, validates the Atomic system metadata path, and creates native detached markers before ClickHouse starts without targeting application tables.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/datastores.yaml#L300-L328",
+          "version": "repo-lines-v1:sha256:e3dabb4e641d6af066c482a3f273306893b86d69edafe6d39ea0f13ca93e855d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4MTVmMjhmOTRiZWQwYWQ3ODBlYjc5ZThhMTkyNTI2OGUzMGY3MmEzM2MyZjk4Y2EwNDlkMTc2NTVkMzdkMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYWU1OTQxZTYyNTFhODYxZTM2YzZkOTFkMmY4ZWFlYWMwZDYwZGE4ZTkwM2ZkNTlhOGQ3NWJhMWIwZDcxY2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjZTg0Zjc0YjczNTlhZWIyZTVlZGJmZDliOWRhOWIxZTA3OTcwOWYxZTlmYTZmMjlhYjk5OGM2NjBiYzNiOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzZWIzMWEwMGI4ZWFlMzU1ZTYxOWE0M2M1OGE5NDFlNGUzZWY4YWMxODAyMDA0YzIyYmFiOWM0N2I4ZWQzZmYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/quarantine-system-logs.sh#L1-L49",
+          "version": "repo-lines-v1:sha256:eb458aae7553360373e78f77723f055d0f3b6cc03c528c495e6b6c6483a94b22:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4MDc2ZDNkMjhkMjFlMDIwMTJiMjBlYWY3ZGJmNzU0MDlhNjI3NzEzNDQzOTAyNWYyODJlMzY4ZTMzMDVhYmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMTdmYTAwNmJhOTIwODUwMGIyOTMwY2U2OWNiZGU0MzZjNjQ3YWZhOTE3Y2I3Mzk2YTliYzkxMTFhNDZkZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c14158bb63af4f6966ba06844cd2963b4145fbf157a7778f283d5aa8032c8c59",
+  "claims": [
+    {
+      "id": "claim_1bec99e1362e4235989c0bd3502ded27",
+      "statement": "New Argo CD Applications are registered with a Terragrunt stack unit and stack.hcl using shared defaults; the directory supplies the default name, namespace, and Git source.",
+      "evidence": [
+        {
+          "resource": "repo://docs/argocd-app-onboarding.md#L168-L212",
+          "version": "repo-lines-v1:sha256:9907513a433282f51e33fcc71df8495fc41a4131335f6590e5b27c175a311e45:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwZDljZjdlNDA5NGM0NmNjYjE1M2Y2MjkwMTNmZGEzMGMwMTcxZDUzMmIzN2RmMDJlY2NhZmQzMmYxNTc0NmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjMTIzM2Q5ZjU5NTRiZGY2Y2UyNzIyMzIzY2JiYmQxNWUwNGFkZDExNGVkZjFiYjdmNDczZWRmNDQzNTNkNjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI0NmYzYmNhNjFhYzkyNGQ4MTM5MzY5NTc3MThhMGM1M2I0YjQ2ZDMwNjhjNGQ3NzE0OWFlMDE5ZTYyMDRlNzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2NzMzZDE5OTU5NjMwOGRiMDU4NmYzNTQ4ZmFjOTgyYTcwOTM4NzIxMzMyODcyOTI0YmJiNmYwYThlZjU4ZjEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

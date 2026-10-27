@@ -92,6 +92,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
+    resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
@@ -172,10 +174,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Harbor Private OCI Registry
@@ -273,6 +275,11 @@ bridges `10.244.1.1` through
 through `.202`, respectively.
 Trusted node-local traffic still has Istio's bypass behavior. The listener's
 path boundary and Harbor's artifact authorization remain required.
+
+During the 2026-10-27 ztunnel image-pull outage on `zimaboard-0`, Traefik's
+source temporarily pins all four listeners to `zimaboard-1`. The rolling
+strategy retains the old Pod until the replacement is Ready; removal of the
+pin requires a reviewed source change after all-node ztunnel recovery.
 
 The first host-only mapping on `zimaboard-1` (`10.1.0.201`) was applied with
 `NoReboot` and read back on October 10. Its uncached pull failed before Traefik:

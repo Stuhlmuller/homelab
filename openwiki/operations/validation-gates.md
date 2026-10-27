@@ -50,6 +50,8 @@ sources:
     resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-d97499dd4d9b20eab22451de
+    resource: repo://builds/openwiki/README.md
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -260,6 +262,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-643ef77ebcc1eff9c86a5ba3
+    resource: repo://scripts/ci/openwiki-baseline-recovery-test.mjs
   - id: openwiki-source-b5946e8eb5b294e910c57270
     resource: repo://scripts/ci/platform-maintenance-stage-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -360,10 +364,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Validation Gates
@@ -997,6 +1001,15 @@ rg -n \
   "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" \
   openwiki .agents/skills
 ```
+
+For a missing or mismatched OpenWiki page baseline, the reviewed
+[native recovery path](../../builds/openwiki/README.md) requires an exact page
+and manifest `gitHead`, queues a full-review page job, and requires Claim
+inspection and explicit decisions before completion. It rejects skipped jobs,
+source drift, deletion and an unreachable target commit. The
+[packaged fixture](../../scripts/ci/openwiki-baseline-recovery-test.mjs)
+exercises these failures and cross-host resume. A local page or generated
+provenance edit cannot substitute for a completed native run.
 
 ## Kubernetes Source Checks
 

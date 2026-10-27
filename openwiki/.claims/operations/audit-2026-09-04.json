@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:96c76de54623808208bb2630b2e2a3fa5b234fdd7cc0d1af3d8de48b86080461",
+  "claims": [
+    {
+      "id": "claim_3a0c8211261a43eabbc27ec970eebe39",
+      "statement": "The repository's KubeJobFailed rule suppresses a retained failed Job only after an observed failure is followed by a later success of its uniquely identified current CronJob owner and the failed Job is inactive.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/job-prometheusrules.yaml#L15-L78",
+          "version": "repo-lines-v1:sha256:d8c90139fadce6af7cfdc7f88ca3bf538728a9a9410682e943728eb19e984308:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3YTRhYmYyNmY5OTY1YzQxOTQzZTU1Y2Q3OTAxZTE3NzdiZjAwMmU4YzBiZmIzNzJmOGQ3N2NlNDc5NDdjMmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NjM4YTljYjlkMDIyNWQ2YzNkYWE3Y2I4OWU0MGMyNWEyYmMyZTZmZTY2NGJmMTY4NDNiNWVmODg0Y2EzM2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxMTA2NzU5N2FiNTkxYTQwYWY5OTc2ZjYyOWQ4YjBlMWQ4MDk0MjRkMzUzNjI5MmI3NzAwMjE3M2ViZTljOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhmNDgwMGY0ODdhMTk0N2E2Y2IzMTIxM2JhZDFlYTE3YWU0NmQ0ZDllYTE0NDI4Y2ExYmRiYTM5YjVjM2VkNmYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

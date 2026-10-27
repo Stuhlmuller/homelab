@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:02ab88961dc46b14e8e996407777d0e0d393fe43fc6b40ba074d0b8c3bd39fbc",
+  "pageVersion": "sha256:a8ab04ddde5eb4e3be5377cfee765016b82e9a74f5e9bbb56ff339973852928d",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:49159fc15e3baf80077c6611ac078218890c3e7fe150d4a6ce60377f42eaef2d"
+          "version": "repo-file-v1:sha256:535ba8d5d5ed7d1cc0b3bd0d9b21553ff719b95aa740ad6b849916239e208829"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:49159fc15e3baf80077c6611ac078218890c3e7fe150d4a6ce60377f42eaef2d"
+          "version": "repo-file-v1:sha256:535ba8d5d5ed7d1cc0b3bd0d9b21553ff719b95aa740ad6b849916239e208829"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -156,7 +156,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:49159fc15e3baf80077c6611ac078218890c3e7fe150d4a6ce60377f42eaef2d"
+          "version": "repo-file-v1:sha256:535ba8d5d5ed7d1cc0b3bd0d9b21553ff719b95aa740ad6b849916239e208829"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py#L125-L151",
@@ -210,7 +210,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
@@ -334,19 +334,15 @@
     },
     {
       "id": "claim_7ecdccd425ea40cbaff08fc602394d17",
-      "statement": "The protected legacy publish-archive workflow reports fixed public pre-upload and post-upload phases while withholding private diagnostics. Run 39466313228 failed under the former broad publication-version phase after bounded upload and produced no final receipt for that attempt.",
+      "statement": "The protected legacy publish-archive workflow reports fixed public publication phases while withholding private diagnostics; the successful versioned publication and independent verification supply the accepted T013 receipt.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L230-L240",
+          "version": "repo-lines-v1:sha256:e053813a33bc6f7e780f4ba29766659433d49264c72e712d799abb235e48f821:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjNTQwNGQzZTMzZTBmYmZhMjM0YTkyNzVmNjEyZjYxNGI1MzM1MTNlNTRjZGQ1ZjcwMDJjZjE2YWVmN2IxYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjZmM2YWYxNzhlNTVjNjZhODhhMGY5NDg0OGMwNzNmYWYyYjMwZDc0OWRmNGRkNzlmOWNhZDA4YzVhMmFkMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhZDVjZWVhZGIxYmZkZWYwMjkxNDE3N2M1NjQwNzU1ZmYzZGQ2Y2JhNTdkOWU4NDlhMjAzMGE2MDg5ZDkyNGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYxNjA3ZmJkNTI0YjhlNTYzZmQ4OGQzMzNhNjk0ODE3MjM0NWRjZTcyYzFhY2NiN2NmYTM3YjRiODY1ZDQxMTIifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
-        },
-        {
-          "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
-          "version": "repo-file-v1:sha256:4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L25-L26",
+          "version": "repo-lines-v1:sha256:f594a5275469d3ce10b199a8a7828464320866ef711de5d8e68413780e5ad995:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTdkNDcyM2NkODc5Zjk0N2U4N2FjOGJiMjEyNGI5NDIwYzkyMWY3YWY4YWUxYTY3ZjRjNWIzOTQ4NjU4OTUzZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTlkNjhmZmZkNmMzZTU3NWE1OWFjZTQxODYyMWM0OGJiZGY5NTcxODQxMDdiODM2NjQ2ZjhlZGFjZTIxM2YxMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjEwNGVjMzNjNDhmYzViOTBhOWM3MTI1ZmMxYWQ1YjNhYTBlODFjN2UyMDlhYzNkNjU4NmExNGVjM2Q2ZjM3NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjc4MWRhMmRkNTJjMzFhYmQwMmNjMGJjNjlmMmFlNzk2MzQyNGRkOTc3NjkzODgzZTM0OTk5YmM0YjYxNWE2MCJ9"
         }
       ]
     },
@@ -356,7 +352,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -378,7 +374,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -389,6 +385,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

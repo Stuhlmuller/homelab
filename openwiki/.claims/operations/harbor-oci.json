@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:172d9b0db1838f5c5472cadb8b02d5a8c1627fb9c0e581c91b257a4694989096",
+  "pageVersion": "sha256:4a099a4cd9deb39344cd08c8593a0e08f65a73d9be7a0be4e78e56bf681708c8",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:adf36adf4da5f19d76ad9426e51796b84c1d8b612d2b00096899d3d1cdce2314"
+          "version": "repo-file-v1:sha256:9affbbac52377b534379b2f401c49905ae49a863770dda10c0e5b3181035b476"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -84,7 +84,7 @@
     },
     {
       "id": "claim_5fbfe74ec1e54bcc8a76911c6ac51cab",
-      "statement": "The staged cutover requires registry policy convergence and successful uncached image pulls from every node before advancing Harbor DNS; the October 10 failed first pull and unresolved zimaboard-2 reboot do not establish rollout success or durable node recovery.",
+      "statement": "The staged Traefik registry cutover still requires policy convergence and uncached image pulls from every node before Harbor DNS changes; the October 10 failed first pull and later zimaboard-2 readiness interruption did not establish pull acceptance or durable node recovery.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
@@ -92,7 +92,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:adf36adf4da5f19d76ad9426e51796b84c1d8b612d2b00096899d3d1cdce2314"
+          "version": "repo-file-v1:sha256:9affbbac52377b534379b2f401c49905ae49a863770dda10c0e5b3181035b476"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -706,7 +706,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -732,7 +732,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -750,11 +750,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:fa78908d59bbd488f25dd2d40ed6bf6db061f1310d494966a1805495f33042f5"
+          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         }
       ]
     },
@@ -776,7 +776,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         }
       ]
     },
@@ -846,7 +846,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         }
       ]
     },
@@ -946,7 +946,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         }
       ]
     },
@@ -959,7 +959,7 @@
           "version": "repo-lines-v1:sha256:756699aec97328f16a9943a192aff1db35a3f2f1f0ac387481052bab43c0fcf1:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmYyOTFmODlhMGY5M2MzMWI5ZTIyYTNhNTE3ZjY2ZDU3MGQ2MWQzYjJkMGYyOGJmMDlmNmQ1M2JiZGZlZjRjOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDNkMDBlZDJlYWE4NzUwZTJhYzBiMjY3ZWJhNzE1YzI2ZDQ3M2RmM2QwZjMyMDU3M2VmYzVhNjJjZWVkYmY3ZSJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L45-L52",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L65-L72",
           "version": "repo-lines-v1:sha256:9f4a35059848084c9c2d2e6dd237c80d2c222b53a5fcbe23b301d33c7abbb0ea:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFkMTIwNzIwMzc0NjEyOTFiYTNkMmEwODEyZTgwM2VjNmZlMzQ5NTY4NDRlZDE1YTQ1YzQ4NTU5YTEzOGY3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDIyZTJlNjNlODNkMWNkMmIxZDE3MGZjYjhiMGJhODIzNmIyMjhjNjVjMzcyZjA0NDFhZGE1MjVlNmRmMTY0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODI5NzYxOGI4OGZhYTE2ODUxYjE4MjYzNjY5ZGU5MTk1ZThkNmE0MzQxNjNkMTBhM2E2NGZlMzNjZTJmOGY2MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODA4YzBkZmQ5ZGFhMmVkOGE5Nzk5ZjJhOWViY2VkNGJiZDI5Y2M1ZmNmYzA4NjU4NmVmZTVhMzdjNDI0OWZiOSJ9"
         },
         {
@@ -981,10 +981,24 @@
           "version": "repo-lines-v1:sha256:76e7a005a1dff9350fe26c2b3d657c790fed69697061aa38257134a8b983fa19:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlZDU2ZmM4ODYxZGZkNDI1ZGQyOGM1NTNkN2M3MjBiMWU0ODRmZGJmYWM5YjY0Yjk5MTFlN2RmOTdiYzFjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIyMWQ4MjM3NTQ4ODdiMjFjMGM3ZWZhYjExY2Y1MWE3ZmU1ZmM3MGVhNGY1MGY5YjdiM2UyNTUyMGY2NmRiNjgifQ"
         }
       ]
+    },
+    {
+      "id": "claim_d151531e31a94f11a7da3b1cde49c387",
+      "statement": "Traefik source temporarily pins all four listeners to zimaboard-1 during the 2026-10-27 zimaboard-0 ztunnel image-pull outage; its rolling strategy retains the old Pod until the replacement is Ready, and the pin requires reviewed removal after all-node recovery.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md#L58-L69",
+          "version": "repo-lines-v1:sha256:f80dd52f8906aa49ebdfd7c702f5cd73740dcf748fb056026ee6e0fa68d3de6d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0YzljNWNmYWU2Mzc4NzgyYTA2Y2IyMDgzNjlkZmNlZjdhM2NkZTJmZDU5ZjE0ZjQxYzVmYTc5YjAzZWExNTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIyYmE1YmVkMzMyNzFhN2QxOTAyYzlmNzkzYjU1ZDQ4NGMyNDc4ZTgzOGNlMTc4ZWMyMWVmMDA2ZjA5MDI5OWQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/values.yaml#L10-L17",
+          "version": "repo-lines-v1:sha256:fb2c5fec9c1d8a4d99e4e924a04d87ce7a2b8ea5b7e6b3848df37563e8898bbf:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjgyZDUwZjlmYmJlYjI5NzU5MjNhYmNjMTEzNzdiYmJkODQ2N2E5NzYyODQ2NzgzOGEyOTIyNDFhYTZkMGRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUwODRhZTI5Mzk5YWFiOTEzZWZkNWFiMzQzYTNlYjJkMjVhYjY3NjZkNzI4MDFiN2ZjZDFlNTgzYjFiY2JiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2NkMDBhYTk1YjZiOGY1ZTFhZjY5NzE3NzI2NmQyYmFhMWQ0ODk0OTJjNjRlMTcwNDYxMjI3ZDcxNzgyNTk5MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTkwZjZmNTY5OWZhY2JhM2M0Y2Y3NDg5ZTE0MjNkZmMzMWRkODRkNjc5Y2U1ZDJmMzI5ZjBiMjdkYTgwMDMxYSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

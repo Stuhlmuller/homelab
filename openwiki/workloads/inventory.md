@@ -212,18 +212,16 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
-  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
-    resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Workload Inventory
@@ -544,42 +542,16 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
-The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
-still blocks placement: the best worker has about 3,398 MiB unreserved versus
-the initial 4,096 MiB Enterprise planning reservation if co-located, before
-transient and host headroom, and 9.74 GB root-filesystem space free. Every worker's `/var` uses
-eMMC and has less than 10.74 GB for a new 10 GiB local claim under the existing
-`/var/lib` pattern; `acer` lacks the 2,304 MiB database-plus-gateway minimum.
-Unrelated Pods remain on each worker, so an added `NoSchedule` taint would not
-provide isolation.
-The 2026-10-23 read-only recheck still finds only `acer` with disk for a new
-10 GiB local claim, but it is 503 MiB below the 2,304 MiB minimum request.
-The best worker has 9.00 GiB filesystem free, and clearing its 38
-non-DaemonSet Pods would need about 3,342 MiB against 2,036 MiB unreserved
-elsewhere. Crossplane's two live 256 MiB controllers conflict with the
-source-declared zero replicas; reconciling them cannot create an isolated
-canary or transient margin. T022 and T035 remain blocked.
-The 08:18 UTC recheck on `main` `bcc08cb` found `acer` with 383.07 GiB
-filesystem free but only about 1,802 MiB unreserved RAM. The 503 MiB gap is
-only the declared database-plus-gateway floor. Co-locating the [initial
-4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
-for API, worker, database, Envoy and gateway on `acer` would exceed its
-unreserved requests by about 2,295 MiB before startup, backup or peak margin.
-The [pinned Embedded driver](../../docs/evidence/openclaw-enterprise-acceptance.md)
-instead schedules one 1,792 MiB Gateway Pod through `oce-role: agents` with
-its own 10 GiB local state claim. The 768 MiB Harness request is for Dedicated
-mode only. At 09:32 UTC on `main` `111b58f`, every worker still had less than
-10 GiB filesystem free. Both the Gateway and database local claims therefore
-need `acer` under the proposed storage pattern, but their 2,304 MiB request
-exceeds its 1,802 MiB unreserved RAM by 502 MiB. Splitting API, worker and
-the full Envoy planning allowance to `zimaboard-1` would leave only 122 MiB
-against its observed memory margin before peaks. `zimaboard-2` has four
-unrelated Pods,
-including single-replica `Recreate` Langfuse PostgreSQL; moving them to clear a
-policy canary would disrupt service and still lacks peak proof. These dated
-request calculations predate outage-affected rescheduling and do not admit a
-current placement. No node has an accepted Enterprise placement or isolated
-tainted canary.
+The [2026-10-27 post-recovery capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+found 2,895 MiB unreserved on `acer`, 1,201 MiB short of the initial 4,096 MiB
+Enterprise request budget. Other workers lacked a safe memory and local-storage
+split, and `zimaboard-2` still hosted unrelated Pods. The Embedded driver uses
+one 1,792 MiB Gateway with a separate 10 GiB local claim; the 768 MiB Harness
+request applies only to Dedicated mode. Pausing Langfuse and Dispatcharr would
+fit request arithmetic, but both lack complete independent whole-service
+restores and measured peak/restart margin. No service was paused and no node has
+an accepted Enterprise placement or isolated policy canary. T022, T027 and
+T035 remain open.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

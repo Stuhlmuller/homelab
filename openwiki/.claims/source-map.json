@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8a9f88c92b20ea9c645bcf1c2bb231bbfb86aacbe551b74cb3353e76fc5a5949",
+  "pageVersion": "sha256:05e8de0acbbee251a480df15375788dc009403c2e68271d9c9c522897a1b2780",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:adf36adf4da5f19d76ad9426e51796b84c1d8b612d2b00096899d3d1cdce2314"
+          "version": "repo-file-v1:sha256:9affbbac52377b534379b2f401c49905ae49a863770dda10c0e5b3181035b476"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:fa78908d59bbd488f25dd2d40ed6bf6db061f1310d494966a1805495f33042f5"
+          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -154,7 +154,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
-          "version": "repo-file-v1:sha256:342876ca0a2dee507da86ab30c5d9dc7e88c987400cb0bf267947fc5095ad10b"
+          "version": "repo-file-v1:sha256:629395257abca59c372e435d7bac3fd122a14efcecb1a7b92a17c98107809800"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -342,7 +342,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
@@ -368,7 +368,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:381079e22a93e9e91100edb0df7308d8d5338b42d9f67fe5e14dd7c9ddc7a57d"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -379,6 +379,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

@@ -3,6 +3,13 @@ type: pattern
 title: "New Platform Service Pattern"
 description: "Shared platform-service ownership, downstream dependencies, readiness checks, and required architecture and validation updates."
 tags: ["pattern", "platform", "argocd"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-aca97763f6036e50c48e50df
+    resource: repo://IaC/homelab/us-west-2/apps/platform-dns/terragrunt.stack.hcl
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 ---
 
 # New Platform Service Pattern
@@ -25,7 +32,8 @@ cluster-wide controller.
 1. Put desired state under `clusters/homelab/platform/<service>` unless the
    service is intentionally application-scoped.
 2. Register the parent Application under
-   `IaC/homelab/us-west-2/apps/platform-/argocd<service>`.
+   `IaC/homelab/us-west-2/apps/platform-<service>/terragrunt.stack.hcl`,
+   with its settings in the adjacent `stack.hcl`.
 3. Document downstream apps that depend on the service.
 4. Add readiness checks before dependent workloads rely on the service.
 5. Keep rollback notes close to the runbook.

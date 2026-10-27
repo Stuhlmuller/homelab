@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f58de17ab23b247d3820ad1c95b975ac44d8ee6bcf0b8edf48a463c1bbf9d1a6",
+  "claims": [
+    {
+      "id": "claim_61a6f10fde6c48a2b1aeac6d7066419b",
+      "statement": "The declared Octelium storage CronJob runs daily at 02:30 UTC, writes password-free role globals and a custom-format database dump, validates archive listing and SHA-256 checksums before and after promotion; this local source does not itself prove an independent off-NAS restore.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-storage/backup-cronjob.yaml#L1-L15",
+          "version": "repo-lines-v1:sha256:0fce01ad6bcc0d0bd240d274b0f25d0d1584ff655f35186b4a81108c6333b52d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1MzE5NDgzMGQ5MGVhYzAwZWZkNWZiODM2ODY4MWQ1MDY4YjFmMDc5ZDE0YTZkZDM4ZWE5M2RmOTZhOWE2OWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5OTA2ZTMyNTk0YzVlZjk2ZGU4ZTJkMmM3YmY5ZGIyZmNiN2Q1ZTFkNzZhMTc0Yjk1MTQyNzhjMTQ4MTQ2ODMifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-storage/backup-cronjob.yaml#L65-L96",
+          "version": "repo-lines-v1:sha256:a3290ac0d59f4c040f5ecd9615de93195b16477abd6a654f23bbf7da4dd702c5:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ2Njk4NzI0ZmNiZDAzNjJjZGU2YWZiZjMxNjE2MWFjNjljYzU3ZjIzNWFmOTU2ZTEzNjkyMTEyM2VhNGZiNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhZjNkOTJlMzMwMGQ0NTZkN2JkNTdmNTlhN2E5ZDYwY2VlNDQxMjMxZjU3NDk5MmUxZWRkYTdiZDFlNzVlNGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU3YmM5ZjE3N2VkYmRmZTdmMGNmMjA3ZTJlOWE2ZDI2MDE2YWMwODA0OGYyNjU0NDQ1MTFlOGQ0Y2EyOTIwYWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0OTJlMGJjMzhkZGI2OTM0ZGVhN2UzMzljYjE4N2EzYTA0OTg0MDFkMDhiMTFlMzliNzhlODRjOGFmYjA0YWQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}
