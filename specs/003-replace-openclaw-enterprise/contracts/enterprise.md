@@ -333,5 +333,24 @@ output, auth secret, and private gateway identity. Require real isolated restore
 not merely `pg_restore --list`. OCE agent deletion may delete its claim; retain
 explicitly before deletion. Data disposal remains separately authorized.
 
+The pinned OCC [Secret schema][secret-schema] stores Kubernetes `backend_uid` in
+an immutable database row. Its [Secret Driver][secret-driver] and
+[Compute projection][compute-secret] reject a Secret whose observed UID differs;
+Kubernetes [generates UIDs][kubernetes-uid] on creation. The pinned
+[Secret HTTP surface][secret-http] has no import or UID rebind operation.
+A database dump plus newly applied Secret manifests therefore fails this
+recovery contract. Prove an isolated UID-preserving cluster-state restore paired
+with PostgreSQL, claims, credentials and writer fencing. Every active Secret row
+must bind to its restored Kubernetes UID. A supported upstream import/rebind path
+is acceptable only after implementation and verification. Never manually rewrite
+`backend_uid` in a dump.
+The current `restore-drill.yaml` tests PostgreSQL only and cannot close T049/T051.
+
+[secret-schema]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/migrations/0013_secret_state.sql#L55-L102
+[secret-driver]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/secret/kubernetes/index.ts#L519-L546
+[compute-secret]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L13792-L13808
+[kubernetes-uid]: https://kubernetes.io/docs/reference/kubernetes-api/definitions/object-meta-v1-meta/#objectmeta
+[secret-http]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/http/secrets.ts#L1-L90
+
 Test rollback ordering and interrupted agent shutdown. No legacy restoration or
 enforcement removal proceeds while a new agent may still run.
