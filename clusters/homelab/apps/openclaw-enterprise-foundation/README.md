@@ -105,8 +105,9 @@ The foundation now declares selector-scoped empty ingress and egress
 NetworkPolicies for those two reader labels in `openclaw-system` and
 `openclaw-agents`. Kubernetes policies are additive: any other matching allow
 still grants traffic. The local source fixture rejects overlapping allows in
-foundation and chart-adjacent manifests; its pinned stock-chart check currently
-runs only when given a verified checkout, outside protected CI. Before any
+foundation and chart-adjacent manifests. The protected `validate` job fetches
+the exact stock chart commit from `builds/openclaw-enterprise/source.json` and
+checks the combined rendered policies. Before any
 reader is created, a protected coordinator must recheck every live matching
 policy and prove denied egress through an enforcing isolated canary.
 The assembler needs a private local scratch mount with free space

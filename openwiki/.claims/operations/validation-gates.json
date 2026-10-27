@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5af9cbc9a56fd35de8c91367b8160c7d0c002e6b15316cd34558a8607354ded4",
+  "pageVersion": "sha256:3aa855c4faf5de1147a80262bea9664d50e0a9639de26dbaa82b54489a9cbb9f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "version": "repo-file-v1:sha256:8e49edddf8080dda33426cf17379f6feb5b8a330bed63e774ec5dd0231e44f15"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -362,7 +362,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "version": "repo-file-v1:sha256:8e49edddf8080dda33426cf17379f6feb5b8a330bed63e774ec5dd0231e44f15"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "version": "repo-file-v1:sha256:8e49edddf8080dda33426cf17379f6feb5b8a330bed63e774ec5dd0231e44f15"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -906,7 +906,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:7cc98a0b431f7410dccb2e73180bec2e40948b502a31f0fd0b43eee4f53f86e9"
+          "version": "repo-file-v1:sha256:b2a2abacb2e367784b6e4c71d7a3b0c9a284281c976508e41f1ce99365d84e77"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -1083,8 +1083,8 @@
       "statement": "The validate whitespace step diffs the pull-request base or push before SHA against HEAD, using the empty tree for a new-branch push, so changed lines are checked on a clean checkout.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/validate.yml#L73-L125",
-          "version": "repo-lines-v1:sha256:8b671394b0ecb710ca53106952e25d06b1c9da3097ffdb8c831ac58c78291580:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4OTk5MTEwM2Y2YmE4ODhlM2RlNzY1MWM1YTMwNWM3N2U1NTQ3Njc3M2FiYTgzOTU5MWVjYzViZDBmMmFiMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhN2U2ZDkzMmUxNGRjZDk3NTQ3MWUzMWY5ZjRjZjQzYjlhZmI2ZThmMGRmOGVjMjkyZmY3NTFhNTJiYjMyMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkYWU5MmMwYWVkZWQ5NmMwNTVhOGVlMWJhNGM4YWU1NjVkM2IzYjBjYjdiOGU1MjM5ZjQ4MGE3YzhjNTAxYmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmZmRlODU2Y2QyMDA3YjBhMGE2MzkzNThkMjM5MDk3MzYwZWU3Y2I3YTkzMjkwYmU1NzE0OTBjNjNhMmIzZGQifQ"
+          "resource": "repo://.github/workflows/validate.yml#L73-L131",
+          "version": "repo-lines-v1:sha256:e573a86f5d796dd18b75566d0644113b5d0fdaa1fb0c25e16c1f778ca1f4a5b4:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4OTk5MTEwM2Y2YmE4ODhlM2RlNzY1MWM1YTMwNWM3N2U1NTQ3Njc3M2FiYTgzOTU5MWVjYzViZDBmMmFiMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhN2U2ZDkzMmUxNGRjZDk3NTQ3MWUzMWY5ZjRjZjQzYjlhZmI2ZThmMGRmOGVjMjkyZmY3NTFhNTJiYjMyMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkYWU5MmMwYWVkZWQ5NmMwNTVhOGVlMWJhNGM4YWU1NjVkM2IzYjBjYjdiOGU1MjM5ZjQ4MGE3YzhjNTAxYmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmZmRlODU2Y2QyMDA3YjBhMGE2MzkzNThkMjM5MDk3MzYwZWU3Y2I3YTkzMjkwYmU1NzE0OTBjNjNhMmIzZGQifQ"
         }
       ]
     },
@@ -1464,7 +1464,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:7cc98a0b431f7410dccb2e73180bec2e40948b502a31f0fd0b43eee4f53f86e9"
+          "version": "repo-file-v1:sha256:b2a2abacb2e367784b6e4c71d7a3b0c9a284281c976508e41f1ce99365d84e77"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-postgres-test.py",
@@ -1748,7 +1748,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:aaf0d5e12b590896c3bd8f4cf9b63cca09b705748ad54df565e441fc805b2f2e"
+          "version": "repo-file-v1:sha256:8e49edddf8080dda33426cf17379f6feb5b8a330bed63e774ec5dd0231e44f15"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-audit-status.sh",
@@ -1972,25 +1972,29 @@
     },
     {
       "id": "claim_11b9bda1c5bd4ed78414f6f6b294040c",
-      "statement": "Static and offline checks run a source-only reader policy fixture that rejects overlapping ingress or egress allows selecting either reader label set; the optional clean pinned-chart render is not in protected CI, and no fixture establishes live NetworkPolicy enforcement or canary traffic.",
+      "statement": "Static and offline reader policy fixtures reject ingress or egress allows selecting either reader label set; the required protected validate job uses repository read access without cloud credentials to fetch the exact pinned stock chart and run the combined overlap check, while live NetworkPolicy enforcement and isolated canary traffic remain unproven.",
       "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml#L69-L91",
+          "version": "repo-lines-v1:sha256:2cbee95b5ebc25aef2e9594ac99fb62032adae838d6a478a908be2376c5d8544:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwNDAzMmM0MDhlMmYxYzUxYjljYTA3ODMzMjdhM2FkNTQ1NTZkZjc4Y2FkNGMzM2Q0OTZiYTEzYWQyZTkzZDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMjk1YWMzZWY2M2Y0NWNhN2JhMWY0N2QwOTQzNGFjMDVkM2M4MWVmNTZmMzVhM2RhNjk0OGEzNzIwNjgxMzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZWMwNDFlZDQ2NDM1NGVjYTkwOTYzY2NmMzg1MTZlM2U1ZTVmNTdmYjg3ZTlkM2MxY2QxNGJlODNkZTQyYTkifQ"
+        },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
           "version": "repo-file-v1:sha256:f9ad9271a5c2fc82763f0dcbbd5e641c54f78d45c72e3d6d96c1534377383f83"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-reader-policy-test.py#L60-L146",
-          "version": "repo-lines-v1:sha256:aaaf61f9e721731a15d33899f84c1e74616941052975438bf4dfd962c32fbf6a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTY4Y2JiMjM3MDg3MWZkZmZlYTJlYTE5MjA3YjJjZTcwMGIxOTM5ZWM1Zjg3M2EwYmEwOTZmNjFkMzVlMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNmIyNzNlNzVhNTU3YzY0YTdhMmMwZThlNTdkZmE4NWY3N2Q1NjYzYzIzZDFjOGFlYWE4MzI1MzhjOTRkZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L1-L59",
+          "version": "repo-lines-v1:sha256:3f133ab4a52b02222735011f6b2322e926304b6c6d5f5d963b5229c89f224a00:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2ODJjYmRiNGM4YjA3NTE4YmY0ODZjNTg5OTBmYzM5MTc4M2FhMjBhOTE2YmZiMjdhZDIxMWViMWQ1YzM2NDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:37ba1a85d6f8b7826f1eef80a314fe5e14dfb3d6f239f9d839df2fef578efc23"
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-policy-test.py#L60-L145",
+          "version": "repo-lines-v1:sha256:c998566c4c86b8a9602d6ae0468310ae46a971d98b5333c3b4c5ec2ef1fc8ffb:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNjBhNDkwMjU2YTEyYWYxNTI2MmViZTUxNDExODEzY2ZiY2Y5ZDVmYzM5NDYxMzNjYWU3NjZlN2RkYzRlYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1OGZiZjIxZGJmMWFmM2JiYWNkM2IwYjQxYTRhYjVmZDZjODI4MDQzZDQwYzVkODMzYWRhZTQ1OGM4MzE5Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:53:30.669Z"
+    "at": "2026-10-27T23:09:14.121Z"
   }
 }

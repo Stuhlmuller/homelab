@@ -22,6 +22,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-db51338c65d164109e183154
@@ -108,6 +110,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-e9e65f5a163d93923cf250f7
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
+  - id: openwiki-source-5e0c81611c85d2d14785a38b
+    resource: repo://scripts/ci/openclaw-enterprise-reader-chart-check.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-2b592454bee3d706931b5357
@@ -144,10 +148,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
+generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:53:30.669Z
+    at: 2026-10-27T23:04:53.760Z
 ---
 
 # Source Map
@@ -219,7 +223,7 @@ desired state.
 | `builds/openclaw-enterprise-restore/`, `.github/workflows/openclaw-enterprise-images.yml`, and `scripts/ci/harbor-publish.sh` | [Source-only fifth restore image with embedded reader and UID 1000 hash smoke, pre-credential audit, signed publication and authenticated-pull gates](operations/harbor-oci.md); no fifth-image receipt yet |
 | `clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh` | [Stopped-writer marker, local scratch, age encryption and off-node recovery contract](architecture/storage-and-state.md); no scheduled or independently restored set |
 | `scripts/ci/openclaw-enterprise-reader-pod.py`, `scripts/ci/openclaw-enterprise-reader-archive.py`, and `scripts/ci/openclaw-enterprise-capture.py` | [Excluded namespace-local reader Pod specs, exact expected image and claim identity checks, full claim archives and intentionally unverified continuous fence](architecture/storage-and-state.md); no reader is applied |
-| `clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml` and `scripts/ci/openclaw-enterprise-reader-policy-test.py` | [Reader-specific empty ingress/egress source and additive-overlap fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); pinned chart checked locally, live enforcement and canary pending |
+| `clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml`, `scripts/ci/openclaw-enterprise-reader-policy-test.py`, and `scripts/ci/openclaw-enterprise-reader-chart-check.py` | [Reader-specific empty ingress/egress source and required pinned-chart additive-overlap gate](operations/validation-gates.md#openclaw-enterprise-replacement-gates); live enforcement and canary pending |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |

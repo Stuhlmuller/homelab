@@ -80,6 +80,12 @@ jobs:
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
 
+      - name: Check Reader Chart Gate Contract
+        run: nix develop --command python3 -I scripts/ci/openclaw-enterprise-reader-chart-check-test.py
+
+      - name: Check Pinned Reader Policy Overlap
+        run: nix develop --command python3 -I scripts/ci/openclaw-enterprise-reader-chart-check.py
+
       - name: Check flake
         run: nix flake check --no-build --all-systems
 

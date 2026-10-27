@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-855f2c27f3fa7ed6f006f4be
@@ -52,6 +54,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-e9e65f5a163d93923cf250f7
     resource: repo://scripts/ci/openclaw-enterprise-reader-archive.py
+  - id: openwiki-source-5e0c81611c85d2d14785a38b
+    resource: repo://scripts/ci/openclaw-enterprise-reader-chart-check.py
   - id: openwiki-source-fefbb162e3ea3ac148a6dc9a
     resource: repo://scripts/ci/openclaw-enterprise-reader-pod.py
   - id: openwiki-source-2b592454bee3d706931b5357
@@ -74,10 +78,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:53:30.669Z" }
+generated: { by: "codex", at: "2026-10-27T23:04:53.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:53:30.669Z
+    at: 2026-10-27T23:04:53.760Z
 ---
 
 # Storage And State
@@ -408,10 +412,10 @@ Kustomization and workflows. No coordinator, enforced egress fence, UID 1000
 claim-access proof, recipient projection, off-node publication receipt or
 independent restore is declared; T051 remains open.
 The foundation now includes two source-owned, reader-specific policies with
-empty ingress and egress rules. Source fixtures reject an overlapping allow in
-foundation and chart-adjacent renders; a clean local render of the pinned stock
-chart also passed. Kubernetes policies are additive, and the pinned-chart
-check is not a protected CI gate yet. A future coordinator must inspect every
+empty ingress and egress rules. The required protected `validate / repo` job
+fetches the pinned stock chart commit and rejects overlapping allows in its
+render alongside foundation and chart-adjacent resources. Kubernetes policies
+are additive. A future coordinator must inspect every
 live policy selecting those labels and prove an enforcing egress canary before
 creating either reader Pod.
 The dormant reconciler now has a journaled backup stop/resume transaction.

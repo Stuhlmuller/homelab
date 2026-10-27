@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Check dormant reader policy selectors; live enforcement remains unproved.
 
-The optional --upstream-root checks a clean, pinned stock chart checkout. No
-protected PR job supplies that checkout yet, so the chart check is a named
-future gate and must not be cited as current source coverage.
+The optional --upstream-root checks a clean, pinned stock chart checkout. The
+protected validate job supplies one; offline checks still exercise local source.
 """
 
 import argparse
@@ -137,7 +136,7 @@ class ReaderPolicySource(unittest.TestCase):
             assert_isolated(altered, self.reader_pods)
 
     @unittest.skipUnless(UPSTREAM is not None,
-                         "pinned stock chart overlap requires --upstream-root; no protected gate yet")
+                         "pinned stock chart overlap requires --upstream-root")
     def test_pinned_stock_chart_has_no_reader_allow(self):
         assert_isolated([*self.local, *self.chart], self.reader_pods)
 

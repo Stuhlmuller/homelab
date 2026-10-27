@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4e7341015a5e06b5399c2a818189cbd161e7b6e18bd5d5054a82baf6d84d5b3a",
+  "pageVersion": "sha256:4ac5fcd136a5b6b047a4b9a1e833cdb055597e88f6332b8485132b916b3995b5",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:7cc98a0b431f7410dccb2e73180bec2e40948b502a31f0fd0b43eee4f53f86e9"
+          "version": "repo-file-v1:sha256:b2a2abacb2e367784b6e4c71d7a3b0c9a284281c976508e41f1ce99365d84e77"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -432,21 +432,29 @@
     },
     {
       "id": "claim_d763ce743e0549f2a8b8fb315664b333",
-      "statement": "The T051 reader policy source declares two label-scoped empty ingress and egress policies and a fixture that rejects other matching allows in rendered local source; pinned stock chart and live enforcement remain separate gates.",
+      "statement": "The T051 reader policy source declares two label-scoped empty ingress and egress policies, and required protected CI fetches the exact pinned stock chart and rejects matching additive allows; live matching-policy checks, enforcement, and isolated-canary traffic remain separate gates.",
       "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml#L80-L91",
+          "version": "repo-lines-v1:sha256:5833d1f018522e0fa7411e1b36f7dc6bfb9dfe81f4c40b9f32f06d01f996e6fc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0NDU4ZTU1M2M2MGU0M2QyZDk5MzQ4NmRjY2MzZmQ5Y2M0ZWNlYzAxOTg4MmUyOTE0MDI5Y2UxODc2NzU2NjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1ZWMwNDFlZDQ2NDM1NGVjYTkwOTYzY2NmMzg1MTZlM2U1ZTVmNTdmYjg3ZTlkM2MxY2QxNGJlODNkZTQyYTkifQ"
+        },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml#L47-L72",
           "version": "repo-lines-v1:sha256:da91d9eef5def9da5d3cb0173b9593c5e7f60d16de742e03bd535d9849c5f274:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1MmQ3MTExMDNkNTBhNDM3ODMwYzZmYmNkMDRmYjRiYWI0OWEwZjgyZjZkMjZkMWM3OTFjNmU4NDg4ZGQwOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlZDNiYzgyNzM0N2QwOWIwNzhiOTcwODEwOTU4NTRlYmY3NTg3ODk5MDM3M2IxZjI1YTExNmRmOWNkMGYwNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNmNhY2NiZWVmZWJiYzUzZDRhYzIxN2FlMzhlODQxMTg3YTc1ZDdkNDYyNjMzZDJmODlhOGYzMjhkMDcwNjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-reader-policy-test.py#L60-L146",
-          "version": "repo-lines-v1:sha256:aaaf61f9e721731a15d33899f84c1e74616941052975438bf4dfd962c32fbf6a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTY4Y2JiMjM3MDg3MWZkZmZlYTJlYTE5MjA3YjJjZTcwMGIxOTM5ZWM1Zjg3M2EwYmEwOTZmNjFkMzVlMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNmIyNzNlNzVhNTU3YzY0YTdhMmMwZThlNTdkZmE4NWY3N2Q1NjYzYzIzZDFjOGFlYWE4MzI1MzhjOTRkZDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-chart-check.py#L24-L56",
+          "version": "repo-lines-v1:sha256:bd2e96cb2bde49722204e858b712335c3e5f2d81699ead3c81680c912e664264:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZjFkYzdjMWNiOTk4ZTlhMjEzMWI1ZjQxYWI4NTdmYzU4NDY0NDljZDAzZTdkYWY5ZTdkYjk1YjQxYTUzMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkY2MyYmI2ZjVhNmJhOWU5ZjM3NWIzMmI2M2ZlNjkzNWZmMGQzYWM5MmNhNTFlNzllNzAyZDMyYjRhNjExYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzOTFkZjNkMDlkYTVmYTk0NTRiMjBkNDRhMTk0ZDA4MTQwNjUzOTRiZDNjMTVlOTQ1NzQ5ODhmZWVmNTY1NGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-reader-policy-test.py#L60-L145",
+          "version": "repo-lines-v1:sha256:c998566c4c86b8a9602d6ae0468310ae46a971d98b5333c3b4c5ec2ef1fc8ffb:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxNjBhNDkwMjU2YTEyYWYxNTI2MmViZTUxNDExODEzY2ZiY2Y5ZDVmYzM5NDYxMzNjYWU3NjZlN2RkYzRlYzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlOTNkODkzOTA2ZWVhZjJjYWRjYzY1NTg1OTdiZDkzMzBlMmViNjlkZmI2MGE5YzgxNzUyMTg1MjdlNzI2ODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE1OGZiZjIxZGJmMWFmM2JiYWNkM2IwYjQxYTRhYjVmZDZjODI4MDQzZDQwYzVkODMzYWRhZTQ1OGM4MzE5Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:53:30.669Z"
+    "at": "2026-10-27T23:04:53.760Z"
   }
 }
