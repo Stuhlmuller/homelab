@@ -73,8 +73,6 @@ resource "tailscale_contacts" "homelab" {
   }
 }
 
-# Retained unused during the Tailnet Lock transition. Remove in a separately
-# reviewed retirement after signed-key CI acceptance; do not bypass prevent_destroy.
 resource "tailscale_federated_identity" "github" {
   for_each = local.identities
 

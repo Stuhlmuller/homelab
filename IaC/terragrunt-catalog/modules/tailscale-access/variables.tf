@@ -28,3 +28,15 @@ variable "ci_key_generation" {
     error_message = "CI key generation must be a positive integer no greater than 999999."
   }
 }
+
+variable "tailscale_oauth_client_id" {
+  description = "Tailscale federated identity OAuth client ID for workload identity federation authentication. Obtained from the Tailscale admin console trust credentials page after creating federated identities."
+  type        = string
+  default     = ""
+}
+
+variable "tailscale_tailnet" {
+  description = "The Tailscale tailnet name (MagicDNS suffix without the dot)."
+  type        = string
+  default     = "tail67beb.ts.net"
+}
