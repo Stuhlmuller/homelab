@@ -39,6 +39,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Private browser access source | [access PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420), `bd5bd437`; [installation PR #1424](https://github.com/Stuhlmuller/homelab/pull/1424), `e24dc89` | — | Source validated: authenticated Octelium console and post-auth redirect, opaque native-host private route and DNS/certificate from #1420; cookie and trusted-proxy declarations from #1424. Live URL cutover and browser/TLS/WebSocket acceptance remain pending. |
 | Protected Enterprise operations stages | [workflow](../../.github/workflows/openclaw-enterprise-operations.yml), [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh), [journal dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py) | — | Source-only. Fixed dispatch is guarded and serialized; full-sync blocks on the unselected installation phase. Reconcile, stop and verification have a source-bound in-cluster Job with a retained journal PVC, but its disabled declaration lacks verified placement, PV/image identities and bootstrap credential. Binding needs an owner-controlled private key; restore and acceptance remain blocked. T041/T043 and live outcomes remain pending. |
 | Recovery failure fixtures (T050) | [recovery test](../../scripts/ci/openclaw-enterprise-recovery-test.py), [static gate](../../scripts/ci/static-checks.sh) | — | Source-only: 12 tests passed in the Nix development shell on 2026-10-25. They cover native stop ordering, lost/uncertain termination, retained new and legacy state, PVC retention, blocked enforcement removal and incomplete backup material. T054 orchestration and live restore remain pending. |
+| Scheduled complete new-state backup (T051) | [backup script](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh), [pinned Agent stop contract](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md#L328-L334), [pinned recovery guide](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/production-handoff.md#L108-L130) | — | Pending: no identity-checked producer across the separate operator/Agent PVC namespaces, tenant Secret value capture, in-cluster credential/protected publication path, or encrypted off-node mount. Supported stop clears the active revision and resume needs a new deployment; upstream has no general backup command and rejects live SQLite/PVC copies. At 2026-10-25 12:41 UTC, read-only `kubectl api-resources --api-group=snapshot.storage.k8s.io` returned no resources, so no VolumeSnapshotClass is available for an online snapshot path. No scheduled capture or independent restore receipt. |
 | Enterprise install and hook failure matrix | Pending | — | Pending |
 | Inactive agent reconciliation and retry | Pending | — | Pending |
 | Model credential and real provider probe | Pending | — | Pending |
@@ -46,6 +47,17 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Complete new-state independent restore | Pending | — | Pending |
 | 24-hour observation and selective retirement | Pending | — | Pending |
 | T059 source documentation and OpenWiki refresh | [merged PR #1560](https://github.com/Stuhlmuller/homelab/pull/1560), main `0e223d6`; protected static, lint, image-policy, network-policy and release-dry-run checks passed | — | Passed for source documentation only: five named runbooks updated and affected OpenWiki pages refreshed by the native update path. Capacity, credentials, policy enforcement, platform upgrades and Enterprise live acceptance remain pending. |
+
+T051 NFS option remains unqualified. On 2026-10-25, read-only
+`df -B1 /var/lib/postgresql/data` inside the NFS-backed
+`octelium-postgres-0` Pod reported 718,305,492,992 bytes available on the
+QNAP `/homelab` export. [NFS claim sizes](../storage-nfs.md) do not reserve
+or cap that space, so this sample does not admit retention. The current
+[packager](../../clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh)
+writes its dump and recovery material in plaintext to `/backup` before
+rename. NFSv3 `sec=sys` does not encrypt transport, QNAP at-rest encryption is
+unverified, and the same NAS is not an independent off-NAS copy. Encrypt before
+the first NFS write, then prove an isolated decrypt-and-restore.
 
 The 215-image public catalog passed protected `image_scope=all` run
 [`40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517).
