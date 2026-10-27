@@ -449,12 +449,28 @@ class RolloutTest(unittest.TestCase):
                          "fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha",
                          "fresh-boot", "pending-config", "try-without-persistent", "config-read-error",
                          "duplicate-config", "missing-active", "missing-reader-auth", "existing-reader-auth",
-                         "missing-private-route", "wrong-private-route"):
+                         "missing-private-route", "wrong-private-route",
+                         "bootstrap-cycle", "implicit-docker-cycle", "mirror-port-cycle",
+                         "direct-bootstrap-cycle", "direct-bootstrap-port-cycle", "live-bootstrap-drift"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 base = Path(temporary).resolve()
                 root = base / "repo"
                 (root / "scripts/config").mkdir(parents=True)
                 (root / ".talos/patches").mkdir(parents=True)
+                traefik = root / "clusters/homelab/apps/traefik"
+                traefik.mkdir(parents=True)
+                repository = {
+                    "bootstrap-cycle": "docker.io/library/traefik",
+                    "implicit-docker-cycle": "library/traefik",
+                    "mirror-port-cycle": "docker.io:443/library/traefik",
+                    "direct-bootstrap-cycle": "harbor.stinkyboi.com/library/traefik",
+                    "direct-bootstrap-port-cycle": "harbor.stinkyboi.com:443/library/traefik",
+                }.get(scenario, "registry.example.test/traefik")
+                (traefik / "values.yaml").write_text(json.dumps({
+                    "service": {"registry": {"controller": "traefik"}},
+                    "controllers": {"traefik": {"containers": {"app": {
+                        "image": {"repository": repository, "tag": f"v3.7.14@sha256:{DIGEST}"}}}}},
+                }))
                 private = base / "private"
                 private.mkdir()
                 private.chmod(0o700)
@@ -493,6 +509,17 @@ class RolloutTest(unittest.TestCase):
                 def run(*command, binary=False):
                     nonlocal current, applied
                     calls.append(command)
+                    if command == ("kubectl", "-n", "traefik", "get", "deployment", "traefik", "-o", "json"):
+                        image = f"{repository}:v3.7.14@sha256:{DIGEST}"
+                        if scenario == "live-bootstrap-drift":
+                            image = "harbor.stinkyboi.com/mirror/" + image
+                        return json.dumps({
+                            "metadata": {"generation": 2},
+                            "spec": {"replicas": 1, "template": {"spec": {"containers": [
+                                {"name": "app", "image": image}]}}},
+                            "status": {"observedGeneration": 2, "replicas": 1,
+                                       "updatedReplicas": 1, "readyReplicas": 1, "availableReplicas": 1},
+                        })
                     if command[0] == "talosctl" and any(action in command for action in ("get", "read", "apply-config", "image")):
                         self.assertIn("--talosconfig", command)
                         self.assertEqual(command[command.index("--talosconfig") + 1], str(talosconfig.resolve()))
@@ -644,6 +671,15 @@ class RolloutTest(unittest.TestCase):
                         with self.assertRaisesRegex(RuntimeError, "exact private Harbor hostname mapping"):
                             rollout.reconcile("10.1.0.202", True, SHA, False, config_argument,
                                               registry_auth_file=registry_auth_file)
+                    elif scenario in ("bootstrap-cycle", "implicit-docker-cycle", "mirror-port-cycle",
+                                      "direct-bootstrap-cycle", "direct-bootstrap-port-cycle"):
+                        with self.assertRaisesRegex(RuntimeError, "own Harbor registry route"):
+                            rollout.reconcile("10.1.0.202", True, SHA, False, config_argument,
+                                              registry_auth_file=registry_auth_file)
+                    elif scenario == "live-bootstrap-drift":
+                        with self.assertRaisesRegex(RuntimeError, "Live Traefik image"):
+                            rollout.reconcile("10.1.0.202", True, SHA, False, config_argument,
+                                              registry_auth_file=registry_auth_file)
                     else:
                         with self.assertRaises(RuntimeError):
                             rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"), config_argument,
@@ -661,6 +697,9 @@ class RolloutTest(unittest.TestCase):
                     self.assertFalse(any(call[:2] == ("git", "merge-base") for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
+                if scenario in ("bootstrap-cycle", "implicit-docker-cycle", "mirror-port-cycle",
+                                "direct-bootstrap-cycle", "direct-bootstrap-port-cycle", "live-bootstrap-drift"):
+                    self.assertFalse(any("apply-config" in command for command in calls))
                 self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"))
                 self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"))
                 if scenario == "missing-reader-auth":

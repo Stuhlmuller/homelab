@@ -247,6 +247,44 @@ def documents(path):
     return value
 
 
+def require_independent_registry_bootstrap(mirrors):
+    values = documents(ROOT / "clusters/homelab/apps/traefik/values.yaml")
+    if len(values) != 1:
+        raise RuntimeError("Traefik bootstrap source is ambiguous")
+    try:
+        if values[0]["service"]["registry"]["controller"] != "traefik":
+            raise RuntimeError("Traefik registry route ownership changed")
+        repository = values[0]["controllers"]["traefik"]["containers"]["app"]["image"]["repository"]
+        tag = values[0]["controllers"]["traefik"]["containers"]["app"]["image"]["tag"]
+        if (not isinstance(repository, str) or "/" not in repository or
+                not isinstance(tag, str) or "@sha256:" not in tag):
+            raise ValueError
+        authority = repository.split("/", 1)[0]
+        host, separator, port = authority.partition(":")
+        host = host.lower().rstrip(".")
+        if (not host or (separator and (not port.isdecimal() or not 1 <= int(port) <= 65535))):
+            raise ValueError
+        if not separator and "." not in host and host != "localhost":
+            host = "docker.io"
+    except (KeyError, TypeError, AttributeError, ValueError) as error:
+        raise RuntimeError("Traefik bootstrap source is invalid") from error
+    if host == REGISTRY_HOST or host in mirrors:
+        raise RuntimeError("Traefik image would depend on its own Harbor registry route")
+    deployment = json.loads(run("kubectl", "-n", "traefik", "get", "deployment", "traefik", "-o", "json"))
+    try:
+        desired = deployment["spec"]["replicas"]
+        containers = deployment["spec"]["template"]["spec"]["containers"]
+        status = deployment["status"]
+        if (desired < 1 or len(containers) != 1 or containers[0]["name"] != "app" or
+                containers[0]["image"] != f"{repository}:{tag}" or
+                deployment["metadata"]["generation"] != status["observedGeneration"] or
+                any(status.get(key) != desired for key in
+                    ("replicas", "updatedReplicas", "readyReplicas", "availableReplicas"))):
+            raise ValueError
+    except (KeyError, TypeError, ValueError) as error:
+        raise RuntimeError("Live Traefik image or readiness differs from independent source") from error
+
+
 def registry_auth_config(registries, registry_auth, rollback):
     """Change only this rollout's Harbor credential, preserving other hosts."""
     configs = registries.get("config", {})
@@ -493,6 +531,8 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
                     ".talos/patches/harbor-mirrors.yaml")
     declaration = documents(patch)[0]["machine"]
     wanted = declaration["network"]["extraHostEntries"] if registry_host_only else declaration["registries"]["mirrors"]
+    if execute and not rollback and not registry_host_only:
+        require_independent_registry_bootstrap(wanted)
     with tempfile.TemporaryDirectory(prefix="talos-harbor-") as temporary:
         directory = Path(temporary)
         directory.chmod(0o700)
