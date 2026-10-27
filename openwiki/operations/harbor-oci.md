@@ -244,6 +244,13 @@ On October 27, `ztunnel` on the Traefik node was in `ImagePullBackOff`:
 its Harbor image depended on the registry listener served through that same
 ambient destination. The unavailable registry path also blocked Renovate's
 05:00 image pull; that Job reached its deadline without scanning any repository.
+At 07:00, a new Renovate Pod on `acer` also failed to pull: events reported
+`connect: connection refused` to `10.96.0.50:443`. The
+[`traefik-registry` Service](../../clusters/homelab/apps/traefik/values.yaml)
+had one ready EndpointSlice backend, the ambient Traefik Pod on `zimaboard-0`,
+where ztunnel remained unready. This supports the bootstrap-loop diagnosis but
+does not prove its cause or recovery; the successful 06:00 Job used
+`IfNotPresent` on `zimaboard-1` and did not establish a fresh Harbor pull.
 The [Istio stack](../../IaC/homelab/us-west-2/apps/istio/stack.hcl)
 now declares the upstream Docker Hub ztunnel reference at the same digest as
 the Harbor image. Read-only Talos inspection found no active `docker.io`
