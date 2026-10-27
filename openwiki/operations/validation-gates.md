@@ -1900,7 +1900,10 @@ was performed.
 Before `owned-cleanup` can touch the firewall, the protected stage reads the
 approved `firewall-ownership/<capture-run-id>.json` under the private
 `openclaw-enterprise/platform/receipts/<source-sha>/` prefix, then follows its
-`evidenceSourceSha` to the original `receipts/<evidence-sha>/placement.json`.
+`evidenceSourceSha`, `placementRunId`, and `placementVersionId` to the selected
+`receipts/<evidence-sha>/placement/<placement-run-id>.json`. Capture first
+verifies the successful admission run that selected this exact version; approval,
+cleanup, and release keep the same selection.
 Each exact key must
 have an untruncated listing with exactly one latest S3 version and no delete
 markers; a version-pinned metadata read must show KMS encryption, a 1-byte to
@@ -1927,20 +1930,68 @@ arrive during deletion. Live activation stays blocked until isolated placement
 rules that out or a reviewed repository-owned isolation path is added. See
 the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
-The staged protected `canary-admit` path remains dormant while `canary.node` is
-unset. With a fresh placement receipt, it verifies the exact Node UID and boot
+The staged protected `canary-admit` path remains dormant until the protected
+`placement` stage writes a verified current-main, run-scoped receipt. A new
+placement run can refresh expired evidence on unchanged `main` while the old
+receipt remains immutable. Admission takes the selected placement run ID and
+checks its exact S3 version. Placement binds a
+reviewed, less-than-one-hour-old versioned firewall capture to fresh Node and
+system Pod identities, requested resources, metrics and node filesystem
+headroom; it keeps platform activation disabled. Admission rejects placement
+older than 30 minutes or its baseline older than one hour, then rechecks the
+bound capture, Pod identities, Node metrics, filesystem and capacity before
+Node mutation. A separate fresh capacity gate is still needed before the later
+enforcer and fixture rollout. Qualification also requires a reviewed
+`activationEnabled: true` change in the maintenance config. The isolated
+canary does not protect Traefik on `zimaboard-0`; a later reviewed expansion
+and direct unauthorized-Pod denial plus positive private ingress, callback,
+Harbor, and Octelium checks remain separate acceptance gates. With a fresh
+receipt,
+admission verifies the exact Node UID and boot
 ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
 Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
-then the selector label. A complete cluster-wide selector inventory must show
+admission-run annotation atomically, then the selector label. A complete
+cluster-wide selector inventory must show
 no labeled Node before mutation and again just before labeling; if another
 Node appears after the patch, admission removes its own label and retains the
-taint. `canary-release` requires the reviewed cleanup receipt
+taint. If the Node patch succeeds but the final admission receipt cannot be
+uploaded, owner-only protected `canary-admit-recover` takes the original
+admission `evidence_source_sha` and run ID. It requires that source to be an
+ancestor of current `main`, loads its immutable attempt and exact placement
+version, refuses a final admission receipt under the original SHA, then
+runs a UID-owned privileged host probe. It requires an empty live IPv4/IPv6/ipset
+kube-router snapshot, deleted probe Pod, absent enforcer/fixtures, matching
+Node UID/boot and system Pods, and no other selected Node. It removes only the
+owned label, then the annotation and taint atomically with resource-version and
+UID tests. A taint-only attempt needs this protected recovery before another
+admission run. This rollback remains
+available after placement expiry or a newer current-main commit, provided
+the configured canary node and taint still match the original placement. An
+orphaned probe has token/UID-bound `firewall-baseline-recover` cleanup using
+the recovery run and admission IDs.
+After a verified admission with no enforcer or fixtures deployed, owner-only
+`canary-abort` selects the immutable final admission and placement receipt by
+original SHA and run ID. Current protected `main` must retain the admission's
+runtime manifests and disabled activation. A same-run UID-owned host probe
+must prove the kube-router firewall empty and be deleted before the stage
+checks absent runtime and matching Node/Pod identities, removes only the
+selected label, then removes the annotation and taint atomically.
+Interrupted and already-clean retries are idempotent. A newer admission marker
+or changed source blocks the abort; an orphaned abort probe uses
+`firewall-baseline-recover` first.
+`canary-release` requires the reviewed cleanup receipt
 and an empty owned firewall. It removes the label, waits until cleanup
 DaemonSet Pods are gone cluster-wide, then rechecks the complete canary-node
 Pod inventory against reviewed system Pod UIDs before removing the taint. A
 survivor, incomplete inventory, changed Pod or timeout leaves the taint and an
 interrupted private receipt. Source fixtures do not supply live capacity or
 traffic qualification.
+After an interrupted unlabel, current `canary-release` cannot retry the
+taint-only state. Before activation, a protected release-recovery stage must
+bind reviewed ownership/cleanup receipts and the admission marker to fresh
+empty owned-firewall, absent-runtime, and Node/Pod identity proof before taint
+removal. See [the canary Node stage](../../scripts/network-policy-canary-node.py);
+manual untaint is barred.
 
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)

@@ -9,7 +9,7 @@ import runpy
 import subprocess
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -25,9 +25,13 @@ CONFIG = {"canary": {"node": "zimaboard-1",
 
 def placement(source_sha=SHA):
     return {"format": 1, "verified": True, "sourceSha": source_sha,
+            "placementRunId": "456",
             "node": "zimaboard-1", "canaryNode": "zimaboard-1", "nodeUid": "uid",
             "bootID": "boot", "measured": True, "isolatedTaint": CONFIG["canary"]["taint"],
             "firewallBaselineEmpty": True,
+            "baselineSourceSha": source_sha, "baselineCaptureVersionId": "version-1",
+            "baselineRunId": "123", "baselineCaptureSha256": "a" * 64,
+            "baselineCapturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "systemDaemonSetPods": [{"namespace": "kube-system", "name": "flannel-1",
                                      "uid": "system-pod-uid"}],
             "capturedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -44,21 +48,62 @@ def cleanup():
 def ownership():
     return {"format": 1, "verified": True, "sourceSha": SHA,
             "evidenceSourceSha": EVIDENCE_SHA, "captureRunId": "456",
+            "admissionRunId": "123", "placementRunId": "456",
+            "placementVersionId": "version-1",
             "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
             "snapshotSha256": "c" * 64, "reviewedAt": "2026-10-19T00:00:00Z"}
 
 
+def admission_attempt():
+    return {"format": 1, "stage": "canary-admit", "status": "attempted",
+            "verified": False, "sourceSha": EVIDENCE_SHA, "runId": "123",
+            "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
+            "placementRunId": "456", "placementVersionId": "version-1"}
+
+
+def admission_receipt():
+    return {"format": 1, "stage": "canary-admit", "status": "verified",
+            "verified": True, "sourceSha": EVIDENCE_SHA, "runId": "123",
+            "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
+            "placementRunId": "456", "placementVersionId": "version-1",
+            "resourceVersion": "11", "completedAt": "2026-10-19T00:00:00Z"}
+
+
+def recovery_proof():
+    return {"format": 1, "stage": "firewall-recovery-proof", "status": "verified",
+            "verified": True, "sourceSha": SHA, "evidenceSourceSha": EVIDENCE_SHA,
+            "runId": "789",
+            "admissionRunId": "123", "placementRunId": "456",
+            "placementVersionId": "version-1", "node": "zimaboard-1",
+            "nodeUid": "uid", "bootID": "boot", "firewallBaselineEmpty": True,
+            "ownedChains": 0, "ownedSets": 0, "podDeleted": True,
+            "completedAt": datetime.now(timezone.utc).isoformat(),
+            "snapshotSha256": "d" * 64,
+            "captureKey": f"openclaw-enterprise/platform/{SHA}/789/firewall-recovery-capture.json"}
+
+
 def node(admitted=False):
     labels = {"foreign.example/owner": "keep"}
+    annotations = {"foreign.example/note": "keep"}
     taints = [{"key": "foreign.example/maintenance", "value": "yes", "effect": "NoExecute"}]
     if admitted:
         labels[CANARY] = "true"
+        annotations[SUT["ADMISSION"]] = SUT["admission_marker"](EVIDENCE_SHA, "123")
         taints.append(copy.deepcopy(TAINT))
     return {"metadata": {"name": "zimaboard-1", "uid": "uid",
-                         "resourceVersion": "10", "labels": labels},
+                         "resourceVersion": "10", "labels": labels,
+                         "annotations": annotations},
             "spec": {"taints": taints, "unschedulable": False},
             "status": {"nodeInfo": {"bootID": "boot"},
                        "conditions": [{"type": "Ready", "status": "True"}]}}
+
+
+def taint_only(source_sha=EVIDENCE_SHA, run_id="123"):
+    state = node(admitted=True)
+    state["metadata"]["labels"].pop(CANARY)
+    state["metadata"]["annotations"][SUT["ADMISSION"]] = \
+        SUT["admission_marker"](source_sha, run_id)
+    return state
 
 
 def system_pod():
@@ -122,6 +167,11 @@ class CanaryNodeTests(unittest.TestCase):
     def test_private_placement_and_cleanup_must_be_verified_and_bound(self):
         for change in ({"verified": False}, {"sourceSha": "b" * 40},
                        {"nodeUid": ""}, {"firewallBaselineEmpty": False},
+                       {"baselineRunId": ""}, {"baselineCaptureSha256": "bad"},
+                       {"baselineSourceSha": "f" * 40},
+                       {"baselineCaptureVersionId": ""},
+                       {"baselineCapturedAt": "2026-10-01T00:00:00Z"},
+                       {"capturedAt": "2026-10-01T00:00:00Z"},
                        {"systemDaemonSetPods": None},
                        {"systemDaemonSetPods": [{"namespace": "kube-system",
                                                 "name": "flannel-1", "uid": ""}]},
@@ -142,7 +192,9 @@ class CanaryNodeTests(unittest.TestCase):
                     SUT["validate_cleanup"](cleanup() | changed, ownership(),
                                             placement(EVIDENCE_SHA), CONFIG, SHA)
             for changed in ({"verified": False}, {"sourceSha": "d" * 40},
-                            {"nodeUid": "replaced"}, {"snapshotSha256": "d" * 64}):
+                            {"nodeUid": "replaced"}, {"snapshotSha256": "d" * 64},
+                            {"admissionRunId": ""}, {"placementRunId": "789"},
+                            {"placementVersionId": ""}):
                 with self.subTest(changed=changed), self.assertRaises(ValueError):
                     SUT["validate_cleanup"](cleanup(), ownership() | changed,
                                             placement(EVIDENCE_SHA), CONFIG, SHA)
@@ -340,8 +392,11 @@ class CanaryNodeTests(unittest.TestCase):
                     SUT["verify_live_pods"](CONFIG, placement())
 
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
-                   cleanup_pods=None, label_inventory=None):
+                   cleanup_pods=None, label_inventory=None, capacity_error=None,
+                   selected_run="456", selected_version="version-1", loaded_run=None,
+                   source_sha=SHA, run_id="123", fail_main_after_label=False):
         commands, records, events = [], [], []
+        self.last_commands = commands
         self.last_records = records
         self.last_events = events
         cleanup_inventory = iter(([cleanup_pod()], [])) if cleanup_pods is None else None
@@ -361,9 +416,9 @@ class CanaryNodeTests(unittest.TestCase):
                                          else label_inventory)
                 selected = [copy.deepcopy(state)] if state["metadata"]["labels"].get(CANARY) \
                     == "true" else []
-                return {"items": selected}
+                return {"metadata": {}, "items": selected}
             if (action == "release" and args[:4] == ("-n", "kube-system", "get", "pods")
-                    and "--chunk-size=0" in args):
+                    and "--chunk-size=0" in args and "-l" not in args):
                 events.append("cleanup-inventory")
                 current_pods = (next(cleanup_inventory) if cleanup_inventory is not None
                                 else cleanup_pods() if callable(cleanup_pods) else cleanup_pods)
@@ -374,7 +429,7 @@ class CanaryNodeTests(unittest.TestCase):
                 current_pods = pods() if callable(pods) else pods
                 return {"metadata": {}, "items": copy.deepcopy(
                     [system_pod()] if current_pods is None else current_pods)}
-            return {"items": []}
+            return {"metadata": {}, "items": []}
 
         def command(*args):
             if "patch" in args:
@@ -394,14 +449,19 @@ class CanaryNodeTests(unittest.TestCase):
                 return json.dumps(state)
             return ""
 
+        def capacity_gate(*_):
+            if capacity_error:
+                raise capacity_error
+
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ,
-                {"GITHUB_RUN_ID": "123"}), patch.dict(SUT["PLATFORM"], {
+                {"GITHUB_RUN_ID": run_id}), patch.dict(SUT["PLATFORM"], {
                     "validate_config": lambda _: CONFIG,
                     "protected_context": lambda _: None,
                     "private_directory": lambda path: path,
                     "private_output": lambda path: path,
                     "read_private_json": lambda path: (placement(EVIDENCE_SHA if action ==
-                    "release" else SHA) if path.name == "placement.json" else
+                    "release" else source_sha) | {"placementRunId": loaded_run or selected_run}
+                    if path.name == "placement.json" else
                     ownership() if path.name == "firewall-ownership.json" else cleanup())}), \
                     patch.dict(SUT["CLEANUP"], {
                     "kubernetes_json": kube_json, "command": command,
@@ -413,11 +473,25 @@ class CanaryNodeTests(unittest.TestCase):
                     "write_record": lambda _path, record, replace=False:
                     records.append(copy.deepcopy(record))}), patch.object(SUT["time"],
                     "sleep", lambda _: None), patch.dict(
-                    SUT["execute"].__globals__, {"require_current_main": lambda _: None}):
+                    SUT["execute"].__globals__, {
+                        "require_current_main": lambda _: (_ for _ in ()).throw(
+                            ValueError("source is not exact current main")) if
+                            fail_main_after_label and state["metadata"]["labels"].get(
+                                CANARY) == "true" else None,
+                        "require_fresh_capacity": capacity_gate}):
             args = argparse.Namespace(action=action,
                                       config=ROOT / "scripts/config/platform-maintenance.json",
-                                      expected_sha=SHA, receipt_dir=Path(directory),
-                                      output=Path(directory) / "result.json")
+                                      expected_sha=source_sha, receipt_dir=Path(directory),
+                                      output=Path(directory) / "result.json", bucket="bucket",
+                                      placement_run_id=selected_run if action == "admit" else None,
+                                      placement_version_id=selected_version if action == "admit" else None)
+            if capacity_error:
+                with self.assertRaisesRegex(ValueError, "headroom"):
+                    SUT["execute"](args)
+                self.assertFalse(commands)
+                self.assertEqual([item["status"] for item in records],
+                                 ["started", "interrupted"])
+                return commands, state
             result = SUT["execute"](args)
         self.assertEqual(state["metadata"]["labels"]["foreign.example/owner"],
                          initial_foreign_labels["foreign.example/owner"])
@@ -426,25 +500,321 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertTrue(result["verified"])
         return commands, state
 
+    def run_recovery(self, state, *, selected=None, attempt=None, proof=None,
+                     admission=None, action="recover", source_changed=False,
+                     runtime_error=False, pods=None, expected_error=None):
+        selected = selected if selected is not None else placement(EVIDENCE_SHA)
+        attempt = attempt if attempt is not None else admission_attempt()
+        proof = proof if proof is not None else recovery_proof()
+        admission = admission if admission is not None else admission_receipt()
+        commands, records = [], []
+        self.last_recovery_commands = commands
+        self.last_recovery_records = records
+
+        def kube_json(*args):
+            if args[:2] == ("get", "node"):
+                return copy.deepcopy(state)
+            if args[:2] == ("get", "nodes"):
+                selected_nodes = [copy.deepcopy(state)] if state["metadata"]["labels"].get(
+                    CANARY) == "true" else []
+                return {"metadata": {}, "items": selected_nodes}
+            if args[:2] == ("get", "pods"):
+                current = pods() if callable(pods) else pods
+                return {"metadata": {}, "items": copy.deepcopy(
+                    [system_pod()] if current is None else current)}
+            return {"metadata": {}, "items": []}
+
+        def command(*args):
+            if "patch" in args:
+                operations = json.loads(args[args.index("-p") + 1])
+                commands.append(operations)
+                apply_patch(state, operations)
+                return json.dumps(state)
+            return ""
+
+        with tempfile.TemporaryDirectory() as directory, patch.dict(
+                os.environ, {"GITHUB_RUN_ID": "789"}), patch.dict(SUT["PLATFORM"], {
+                    "validate_config": lambda _: CONFIG,
+                    "protected_context": lambda _: None,
+                    "private_directory": lambda path: path,
+                    "private_output": lambda path: path,
+                    "fresh_recovery_time": lambda *_: self.fail(
+                        "recovery must not require fresh placement"),
+                    "read_private_json": lambda path: (selected if path.name ==
+                        "placement.json" else attempt if path.name ==
+                        "admission-attempt.json" else admission if path.name ==
+                        "admission.json" else proof)}), patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": kube_json, "command": command,
+                    "write_record": lambda _path, record, replace=False:
+                    records.append(copy.deepcopy(record))}), patch.dict(SUT["OWNERSHIP"], {
+                    "require_owner_attestation": lambda: None,
+                    "PrivateStore": lambda _bucket: type("Store", (), {
+                        "version": lambda _self, *_: "admission-version",
+                        "read": lambda _self, *_: json.dumps(admission)})()}), patch.dict(
+                    SUT["recover"].__globals__, {
+                        "require_current_main": lambda _: None,
+                        "require_abort_source": lambda *_: (_ for _ in ()).throw(
+                            ValueError("canary source changed")) if source_changed else None,
+                        "require_runtime_absent": lambda admit: (_ for _ in ()).throw(
+                            ValueError("firewall DaemonSet remains")) if runtime_error else
+                            SUT["require_runtime_absent"](admit),
+                        "require_fresh_capacity": lambda *_: self.fail(
+                            "recovery must not refresh capacity")}):
+            args = argparse.Namespace(
+                action=action, config=ROOT / "scripts/config/platform-maintenance.json",
+                expected_sha=SHA, receipt_dir=Path(directory),
+                output=Path(directory) / "result.json", bucket="bucket" if action == "abort"
+                else None,
+                evidence_source_sha=EVIDENCE_SHA,
+                admission_run_id="123", placement_run_id="456",
+                placement_version_id="version-1",
+                admission_version_id="admission-version" if action == "abort" else None)
+            if expected_error:
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    SUT["recover"](args)
+                return commands, records, state
+            result = SUT["recover"](args)
+        self.assertTrue(result["verified"])
+        return commands, records, state
+
+    def test_recover_expired_admission_removes_only_owned_label_then_taint(self):
+        selected = placement(EVIDENCE_SHA)
+        selected["capturedAt"] = "2026-01-01T00:00:00Z"
+        selected["baselineCapturedAt"] = "2026-01-01T00:00:00Z"
+        commands, records, state = self.run_recovery(node(admitted=True), selected=selected)
+        self.assertEqual(len(commands), 2)
+        self.assertEqual([operation["path"] for operation in commands[0][:2]],
+                         ["/metadata/resourceVersion", "/metadata/uid"])
+        self.assertEqual([(operation["op"], operation["path"])
+                          for operation in commands[0][2:]],
+                         [("test", SUT["LABEL_PATH"]),
+                          ("test", SUT["ADMISSION_PATH"]),
+                          ("test", "/spec/taints/1"), ("remove", SUT["LABEL_PATH"])])
+        self.assertEqual([(operation["op"], operation["path"])
+                          for operation in commands[1][2:]],
+                         [("test", "/spec/taints/1"),
+                          ("test", SUT["ADMISSION_PATH"]),
+                          ("remove", SUT["ADMISSION_PATH"]),
+                          ("remove", "/spec/taints/1")])
+        self.assertEqual(state["metadata"]["labels"], {"foreign.example/owner": "keep"})
+        self.assertEqual(state["spec"]["taints"], [{"key": "foreign.example/maintenance",
+                                                   "value": "yes", "effect": "NoExecute"}])
+        self.assertEqual([record["status"] for record in records], ["started", "verified"])
+        self.assertEqual(records[-1]["stage"], "canary-admit-recover")
+        self.assertEqual(records[-1]["firewallCaptureKey"], recovery_proof()["captureKey"])
+
+    def test_recover_taint_only_or_already_clean_is_idempotent(self):
+        commands, _, state = self.run_recovery(taint_only())
+        self.assertEqual(len(commands), 1)
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+        commands, _, _ = self.run_recovery(state)
+        self.assertEqual(commands, [])
+
+    def test_verified_admission_abort_removes_marker_and_taint_and_retries(self):
+        commands, records, state = self.run_recovery(node(admitted=True), action="abort")
+        self.assertEqual(len(commands), 2)
+        self.assertEqual([(item["op"], item["path"]) for item in commands[0][2:]],
+                         [("test", SUT["LABEL_PATH"]),
+                          ("test", SUT["ADMISSION_PATH"]),
+                          ("test", "/spec/taints/1"), ("remove", SUT["LABEL_PATH"])])
+        self.assertEqual([(item["op"], item["path"]) for item in commands[1][2:]],
+                         [("test", "/spec/taints/1"),
+                          ("test", SUT["ADMISSION_PATH"]),
+                          ("remove", SUT["ADMISSION_PATH"]),
+                          ("remove", "/spec/taints/1")])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertNotIn(SUT["ADMISSION"], state["metadata"]["annotations"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+        self.assertEqual(records[-1]["stage"], "canary-abort")
+        self.assertEqual(records[-1]["admissionVersionId"], "admission-version")
+        commands, _, _ = self.run_recovery(state, action="abort")
+        self.assertEqual(commands, [])
+
+    def test_verified_admission_abort_rejects_replay_or_changed_source(self):
+        for state, options, error in (
+                (node(admitted=True), {"admission": admission_receipt() |
+                 {"placementVersionId": "other"}}, "verified canary admission"),
+                (node(admitted=True), {"source_changed": True}, "source changed"),
+                (node(admitted=True), {"runtime_error": True}, "firewall DaemonSet"),
+                (node(admitted=True), {"proof": recovery_proof() |
+                 {"firewallBaselineEmpty": False}}, "same-run empty firewall"),
+                (node(admitted=True), {}, "admission marker")):
+            with self.subTest(error=error):
+                if error == "admission marker":
+                    state["metadata"]["annotations"][SUT["ADMISSION"]] = \
+                        SUT["admission_marker"](EVIDENCE_SHA, "999")
+                commands, records, _ = self.run_recovery(
+                    state, action="abort", expected_error=error, **options)
+                self.assertEqual((commands, records), ([], []))
+
+    def test_aborted_admission_cannot_remove_later_taint_only_attempt(self):
+        _, _, state = self.run_recovery(node(admitted=True), action="abort")
+        with self.assertRaisesRegex(ValueError, "simulated label patch failure"):
+            self.run_action("admit", state, source_sha=EVIDENCE_SHA, run_id="124",
+                            fail_label_patch=True)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(state["metadata"]["annotations"][SUT["ADMISSION"]],
+                         SUT["admission_marker"](EVIDENCE_SHA, "124"))
+        commands, records, _ = self.run_recovery(
+            state, action="abort", expected_error="admission marker")
+        self.assertEqual((commands, records), ([], []))
+
+    def test_abort_source_allows_unrelated_main_advance_only(self):
+        config = {"activationEnabled": False, "canary": {"node": "zimaboard-2"}}
+        def committed(command, **_):
+            if "rev-list" in command:
+                return f"{SHA}\n{EVIDENCE_SHA}\n"
+            return (ROOT / command[-1].split(":", 1)[1]).read_bytes()
+        with patch.object(SUT["subprocess"], "check_output", side_effect=committed):
+            SUT["require_abort_source"](config, EVIDENCE_SHA, SHA)
+        def changed(command, **_):
+            return f"{SHA}\n{EVIDENCE_SHA}\n" if "rev-list" in command else b"changed"
+        with patch.object(SUT["subprocess"], "check_output", side_effect=changed):
+            with self.assertRaisesRegex(ValueError, "source changed"):
+                SUT["require_abort_source"](config, EVIDENCE_SHA, SHA)
+        with patch.object(SUT["subprocess"], "check_output",
+                          return_value=f"{SHA}\n"):
+            with self.assertRaisesRegex(ValueError, "not an ancestor"):
+                SUT["require_abort_source"](config, EVIDENCE_SHA, SHA)
+        with self.assertRaisesRegex(ValueError, "pre-activation"):
+            SUT["require_abort_source"](
+                {"activationEnabled": True, "canary": {"node": "zimaboard-2"}},
+                EVIDENCE_SHA, SHA)
+
+    def test_interrupted_abort_keeps_taint_then_can_retry(self):
+        foreign = system_pod()
+        foreign["metadata"].update({"namespace": "default", "name": "foreign",
+                                    "uid": "foreign-uid", "ownerReferences": []})
+        inventories = iter(([system_pod()], [system_pod(), foreign]))
+        commands, records, state = self.run_recovery(
+            node(admitted=True), action="abort", pods=lambda: next(inventories),
+            expected_error="foreign")
+        self.assertEqual(len(commands), 1)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(state["metadata"]["annotations"][SUT["ADMISSION"]],
+                         SUT["admission_marker"](EVIDENCE_SHA, "123"))
+        self.assertEqual(records[-1]["status"], "interrupted")
+        commands, records, state = self.run_recovery(state, action="abort")
+        self.assertEqual(len(commands), 1)
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+        self.assertEqual(records[-1]["status"], "verified")
+
+    def test_recover_rejects_forged_selection_or_missing_firewall_proof(self):
+        for evidence, changes, error in (
+                ("attempt", {"sourceSha": SHA}, "admission attempt"),
+                ("attempt", {"runId": "124"}, "admission attempt"),
+                ("attempt", {"nodeUid": "other"}, "admission attempt"),
+                ("attempt", {"placementVersionId": "forged"}, "admission attempt"),
+                ("proof", {"runId": "788"}, "same-run empty firewall"),
+                ("proof", {"evidenceSourceSha": SHA}, "same-run empty firewall"),
+                ("proof", {"admissionRunId": "124"}, "same-run empty firewall"),
+                ("proof", {"placementRunId": "457"}, "same-run empty firewall"),
+                ("proof", {"placementVersionId": "forged"}, "same-run empty firewall"),
+                ("proof", {"nodeUid": "other"}, "same-run empty firewall"),
+                ("proof", {"firewallBaselineEmpty": False}, "same-run empty firewall"),
+                ("proof", {"podDeleted": False}, "same-run empty firewall"),
+                ("proof", {"completedAt": (datetime.now(timezone.utc) -
+                             timedelta(minutes=10)).isoformat()}, "stale"),
+                ("proof", {"completedAt": "2026-10-25T00:00:00"}, "invalid completion time"),
+                ("proof", {"captureKey": "unrelated"}, "same-run empty firewall")):
+            with self.subTest(evidence=evidence, changes=changes):
+                kwargs = {evidence: (admission_attempt() if evidence == "attempt" else
+                                     recovery_proof()) | changes}
+                commands, records, _ = self.run_recovery(
+                    node(admitted=True), expected_error=error, **kwargs)
+                self.assertEqual((commands, records), ([], []))
+
+    def test_recover_rejects_unrelated_node_or_foreign_pod_before_mutation(self):
+        replaced = node(admitted=True)
+        replaced["metadata"]["uid"] = "replacement"
+        commands, records, _ = self.run_recovery(replaced, expected_error="identity")
+        self.assertEqual((commands, records), ([], []))
+        unisolated = node(admitted=True)
+        unisolated["spec"]["taints"].pop()
+        commands, records, _ = self.run_recovery(unisolated,
+                                                expected_error="unexpected canary")
+        self.assertEqual((commands, records), ([], []))
+        foreign = system_pod()
+        foreign["metadata"].update({"namespace": "default", "name": "foreign",
+                                    "uid": "foreign-uid", "ownerReferences": []})
+        commands, records, _ = self.run_recovery(
+            node(admitted=True), pods=[system_pod(), foreign], expected_error="foreign")
+        self.assertEqual((commands, records), ([], []))
+
+    def test_recover_keeps_taint_if_foreign_pod_arrives_after_unlabel(self):
+        inventories = iter(([system_pod()], [system_pod(), system_pod() | {
+            "metadata": system_pod()["metadata"] | {
+                "namespace": "default", "name": "foreign", "uid": "foreign-uid",
+                "ownerReferences": []}}]))
+        commands, records, state = self.run_recovery(
+            node(admitted=True), pods=lambda: next(inventories), expected_error="foreign")
+        self.assertEqual(len(commands), 1)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual([record["status"] for record in records],
+                         ["started", "interrupted"])
+
     def test_admit_adds_only_owned_taint_then_label(self):
         commands, state = self.run_action("admit", node())
         self.assertEqual(len(commands), 2)
         self.assertEqual([item["path"] for item in commands[0][2:]],
-                         ["/spec/taints/-"])
+                         ["/spec/taints/-", SUT["ADMISSION_PATH"]])
         self.assertEqual([item["path"] for item in commands[1][2:]],
                          [SUT["LABEL_PATH"]])
         self.assertEqual(self.last_events, ["taint", "inventory", "label", "inventory"])
         self.assertEqual(state["metadata"]["labels"][CANARY], "true")
+        self.assertEqual(state["metadata"]["annotations"][SUT["ADMISSION"]],
+                         SUT["admission_marker"](SHA, "123"))
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(self.last_records[-1]["placementRunId"], "456")
+        self.assertEqual(self.last_records[-1]["placementVersionId"], "version-1")
+
+    def test_admit_rejects_capacity_spike_before_node_mutation(self):
+        commands, state = self.run_action("admit", node(),
+                                          capacity_error=ValueError("memory headroom"))
+        self.assertFalse(commands)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+
+    def test_admit_rejects_different_loaded_placement_before_mutation(self):
+        state = node()
+        with self.assertRaisesRegex(ValueError, "selected placement run"):
+            self.run_action("admit", state, loaded_run="999")
+        self.assertEqual(self.last_records, [])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+
+    def test_admission_check_runs_read_only_placement_mode(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+                SUT["subprocess"], "run") as run:
+            args = argparse.Namespace(config=ROOT / "scripts/config/platform-maintenance.json",
+                                      expected_sha=SHA, bucket="bucket",
+                                      placement_run_id="456", placement_version_id="version-1")
+            SUT["require_fresh_capacity"](args, Path(directory))
+            command = run.call_args.args[0]
+            self.assertEqual(command[2], str(ROOT / "scripts/network-policy-placement.py"))
+            self.assertEqual(command[-2:], ["--check-placement",
+                                           str(Path(directory) / "placement.json")])
+            self.assertEqual(run.call_args.kwargs["check"], True)
+            self.assertIn("--bucket", command)
+            self.assertEqual(command[command.index("--placement-run-id") + 1], "456")
+            self.assertEqual(command[command.index("--placement-version-id") + 1],
+                             "version-1")
 
     def test_release_removes_only_owned_label_then_taint(self):
         commands, state = self.run_action("release", node(admitted=True))
         self.assertEqual(len(commands), 2)
         self.assertEqual([(item["op"], item["path"]) for item in commands[0][2:]],
-                         [("test", SUT["LABEL_PATH"]), ("test", "/spec/taints/1"),
-                          ("remove", SUT["LABEL_PATH"])])
+                         [("test", SUT["LABEL_PATH"]),
+                          ("test", SUT["ADMISSION_PATH"]),
+                          ("test", "/spec/taints/1"), ("remove", SUT["LABEL_PATH"])])
         self.assertEqual([(item["op"], item["path"]) for item in commands[1][2:]],
-                         [("test", "/spec/taints/1"), ("remove", "/spec/taints/1")])
+                         [("test", "/spec/taints/1"),
+                          ("test", SUT["ADMISSION_PATH"]),
+                          ("remove", SUT["ADMISSION_PATH"]),
+                          ("remove", "/spec/taints/1")])
         self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory",
                                             "cleanup-inventory", "inventory", "taint"])
         self.assertNotIn(CANARY, state["metadata"]["labels"])
@@ -457,6 +827,8 @@ class CanaryNodeTests(unittest.TestCase):
                 self.run_action("release", state, cleanup_pods=lambda: [cleanup_pod()])
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(state["metadata"]["annotations"][SUT["ADMISSION"]],
+                         SUT["admission_marker"](EVIDENCE_SHA, "123"))
         self.assertEqual(self.last_events, ["unlabel", "cleanup-inventory"])
         self.assertEqual([record["status"] for record in self.last_records],
                          ["started", "interrupted"])
@@ -517,27 +889,27 @@ class CanaryNodeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "live firewall proof unavailable"):
             self.run_action("release", node())
 
-    def test_taint_only_admission_recovers_after_fresh_inventory(self):
-        state = node()
-        state["spec"]["taints"].append(copy.deepcopy(TAINT))
-        commands, state = self.run_action("admit", state)
-        self.assertEqual(len(commands), 1)
-        self.assertEqual(self.last_events, ["inventory", "label", "inventory"])
-        self.assertEqual(state["metadata"]["labels"][CANARY], "true")
+    def test_taint_only_admission_requires_selected_recovery(self):
+        state = taint_only()
+        with self.assertRaisesRegex(ValueError, "selected admission recovery"):
+            self.run_action("admit", state)
+        self.assertEqual(self.last_commands, [])
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
 
     def test_admit_refuses_label_only_or_already_admitted(self):
-        for state in (node(admitted=True), node()):
-            if CANARY not in state["metadata"]["labels"]:
-                state["metadata"]["labels"][CANARY] = "true"
-            with self.assertRaisesRegex(ValueError, "already labeled"):
-                self.run_action("admit", state)
+        with self.assertRaisesRegex(ValueError, "already labeled"):
+            self.run_action("admit", node(admitted=True))
+        label_only = node()
+        label_only["metadata"]["labels"][CANARY] = "true"
+        with self.assertRaisesRegex(ValueError, "already labeled"):
+            self.run_action("admit", label_only)
 
     def test_admit_refuses_another_labeled_node_before_mutation(self):
         state = node()
         other = {"metadata": {"name": "zimaboard-2", "uid": "other-uid",
                               "labels": {CANARY: "true"}}}
         with self.assertRaisesRegex(ValueError, "another Node"):
-            self.run_action("admit", state, label_inventory={"items": [other]})
+            self.run_action("admit", state, label_inventory={"metadata": {}, "items": [other]})
         self.assertEqual(len(state["spec"]["taints"]), 1)
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(self.last_records, [])
@@ -546,7 +918,8 @@ class CanaryNodeTests(unittest.TestCase):
         state = node()
         other = {"metadata": {"name": "zimaboard-2", "uid": "other-uid",
                               "labels": {CANARY: "true"}}}
-        inventories = iter(({"items": []}, {"items": [other]}))
+        inventories = iter(({"metadata": {}, "items": []},
+                            {"metadata": {}, "items": [other]}))
         with self.assertRaisesRegex(ValueError, "another Node"):
             self.run_action("admit", state, label_inventory=lambda: next(inventories))
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
@@ -563,7 +936,8 @@ class CanaryNodeTests(unittest.TestCase):
         def inventory():
             nonlocal calls
             calls += 1
-            return {"items": [copy.deepcopy(state), other] if calls == 3 else []}
+            return {"metadata": {},
+                    "items": [copy.deepcopy(state), other] if calls == 3 else []}
 
         with self.assertRaisesRegex(ValueError, "another Node"):
             self.run_action("admit", state, label_inventory=inventory)
@@ -603,16 +977,43 @@ class CanaryNodeTests(unittest.TestCase):
                 self.assertEqual([item["status"] for item in self.last_records],
                                  ["started", "interrupted"])
 
-    def test_interrupted_taint_only_state_can_retry(self):
+    def test_interrupted_taint_only_state_requires_recovery_before_retry(self):
         state = node()
         with self.assertRaisesRegex(ValueError, "simulated label patch failure"):
-            self.run_action("admit", state, fail_label_patch=True)
+            self.run_action("admit", state, source_sha=EVIDENCE_SHA,
+                            fail_label_patch=True)
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        self.assertEqual(state["metadata"]["annotations"][SUT["ADMISSION"]],
+                         SUT["admission_marker"](EVIDENCE_SHA, "123"))
         self.assertEqual([item["status"] for item in self.last_records],
                          ["started", "interrupted"])
-        self.run_action("admit", state)
-        self.assertEqual(self.last_events, ["inventory", "label", "inventory"])
+        with self.assertRaisesRegex(ValueError, "selected admission recovery"):
+            self.run_action("admit", state, selected_run="457",
+                            selected_version="version-2")
+        self.assertEqual(self.last_commands, [])
+        commands, _, state = self.run_recovery(state)
+        self.assertEqual(len(commands), 1)
+        self.assertNotIn(TAINT, state["spec"]["taints"])
+        self.run_action("admit", state, selected_run="457", selected_version="version-2")
+        self.assertEqual(self.last_records[-1]["placementRunId"], "457")
+        self.assertEqual(self.last_records[-1]["placementVersionId"], "version-2")
+
+    def test_stale_main_after_label_recovers_from_original_admission_sha(self):
+        state = node()
+        with self.assertRaisesRegex(ValueError, "exact current main"):
+            self.run_action("admit", state, source_sha=EVIDENCE_SHA,
+                            fail_main_after_label=True)
+        self.assertEqual([item["status"] for item in self.last_records],
+                         ["started", "interrupted"])
+        self.assertEqual(state["metadata"]["labels"][CANARY], "true")
+        self.assertEqual(state["spec"]["taints"][-1], TAINT)
+        commands, records, state = self.run_recovery(state)
+        self.assertEqual(len(commands), 2)
+        self.assertEqual(records[-1]["sourceSha"], SHA)
+        self.assertEqual(records[-1]["evidenceSourceSha"], EVIDENCE_SHA)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertNotIn(TAINT, state["spec"]["taints"])
 
     def test_new_occupant_after_label_removes_label(self):
         state = node()
@@ -632,7 +1033,8 @@ class CanaryNodeTests(unittest.TestCase):
     def test_partial_release_is_rejected(self):
         state = node(admitted=True)
         state["metadata"]["labels"].pop(CANARY)
-        with self.assertRaisesRegex(ValueError, "label and isolation taint differ"):
+        state["metadata"]["annotations"].pop(SUT["ADMISSION"])
+        with self.assertRaisesRegex(ValueError, "unexpected canary"):
             self.run_action("release", state)
 
     def test_rv_test_is_sent_with_owned_patch(self):

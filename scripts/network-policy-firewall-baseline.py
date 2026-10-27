@@ -29,6 +29,8 @@ NODE = "zimaboard-2"
 POD = "kube-router-firewall-baseline"
 RUN_ANNOTATION = "homelab.stinkyboi.com/firewall-baseline-run"
 POD_API_PATH = f"/api/v1/namespaces/kube-system/pods/{POD}"
+CANARY_TOLERATION = {"key": CLEANUP["CANARY"], "operator": "Equal",
+                    "value": "true", "effect": "NoSchedule"}
 
 
 def require_reviewed_manifest(source_sha):
@@ -64,6 +66,20 @@ def node_identity():
     return uid, boot_id
 
 
+def recovery_node_identity(placement, evidence_sha, admission_run_id):
+    node, _, tainted = CANARY["node_state"]({"canary": {"node": NODE}}, placement)
+    if tainted:
+        CANARY["require_admission_marker"](node, evidence_sha, admission_run_id)
+    uid = node["metadata"]["uid"]
+    listing = CLEANUP["kubernetes_json"]("get", "nodes", "-l",
+                                        f"kubernetes.io/hostname={NODE}", "--chunk-size=0")
+    matches = [(item.get("metadata", {}).get("name"), item.get("metadata", {}).get("uid"))
+               for item in CLEANUP["complete_items"](listing, "preflight hostname")]
+    if matches != [(NODE, uid)]:
+        raise ValueError("recovery probe hostname selector is ambiguous")
+    return uid, node["status"]["nodeInfo"]["bootID"]
+
+
 def system_pods():
     listing = CLEANUP["kubernetes_json"]("get", "pods", "-A", "--field-selector",
                                          f"spec.nodeName={NODE}", "--chunk-size=0")
@@ -82,11 +98,13 @@ def get_pod():
     return json.loads(raw) if raw.strip() else None
 
 
-def read_attempt(path, source_sha, run_id):
+def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
     attempt = PLATFORM["read_private_json"](path)
     token = attempt.get("podToken") if isinstance(attempt, dict) else None
+    allowed_stages = (("firewall-baseline", "canary-admit-recover", "canary-abort")
+                      if stage is None else stage if isinstance(stage, tuple) else (stage,))
     if (not isinstance(attempt, dict) or attempt.get("format") != 1 or
-            attempt.get("stage") != "firewall-baseline" or
+            attempt.get("stage") not in allowed_stages or
             attempt.get("status") != "attempted" or
             attempt.get("verified") is not False or
             attempt.get("sourceSha") != source_sha or
@@ -94,6 +112,22 @@ def read_attempt(path, source_sha, run_id):
             not isinstance(token, str) or len(token) != 48 or
             any(character not in "0123456789abcdef" for character in token)):
         raise ValueError("private preflight ownership marker is missing or unrelated")
+    return attempt
+
+
+def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement):
+    attempt = read_attempt(path, source_sha, run_id,
+                           ("canary-admit-recover", "canary-abort"))
+    if (not isinstance(attempt.get("admissionRunId"), str) or
+            not OWNERSHIP["RUN_ID"].fullmatch(attempt["admissionRunId"]) or
+            attempt.get("evidenceSourceSha") != evidence_sha or
+            not isinstance(attempt.get("placementRunId"), str) or
+            attempt["placementRunId"] != placement.get("placementRunId") or
+            not isinstance(attempt.get("placementVersionId"), str) or
+            attempt["placementVersionId"] in ("", "null") or
+            attempt.get("nodeUid") != placement.get("nodeUid") or
+            attempt.get("bootID") != placement.get("bootID")):
+        raise ValueError("recovery probe attempt differs from selected placement")
     return attempt
 
 
@@ -107,11 +141,12 @@ def require_probe_owner(pod, token, uid=None):
     return metadata["uid"]
 
 
-def require_probe_pod(pod, token, uid=None, running=False):
+def require_probe_pod(pod, token, uid=None, running=False, recovery=False):
     pod_uid = require_probe_owner(pod, token, uid)
     metadata, spec = pod["metadata"], pod["spec"]
     containers = spec.get("containers", [])
     container = containers[0] if isinstance(containers, list) and len(containers) == 1 else {}
+    tolerations = spec.get("tolerations", [])
     if (metadata.get("deletionTimestamp") or
             metadata.get("ownerReferences") or
             spec.get("nodeName") not in (None, NODE) or spec.get("hostNetwork") is not True or
@@ -121,6 +156,12 @@ def require_probe_pod(pod, token, uid=None, running=False):
             spec.get("terminationGracePeriodSeconds") != 0 or
             spec.get("nodeSelector") != {"kubernetes.io/hostname": NODE} or
             spec.get("volumes") or
+            (recovery and (not isinstance(tolerations, list) or
+                           CANARY_TOLERATION not in tolerations)) or
+            (recovery and any(not isinstance(item, dict) or
+                              item.get("key") == CLEANUP["CANARY"] and
+                              item != CANARY_TOLERATION
+                              for item in tolerations)) or
             not container or
             set(container) - {"name", "image", "imagePullPolicy", "command", "args",
                               "resources", "securityContext", "terminationMessagePath",
@@ -143,17 +184,17 @@ def require_probe_pod(pod, token, uid=None, running=False):
     return pod_uid
 
 
-def wait_ready(token, uid, timeout_seconds=180):
+def wait_ready(token, uid, timeout_seconds=180, recovery=False):
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         pod = get_pod()
         if pod is None:
             raise ValueError("preflight Pod disappeared before firewall inspection")
-        require_probe_pod(pod, token, uid)
+        require_probe_pod(pod, token, uid, recovery=recovery)
         if pod.get("status", {}).get("phase") in {"Failed", "Succeeded"}:
             raise ValueError("preflight Pod exited before firewall inspection")
         if CLEANUP["ready"](pod):
-            require_probe_pod(pod, token, uid, running=True)
+            require_probe_pod(pod, token, uid, running=True, recovery=recovery)
             return
         time.sleep(2)
     raise ValueError("preflight Pod did not become Ready")
@@ -243,27 +284,50 @@ def delete_probe(token, private_dir, uid=None, timeout_seconds=120):
 
 
 def execute(args):
+    recovery = getattr(args, "recovery_placement", None) is not None
     PLATFORM["require_reviewed_execution_config"](args.config, args.expected_sha)
     config = PLATFORM["validate_config"](json.loads(args.config.read_text()))
-    if config["activationEnabled"] is not False or config["canary"]["node"] is not None:
+    if config["activationEnabled"] is not False or config["canary"]["node"] != NODE:
         raise ValueError("baseline requires pre-enable canary configuration")
     PLATFORM["protected_context"](args.expected_sha)
     CLEANUP["require_current_main"](args.expected_sha)
     manifest = require_reviewed_manifest(args.expected_sha)
-    attempt = read_attempt(args.attempt, args.expected_sha, os.environ["GITHUB_RUN_ID"])
+    placement = None
+    if recovery:
+        if not PLATFORM["SHA"].fullmatch(args.evidence_source_sha or ""):
+            raise ValueError("recovery probe requires original admission SHA")
+        placement = PLATFORM["read_private_json"](args.recovery_placement)
+        CANARY["validate_placement"](placement, config, args.evidence_source_sha, False)
+        attempt = read_recovery_attempt(args.attempt, args.expected_sha,
+                                        args.evidence_source_sha,
+                                        os.environ["GITHUB_RUN_ID"], placement)
+        manifest["spec"]["tolerations"] = [CANARY_TOLERATION]
+    else:
+        attempt = read_attempt(args.attempt, args.expected_sha, os.environ["GITHUB_RUN_ID"])
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         raise ValueError("baseline output already exists")
     store = OWNERSHIP["PrivateStore"](args.bucket)
     store.store.check()
     CANARY["require_runtime_absent"](True)
-    identity = node_identity()
+    inspect_identity = (lambda: recovery_node_identity(
+        placement, args.evidence_source_sha, attempt["admissionRunId"])) \
+        if recovery else node_identity
+    identity = inspect_identity()
     assigned = system_pods()
-    record = {"format": 1, "stage": "firewall-baseline", "status": "started",
+    if recovery and assigned != placement["systemDaemonSetPods"]:
+        raise ValueError("recovery probe system Pods differ from selected placement")
+    record = {"format": 1, "stage": "firewall-recovery-proof" if recovery else
+              "firewall-baseline", "status": "started",
               "verified": False, "sourceSha": args.expected_sha, "runId":
               os.environ["GITHUB_RUN_ID"], "node": NODE,
               "nodeUid": identity[0], "bootID": identity[1],
               "startedAt": datetime.now(timezone.utc).isoformat()}
+    if recovery:
+        record.update(evidenceSourceSha=args.evidence_source_sha,
+                      admissionRunId=attempt["admissionRunId"],
+                      placementRunId=attempt["placementRunId"],
+                      placementVersionId=attempt["placementVersionId"])
     CLEANUP["write_record"](output, record)
     token = attempt["podToken"]
     manifest["metadata"]["annotations"][RUN_ANNOTATION] = token
@@ -274,22 +338,22 @@ def execute(args):
     try:
         try:
             CLEANUP["require_current_main"](args.expected_sha)
-            if node_identity() != identity or system_pods() != assigned:
+            if inspect_identity() != identity or system_pods() != assigned:
                 raise ValueError("preflight Node identity or assigned Pods changed before creation")
             create_attempted = True
             created = CLEANUP["kubernetes_json"]("-n", "kube-system", "create", "-f",
                                                  str(pod_file))
-            created_uid = require_probe_pod(created, token)
-            wait_ready(token, created_uid)
-            if node_identity() != identity:
+            created_uid = require_probe_pod(created, token, recovery=recovery)
+            wait_ready(token, created_uid, recovery=recovery)
+            if inspect_identity() != identity:
                 raise ValueError("preflight Node identity changed during inspection")
-            require_probe_pod(get_pod(), token, created_uid, running=True)
+            require_probe_pod(get_pod(), token, created_uid, running=True, recovery=recovery)
             state = CLEANUP["snapshot"](POD)
-            require_probe_pod(get_pod(), token, created_uid, running=True)
+            require_probe_pod(get_pod(), token, created_uid, running=True, recovery=recovery)
             operations, chains, sets = CLEANUP["cleanup_plan"](state)
             if operations or chains or sets:
                 raise ValueError("kube-router firewall baseline is not empty")
-            if node_identity() != identity:
+            if inspect_identity() != identity:
                 raise ValueError("preflight Node identity changed after inspection")
             CLEANUP["require_current_main"](args.expected_sha)
         finally:
@@ -297,7 +361,7 @@ def execute(args):
                 delete_probe(token, output.parent, created_uid)
             pod_file.unlink(missing_ok=True)
         CANARY["require_runtime_absent"](True)
-        if node_identity() != identity or system_pods() != assigned:
+        if inspect_identity() != identity or system_pods() != assigned:
             raise ValueError("preflight Node or assigned Pods changed")
         CLEANUP["require_current_main"](args.expected_sha)
         capture = dict(record, status="verified", verified=True,
@@ -308,7 +372,8 @@ def execute(args):
                        podDeleted=True,
                        completedAt=datetime.now(timezone.utc).isoformat())
         key = (f"openclaw-enterprise/platform/{args.expected_sha}/"
-               f"{os.environ['GITHUB_RUN_ID']}/firewall-baseline-capture.json")
+               f"{os.environ['GITHUB_RUN_ID']}/"
+               f"{'firewall-recovery-capture' if recovery else 'firewall-baseline-capture'}.json")
         store.write_once(key, capture, OWNERSHIP["MAX_CAPTURE"])
         record.update({key_: capture[key_] for key_ in
                        ("status", "verified", "firewallBaselineEmpty", "ownedChains",
@@ -331,7 +396,8 @@ def recover(args):
     PLATFORM["require_reviewed_execution_config"](args.config, args.expected_sha)
     PLATFORM["protected_context"](args.expected_sha)
     CLEANUP["require_current_main"](args.expected_sha)
-    attempt = read_attempt(args.attempt, args.baseline_source_sha, args.baseline_run_id)
+    attempt = read_attempt(args.attempt, args.baseline_source_sha,
+                           args.baseline_run_id, stage=None)
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         raise ValueError("baseline recovery output already exists")
@@ -368,11 +434,17 @@ def main():
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--attempt", type=Path, required=True)
+    parser.add_argument("--recovery-placement", type=Path)
+    parser.add_argument("--evidence-source-sha")
     parser.add_argument("--baseline-source-sha")
     parser.add_argument("--baseline-run-id")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
+        if args.action == "recover" and (args.recovery_placement or args.evidence_source_sha):
+            raise ValueError("orphan probe cleanup does not use placement evidence")
+        if args.action != "recover" and not args.recovery_placement and args.evidence_source_sha:
+            raise ValueError("baseline capture does not use admission evidence")
         recover(args) if args.action == "recover" else execute(args)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError,
             subprocess.TimeoutExpired, http.client.HTTPException) as exc:

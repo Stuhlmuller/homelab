@@ -234,7 +234,23 @@ def snapshot_sha256(state):
     return hashlib.sha256(json.dumps(state, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def require_placement_selection(ownership, placement):
+    if (not isinstance(ownership, dict) or not isinstance(placement, dict) or
+            not isinstance(ownership.get("admissionRunId"), str) or
+            not re.fullmatch(r"[1-9][0-9]*", ownership["admissionRunId"]) or
+            not isinstance(ownership.get("placementRunId"), str) or
+            not re.fullmatch(r"[1-9][0-9]*", ownership["placementRunId"]) or
+            ownership.get("placementRunId") != placement.get("placementRunId") or
+            not isinstance(ownership.get("placementVersionId"), str) or
+            ownership["placementVersionId"] in ("", "null") or
+            not isinstance(ownership.get("evidenceSourceSha"), str) or
+            not PLATFORM["SHA"].fullmatch(ownership["evidenceSourceSha"]) or
+            ownership.get("evidenceSourceSha") != placement.get("sourceSha")):
+        raise ValueError("reviewed selected placement differs from ownership")
+
+
 def require_ownership(ownership, placement, state, source_sha, node_name):
+    require_placement_selection(ownership, placement)
     if (not isinstance(ownership, dict) or ownership.get("format") != 1 or
             ownership.get("verified") is not True or
             ownership.get("sourceSha") != source_sha or
@@ -513,6 +529,7 @@ def execute(args):
             placement.get("firewallBaselineEmpty") is not True or
             not placement.get("nodeUid") or not placement.get("bootID")):
         raise ValueError("verified pre-enable placement and empty firewall baseline are required")
+    require_placement_selection(ownership, placement)
     output = PLATFORM["private_output"](args.output)
     if output.exists() or output.is_symlink():
         previous = PLATFORM["read_private_json"](output)
