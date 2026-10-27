@@ -516,6 +516,40 @@ Its random publication ID is for a future
 immutable per-run key; a protected owner-attested ingestion path and direct
 recovery drill are still required before maintenance.
 
+The source-only `scripts/platform-direct-recovery-attestation.py` prepares a
+canonical private statement binding the candidate's exact bytes, source SHA,
+publication ID and capture time. It verifies a detached signature from the
+owner's committed Ed25519 public key at
+`scripts/config/platform-direct-recovery-owner.asc`, pinned to primary
+fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC`. After the real local
+probe, the owner must inspect the candidate, the machine's route used for the
+authenticated Talos requests, and the prepared statement before signing it:
+
+```sh
+umask 077
+current_main_sha="$(git rev-parse HEAD)"
+python3 -I scripts/platform-direct-recovery-attestation.py prepare \
+  --expected-sha "$current_main_sha" \
+  --candidate /private/path/direct-recovery.json \
+  --attestation /private/path/owner-attestation.json
+gpg --batch --local-user 2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC! \
+  --output /private/path/owner-attestation.sig --detach-sign \
+  /private/path/owner-attestation.json
+python3 -I scripts/platform-direct-recovery-attestation.py verify \
+  --expected-sha "$current_main_sha" \
+  --candidate /private/path/direct-recovery.json \
+  --attestation /private/path/owner-attestation.json \
+  --signature /private/path/owner-attestation.sig
+```
+
+Use an existing owner signing key; never copy a private key into this repo or
+CI. The verifier accepts only the exact signed statement and unchanged
+`verified: false` candidate, keeps all files private, and publishes nothing.
+The signature is an explicit operator assertion about the reviewed local route,
+not a cryptographic network-path proof. A separate protected publisher must
+reverify it, perform the direct recovery drill and create the durable receipt
+before T023 can pass.
+
 The executor writes a `started` marker to the KMS-encrypted, versioned backup
 bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its
 exact version and checksum before each Talos node command or the Kubernetes
