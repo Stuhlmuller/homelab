@@ -95,7 +95,7 @@ jobs:
       id-token: write
     timeout-minutes: 60
     env:
-      TS_OAUTH_CLIENT_ID: ${{ vars.TS_OAUTH_CLIENT_ID || '' }}
+      TS_OIDC_CLIENT_ID: ${{ vars.TS_OIDC_CLIENT_ID || '' }}
     steps:
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
@@ -117,10 +117,10 @@ jobs:
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
       - name: Get Tailscale OIDC Token
-        if: env.TS_OAUTH_CLIENT_ID != ''
+        if: env.TS_OIDC_CLIENT_ID != ''
         id: tailscale_oidc
         run: |
-          TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_RUNTIME_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api.tailscale.com/${TS_OAUTH_CLIENT_ID}")
+          TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_RUNTIME_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api.tailscale.com/${TS_OIDC_CLIENT_ID}")
           echo "TS_IDENTITY_TOKEN=$TOKEN" >> "$GITHUB_ENV"
           echo "::mask::${TOKEN}"
 
@@ -150,7 +150,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
-          TS_OAUTH_CLIENT_ID: ${{ vars.TS_OAUTH_CLIENT_ID || '' }}
+          TS_OIDC_CLIENT_ID: ${{ vars.TS_OIDC_CLIENT_ID || '' }}
           TS_IDENTITY_TOKEN: ${{ env.TS_IDENTITY_TOKEN }}
         run: |
           private_dir="$(mktemp -d)"

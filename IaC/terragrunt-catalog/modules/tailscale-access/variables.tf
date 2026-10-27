@@ -29,8 +29,8 @@ variable "ci_key_generation" {
   }
 }
 
-variable "tailscale_oauth_client_id" {
-  description = "Tailscale federated identity OAuth client ID for workload identity federation authentication. Obtained from the Tailscale admin console trust credentials page after creating federated identities."
+variable "tailscale_oidc_client_id" {
+  description = "Tailscale federated identity OIDC client ID for workload identity federation authentication. Obtained from the Tailscale admin console trust credentials page after creating federated identities."
   type        = string
   default     = ""
 }

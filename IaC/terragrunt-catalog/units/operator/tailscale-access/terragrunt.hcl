@@ -25,6 +25,6 @@ inputs = {
   # Generation 2 exists in encrypted state since 2026-10-14 UTC; rotate 60 days after provider creation.
   ci_key_generation = 2
   policy            = file("${dirname(find_in_parent_folders("root.hcl"))}/../scripts/config/tailscale-policy.json")
-  tailscale_oauth_client_id = ""
+  tailscale_oidc_client_id = ""
   tailscale_tailnet         = "tail67beb.ts.net"
 }
