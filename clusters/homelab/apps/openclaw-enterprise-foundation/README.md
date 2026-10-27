@@ -82,9 +82,21 @@ before/after observations. It copies the supplied retained bootstrap and
 Gateway claim trees, verifies fixed control Secrets and the pinned
 [OCC Kubernetes Secret backend identity](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/secret/kubernetes/index.ts),
 and leaves `continuousFenceVerified:false`. The packager must reject that
-marker until a protected coordinator proves continuous writer exclusion. Reader
-Jobs, exact-main dispatch, fresh observation collection and a trusted fence
-receipt are still absent. The source-only
+marker until a protected coordinator proves continuous writer exclusion. The
+watch-only coordinator now binds the assembler's owned, mode-0600
+`recovery.json` file, requires canonical bytes, and rechecks it before reader
+transfer and each later watch checkpoint. Watch-only receipts carry its SHA-256.
+A detached JSON object or changed
+marker cannot yield even a watch-only receipt. This does not attest the other
+recovery bytes or authorize packaging. Reader Jobs, exact-main dispatch,
+fresh observation collection and a trusted fence receipt are still absent.
+The assembler now seals every output directory to mode 0700. The source-only
+[recovery chain](../../../../scripts/ci/openclaw-enterprise-recovery-chain.py)
+hashes all staged files and directories, checks journal/tenant/Agent identity,
+and binds proposed ciphertext, exact bucket/key/version and distinct publisher
+and isolated-restore run references. It does not authenticate S3 or workflow
+runs, prove a restore, promote the marker or return a publishable receipt.
+The source-only
 [reader emitter](../../../../scripts/ci/openclaw-enterprise-reader-archive.py)
 streams each namespace's complete read-only claim tree over a private exec
 channel. It requires a bounded authenticated Pod/PVC observation on stdin and

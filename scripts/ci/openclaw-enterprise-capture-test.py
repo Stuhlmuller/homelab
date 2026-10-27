@@ -253,6 +253,8 @@ class CaptureAssembler(unittest.TestCase):
                          self.journal_bytes)
         self.assertEqual((self.output / "bootstrap/initial-admin-password").read_bytes(),
                          b"BootstrapPassword1")
+        self.assertTrue(all((path.stat().st_mode & 0o777) == 0o700
+                            for path in self.output.rglob("*") if path.is_dir()))
         self.assertEqual((self.output / "agent/state/state/openclaw.sqlite").read_bytes(),
                          b"SQLite fixture")
         for path, expected in self.tenant_files.items():
