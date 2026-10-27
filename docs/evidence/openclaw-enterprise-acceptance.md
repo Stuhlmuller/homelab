@@ -608,6 +608,15 @@ The [blob IAM policy](../../IaC/terragrunt-catalog/modules/aws-langfuse-blob-sto
 lacks `ListBucketVersions` and `GetObjectVersion`; an exact independent copy
 needs a reviewed scoped grant and componentized publication. Dispatcharr needs
 a paired PostgreSQL and runtime-files set plus private provider credentials.
+Draft #1666 keeps its one-shot capture Job outside active GitOps. Including it
+would create the Job before a separate checker could prove a continuous writer
+fence; its commit-shaped `FENCE_REF` and pre/post Pod snapshots alone cannot
+exclude a transient writer. A protected capture path still needs a reviewed
+start gate, continuous Pod observation or equivalent durable audit through the
+capture window, exact Argo revision and Deployment identity/generation, both
+source PVC/PV identities, and a completed Job bound to an off-host checksummed
+manifest. No such fence receipt, approved backup-host mount, or offsite copy
+exists, so the paired publisher must keep rejecting Dispatcharr.
 Retained PVCs make a declarative pause reversible but are not independent
 backups. No suspension,
 relocation, taint, local claim, or permanent retirement is authorized by this
