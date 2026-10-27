@@ -40,6 +40,8 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
+    resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-0ec224257fa3d91c69b2b9f1
     resource: repo://scripts/ci/openclaw-enterprise-capture.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
@@ -58,16 +60,18 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
+generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:04:19.774Z
+    at: 2026-10-27T22:23:45.554Z
 ---
 
 # Storage And State
@@ -388,6 +392,16 @@ prove a live UID match or continuous writer exclusion by itself. The packager
 uses a local scratch mount and pinned age recipient to publish ciphertext on a
 separate backup mount. No reader Job, coordinator, recipient projection, off-node
 publication receipt or independent restore is declared; T051 remains open.
+The dormant reconciler now has a journaled backup stop/resume transaction.
+It records stop intent before the native stop request, adopts an exact stopped
+outcome after a lost response, and blocks uncertain outcomes without reposting.
+Resume requires a future trusted capture-proof callback before a new deployment
+revision; it records resume intent first, checks exact revision history and
+adopts a lost response without a second POST. A pre-stop guard refuses backup
+when the journal's 100-revision limit leaves no resume slot. Ordinary no-change
+reconciliation does not redeploy. These helpers have no CLI or workflow entry;
+a coordinator must still prove continuous writer exclusion, encrypted off-node
+publication, independent restore, and exact-main source/config binding.
 The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found
 about 3,398 MiB unreserved on the best worker, `zimaboard-1`, below the
 4,096 MiB initial Enterprise reservation before transient and host headroom.

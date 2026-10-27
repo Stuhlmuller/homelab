@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1a1f8fe5c29ddf57065a3012ce17807ab874c768b43c2cf6a90900eedc1b8781",
+  "pageVersion": "sha256:ca5ef02b5c37e51d8489e7767b2f43b2e5d57e5e5f1ca326a234cff3da0fbd13",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -166,7 +166,7 @@
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:e80390a0f6dc5330cc67a406994af4f50e83b3df5597dca46f8fc002c65f58e8"
+          "version": "repo-file-v1:sha256:86555661795c8cd4bf6a7bb847a98d5fcf3fc7a0cbd1c3f29ab9d56d895eed7a"
         }
       ]
     },
@@ -407,10 +407,24 @@
           "version": "repo-lines-v1:sha256:aea9603e016c9dd5bcf50850f131897c1e692730b2aea83ad9ea0711e74d4029:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzZGE2OWU5MDBjNzBiYmE3M2E0NThlZTQxY2MzYmFlYTk5Nzc4NGJmNjU4NWQxNGM1OWQ2ZDA2MGEyOWZjYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3ZTE1NjYyMjAwNGMyNjk4ZmNhMzJiZmU3NjZmM2E3NTc0MjFmYzQ2ZjYzODlhYmNiMjgxOTE5YTQ3OTliYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlZThlZjdmZTIwMTk3NmNkMTRkZTZhNzBmNGRmMmQwMmE5ZDdlNTY0MjkyNzI1MWE5NGYxM2MyNDU0YWQzZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5ODE2M2YwZDg0MTA0Mzc4NmFjZjk1MzUxN2JjMDVhZmI2ZDlmYjQ5YmNkZDI5NTJlMzQ3ODMwOWI1YjJmZWYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_ac464a3b096c47f8a5999415860b72c7",
+      "statement": "The Enterprise helper now owns a dormant journaled backup stop/resume path and the backup transaction fixture exercises lost responses, crashes, revision ambiguity and the 100-entry pre-stop guard; no CLI or workflow entry deploys it.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py",
+          "version": "repo-file-v1:sha256:0b8bac5a63fa7d0aaaa1851bae39eb6dfe9f8c7016257578b3bbb1169e21f855"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L1713-L1900",
+          "version": "repo-lines-v1:sha256:f102ab87e71c2a338eb5d0b30c9006b2920ed9494bb19aef874cbba63f35c910:eyJzZWxlY3RlZExpbmVDb3VudCI6MTg4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI0ZjUwYzgxMWFlYjhjMTMzZWU1NzZlOGY3OGExZDlhMmFlZjY4NjFiOGZjYzZjOThkNTFhNTFiZjI5NzYwOTQ1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3ZmFjNWMwOWIwNmM5OGYwY2VkZTI2OWEzMDRiMzdlODM0NDJmMjNlMTRmZTY2NGFiNmJlMWUwOWI3NWVmMmQyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlYWVlMjliNTYwM2VlYWFjZDFiYjUyYjRmMWI3YjkwM2Q4MDRkMDU3ZjI5ODgyODY2YWYyNDA0ODYzMWI2YTlmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIyNDJiMGM3ZGIwZjdmMGM5ZWRhNTIzZTc4YjNlMWZkYTg2NGI4ZjMwMzRlMmE5NzlmYjk2OWQ1ZDljOWY0MjdjIn0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T22:04:19.774Z"
+    "at": "2026-10-27T22:23:45.554Z"
   }
 }

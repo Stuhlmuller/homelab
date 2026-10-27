@@ -228,6 +228,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
   - id: openwiki-source-d070446e78bc2444fe729dec
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
+  - id: openwiki-source-5c8bcbe4b07307d5ad637f1a
+    resource: repo://scripts/ci/openclaw-enterprise-backup-transaction-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
   - id: openwiki-source-eadf2ab2c03e6bff89609ca7
@@ -368,10 +370,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T22:04:19.774Z" }
+generated: { by: "codex", at: "2026-10-27T22:23:45.554Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T22:04:19.774Z
+    at: 2026-10-27T22:23:45.554Z
 ---
 
 # Validation Gates
@@ -1983,6 +1985,11 @@ and accepts exactly one object with `writerStopped` and
 capture, safe-extraction and restore-image fixtures, including rejection of
 partial `subPath` and `subPathExpr` claim mounts. These tests do not attest a
 live claim UID, sustained writer fence, published ciphertext or independent restore.
+The new source-only backup transaction fixture runs in static and offline
+checks. It covers durable stop/resume intent, lost API responses, crashes
+before and after POST, duplicate or foreign revisions, missing or changed
+capture proof, no-change reconciliation, and refusal to stop at the 100-revision
+journal cap. It does not call a live workflow or authenticate recovery material.
 Local results do not establish live PVC, TLS or restore acceptance. The separate
 [`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
 now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
