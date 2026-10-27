@@ -293,7 +293,8 @@ full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
 [deployment and readiness gates](../../clusters/homelab/apps/langfuse/README.md#validation).
 
 The protected `argocd_app=renovate` dispatch validates the exact Application
-unit before any shared SSM state import or apply. It then uses the existing
+unit, live AppProject, secret store and platform dependencies before any shared
+SSM state import or apply. It then uses the existing
 private saved-plan and Conftest gate for the whole shared SSM/IAM unit before
 planning only Renovate's Application. PR plans skip that secret-bearing unit;
 review its private exact-main plan for unrelated changes before dispatch. This

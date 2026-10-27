@@ -33,6 +33,10 @@ TRAEFIK_PROJECT = {"spec": {
     "destinations": [{"namespace": "traefik", "server": "https://kubernetes.default.svc"}],
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}
+RENOVATE_PROJECT = {"spec": {
+    "sourceRepos": ["https://github.com/Stuhlmuller/homelab.git"],
+    "destinations": [{"namespace": "automation", "server": "https://kubernetes.default.svc"}],
+}}
 
 # Every external operation is enumerated. Real jq evaluates the production
 # predicates; these stubs only provide inputs and verify saved-plan sequencing.
@@ -130,7 +134,8 @@ if tool == "git":
     else:
         unexpected()
 elif tool == "kubectl":
-    if args == ["-n", "argocd", "get", "appproject", "homelab", "-o", "json"]:
+    if args in (["-n", "argocd", "get", "appproject", "homelab", "-o", "json"],
+                ["-n", "argocd", "get", "appproject", "homelab-workloads", "-o", "json"]):
         event("preflight.project")
         print(json.dumps(config["project"]))
     elif args == ["-n", "argocd", "get", "applications", "-o", "json"]:
@@ -263,9 +268,14 @@ class TerragruntApplyTest(unittest.TestCase):
             app_names = TRAEFIK_APPS
             crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
                     "authorizationpolicies.security.istio.io"]
+        elif target == "renovate":
+            project = json.loads(json.dumps(RENOVATE_PROJECT))
+            app_names = ["external-secrets", "platform-storage"]
+            crds = CRDS[:2]
         config = {"target": target, "sha": FIXTURE_SHA, "project": project,
                   "app_names": app_names, "crds": crds,
-                  "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
+                  "store": {"spec": {"conditions": [{"namespaces": [
+                      "automation" if target == "renovate" else target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
                   }} for name in app_names], **overrides}
@@ -586,11 +596,22 @@ else:
         result, events = self.run_apply(target="renovate", without_azuread=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, [
-            "generate", "ssm.init", "ssm.state",
+            "generate", "preflight.project", "preflight.apps", "preflight.crds",
+            "preflight.store", "preflight.store_scope", "preflight.storage",
+            "ssm.init", "ssm.state",
             *(["ssm.lookup", "ssm.import"] * 4),
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
             "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_renovate_bad_project_stops_before_shared_ssm_write(self):
+        project = json.loads(json.dumps(RENOVATE_PROJECT))
+        project["spec"]["destinations"] = []
+        result, events = self.run_apply(target="renovate", repair="true", project=project)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events, ["generate", "preflight.project"])
+        self.assertFalse(any(event.endswith((".import", ".apply", ".untaint"))
+                             for event in events))
 
     def test_renovate_target_stops_before_app_when_ssm_policy_fails(self):
         result, events = self.run_apply(target="renovate", fail="ssm.policy")

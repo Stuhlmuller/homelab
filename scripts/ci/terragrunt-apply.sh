@@ -334,6 +334,30 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
   echo "::endgroup::"
 fi
 
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "renovate" ]]; then
+  # This target also skips platform reconciliation; check live dependencies
+  # before state repair or the shared SSM unit can write anything.
+  (cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter) >/dev/null
+  echo "::group::Renovate Argo CD apply prerequisites"
+  kubectl -n argocd get appproject homelab-workloads -o json | jq -e '
+    .spec |
+    (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and
+    any(.destinations[]; .namespace == "automation" and .server == "https://kubernetes.default.svc")
+  ' >/dev/null
+  kubectl -n argocd get applications external-secrets platform-storage -o json | jq -e '
+    (.items | length == 2) and
+    all(.items[]; .status.sync.status == "Synced" and .status.health.status == "Healthy")
+  ' >/dev/null
+  kubectl wait --for=condition=Established --timeout=0s \
+    crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io
+  kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
+  kubectl get clustersecretstore aws-ssm -o json | jq -e '
+    any(.spec.conditions[]?.namespaces[]?; . == "automation")
+  ' >/dev/null
+  kubectl get storageclass nfs-default -o name >/dev/null
+  echo "::endgroup::"
+fi
+
 if [[ -n "$repair_argocd_app_state_unit" ]]; then
   echo "::group::Targeted Argo CD Application state repair"
   (
