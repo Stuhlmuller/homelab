@@ -17,6 +17,26 @@ images, _ = check.declared_images({"image": {"registry": "harbor.stinkyboi.com",
                                                "repository": "mirror/docker.io/library/busybox",
                                                "tag": "1.38", "sha": sha}})
 assert images == {"harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@sha256:" + sha}
+with tempfile.TemporaryDirectory() as directory:
+    original_root = check.ROOT
+    check.ROOT = Path(directory)
+    build = check.ROOT / "builds/openclaw-enterprise"
+    build.mkdir(parents=True)
+    node = "docker.io/library/node:24-bookworm@sha256:" + "a" * 64
+    static = "cgr.dev/chainguard/static:latest@sha256:" + "b" * 64
+    python = "docker.io/library/python:3.13-bookworm@sha256:" + "c" * 64
+    (build / "source.json").write_text(json.dumps({"nodeBaseImage": node}))
+    (build / "occ.Dockerfile").write_text(f"FROM {static}\n")
+    (build / "operator.Dockerfile").write_text(f"FROM {python}\n")
+    assert check.enterprise_build_base_images() == {node, static, python}
+    (build / "occ.Dockerfile").write_text("FROM cgr.dev/chainguard/static:latest\n")
+    try:
+        check.enterprise_build_base_images()
+    except SystemExit as error:
+        assert "Enterprise build base must be pinned" in str(error)
+    else:
+        raise AssertionError("Unpinned Enterprise CLI base passed")
+    check.ROOT = original_root
 # Shared stack defaults and sparse sources must not hide chart upgrades from
 # the image inventory gate. A chart needs no Helm overrides to deploy.
 with tempfile.TemporaryDirectory() as directory:
@@ -186,6 +206,15 @@ with tempfile.TemporaryDirectory() as directory:
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    original_build_base_images = check.enterprise_build_base_images
+    check.enterprise_build_base_images = lambda: {"docker.io/library/node:24-bookworm@sha256:" + "b" * 64}
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: docker.io/library/node@sha256:" + "b" * 64 in str(error)
+    else:
+        raise AssertionError("Unmirrored Enterprise build base passed")
+    check.enterprise_build_base_images = original_build_base_images
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source.replace("0b556", "0b557")}]}))
     try:
         check.check()
