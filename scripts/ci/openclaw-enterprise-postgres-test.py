@@ -93,7 +93,7 @@ class PostgresFoundation(unittest.TestCase):
             raise AssertionError(f"fixture server must be PostgreSQL 18, found {server_version}")
         cls.material = cls.root / "material"
         files = {
-            "recovery.json": "{\"claimUid\":\"fixture\",\"writerStopped\":true}",
+            "recovery.json": "{\"claimUid\":\"fixture\",\"writerStopped\":true,\"continuousFenceVerified\":true}",
             "postgres-root/tls.crt": cls.cert.read_text(),
             "postgres-root/tls.key": key.read_text(),
             "postgres-admin/password": "A" * 40,
@@ -101,7 +101,11 @@ class PostgresFoundation(unittest.TestCase):
             "postgres-app/password": "P" * 40,
             "postgres-backup/password": "B" * 40,
             "auth/secret": "auth-fixture", "gateway/occ": "gateway-fixture",
+            "gateway-ca/tls.crt": "gateway-ca-cert-fixture",
+            "gateway-ca/tls.key": "gateway-ca-key-fixture",
             "bootstrap/output.json": "{\"bootstrap\":true}",
+            "bootstrap/initial-admin-password": "bootstrap-admin-fixture",
+            "bootstrap/initial-admin-service-key.json": "{\"key\":\"fixture\"}",
             "journal/journal.json": "{\"status\":\"complete\"}",
             "tenant/metadata.json": "{\"tenant\":\"fixture\"}",
             "tenant/secrets/agent-key": "tenant-fixture",
