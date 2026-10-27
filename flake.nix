@@ -50,7 +50,7 @@
             src = ./builds/openwiki;
             npmDepsHash = "sha256-jz+cp/j9RCcW+v9idCrdvrXOOo5OXiBUSD26Ld1qQuk=";
             dontNpmBuild = true;
-            nativeBuildInputs = [ pkgs.makeWrapper ];
+            nativeBuildInputs = [ pkgs.makeWrapper pkgs.gnupatch ];
             installPhase = ''
               runHook preInstall
               mkdir -p "$out/libexec/openwiki" "$out/bin"
@@ -58,6 +58,8 @@
               substituteInPlace "$out/libexec/openwiki/node_modules/openwiki/dist/ingestion/code-mode.js" \
                 --replace-fail '    await writeCodeModeAgentSnippets(cwd);' \
                 '    if (options.createWorkflow) await writeCodeModeAgentSnippets(cwd);'
+              patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
+                < ${./builds/openwiki/coverage-history.patch}
               makeWrapper ${pkgs.nodejs}/bin/node "$out/bin/openwiki" \
                 --add-flags "$out/libexec/openwiki/node_modules/openwiki/dist/cli/cli.js"
               runHook postInstall
@@ -162,7 +164,7 @@
         in
         {
           openwiki-setup = pkgs.runCommand "homelab-openwiki-setup-test" {
-            nativeBuildInputs = [ pkgs.nodejs ];
+            nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
           } ''
             node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
             mkdir "$out"
