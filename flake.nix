@@ -62,6 +62,8 @@
                 < ${./builds/openwiki/coverage-history.patch}
               patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
                 < ${./builds/openwiki/baseline-recovery.patch}
+              patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
+                < ${./builds/openwiki/squash-provenance.patch}
               makeWrapper ${pkgs.nodejs}/bin/node "$out/bin/openwiki" \
                 --add-flags "$out/libexec/openwiki/node_modules/openwiki/dist/cli/cli.js"
               runHook postInstall

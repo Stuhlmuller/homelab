@@ -31,7 +31,14 @@ try {
   await mkdir(path.join(root, "openwiki/.claims/architecture"), { recursive: true });
   const readme = "# Repository\n";
   await writeFile(path.join(root, "README.md"), readme);
-  await writeFile(path.join(root, "AGENTS.md"), "# Fixture\n");
+  await writeFile(path.join(root, "AGENTS.md"), [
+    "# Fixture",
+    "",
+    "<!-- OPENWIKI:START -->",
+    "No scheduled wiki workflow is installed. Update affected pages in the same PR.",
+    "<!-- OPENWIKI:END -->",
+    "",
+  ].join("\n"));
   const markdown = [
     "---",
     "type: architecture",
@@ -86,7 +93,7 @@ try {
   const session = HostSessionManager.create({ host: "codex", producerActor: "codex" });
   await assert.rejects(
     session.begin({ root, mode: "update" }),
-    (error) => error.code === "invalid_state" && /Git changed-path query is unavailable/.test(error.message),
+    (error) => error.code === "invalid_state" && /visible-source or Git changed-path query is unavailable/.test(error.message),
   );
   await assert.rejects(
     session.begin({

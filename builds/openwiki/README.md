@@ -26,6 +26,25 @@ The run refuses deletion, skip, source drift, or an unreachable target Git commi
 only a completed page job with new durable provenance can replace its baseline.
 Omit this option for ordinary updates. Fetch available historical objects first.
 
+Completed pages also record a content-addressed map of verified, model-visible
+source paths and per-path digests. The map covers file bytes, symlink targets,
+kind, and executable mode; it excludes OpenWiki and
+ignored paths. Git HEAD and status remain separate run-drift checks. Native
+updates persist each map once and retain it while any page references it.
+Publication requires every visible path to be tracked, present, and byte/mode
+equivalent to its committed HEAD blob. Local dirty or untracked source cannot
+be published in the page manifest. This repository has no Git content filters;
+a checkout that transforms committed bytes fails closed until normalized.
+On a fresh `init`, the first begin may install AGENTS/workflow setup and return
+`commit and retry`; commit that setup through the normal signed PR path, then
+begin again. It creates no wiki run state before that retry.
+Comparing maps gives exact changed paths after squash merges, unrelated merges,
+or unavailable old commits. Dirty and untracked paths also require successful
+Git queries; failed reads or queries never count as unchanged coverage. Older
+entries without a map keep their Git-history requirement and can use reviewed
+full-page baseline recovery. `.openwikiignore` always counts as source even
+when its own rules name it.
+
 Verify the package and setup behavior with:
 
 ```sh
