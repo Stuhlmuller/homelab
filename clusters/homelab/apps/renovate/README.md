@@ -187,6 +187,21 @@ its contents for rollback until the new cache has survived separate scheduled
 Pods. Roll back the claim reference through GitOps if the new mount or rebuild
 fails.
 
+After a healthy scheduled dry run on the dedicated claim, exercise the
+read-only failure path with a reviewed GitOps fault PR. Confirm no Renovate
+Job is active, keep `dryRun: 'full'`, and set `readOnly: true` only on the
+CronJob's `cache` volumeMount in `cronjob.yaml`; leave the claim reference,
+App credential, and schedule unchanged. Check the rendered mount and Argo CD
+sync to exact `main` before the next scheduled Job. The Job must mount the
+dedicated claim, fail its 4 KiB write probe before App token minting, and
+reach Failed; a mount or image-pull failure is inconclusive. Record Job and
+Pod UIDs, the restricted error category, and failed-cycle alert timing without
+publishing private cache keys or logs. Restore the writable mount through a
+second reviewed PR, confirm sync and no active fault Job, then verify the
+next scheduled dry run succeeds and a later Pod reuses a cache entry. If the
+alert does not fire or clear, keep that acceptance gate open. Do not run this
+drill on the shared `/homelab` claim or change NAS permissions.
+
 For a real full-volume drill, first verify the target is the dedicated QTS
 volume, then use a bounded, reviewed GitOps Job to fill only that volume and
 observe the next scheduled dry-run fail before App token minting. Remove only

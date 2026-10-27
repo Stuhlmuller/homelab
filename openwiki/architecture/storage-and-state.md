@@ -736,6 +736,14 @@ hit the same key, refreshed its record, and selected the new public canary
 branch proposal. T022 is complete. A live cache-failure cycle and next-slot
 recovery remain open.
 
+After the cluster runner moves to the dedicated claim, a read-only cache fault
+needs two reviewed GitOps PRs: set only the CronJob cache volumeMount read-only
+for one scheduled full dry run, then restore it writable before the next slot.
+The fault Job must fail the pre-token write probe; record failed-cycle alert
+timing and next-slot recovery. A failed mount or image pull does not prove the
+cache guard. See the [runbook](../../clusters/homelab/apps/renovate/README.md)
+for the gate and rollback sequence. Keep the shared claim out of this drill.
+
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
