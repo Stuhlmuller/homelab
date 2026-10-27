@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Run reader policy overlap against the exact stock Enterprise chart commit."""
+"""Run reader policy overlap against the exact stock Enterprise chart commit.
+
+The required validation job needs repository read access, not cloud credentials.
+"""
 
 import json
 from pathlib import Path
