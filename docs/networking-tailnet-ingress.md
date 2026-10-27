@@ -134,9 +134,11 @@ Authentication or signing remains workflow-specific. The editor, REST API,
 assets, and root stay at private `n8n.stinkyboi.com`.
 
 Phase 2a sets `WEBHOOK_URL` to `https://n8n-webhook.tail67beb.ts.net/` only after
-Funnel readiness; n8n can re-register hooks during startup. Then migrate the two
-fixed repository hooks with `scripts/n8n-github-webhooks.py`. Follow its receipt
-and fresh-delivery checks; retain the old callback routes until acceptance.
+Funnel readiness; n8n can re-register hooks during startup. Keep the Emergency
+repository hook on Funnel and retire the unused Codex Review Helper hook through
+`scripts/n8n-github-webhooks.py`. Require the retired ID and path to be absent,
+plus fresh Emergency and Policy Bot deliveries; retain the old callback routes
+until acceptance.
 
 ## Fleet And Future Public Routes
 

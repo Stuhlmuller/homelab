@@ -26,7 +26,7 @@ workflow dispatches or production changes.
 - Custom image or new mirrored digest: finish the relevant publication
   workflow before merging its consuming reference. See
   [Harbor publication](../homelab-harbor-images/SKILL.md).
-- Operator-owned bootstrap permissions stay under `IaC/operator`; the workload
+- Operator-owned bootstrap permissions stay under `IaC/homelab/us-west-2/operator`; the workload
   CI role cannot administer itself. Use the documented operator path when
   the requested rollout needs it.
 

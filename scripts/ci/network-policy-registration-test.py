@@ -8,9 +8,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-UNIT = ROOT / "IaC/live/argocd-apps/platform-network-policy"
-CANARY_UNIT = ROOT / "IaC/live/argocd-apps/platform-network-policy-canary"
-CLEANUP_UNIT = ROOT / "IaC/live/argocd-apps/platform-network-policy-cleanup"
+UNIT = ROOT / "IaC/homelab/us-west-2/apps/platform-network-policy/argocd"
+CANARY_UNIT = ROOT / "IaC/homelab/us-west-2/apps/platform-network-policy-canary/argocd"
+CLEANUP_UNIT = ROOT / "IaC/homelab/us-west-2/apps/platform-network-policy-cleanup/argocd"
 POLICY_MANIFEST = ROOT / "clusters/homelab/platform/network-policy/kustomization.yaml"
 CANARY_MANIFEST = ROOT / "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
 EMPTY = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n"

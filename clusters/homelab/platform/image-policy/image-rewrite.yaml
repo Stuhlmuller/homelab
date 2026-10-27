@@ -1,0 +1,199 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: image-rewrite-selfsigned
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: image-rewrite-root
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  secretName: image-rewrite-root
+  commonName: image-rewrite-root
+  isCA: true
+  duration: 87600h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Never
+  usages: [cert sign, crl sign]
+  issuerRef:
+    name: image-rewrite-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: image-rewrite-ca
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  ca:
+    secretName: image-rewrite-root
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: image-rewrite-server
+  namespace: kube-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  secretName: image-rewrite-server-tls
+  dnsNames:
+    - image-rewrite.kube-system.svc
+    - image-rewrite.kube-system.svc.cluster.local
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages: [server auth]
+  issuerRef:
+    name: image-rewrite-ca
+    kind: Issuer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-rewrite
+  namespace: kube-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: image-rewrite
+  template:
+    metadata:
+      labels:
+        app: image-rewrite
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: webhook
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
+          command: [python3, /app/image-rewrite.py]
+          ports:
+            - containerPort: 9443
+              name: https
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: https
+              scheme: HTTPS
+          resources:
+            requests:
+              cpu: 20m
+              memory: 48Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: app
+              mountPath: /app
+              readOnly: true
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+      volumes:
+        - name: app
+          configMap:
+            name: image-rewrite
+        - name: tls
+          secret:
+            secretName: image-rewrite-server-tls
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: image-rewrite
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-rewrite
+  namespace: kube-system
+spec:
+  selector:
+    app: image-rewrite
+  ports:
+    - port: 443
+      targetPort: https
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: image-rewrite
+  namespace: kube-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: image-rewrite
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: generated-harbor-images
+  annotations:
+    cert-manager.io/inject-ca-from: kube-system/image-rewrite-server
+    argocd.argoproj.io/sync-wave: "2"
+webhooks:
+  - name: generated-harbor-images.homelab.stinkyboi.com
+    admissionReviewVersions: [v1]
+    sideEffects: None
+    failurePolicy: Fail
+    timeoutSeconds: 5
+    matchPolicy: Equivalent
+    reinvocationPolicy: IfNeeded
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [image-rewrite-canary]
+    rules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE]
+        resources: [pods]
+        scope: Namespaced
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [UPDATE]
+        resources: [pods/ephemeralcontainers]
+        scope: Namespaced
+    clientConfig:
+      service:
+        namespace: kube-system
+        name: image-rewrite
+        path: /mutate
+        port: 443

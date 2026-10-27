@@ -54,7 +54,7 @@ Free bytes reported inside `/homelab` are not proof of unallocated pool space.
    generic Linux examples. [Talos 1.11.3 identifies this extension][talos-storage]
    as its iSCSI support path.
 3. Register a dedicated `qnap-csi` Application through
-   `IaC/terragrunt.stack.hcl` and the existing Application module. Review and pin
+   `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` and the existing Application module. Review and pin
    upstream Helm resources, namespace privileges, CRDs and node-plugin mounts.
    Let a `TridentBackendConfig` and controller-managed credential Secret own
    provisioning. Use `qnap-nas`, `csi.trident.qnap.io`, single-path iSCSI,

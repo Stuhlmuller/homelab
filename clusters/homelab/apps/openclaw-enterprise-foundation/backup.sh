@@ -6,6 +6,7 @@ umask 0077
 
 material=/recovery-material
 backup_root=/backup/openclaw-enterprise
+backup_mount=${backup_root%/*}
 stopped_marker() {
   jq -es 'length == 1 and (.[0] | type == "object" and .writerStopped == true and
     (.claimUid | type == "string" and length > 0))' "$1" >/dev/null 2>&1
@@ -37,6 +38,15 @@ stopped_marker "$material/recovery.json" || {
 }
 test ! -L "$material"
 test -z "$(find "$material" ! -type f ! -type d -print -quit)" || exit 1
+if ! test -d "$backup_mount" || test -L "$backup_mount" ||
+   ! mountpoint -q "$backup_mount"; then
+  echo 'private backup destination is not mounted' >&2
+  exit 1
+fi
+if test -L "$backup_root"; then
+  echo 'private backup directory must not be a symlink' >&2
+  exit 1
+fi
 test -s /run/secrets/occ-postgres-backup/password
 test -s /run/postgres-ca/tls.crt
 mkdir -p /tmp /backup/openclaw-enterprise

@@ -21,17 +21,17 @@ sources:
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-5e8e516a25e2448b5e0205a4
-    resource: repo://IaC/openclaw-enterprise-foundation/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-c4a1630a18962f8a58f367ec
-    resource: repo://IaC/openclaw-enterprise/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-00c8a32293c8aaa55d3daba4
-    resource: repo://IaC/platform-envoy-gateway/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-17718b74140783bc6aaf9388
-    resource: repo://IaC/platform-network-policy-canary/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl
   - id: openwiki-source-e3e84b128839afbc47f478f7
-    resource: repo://IaC/platform-network-policy/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
-    resource: repo://IaC/terragrunt.stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -50,9 +50,9 @@ verified:
 
 Canonical runbook: [`docs/argocd-app-onboarding.md`](../../docs/argocd-app-onboarding.md)
 
-Register applications in `IaC/terragrunt.stack.hcl` with the shared
+Register applications in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` with the shared
 `IaC/terragrunt-catalog/units/live/argocd-app` template. Put per-app inputs in
-`IaC/<app>/stack.hcl`, load common defaults from `IaC/stack-defaults.hcl`,
+`IaC/homelab/us-west-2/apps/<app>/stack.hcl`, load common defaults from `IaC/stack-defaults.hcl`,
 and keep runtime state under
 `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`. Use
 `main` for repository-backed sources and treat Terragrunt dependencies as

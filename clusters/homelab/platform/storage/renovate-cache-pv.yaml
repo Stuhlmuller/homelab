@@ -1,0 +1,28 @@
+# Staged only: add to the platform-storage Kustomization after the isolated QNAP export is verified.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: renovate-cache-dedicated
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/part-of: homelab-automation
+    homelab.stuhlmuller.dev/storage-backend: qnap-renovate-cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  claimRef:
+    name: renovate-cache-dedicated
+    namespace: automation
+  mountOptions:
+    - nfsvers=3
+  nfs:
+    path: /renovate-cache
+    server: 10.1.0.2
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: renovate-cache-qnap-static
+  volumeMode: Filesystem

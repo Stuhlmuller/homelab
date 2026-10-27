@@ -97,7 +97,14 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/mastodon/postgres-password" = {
-      description = "Mastodon dedicated postgres password."
+      description = "Mastodon PostgreSQL bootstrap administrator password; not an application credential."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/mastodon/postgres-app-password" = {
+      description = "Mastodon limited PostgreSQL application role password."
       generated = {
         length  = 40
         special = false
@@ -326,6 +333,14 @@ inputs = {
     }
     "/homelab/renovate/github-app/private-key" = {
       description   = "Existing Renovate GitHub App private key; transfer from the companion repository before activation."
+      initial_value = local.placeholder
+    }
+    "/homelab/renovate/acceptance/github-app/issuer-id" = {
+      description   = "Read-only GitHub App issuer for the temporary Renovate acceptance Jobs."
+      initial_value = local.placeholder
+    }
+    "/homelab/renovate/acceptance/github-app/private-key" = {
+      description   = "Read-only GitHub App private key for the temporary Renovate acceptance Jobs."
       initial_value = local.placeholder
     }
     "/homelab/external-secrets/aws-ssm/access-key-id" = {
@@ -751,6 +766,22 @@ inputs = {
     }
     "/homelab/policy-bot/github-app/integration-id" = {
       description   = "Policy Bot GitHub App integration ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/integration-id" = {
+      description   = "Bulldozer GitHub App ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/webhook-secret" = {
+      description = "Bulldozer GitHub App webhook HMAC secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/private-key" = {
+      description   = "Bulldozer GitHub App private key PEM."
       initial_value = local.placeholder
     }
     "/homelab/policy-bot/github-app/webhook-secret" = {

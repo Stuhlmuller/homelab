@@ -359,6 +359,12 @@ test_allows_reviewed_funnel_callback if {
 	count(violations) == 0
 }
 
+test_allows_bulldozer_funnel_callback if {
+	resource := object.union(reviewed_callback, {"metadata": object.union(reviewed_callback.metadata, {"name": "bulldozer-hook"}), "spec": object.union(reviewed_callback.spec, {"tls": [{"hosts": ["bulldozer-hook"]}]})})
+	violations := deny with input as resource
+	count(violations) == 0
+}
+
 test_rejects_funnel_to_private_entrypoint if {
 	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {
 		"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}},

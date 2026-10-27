@@ -17,7 +17,7 @@ spec:
   http:
     - match:
         - uri:
-            prefix: /api/github/hook
+            exact: /api/github/hook
       route:
         - destination:
             host: policy-bot.automation.svc.cluster.local
