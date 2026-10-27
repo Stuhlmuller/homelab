@@ -37,10 +37,33 @@ def failed_objects():
                         "conditions": [{"type": "Failed", "status": "True"}]}
     pod["status"] = {"phase": "Failed", "containerStatuses": [{
         "name": "operator", "state": {"terminated": {"exitCode": 1}}}]}
+    pod["spec"]["tolerations"] = copy.deepcopy(
+        list(cleanup.journal.DEFAULT_JOB_POD_TOLERATIONS))
     return operator, intended, actual, pod, secret
 
 
 class Cleanup(unittest.TestCase):
+    def test_only_admission_default_pod_tolerations_are_accepted(self):
+        operator, intended, _, pod, _ = failed_objects()
+        cleanup.prove_pod(pod, intended, JOB_UID, POD_UID, operator)
+        pod["spec"]["tolerations"].reverse()
+        cleanup.prove_pod(pod, intended, JOB_UID, POD_UID, operator)
+        for change in ("missing", "extra", "altered", "duplicate"):
+            candidate = copy.deepcopy(pod)
+            tolerations = candidate["spec"]["tolerations"]
+            if change == "missing":
+                tolerations.pop()
+            elif change == "extra":
+                tolerations.append({"effect": "NoSchedule", "key": "foreign",
+                                    "operator": "Exists"})
+            elif change == "altered":
+                tolerations[0]["tolerationSeconds"] = 600
+            else:
+                tolerations[0] = copy.deepcopy(tolerations[1])
+            with self.subTest(change=change), self.assertRaisesRegex(
+                    cleanup.journal.Blocked, "Pod identity"):
+                cleanup.prove_pod(candidate, intended, JOB_UID, POD_UID, operator)
+
     def test_workflow_pins_cleanup_sources_and_hides_private_output(self):
         workflow = (ROOT / ".github/workflows/openclaw-enterprise-operations.yml").read_text()
         lane = workflow.split("\n  cleanup-failed-bind:\n", 1)[1]

@@ -209,7 +209,8 @@ def prove_pod(pod, intended, job_uid, pod_uid, operator):
             not actual.get("initContainers") and not actual.get("ephemeralContainers") and
             not actual.get("hostNetwork") and not actual.get("hostPID") and
             not actual.get("hostIPC") and not actual.get("shareProcessNamespace") and
-            not actual.get("hostUsers") and not actual.get("tolerations") and
+            not actual.get("hostUsers") and
+            journal.admitted_job_pod_tolerations(actual.get("tolerations")) and
             not actual.get("hostAliases") and not actual.get("dnsConfig") and
             not actual.get("runtimeClassName") and
             actual.get("dnsPolicy") in (None, "ClusterFirst") and
