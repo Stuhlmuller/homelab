@@ -13,7 +13,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | --- | --- | --- | --- |
 | Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
 | Earlier stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Historical signed and fully pulled pair; the newer source-built bundle below supplies the selected digests. |
-| Full platform image catalog and transitive render | [main `8c9e0b41c151a64555bc1007203aad541464848c`, protected `all` mirror `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180); [later 214-image retry `40157353792`](https://github.com/Stuhlmuller/homelab/actions/runs/40157353792) | — | Pending at current main. The protected 2026-10-24 run passed both jobs, matching Harbor digests and authenticated pulls for its 214 reviewed sources; its six strict publication-bundle files still matched main `efb6a3a557a47cd73fb136f56a57f9139215b4a6`. The catalog now has 215 images after `c227a5df`; both that successful run and the later retry at `bc593023` use the older 214-image catalog. |
+| Full platform image catalog and transitive render | [main `8176edde84f5b548a75eb2fbfdc7b4112db2140b`, protected `all` mirror `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517) | — | Passed 2026-10-25 13:43 UTC for all 215 reviewed public sources: both jobs succeeded, with matching digests and complete authenticated Harbor pulls. The six strict publication-bundle files matched current main `8877b3b73f74a1d023456f46ad9510a3d88b22ed` byte for byte at acceptance. Earlier 214-image runs remain historical. |
 | Source-built Enterprise controller/runtime/CLI/operator | [main `4b0186236b919570164a73f5ca3b8ef7420564cb`, protected publisher `40048058867`](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867); exact refs below | — | Passed 2026-10-24 01:28 UTC: exact-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. Controller/runtime and CLI are pinned in source; this operator digest became historical when the selected Installation/values bytes changed. |
 | Exact-source Enterprise journal operator | [main `fda0d68cd2fc5d4689b6f1b048d329ae66ef3727`, protected publisher `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158); `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08` | — | Passed 2026-10-24 03:24 UTC: exact-current-main build, four complete authenticated pulls, signer public-key fingerprint check and cosign verification. The operator digest and embedded source SHA are pinned in the disabled declaration; placement, bootstrap credential and live isolation proofs remain open. |
 | Pinned Prometheus one-image qualification | [main `12bb86c84beffd8a7260049fa46abb3deeefa664`, protected `prometheus` mirror `39949606211`](https://github.com/Stuhlmuller/homelab/actions/runs/39949606211); `quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d` | — | Passed 2026-10-23 12:14 UTC: exact-current-main guard, matching digests and complete authenticated Harbor pull. This fixed one-image scope does not pass full-catalog T004. |
@@ -23,8 +23,8 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [source archive `39366476872`](https://github.com/Stuhlmuller/homelab/actions/runs/39366476872); [publication `9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221); [separate verification on `90d3d413`, run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168) | — | Passed T013. Protected publication uploaded the versioned archive and receipt, restored both objects and wrote a private final receipt. The separate protected `verify` run succeeded on 2026-10-23 09:52 UTC after retrieving the exact published versions and independently restoring the full local/NAS trees, both SQLite databases, NAS workspace/configuration, and historical backup directories. Local source and partial attempts remain retained. |
-| Legacy compatible recovery rehearsal | [read-only image/mount review on `90f7338`](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c); [failed transfer attempts `39942297939`, `39951803625`, `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305); [cancelled protected copy run `39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652); [successful protected resume on main `efb6a3a`, run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926) | — | Partial. The first three attempts failed before a verified copy. Run `39988927652` downloaded the pinned versioned archive and receipt and started a detached restore worker, then the six-hour protected job was cancelled. Its source-bound `resume-restore` run passed exact-main, prior-job provenance and the protected legacy stage at 2026-10-24 02:04 UTC. The stage required a stable worker success marker, exact cached archive/receipt size and SHA-256, a completed restored-database report, source identity and zero stopped-production writers; it prepared a separate private NAS scratch recovery tree. Original claims and credentials remain retained; the reader mounts originals read-only. T014 remains open: the old image has not booted in isolation, a UID 1000 local copy and enforced offline network boundary have not been proven, six external `/app` links may depend on unretained writable-overlay contents, and three dangling external targets remain unclassified. |
-| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-23 08:18 UTC recheck below | — | Blocked. Acer is 503 MiB short of database plus gateway, and the initial 4 GiB API/worker/database/Envoy/gateway planning reservation would be about 2,295 MiB short if co-located there; both exclude transient margin. Every Zima worker has less than 10 GiB filesystem free for one required claim. No isolated tainted canary or admitted Enterprise placement. T022, T027 and T035 remain pending. |
+| Legacy compatible recovery rehearsal | [read-only image/mount review on `90f7338`](https://github.com/Stuhlmuller/homelab/commit/90f733820e1c51b3b5a17c0743e606e6439a3d4c); [failed transfer attempts `39942297939`, `39951803625`, `39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305); [cancelled protected copy run `39988927652`](https://github.com/Stuhlmuller/homelab/actions/runs/39988927652); [successful protected resume on main `efb6a3a`, run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926); [failed protected network preflight 40207428612](https://github.com/Stuhlmuller/homelab/actions/runs/40207428612); [failed protected network preflight 40217814422](https://github.com/Stuhlmuller/homelab/actions/runs/40217814422); [registry recovery PR #1679](https://github.com/Stuhlmuller/homelab/pull/1679) | — | Partial. The first three attempts failed before a verified copy. Run `39988927652` downloaded the pinned versioned archive and receipt and started a detached restore worker, then the six-hour protected job was cancelled. Its source-bound `resume-restore` run passed exact-main, prior-job provenance and the protected legacy stage at 2026-10-24 02:04 UTC. The stage required a stable worker success marker, exact cached archive/receipt size and SHA-256, a completed restored-database report, source identity and zero stopped-production writers; it prepared a separate private NAS scratch recovery tree. Original claims and credentials remain retained; the reader mounts originals read-only. Both protected network-preflight runs passed the exact-main guard, then failed in the sanitized preflight category; neither produced a rootless capability receipt. After registry recovery merged, a read-only check found the reader 1/1 Ready, the legacy gateway 0/0, the backup CronJob suspended, and id -u inside the reader returned 1000. T014 remains open: the old image has not booted in isolation, a UID 1000 local copy and enforced offline network boundary have not been proven, six external `/app` links may depend on unretained writable-overlay contents, and three dangling external targets remain unclassified. |
+| Capacity and isolated canary | [earlier read-only checks, PR #1539](https://github.com/Stuhlmuller/homelab/pull/1539); 2026-10-25 12:56 and 14:40 UTC rechecks below | — | Blocked. At the pre-outage snapshot, Acer had 1,162 MiB unreserved: 1,142 MiB short of the 2,304 MiB database-plus-Embedded-Gateway floor, or 2,934 MiB short of the initial 4 GiB full reservation, before transient margin. Every Zima worker had less than 10 GiB filesystem free for one required claim. Later outage-affected rescheduling invalidates the retirement and canary arithmetic as current admission evidence. No candidate has measured peak, restart or isolation proof. T022, T027 and T035 remain pending. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -33,6 +33,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | PostgreSQL roles/TLS and isolated restore | Pending | — | Pending |
 | Private browser access source | [access PR #1420](https://github.com/Stuhlmuller/homelab/pull/1420), `bd5bd437`; [installation PR #1424](https://github.com/Stuhlmuller/homelab/pull/1424), `e24dc89` | — | Source validated: authenticated Octelium console and post-auth redirect, opaque native-host private route and DNS/certificate from #1420; cookie and trusted-proxy declarations from #1424. Live URL cutover and browser/TLS/WebSocket acceptance remain pending. |
 | Protected Enterprise operations stages | [workflow](../../.github/workflows/openclaw-enterprise-operations.yml), [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh), [journal dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py) | — | Source-only. Fixed dispatch is guarded and serialized; full-sync blocks on the unselected installation phase. Reconcile, stop and verification have a source-bound in-cluster Job with a retained journal PVC, but its disabled declaration lacks verified placement, PV/image identities and bootstrap credential. Binding needs an owner-controlled private key; restore and acceptance remain blocked. T041/T043 and live outcomes remain pending. |
+| Recovery failure fixtures (T050) | [recovery test](../../scripts/ci/openclaw-enterprise-recovery-test.py), [static gate](../../scripts/ci/static-checks.sh) | — | Source-only: 12 tests passed in the Nix development shell on 2026-10-25. They cover native stop ordering, lost/uncertain termination, retained new and legacy state, PVC retention, blocked enforcement removal and incomplete backup material. T054 orchestration and live restore remain pending. |
 | Enterprise install and hook failure matrix | Pending | — | Pending |
 | Inactive agent reconciliation and retry | Pending | — | Pending |
 | Model credential and real provider probe | Pending | — | Pending |
@@ -41,13 +42,15 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | 24-hour observation and selective retirement | Pending | — | Pending |
 | T059 source documentation and OpenWiki refresh | [merged PR #1560](https://github.com/Stuhlmuller/homelab/pull/1560), main `0e223d6`; protected static, lint, image-policy, network-policy and release-dry-run checks passed | — | Passed for source documentation only: five named runbooks updated and affected OpenWiki pages refreshed by the native update path. Capacity, credentials, policy enforcement, platform upgrades and Enterprise live acceptance remain pending. |
 
-T004 needs a fresh protected `image_scope=all` run on exact current main. Accept
-it only after both workflow jobs succeed, the digest and authenticated-pull
-checks pass, and all six publication-bundle files match that main byte for
-byte: `scripts/config/harbor-images.json`, `.github/workflows/harbor-mirror.yml`,
+The 215-image public catalog passed protected `image_scope=all` run
+[`40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517).
+Both jobs succeeded and its final marker confirms matching digests and complete
+authenticated Harbor pulls. At acceptance, these six publication-bundle files
+matched main `8877b3b73f74a1d023456f46ad9510a3d88b22ed` byte for byte:
+`scripts/config/harbor-images.json`, `.github/workflows/harbor-mirror.yml`,
 `scripts/ci/harbor-publish.sh`, `scripts/ci/install-kubeconfig.sh`, `flake.nix`
-and `flake.lock`. The earlier 214-image receipts remain historical evidence;
-the later retry cannot qualify the 215-image catalog.
+and `flake.lock`. T004 remains open until the changed Enterprise operator source
+has a new signed, authenticated-pull publication and pinned digest.
 
 The successful Enterprise bundle's [job summary](https://github.com/Stuhlmuller/homelab/actions/runs/40048058867#summary-120734188450) records these immutable references:
 
@@ -433,6 +436,177 @@ placement. The earlier separate-768-MiB-Agent arithmetic was incorrect for
 Embedded mode and must not be used for capacity admission. `zimaboard-2` still
 hosts four unrelated Pods, including single-replica `Recreate` Langfuse
 PostgreSQL; no worker satisfies the zero-foreign-Pod canary gate.
+
+At 2026-10-25 10:57–10:58 UTC with repository `main` at `1e46ec59`, read-only
+`kubectl get nodes -o json`, `kubectl get pods -A -o json`,
+`kubectl top nodes`, per-node kubelet `/stats/summary`, and targeted
+`kubectl top pods -n <namespace>` found all
+four nodes Ready and untainted:
+
+| Node | Memory requested / allocatable | Memory used | Root filesystem free |
+| --- | ---: | ---: | ---: |
+| `acer` | 14,099 / 15,261 MiB | 11,725 MiB | 382.08 GiB |
+| `zimaboard-0` | 7,148 / 7,282 MiB | 6,341 MiB | 4.98 GiB |
+| `zimaboard-1` | 3,372 / 7,282 MiB | 5,953 MiB | 8.98 GiB |
+| `zimaboard-2` | 1,078 / 1,308 MiB | 960 MiB | 8.65 GiB |
+
+A 12:07 UTC read-only refresh found all nodes Ready without MemoryPressure or
+DiskPressure. `kubectl describe node`, `kubectl top nodes`, and kubelet
+`/stats/summary` gave the following then-current values; they are samples, not
+historical peaks:
+
+| Node | Memory requested / allocatable | Memory used | Root filesystem free |
+| --- | ---: | ---: | ---: |
+| `acer` | 14,099 / 15,261 MiB | 11,693 MiB | 382.09 GiB |
+| `zimaboard-0` | 7,276 / 7,282 MiB | 5,547 MiB | 5.00 GiB |
+| `zimaboard-1` | 3,884 / 7,282 MiB | 6,141 MiB | 8.96 GiB |
+| `zimaboard-2` | 1,078 / 1,308 MiB | 967 MiB | 8.64 GiB |
+
+At 2026-10-25 12:50 UTC, kubelet reported 8.98 GiB free on
+`zimaboard-1`, below one required 10 GiB local Enterprise claim before
+image pulls or restart margin. Kubernetes reported seven bound node-local
+volumes there: three retained legacy OpenClaw volumes (5 + 3 + 2 GiB),
+Mastodon PostgreSQL and Redis (3 + 1 GiB), and two Cordium workspaces
+(20,000 + 10,000 MiB). Authenticated read-only Talos `usage` measured 300 MB
+in `/var/lib/openclaw-runtime`, 66 MB in Mastodon PostgreSQL, 4.1 MB in
+Mastodon Redis, and 438 kB across the Cordium workspaces. Their combined
+occupancy is below 0.35 GiB, less than the 1.02 GiB minimum claim shortfall;
+the declared PV capacities are not measured disk use. Retiring these services
+cannot close the shortfall and would discard retained state.
+The CRI lists 135 images with 13.9 GB summed listed sizes, but shared layers
+and active images make that sum no verified reclaim amount. No reviewed
+selective image-cleanup receipt exists. `acer` was the only measured
+local-storage candidate.
+
+At 14:40 UTC, with `main` at `46476e7d`, Traefik had zero ready replicas and
+its Pod was in `ImagePullBackOff`. Read-only node requests were 12,198 / 15,261
+MiB on `acer`, 5,716 / 7,282 MiB on `zimaboard-1`, and 1,020 / 1,308 MiB on
+`zimaboard-2`. Grafana's 768 MiB Pod was running on `zimaboard-1`, so pausing
+it would release no `acer` request in this observed placement. `zimaboard-2`
+also hosted LiteLLM, CoreDNS, Tailscale operator and two pending cert-manager
+Pods; `kubectl top nodes` sampled it at 1,289 MiB used. This outage-affected
+layout is not safe new headroom. All retirement margins and the earlier
+four-Pod canary model below describe the pre-outage placement only. Recheck after
+registry recovery and stable reconciliation before any admission or suspension.
+
+The two 10 GiB local claims put PostgreSQL (512 MiB request) and the
+Embedded Gateway (1,792 MiB request) on `acer` under the proposed storage
+pattern. Suspending only Dispatcharr releases 1,664 MiB there, leaving 522
+MiB after that 2,304 MiB floor. API, worker, and Envoy have a further 1,792
+MiB planning reservation. They fit `zimaboard-1` by request (5,676 / 7,282
+MiB), but consuming that reservation atop its then-measured 6,141 MiB working
+set gives 7,933 MiB, 651 MiB above allocatable before peaks. Putting one 512 MiB
+component on `acer` leaves only 10 MiB by request, while the other 1,280 MiB
+would put `zimaboard-1` at 7,421 MiB using the same estimate. The other
+workers have no admission headroom or 10 GiB local-claim space.
+
+Suspending only Langfuse releases 2,816 MiB on `acer` and vacates its
+`zimaboard-2` PostgreSQL Pod. Placing PostgreSQL, Gateway, API, and worker on
+`acer` would leave only 650 MiB by request; Envoy's 768 MiB planning budget
+on `zimaboard-1` leaves 373 MiB against its sampled working set. Relocating
+`zimaboard-2`'s three remaining ordinary Pods there adds 244 MiB of observed
+use and reduces that estimate to 129 MiB before startup or rolling overlap.
+Neither one-service split is an admitted placement.
+
+The operator ruled out hardware upgrades and requested service retirements.
+A source-only retirement candidate would **suspend**, not delete, all five
+Langfuse Pods and both Dispatcharr Pods while retaining their claims and
+credentials. This releases 2,816 + 1,664 = 4,480 MiB of requests on `acer`.
+Its 1,162 MiB baseline margin would become 5,642 MiB; an Acer-only 4,096 MiB
+Enterprise planning budget would leave 1,546 MiB before startup, backup,
+rolling replacement, policy enforcement, and peak margin. The Gateway's 3 GiB
+limit alone permits 1,280 MiB above its request, reducing that margin to 266
+MiB before any other burst. This pair has more static margin than the other
+two-service candidate assessed, not proof of safe admission. Suspending
+Langfuse and Mastodon instead would leave 1,034 MiB after the same Enterprise
+reservation and interrupt a public app. The proposed 10 GiB
+PostgreSQL and 10 GiB Embedded Gateway claims, plus 1 GiB bootstrap and 1 GiB
+journal claims, could use `acer`'s disk in principle; the separate 24 GiB
+restore scratch also needs admission. T035 has not created or bound those
+node-affine volumes. The current [profile input](../../clusters/homelab/apps/openclaw-enterprise/profile-input.json)
+pins control Pods to `oce-role: control` but the Embedded Gateway to
+`oce-role: agents`; its Dedicated-only `gatewayNodeSelector` does not fix
+co-location. A reviewed selector change is required before Acer-only placement.
+
+If Langfuse is suspended, `zimaboard-2` loses its 128 MiB PostgreSQL Pod.
+The remaining three ordinary Pods have no required node selector: Multica
+frontend 320 MiB, Cloudflare connector 64 MiB, and Harbor vulnerability
+exporter 32 MiB. Moving those 416 MiB by reviewed placement to `zimaboard-1`
+would leave that node about 2,982 MiB unreserved by request; its then-measured
+usage plus those Pods' observed 244 MiB is about 6,385 / 7,282 MiB before
+peaks or rolling overlap. The vacated `zimaboard-2` would retain 534 MiB of
+system requests; a proposed 250 MiB enforcer plus three 32 MiB fixtures
+would leave 428 MiB unreserved. Its then-measured usage minus those four Pods' 293
+MiB, plus the 346 MiB proposed canary requests, is about 1,020 / 1,308 MiB.
+Neither estimate proves transient fit, image-pull disk headroom, or isolation;
+a `NoSchedule` taint does not evict existing Pods.
+
+At 2026-10-25 12:23 UTC, `kubectl top nodes` sampled `acer` at 11,881 MiB,
+`zimaboard-1` at 6,561 MiB and `zimaboard-2` at 966 MiB. Recent `acer`
+samples ranged from 11,693 to 11,952 MiB, a 259 MiB spread; this is not a
+peak measurement. The pinned upstream [Gateway renderer][gateway-recreate]
+sets `Recreate`, so a second Gateway Pod is not part of this calculation;
+verify that the eventual controller image still contains this behavior.
+For screening, reserve 512 MiB for one API or worker replacement plus another
+512 MiB, roughly twice that sampled spread. This 1 GiB post-Gateway-burst
+floor is a planning filter, not measured peak or rollout acceptance. A stricter
+1 GiB residual after the Gateway burst and replacement needs more capacity.
+
+<!-- markdownlint-disable-next-line MD013 -->
+[gateway-recreate]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L14668-L14673
+
+<!-- markdownlint-disable MD013 -->
+
+| Additional pause after Langfuse + Dispatcharr | Acer free after 4 GiB Enterprise reservation | After Gateway reaches 3 GiB and one 512 MiB replacement | Effect and recovery gate |
+| --- | ---: | ---: | --- |
+| None | 1,546 MiB | -246 MiB | Cannot fit the screened replacement. |
+| Multica runtime (512 MiB) | 2,058 MiB | 266 MiB | Below the 512 MiB residual floor; local session/credential state has no approved loss path. |
+| Grafana (768 MiB) | 2,314 MiB | 522 MiB | Barely clears the filter but loses dashboards and Grafana-managed alerts; its SQLite/PVC state lacks a verified independent restore. |
+| Mastodon, including its three Acer Pods (1,152 MiB) | 2,698 MiB | 906 MiB | Public service outage; local PostgreSQL/Redis, NFS media, application keys and a database-only NAS backup lack a complete independent restore. |
+| Multica runtime + Grafana (1,280 MiB) | 2,826 MiB | 1,034 MiB | Clears the illustrative 1 GiB residual screen but also stops the agent daemon and monitoring; neither retained state has a verified independent restore. |
+
+<!-- markdownlint-enable MD013 -->
+
+The Grafana row assumes all three remaining ordinary `zimaboard-2` Pods move
+to `zimaboard-1`: their sampled 247 MiB would raise that node to 6,808 / 7,282
+MiB, leaving 474 MiB before peaks. For the Mastodon row, moving Multica
+frontend to `acer` consumes 320 MiB of its request margin, leaving 586 MiB
+after the screened replacement; moving Cloudflared and Harbor exporter to
+`zimaboard-1` adds 74 MiB sampled use there, leaving 647 MiB. Neither
+allocation proves service continuity or safe restart headroom.
+
+The canary is independently blocked. At 2026-10-25 12:56 UTC, the kubelet
+Summary API reported a 955 MiB node working set on `zimaboard-2`; its four
+ordinary Pods used 297 MiB. The Node API reports 1,792 MiB physical capacity
+and 1,308 MiB allocatable. If those Pods leave and the [enforcer](../../clusters/homelab/platform/network-policy/daemonset.yaml)
+and three simultaneous [fixtures](../../clusters/homelab/platform/network-policy/canary/fixtures.yaml)
+reach their 512 + 192 MiB limits, projected node use is 955 - 297 + 704 =
+1,362 MiB, about 430 MiB below physical capacity. The earlier comparison to
+1,308 MiB was too strict: [Node Allocatable](https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/)
+is the Pod budget, while the node working set includes host use. Separately,
+534 MiB system Pod requests plus 250 + 3 × 32 MiB new requests leave 428 MiB
+under allocatable. These snapshots do not measure enforcer peaks, host growth,
+restart overlap, image-pull space or cleanup. No reviewed placement has vacated
+the node; keep T022 and T027 blocked.
+
+Suspension would interrupt Dispatcharr's IPTV/EPG export and Langfuse's
+telemetry UI/ingestion; [LiteLLM](../../clusters/homelab/apps/litellm/README.md)
+still requires Langfuse-attributed caller traces for its acceptance checks.
+Before relying on this capacity release, qualify caller behavior and complete
+the [recovery contracts](../application-recovery.md): Langfuse needs coordinated
+PostgreSQL, ClickHouse, Valkey and raw-event S3 recovery plus encryption/salt
+secrets and a queue-loss decision. An October 25 read-only inventory found
+4,683,189,334 bytes of active ClickHouse parts and 827,069,112 bytes across
+1,857 Langfuse blob-bucket versions. Those alone exceed the 5 GiB whole-set
+limit in [`application-backup.py`](../../scripts/application-backup.py).
+The [blob IAM policy](../../IaC/terragrunt-catalog/modules/aws-langfuse-blob-storage/main.tf)
+lacks `ListBucketVersions` and `GetObjectVersion`; an exact independent copy
+needs a reviewed scoped grant and componentized publication. Dispatcharr needs
+a paired PostgreSQL and runtime-files set plus private provider credentials.
+Retained PVCs make a declarative pause reversible but are not independent
+backups. No suspension,
+relocation, taint, local claim, or permanent retirement is authorized by this
+review; T022, T027 and T035 stay open.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during

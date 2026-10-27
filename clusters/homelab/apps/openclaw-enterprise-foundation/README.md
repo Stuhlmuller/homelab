@@ -57,7 +57,11 @@ manifests differ.
 T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup`
 mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
 archive directory before creating anything; the future Job must still prove
-that the volume is the reviewed off-node destination. `restore-drill.yaml` is
+that the volume is the reviewed off-node destination.
+No declared producer assembles the identity-checked recovery tree or exposes an
+encrypted off-node POSIX mount. A suspended CronJob with placeholder PVCs would
+have no runnable recovery path; keep T051 open until both inputs and an
+independent scheduled restore are verified. `restore-drill.yaml` is
 deliberately outside the Kustomization; T045 must run it in isolation against
 a complete set and verify the result. Its
 fixed-name Job is a one-shot candidate; a declared repeat/recreate workflow is

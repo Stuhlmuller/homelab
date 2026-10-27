@@ -341,6 +341,14 @@ success marker, cached archive and receipt hashes, restored database report,
 source identity and zero production writers, and prepared a separate private
 NAS scratch recovery tree. This is a partial T014 copy receipt, not an old-image
 boot or compatible recovery proof.
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+produces a public npm content-cache tar, dependency lock, and digest manifest
+without legacy state or credentials. Its
+[CI proof](../../.github/workflows/openclaw-discord-offline-cache.yml)
+deletes those artifacts after a fresh `--network none` install and runtime
+inspection. A later recovery operation still needs reviewed private publication,
+digest-checked transfer, and a compatible boot from separate writable copies
+behind an enforced offline boundary; this cache proof does not accept T014.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former

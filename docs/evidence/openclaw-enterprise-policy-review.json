@@ -2014,6 +2014,39 @@
     "correctionDecision": "No additional source-owned live policy drift was found. Keep strict broad-egress findings. Cordium ws-main and Octelium svc-upstream all-port public egress require pinned generator patches or reviewed forks, then actual generator renders and isolated-canary traffic. Do not narrow all-source ingress or other broad egress from hash equality alone. The accepted stock OCE public TCP/443/private-range boundary remains separate and does not waive strict findings.",
     "status": "read-only current inventory complete; T018 still open pending generator corrections, owner intent, and isolated-canary traffic before enforcement"
   },
+  "generatedBroadEgressFollowup": {
+    "capturedAt": "2026-10-25T17:52:04Z",
+    "sourceSha": "ab28b8d1823e07e8222d33d46fd74f6b6c86d7b6",
+    "method": "Read-only kubectl get of the two live NetworkPolicies, managedFields, and selected Pod counts; SHA-256 of each complete compact sorted-key JSON spec. Compared with the pinned upstream constructors and repository traffic contracts. No generator binary, packet capture, or enforced canary was run.",
+    "policies": [
+      {
+        "policy": "cordium/ws-main",
+        "manager": "cordium-genesis",
+        "liveSpecSha256": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+        "generatorSourceRef": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254-L390",
+        "repositoryTrafficRefs": [
+          "clusters/homelab/apps/cordium/README.md",
+          "docs/cordium-ci.md",
+          ".cordium/workspace.yaml"
+        ],
+        "observedRule": "Workspace selector; one all-port public IPv4/IPv6 egress rule with private-range exclusions, separate Octelium/registry TCP 8080 and DNS TCP/UDP 53 rules.",
+        "trafficGap": "The repository uses Workspaces for remote repository checkout and Nix execution and supports interactive developer commands. It has no reviewed destination, protocol, and port contract for arbitrary Workspace activity or denied alternatives; the current selected Pod count cannot establish one.",
+        "sourceCorrection": "Define the accepted Workspace egress contract, then change and pin the Cordium Genesis constructor and image; compare its actual generated spec and qualify real Workspace access, checkout, execution, and denials on the isolated canary."
+      },
+      {
+        "policy": "octelium/svc-upstream",
+        "manager": "octelium-genesis",
+        "liveSpecSha256": "09c86331a6a384a28f6ed34e5b185c3706efdf18395bd8ef82b44c374a69c4b9",
+        "generatorSourceRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237-L327",
+        "selectedWorkloadSourceRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/nocturne/nocturne/controllers/services/k8s_upstream.go#L41-L110",
+        "observedRule": "Shared svc-k8s-upstream selector; one all-port public IPv4/IPv6 egress rule with private-range exclusions. A single selected container-backed Service Pod was present at this read-only check.",
+        "trafficGap": "The upstream controller creates Pods from Service-supplied container configuration, so one current Pod and the repository catalog of URL-backed Services do not bound all present or future container-backed Service ports. No owner-approved allow/deny matrix or enforced traffic trace exists.",
+        "sourceCorrection": "Define category or per-Service egress requirements, then change and pin the Octelium Genesis constructor and installer image selection for init and upgrade; compare its actual generated spec and qualify container-backed Service traffic and denials on the isolated canary."
+      }
+    ],
+    "updateSemanticsRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/common/k8sutils/resources.go#L248-L265",
+    "correctionDecision": "Both Genesis paths call CreateOrUpdateNetworkPolicy, which replaces an existing spec. Additive Kubernetes NetworkPolicies cannot subtract these all-port allows. No repository-only manifest correction is safe; retain strict broad-egress findings and keep T018 open until the owner contracts, reviewed generator changes, actual renders, and canary evidence exist."
+  },
   "requiredCorrections": [
     "All 17 Cordium, Octelium and Octelium Enterprise generated policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has a source-owned replacement. Recheck complete live specs after any generator upgrade and qualify real ingress, egress, and lifecycle behavior on the isolated canary before enforcement.",
     "Pinned Cordium v0.12.7 ws-main and Octelium v0.35.0 svc-upstream constructors hardcode all-port public IPv4/IPv6 egress without an egress input; Cordium creates its policy in non-dev Genesis and Octelium InstallCommon always creates its policy. Patch the owning generators upstream or build reviewed forks, publish and pin corrected images; Octelium also needs reviewed octops image selection for both init and upgrade. Refresh expected-spec fixtures from actual generator renders, then prove required destinations and private-range denial on an isolated canary. Additive NetworkPolicies cannot narrow either current rule.",
