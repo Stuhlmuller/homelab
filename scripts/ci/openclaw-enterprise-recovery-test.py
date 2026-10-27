@@ -365,7 +365,10 @@ class RecoveryBoundaries(unittest.TestCase):
         for name in ("postgres-root/tls.crt", "postgres-root/tls.key",
                      "postgres-admin/password", "postgres-migrator/password",
                      "postgres-app/password", "postgres-backup/password",
-                     "auth/secret", "gateway/occ", "bootstrap/output.json",
+                     "auth/secret", "gateway/occ", "gateway-ca/tls.crt",
+                     "gateway-ca/tls.key", "bootstrap/output.json",
+                     "bootstrap/initial-admin-password",
+                     "bootstrap/initial-admin-service-key.json",
                      "journal/journal.json", "tenant/metadata.json",
                      "agent/identity.json", "tenant/secrets/key", "agent/state/state.db"):
             target = material / name
@@ -377,6 +380,8 @@ class RecoveryBoundaries(unittest.TestCase):
         marker = material / "recovery.json"
         for payload in ('{"claimUid":"fixture","writerStopped":false}',
                         '{"claimUid":"","writerStopped":true}',
+                        '{"claimUid":"fixture","writerStopped":true,'
+                        '"continuousFenceVerified":false}',
                         '{"claimUid":"fixture"}', '{',
                         '{"claimUid":"fixture","writerStopped":false}'
                         '{"claimUid":"fixture","writerStopped":true}'):
@@ -387,10 +392,20 @@ class RecoveryBoundaries(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("lacks a stopped, identified writer", result.stderr)
                 self.assertNotIn("fixture-secret", result.stderr)
-        marker.write_text('{"claimUid":"fixture","writerStopped":true}')
+        marker.write_text('{"claimUid":"fixture","writerStopped":true,'
+                          '"continuousFenceVerified":true}')
         result = subprocess.run(["sh", "-c", preflight], text=True,
                                 capture_output=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
+        for missing in ("gateway-ca/tls.key",
+                        "bootstrap/initial-admin-service-key.json"):
+            target = material / missing
+            target.unlink()
+            result = subprocess.run(["sh", "-c", preflight], text=True,
+                                    capture_output=True, check=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("incomplete recovery material", result.stderr)
+            target.write_text("fixture-secret")
 
     def test_backup_rejects_material_changed_during_copy(self):
         root = Path(self.temp.name)
@@ -398,14 +413,18 @@ class RecoveryBoundaries(unittest.TestCase):
         for name in ("postgres-root/tls.crt", "postgres-root/tls.key",
                      "postgres-admin/password", "postgres-migrator/password",
                      "postgres-app/password", "postgres-backup/password",
-                     "auth/secret", "gateway/occ", "bootstrap/output.json",
+                     "auth/secret", "gateway/occ", "gateway-ca/tls.crt",
+                     "gateway-ca/tls.key", "bootstrap/output.json",
+                     "bootstrap/initial-admin-password",
+                     "bootstrap/initial-admin-service-key.json",
                      "journal/journal.json", "tenant/metadata.json",
                      "agent/identity.json", "tenant/secrets/key", "agent/state/state.db"):
             target = material / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("fixture-secret")
         (material / "recovery.json").write_text(
-            '{"claimUid":"fixture","writerStopped":true}')
+            '{"claimUid":"fixture","writerStopped":true,'
+            '"continuousFenceVerified":true}')
         backup = root / "backup"
         backup.mkdir()
         fake_bin = root / "bin"
