@@ -22,6 +22,14 @@ Expected result: the Argo CD Application units affected by `main...HEAD` are
 planned, their dependencies remain ordered by Terragrunt `dependencies` blocks,
 and unaffected units are skipped by the run queue.
 
+For the staged Cordium and Octelium NetworkPolicy generator corrections, run
+`python3 builds/network-policy-generators/verify-source.py` to verify pinned
+upstream commits, apply the reviewed patches, and test the affected Go packages.
+Passing this source check does not qualify deployment: require protected Harbor
+publication with pinned digests, actual generated-policy renders, and allowed
+and denied traffic on an isolated canary before enabling enforcement. See
+[`docs/runtime-isolation.md`](runtime-isolation.md#staged-networkpolicy-enforcement).
+
 Render or dry-run GitOps sources:
 
 ```sh

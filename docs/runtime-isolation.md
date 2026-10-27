@@ -188,10 +188,18 @@ and [non-dev Genesis write](https://github.com/octelium/cordium/blob/e12b0b16d5f
 plus [Octelium's constructor and unconditional install](https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237-L325),
 expose no public-egress setting: each constructs the all-port public rule in
 code. An additive NetworkPolicy cannot revoke an existing allow. A reviewed
-upstream change or fork must rebuild and pin both generators, refresh the
-expected-spec fixtures from their actual renders, and qualify required
-destinations and private-range denial on the isolated canary before strict
-enforcement.
+source correction is now staged in
+[`builds/network-policy-generators/`](../builds/network-policy-generators/README.md).
+Its pinned Cordium and Octelium patches remove those two generated public
+all-port rules. Run
+`python3 builds/network-policy-generators/verify-source.py` to verify the
+upstream commits, apply both patches, and run their targeted tests. This
+checks source only: no corrected image has been published or deployed, and the
+current Octelium bootstrap wrapper cannot pass the patched Genesis image.
+Before strict enforcement, publish and pin reviewed generator images, use the
+patched bootstrap path, refresh expected-spec fixtures from actual renders,
+and qualify required destinations and private-range denial on the isolated
+canary. The current live policies and fixtures still contain the broad rules.
 
 The ten Octelium Enterprise Genesis policies have a separate [v0.22.0
 expected-spec fixture](../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
