@@ -244,6 +244,10 @@ echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
 echo "::endgroup::"
 
+echo "::group::Langfuse raw-version inventory"
+python3 -I scripts/ci/langfuse-raw-version-inventory-test.py
+echo "::endgroup::"
+
 echo "::group::Secret scan"
 bash scripts/ci/secret-scan.sh --self-check
 bash scripts/ci/secret-scan.sh
