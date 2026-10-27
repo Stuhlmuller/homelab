@@ -687,14 +687,18 @@ and verification are required.
 The staged `acceptance-outcome-amend-job.yaml` supplies the missing private
 `policy-ineligible` and `excluded-outage` receipts. Its source stays suspended
 and outside Kustomize. After the observer, report, and PR-proof writers are
-suspended and drained, reconcile its deny-all NetworkPolicy. A separate
+suspended and drained, reconcile its staged NetworkPolicy. Flannel does not
+enforce this policy today, so it is no proof of egress isolation. A separate
 reviewed GitOps change adds both the writer and
 `acceptance-outcome-preflight-job.yaml` still suspended; verify the writer has
 no start time before installing the private input. Unsuspend only the preflight
 Job through a reviewed GitOps change. Its `--check-only` mode mounts the ledger
 read-only and must complete with `valid: true` and the reviewed prospective
 count without creating outcomes or evidence. Both Jobs have no GitHub
-credential, Kubernetes token, cache mount, or network access. The writer accepts
+credential, Kubernetes token, or cache mount. The Pods retain network
+capability; the amendment code makes no intentional network calls. Signed
+source, exact live Pod and code comparison, fixed private input, and independent
+source review form the bounded trust boundary. The writer accepts
 only exact sampled `[key, version]` events inside the frozen window, preserves
 eligible receipts, and refuses conflicting classifications. An exact replay is
 a no-op. It writes mode `0600` evidence bound to the frozen inventory, policy
@@ -725,9 +729,13 @@ python3 -I scripts/renovate-acceptance-review.py install \
 ```
 
 The install command verifies the fixed Kubernetes API, signed remote `main`, the
-owner-only input, both pre-existing suspended Jobs, and the exact target
-Secret bound to their Kubernetes UIDs through nonprivate annotations. It checks
-post-write readback without printing private values. After the preflight PR
+owner-only input, both pre-existing suspended Jobs, their full live Pod templates,
+and the mounted generated code ConfigMap against the reviewed GitOps render.
+Any extra container, changed image, command, environment, mount, token setting,
+network setting, or security context fails before the fixed private Secret is
+created. The immutable Secret is bound to both Job UIDs through nonprivate
+annotations; readback is checked without printing private values. After the
+preflight PR
 merges, run this read-only binding gate from clean signed current `main`:
 
 ```sh
@@ -736,9 +744,11 @@ python3 -I scripts/renovate-acceptance-review.py verify-preflight \
 ```
 
 The gate requires the preflight Job UID bound in the current immutable Secret,
-a start after Secret creation, successful `--check-only` execution, the read-only
-ledger mount, and the still-suspended writer. Unsuspend the writer through a
-separate reviewed GitOps change. Retire only after the writer Job succeeds:
+a start after Secret creation, successful `--check-only` execution, and the
+still-suspended writer. It rechecks both complete live Pod templates and mounted
+code against signed `main`. Run it immediately before the separate reviewed
+writer-activation change; any drift keeps the writer suspended. Retire only
+after the writer Job succeeds:
 
 ```sh
 python3 -I scripts/renovate-acceptance-review.py retire \

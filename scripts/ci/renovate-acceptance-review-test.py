@@ -103,8 +103,10 @@ class ReviewDeliveryTests(TestCase):
                   mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
                       json.dumps(preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args else job)
                       if "get" in args else "") as run,
+                  mock.patch.object(REVIEW, "verify_outcome_source") as source_guard,
                   mock.patch("builtins.print")):
                 REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
+            self.assertEqual(source_guard.call_count, 2)
             create = next(call for call in run.call_args_list
                           if call.args[:3] == ("kubectl", "create", "-f"))
             manifest = json.loads(create.kwargs["input_data"])
@@ -120,7 +122,7 @@ class ReviewDeliveryTests(TestCase):
 
     def test_secret_creation_passes_private_value_only_on_stdin(self):
         raw = b'{"schema":1,"owner":"Stuhlmuller"}'
-        existing = {"data": {"review.json": "eyJzY2hlbWEiOjEsIm93bmVyIjoiU3R1aGxtdWxsZXIifQ=="}}
+        existing = {"data": {"review.json": base64.b64encode(raw).decode()}}
         with (mock.patch.object(REVIEW, "secret", side_effect=[None, existing]),
               mock.patch.object(REVIEW, "command", return_value="") as run,
               mock.patch("builtins.print")):
@@ -274,6 +276,7 @@ class ReviewDeliveryTests(TestCase):
                               else same_second)
         with (mock.patch.object(REVIEW, "secret", return_value=existing),
               mock.patch.object(REVIEW, "command", side_effect=same_response),
+              mock.patch.object(REVIEW, "verify_outcome_source"),
               mock.patch("builtins.print")):
             REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
         terminal_without_counter = {**same_second, "status": {"conditions": [
@@ -281,7 +284,8 @@ class ReviewDeliveryTests(TestCase):
         with (mock.patch.object(REVIEW, "secret", return_value=existing),
               mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
                   json.dumps(pending_preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args
-                             else terminal_without_counter))):
+                             else terminal_without_counter)),
+              mock.patch.object(REVIEW, "verify_outcome_source")):
             with self.assertRaises(REVIEW.Failure):
                 REVIEW.install(raw, True, REVIEW.OUTCOME_SECRET)
         finished = {**pending, "spec": {"suspend": False},
@@ -307,10 +311,11 @@ class ReviewDeliveryTests(TestCase):
                                   "namespace": REVIEW.NAMESPACE,
                                   "uid": preflight_uid,
                                   "creationTimestamp": "2026-10-19T18:00:00Z"},
-                     "spec": {"template": {"metadata": {"labels": {
+                     "spec": {"suspend": False, "template": {"metadata": {"labels": {
                          "app.kubernetes.io/component": "acceptance-outcome-amend"}},
                          "spec": {
                          "automountServiceAccountToken": False,
+                         "serviceAccountName": "renovate",
                          "containers": [{"command": ["node",
                              "/usr/src/app/acceptance-outcome-amend.js", "--check-only"],
                              "volumeMounts": [
@@ -333,22 +338,48 @@ class ReviewDeliveryTests(TestCase):
                                          "readOnly": True}}]}}},
                      "status": {"startTime": "2026-10-19T19:01:00Z", "succeeded": 1,
                                 "conditions": [{"type": "Complete", "status": "True"}]}}
+        writer["spec"]["template"] = copy.deepcopy(preflight["spec"]["template"])
+        writer_container = writer["spec"]["template"]["spec"]["containers"][0]
+        writer_container["command"] = writer_container["command"][:-1]
+        writer_container["volumeMounts"][3].pop("readOnly")
+        writer["spec"]["template"]["spec"]["volumes"][2][
+            "persistentVolumeClaim"].pop("readOnly")
         code_dir = ROOT / "clusters/homelab/apps/renovate"
         code_map = {"metadata": {"name": code_name, "namespace": REVIEW.NAMESPACE},
                     "data": {name: (code_dir / name).read_text() for name in (
                         "acceptance-outcome-amend.js", "acceptance-observer.js")}}
 
-        def check(case, configmap=code_map):
+        source_jobs = {REVIEW.OUTCOME_JOB: copy.deepcopy(writer),
+                       REVIEW.OUTCOME_PREFLIGHT_JOB: copy.deepcopy(preflight)}
+
+        def check(case, configmap=code_map, writer_case=writer):
             def response(*args, **_kwargs):
                 if "configmap" in args:
                     return json.dumps(configmap)
-                return json.dumps(case if REVIEW.OUTCOME_PREFLIGHT_JOB in args else writer)
+                return json.dumps(case if REVIEW.OUTCOME_PREFLIGHT_JOB in args
+                                  else writer_case)
             with (mock.patch.object(REVIEW, "secret", return_value=existing),
                   mock.patch.object(REVIEW, "command", side_effect=response),
+                  mock.patch.object(REVIEW, "rendered_outcome_resources",
+                                    return_value=(source_jobs, code_map)),
                   mock.patch("builtins.print")):
                 REVIEW.verify_preflight()
 
         check(preflight)
+        defaulted = copy.deepcopy(preflight)
+        defaulted_pod = defaulted["spec"]["template"]["spec"]
+        defaulted_pod.update({"dnsPolicy": "ClusterFirst", "hostNetwork": False,
+                              "serviceAccount": "renovate",
+                              "terminationGracePeriodSeconds": 30})
+        defaulted_container = defaulted_pod["containers"][0]
+        defaulted_container["terminationMessagePath"] = "/dev/termination-log"
+        defaulted_container["terminationMessagePolicy"] = "File"
+        defaulted["spec"]["template"]["metadata"]["labels"].update({
+            "batch.kubernetes.io/job-name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+            "job-name": REVIEW.OUTCOME_PREFLIGHT_JOB,
+            "batch.kubernetes.io/controller-uid": preflight_uid,
+            "controller-uid": preflight_uid})
+        check(defaulted)
         with (mock.patch.object(REVIEW, "secret", return_value=None),
               mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
                   json.dumps(preflight if REVIEW.OUTCOME_PREFLIGHT_JOB in args else writer))):
@@ -380,6 +411,75 @@ class ReviewDeliveryTests(TestCase):
         wrong_bytes["data"]["acceptance-outcome-amend.js"] = "stale"
         with self.assertRaises(REVIEW.Failure):
             check(preflight, wrong_bytes)
+
+        for target in ("preflight", "writer"):
+            for field in ("container", "initContainer", "image", "command",
+                          "environment", "envFrom", "mount", "hostNetwork",
+                          "token", "security"):
+                changed = copy.deepcopy(preflight if target == "preflight" else writer)
+                pod = changed["spec"]["template"]["spec"]
+                container = pod["containers"][0]
+                if field == "container":
+                    pod["containers"].append(copy.deepcopy(container))
+                elif field == "initContainer":
+                    pod["initContainers"] = [copy.deepcopy(container)]
+                elif field == "image":
+                    container["image"] = "example.invalid/unreviewed:latest"
+                elif field == "command":
+                    container["command"] = ["sh", "-c", "true"]
+                elif field == "environment":
+                    container["env"] = [{"name": "EXTRA", "value": "unsafe"}]
+                elif field == "envFrom":
+                    container["envFrom"] = [{"secretRef": {"name": "unsafe"}}]
+                elif field == "mount":
+                    container["volumeMounts"].append({"name": "review", "mountPath": "/extra"})
+                elif field == "hostNetwork":
+                    pod["hostNetwork"] = True
+                elif field == "token":
+                    pod["automountServiceAccountToken"] = True
+                else:
+                    container["securityContext"] = {"privileged": True}
+                with self.subTest(target=target, drift=field):
+                    with self.assertRaises(REVIEW.Failure):
+                        if target == "preflight":
+                            check(changed)
+                        else:
+                            check(preflight, writer_case=changed)
+        extra_map = copy.deepcopy(code_map)
+        extra_map["data"]["unexpected.js"] = "malicious"
+        with self.assertRaises(REVIEW.Failure):
+            check(preflight, extra_map)
+
+    def test_gitops_render_requires_both_jobs_and_one_generated_code_map(self):
+        jobs = [{"kind": "Job", "metadata": {"name": name,
+                 "namespace": REVIEW.NAMESPACE}} for name in
+                (REVIEW.OUTCOME_JOB, REVIEW.OUTCOME_PREFLIGHT_JOB)]
+        code_map = {"kind": "ConfigMap", "metadata": {
+            "name": "renovate-acceptance-observer-9k4tg5c8fh",
+            "namespace": REVIEW.NAMESPACE}, "data": {"script.js": "safe"}}
+        output = "\n".join(json.dumps(obj) for obj in (*jobs, code_map))
+        def response(*args, **_kwargs):
+            return "rendered YAML" if args[1] == "kustomize" else output
+        with mock.patch.object(REVIEW, "command", side_effect=response):
+            found_jobs, found_map = REVIEW.rendered_outcome_resources()
+            self.assertEqual(set(found_jobs), {REVIEW.OUTCOME_JOB,
+                                                REVIEW.OUTCOME_PREFLIGHT_JOB})
+            self.assertEqual(found_map, code_map)
+        with mock.patch.object(REVIEW, "command", side_effect=lambda *args, **_kwargs:
+                               "rendered YAML" if args[1] == "kustomize" else
+                               "\n".join(json.dumps(obj) for obj in (jobs[0], code_map))):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.rendered_outcome_resources()
+
+    def test_outcome_source_guard_fails_before_secret_install(self):
+        pending = (None, "uid", {"metadata": {"name": REVIEW.OUTCOME_JOB}})
+        with (mock.patch.object(REVIEW, "suspended_outcome_job", return_value=pending),
+              mock.patch.object(REVIEW, "verify_outcome_source",
+                                side_effect=REVIEW.Failure("source drift")),
+              mock.patch.object(REVIEW, "secret") as secret):
+            with self.assertRaises(REVIEW.Failure):
+                REVIEW.install(b'{}', True, REVIEW.OUTCOME_SECRET)
+        secret.assert_not_called()
 
 
 if __name__ == "__main__":

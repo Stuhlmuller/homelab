@@ -2482,21 +2482,6 @@ without claiming a separate per-repository Prometheus alert. Live cache-fault
 recovery, a declared QNAP capacity-restoration path, full parity, writer
 cutover, and seven-day acceptance remain open.
 
-The staged [acceptance outcome amendment](../../clusters/homelab/apps/renovate/README.md)
-has a focused `node --test scripts/ci/renovate-acceptance-outcome-amend-test.js`
-gate for exact event binding, private evidence, replay, conflict rejection,
-and an inert deny-all-network Job. The private delivery and Secret-boundary
-fixtures cover its fixed Secret target, writer Job UID binding, and lack of
-Renovate writer credentials. The staged read-only preflight Job checks the
-same private input without mutating the ledger; it must succeed before a
-separate writer activation PR. The read-only `verify-preflight` gate checks its
-bound UID, start after the current Secret's creation, exact check-only command,
-read-only mount, completion, and still-suspended writer.
-These source tests do not prove a real policy exclusion or outage. Before a
-reviewed activation, verify all observer, report and PR-proof writers drained,
-the NetworkPolicy reconciled, and the input was reviewed privately; independent
-source verification remains required for SC-002 acceptance.
-
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
 and actual Skopeo, rejecting network transports and requiring exact root and

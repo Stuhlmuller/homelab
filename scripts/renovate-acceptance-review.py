@@ -9,6 +9,7 @@ if __name__ == "__main__" and not sys.flags.isolated:
 import argparse
 import base64
 import binascii
+import copy
 from datetime import datetime
 import hashlib
 import json
@@ -20,11 +21,13 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SECRET = "renovate-acceptance-review"
-JOB = "renovate-acceptance-inventory"
-OUTCOME_SECRET = "renovate-acceptance-outcome-review"
-OUTCOME_JOB = "renovate-acceptance-outcome-amend"
-OUTCOME_PREFLIGHT_JOB = "renovate-acceptance-outcome-preflight"
+APP = ROOT / "clusters/homelab/apps/renovate"
+ACCEPTANCE_NAME = "renovate-acceptance"
+SECRET = f"{ACCEPTANCE_NAME}-review"
+JOB = f"{ACCEPTANCE_NAME}-inventory"
+OUTCOME_SECRET = f"{ACCEPTANCE_NAME}-outcome-review"
+OUTCOME_JOB = f"{ACCEPTANCE_NAME}-outcome-amend"
+OUTCOME_PREFLIGHT_JOB = f"{ACCEPTANCE_NAME}-outcome-preflight"
 OUTCOME_JOB_UID_ANNOTATION = "renovate.stuhlmuller.net/outcome-job-uid"
 OUTCOME_PREFLIGHT_UID_ANNOTATION = "renovate.stuhlmuller.net/outcome-preflight-uid"
 NAMESPACE = "automation"
@@ -142,6 +145,115 @@ def delivered_uid(review_secret, annotation):
     return uid
 
 
+def rendered_outcome_resources():
+    """Read the reviewed GitOps render, including its generated code-map name."""
+    rendered = command("kubectl", "kustomize", str(APP))
+    output = command("kubectl", "create", "--dry-run=client", "--validate=false",
+                     "-f", "-", "-o", "json", input_data=rendered)
+    decoder = json.JSONDecoder()
+    objects = []
+    position = 0
+    try:
+        while position < len(output):
+            while position < len(output) and output[position].isspace():
+                position += 1
+            if position < len(output):
+                obj, position = decoder.raw_decode(output, position)
+                objects.extend(obj.get("items", []) if obj.get("kind") == "List" else [obj])
+        jobs = {}
+        for name in (OUTCOME_JOB, OUTCOME_PREFLIGHT_JOB):
+            matches = [obj for obj in objects if obj.get("kind") == "Job" and
+                       obj.get("metadata", {}).get("name") == name and
+                       obj.get("metadata", {}).get("namespace") == NAMESPACE]
+            if len(matches) != 1:
+                raise ValueError
+            jobs[name] = matches[0]
+        maps = [obj for obj in objects if obj.get("kind") == "ConfigMap" and
+                obj.get("metadata", {}).get("namespace") == NAMESPACE and
+                re.fullmatch(r"renovate-acceptance-observer-[a-z0-9]{10}",
+                             obj.get("metadata", {}).get("name", ""))]
+        if len(maps) != 1 or not isinstance(maps[0].get("data"), dict):
+            raise ValueError
+        return jobs, maps[0]
+    except (AttributeError, KeyError, TypeError, ValueError):
+        raise Failure("Reviewed GitOps outcome resources are incomplete") from None
+
+
+def normalized_template(job):
+    """Remove only known API defaults and Job-controller labels."""
+    template = copy.deepcopy(job["spec"]["template"])
+    metadata = template["metadata"]
+    if metadata.get("creationTimestamp") is None:
+        metadata.pop("creationTimestamp", None)
+    labels = metadata["labels"]
+    name = job["metadata"]["name"]
+    uid = job["metadata"].get("uid")
+    for key, expected in (("batch.kubernetes.io/job-name", name),
+                          ("job-name", name),
+                          ("batch.kubernetes.io/controller-uid", uid),
+                          ("controller-uid", uid)):
+        if key in labels:
+            if labels[key] != expected or expected is None:
+                raise ValueError
+            del labels[key]
+    pod = template["spec"]
+    for key, default in (("dnsPolicy", "ClusterFirst"),
+                         ("schedulerName", "default-scheduler"),
+                         ("terminationGracePeriodSeconds", 30),
+                         ("enableServiceLinks", True),
+                         ("priority", 0),
+                         ("preemptionPolicy", "PreemptLowerPriority"),
+                         ("hostNetwork", False), ("hostPID", False),
+                         ("hostIPC", False), ("shareProcessNamespace", False)):
+        if pod.get(key) == default:
+            pod.pop(key, None)
+    if pod.get("serviceAccount") == pod.get("serviceAccountName"):
+        pod.pop("serviceAccount", None)
+    for container in pod["containers"]:
+        for key, default in (("terminationMessagePath", "/dev/termination-log"),
+                             ("terminationMessagePolicy", "File"),
+                             ("stdin", False), ("stdinOnce", False),
+                             ("tty", False)):
+            if container.get(key) == default:
+                container.pop(key, None)
+    for volume in pod["volumes"]:
+        if volume.get("configMap", {}).get("defaultMode") == 420:
+            volume["configMap"].pop("defaultMode")
+        if volume.get("secret", {}).get("defaultMode") == 420:
+            volume["secret"].pop("defaultMode")
+        if volume.get("persistentVolumeClaim", {}).get("readOnly") is False:
+            volume["persistentVolumeClaim"].pop("readOnly")
+    return template
+
+
+def verify_outcome_source(writer, preflight):
+    """Fail before private input if either Pod or mounted code differs from main."""
+    try:
+        jobs, expected_map = rendered_outcome_resources()
+        for name, live in ((OUTCOME_JOB, writer), (OUTCOME_PREFLIGHT_JOB, preflight)):
+            expected = jobs[name]
+            if (live["metadata"]["name"] != name or
+                    live["metadata"]["namespace"] != NAMESPACE or
+                    normalized_template(live) != normalized_template(expected)):
+                raise ValueError
+        code_name = expected_map["metadata"]["name"]
+        for live in (writer, preflight):
+            volumes = live["spec"]["template"]["spec"]["volumes"]
+            if not any(volume.get("name") == "code" and
+                       volume.get("configMap", {}).get("name") == code_name
+                       for volume in volumes):
+                raise ValueError
+        live_map = json.loads(command("kubectl", "-n", NAMESPACE, "get", "configmap",
+                                      code_name, "-o", "json"))
+        if (live_map.get("metadata", {}).get("name") != code_name or
+                live_map.get("metadata", {}).get("namespace") != NAMESPACE or
+                live_map.get("data") != expected_map["data"] or
+                live_map.get("binaryData") or expected_map.get("binaryData")):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise Failure("Outcome Job or mounted code differs from reviewed main") from None
+
+
 def suspended_outcome_job(job_name=OUTCOME_JOB):
     output = command("kubectl", "-n", NAMESPACE, "get", "job", job_name,
                      "--ignore-not-found=true", "-o", "json")
@@ -162,7 +274,7 @@ def suspended_outcome_job(job_name=OUTCOME_JOB):
             raise ValueError
         created_at = datetime.fromisoformat(
             job["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
-        return created_at, uid
+        return created_at, uid, job
     except (KeyError, TypeError, ValueError):
         raise Failure("Outcome Job must be reconciled suspended before input delivery") from None
 
@@ -170,6 +282,8 @@ def suspended_outcome_job(job_name=OUTCOME_JOB):
 def install(raw, execute, name=SECRET):
     outcome_job = suspended_outcome_job() if name == OUTCOME_SECRET else None
     preflight_job = suspended_outcome_job(OUTCOME_PREFLIGHT_JOB) if outcome_job else None
+    if outcome_job:
+        verify_outcome_source(outcome_job[2], preflight_job[2])
     existing = secret(name)
     if existing:
         if outcome_job:
@@ -210,12 +324,16 @@ def install(raw, execute, name=SECRET):
         raise Failure("Review Secret creation could not be verified") from None
     if hashlib.sha256(actual).digest() != hashlib.sha256(raw).digest():
         raise Failure("Review Secret digest mismatch; inspect before retrying")
-    if outcome_job and (delivered_uid(created, OUTCOME_JOB_UID_ANNOTATION) != outcome_job[1]
-                        or delivered_uid(created, OUTCOME_PREFLIGHT_UID_ANNOTATION)
-                        != preflight_job[1]
-                        or suspended_outcome_job() != outcome_job
-                        or suspended_outcome_job(OUTCOME_PREFLIGHT_JOB) != preflight_job):
-        raise Failure("Outcome Job identity changed during input delivery")
+    if outcome_job:
+        current_writer = suspended_outcome_job()
+        current_preflight = suspended_outcome_job(OUTCOME_PREFLIGHT_JOB)
+        if (delivered_uid(created, OUTCOME_JOB_UID_ANNOTATION) != outcome_job[1]
+                or delivered_uid(created, OUTCOME_PREFLIGHT_UID_ANNOTATION)
+                != preflight_job[1]
+                or current_writer[:2] != outcome_job[:2]
+                or current_preflight[:2] != preflight_job[:2]):
+            raise Failure("Outcome Job identity changed during input delivery")
+        verify_outcome_source(current_writer[2], current_preflight[2])
     print("Private review input delivered to the fixed automation Secret; value withheld.")
 
 
@@ -314,7 +432,7 @@ def verify_preflight():
     existing = secret(OUTCOME_SECRET)
     if not existing:
         raise Failure("Outcome review input is absent")
-    writer_created_at, writer_uid = suspended_outcome_job()
+    writer_created_at, writer_uid, writer = suspended_outcome_job()
     try:
         installed_at = datetime.fromisoformat(
             existing["metadata"]["creationTimestamp"].replace("Z", "+00:00"))
@@ -333,10 +451,11 @@ def verify_preflight():
             raise ValueError
         code_map = json.loads(command("kubectl", "-n", NAMESPACE, "get", "configmap",
                                       code_name, "-o", "json"))
-        code_dir = ROOT / "clusters/homelab/apps/renovate"
+        code_dir = APP
         expected_mounts = {
             "/usr/src/app/acceptance-outcome-amend.js": ("code", "acceptance-outcome-amend.js"),
             "/usr/src/app/acceptance-observer.js": ("code", "acceptance-observer.js")}
+        verify_outcome_source(writer, preflight)
         if (writer_created_at > installed_at or
                 writer_uid != delivered_uid(existing, OUTCOME_JOB_UID_ANNOTATION) or
                 preflight_created_at > installed_at or started_at <= installed_at or
@@ -374,7 +493,8 @@ def verify_preflight():
                 [{"key": "review.json", "path": "review.json"}] or
                 volumes["ledger"].get("persistentVolumeClaim", {}).get("claimName") !=
                 "renovate-acceptance-ledger" or
-                volumes["ledger"]["persistentVolumeClaim"].get("readOnly") is not True):
+                volumes["ledger"]["persistentVolumeClaim"].get("readOnly") is not True or
+                preflight["spec"].get("suspend") is not False):
             raise ValueError
     except (KeyError, TypeError, ValueError):
         raise Failure("Outcome preflight has not verified the current private input") from None

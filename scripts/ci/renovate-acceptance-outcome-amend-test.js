@@ -245,7 +245,7 @@ test('rejects extra fields, wrong review hash and a Secret symlink escaping its 
   }
 });
 
-test('staged Job has only the private input, deny-all policy and no writer credentials', () => {
+test('staged Jobs remain suspended and credential-free; policy is only desired state', () => {
   const root = path.resolve(__dirname, '../../clusters/homelab/apps/renovate');
   const job = fs.readFileSync(path.join(root, 'acceptance-outcome-amend-job.yaml'), 'utf8');
   const preflight = fs.readFileSync(path.join(root,
