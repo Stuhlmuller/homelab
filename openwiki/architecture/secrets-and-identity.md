@@ -576,7 +576,10 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   21 days with
   `scripts/octelium-ci-credential.sh`; routine rotation first verifies the
   existing User, Policy, Service, and credential binding without applying the
-  full catalog. The helper deletes the dedicated User's Sessions so Octelium
+  full catalog. It rejects unknown or duplicate Service policy attachments;
+  only the primary CI policy and optional staged plan policy are accepted, and
+  it checks all three staged plan rules when that policy is attached.
+  The helper deletes the dedicated User's Sessions so Octelium
   cannot retain an older Session expiry, then retries each GitHub environment
   write up to five times. Bootstrap catalog application is explicit with
   `--apply-catalog`.

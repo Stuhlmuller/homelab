@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the Octelium CI rotation boundary without live credentials."""
 
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -52,21 +53,55 @@ if args[0] == "get":
         if variant == "access_token_duration_drift":
             result["spec"]["session"]["accessTokenDuration"]["days"] = 31
     elif resource == "policy":
-        matches = [
-            'ctx.user.metadata.name == "homelab-ci"',
-            'ctx.user.spec.type == "WORKLOAD"',
-            'ctx.session.status.type == "CLIENTLESS"',
-            'ctx.service.metadata.name == "kubernetes-api-ci.default"',
-            'ctx.service.spec.mode == "KUBERNETES"',
-        ]
-        rules = [{"effect": "ALLOW", "condition": {"all": {"of": [
-            {"match": match} for match in matches]}}}]
-        if variant == "policy_drift":
-            rules.append({"effect": "ALLOW", "condition": {"all": {"of": []}}})
-        result = {"metadata": {"name": "homelab-ci-kubernetes-api-access"},
-                  "spec": {"rules": rules}}
-        if variant == "policy_disabled":
-            result["spec"]["isDisabled"] = True
+        if args[2] == "homelab-ci-kubernetes-api-plan-access":
+            def match(expression):
+                return {"match": expression}
+
+            plan_user = 'ctx.user.metadata.name == "homelab-ci-plan"'
+            service = 'ctx.service.metadata.name == "kubernetes-api-ci.default"'
+            write_verb = 'ctx.request.kubernetes.verb in ["create", "update", "patch", "delete", "deletecollection"]'
+            rules = [
+                {"name": "deny-non-dry-run-writes", "effect": "DENY", "priority": -4,
+                 "condition": {"all": {"of": [
+                     match(plan_user), match(service), match(write_verb),
+                     match('!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != "All"')
+                 ]}}},
+                {"name": "deny-subresources", "effect": "DENY", "priority": -4,
+                 "condition": {"all": {"of": [
+                     match(plan_user), match(service),
+                     match('has(ctx.request.kubernetes.subresource)')
+                 ]}}},
+                {"name": "read-or-dry-run", "effect": "ALLOW",
+                 "condition": {"all": {"of": [
+                     match(plan_user), match('ctx.user.spec.type == "WORKLOAD"'),
+                     match('ctx.session.status.type == "CLIENTLESS"'),
+                     match(service), match('ctx.service.spec.mode == "KUBERNETES"'),
+                     match('!has(ctx.request.kubernetes.subresource)'),
+                     {"any": {"of": [
+                         match('ctx.request.kubernetes.http.method in ["GET", "HEAD"] && ctx.request.kubernetes.verb in ["get", "list", "watch"]'),
+                         match('ctx.request.kubernetes.verb in ["create", "update", "patch", "delete", "deletecollection"] && ctx.request.kubernetes.http.queryParams.dryRun == "All"')
+                     ]}}
+                 ]}}}
+            ]
+            if variant == "staged_plan_policy_drift":
+                rules[-1]["condition"] = {"all": {"of": []}}
+            result = {"metadata": {"name": args[2]}, "spec": {"rules": rules}}
+        else:
+            matches = [
+                'ctx.user.metadata.name == "homelab-ci"',
+                'ctx.user.spec.type == "WORKLOAD"',
+                'ctx.session.status.type == "CLIENTLESS"',
+                'ctx.service.metadata.name == "kubernetes-api-ci.default"',
+                'ctx.service.spec.mode == "KUBERNETES"',
+            ]
+            rules = [{"effect": "ALLOW", "condition": {"all": {"of": [
+                {"match": match} for match in matches]}}}]
+            if variant == "policy_drift":
+                rules.append({"effect": "ALLOW", "condition": {"all": {"of": []}}})
+            result = {"metadata": {"name": "homelab-ci-kubernetes-api-access"},
+                      "spec": {"rules": rules}}
+            if variant == "policy_disabled":
+                result["spec"]["isDisabled"] = True
     elif resource == "service":
         result = {"metadata": {"name": "kubernetes-api-ci.default"}, "spec": {
             "isPublic": True, "mode": "KUBERNETES", "port": 6443,
@@ -77,6 +112,17 @@ if args[0] == "get":
             result["spec"]["isPublic"] = False
         if variant == "anonymous_service":
             result["spec"]["isAnonymous"] = True
+        if variant == "unreviewed_service_policy":
+            result["spec"]["authorization"]["policies"].append("allow-all-public")
+        if variant == "duplicate_service_policy":
+            result["spec"]["authorization"]["policies"].append(
+                "homelab-ci-kubernetes-api-access")
+        if variant == "staged_plan_service_policy":
+            result["spec"]["authorization"]["policies"].append(
+                "homelab-ci-kubernetes-api-plan-access")
+        if variant == "staged_plan_policy_drift":
+            result["spec"]["authorization"]["policies"].append(
+                "homelab-ci-kubernetes-api-plan-access")
     elif resource == "creds":
         target = {"metadata": {"name": "homelab-ci"}, "spec": {
             "user": "homelab-ci", "type": "ACCESS_TOKEN",
@@ -158,7 +204,8 @@ class RotationBoundaryTest(unittest.TestCase):
 
     def test_policy_drift_stops_before_session_reset_or_rotation(self):
         for variant in ("policy_drift", "policy_disabled", "service_drift",
-                        "anonymous_service"):
+                        "anonymous_service", "unreviewed_service_policy",
+                        "duplicate_service_policy", "staged_plan_policy_drift"):
             with self.subTest(variant=variant):
                 result, calls = self.run_helper(variant)
                 self.assertNotEqual(result.returncode, 0)
@@ -166,6 +213,34 @@ class RotationBoundaryTest(unittest.TestCase):
                 self.assertFalse(any(call.startswith("octeliumctl delete") or
                                      call.startswith("octeliumctl create") or
                                      call.startswith("gh secret set") for call in calls))
+
+    def test_reviewed_staged_service_policy_is_allowed(self):
+        result, calls = self.run_helper("staged_plan_service_policy")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(any(call.startswith("octeliumctl create cred") for call in calls))
+
+    def test_staged_policy_fixture_matches_catalog(self):
+        with tempfile.TemporaryDirectory() as temp:
+            fake = Path(temp) / "octeliumctl"
+            fake.write_text(MOCK, encoding="utf-8")
+            fake.chmod(0o755)
+            env = os.environ.copy()
+            env["OCE_TEST_LOG"] = str(Path(temp) / "calls")
+            observed = subprocess.run(
+                [str(fake), "get", "policy", "homelab-ci-kubernetes-api-plan-access"],
+                env=env, text=True, capture_output=True, check=True,
+            )
+        catalog = subprocess.run(
+            ["yq", "ea", "-o=json", "-I=0", "[.]",
+             str(ROOT / "docs/examples/octelium/homelab-services.yaml")],
+            text=True, capture_output=True, check=True,
+        )
+        expected = [item for item in json.loads(catalog.stdout)
+                    if item.get("kind") == "Policy" and item["metadata"]["name"]
+                    == "homelab-ci-kubernetes-api-plan-access"]
+        self.assertEqual(len(expected), 1)
+        self.assertEqual(json.loads(observed.stdout)["spec"]["rules"],
+                         expected[0]["spec"]["rules"])
 
     def test_user_duration_drift_stops_before_session_reset_or_rotation(self):
         for variant in ("clientless_duration_drift", "access_token_duration_drift"):

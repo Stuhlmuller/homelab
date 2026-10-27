@@ -7,6 +7,7 @@ catalog="docs/examples/octelium/homelab-services.yaml"
 credential_name="homelab-ci"
 user_name="homelab-ci"
 policy_name="homelab-ci-kubernetes-api-access"
+plan_policy_name="homelab-ci-kubernetes-api-plan-access"
 secret_name="OCTELIUM_CI_AUTH_TOKEN"
 octelium_homedir=""
 octelium_proxy=""
@@ -310,7 +311,7 @@ validate_target_user() {
 }
 
 validate_ci_access() {
-  local policy_json service_json
+  local policy_json service_json plan_policy_json
 
   if [[ "$rotate_credential" != "true" ]]; then
     return 0
@@ -344,19 +345,71 @@ validate_ci_access() {
     echo "error: could not read Octelium Service kubernetes-api-ci" >&2
     exit 1
   fi
-  if ! jq -e --arg policy "$policy_name" '
+  if ! jq -e --arg policy "$policy_name" \
+    --arg plan_policy "$plan_policy_name" '
     .metadata.name == "kubernetes-api-ci.default" and
     (.spec.isDisabled // false) == false and
     (.spec.isAnonymous // false) == false and
     .spec.isPublic == true and
     .spec.mode == "KUBERNETES" and
     .spec.port == 6443 and
-    (.spec.authorization.policies | index($policy)) != null and
+    ((.spec.authorization.policies | sort) == [$policy] or
+     (.spec.authorization.policies | sort) == ([$policy, $plan_policy] | sort)) and
     .spec.config.upstream.url == "https://10.1.0.199:6443" and
     .spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig"
   ' >/dev/null 2>&1 <<<"$service_json"; then
     echo "error: Octelium Service kubernetes-api-ci differs from the dedicated CI access contract" >&2
     exit 1
+  fi
+
+  if jq -e --arg plan_policy "$plan_policy_name" \
+    '.spec.authorization.policies | index($plan_policy) != null' \
+    >/dev/null 2>&1 <<<"$service_json"; then
+    if ! plan_policy_json="$(run_octeliumctl get policy "$plan_policy_name" --domain "$domain" -o json 2>/dev/null)"; then
+      echo "error: could not read Octelium Policy ${plan_policy_name}" >&2
+      exit 1
+    fi
+    if ! jq -e --arg plan_policy "$plan_policy_name" '
+      .metadata.name == $plan_policy and
+      (.spec.isDisabled // false) == false and
+      .spec.rules == [
+        {
+          "name": "deny-non-dry-run-writes", "effect": "DENY", "priority": -4,
+          "condition": {"all": {"of": [
+            {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+            {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+            {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"]"},
+            {"match": "!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != \"All\""}
+          ]}}
+        },
+        {
+          "name": "deny-subresources", "effect": "DENY", "priority": -4,
+          "condition": {"all": {"of": [
+            {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+            {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+            {"match": "has(ctx.request.kubernetes.subresource)"}
+          ]}}
+        },
+        {
+          "name": "read-or-dry-run", "effect": "ALLOW",
+          "condition": {"all": {"of": [
+            {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+            {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+            {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+            {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+            {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+            {"match": "!has(ctx.request.kubernetes.subresource)"},
+            {"any": {"of": [
+              {"match": "ctx.request.kubernetes.http.method in [\"GET\", \"HEAD\"] && ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"},
+              {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"] && ctx.request.kubernetes.http.queryParams.dryRun == \"All\""}
+            ]}}
+          ]}}
+        }
+      ]
+    ' >/dev/null 2>&1 <<<"$plan_policy_json"; then
+      echo "error: Octelium Policy ${plan_policy_name} differs from the staged plan access contract" >&2
+      exit 1
+    fi
   fi
 
   echo "Verified dedicated CI Policy and Kubernetes Service."
