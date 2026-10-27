@@ -8,7 +8,7 @@ metadata:
     homelab.rst.io/public-funnel: "false"
     homelab.rst.io/public-callback: "true"
     homelab.rst.io/public-callback-reviewed: "true"
-    homelab.rst.io/public-callback-purpose: "Public Mastodon website, native clients, WebFinger and federation; Mastodon authenticates users."
+    homelab.rst.io/public-callback-purpose: "Federation and required media only bypass Octelium; web, login, administration and client APIs require human access."
 spec:
   hosts:
     - mastodon.stinkyboi.com

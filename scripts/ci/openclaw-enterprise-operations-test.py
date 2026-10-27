@@ -770,7 +770,9 @@ os.execv(sys.executable, [sys.executable, '-c', command[2], operation, *mapped])
             self.assertEqual(result.returncode, 2)
             self.assertFalse(phase.exists())
             workflow = WORKFLOW.read_text()
-            self.assertIn('preflight|baseline|baseline-s3-read|baseline-mounted-compare|'
+            self.assertIn('preflight|network-access|network-source|network-current-main|'
+                          'network-stopped-reader|network-namespace|network-postcheck|'
+                          'baseline|baseline-s3-read|baseline-mounted-compare|'
                           'baseline-source-status|publication|publication-lookup|'
                           'publication-lookup-denied|publication-lookup-failed|'
                           'publication-lookup-response|publication-archive-result|'
@@ -822,6 +824,68 @@ false
                                     capture_output=True, text=True, timeout=5)
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(phase.read_text(), 'preflight\n')
+
+    def test_network_preflight_phases_mask_private_runner_output(self):
+        source = SCRIPT.read_text()
+        block = source.split('if [[ "$stage" == network-preflight ]]; then\n', 1)[1].split(
+            '\nfi\n', 1)[0]
+        boundaries = (
+            ('network-current-main', 'bash scripts/ci/terragrunt-current-main.sh'),
+            ('network-stopped-reader', 'python3 -I scripts/openclaw-retirement-status.py'),
+            ('network-namespace', 'proof="$(timeout 45s kubectl'),
+            ('network-postcheck', 'python3 -I scripts/openclaw-retirement-status.py'),
+        )
+        for phase, command in boundaries:
+            with self.subTest(phase=phase):
+                start = block.index('phase=' + phase)
+                self.assertIn(command, block[start:])
+        self.assertLess(block.index('phase=network-current-main'),
+                        block.index('phase=network-stopped-reader'))
+        self.assertLess(block.index('phase=network-stopped-reader'),
+                        block.index('phase=network-namespace'))
+        self.assertLess(block.index('phase=network-namespace'),
+                        block.index('phase=network-postcheck'))
+
+        workflow = WORKFLOW.read_text()
+        run = textwrap.dedent(workflow.split('      - name: Run Legacy Stage\n', 1)[1]
+                              .split('\n  enterprise:\n', 1)[0]
+                              .split('        run: |\n', 1)[1])
+        self.assertLess(run.index("printf '%s\\n' network-access"),
+                        run.index('bash scripts/ci/install-kubeconfig.sh'))
+        self.assertLess(run.index("printf '%s\\n' network-source"),
+                        run.index("sha256sum --check --status"))
+
+        with tempfile.TemporaryDirectory() as directory:
+            fake_nix = Path(directory) / 'nix'
+            fake_nix.write_text('''#!/bin/sh
+cat >/dev/null
+printf '%s\\n' PRIVATE_CLUSTER_DETAIL >&2
+printf '%s\\n' "$TEST_PHASE" >"$OPENCLAW_PHASE_FILE"
+exit 1
+''')
+            fake_nix.chmod(0o755)
+            for phase in ('network-access', 'network-source', 'network-current-main',
+                          'network-stopped-reader', 'network-namespace', 'network-postcheck',
+                          'network-namespace\nPRIVATE_CLUSTER_DETAIL'):
+                with self.subTest(phase=phase):
+                    result = subprocess.run(['bash', '-c', run], cwd=ROOT,
+                                            env={**os.environ, 'PATH': directory + os.pathsep +
+                                                 os.environ['PATH'], 'TMPDIR': directory,
+                                                 'RUNNER_TEMP': directory,
+                                                 'RUN_STAGE': 'network-preflight',
+                                                 'TEST_PHASE': phase,
+                                                 'OPENCLAW_RESUME_PROVENANCE': directory +
+                                                 '/absent'},
+                                            capture_output=True, text=True, timeout=5,
+                                            check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertNotIn('PRIVATE_CLUSTER_DETAIL', result.stdout + result.stderr)
+                    expected = phase if '\n' not in phase else None
+                    message = (f'Legacy operation failed in {expected}; '
+                               if expected else 'Legacy operation failed; ')
+                    self.assertIn(message + 'private cluster and archive diagnostics withheld.',
+                                  result.stdout)
+                    self.assertEqual(list(Path(directory).glob('tmp.*')), [])
 
     def test_versioned_restore_maps_only_fixed_public_failure_categories(self):
         source = SCRIPT.read_text()

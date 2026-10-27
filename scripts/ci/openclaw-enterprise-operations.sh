@@ -53,7 +53,9 @@ esac
 
 if [[ "$stage" == network-preflight ]]; then
   # The capability probe uses only read-only Kubernetes calls and a disposable process namespace.
+  phase=network-current-main
   bash scripts/ci/terragrunt-current-main.sh
+  phase=network-stopped-reader
   work="$(mktemp -d)"
   python3 -I scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/status.json"
   jq -e '.replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and
@@ -74,12 +76,14 @@ if [[ "$stage" == network-preflight ]]; then
     ([.status.containerStatuses[] | select(.name == "reader" and
       .imageID == ("ghcr.io/openclaw/openclaw@" + ($status[0].image | split("@") | last)))] | length) == 1
   ' "$work/pod.json" >/dev/null
+  phase=network-namespace
   proof="$(timeout 45s kubectl -n ai exec -i "$pod" -c reader -- sh -ec '
     test "$(id -u)" = 1000
     export PARENT_NETNS="$(readlink /proc/self/ns/net)" PARENT_UID="$(id -u)"
     exec unshare --user --map-current-user --net -- python3 -
   ' <scripts/ci/openclaw-legacy-netns-preflight.py)"
   [[ "$proof" == LEGACY_NETNS_CAPABILITY_OK ]] || exit 1
+  phase=network-postcheck
   python3 -I scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/after.json"
   jq -e --slurpfile before "$work/status.json" '
     .readerPodUid == $before[0].readerPodUid and .claims == $before[0].claims and

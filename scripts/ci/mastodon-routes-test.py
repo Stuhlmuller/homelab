@@ -19,6 +19,47 @@ def documents(name):
 
 
 class Routes(unittest.TestCase):
+    def test_tunnel_only_bypasses_human_access_for_federation(self):
+        configmap = ROOT / "clusters/homelab/apps/octelium-public/configmap.yaml"
+        config = subprocess.check_output(["yq", "-r", '.data["config.yaml"]', str(configmap)], text=True)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.yaml"
+            path.write_text(config)
+            subprocess.run(["cloudflared", "tunnel", "--config", str(path), "ingress", "validate"],
+                           check=True, capture_output=True, text=True)
+            public = [
+                "/.well-known/webfinger?resource=acct:rodman@mastodon.stinkyboi.com",
+                "/.well-known/host-meta", "/actor", "/actor/inbox", "/actor/outbox", "/inbox",
+                "/ap/users/117500824684615471", "/ap/users/123/inbox",
+                "/ap/users/123/statuses/456", "/ap/users/123/collections/456",
+                "/ap/users/123/quote_authorizations/456", "/users/rodman/inbox",
+                "/users/rodman/collections/featured", "/contexts/123-456/items", "/collections/123",
+                "/emojis/123", "/system/media_attachments/files/123/456/original/abc123.png",
+                "/system/media_attachments/thumbnails/123/456/original/abc123.jpg",
+                "/system/accounts/avatars/123/456/original/abc123.png",
+                "/system/custom_emojis/images/123/456/static/abc123.png",
+            ]
+            private = [
+                "/", "/home", "/admin", "/admin/accounts", "/auth/sign_in", "/auth/sign_up",
+                "/oauth/authorize", "/oauth/token", "/settings", "/sidekiq", "/pghero",
+                "/api/v1/accounts/verify_credentials", "/api/v2/instance", "/api/v1/streaming",
+                "/api/v1/streaming/", "/@rodman", "/@rodman/123", "/assets/app.js",
+                "/.well-known/nodeinfo", "/nodeinfo/2.0", "/media_proxy/123/x", "/backups/123/download",
+                "/ap/../admin", "/ap/%2e%2e/admin", "/ap/%252e%252e/admin",
+                "/users/rodman/../../admin", "/users/rodman/%2e%2e/%2e%2e/admin",
+                "/ap/%2f..%2fadmin", "/ap/%5c..%5cadmin", "/ap/123;../../admin",
+                "/system/media_attachments/files/123/original/../../../../admin",
+                "/inbox/admin", "/inbox.json", "/.well-known/webfinger/../../admin",
+            ]
+            for uri, origin in [(uri, "https://istio-ingressgateway.") for uri in public] + [
+                    (uri, "http://octelium-ingress-dataplane.") for uri in private]:
+                with self.subTest(uri=uri):
+                    result = subprocess.check_output([
+                        "cloudflared", "tunnel", "--config", str(path), "ingress", "rule",
+                        "https://mastodon.stinkyboi.com" + uri,
+                    ], text=True, stderr=subprocess.STDOUT)
+                    self.assertIn("service: " + origin, result)
+
     def test_private_client_service_requires_human_access(self):
         catalog = json.loads(subprocess.check_output([
             "yq", "ea", "-o=json", ". as $doc ireduce ([]; . + [$doc])",
