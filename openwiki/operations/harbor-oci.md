@@ -240,6 +240,21 @@ The host-only patch resolves `harbor.stinkyboi.com` there on Talos while retaini
 hostname-valid TLS. Cluster Service routing is required, so cold bootstrap
 still needs upstream images before Kubernetes networking and Harbor are ready.
 
+On October 27, `ztunnel` on the Traefik node was in `ImagePullBackOff`:
+its Harbor image depended on the registry listener served through that same
+ambient destination. The unavailable registry path also blocked Renovate's
+05:00 image pull; that Job reached its deadline without scanning any repository.
+The [Istio stack](../../IaC/homelab/us-west-2/apps/istio/stack.hcl)
+now declares the upstream Docker Hub ztunnel reference at the same digest as
+the Harbor image. Read-only Talos inspection found no active `docker.io`
+mirror, so the strict mirror rollout remains held; it would send this
+bootstrap pull back through Harbor. This is reviewed desired state, not a
+recovery receipt. After protected merge and targeted Terragrunt Apply, require
+Istio Synced/Healthy, ztunnel Ready on all four nodes, and a later scheduled
+Renovate dry run without Harbor token or image-pull errors. The
+[Istio runbook](../../clusters/homelab/apps/istio/README.md#ztunnel-bootstrap-image)
+keeps the reviewed rollback path.
+
 [`talos-harbor-mirrors.py --registry-host-only`](../../scripts/talos-harbor-mirrors.py)
 preserves the live registry configuration and unrelated hosts. It defaults to
 strict validation, uses the matching Talos executable, and requires exact reviewed
