@@ -132,4 +132,6 @@ that path has its own authentication policy.
 For telemetry rollback, revert the Kiali values and Prometheus monitor changes
 in git and let Argo CD reconcile both apps. Historical metrics remain until
 normal retention expires. A green Argo CD status alone does not prove traffic
-visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.
+visibility: `scripts/kiali-check.py` requires Kiali metrics enabled and graph
+edges from recent real mesh traffic. The direct Kubernetes API server proxy
+to Prometheus currently resets, while Kiali's allowed in-mesh query works.

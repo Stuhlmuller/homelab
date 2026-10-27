@@ -64,9 +64,9 @@ Kiali starts. `clusters/homelab/apps/prometheus/istio-podmonitors.yaml` owns
 ztunnel L4, Envoy and Istiod scrape discovery. See the Kiali README for the
 operator security flags, rollback and UI namespace selection. Validate rollout
 with `python3 scripts/kiali-check.py`; Argo CD health alone is insufficient.
-Live recovery remains unverified until the GitOps change rolls out. Grafana's
-frontend-settings endpoint also returned 401; dashboard integration is a separate
-follow-up requiring its existing authentication contract to be checked.
+Grafana's frontend-settings endpoint also returned 401; dashboard integration
+is a separate follow-up requiring its existing authentication contract to be
+checked.
 
 On 2026-10-27, the Kiali CR reported `Failure` while the operator rejected a
 ServiceAccount label derived from `deployment.image_version` containing
@@ -75,8 +75,14 @@ ServiceAccount label derived from `deployment.image_version` containing
 The repository fix puts the bare mirror digest in `image_version` and `sha256`
 in `image_digest`, as required by the
 [Kiali installation FAQ](https://kiali.io/docs/faq/installation/). The static
-gate checks that the digest matches the Harbor catalog. Live recovery still
-requires GitOps reconciliation and the Kiali README validation after merge.
+gate checks that the digest matches the Harbor catalog. After merge, Argo
+reported Synced/Healthy, the server Deployment reached 1/1 Ready,
+and the private route returned HTTPS 200. The Kiali graph returned 76 active
+edges over ten minutes. The previous checker also queried Prometheus through
+the Kubernetes API server proxy; that path reset even for readiness while
+Kiali's permitted in-mesh query worked. The checker now requires active graph
+edges without that proxy path. The Prometheus mesh policy's identity allowlist
+is the leading explanation for the reset; ztunnel logs did not confirm it.
 
 ## Dispatcharr
 
