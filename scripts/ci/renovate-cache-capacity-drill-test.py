@@ -17,7 +17,7 @@ assert "kind: PersistentVolume\n" not in pvc
 assert "name: renovate-cache-dedicated" in pv and "name: renovate-cache-dedicated" in pvc
 assert "path: /renovate-cache" in pv and "server: 10.1.0.2" in pv
 assert "volumeName: renovate-cache-dedicated" in pvc
-assert "renovate-cache-pv.yaml" not in (platform / "kustomization.yaml").read_text()
+assert "  - renovate-cache-pv.yaml\n" in (platform / "kustomization.yaml").read_text()
 assert "dedicated-cache-pvc.yaml" not in (app / "kustomization.yaml").read_text()
 base = (app / "cache-capacity-drill-base.yaml").read_text()
 fill = (app / "cache-capacity-drill-fill.yaml").read_text()

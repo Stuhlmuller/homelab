@@ -111,10 +111,10 @@ through a reviewed PR, restore share capacity through a declared path, and
 verify the next scheduled Job after resuming. If no declared NAS capacity path
 exists, add one before changing live state. Increasing the PVC request will
 not restore writes. No verified QNAP `/homelab` capacity-restoration operation
-is declared yet. The staged platform `renovate-cache-pv.yaml` and workload
+is declared yet. The platform `renovate-cache-pv.yaml` and staged workload
 `dedicated-cache-pvc.yaml` define a static PV and new claim for a separate
-20 GiB QTS thick volume exported as `/renovate-cache`. Both are absent from
-their Kustomizations; verify the NAS volume and export before binding them.
+20 GiB QTS thick volume exported as `/renovate-cache`. Only the PV is included
+in live GitOps; the current Renovate cache claim remains unchanged.
 A bounded, isolated tmpfs `ENOSPC` drill can test failure
 visibility and later normal PVC use, but cannot prove recovery from an actual
 full NAS export. T024/T042 and writer cutover remain blocked on a declared
@@ -137,9 +137,9 @@ failed cycle and verify the next scheduled run and freshness alerts recover.
 
 ### Staged dedicated-cache cutover
 
-`clusters/homelab/platform/storage/renovate-cache-pv.yaml` and
-`dedicated-cache-pvc.yaml` are outside their Kustomizations and have no live
-effect. The target is a separate 20 GiB
+`clusters/homelab/platform/storage/renovate-cache-pv.yaml` is included in
+platform storage. The workload PVC and probe remain outside Renovate's
+Kustomization, so the writer still uses the old claim. The target is a 20 GiB
 QTS thick volume on Storage Pool 1 with one NFSv3 export at
 `10.1.0.2:/renovate-cache`, the same four Talos node allow-list and guest
 all-squash mapping as `/homelab`, and no snapshots or recycle bin for this
@@ -148,7 +148,7 @@ NFSv3 `sys` and all-squash trust every permitted Talos node for cache
 confidentiality; POSIX file modes do not isolate private package metadata
 between permitted NFS clients. Keep the node allow-list exact.
 No supported repository-owned QNAP volume-creation path exists. The owner
-authorized one QTS setup after this reviewed change merges. In QTS Storage &
+authorized one QTS setup after the staging PR merges. In QTS Storage &
 Snapshots, create only a 20 GiB thick volume in existing Storage Pool 1;
 create the `renovate-cache` shared folder on that volume, disable snapshots
 and the network recycle bin for this rebuildable cache, and grant NFSv3
@@ -157,8 +157,8 @@ read/write access only to the four Talos node addresses in
 and all-squash to guest. Do not create a pool or change existing exports.
 Before GitOps activation, verify in QTS that this is a separate 20 GiB volume,
 `showmount -e 10.1.0.2` lists `/renovate-cache`, and the four-node allow-list
-is exact. Add only `renovate-cache-pv.yaml` to the `platform-storage`
-Kustomization in a reviewed PR and verify its cluster-scoped PV reconciles.
+is exact. This first reviewed GitOps phase includes only
+`renovate-cache-pv.yaml`; verify its cluster-scoped PV reconciles.
 Each activation PR must update `scripts/ci/renovate-cache-capacity-drill-test.py`
 to assert that phase's intended Kustomization membership and Job suspension;
 its staging assertions deliberately fail after a resource is activated.

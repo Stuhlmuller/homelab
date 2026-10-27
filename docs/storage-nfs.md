@@ -85,7 +85,7 @@ Exports list on 10.1.0.2:
 
 After the authorized one-off QTS setup, also require `/renovate-cache` with
 exactly those four Talos node addresses. Confirm in QTS that this export uses
-the separate 20 GiB thick volume before activating its staged PV through
+the separate 20 GiB thick volume before activating its PV through
 GitOps. Do not change the existing exports.
 
 ## GitOps Desired State
@@ -132,11 +132,11 @@ most PostgreSQL data, dashboards, metrics, and other app-owned state. The
 exceptions are:
 
 - Renovate's proposed `renovate-cache-dedicated` static claim on a separate
-  20 GiB QTS thick volume and `/renovate-cache` NFS export. The PV, PVC, and
-  read-only claim probe remain outside their live Kustomizations. The owner
-  authorized one QTS setup after the staging PR merges; verify the separate
-  volume and exact export before activating the PV, then the PVC and probe,
-  through separate reviewed GitOps changes. The current `renovate-cache`
+  20 GiB QTS thick volume and `/renovate-cache` NFS export. Its PV is included
+  in platform storage after the separate volume and exact export are verified;
+  the PVC and read-only claim probe remain staged. The owner authorized one
+  QTS setup after the staging PR merges. Activate the PVC and probe through
+  a separate reviewed GitOps change. The current `renovate-cache`
   continues to use `nfs-default` until a later reviewed claim switch. See
   `clusters/homelab/apps/renovate/README.md`.
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
