@@ -974,6 +974,8 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
+    '.github/workflows/bulldozer-credential.yml:credential' \
+    '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
@@ -1070,6 +1072,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
@@ -1087,7 +1090,7 @@ done <<'EOF'
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 31a190f5e8fb0f4feea6f9a238277d8f8f864d4318fcea44c435713207e0b170
+.github/workflows/openclaw-enterprise-operations.yml 867502c8ef32d55cbc4341ab99385f5ff31530408ac8da34c2b84745b397e37c
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -1104,6 +1107,7 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/bulldozer-credential.yml:static-policy' \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
