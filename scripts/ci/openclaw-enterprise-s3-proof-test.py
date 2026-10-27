@@ -77,7 +77,8 @@ class FakeAws:
             elif operation == "get-object":
                 index = args.index("--range")
                 range_value = args[index + 1]
-                body = Path(args[index + 2])
+                assert args[-3:-1] == ["--output", "json"]
+                body = Path(args[-1])
                 start, end = map(int, range_value.removeprefix("bytes=").split("-"))
                 block = self.payload[start:end + 1]
                 if self.corrupt and start == 0:
@@ -117,6 +118,7 @@ class S3ProofTest(unittest.TestCase):
         self.assertEqual(len(reads), 6)
         self.assertTrue(all("--version-id" in call for call in reads))
         self.assertTrue(all("--expected-bucket-owner" in call for call in reads))
+        self.assertTrue(all(call[-3:-1] == ["--output", "json"] for call in reads))
 
     def test_missing_version_corrupt_bytes_kms_or_unsafe_body_blocks(self):
         receipt = source_receipt()

@@ -45,10 +45,14 @@ def require(condition):
         raise Blocked("Enterprise S3 readback is incomplete or changed")
 
 
-def _aws(run, operation, *args, timeout=90):
+def _aws(run, operation, *args, timeout=90, outfile=None):
     service, command = operation
     invocation = ["aws", "--region", "us-east-1", service, command, *args,
                   "--output", "json"]
+    # AWS CLI requires the positional get-object outfile to be the last arg.
+    if outfile is not None:
+        require(operation == ("s3api", "get-object"))
+        invocation.append(str(outfile))
     try:
         result = run(invocation, stdout=subprocess.PIPE,
                      stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
@@ -152,7 +156,7 @@ def _verify_version(receipt, run):
             count = min(PART_SIZE, receipt["ciphertextBytes"] - total)
             end = total + count - 1
             response = _aws(run, ("s3api", "get-object"), *source, "--range",
-                            f"bytes={total}-{end}", str(body), timeout=600)
+                            f"bytes={total}-{end}", timeout=600, outfile=body)
             _kms(response, account)
             require(response.get("SSEKMSKeyId") == head["SSEKMSKeyId"] and
                     response.get("VersionId") == receipt["versionId"] and
