@@ -141,7 +141,7 @@ Do not enable default-deny egress, `REGISTRY_ONLY`, an egress waypoint, or the
 existing NetworkPolicies globally. Some policies are incomplete or deliberately
 broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
-limited capacity, system DaemonSets, and a live backup workload.
+limited capacity, system DaemonSets, and unrelated workloads.
 
 The reviewed 214-image catalog passed protected publication and authenticated
 Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
