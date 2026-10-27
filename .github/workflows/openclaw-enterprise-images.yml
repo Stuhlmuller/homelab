@@ -25,6 +25,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      restore: ${{ steps.publication.outputs.restore }}
     steps:
       - name: Verify Dispatch Commit
         env:
@@ -51,6 +53,8 @@ jobs:
         run: |
           nix develop --command python3 -I scripts/ci/openclaw-enterprise-image-test.py
           nix develop --command python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
+          nix develop --command python3 -I scripts/ci/openclaw-enterprise-restore-image-test.py
+          nix develop --command python3 -I scripts/ci/harbor-core-scan-check-test.py
           nix develop --command python3 -I scripts/ci/harbor-publish-test.py
 
       - name: Build Journal Operator Before Registry Login
@@ -59,11 +63,28 @@ jobs:
       - name: Build Stock Controller Runtime And CLI Before Registry Login
         run: nix develop --command bash builds/openclaw-enterprise/build.sh
 
+      - name: Build Restore Runtime Before Registry Login
+        run: nix develop --command bash builds/openclaw-enterprise-restore/build.sh
+
+      - name: Audit Exact Restore Runtime Before Registry Login
+        id: restore_scan
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash builds/openclaw-enterprise-restore/scan.sh >"$private_log" 2>&1; then
+            echo "::error::Restore runtime audit failed; private output withheld."
+            exit 1
+          fi
+          echo "Restore runtime complete private scan passed; details withheld."
+
       - name: Verify Current Main Commit Before Credentials
         env:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_RESTORE_IMAGE_ID: ${{ steps.restore_scan.outputs.restore_image_id }}
         run: |
           set -euo pipefail
           test "${ACTUAL_REF}" = "refs/heads/main"
@@ -71,6 +92,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
+          [[ "${EXPECTED_RESTORE_IMAGE_ID}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          test "$(docker image inspect --format '{{.Id}}' homelab-oce-restore:build)" = "${EXPECTED_RESTORE_IMAGE_ID}"
 
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
@@ -82,8 +105,10 @@ jobs:
           unset-current-credentials: true
 
       - name: Publish And Verify Signed Harbor Images, CLI And Operator
+        id: publication
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_RESTORE_IMAGE_ID: ${{ steps.restore_scan.outputs.restore_image_id }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
@@ -105,7 +130,7 @@ jobs:
               if [[ "$phase_line" == "Enterprise image publication failed at phase: "* ]]; then
                 candidate="${phase_line#*phase: }"
                 case "$candidate" in
-                  preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator)
+                  preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|push-restore|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|upload-verify-restore|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator|authenticated-pull-restore)
                     phase="$candidate" ;;
                 esac
               fi
@@ -113,7 +138,7 @@ jobs:
             echo "::error::Enterprise image publication failed at phase: $phase; private transport and registry output withheld."
             exit 1
           fi
-          echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."
+          echo "Pinned Enterprise controller/runtime/CLI/operator/restore images published, signed, and fully pulled; private output withheld."
 
       - name: Retain Only Encrypted Failure Diagnostic
         if: failure()
@@ -123,4 +148,30 @@ jobs:
           path: ${{ runner.temp }}/oce-image-error.gpg
           if-no-files-found: ignore
           retention-days: 1
+          include-hidden-files: false
+
+  published-restore-digest:
+    name: Report Published Restore Digest
+    needs: [publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Validate Published Restore Reference
+        env:
+          RESTORE_REFERENCE: ${{ needs.publish.outputs.restore }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${RESTORE_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-oce-restore:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          set -o noclobber
+          printf '%s\n' "$RESTORE_REFERENCE" >"${RUNNER_TEMP:?}/oce-restore-published-image.txt"
+      - name: Upload Published Restore Reference
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: oce-restore-published-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/oce-restore-published-image.txt
+          if-no-files-found: error
+          retention-days: 30
           include-hidden-files: false
