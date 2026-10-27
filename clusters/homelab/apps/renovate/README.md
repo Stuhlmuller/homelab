@@ -804,7 +804,8 @@ access, or the pinned image's datasource API fails validation. After the
 seven-day window, remove the primary report patch through reviewed GitOps and
 verify the hourly writer uses its original config and no ledger mount. Drain
 all report-enabled Jobs before touching the ledger. Suspend and drain the
-observer, inventory, PR-proof, and schedule-collector acceptance writers;
+observer, inventory, PR-proof, and schedule-collector acceptance writers and
+both outcome Jobs;
 verify none of their Jobs or Pods remains pending or active. Activate the
 staged read-only
 `acceptance-source-review-job.yaml` only after that freeze. Activate the staged
@@ -819,6 +820,12 @@ final report's `ledgerSha256` with the last observer poll digest; a mismatch
 means the report is stale and must be regenerated and reviewed. The digest is
 safe to retain in the public activation change; never publish private files.
 A missing or failed final report keeps cleanup suspended.
+
+Before ledger cleanup, verify the transient
+`renovate-acceptance-outcome-review` Secret is absent. If it was installed, use
+the guarded `retire --kind outcomes` command above after the bound writer
+succeeds and while both outcome Jobs still exist. A remaining Secret or failed
+writer keeps ledger cleanup suspended.
 
 `acceptance-ledger-cleanup-job.yaml` is deliberately suspended and outside
 `kustomization.yaml`. In a reviewed activation PR, replace
@@ -838,16 +845,17 @@ before logging success. Keep all acceptance writers suspended during this check.
 Next remove `Prune=false`
 from the PVC and PV and `Delete=false` from the PV through their respective
 GitOps Applications; verify the live annotations are gone. Remove the CronJob,
-script, init/cleanup Jobs, and PVC from Renovate first, then remove the PV and
-local StorageClass from platform-storage through reviewed changes; verify the
-claim and PV are gone.
+script, init/cleanup Jobs, outcome preflight/amend Jobs, and PVC from Renovate
+first, then remove the PV and local StorageClass from platform-storage through
+reviewed changes; verify the claim and PV are gone.
 The retained local PV does not erase its hostPath on deletion. Use a separate
 reviewed exact-path storage cleanup on `acer` and verify
 `/var/lib/renovate-acceptance-ledger` has no retained files before closing
 T035. This later hostPath cleanup also removes the Job's digest marker; the
 Job itself never touches the backing path directly.
-Remove the suspended proof CronJob, one-shot Job manifests, inventory Job,
-report patch, and acceptance scripts through the same reviewed GitOps change.
+Remove the suspended proof CronJob, remaining one-shot Job manifests, inventory
+Job, report patch, outcome-amend deny-all NetworkPolicy, and acceptance scripts
+including `acceptance-outcome-amend.js` through the same reviewed GitOps change.
 Prune the acceptance ExternalSecret and target `renovate-acceptance` Secret
 through reviewed desired state and verify both absent. Obtain explicit owner
 authorization/handoff before deleting the dedicated acceptance App in GitHub
