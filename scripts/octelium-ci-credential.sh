@@ -11,6 +11,7 @@ secret_name="OCTELIUM_CI_AUTH_TOKEN"
 octelium_homedir=""
 octelium_proxy=""
 apply_catalog="false"
+apply_catalog_requested="false"
 update_github="true"
 rotate_credential="true"
 delete_user_sessions="true"
@@ -66,7 +67,7 @@ Options:
                                rotating the credential. This is the default.
   --delete-user-sessions-only  Delete all Octelium sessions for --user without
                                applying the catalog, rotating a credential, or
-                               updating GitHub.
+                               updating GitHub. Incompatible with --apply-catalog.
   --env NAME                   GitHub environment to update. May be repeated.
                                Defaults: homelab-plan, homelab-production
   --apply-catalog              Apply the full catalog before rotating. Use only
@@ -143,6 +144,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --apply-catalog)
       apply_catalog="true"
+      apply_catalog_requested="true"
       shift
       ;;
     --skip-github)
@@ -165,6 +167,11 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$rotate_credential" != "true" && "$apply_catalog_requested" == "true" ]]; then
+  echo "error: --delete-user-sessions-only cannot be combined with --apply-catalog" >&2
+  exit 2
+fi
 
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -289,9 +296,13 @@ validate_target_user() {
     --arg user "$user_name" \
     --argjson require_enabled "$rotate_credential" \
     'type == "object" and .metadata.name == $user and .spec.type == "WORKLOAD" and
-      ($require_enabled == false or (.spec.isDisabled // false) == false)' \
+      ($require_enabled == false or (
+        (.spec.isDisabled // false) == false and
+        .spec.session.clientlessDuration == {"days": 30} and
+        .spec.session.accessTokenDuration == {"days": 30}
+      ))' \
     >/dev/null 2>&1 <<<"$user_json"; then
-    echo "error: refusing to rotate or delete sessions for non-WORKLOAD User ${user_name}" >&2
+    echo "error: Octelium User ${user_name} differs from the dedicated CI access contract" >&2
     exit 1
   fi
 

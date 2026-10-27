@@ -41,9 +41,16 @@ if name == "sleep":
 if args[0] == "get":
     resource = args[1]
     if resource == "user":
-        result = {"metadata": {"name": "homelab-ci"}, "spec": {"type": "WORKLOAD"}}
+        result = {"metadata": {"name": "homelab-ci"}, "spec": {
+            "type": "WORKLOAD", "session": {
+                "clientlessDuration": {"days": 30},
+                "accessTokenDuration": {"days": 30}}}}
         if variant == "user_disabled":
             result["spec"]["isDisabled"] = True
+        if variant == "clientless_duration_drift":
+            result["spec"]["session"]["clientlessDuration"]["days"] = 31
+        if variant == "access_token_duration_drift":
+            result["spec"]["session"]["accessTokenDuration"]["days"] = 31
     elif resource == "policy":
         matches = [
             'ctx.user.metadata.name == "homelab-ci"',
@@ -160,6 +167,16 @@ class RotationBoundaryTest(unittest.TestCase):
                                      call.startswith("octeliumctl create") or
                                      call.startswith("gh secret set") for call in calls))
 
+    def test_user_duration_drift_stops_before_session_reset_or_rotation(self):
+        for variant in ("clientless_duration_drift", "access_token_duration_drift"):
+            with self.subTest(variant=variant):
+                result, calls = self.run_helper(variant)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("dedicated CI access contract", result.stderr)
+                self.assertFalse(any(call.startswith("octeliumctl delete") or
+                                     call.startswith("octeliumctl create") or
+                                     call.startswith("gh secret set") for call in calls))
+
     def test_short_server_pages_are_fully_consumed(self):
         result, calls = self.run_helper("credential_short_page")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -191,6 +208,15 @@ class RotationBoundaryTest(unittest.TestCase):
         result, calls = self.run_helper("success", "--apply-catalog")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(any(call.startswith("octeliumctl apply") for call in calls))
+
+    def test_sessions_only_rejects_catalog_apply_in_either_order(self):
+        for args in (("--delete-user-sessions-only", "--apply-catalog"),
+                     ("--apply-catalog", "--delete-user-sessions-only")):
+            with self.subTest(args=args):
+                result, calls = self.run_helper("success", *args)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("cannot be combined", result.stderr)
+                self.assertEqual(calls, [])
 
     def test_second_environment_failure_reports_recovery(self):
         result, calls = self.run_helper("github_second_env_fail")
