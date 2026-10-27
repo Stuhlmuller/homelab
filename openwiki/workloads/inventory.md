@@ -624,10 +624,11 @@ now verifies the exact Bound source PVC/PV identities. The
 [2026-10-25 run](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316)
 restored 75 tables but predates that identity check and is not sufficient for
 the move; ClickHouse, Valkey, raw objects, and secrets need separate recovery.
-The draft [PostgreSQL move](../../clusters/homelab/apps/langfuse/README.md#postgresql-move-off-zimaboard-2)
-pins the single `Recreate` Pod to `acer` with its existing NFS claim. It requires
-a fresh source-bound checkpoint and reviewed rollout; source does not prove live
-placement or restore success.
+The draft [PostgreSQL move](../../clusters/homelab/apps/langfuse/README.md#postgresql-placement-on-acer)
+pins the single `Recreate` Pod to `acer` with its existing NFS claim. A
+read-only 2026-10-26 check found the source Pod on `zimaboard-1`; recheck before
+rollout. The move requires a fresh source-bound checkpoint and reviewed rollout;
+source does not prove live placement or restore success.
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
