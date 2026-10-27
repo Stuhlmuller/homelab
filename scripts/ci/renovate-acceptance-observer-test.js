@@ -615,7 +615,7 @@ test('private acceptance data binds only to initialized acer-local storage', () 
   assert.match(platformStorage, /path: \/var\/lib\/renovate-acceptance-ledger/);
   assert.match(platformStorage, /values:\s*\n\s*- acer/);
   assert.doesNotMatch(storage, /nfs-default/);
-  assert.doesNotMatch(kustomization, /- acceptance-ledger-pvc.yaml/);
+  assert.match(kustomization, /- acceptance-ledger-pvc.yaml/);
   assert.match(platformKustomization, /- renovate-acceptance-ledger-platform.yaml/);
   assert.match(initializer, /^  suspend: true$/m);
   assert.match(initializer, /chown 12021:12021 \/ledger/);

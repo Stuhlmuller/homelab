@@ -1,4 +1,4 @@
-# Staged only: add to Renovate after platform storage reconciles the local class and PV.
+# Bind only after platform storage reconciles the local class and PV.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

@@ -32,6 +32,6 @@ PVC and a read-only capacity probe after this platform PV reconciles.
 `renovate-acceptance-ledger-platform.yaml` declares a separate static Talos-local
 StorageClass and PV for the temporary private Renovate acceptance ledger on
 `acer`. This Kustomization includes them; verify the class and PV reconcile
-before adding the namespaced claim to Renovate. The PV retains its hostPath and
-has Argo CD prune/delete protection, so removal needs a separate reviewed
-cleanup path.
+before the separately reviewed Renovate claim binds. The PV retains its
+hostPath and has Argo CD prune/delete protection, so removal needs a separate
+reviewed cleanup path.

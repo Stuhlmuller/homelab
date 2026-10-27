@@ -2,6 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: automation
 resources:
+  - acceptance-ledger-pvc.yaml
   - acceptance-observer-cronjob.yaml
   - acceptance-pr-proof-cronjob.yaml
   - acceptance-schedule-assemble-networkpolicy.yaml
