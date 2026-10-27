@@ -111,35 +111,35 @@ resource "tailscale_tailnet_key" "github" {
 }
 
 # Import existing federated identities and tailnet keys created manually in
-# the Tailscale admin console. Replace each placeholder ID with the actual
-# resource ID from https://login.tailscale.com/admin/settings/trust-credentials
-# then run: tofu plan -generate-config-out=generated.tf && tofu apply
+# the Tailscale admin console. Resource IDs confirmed via Tailscale API.
+#
+# Federated identity IDs = OAuth client IDs you provided:
+#   plan:    TaabK11tQP11CNTRL-kGw1dv6Gx421CNTRL
+#   apply:   TaabK11tQP11CNTRL-k4sXJLhf2611CNTRL
+#   cordium: TaabK11tQP11CNTRL-kY8su7GxL721CNTRL
+#
+# Tailnet key IDs confirmed via /api/v2/tailnet/-/keys:
+#   cordium: kFsMJTbc6p11CNTRL
+#
+# Plan and apply tailnet keys were not found in the Tailscale API — they do
+# not exist yet and will be created by Terraform rather than imported.
+# Remove those import blocks before applying.
 import {
   to = tailscale_federated_identity.github["plan"]
-  id = "REPLACE_WITH_PLAN_FEDERATED_IDENTITY_ID"
+  id = "TaabK11tQP11CNTRL-kGw1dv6Gx421CNTRL"
 }
 
 import {
   to = tailscale_federated_identity.github["apply"]
-  id = "REPLACE_WITH_APPLY_FEDERATED_IDENTITY_ID"
+  id = "TaabK11tQP11CNTRL-k4sXJLhf2611CNTRL"
 }
 
 import {
   to = tailscale_federated_identity.github["cordium"]
-  id = "REPLACE_WITH_CORDIUM_FEDERATED_IDENTITY_ID"
-}
-
-import {
-  to = tailscale_tailnet_key.github["plan"]
-  id = "REPLACE_WITH_PLAN_TAILNET_KEY_ID"
-}
-
-import {
-  to = tailscale_tailnet_key.github["apply"]
-  id = "REPLACE_WITH_APPLY_TAILNET_KEY_ID"
+  id = "TaabK11tQP11CNTRL-kY8su7GxL721CNTRL"
 }
 
 import {
   to = tailscale_tailnet_key.github["cordium"]
-  id = "REPLACE_WITH_CORDIUM_TAILNET_KEY_ID"
+  id = "kFsMJTbc6p11CNTRL"
 }
