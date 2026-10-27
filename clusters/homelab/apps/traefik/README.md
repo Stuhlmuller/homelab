@@ -59,6 +59,9 @@ from [`certificate.yaml`](certificate.yaml).
 During the 2026-10-27 ztunnel image-pull outage on `zimaboard-0`, Traefik is
 temporarily pinned to `zimaboard-1`, whose ztunnel is Ready. This moves all four
 listeners together without changing their routes or Service addresses. Verify
+the target can pull the pinned Traefik image; the controller uses one surge Pod
+and zero unavailable Pods, retaining the old Pod until the replacement is Ready.
+An image-pull failure stalls the rollout with the old Pod retained. Verify
 the replacement Pod, Argo CD health, a tailnet HTTPS request, and a Harbor
 registry request before treating access as restored. After the upstream-image
 ztunnel fix restores all four nodes, remove the pin through a reviewed PR; a

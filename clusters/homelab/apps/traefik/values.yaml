@@ -2,6 +2,10 @@ serviceAccount:
   traefik: {}
 controllers:
   traefik:
+    strategy: RollingUpdate
+    rollingUpdate:
+      surge: 1
+      unavailable: "0%"
     serviceAccount:
       identifier: traefik
     pod:
