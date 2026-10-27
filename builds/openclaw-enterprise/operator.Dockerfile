@@ -1,4 +1,4 @@
-FROM docker.io/library/python:3.13-bookworm@sha256:073ffebb96ae4d0ed73ccad59f08c47bd84af8a79f5258130f8458ac50ad9ff4
+FROM docker.io/library/python:3.13-bookworm@sha256:a3799099b64fd333f262768c7a64733f6e4edb7bc569813710a100214bdcf278
 
 ENV PYTHONDONTWRITEBYTECODE=1
 COPY --chmod=0555 bin/kubectl bin/yq /usr/local/bin/
