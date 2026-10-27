@@ -84,7 +84,16 @@ Gateway claim trees, verifies fixed control Secrets and the pinned
 and leaves `continuousFenceVerified:false`. The packager must reject that
 marker until a protected coordinator proves continuous writer exclusion. Reader
 Jobs, exact-main dispatch, fresh observation collection and a trusted fence
-receipt are still absent. It needs a private local scratch mount with free space
+receipt are still absent. The source-only
+[reader emitter](../../../../scripts/ci/openclaw-enterprise-reader-archive.py)
+streams each namespace's complete read-only claim tree over a private exec
+channel. It requires a bounded authenticated Pod/PVC observation on stdin and
+the coordinator's expected source SHA and Pod/PVC UIDs, then rejects foreign or
+continued tenant Pod lists, links, special files, changed bytes, and missing
+recovery files. It must never be a Pod command or workflow log source: stdout
+contains private recovery bytes. No image or Job includes it yet, so it cannot
+run before a reviewed private transport and continuous-fence coordinator exist.
+The assembler needs a private local scratch mount with free space
 for both archives' uncompressed contents plus 2Gi; no hosted runner capacity is
 assumed. The operator archive contains `manifest.json`, the full `journal/`
 and `bootstrap/` claim copies; the tenant archive contains `manifest.json`
