@@ -7,16 +7,14 @@ there, a PR may merge without CI if GitHub allows it. Where branch rules require
 reviews or checks, GitHub enforces them.
 The branch-update feature is disabled to avoid extra CI churn.
 
-Bootstrap starts at zero replicas. Create a dedicated GitHub App owned by
+This Deployment starts at zero replicas. Create a dedicated GitHub App owned by
 Stuhlmuller and install it on **all repositories**. Set `BULLDOZER_APP_ID` and
 `BULLDOZER_PRIVATE_KEY` as protected `Stuhlmuller/homelab` Actions secrets,
 then dispatch `bulldozer-credential.yml` with exact current `main` after the
 SSM placeholders exist. The fixed-target workflow stores both values before
-replicas change to one. Bump the ExternalSecret's credential-refresh annotation
-to project the new values before starting the Deployment. Do not reuse Policy
-Bot's App: it has a different webhook and permissions. GitHub App creation and
-installation are external registration steps; the Argo Application alone cannot
-perform them.
+replicas change to one in this file. Do not reuse Policy Bot's App: it has a different webhook
+and permissions. GitHub App creation and installation are external registration
+steps; the Argo Application alone cannot perform them.
 
 Set the App webhook to
 `https://bulldozer-hook.tail67beb.ts.net/api/github/hook`, using the generated

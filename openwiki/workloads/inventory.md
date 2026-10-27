@@ -261,10 +261,9 @@ source path; they are not proof that cutover has happened. See
 [the staged ingress runbook](../runbooks/tailnet-ingress.md).
 
 Bulldozer is registered from `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl`
-into `automation` using `clusters/homelab/apps/bulldozer`. Its Deployment runs
-one replica after the protected credential workflow and ExternalSecret refresh.
-The GitHub App webhook still needs the generated secret entered privately and
-its events enabled. It has no persistent volume. See the
+into `automation` using `clusters/homelab/apps/bulldozer`. Its Deployment starts
+at zero replicas while the dedicated GitHub App credentials and generated
+webhook secret are delivered. It has no persistent volume. See the
 [workload runbook](../../clusters/homelab/apps/bulldozer/README.md) for activation
 and all-repository merge behavior.
 

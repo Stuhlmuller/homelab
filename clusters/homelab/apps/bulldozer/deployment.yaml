@@ -5,11 +5,12 @@ metadata:
   namespace: automation
   annotations:
     checkov.io/skip1: CKV2_K8S_6=bulldozer is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+    homelab.stuhlmuller.dev/replicas: "Awaiting a dedicated GitHub App and real SSM credentials."
   labels:
     app.kubernetes.io/name: bulldozer
     app.kubernetes.io/part-of: homelab-automation
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: bulldozer
