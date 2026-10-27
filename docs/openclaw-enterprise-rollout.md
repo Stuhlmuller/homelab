@@ -83,10 +83,23 @@ Secret and storage remain unchanged. A running Job, absent Pod, changed Secret,
 or uncertain cleanup remains blocked. The lane is source-only until its
 protected checks pass and it is merged; T041 remains open.
 If the Secret patch commits but the Job or post-patch proof fails, the Secret
-may already be bound. The pre-patch cleanup path cannot handle that state.
-Do not retry binding, automatically delete the Job, activate the agent or
-accept the Installation until T041 adds a separately reviewed post-patch
-identity check and recovery path.
+may already be bound. The separate fixed `recover-bound-bind` lane requires
+the failed Job and Pod identities, original in-Pod readiness proof, unchanged
+reviewed source and candidate, and the exact post-patch Secret UID, resource
+version and Installation ID. It runs a new source-bound binder Job without the
+runner's CAS callback. That Job must prove the existing binding and current
+Ready API/worker Pods with `alreadyBound: true`; an unbound Secret cannot be
+patched by this lane. Before one UID/resourceVersion-preconditioned foreground
+DELETE of the old failed Job, it stores an immutable private-cluster receipt
+containing only identities and hashes. If a run is canceled after DELETE, the
+same stage has a read-only completion path: it proves every matching receipt,
+the old Job and Pod are absent, the bound Secret, retained storage and source
+projections are unchanged, and the bound-only verifier still completed from
+reviewed source. Missing evidence or drift blocks. This source path remains
+dormant under the operator's placement, credential and live isolation holds;
+it is not an acceptance receipt.
+The retained receipt and readback prove the pre-delete witness and final state;
+they cannot identify which actor accepted a DELETE whose response was lost.
 
 The fixed `full-sync` lane can sync both Applications only after a reviewed
 `installationPhase` and source registration; the current `unselected` phase

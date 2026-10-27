@@ -348,13 +348,13 @@ approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
-	count(dispatch.inputs) == 11
+	count(dispatch.inputs) == 14
 	dispatch.inputs.expected_sha.required == true
 	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore", "network-preflight", "publish-discord-cache", "transfer-discord-cache"]
 	dispatch.inputs.legacy_stage.default == "none"
-	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "cleanup-failed-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "cleanup-failed-bind", "recover-bound-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
-	count(input.jobs) == 5
+	count(input.jobs) == 6
 	approved_openclaw_legacy_operation
 	approved_openclaw_enterprise_operation
 }
@@ -418,23 +418,23 @@ fi`)
 
 approved_openclaw_enterprise_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	count(dispatch.inputs) == 11
+	count(dispatch.inputs) == 14
 	dispatch.inputs.expected_sha.required == true
-	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "cleanup-failed-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
+	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "cleanup-failed-bind", "recover-bound-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
 	input.permissions == {}
-	count(input.jobs) == 5
+	count(input.jobs) == 6
 	static := input.jobs["static-policy"]
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
-	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}"}
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "BOUND_SECRET_UID": "${{ inputs.bound_secret_uid }}", "BOUND_SECRET_RV": "${{ inputs.bound_secret_rv }}", "BOUND_INSTALLATION_ID": "${{ inputs.bound_installation_id }}"}
 	trim(static.steps[0].run, "\n") == openclaw_dispatch_guard
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.enterprise
 	job["runs-on"] == "ubuntu-24.04"
 	job["timeout-minutes"] == 150
 	job.needs == ["static-policy"]
-	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation' && inputs.enterprise_stage != 'cleanup-failed-bind'"
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation' && inputs.enterprise_stage != 'cleanup-failed-bind' && inputs.enterprise_stage != 'recover-bound-bind'"
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.environment.name == "homelab-production"
 	job.permissions == {"contents": "read"}
@@ -491,13 +491,38 @@ approved_openclaw_enterprise_operation if {
 	trim(cleanup.steps[3].run, "\n") == platform_maintenance_main_check
 	cleanup.steps[4].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(cleanup.steps[4].run, "\n") == openclaw_enterprise_cleanup_run
+	recovery := input.jobs["recover-bound-bind"]
+	count(object.keys(recovery)) == 9
+	recovery.name == "Protected Bound Installation Recovery"
+	recovery["runs-on"] == "ubuntu-24.04"
+	recovery.needs == ["static-policy"]
+	recovery.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'recover-bound-bind'"
+	recovery.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
+	recovery.environment.name == "homelab-production"
+	recovery.permissions == {"contents": "read"}
+	recovery["timeout-minutes"] == 55
+	count(recovery.steps) == 5
+	every step in recovery.steps {
+		count(object.keys(step)) == 3
+	}
+	[recovery.steps[0].name, recovery.steps[1].name, recovery.steps[2].name, recovery.steps[3].name, recovery.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Recovery", "Verify Bound Installation And Receipt Failed Job"]
+	recovery.steps[0].env == job.steps[0].env
+	trim(recovery.steps[0].run, "\n") == platform_maintenance_main_check
+	recovery.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	recovery.steps[1].with == {"fetch-depth": 0, "persist-credentials": false}
+	recovery.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	recovery.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	recovery.steps[3].env == job.steps[0].env
+	trim(recovery.steps[3].run, "\n") == platform_maintenance_main_check
+	recovery.steps[4].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "BOUND_SECRET_UID": "${{ inputs.bound_secret_uid }}", "BOUND_SECRET_RV": "${{ inputs.bound_secret_rv }}", "BOUND_INSTALLATION_ID": "${{ inputs.bound_installation_id }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(recovery.steps[4].run, "\n") == openclaw_enterprise_recovery_run
 }
 
 openclaw_dispatch_guard := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:cleanup-failed-bind|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:cleanup-failed-bind|none:recover-bound-bind|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
   *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
 esac
 if [[ "$ENTERPRISE_STAGE" != none ]]; then
@@ -526,7 +551,7 @@ if [[ "$LEGACY_STAGE" == transfer-discord-cache ]]; then
   test -z "$BASELINE_REF"
   test -z "$ARCHIVE_REF"
 fi
-if [[ "$ENTERPRISE_STAGE" == cleanup-failed-bind ]]; then
+if [[ "$ENTERPRISE_STAGE" == cleanup-failed-bind || "$ENTERPRISE_STAGE" == recover-bound-bind ]]; then
   [[ "$FAILED_BIND_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
   [[ "$FAILED_BIND_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
   [[ "$FAILED_BIND_ATTEMPT" =~ ^[1-9][0-9]{0,4}$ ]]
@@ -538,6 +563,15 @@ else
   test -z "$FAILED_BIND_ATTEMPT"
   test -z "$FAILED_BIND_JOB_UID"
   test -z "$FAILED_BIND_POD_UID"
+fi
+if [[ "$ENTERPRISE_STAGE" == recover-bound-bind ]]; then
+  [[ "$BOUND_SECRET_UID" =~ ^[0-9a-f-]{36}$ ]]
+  [[ "$BOUND_SECRET_RV" =~ ^[1-9][0-9]*$ ]]
+  [[ "$BOUND_INSTALLATION_ID" =~ ^ins_[A-Za-z0-9_-]+$ ]]
+else
+  test -z "$BOUND_SECRET_UID"
+  test -z "$BOUND_SECRET_RV"
+  test -z "$BOUND_INSTALLATION_ID"
 fi`
 
 openclaw_resume_provenance_run := `set -euo pipefail
@@ -572,7 +606,7 @@ trap 'rm -f "$private_log"' EXIT
 if ! {
   ulimit -f 1024 &&
   sha256sum --check --status <<<'bf5bed5a0b810ff7d50a6869b071287b7d38594254e3f0775cc6acc4041d2e65  scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh' &&
-  sha256sum --check --status <<<'7caf825466d1b819c4748678f5cbee911fd2fca413cf0abcc35c61bccd18d6be  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
+  sha256sum --check --status <<<'755730549cb91063b838a1d0239db6a3289933f8f94c6f476842475b290ff86e  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
   sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   timeout 15m nix develop --command bash scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh
 } >"$private_log" 2>&1; then
@@ -580,6 +614,24 @@ if ! {
   exit 1
 fi
 echo 'Failed binding cleanup completed; private diagnostics withheld.'`
+
+openclaw_enterprise_recovery_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+chmod 600 "$private_log"
+trap 'rm -f "$private_log"' EXIT
+if ! {
+  ulimit -f 1024 &&
+  sha256sum --check --status <<<'d460105d6b18ca3ef7d25f0a0f9cc59067f6d40045788e178a14432d37f49756  scripts/ci/openclaw-enterprise-recover-bound-bind.sh' &&
+  sha256sum --check --status <<<'d2120c793c96f8e766f4b25d624d85022c148759b18452e136246673f32087f4  scripts/ci/openclaw-enterprise-recover-bound-bind.py' &&
+  sha256sum --check --status <<<'755730549cb91063b838a1d0239db6a3289933f8f94c6f476842475b290ff86e  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
+  sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  timeout 50m nix develop --command bash scripts/ci/openclaw-enterprise-recover-bound-bind.sh
+} >"$private_log" 2>&1; then
+  echo '::error::Bound Installation recovery blocked; private diagnostics withheld.'
+  exit 1
+fi
+echo 'Bound Installation recovery verified; private receipt retained.'`
 
 openclaw_enterprise_binding_run := `set -euo pipefail
 umask 077

@@ -396,6 +396,38 @@ test_rejects_changed_openclaw_failed_binding_cleanup if {
 	}
 }
 
+test_rejects_changed_openclaw_bound_binding_recovery if {
+	job := openclaw_operations_fixture.jobs["recover-bound-bind"]
+	steps := job.steps
+	every changed in [
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"container": "harbor.stinkyboi.com/foreign@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"services": {"exfil": {"image": "harbor.stinkyboi.com/foreign@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"env": {"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"environment": {"name": "unprotected"}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"permissions": {"contents": "write"}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"concurrency": {"group": "other", "cancel-in-progress": false, "queue": "max"}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"steps": [steps[0], object.union(steps[1], {"with": {"fetch-depth": 1, "persist-credentials": false}}), steps[2], steps[3], steps[4]]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"steps": [steps[0], object.union(steps[1], {"env": {"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}}), steps[2], steps[3], steps[4]]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"steps": [steps[0], steps[1], steps[2], object.union(steps[3], {"run": "true"}), steps[4]]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_recovery_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": object.union(job, {"steps": [steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"run": replace(openclaw_enterprise_recovery_run, "openclaw-enterprise-recover-bound-bind.sh", "openclaw-enterprise-cleanup-failed-bind.sh")})]})})}),
+	] {
+		violations := deny with input as changed
+		some msg in violations
+		contains(msg, "Enterprise stages require exact dispatch")
+	}
+}
+
+test_rejects_recovery_name_swapped_for_container if {
+	job := openclaw_operations_fixture.jobs["recover-bound-bind"]
+	without_name := object.remove(job, {"name"})
+	changed_job := object.union(without_name, {"container": "harbor.stinkyboi.com/foreign@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+	changed := object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"recover-bound-bind": changed_job})})
+	violations := deny with input as changed
+	some msg in violations
+	contains(msg, "Enterprise stages require exact dispatch")
+}
+
 test_allows_fixed_openclaw_phase_tail if {
 	private_live_tail(`then
 phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
@@ -453,13 +485,14 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
 		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore", "network-preflight", "publish-discord-cache", "transfer-discord-cache"], "default": "none"},
-		"enterprise_stage": {"options": ["none", "bind-installation", "cleanup-failed-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
+		"enterprise_stage": {"options": ["none", "bind-installation", "cleanup-failed-bind", "recover-bound-bind", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
 		"baseline_ref": {}, "archive_ref": {}, "cache_ref": {},
 		"failed_bind_source_sha": {}, "failed_bind_run_id": {}, "failed_bind_attempt": {}, "failed_bind_job_uid": {}, "failed_bind_pod_uid": {},
+		"bound_secret_uid": {}, "bound_secret_rv": {}, "bound_installation_id": {},
 	}}},
 	"jobs": {
 	"static-policy": {"permissions": {"contents": "read"}, "steps": [
-		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}"}, "run": openclaw_dispatch_guard},
+		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "BOUND_SECRET_UID": "${{ inputs.bound_secret_uid }}", "BOUND_SECRET_RV": "${{ inputs.bound_secret_rv }}", "BOUND_INSTALLATION_ID": "${{ inputs.bound_installation_id }}"}, "run": openclaw_dispatch_guard},
 		{"name": "Check Out Repository"},
 		{"name": "Install Nix"},
 		{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
@@ -489,7 +522,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"runs-on": "ubuntu-24.04",
 		"timeout-minutes": 150,
 		"needs": ["static-policy"],
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation' && inputs.enterprise_stage != 'cleanup-failed-bind'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation' && inputs.enterprise_stage != 'cleanup-failed-bind' && inputs.enterprise_stage != 'recover-bound-bind'",
 		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
 		"environment": {"name": "homelab-production"},
 		"permissions": {"contents": "read"},
@@ -515,6 +548,23 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
 			{"name": "Recheck Current Main Commit Before Cleanup", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
 			{"name": "Remove Exact Failed Binding Job", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_enterprise_cleanup_run},
+		],
+	},
+	"recover-bound-bind": {
+		"name": "Protected Bound Installation Recovery",
+		"runs-on": "ubuntu-24.04",
+		"needs": ["static-policy"],
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'recover-bound-bind'",
+		"timeout-minutes": 55,
+		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"},
+		"environment": {"name": "homelab-production"},
+		"permissions": {"contents": "read"},
+		"steps": [
+			{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}},
+			{"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}},
+			{"name": "Recheck Current Main Commit Before Recovery", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+			{"name": "Verify Bound Installation And Receipt Failed Job", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "FAILED_BIND_SOURCE_SHA": "${{ inputs.failed_bind_source_sha }}", "FAILED_BIND_RUN_ID": "${{ inputs.failed_bind_run_id }}", "FAILED_BIND_ATTEMPT": "${{ inputs.failed_bind_attempt }}", "FAILED_BIND_JOB_UID": "${{ inputs.failed_bind_job_uid }}", "FAILED_BIND_POD_UID": "${{ inputs.failed_bind_pod_uid }}", "BOUND_SECRET_UID": "${{ inputs.bound_secret_uid }}", "BOUND_SECRET_RV": "${{ inputs.bound_secret_rv }}", "BOUND_INSTALLATION_ID": "${{ inputs.bound_installation_id }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_enterprise_recovery_run},
 		],
 	},
 	"binding": {
