@@ -74,6 +74,25 @@ requires a new deployment to resume. A scheduled backup must prove either
 a consistent online capture or a journaled stop, capture and new-deployment
 resume with failure recovery. The normal no-change reconcile must not
 redeploy just to compensate for an incomplete backup path.
+The source-only [capture assembler](../../../../scripts/ci/openclaw-enterprise-capture.py)
+can stage a private local tree from two namespace-local reader archives and
+before/after observations. It copies the supplied retained bootstrap and
+Gateway claim trees, verifies fixed control Secrets and the pinned
+[OCC Kubernetes Secret backend identity](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/secret/kubernetes/index.ts),
+and leaves `continuousFenceVerified:false`. The packager must reject that
+marker until a protected coordinator proves continuous writer exclusion. Reader
+Jobs, exact-main dispatch, fresh observation collection and a trusted fence
+receipt are still absent. It needs a private local scratch mount with free space
+for both archives' uncompressed contents plus 2Gi; no hosted runner capacity is
+assumed. The operator archive contains `manifest.json`, the full `journal/`
+and `bootstrap/` claim copies; the tenant archive contains `manifest.json`
+and the full `state/` claim copy. Each manifest binds the source SHA, exact
+reader Pod UID, claim UIDs, file bytes and explicit directory paths. The
+private observation input contains pre/post claim, PV, Secret and stopped-runtime
+reads, plus the exact reader Pods and tenant Pod list during transfer. Archive
+paths must be plain relative names without `./` prefixes. The configured
+`occ-gateway-654a256bceae-root` CA Secret is produced by the stock chart;
+the committed gateway CA name must match it before capture can pass.
 The current reconciler validates only the first one or two revisions; it
 cannot safely create a fresh revision after each scheduled backup stop.
 The [pinned upstream recovery guide](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/production-handoff.md#L108-L130)
@@ -92,8 +111,9 @@ never returns value bytes through the OCC API; capture the tenant's exact
 Kubernetes Secret objects through reviewed namespace-scoped access, including
 the Compute Driver's [generated transport and gateway credentials](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L220-L246).
 
-Draft [publisher PR #1684](https://github.com/Stuhlmuller/homelab/pull/1684)
-binds its S3 role to GitHub Actions OIDC, so it cannot authenticate a CronJob;
+Merged [publisher PR #1684](https://github.com/Stuhlmuller/homelab/pull/1684)
+declares a reserved S3 role bound to GitHub Actions OIDC; no workflow assumes
+it and no apply receipt exists. It cannot authenticate a CronJob;
 T051 still needs declared in-cluster credential delivery or a protected
 publication stage after coordinated capture.
 
