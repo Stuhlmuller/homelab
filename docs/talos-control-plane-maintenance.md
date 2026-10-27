@@ -497,9 +497,16 @@ recovery must attest authenticated Talos access to `10.1.0.199:50000` and all
 four named nodes from the LAN. The off-node etcd receipt must bind a snapshot
 SHA-256 and versioned object with an offline restore check. The latter two
 checks must be at most six hours old; all four receipts must be verified and
-bound to the dispatched SHA. A protected producer and review path for these
-receipts remains T023 work, so no operator should set `activationEnabled` or
-the canary node yet.
+bound to the dispatched SHA. A source-owned candidate producer for the off-node
+etcd receipt is `scripts/platform-etcd-prerequisite.py`. It requires a clean,
+exact-current-main GitHub Actions dispatch context, reads one immutable version
+each of the committed offsite snapshot and manifest, checks S3 KMS/checksum
+metadata, and runs the pinned `etcdutl` offline restore before staging a
+private candidate. It never writes S3 or tests control-plane recovery. No
+protected workflow or dedicated IAM role yet reads raw etcd bytes and
+publishes this candidate under the platform receipt key. The other three
+receipt producers and review paths are also pending T023. Keep
+`activationEnabled` false and the canary node unset.
 
 The executor writes a `started` marker to the KMS-encrypted, versioned backup
 bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its
