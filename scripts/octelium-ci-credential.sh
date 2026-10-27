@@ -10,19 +10,37 @@ policy_name="homelab-ci-kubernetes-api-access"
 secret_name="OCTELIUM_CI_AUTH_TOKEN"
 octelium_homedir=""
 octelium_proxy=""
-apply_catalog="true"
+apply_catalog="false"
 update_github="true"
 rotate_credential="true"
 delete_user_sessions="true"
 dry_run="false"
 environments=("homelab-plan" "homelab-production")
+preflight_secret_name=""
+preflight_env_name=""
+credential_json=""
+
+cleanup() {
+  if [[ -n "$preflight_secret_name" && -n "$preflight_env_name" ]]; then
+    if ! gh api --method DELETE \
+      "repos/${github_repo}/environments/${preflight_env_name}/secrets/${preflight_secret_name}" \
+      >/dev/null 2>&1; then
+      echo "warning: temporary GitHub preflight secret ${preflight_secret_name} may remain in ${preflight_env_name}" >&2
+    fi
+  fi
+  if [[ -n "$credential_json" ]]; then
+    rm -f "$credential_json"
+  fi
+}
+trap cleanup EXIT
 
 usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-ci-credential.sh [options]
 
-Apply the Octelium CI service catalog and rotate the policy-bound GitHub
-Actions Octelium credential used by Terragrunt plan/apply and diagnostics.
+Rotate the policy-bound GitHub Actions Octelium credential used by Terragrunt
+plan/apply and diagnostics. Existing CI access resources are verified before
+rotation. Bootstrap catalog application requires --apply-catalog.
 
 The script requires an authenticated Octelium admin session for octeliumctl.
 It captures the generated credential token in a 0600 temporary file, pipes it
@@ -51,7 +69,9 @@ Options:
                                updating GitHub.
   --env NAME                   GitHub environment to update. May be repeated.
                                Defaults: homelab-plan, homelab-production
-  --skip-catalog               Do not apply the catalog before rotating.
+  --apply-catalog              Apply the full catalog before rotating. Use only
+                               for bootstrap or a separately reviewed change.
+  --skip-catalog               Do not apply the catalog (default).
   --skip-github                Create/rotate the credential but do not update GitHub.
                                This is intended only for debugging token parsing.
   --dry-run                    Print intended actions without creating a credential.
@@ -119,6 +139,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-catalog)
       apply_catalog="false"
+      shift
+      ;;
+    --apply-catalog)
+      apply_catalog="true"
       shift
       ;;
     --skip-github)
@@ -223,7 +247,6 @@ fi
 preflight_github_secret_targets() {
   local delete_path
   local env_name
-  local preflight_secret_name
   local preflight_secret_value="ok"
 
   if [[ "$update_github" != "true" || "$rotate_credential" != "true" ]]; then
@@ -234,6 +257,7 @@ preflight_github_secret_targets() {
   echo "Verifying GitHub environment secret write access for ${github_repo}..."
   gh auth status >/dev/null
   for env_name in "${environments[@]}"; do
+    preflight_env_name="$env_name"
     printf '%s' "$preflight_secret_value" |
       gh secret set "$preflight_secret_name" --repo "$github_repo" --env "$env_name" \
         >/dev/null
@@ -242,23 +266,10 @@ preflight_github_secret_targets() {
       --method DELETE \
       "$delete_path" \
       >/dev/null
+    preflight_env_name=""
     echo "Verified GitHub environment ${env_name} accepts secret writes."
   done
 }
-
-if [[ "$apply_catalog" == "true" ]]; then
-  apply_output=""
-  echo "Applying Octelium catalog ${catalog} to ${domain}..."
-  if ! apply_output="$(run_octeliumctl apply --domain "$domain" "$catalog" 2>&1)"; then
-    printf '%s\n' "$apply_output" >&2
-    exit 1
-  fi
-  printf '%s\n' "$apply_output"
-  if grep -Eq '(^|[[:space:]])Could not (create|update|apply)|gRPC error' <<<"$apply_output"; then
-    echo "error: octeliumctl reported one or more failed catalog changes" >&2
-    exit 1
-  fi
-fi
 
 validate_target_user() {
   local user_json
@@ -276,7 +287,9 @@ validate_target_user() {
   fi
   if ! jq -e \
     --arg user "$user_name" \
-    'type == "object" and .metadata.name == $user and .spec.type == "WORKLOAD"' \
+    --argjson require_enabled "$rotate_credential" \
+    'type == "object" and .metadata.name == $user and .spec.type == "WORKLOAD" and
+      ($require_enabled == false or (.spec.isDisabled // false) == false)' \
     >/dev/null 2>&1 <<<"$user_json"; then
     echo "error: refusing to rotate or delete sessions for non-WORKLOAD User ${user_name}" >&2
     exit 1
@@ -285,33 +298,165 @@ validate_target_user() {
   echo "Verified Octelium User ${user_name} is a dedicated WORKLOAD User."
 }
 
-validate_target_user
+validate_ci_access() {
+  local policy_json service_json
+
+  if [[ "$rotate_credential" != "true" ]]; then
+    return 0
+  fi
+
+  if ! policy_json="$(run_octeliumctl get policy "$policy_name" --domain "$domain" -o json 2>/dev/null)"; then
+    echo "error: could not read Octelium Policy ${policy_name}" >&2
+    exit 1
+  fi
+  if ! jq -e --arg user "$user_name" --arg policy "$policy_name" '
+    .metadata.name == $policy and
+    (.spec.isDisabled // false) == false and
+    (.spec.rules | length) == 1 and
+    .spec.rules[0].effect == "ALLOW" and
+    (.spec.rules[0].condition | keys) == ["all"] and
+    (.spec.rules[0].condition.all | keys) == ["of"] and
+    all(.spec.rules[0].condition.all.of[]; keys == ["match"]) and
+    ([.spec.rules[0].condition.all.of[].match] | sort) == ([
+      "ctx.user.metadata.name == \"\($user)\"",
+      "ctx.user.spec.type == \"WORKLOAD\"",
+      "ctx.session.status.type == \"CLIENTLESS\"",
+      "ctx.service.metadata.name == \"kubernetes-api-ci.default\"",
+      "ctx.service.spec.mode == \"KUBERNETES\""
+    ] | sort)
+  ' >/dev/null 2>&1 <<<"$policy_json"; then
+    echo "error: Octelium Policy ${policy_name} differs from the dedicated CI access contract" >&2
+    exit 1
+  fi
+
+  if ! service_json="$(run_octeliumctl get service kubernetes-api-ci --domain "$domain" -o json 2>/dev/null)"; then
+    echo "error: could not read Octelium Service kubernetes-api-ci" >&2
+    exit 1
+  fi
+  if ! jq -e --arg policy "$policy_name" '
+    .metadata.name == "kubernetes-api-ci.default" and
+    (.spec.isDisabled // false) == false and
+    (.spec.isAnonymous // false) == false and
+    .spec.isPublic == true and
+    .spec.mode == "KUBERNETES" and
+    .spec.port == 6443 and
+    (.spec.authorization.policies | index($policy)) != null and
+    .spec.config.upstream.url == "https://10.1.0.199:6443" and
+    .spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig"
+  ' >/dev/null 2>&1 <<<"$service_json"; then
+    echo "error: Octelium Service kubernetes-api-ci differs from the dedicated CI access contract" >&2
+    exit 1
+  fi
+
+  echo "Verified dedicated CI Policy and Kubernetes Service."
+}
+
+if [[ "$apply_catalog" != "true" ]]; then
+  validate_target_user
+  validate_ci_access
+fi
+
 preflight_github_secret_targets
+
+if [[ "$apply_catalog" == "true" ]]; then
+  apply_output=""
+  echo "Applying Octelium catalog ${catalog} to ${domain}..."
+  if ! apply_output="$(run_octeliumctl apply --domain "$domain" "$catalog" 2>&1)"; then
+    printf '%s\n' "$apply_output" >&2
+    exit 1
+  fi
+  printf '%s\n' "$apply_output"
+  if grep -Eq '(^|[[:space:]])Could not (create|update|apply)|gRPC error' <<<"$apply_output"; then
+    echo "error: octeliumctl reported one or more failed catalog changes" >&2
+    exit 1
+  fi
+  validate_target_user
+  validate_ci_access
+fi
+
+list_octelium_items() {
+  local resource="$1"
+  shift
+  local page=1 page_json item_count expected_total current_total
+  local combined='{"items":[]}'
+
+  # shortcut: 100 pages bounds a broken listing; raise after a large-inventory fixture.
+  while [[ "$page" -le 100 ]]; do
+    if ! page_json="$(run_octeliumctl get "$resource" "$@" \
+      --items-per-page 1000 --page "$page" --order-by-name \
+      --domain "$domain" -o json 2>/dev/null)"; then
+      echo "error: could not list Octelium ${resource} page ${page}" >&2
+      return 1
+    fi
+    if grep -Eq '^[[:space:]]*No (Sessions|Credentials) found[[:space:]]*$' <<<"$page_json"; then
+      if [[ "$page" -eq 1 ]]; then
+        printf '%s\n' "$combined"
+        return 0
+      fi
+      echo "error: Octelium ${resource} page ${page} disappeared after hasMore" >&2
+      return 1
+    fi
+    if ! jq -se --argjson page "$page" '
+      length == 1 and
+      (.[0] | type == "object" and (.items | type == "array") and
+        all(.items[]; (.metadata.name | type == "string" and length > 0)) and
+        (.listResponseMeta | type == "object") and
+        (.listResponseMeta.page // 0) == ($page - 1) and
+        (.listResponseMeta.itemsPerPage | type == "number" and . > 0) and
+        (.listResponseMeta.totalCount | type == "number") and
+        .listResponseMeta.totalCount >= (.items | length) and
+        (.listResponseMeta.hasMore == null or
+          (.listResponseMeta.hasMore | type == "boolean")))
+    ' >/dev/null 2>&1 <<<"$page_json"; then
+      echo "error: invalid Octelium ${resource} page ${page}" >&2
+      return 1
+    fi
+    item_count="$(jq '.items | length' <<<"$page_json")"
+    if [[ "$item_count" -eq 0 ]]; then
+      echo "error: empty Octelium ${resource} page ${page} with list metadata" >&2
+      return 1
+    fi
+    current_total="$(jq '.listResponseMeta.totalCount' <<<"$page_json")"
+    if [[ "$page" -eq 1 ]]; then
+      expected_total="$current_total"
+    elif [[ "$current_total" -ne "$expected_total" ]]; then
+      echo "error: Octelium ${resource} total changed during listing" >&2
+      return 1
+    fi
+    if ! combined="$(jq -cs '{items: (.[0].items + .[1].items)}' \
+      <(printf '%s\n' "$combined") <(printf '%s\n' "$page_json"))"; then
+      echo "error: could not combine Octelium ${resource} pages" >&2
+      return 1
+    fi
+    if ! jq -e '
+      [.items[].metadata.name] as $names |
+      ($names | length) == ($names | unique | length)
+    ' >/dev/null 2>&1 <<<"$combined"; then
+      echo "error: duplicate Octelium ${resource} entries across pages" >&2
+      return 1
+    fi
+    if [[ "$(jq -r '.listResponseMeta.hasMore // false' <<<"$page_json")" == "false" ]]; then
+      break
+    fi
+    page=$((page + 1))
+  done
+  if [[ "$page" -gt 100 ]]; then
+    echo "error: Octelium ${resource} listing exceeded 100 pages" >&2
+    return 1
+  fi
+  if [[ "$(jq '.items | length' <<<"$combined")" -ne "$expected_total" ]]; then
+    echo "error: incomplete Octelium ${resource} listing" >&2
+    return 1
+  fi
+  printf '%s\n' "$combined"
+}
 
 delete_user_sessions_for_user() {
   local sessions_json
   local session_name
   local session_names=()
 
-  sessions_json="$(
-    run_octeliumctl get sessions \
-      --user "$user_name" \
-      --items-per-page 1000 \
-      --domain "$domain" \
-      -o json
-  )"
-
-  if grep -Eq '^No Sessions found$' <<<"$sessions_json"; then
-    echo "No Octelium sessions found for User ${user_name}."
-    return 0
-  fi
-  if ! jq -e \
-    'type == "object" and (.items | type == "array") and all(.items[]; (.metadata.name | type == "string" and length > 0))' \
-    >/dev/null 2>&1 <<<"$sessions_json"; then
-    echo "error: octeliumctl returned invalid session output" >&2
-    printf '%s\n' "$sessions_json" >&2
-    exit 1
-  fi
+  sessions_json="$(list_octelium_items sessions --user "$user_name")"
 
   while IFS= read -r session_name; do
     if [[ -n "$session_name" ]]; then
@@ -365,6 +510,11 @@ ensure_existing_credential_spec() {
     return 0
   fi
 
+  if [[ "$apply_catalog" != "true" ]]; then
+    echo "error: existing Octelium credential ${credential_name} binding differs; review the catalog before rotation" >&2
+    exit 1
+  fi
+
   credential_spec="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential-spec.XXXXXX.yaml")"
   {
     printf 'kind: Credential\n'
@@ -404,25 +554,8 @@ create_args=(
 )
 
 if [[ "$rotate_credential" == "true" ]]; then
-  credentials_json=""
-  if ! credentials_json="$(
-    run_octeliumctl get creds \
-      --items-per-page 1000 \
-      --domain "$domain" \
-      -o json 2>&1
-  )"; then
-    echo "error: could not list Octelium credentials before session reset" >&2
-    printf '%s\n' "$credentials_json" >&2
-    exit 1
-  fi
-
-  if ! grep -Eq '^[[:space:]]*No Credentials found[[:space:]]*$' <<<"$credentials_json"; then
-    if ! jq -e 'type == "object" and (.items | type == "array")' >/dev/null 2>&1 <<<"$credentials_json"; then
-      echo "error: octeliumctl returned non-JSON credential output" >&2
-      printf '%s\n' "$credentials_json" >&2
-      exit 1
-    fi
-
+  credentials_json="$(list_octelium_items creds)"
+  if [[ "$(jq '.items | length' <<<"$credentials_json")" -gt 0 ]]; then
     credential_count="$(
       jq -r \
         --arg name "$credential_name" \
@@ -456,10 +589,6 @@ fi
 
 if [[ "$rotate_credential" == "true" ]]; then
   credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
-  cleanup() {
-    rm -f "$credential_json"
-  }
-  trap cleanup EXIT
   chmod 0600 "$credential_json"
 fi
 
@@ -496,12 +625,20 @@ fi
 
 set_github_environment_secret() {
   local env_name="$1"
+  local attempt
 
-  until printf '%s' "$credential_token" |
-    gh secret set "$secret_name" --repo "$github_repo" --env "$env_name" >/dev/null; do
-    echo "GitHub environment ${env_name} update failed; retrying in 5 seconds." >&2
-    sleep 5
+  for attempt in 1 2 3 4 5; do
+    if printf '%s' "$credential_token" |
+      gh secret set "$secret_name" --repo "$github_repo" --env "$env_name" >/dev/null; then
+      return 0
+    fi
+    if [[ "$attempt" -lt 5 ]]; then
+      echo "GitHub environment ${env_name} update failed; retrying in 5 seconds." >&2
+      sleep 5
+    fi
   done
+  echo "error: GitHub environment ${env_name} update failed after five attempts; rerun rotation for both environments" >&2
+  return 1
 }
 
 if [[ "$update_github" == "true" ]]; then
