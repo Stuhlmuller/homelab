@@ -207,6 +207,8 @@ case "$stage" in
     ;;
   talos-*|kubernetes-*)
     [[ -n "${OCE_CONTROLPLANE_CONFIG_B64:-}" && -n "${OCE_WORKER_CONFIG_B64:-}" ]] || exit 1
+    [[ "${DIRECT_RECOVERY_RECEIPT_ID:-}" =~ ^[0-9a-f]{32}$ &&
+       "${OFF_NODE_ETCD_RECEIPT_ID:-}" =~ ^[0-9a-f]{32}$ ]] || exit 2
     connect_talos
     printf %s "$OCE_CONTROLPLANE_CONFIG_B64" | base64 --decode >"$work/controlplane.yaml"
     printf %s "$OCE_WORKER_CONFIG_B64" | base64 --decode >"$work/worker.yaml"
@@ -214,6 +216,8 @@ case "$stage" in
     install -m 0700 -d "$work/receipts"
     if ! python3 -I scripts/platform-maintenance.py execute --config "$config" \
       --stage "$stage" --expected-sha "$GITHUB_SHA" \
+      --direct-recovery-receipt-id "$DIRECT_RECOVERY_RECEIPT_ID" \
+      --off-node-etcd-receipt-id "$OFF_NODE_ETCD_RECEIPT_ID" \
       --talosconfig "$work/talosconfig" \
       --control-plane-config "$work/controlplane.yaml" \
       --worker-config "$work/worker.yaml" \

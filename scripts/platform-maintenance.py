@@ -25,7 +25,10 @@ RECEIPTS = ("placement", "direct-recovery", "off-node-etcd-backup", "artifact-pu
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 RECEIPT_PREFIX = "openclaw-enterprise/platform/upgrade"
 PREREQUISITE_PREFIX = "openclaw-enterprise/platform/receipts"
+EXPIRING_RECEIPTS = ("direct-recovery", "off-node-etcd-backup")
+PUBLICATION_ID = re.compile(r"[0-9a-f]{32}\Z")
 MAX_RECOVERY_AGE_SECONDS = 6 * 60 * 60
+MIN_TALOS_CLIENT_REMAINING_SECONDS = 3 * 60 * 60
 
 
 def receipt_target():
@@ -228,14 +231,26 @@ class DurableReceipts:
             output.flush()
             os.fsync(output.fileno())
 
-    def load_prerequisites(self, source_sha, directory):
-        """Restore one immutable, checksummed version of each current-SHA gate."""
+    def load_prerequisites(self, source_sha, directory, references):
+        """Restore exact immutable versions of the named current-SHA gates."""
         if not isinstance(source_sha, str) or not SHA.fullmatch(source_sha):
             raise ValueError("invalid prerequisite source revision")
+        if (not isinstance(references, dict) or
+                set(references) != set(EXPIRING_RECEIPTS) or
+                any(not isinstance(value, str) or not PUBLICATION_ID.fullmatch(value)
+                    for value in references.values())):
+            raise ValueError("explicit expiring prerequisite IDs are required")
         directory = private_directory(directory)
         for name in RECEIPTS:
-            key = f"{PREREQUISITE_PREFIX}/{source_sha}/{name}.json"
+            key = prerequisite_key(source_sha, name, references.get(name))
             self.load_one(key, directory / f"{name}.json")
+        recovery = read_private_json(directory / "direct-recovery.json")
+        backup = read_private_json(directory / "off-node-etcd-backup.json")
+        if (recovery.get("publicationId") != references["direct-recovery"] or
+                backup.get("objectPrefix") !=
+                f"etcd/{backup.get('snapshotSha256')}/{references['off-node-etcd-backup']}/"):
+            raise ValueError("expiring prerequisite content differs from selected key")
+
 
     def load_istio_completions(self, config, directory):
         directory = private_directory(directory)
@@ -243,6 +258,20 @@ class DurableReceipts:
             stage = f"istio-{item['to']}"
             key = f"openclaw-enterprise/platform/stages/{stage}/verified.json"
             self.load_one(key, directory / f"{stage}.json")
+
+
+def prerequisite_key(source_sha, name, publication_id=None):
+    if (not isinstance(source_sha, str) or not SHA.fullmatch(source_sha) or
+            name not in RECEIPTS):
+        raise ValueError("invalid prerequisite key identity")
+    if name in EXPIRING_RECEIPTS:
+        if (not isinstance(publication_id, str) or
+                not PUBLICATION_ID.fullmatch(publication_id)):
+            raise ValueError("expiring prerequisite needs a reviewed publication ID")
+        return f"{PREREQUISITE_PREFIX}/{source_sha}/{name}/{publication_id}.json"
+    if publication_id is not None:
+        raise ValueError("fixed prerequisite cannot select a publication ID")
+    return f"{PREREQUISITE_PREFIX}/{source_sha}/{name}.json"
 
 
 def validate_config(config):
@@ -295,6 +324,14 @@ def fresh_recovery_time(value):
         raise ValueError("private recovery evidence is stale or in the future")
 
 
+def usable_talos_client_expiry(value):
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", value):
+        raise ValueError("direct Talos client expiry is invalid")
+    expires = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    if (expires - datetime.now(timezone.utc)).total_seconds() < MIN_TALOS_CLIENT_REMAINING_SECONDS:
+        raise ValueError("direct Talos client expires before the maintenance stage and margin")
+
+
 def verify_prerequisites(config, source_sha, receipts):
     if (not isinstance(receipts, dict) or
             any(not isinstance(receipts.get(name), dict) or
@@ -308,9 +345,12 @@ def verify_prerequisites(config, source_sha, receipts):
         raise ValueError("measured isolated canary placement is missing")
     recovery = receipts["direct-recovery"]
     fresh_recovery_time(recovery.get("capturedAt"))
+    usable_talos_client_expiry(recovery.get("clientCertNotAfter"))
     if (recovery.get("transport") != "direct-lan-authenticated-talos" or
             recovery.get("endpoint") != "10.1.0.199:50000" or
             recovery.get("nodes") != list(NODES) or
+            not isinstance(recovery.get("publicationId"), str) or
+            not PUBLICATION_ID.fullmatch(recovery["publicationId"]) or
             recovery.get("talosMtls") is not True):
         raise ValueError("direct-LAN Talos recovery was not proved")
     backup = receipts["off-node-etcd-backup"]
@@ -320,7 +360,13 @@ def verify_prerequisites(config, source_sha, receipts):
             not isinstance(backup.get("snapshotSha256"), str) or
             not re.fullmatch(r"[0-9a-f]{64}", backup["snapshotSha256"]) or
             not isinstance(backup.get("objectVersionId"), str) or
-            backup["objectVersionId"] in ("", "null")):
+            backup["objectVersionId"] in ("", "null") or
+            not isinstance(backup.get("manifestVersionId"), str) or
+            backup["manifestVersionId"] in ("", "null") or
+            not isinstance(backup.get("objectPrefix"), str) or
+            not re.fullmatch(r"etcd/[0-9a-f]{64}/[0-9a-f]{32}/", backup["objectPrefix"]) or
+            backup.get("offlineRestore") != "etcdutl-offline-database-restore" or
+            backup.get("controlPlaneRecoveryTested") is not False):
         raise ValueError("fresh off-node etcd recovery proof is incomplete")
 
 
@@ -1095,6 +1141,8 @@ def main():
     parser.add_argument("--receipt-dir", type=Path)
     parser.add_argument("--stage")
     parser.add_argument("--expected-sha")
+    parser.add_argument("--direct-recovery-receipt-id")
+    parser.add_argument("--off-node-etcd-receipt-id")
     args = parser.parse_args()
     try:
         if args.command == "execute":
@@ -1131,7 +1179,10 @@ def main():
                 raise ValueError("platform maintenance is not activated")
             store = DurableReceipts(receipt_target())
             store.check()
-            store.load_prerequisites(args.expected_sha, args.receipt_dir)
+            store.load_prerequisites(args.expected_sha, args.receipt_dir, {
+                "direct-recovery": args.direct_recovery_receipt_id,
+                "off-node-etcd-backup": args.off_node_etcd_receipt_id,
+            })
             if args.stage.startswith("kubernetes-"):
                 store.load_istio_completions(config, args.receipt_dir)
             for item in config["talosStages"]:

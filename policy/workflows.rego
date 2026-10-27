@@ -240,11 +240,13 @@ approved_platform_maintenance if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
-	count(dispatch.inputs) == 7
+	count(dispatch.inputs) == 9
 	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	dispatch.inputs.expected_sha.required == true
+	dispatch.inputs.direct_recovery_receipt_id == {"description": "Non-secret opaque direct-LAN recovery proof ID for upgrade stages", "required": false, "type": "string"}
+	dispatch.inputs.off_node_etcd_receipt_id == {"description": "Non-secret opaque off-node etcd publication ID for upgrade stages", "required": false, "type": "string"}
 	count(object.keys(input)) == 5
 	input.permissions == {}
 	input.env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}
@@ -312,7 +314,7 @@ platform_maintenance_static_checkout := {"name": "Check Out Repository", "uses":
 platform_maintenance_private_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}}
 platform_maintenance_install_nix := {"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}}
 platform_maintenance_aws_credentials := {"name": "Configure AWS Credentials", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-platform-${{ github.run_id }}", "role-to-assume": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}", "unset-current-credentials": true}}
-platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
+platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "DIRECT_RECOVERY_RECEIPT_ID": "${{ inputs.direct_recovery_receipt_id }}", "OFF_NODE_ETCD_RECEIPT_ID": "${{ inputs.off_node_etcd_receipt_id }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
 
 platform_maintenance_main_check := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
@@ -335,7 +337,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'c76e06e32214a2f9525725c6b09987a9ab4d12b5dacd83a9a0f04ff4ccfedd31  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then
@@ -343,6 +345,119 @@ then
   exit 1
 fi
 echo "Platform stage completed; private receipts withheld."`
+
+deny contains msg if {
+	object.get(input, "name", "") == "Platform Etcd Prerequisite Publication"
+	not approved_platform_etcd_prerequisite
+	msg := "off-node etcd publication requires exact owner-reviewed main dispatch, narrow OIDC role, and private proof"
+}
+
+approved_platform_etcd_prerequisite if {
+	count(object.keys(input)) == 4
+	count(object.keys(workflow_events)) == 1
+	dispatch := workflow_events.workflow_dispatch
+	count(dispatch.inputs) == 3
+	dispatch.inputs.expected_sha == {"description": "Exact current main commit", "required": true, "type": "string"}
+	dispatch.inputs.snapshot_sha256 == {"description": "Non-secret SHA-256 selector from reviewed offsite manifest", "required": true, "type": "string"}
+	dispatch.inputs.publication_id == {"description": "Non-secret opaque offsite publication ID (32 lowercase hex)", "required": true, "type": "string"}
+	input.permissions == {}
+	count(input.jobs) == 2
+	static := input.jobs["static-policy"]
+	count(object.keys(static)) == 4
+	static.name == "Validate Etcd Prerequisite Source"
+	static["runs-on"] == "ubuntu-24.04"
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	count(object.keys(static.steps[0])) == 3
+	static.steps[0].name == "Verify Reviewed Dispatch"
+	static.steps[0].env == platform_etcd_dispatch_env
+	trim(static.steps[0].run, "\n") == platform_etcd_dispatch_check
+	static.steps[1] == platform_maintenance_private_checkout
+	static.steps[2] == platform_maintenance_install_nix
+	count(object.keys(static.steps[3])) == 2
+	static.steps[3].name == "Run Reviewed Static Checks"
+	trim(static.steps[3].run, "\n") == platform_etcd_static_checks
+	job := input.jobs.publish
+	count(object.keys(job)) == 9
+	job.name == "Publish Reviewed Off-Node Proof"
+	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job["runs-on"] == "ubuntu-24.04"
+	job["timeout-minutes"] == 120
+	job.concurrency == {"group": "platform-etcd-prerequisite-production", "cancel-in-progress": false}
+	job.environment == {"name": "homelab-production"}
+	job.permissions == {"contents": "read", "id-token": "write"}
+	count(job.steps) == 6
+	count(object.keys(job.steps[0])) == 3
+	job.steps[0].name == "Verify Exact Main Before Credentials"
+	job.steps[0].env == platform_etcd_main_env
+	trim(job.steps[0].run, "\n") == platform_etcd_main_check
+	job.steps[1] == platform_maintenance_private_checkout
+	job.steps[2] == platform_maintenance_install_nix
+	count(object.keys(job.steps[3])) == 3
+	job.steps[3].name == "Recheck Exact Main Before AWS Credentials"
+	job.steps[3].env == platform_etcd_main_env
+	trim(job.steps[3].run, "\n") == platform_etcd_main_check
+	job.steps[4] == platform_etcd_aws_credentials
+	count(object.keys(job.steps[5])) == 3
+	job.steps[5].name == "Restore And Publish Exact Off-Node Proof"
+	job.steps[5].env == platform_etcd_private_env
+	trim(job.steps[5].run, "\n") == platform_etcd_private_run
+}
+
+platform_etcd_dispatch_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "SNAPSHOT_SHA256": "${{ inputs.snapshot_sha256 }}", "PUBLICATION_ID": "${{ inputs.publication_id }}"}
+platform_etcd_main_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+platform_etcd_private_env := {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "SNAPSHOT_SHA256": "${{ inputs.snapshot_sha256 }}", "PUBLICATION_ID": "${{ inputs.publication_id }}", "GH_TOKEN": "${{ github.token }}"}
+platform_etcd_aws_credentials := {"name": "Configure Narrow AWS Credentials", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-etcd-proof-${{ github.run_id }}", "role-to-assume": "arn:aws:iam::716182248480:role/homelab-platform-etcd-receipt-publisher", "unset-current-credentials": true}}
+
+platform_etcd_dispatch_check := `set -euo pipefail
+test "$GITHUB_EVENT_NAME" = workflow_dispatch
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+test "$GITHUB_ACTOR_ID" = 57728706
+test "$GITHUB_RUN_ATTEMPT" = 1
+[[ "$SNAPSHOT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+[[ "$PUBLICATION_ID" =~ ^[0-9a-f]{32}$ ]]`
+
+platform_etcd_main_check := `set -euo pipefail
+test "$GITHUB_EVENT_NAME" = workflow_dispatch
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+test "$GITHUB_ACTOR_ID" = 57728706
+test "$GITHUB_RUN_ATTEMPT" = 1
+test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+platform_etcd_static_checks := `set -euo pipefail
+git fetch --no-tags origin main
+cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+nix develop --command bash scripts/ci/static-checks.sh --offline-verified`
+
+platform_etcd_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+work="$(mktemp -d)"
+trap 'rm -rf -- "$work"' EXIT
+archive="$work/etcd-v3.6.5-linux-amd64.tar.gz"
+curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+  --output "$archive" \
+  https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-amd64.tar.gz
+sha256sum --check --status <<<'66bad39ed920f6fc15fd74adcb8bfd38ba9a6412f8c7852d09eb11670e88cac3  '"$archive"
+python3 -I scripts/platform-etcd-prerequisite-publish.py \
+  --expected-sha "$EXPECTED_SHA" \
+  --snapshot-sha256 "$SNAPSHOT_SHA256" \
+  --publication-id "$PUBLICATION_ID" \
+  --etcd-archive "$archive" --output-directory "$work"
+EOF
+then
+  echo "::error::Etcd prerequisite blocked; private snapshot and AWS diagnostics withheld."
+  exit 1
+fi
+echo "Reviewed exact-version off-node prerequisite published; private evidence withheld."`
 
 approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})

@@ -1,0 +1,165 @@
+name: Platform Etcd Prerequisite Publication
+
+# checkov:skip=CKV_GHA_7: all reviewed identities are matched to exact current main.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit
+        required: true
+        type: string
+      snapshot_sha256:
+        description: Non-secret SHA-256 selector from reviewed offsite manifest
+        required: true
+        type: string
+      publication_id:
+        description: Non-secret opaque offsite publication ID (32 lowercase hex)
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  static-policy:
+    name: Validate Etcd Prerequisite Source
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Reviewed Dispatch
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SNAPSHOT_SHA256: ${{ inputs.snapshot_sha256 }}
+          PUBLICATION_ID: ${{ inputs.publication_id }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          [[ "$SNAPSHOT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$PUBLICATION_ID" =~ ^[0-9a-f]{32}$ ]]
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Reviewed Static Checks
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+
+  publish:
+    name: Publish Reviewed Off-Node Proof
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    concurrency:
+      group: platform-etcd-prerequisite-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Exact Main Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recheck Exact Main Before AWS Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Configure Narrow AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-session-name: homelab-etcd-proof-${{ github.run_id }}
+          role-to-assume: arn:aws:iam::716182248480:role/homelab-platform-etcd-receipt-publisher
+          unset-current-credentials: true
+
+      - name: Restore And Publish Exact Off-Node Proof
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SNAPSHOT_SHA256: ${{ inputs.snapshot_sha256 }}
+          PUBLICATION_ID: ${{ inputs.publication_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          work="$(mktemp -d)"
+          trap 'rm -rf -- "$work"' EXIT
+          archive="$work/etcd-v3.6.5-linux-amd64.tar.gz"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "$archive" \
+            https://github.com/etcd-io/etcd/releases/download/v3.6.5/etcd-v3.6.5-linux-amd64.tar.gz
+          sha256sum --check --status <<<'66bad39ed920f6fc15fd74adcb8bfd38ba9a6412f8c7852d09eb11670e88cac3  '"$archive"
+          python3 -I scripts/platform-etcd-prerequisite-publish.py \
+            --expected-sha "$EXPECTED_SHA" \
+            --snapshot-sha256 "$SNAPSHOT_SHA256" \
+            --publication-id "$PUBLICATION_ID" \
+            --etcd-archive "$archive" --output-directory "$work"
+          EOF
+          then
+            echo "::error::Etcd prerequisite blocked; private snapshot and AWS diagnostics withheld."
+            exit 1
+          fi
+          echo "Reviewed exact-version off-node prerequisite published; private evidence withheld."

@@ -33,6 +33,14 @@ on:
         description: SHA-256 of the privately reviewed full firewall snapshot
         required: false
         type: string
+      direct_recovery_receipt_id:
+        description: Non-secret opaque direct-LAN recovery proof ID for upgrade stages
+        required: false
+        type: string
+      off_node_etcd_receipt_id:
+        description: Non-secret opaque off-node etcd publication ID for upgrade stages
+        required: false
+        type: string
 
 permissions: {}
 
@@ -157,6 +165,8 @@ jobs:
           EVIDENCE_SOURCE_SHA: ${{ inputs.evidence_source_sha }}
           CAPTURE_RUN_ID: ${{ inputs.capture_run_id }}
           REVIEWED_SNAPSHOT_SHA256: ${{ inputs.reviewed_snapshot_sha256 }}
+          DIRECT_RECOVERY_RECEIPT_ID: ${{ inputs.direct_recovery_receipt_id }}
+          OFF_NODE_ETCD_RECEIPT_ID: ${{ inputs.off_node_etcd_receipt_id }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           OCE_OCTELIUM_CLIENT_AUTH_TOKEN: ${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}
           OCE_TALOSCONFIG_B64: ${{ secrets.OCE_TALOSCONFIG_B64 }}
@@ -171,7 +181,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'c76e06e32214a2f9525725c6b09987a9ab4d12b5dacd83a9a0f04ff4ccfedd31  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then

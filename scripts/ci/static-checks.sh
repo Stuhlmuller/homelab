@@ -52,6 +52,7 @@ python3 -I scripts/ci/renovate-acceptance-ledger-cleanup-test.py
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-etcd-prerequisite-test.py
+python3 -I scripts/ci/platform-etcd-prerequisite-publish-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
 python3 -I scripts/ci/platform-maintenance-credentials-test.py
 python3 -I scripts/ci/istio-image-overlays-test.py
@@ -190,6 +191,15 @@ echo "::endgroup::"
 echo "::group::Etcd offsite bucket offline guards"
 (
   cd IaC/homelab/us-west-2/operator/etcd-backup-storage
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+echo "::endgroup::"
+
+echo "::group::Platform etcd prerequisite IAM offline guards"
+(
+  cd IaC/homelab/us-west-2/operator/platform-etcd-receipt-role
   terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
