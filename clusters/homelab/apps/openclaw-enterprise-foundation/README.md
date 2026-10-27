@@ -96,9 +96,28 @@ close those gaps. T049 and T051 remain pending.
 These requirements follow the pinned upstream [bootstrap Job][up-bootstrap],
 [agent claim][up-agent-state], and [gateway TLS templates][up-gateway-tls].
 
+A Kubernetes Secret manifest export cannot restore stored OCC Secrets into a
+new cluster. OCC stores each Secret's Kubernetes `backend_uid` in an
+[immutable database row][up-secret-schema]; the [Secret Driver][up-secret-driver]
+rejects a different UID, and [Compute][up-compute-secret] checks that UID before
+projecting harness credentials. Kubernetes [generates object UIDs][k8s-uid] and
+marks them read-only. The pinned [Secret HTTP handlers][up-secret-http] offer
+create, value update, metadata read, and delete, with no import or UID rebind
+operation. T049/T051 need an isolated, UID-preserving cluster-state restore
+proven end to end, or a supported upstream Secret rebind/import contract, before
+this can be a complete recovery path. The existing [offline etcd check] only
+parses a snapshot; it does not start a control plane or restore PVCs. Do not
+edit `backend_uid` in a dump.
+
 [up-bootstrap]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/jobs.yaml#L130-L138
 [up-agent-state]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L12738-L12759
 [up-gateway-tls]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/gateway-routing.yaml#L23-L54
+[up-secret-schema]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/migrations/0013_secret_state.sql#L55-L102
+[up-secret-driver]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/secret/kubernetes/index.ts#L519-L546
+[up-compute-secret]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L13792-L13808
+[up-secret-http]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/http/secrets.ts#L1-L90
+[k8s-uid]: https://kubernetes.io/docs/reference/kubernetes-api/definitions/object-meta-v1-meta/#objectmeta
+[offline etcd check]: ../../../../docs/etcd-offline-restore-validation.md
 
 Validate this dormant boundary with
 `nix develop --command python3 -I scripts/ci/openclaw-enterprise-foundation-test.py`.
