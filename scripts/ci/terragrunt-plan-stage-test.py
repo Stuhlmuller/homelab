@@ -125,60 +125,60 @@ class PrivatePlanStageTest(unittest.TestCase):
         self.assertIn('--report-format json', runner)
         self.assertIn('"${azuread_report_args[@]}" -- plan -lock=false -out plan.out -no-color', runner)
 
-    def test_workflow_tail_executes_only_the_verified_helper(self):
-        # Execute the actual failure tail; no Nix, credentials, or live commands.
-        workflow = WORKFLOW.read_text()
-        tail = textwrap.dedent(workflow.split("\n          EOF\n", 1)[1]
-                               .split("\n  terragrunt-plan-skipped:", 1)[0])
-        withheld_error = ("::error::Live plan failed; detailed output was withheld "
-                          "because this is a public repository. Reproduce it locally.\n")
-        secret = "SYNTHETIC_PRIVATE_VALUE_DO_NOT_EMIT"
-        original = HELPER.read_text()
-        variants = (
-            original,
-            ': > executed\ncat\n',
-            ': > executed\ncat >&2\n',
-            ': > executed\nif [[ ${GITHUB_ACTIONS:-} == true ]]; then cat; fi\n',
-            None,
-        )
-        for helper_source in variants:
-            with self.subTest(helper_source=helper_source), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                sha256sum = root / "sha256sum"
-                sha256sum.write_text("""#!/usr/bin/env python3
-import hashlib
-import sys
+    def test_changed_azuread_inputs_never_skip_for_missing_credentials(self):
+        runner = PLAN_RUNNER.read_text()
+        section = runner.split('echo "::group::AzureAD application registration plan"\n', 1)[1]
+        section = section.split('\necho "::endgroup::"', 1)[0]
+        for stack_changed, inputs_changed, expected_code in (
+            (True, False, 1), (False, True, 1), (False, False, 0)
+        ):
+            with self.subTest(stack_changed=stack_changed, inputs_changed=inputs_changed):
+                script = ('set -euo pipefail\n'
+                          'azuread_credentials_available() { return 1; }\n'
+                          f'terragrunt_azuread_stack_changed() {{ return {0 if stack_changed else 1}; }}\n'
+                          f'terragrunt_azuread_plan_inputs_changed() {{ return {0 if inputs_changed else 1}; }}\n'
+                          + section)
+                result = subprocess.run(["bash", "-c", script], text=True,
+                                        capture_output=True, timeout=5, check=False)
+                self.assertEqual(result.returncode, expected_code, result.stderr)
+                self.assertEqual("Skipping AzureAD" in result.stdout, expected_code == 0)
+                if expected_code:
+                    self.assertIn("AzureAD credentials are required", result.stderr)
 
-if sys.argv[1:] != ["--check", "--status"]:
-    raise SystemExit(2)
-try:
-    expected, path = sys.stdin.read().strip().split(None, 1)
-    actual = hashlib.sha256(open(path, "rb").read()).hexdigest()
-except (OSError, ValueError):
-    raise SystemExit(1)
-raise SystemExit(0 if actual == expected else 1)
-""")
-                sha256sum.chmod(0o700)
-                helper = root / "scripts/ci/terragrunt-plan-stage.sh"
-                helper.parent.mkdir(parents=True)
-                if helper_source is not None:
-                    helper.write_text(helper_source)
-                private_log = root / "private.log"
-                private_log.write_text(f"{secret}\n::group::Kubernetes API check\n{secret}\n")
-                result = subprocess.run(
-                    ["bash", "-euo", "pipefail", "-c", 'private_log="$1"\nif true\n' + tail,
-                     "failure-tail-test", str(private_log)],
-                    cwd=root, env=dict(os.environ, CI="true", GITHUB_ACTIONS="true",
-                                       PATH=str(root) + os.pathsep + os.environ["PATH"]),
-                    text=True, capture_output=True, timeout=5, check=False)
-                expected = withheld_error
-                if helper_source == original:
-                    expected = ("Live plan last recognized stage: api; details withheld.\n"
-                                "Live plan failure hint: unknown; details withheld.\n" + expected)
-                self.assertEqual(result.returncode, 1)
-                self.assertEqual(result.stdout, expected)
-                self.assertEqual(result.stderr, "")
-                self.assertFalse((root / "executed").exists())
+    def test_scope_diff_failure_cannot_skip_live_plan(self):
+        workflow = WORKFLOW.read_text()
+        scope = textwrap.dedent(workflow.split(
+            "      - name: Detect Live Terragrunt Plan Scope\n", 1)[1]
+            .split("\n      - name: Install Nix\n", 1)[0]
+            .split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            (root / "README.md").write_text("fixture\n")
+            subprocess.run(["git", "add", "README.md"], cwd=root, check=True)
+            subprocess.run(["git", "-c", "user.name=Fixture",
+                            "-c", "user.email=fixture@example.invalid",
+                            "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"],
+                           cwd=root, check=True)
+            output = root / "github-output"
+            result = subprocess.run(["bash", "-euo", "pipefail", "-c", scope],
+                                    cwd=root, capture_output=True, text=True,
+                                    env={**os.environ, "BASE_REF": "main",
+                                         "GITHUB_OUTPUT": str(output)}, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_workflow_streams_plan_output_and_keeps_artifacts_private(self):
+        workflow = WORKFLOW.read_text()
+        run = workflow.split("      - name: Run Live Terragrunt Plan\n", 1)[1]
+        run = run.split("\n  terragrunt-plan-skipped:", 1)[0]
+        self.assertIn("HOMELAB_AZUREAD_PLAN_REPORT_FILE=\"$azuread_report\" nix develop --command bash <<'EOF'", run)
+        self.assertNotIn('private_log', run)
+        self.assertNotIn('details withheld', run)
+        self.assertIn("trap 'rm -rf -- \"$private_dir\"' EXIT", run)
+        self.assertIn('bash scripts/ci/terragrunt-plan.sh', run)
+        self.assertNotIn('>/dev/null', PLAN_RUNNER.read_text().split('terragrunt plan -destroy', 1)[1].split('\n', 1)[0])
 
 
 if __name__ == "__main__":

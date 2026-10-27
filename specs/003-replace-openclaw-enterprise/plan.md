@@ -55,7 +55,7 @@ DNS, access, storage, controllers, or shared applications.
 **Constraints**: Capacity/canary allocation currently blocks execution. No manual
 live fixes, unverified image substitutions, automatic Kubernetes downgrade,
 secret disclosure, or old-data deletion. Fresh agent activation requires explicit
-model/key configuration; deployment includes a real model probe.
+model/key configuration and a real model probe.
 
 The 2026-10-17 read-only refresh in [research.md](research.md#r4--capacity-is-a-real-execution-gate)
 confirmed the starting versions and no canary/CRDs. Istio 1.27.9 is unnecessary
@@ -102,11 +102,12 @@ specs/003-replace-openclaw-enterprise/
 └── checklists/requirements.md
 ```
 
-`tasks.md` sequences implementation and live acceptance; no task has been executed.
+`tasks.md` sequences implementation and live acceptance; its checked items and
+the acceptance ledger record the current evidence separately.
 
 ### Source Code (repository root)
 
-Proposed implementation surfaces; new paths below do not exist yet:
+Implementation surfaces in the deployment-oriented Terragrunt layout:
 
 ```text
 .talos/patches/                         # reviewed role/version inputs
@@ -114,25 +115,26 @@ scripts/config/platform-maintenance.json
 scripts/platform-maintenance.py         # bounded upgrade lane
 .github/workflows/platform-maintenance.yml
 clusters/homelab/platform/network-policy/
-IaC/stacks/platform-network-policy/stack.hcl
-IaC/stacks/istio/stack.hcl               # sequential version changes
+IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
+IaC/homelab/us-west-2/apps/istio/stack.hcl # sequential version changes
 clusters/homelab/apps/istio/
 clusters/homelab/platform/envoy-gateway/
-IaC/stacks/platform-envoy-gateway/stack.hcl
+IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
 clusters/homelab/apps/openclaw-enterprise-foundation/
-IaC/stacks/openclaw-enterprise-foundation/stack.hcl
+IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
 clusters/homelab/apps/openclaw-enterprise/ # local values and lifecycle hooks
-IaC/stacks/openclaw-enterprise/stack.hcl
+IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
 scripts/config/openclaw-enterprise.json
 scripts/openclaw-enterprise.py           # serialized API reconciliation/verification
 scripts/openclaw-retirement.py          # inventory/archive verification and handoff
 scripts/ci/*-test.py                    # focused boundary/failure tests
 ```
 
-Also change the existing root unit index, node placement declarations, scoped
-AppProject, exact SSM/ESO contracts, platform-storage PVs, Harbor image catalog,
-Octelium catalog/private DNS, old OpenClaw desired state, and CI workflow security
-hashes/policies as required. Do not edit generated `IaC/live` units.
+Also change each app's adjacent `terragrunt.stack.hcl` unit, node placement
+declarations, scoped AppProject, exact SSM/ESO contracts, platform-storage PVs,
+Harbor image catalog, Octelium catalog/private DNS, old OpenClaw desired state,
+and CI workflow security hashes/policies as required. Do not edit generated
+`terragrunt.hcl` or `terragrunt.values.hcl` under `IaC/homelab/us-west-2`.
 
 **Structure Decision**: Reuse existing shared Application registration, operator
 maintenance, backup, image publication and private access patterns. New helpers
@@ -216,10 +218,12 @@ OCE Namespace to the latter through its supported `existingNamespace` input.
 Create an OCE-owned fresh agent claim; never adopt old claims. Keep new and old
 archives separate and independently recoverable.
 
-Private owner flow: stable OpenClaw URL -> authenticated console -> OCE native
-agent authorization -> private Envoy -> agent gateway. Resolve the native origin
-from OCE, not a guessed hash. New per-agent hosts route to the OCE API, preserving
-Host/WebSocket behavior and narrowly scoped session cookies.
+Private owner flow: stable OpenClaw URL -> Octelium-authenticated console ->
+OCE native exact-Agent authorization -> private Envoy -> agent gateway.
+Resolve the native origin from OCE, not a guessed hash. The console and old
+redirect use Octelium; only the narrow native HostRegexp goes directly from
+private Tailscale/Traefik to OCE API, preserving Host/WebSocket behavior and
+the `oce.stinkyboi.com` session cookie.
 
 ## Validation and Requirement Coverage
 
@@ -246,6 +250,18 @@ path, without hand-editing generated state.
 - OCE database rollback requires compatible verified state; preserve failed/new
   data before restore. An old agent configuration is a new revision, not a
   filesystem rollback. Do not delete an OCE agent to preserve its owned PVC.
+- Stock Agent stop clears the active revision; resuming requires a new deployment,
+  because old revisions cannot restart ([pinned Agent API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md#L328-L334)).
+  Before scheduling T051, prove a complete identity-checked recovery set and
+  encrypted off-node destination, then either prove a consistent online snapshot
+  or serialize stop, capture, new-revision deployment and failure recovery in a
+  durable journal. Keep ordinary unchanged-input reconciliation idempotent.
+  The operator journal and Agent gateway-state claims are in different
+  namespaces, so one Pod cannot mount both; OCC Secret reads omit value bytes.
+  Coordinate namespace-local state and exact tenant Kubernetes Secret capture,
+  then publish one immutable completed set. GitHub OIDC publisher identity does
+  not authenticate the scheduled in-cluster Job; declare that credential or
+  protected publication boundary before T051.
 - Talos A/B fallback applies only to the immediately prior verified compatible
   image. Kubernetes has no automatic downgrade path; stop and use reviewed
   forward repair or separately declared disaster recovery.

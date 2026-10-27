@@ -1,9 +1,13 @@
 # NOFX
 
-NOFX runs at the publicly resolvable `https://nofx.stinkyboi.com`. The maintained
+NOFX uses `https://nofx.stinkyboi.com`. Tailnet DNS answers this name privately
+and Traefik routes its HTTPS traffic. The guarded
+[26-name cutover](../../../../specs/005-retire-public-app-dns/quickstart.md)
+removed its public address record on 2026-10-25; authoritative and public
+recursive answers were empty after the old 60-second TTL. The maintained
 `harbor.stinkyboi.com/homelab/homelab-nofx-*` images remain private and use the
-namespace's `harbor-pull` Secret. The Cloudflare public tunnel
-provides transport, while the Octelium WEB Service requires
+namespace's `harbor-pull` Secret. The legacy Cloudflare public tunnel and
+Octelium WEB Service remain staged; Octelium requires
 `homelab-human-web-access` before forwarding to the private Istio route. NOFX's
 own login remains a second authentication boundary. Octelium passes the
 application `Authorization` header because NOFX sends its session JWT there.

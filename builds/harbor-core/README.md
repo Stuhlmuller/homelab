@@ -46,6 +46,22 @@ to contain zero matches before it can obtain registry credentials; this is a
 core-publication gate, not a whole-Harbor or rollout clearance. Raw image
 metadata and transport output stay private; temporary scan inputs are removed
 on exit.
+The scan saves the inspected image ID, then exports that ID rather than resolving
+the tag again. Classic Docker uses the config digest as this ID. Docker's
+containerd store uses an image index or manifest descriptor digest instead
+([Moby inspect](https://github.com/moby/moby/blob/v28.5.1/daemon/containerd/image_inspect.go),
+[exporter](https://github.com/moby/moby/blob/v28.5.1/daemon/containerd/image_exporter.go)).
+The checker binds that inspected descriptor to the saved OCI index/root blob,
+selected Linux amd64 manifest and config bytes. It then binds Grype's raw
+config and reported image ID to the selected config digest. When the CI audit
+fails, its public error contains only a fixed stage or report validation
+category (for example, `scanner-run`, `validation:identity-archive-descriptor`,
+or `validation:remediation`). The archive config hash category means its path
+digest and bytes disagree; the inspect-ID category means no matching saved
+root descriptor exists. Neither prints IDs. The complete scanner output and
+report stay private, and an unknown or malformed diagnostic reports `unknown`.
+A stage narrows the failed operation; it does not establish the cause or grant
+vulnerability clearance.
 
 ## Protected publication
 

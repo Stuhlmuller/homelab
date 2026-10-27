@@ -1,14 +1,280 @@
 {
   "acceptedEnterpriseBoundary": "Stock OCE public TCP/443 rule with private-range exclusions is a documented exception; it must still produce a strict broad-egress finding.",
-  "capturedAt": "2026-10-18T05:54:21+00:00",
+  "capturedAt": "2026-10-19T02:30:39.199767+00:00",
+  "snapshotStatus": "Historical baseline: findingCounts, generatedOwnerAudit managers and decisions, ingressAudit, live counts, and policies describe capturedAt only. The 2026-10-20 currentLiveAudit is a separate read-only snapshot; repeat live inventory immediately before enforcement.",
   "findingCounts": {
-    "pod-requires-separate-review": 176,
-    "unisolated-pod": 194,
-    "unreviewed-egress-policy": 18,
-    "wildcard-egress": 15
+    "pod-requires-separate-review": 178,
+    "unisolated-pod": 196,
+    "unreviewed-egress-policy": 21,
+    "wildcard-egress": 18
   },
-  "livePodCount": 204,
-  "livePolicyCount": 61,
+  "generatedOwnerAudit": {
+    "capturedAt": "2026-10-19T02:32:56.863292+00:00",
+    "liveSpecRecheck": {
+      "capturedAt": "2026-10-19T15:15:09+00:00",
+      "matchedPriorHashes": 18,
+      "method": "Read-only kubectl snapshot; SHA-256 of each generated policy's complete canonical JSON spec matched the earlier live baseline"
+    },
+    "managers": {
+      "OpenAPI-Generator": [
+        "monitoring/kiali"
+      ],
+      "cordium-genesis": [
+        "cordium/ws-main",
+        "octelium/cordium-nocturne",
+        "octelium/cordium-rscserver"
+      ],
+      "octelium-genesis": [
+        "octelium/octelium-ingress",
+        "octelium/octelium-nocturne",
+        "octelium/octelium-octovigil",
+        "octelium/svc-upstream"
+      ],
+      "octeliumee-genesis": [
+        "octelium/octeliumee-cloudman",
+        "octelium/octeliumee-clusterman",
+        "octelium/octeliumee-collector",
+        "octelium/octeliumee-logstore",
+        "octelium/octeliumee-metricstore",
+        "octelium/octeliumee-nocturne",
+        "octelium/octeliumee-policyportal",
+        "octelium/octeliumee-rscserver",
+        "octelium/octeliumee-rscstore",
+        "octelium/octeliumee-secretman"
+      ]
+    },
+    "ownerBindings": {
+      "OpenAPI-Generator": {
+        "declaredVersion": "kiali-operator 2.26.0",
+        "inputPaths": [
+          "IaC/kiali/stack.hcl",
+          "clusters/homelab/apps/kiali/values.yaml"
+        ],
+        "ownershipEvidence": "The live policy has ownerReference Kiali/kiali; the repository enables that Kiali CR in the pinned operator Helm values"
+      },
+      "cordium-genesis": {
+        "declaredVersion": "cordium-genesis 0.12.7",
+        "inputPaths": [
+          "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+        ],
+        "ownershipEvidence": "The pinned genesis Job is the repository invocation; live policy managedFields name cordium-genesis"
+      },
+      "octelium-genesis": {
+        "declaredVersion": "Octelium Cluster 0.35.0",
+        "inputPaths": [
+          "scripts/octelium-cluster-bootstrap.sh"
+        ],
+        "ownershipEvidence": "The repository bootstrap invokes octops init at this default version; live policy managedFields name octelium-genesis"
+      },
+      "octeliumee-genesis": {
+        "declaredVersion": "octeliumee 0.22.0",
+        "inputPaths": [
+          "scripts/octelium-enterprise-package.sh",
+          "IaC/octelium-enterprise/stack.hcl"
+        ],
+        "ownershipEvidence": "The repository package operation and GitOps steady-state owner declare this version; live policy managedFields name octeliumee-genesis"
+      }
+    },
+    "ownerInputSha256": {
+      "IaC/kiali/stack.hcl": "58a0f94447ffa6cecae21529fe71a7fceab6300de3e1682e3a0c012e5349cc09",
+      "IaC/octelium-enterprise/stack.hcl": "8ad7e49391b2f32b1ec4447c508653c4bf218edb52108ff6541ddb31d434e0f5",
+      "clusters/homelab/apps/cordium-bootstrap/genesis.yaml": "ec87ea2c5d7168c6b7ec6f03148895de31375ccf549ee0600374ab5c228b9953",
+      "clusters/homelab/apps/kiali/values.yaml": "e315de87d4f803a9955d264538decf5db6eccb701522dec53c99dfaa739aad3f",
+      "scripts/octelium-cluster-bootstrap.sh": "28e2c8c8ee392c7f74c6f36e448074b000f02e676280dcf9f265f422fa1949c9",
+      "scripts/octelium-enterprise-package.sh": "963c068373f4d56ca3032077c5c364b7c9a509e47ae2b69c1213827674244cf9"
+    },
+    "policyRuleDecisions": {
+      "cordium/ws-main": "Hold: selected Workspace Pods have Octelium/genesis ingress on TCP 8080/2022 and UDP 45000; egress allows DNS TCP/UDP 53, two internal TCP 8080 peers, and IPv4/IPv6 0/0 minus declared exclusions on every port. The latter remains a strict broad-egress finding pending pinned-generator render and canary traffic.",
+      "monitoring/kiali": "Historical 02:32 UTC baseline: operator-owned ingress admitted every source on TCP 20001/9090. The later source-owned kiali-server-ingress replacement is recorded in pinnedSourceReview.currentLiveRecheck; real Octelium/Prometheus paths still need proof before narrowing.",
+      "octelium/cordium-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/cordium-rscserver": "Hold: ingress from Octelium cluster/genesis selectors on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octelium-ingress": "Hold: ingress from Octelium ingress-dataplane selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octelium-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octelium-octovigil": "Hold: ingress from Octelium cluster selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-cloudman": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octeliumee-clusterman": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octeliumee-collector": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-logstore": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-metricstore": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octeliumee-policyportal": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-rscserver": "Hold: ingress from Octelium cluster/genesis selectors on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-rscstore": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-secretman": "Hold: ingress from Octelium rscserver selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/svc-upstream": "Hold: ingress from Octelium svc/genesis selectors on every port; egress allows IPv4/IPv6 0/0 minus declared exclusions on every port. The latter remains a strict broad-egress finding pending pinned-generator render and canary traffic."
+    },
+    "method": "At the 02:32 UTC baseline, read-only Kubernetes managedFields inspection found 18 generator-managed policies absent from repository Kustomize renders; later Kiali replacement is recorded under pinnedSourceReview.currentLiveRecheck",
+    "repositoryOwnerCandidates": [
+      "clusters/homelab/apps/cordium-bootstrap/genesis.yaml",
+      "IaC/cordium/stack.hcl",
+      "IaC/octelium/stack.hcl",
+      "IaC/octelium-enterprise/stack.hcl",
+      "clusters/homelab/apps/kiali/values.yaml"
+    ],
+    "pinnedSourceReview": {
+      "capturedAt": "2026-10-19T18:30:27+00:00",
+      "liveSpecHashesMatchedPrior": 18,
+      "currentLiveRecheck": {
+        "capturedAt": "2026-10-19T21:12:00+00:00",
+        "generatedPolicyHashesMatchedPrior": 17,
+        "operatorKialiPolicyAbsent": true,
+        "sourceOwnedKialiPolicy": "monitoring/kiali-server-ingress",
+        "sourceOwnedKialiSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7",
+        "method": "Read-only all-namespace NetworkPolicy snapshot and Kiali CR/Argo CD inspection; the replacement's complete canonical spec matches both the source manifest and prior operator policy."
+      },
+      "method": "The 18:30 UTC read-only full-spec SHA-256 recheck covered all 18 then-live generated policies; pinned upstream constructors/templates were inspected, but no generator binary was executed.",
+      "policySourceRefs": {
+        "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
+        "monitoring/kiali": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/templates/kubernetes/networkpolicy.yaml#L1",
+        "octelium/cordium-nocturne": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/nocturne.go#L152",
+        "octelium/cordium-rscserver": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/rscserver.go#L131",
+        "octelium/octelium-ingress": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/ingress.go#L334",
+        "octelium/octelium-nocturne": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/nocturne.go#L147",
+        "octelium/octelium-octovigil": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/octovigil.go#L98",
+        "octelium/octeliumee-cloudman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/cloudman.go#L65",
+        "octelium/octeliumee-clusterman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/clusterman.go#L79",
+        "octelium/octeliumee-collector": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/collector.go#L115",
+        "octelium/octeliumee-logstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/logstore.go#L117",
+        "octelium/octeliumee-metricstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/metricstore.go#L114",
+        "octelium/octeliumee-nocturne": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/nocturne.go#L124",
+        "octelium/octeliumee-policyportal": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/policyportal.go#L99",
+        "octelium/octeliumee-rscserver": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscserver.go#L124",
+        "octelium/octeliumee-rscstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscstore.go#L114",
+        "octelium/octeliumee-secretman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/secretman.go#L129",
+        "octelium/svc-upstream": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237"
+      },
+      "result": "All 17 remaining generated policies match their prior live spec hashes. Kiali's source-owned replacement matches the former operator policy spec; no generator render or real traffic qualification was performed.",
+      "sourceFindings": [
+        "Cordium ws-main and Octelium svc-upstream hardcode broad public IPv4/IPv6 egress; retain strict inventory findings until pinned render and isolated canary traffic show actual requirements.",
+        "Kiali's deployment.network_policy.enabled=false handoff removed the operator policy, and Argo CD now owns an equivalent broad-source TCP 20001/9090 policy. Gateway, Traefik, Prometheus, Octelium and ambient paths still need canary traffic proof before narrowing.",
+        "The other 15 policies are generated ingress-only rules. Their presence does not isolate selected Pods from egress; no source-only correction or acceptance follows from matching source shapes."
+      ],
+      "status": "unqualified: 17 remaining generator renders, broad-source/egress decisions and real isolated canary enforcement remain pending",
+      "kialiOperatorControlRef": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/tasks/kubernetes/k8s-main.yml#L58-L67",
+      "kialiCallerReview": {
+        "repositoryPaths": [
+          "clusters/homelab/apps/kiali/authorizationpolicy.yaml",
+          "clusters/homelab/apps/kiali/networkpolicy.yaml",
+          "clusters/homelab/apps/kiali/values.yaml",
+          "clusters/homelab/apps/kiali/virtualservice.yaml",
+          "clusters/homelab/apps/traefik/routes.yaml",
+          "docs/examples/octelium/homelab-services.yaml"
+        ],
+        "readOnlyObservation": "The Ready Kiali Pod is ambient redirected; its Service targets TCP 20001/9090 and the live Istio ALLOW policy matches the repository principals.",
+        "stillUnverified": "No canary has proven which Pod identities kube-router sees for gateway, Traefik, Prometheus and Octelium traffic through ambient and Service translation."
+      }
+    },
+    "cordiumSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "pinnedTag": "v0.12.7",
+      "pinnedCommit": "e12b0b16d5fe94716e414fca7cfdc10b21014f2c",
+      "imageDigest": "sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401",
+      "fixture": "clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+      "fixtureSha256": "2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0",
+      "sourceRefs": {
+        "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
+        "octelium/cordium-nocturne": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/nocturne.go#L152",
+        "octelium/cordium-rscserver": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/rscserver.go#L131"
+      },
+      "completeSpecSha256": {
+        "cordium/ws-main": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+        "octelium/cordium-nocturne": "fb32c2ee1ea55c51743b1d4ffcfedb234c99d003929322ea507e9391351314bf",
+        "octelium/cordium-rscserver": "4ce6a7059f9b58a3f3ac6b35c97cb5312da100a9d1aec176a459b40c2e429543"
+      },
+      "method": "Compared the pinned upstream constructors and common labels with a sanitized fixture containing complete NetworkPolicy specs; read-only live specs match the prior hashes. The fixture is inventory input, not a deployed policy.",
+      "status": "source shape bound for 3 of 17 remaining generated policies at this checkpoint; all-port public egress and traffic are unqualified"
+    },
+    "octeliumSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "declaredVersion": "0.35.0",
+      "pinnedTag": "v0.35.0",
+      "pinnedCommit": "5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce",
+      "fixture": "clusters/homelab/apps/octelium/generated-networkpolicies.json",
+      "fixtureSha256": "21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7",
+      "sourceRefs": {
+        "octelium/octelium-ingress": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/ingress.go#L334",
+        "octelium/octelium-nocturne": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/nocturne.go#L147",
+        "octelium/octelium-octovigil": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/octovigil.go#L98",
+        "octelium/svc-upstream": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237"
+      },
+      "completeSpecSha256": {
+        "octelium/octelium-ingress": "98604d834f9b0c583f65f14c8f70195df706044658b21d302f33dc62caae2199",
+        "octelium/octelium-nocturne": "5cd2281cdd4996d94b456d65a2f4b244e63bf1a37ed47d0c005ba15d1a3e5a35",
+        "octelium/octelium-octovigil": "ab5b0dcb621fc89813ce9dd2833ebf14a8ab0187635140269f486714cfb5ccf1",
+        "octelium/svc-upstream": "09c86331a6a384a28f6ed34e5b185c3706efdf18395bd8ef82b44c374a69c4b9"
+      },
+      "method": "Compared pinned upstream v0.35.0 constructors and common labels with a sanitized complete-spec fixture; fresh read-only live specs match the historical hashes. No generator binary was executed. The fixture is inventory input, not a deployed policy.",
+      "installerImageSelection": {
+        "reviewedOn": "2026-10-24",
+        "repositoryCaller": "scripts/octelium-cluster-bootstrap.sh",
+        "initSourceRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/client/octops/commands/install/genesis.go#L104-L150",
+        "upgradeSourceRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/client/octops/commands/upgrade/genesis.go#L42-L63",
+        "finding": "Pinned octops constructs the Genesis Job image from package and version for both init and upgrade, with no image or digest override. A corrected Genesis image needs a reviewed installer image-selection patch or equivalent declared immutable image path."
+      },
+      "status": "source shape bound for four more policies; ten Octelium Enterprise Genesis policies and broad svc-upstream egress remain unqualified"
+    },
+    "octeliumEnterpriseSourceBinding": {
+      "reviewedOn": "2026-10-20",
+      "declaredVersion": "0.22.0",
+      "pinnedTag": "v0.22.0",
+      "pinnedCommit": "0e9368283420e17847879a58dc7f354b656ef3c3",
+      "imageDigest": "sha256:f8978d6373bd11a0bb5c6f5c5c57375e110bc1ab2842056f55a3153c77428e92",
+      "fixture": "clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+      "fixtureSha256": "c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2",
+      "sourceRefs": {
+        "octelium/octeliumee-cloudman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/cloudman.go#L65",
+        "octelium/octeliumee-clusterman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/clusterman.go#L79",
+        "octelium/octeliumee-collector": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/collector.go#L115",
+        "octelium/octeliumee-logstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/logstore.go#L117",
+        "octelium/octeliumee-metricstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/metricstore.go#L114",
+        "octelium/octeliumee-nocturne": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/nocturne.go#L124",
+        "octelium/octeliumee-policyportal": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/policyportal.go#L99",
+        "octelium/octeliumee-rscserver": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscserver.go#L124",
+        "octelium/octeliumee-rscstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscstore.go#L114",
+        "octelium/octeliumee-secretman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/secretman.go#L129"
+      },
+      "completeSpecSha256": {
+        "octelium/octeliumee-cloudman": "7a9127b12c5c7155ca871fa98aa74de1b272346159a48c2614f78a1447633682",
+        "octelium/octeliumee-clusterman": "a251d82d27afcea7cd9b31b6e902bda8e97b55bd07d08ead1735c0d17b07898a",
+        "octelium/octeliumee-collector": "57ceee250c68b372992449f16e3728990f7e2ff84152bb9c6418692110f21ebe",
+        "octelium/octeliumee-logstore": "7e61872de5b3b3ee0c56f80a62eb3c3d7bebca70d9a23b0160f11247fc2afce7",
+        "octelium/octeliumee-metricstore": "0a5fe48dcf9783d60743677e3069368e95a764a7062e64bbfa33f51a327a43c6",
+        "octelium/octeliumee-nocturne": "154789ab1e91f093086522732abeb3fc37542226cb74b739027340d28bcaacd3",
+        "octelium/octeliumee-policyportal": "2d3bbf55384ff4b02153571274801b746810d976666fc82fda73a9334cdb0634",
+        "octelium/octeliumee-rscserver": "81f5b4d700b25faf90890d79befd526eed375694b6084de6374c1e9f0948a7fa",
+        "octelium/octeliumee-rscstore": "962321945d3a49408e4049978c78969b498f1727dc566fbad386b6d29dfa8c98",
+        "octelium/octeliumee-secretman": "149ba1bcf503716e2076c16d5092a989093d00e4f15df594a22ca01f151615a1"
+      },
+      "method": "Independently derived complete NetworkPolicy specs from pinned v0.22.0 Enterprise Genesis constructors and common labels; each matched a fresh read-only live spec and the historical raw spec hash. The generator binary was not executed and this fixture is inventory input, not a deployed policy.",
+      "status": "source shape bound for all ten Octelium Enterprise Genesis policies; ingress identity and canary traffic remain unqualified"
+    }
+  },
+  "ingressAudit": {
+    "allSourcePolicies": [
+      "affine/affine-server",
+      "ai/openclaw",
+      "automation/policy-bot",
+      "fleet/fleet-ambient",
+      "langfuse/langfuse-ingress",
+      "monitoring/kiali",
+      "nofx/nofx-backend",
+      "nofx/nofx-frontend",
+      "traefik/traefik"
+    ],
+    "allSourceRuleCount": 9,
+    "scope": "Historical 02:30 UTC syntactic full-spec scan only; mesh HBONE and the later source-owned Kiali replacement need owner intent and canary traffic verification"
+  },
+  "livePodCount": 209,
+  "livePolicyCount": 66,
+  "plannedEnterpriseFindings": [
+    {
+      "finding": "Empty database.cidrs or cluster.cidrs renders a destination-free TCP 5432 or 443 egress rule; Kubernetes treats an empty or missing to field as all destinations.",
+      "requiredCorrection": "Qualify Service DNAT behavior for these exact destinations on the isolated Talos canary before deployment.",
+      "source": "openclaw/openclaw-enterprise@33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/networkpolicies.yaml",
+      "sourceCorrection": "clusters/homelab/apps/openclaw-enterprise/profile-input.json and values.yaml set nonempty database and cluster host CIDRs; scripts/ci/openclaw-enterprise-chart-hooks-test.py asserts the exact rendered dependency and bootstrap egress peers.",
+      "status": "deployment-blocking"
+    }
+  ],
   "policies": [
     {
       "egressRules": 0,
@@ -21,7 +287,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/affine/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "753b9423d796c620ce0d923957edac92ab5bb000be1ce04ddc55103e152b49f1",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/affine/networkpolicy.yaml": "86fa53672d748dadfe8883e08360a824f3e51d23fae9aa367c5063acab7bcca1"
       },
@@ -38,7 +305,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/affine/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "c25908dc667e764459aa3777a188784919e7c516cc8579c4b4e3f7ed6c0501f0",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/affine/networkpolicy.yaml": "86fa53672d748dadfe8883e08360a824f3e51d23fae9aa367c5063acab7bcca1"
       },
@@ -55,7 +323,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/litellm/postgres-networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "db1827239f09158adacce7b40e0e632f069a3c9d900e4839c4fc320d427e0f68",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/litellm/postgres-networkpolicy.yaml": "abf6c4c42f8ea7cf7382aa840f7d5d23c8ede3d997888ba05ac6552a455a40cf"
       },
@@ -73,7 +342,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/multica/postgres.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "5d453a51ccad57e5d8849ce27a759de66a35b04bc9fcf01dae473ba7295448ea",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/multica/postgres.yaml": "3387e5763b58d7b43b8f3215d874ab2b9bfeb4f2e3e60c28c0d20d55d78dafe4"
       },
@@ -90,7 +360,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/multica/runtime.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "4e3018b1f292d1283dce469f2e31741b3e0ed90b372e6f2e5c67b7d08b6e821d",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/multica/runtime.yaml": "17592e6f22247aa5f253791e56ff4a22be8a7217c97abff17fc9b565e2df3bfb"
       },
@@ -107,9 +378,29 @@
       "sourcePaths": [
         "clusters/homelab/apps/openclaw/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "0a7f1a2ba649115c934887cef7caa2d65e982c3100c841a7cff2541a80f3e4ea",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/openclaw/networkpolicy.yaml": "ef4f76f93e6526db16ee5952e04ba4ffc33956b4a52dcd3264b3ff78195e4cbe"
+      },
+      "trackingApplication": "openclaw"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 0,
+      "liveSpecSha256": "ff1d9b0906106ff14436ea018e9b240b6586119f6def73fb7772f2bb0c535a3d",
+      "policy": "ai/openclaw-retirement-reader",
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/openclaw/retirement-reader.yaml"
+      ],
+      "sourceRenderSpecSha256": "ff1d9b0906106ff14436ea018e9b240b6586119f6def73fb7772f2bb0c535a3d",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/openclaw/retirement-reader.yaml": "be73a12a13cb120601e12a448db607bd699851d6e2f59f3fe0b204801750f45e"
       },
       "trackingApplication": "openclaw"
     },
@@ -124,7 +415,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/n8n-postgres/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "26f956339b77961c8c0c8c1e0bfea3af71e6f7666b898ea86f71b017fe099259",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/n8n-postgres/networkpolicy.yaml": "083a0f94297cda63154298aa94fe7687513e851fe4b174fb2940b1a6ba3f8e92"
       },
@@ -141,11 +433,30 @@
       "sourcePaths": [
         "clusters/homelab/apps/policy-bot/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "7b0cdd7c1b78d7494d7e9c7ddeb9c06974f111a0155f04babd2fdc9eb917f123",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/policy-bot/networkpolicy.yaml": "0d04b661ecc6da3263c845aabaaad0607794606e45b02da0f1b814f511913b63"
       },
       "trackingApplication": "policy-bot"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 0,
+      "liveSpecSha256": "3ef6498cbc5cfdc4c3d3e001d8a7f68b5bf3ddb27dba7c562a6e69d007c1906d",
+      "policy": "automation/renovate",
+      "policyTypes": [
+        "Ingress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/renovate/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "23158f339fb693a9f1bc5bdc7d17238ed210f2931d306546043e3bc86e84f415",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/renovate/networkpolicy.yaml": "8150d7308a79af4878b80020a8cf0860bbb768d14846b8653793e10008199ecc"
+      },
+      "trackingApplication": "renovate"
     },
     {
       "egressRules": 0,
@@ -159,7 +470,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/cordium/user-namespace-sysctl.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "d155cb130bc84f41b73c175c64c4206f9f2f217e4bc2484bf22f0b3d34c3cb65",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/cordium/user-namespace-sysctl.yaml": "8eb870fab26fdfc91e48f5fe3dd3c08bb167446429946527327f7e774c151798"
       },
@@ -190,7 +502,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/fleet/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "e119f15b3ecd128f032c059990a4d6712ca2a34a0f907002211f81935cdd2d5a",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/fleet/networkpolicy.yaml": "4b4b6de7abfbc3a17bbbf7606b73867196d60091e339fe51e51f206da34c32f1"
       },
@@ -207,7 +520,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/fleet/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "657a33813c074ce9a086a6e63e5634770b34577d427c55cef0d298fb790ba675",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/fleet/networkpolicy.yaml": "4b4b6de7abfbc3a17bbbf7606b73867196d60091e339fe51e51f206da34c32f1"
       },
@@ -224,7 +538,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/fleet/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/fleet/networkpolicy.yaml": "4b4b6de7abfbc3a17bbbf7606b73867196d60091e339fe51e51f206da34c32f1"
       },
@@ -241,7 +556,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/fleet/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "7bfb9f07eea98f6fc4d7bf077c631f2307009936b114430d84e8d559a96d74d4",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/fleet/networkpolicy.yaml": "4b4b6de7abfbc3a17bbbf7606b73867196d60091e339fe51e51f206da34c32f1"
       },
@@ -258,7 +574,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/fleet/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "809e70abb1550ea4909a3fa4c8aa15a690142774bef208e0e434cbafe2e04755",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/fleet/networkpolicy.yaml": "4b4b6de7abfbc3a17bbbf7606b73867196d60091e339fe51e51f206da34c32f1"
       },
@@ -275,7 +592,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "0a07b9968e68c471b5fc66169975cac068a5d2bf99145b01ed514b5f5f15e5eb",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -292,7 +610,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "6da2821d1ff64c879b35ec2a85e229f9bf3054cb1e5f2c0e4260cf0a2ded1b22",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -309,7 +628,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -327,7 +647,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "d8afb48961f7ce2720a57917d44fd7fb392f692984bc1dec997f131ffc5a6c1f",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -344,7 +665,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "3077993944c3d956f14690d47f6b800ccbea93bb0e9fd7fba42a57c68975e496",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -361,7 +683,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "6b4aa24078093186cad9d831aab90d8b2d9b4967fc28f884deb8e1cb84fde295",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -379,7 +702,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "44c969a8a91a811e0917ece1032e79c0074da57bdd0c24148d1b800a0dae2590",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -397,7 +721,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/harbor/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "80e4b31e30cd5d56667c387c4d00e0534e46a877d72012f952c6c3153c9ee38d",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/harbor/networkpolicy.yaml": "30414b3dd192989fa800c4925c459e46f5e107fb0be5911f6ef96d2d1ea67367"
       },
@@ -414,11 +739,67 @@
       "sourcePaths": [
         "clusters/homelab/apps/langfuse/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "bef6e1da607c8448b5827645bc7d9d38a5ebdcfcbf2a3c0d0369ebe199584f3b",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/langfuse/networkpolicy.yaml": "e69f0d82f99833b88060a0602208edc038dc930fd86b5b944b9372845b769ddc"
       },
       "trackingApplication": "langfuse"
+    },
+    {
+      "egressRules": 2,
+      "ingressRules": 1,
+      "liveSpecSha256": "ba4eaa1326467d692a57e256320cd0be9ccb9e7a6d296b5d890a38a9c8cb4911",
+      "policy": "mastodon/mastodon-datastores",
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/mastodon/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "ba4eaa1326467d692a57e256320cd0be9ccb9e7a6d296b5d890a38a9c8cb4911",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/mastodon/networkpolicy.yaml": "3dc01f19a94e2f0ca0507ec8507a1bf42837ce79a068bcdebce8072a2d09e931"
+      },
+      "trackingApplication": "mastodon"
+    },
+    {
+      "egressRules": 1,
+      "ingressRules": 0,
+      "liveSpecSha256": "2a4543b2d7475f3d4e07be61aa649060aa3b157e34b3b2d560124fc356d4e63d",
+      "policy": "mastodon/mastodon-federation-egress",
+      "policyTypes": [
+        "Egress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/mastodon/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "2a4543b2d7475f3d4e07be61aa649060aa3b157e34b3b2d560124fc356d4e63d",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/mastodon/networkpolicy.yaml": "3dc01f19a94e2f0ca0507ec8507a1bf42837ce79a068bcdebce8072a2d09e931"
+      },
+      "trackingApplication": "mastodon"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 1,
+      "liveSpecSha256": "a833c11e143e9ccc041a280db7359cfe9b1742cf93a0e59c376c71c7770c0b9b",
+      "policy": "mastodon/mastodon-gateway-ingress",
+      "policyTypes": [
+        "Ingress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/mastodon/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "a833c11e143e9ccc041a280db7359cfe9b1742cf93a0e59c376c71c7770c0b9b",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/mastodon/networkpolicy.yaml": "3dc01f19a94e2f0ca0507ec8507a1bf42837ce79a068bcdebce8072a2d09e931"
+      },
+      "trackingApplication": "mastodon"
     },
     {
       "egressRules": 0,
@@ -431,7 +812,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/bazarr/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "3f1dad52f6d8dbc0e001f5c5351aff115d037eab6124f022033a7c78cfddcb43",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/bazarr/networkpolicy.yaml": "a1ddc444af1110c04213f408b63c26bae20dbc89429bb10204af0c505e6f51ed"
       },
@@ -449,7 +831,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/bazarr/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "b1e201a829721455c0800790e6f3af6cd23fbad5b9a7e6da37a92d29e33baa87",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/bazarr/networkpolicy.yaml": "a1ddc444af1110c04213f408b63c26bae20dbc89429bb10204af0c505e6f51ed"
       },
@@ -466,7 +849,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/bazarr/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "9cdc6223b9c4f4e38486a63d65bb4f85fa503d948ab852268e2067472946a4ec",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/bazarr/networkpolicy.yaml": "a1ddc444af1110c04213f408b63c26bae20dbc89429bb10204af0c505e6f51ed"
       },
@@ -483,7 +867,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/dispatcharr/postgres-networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "a49205d75e7c67bd54b3d71320903ec420082e7e3e0e36af767064eeb3ba707e",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/dispatcharr/postgres-networkpolicy.yaml": "588e624e2868a892500ed4553c6480c23e77f4cda701af7c164851461fb62db5"
       },
@@ -501,7 +886,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/deluge/media-storage.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "d4e3911e9b0a4b01b5368dce61fc9a1d1b237b1aec6f52f9c634b20e7a136b50",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/deluge/media-storage.yaml": "a765490f4cb706594286489a7aff855ba6c2675f647232da8a4818ad90504455"
       },
@@ -519,7 +905,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/radarr/media-storage.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "45bd9dcf4a636f532d1c32df23e591a54fba64ea223d6fcccb77afc47185c796",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/radarr/media-storage.yaml": "84e8aeed03087d1574ca488559107269d8716c907440cf799e520b352a78d890"
       },
@@ -536,7 +923,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/media-postgres/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "3397b96eb8b0db842387d2eb792ca9f4bd2784e4b9223c5bd3ea35de91fb4123",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/media-postgres/networkpolicy.yaml": "968393e3467502f70dad30aae973f603b8c9761e04da99a894b4649b9dd435fd"
       },
@@ -554,7 +942,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/media-postgres/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "0b120e4741276f64dcb4a1105290732e94ee18a67d40d70d4f99b045b84afe5e",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/media-postgres/networkpolicy.yaml": "968393e3467502f70dad30aae973f603b8c9761e04da99a894b4649b9dd435fd"
       },
@@ -572,7 +961,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/sonarr/media-storage.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "5d424360fd5392d3d898e5965a148c557d385294eb830d44e23458060067939f",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/sonarr/media-storage.yaml": "f5827a6c2b1e81da0a720100794413f7b6725d2ae8a370b1a9b6cbe68bc849ea"
       },
@@ -603,7 +993,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/nix-builder/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "23461b9c3832c10c17c77c613d135bd503e4bf4981744242a9db941d2ea3f8c3",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/nix-builder/networkpolicy.yaml": "91c246d41f236acaf4d79562ace304edb21dad61da51408e1d7492f16e04972d"
       },
@@ -621,7 +1012,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/nofx/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "ebd021480cf2df5f830558950bc326f421c4bd722403dd64c2663762da191ac6",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/nofx/networkpolicy.yaml": "e798a1e4cc8aba888cca7f74a026740b6e3b1750b860c0c77e350574035ae624"
       },
@@ -639,11 +1031,103 @@
       "sourcePaths": [
         "clusters/homelab/apps/nofx/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "45295d73af3e1f632dce91da9259f4e07c3d571b8f1703c88803da09c403644b",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/nofx/networkpolicy.yaml": "e798a1e4cc8aba888cca7f74a026740b6e3b1750b860c0c77e350574035ae624"
       },
       "trackingApplication": "nofx"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 1,
+      "liveSpecSha256": "cad3c4f6f62be7778edb82f378912b8ccdca2d4f0891f05d375c32e5cfedf6ed",
+      "policy": "octelium-client/octelium-demo-allow-client",
+      "policyTypes": [
+        "Ingress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/octelium/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "cad3c4f6f62be7778edb82f378912b8ccdca2d4f0891f05d375c32e5cfedf6ed",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/octelium/networkpolicy.yaml": "4092cbc44237e59089b6a9c2731e39e1cd231b821135174ed1f9e2a4ad432968"
+      },
+      "trackingApplication": "octelium"
+    },
+    {
+      "egressRules": 4,
+      "ingressRules": 0,
+      "liveSpecSha256": "422496ace5d03a89fab65fb3124407031f506a850ba1884df448c9ff8c17db27",
+      "policy": "octelium-public/cloudflared-egress",
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/octelium-public/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "422496ace5d03a89fab65fb3124407031f506a850ba1884df448c9ff8c17db27",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/octelium-public/networkpolicy.yaml": "2b235cf18d7f5c300774773f282b15cafecf9f22fab293113186666651c7bd29"
+      },
+      "trackingApplication": "octelium-public"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 1,
+      "liveSpecSha256": "464863e1993e5841e0da3966cdec5c462f53ce483f91ff59737473b0c30fe3a6",
+      "policy": "octelium-storage/octelium-postgres-backup",
+      "policyTypes": [
+        "Ingress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "464863e1993e5841e0da3966cdec5c462f53ce483f91ff59737473b0c30fe3a6",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml": "03a284a6ed4b8f701c5a4dbffc782b8e30a5afe2310ada3cca10272d994507df"
+      },
+      "trackingApplication": "octelium-storage"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 1,
+      "liveSpecSha256": "5be9783190b9787b258b13bef76fc8a865b445edc6777c80801c67ae0b930f9a",
+      "policy": "octelium-storage/octelium-storage",
+      "policyTypes": [
+        "Ingress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "5be9783190b9787b258b13bef76fc8a865b445edc6777c80801c67ae0b930f9a",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml": "03a284a6ed4b8f701c5a4dbffc782b8e30a5afe2310ada3cca10272d994507df"
+      },
+      "trackingApplication": "octelium-storage"
+    },
+    {
+      "egressRules": 0,
+      "ingressRules": 0,
+      "liveSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440",
+      "policy": "octelium-storage/octelium-storage-default-deny",
+      "policyTypes": [
+        "Ingress"
+      ],
+      "sourcePaths": [
+        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml"
+      ],
+      "sourceRenderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440",
+      "sourceRenderVerified": true,
+      "sourceSha256": {
+        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml": "03a284a6ed4b8f701c5a4dbffc782b8e30a5afe2310ada3cca10272d994507df"
+      },
+      "trackingApplication": "octelium-storage"
     },
     {
       "egressRules": 3,
@@ -657,7 +1141,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/cordium/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "79a7ded64e2f1b4d04b0f4994d70660635ff734f6874138ec1221b4c10d116af",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/cordium/networkpolicy.yaml": "1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
       },
@@ -675,7 +1160,8 @@
       "sourcePaths": [
         "clusters/homelab/apps/cordium/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "bd922455363c37ca125b76f84a1e7456aab7a3217320632b748e15baab433be2",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/cordium/networkpolicy.yaml": "1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
       },
@@ -892,92 +1378,6 @@
     },
     {
       "egressRules": 0,
-      "ingressRules": 1,
-      "liveSpecSha256": "cad3c4f6f62be7778edb82f378912b8ccdca2d4f0891f05d375c32e5cfedf6ed",
-      "policy": "octelium-client/octelium-demo-allow-client",
-      "policyTypes": [
-        "Ingress"
-      ],
-      "sourcePaths": [
-        "clusters/homelab/apps/octelium/networkpolicy.yaml"
-      ],
-      "sourceRenderVerified": false,
-      "sourceSha256": {
-        "clusters/homelab/apps/octelium/networkpolicy.yaml": "4092cbc44237e59089b6a9c2731e39e1cd231b821135174ed1f9e2a4ad432968"
-      },
-      "trackingApplication": "octelium"
-    },
-    {
-      "egressRules": 4,
-      "ingressRules": 0,
-      "liveSpecSha256": "422496ace5d03a89fab65fb3124407031f506a850ba1884df448c9ff8c17db27",
-      "policy": "octelium-public/cloudflared-egress",
-      "policyTypes": [
-        "Ingress",
-        "Egress"
-      ],
-      "sourcePaths": [
-        "clusters/homelab/apps/octelium-public/networkpolicy.yaml"
-      ],
-      "sourceRenderVerified": false,
-      "sourceSha256": {
-        "clusters/homelab/apps/octelium-public/networkpolicy.yaml": "2b235cf18d7f5c300774773f282b15cafecf9f22fab293113186666651c7bd29"
-      },
-      "trackingApplication": "octelium-public"
-    },
-    {
-      "egressRules": 0,
-      "ingressRules": 1,
-      "liveSpecSha256": "464863e1993e5841e0da3966cdec5c462f53ce483f91ff59737473b0c30fe3a6",
-      "policy": "octelium-storage/octelium-postgres-backup",
-      "policyTypes": [
-        "Ingress"
-      ],
-      "sourcePaths": [
-        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml"
-      ],
-      "sourceRenderVerified": false,
-      "sourceSha256": {
-        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml": "03a284a6ed4b8f701c5a4dbffc782b8e30a5afe2310ada3cca10272d994507df"
-      },
-      "trackingApplication": "octelium-storage"
-    },
-    {
-      "egressRules": 0,
-      "ingressRules": 1,
-      "liveSpecSha256": "5be9783190b9787b258b13bef76fc8a865b445edc6777c80801c67ae0b930f9a",
-      "policy": "octelium-storage/octelium-storage",
-      "policyTypes": [
-        "Ingress"
-      ],
-      "sourcePaths": [
-        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml"
-      ],
-      "sourceRenderVerified": false,
-      "sourceSha256": {
-        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml": "03a284a6ed4b8f701c5a4dbffc782b8e30a5afe2310ada3cca10272d994507df"
-      },
-      "trackingApplication": "octelium-storage"
-    },
-    {
-      "egressRules": 0,
-      "ingressRules": 0,
-      "liveSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440",
-      "policy": "octelium-storage/octelium-storage-default-deny",
-      "policyTypes": [
-        "Ingress"
-      ],
-      "sourcePaths": [
-        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml"
-      ],
-      "sourceRenderVerified": false,
-      "sourceSha256": {
-        "clusters/homelab/apps/octelium-storage/networkpolicy.yaml": "03a284a6ed4b8f701c5a4dbffc782b8e30a5afe2310ada3cca10272d994507df"
-      },
-      "trackingApplication": "octelium-storage"
-    },
-    {
-      "egressRules": 0,
       "ingressRules": 7,
       "liveSpecSha256": "05e21ab9882664fee05dc9895c04125755ab5881baab3c26199088b7ab34e7c0",
       "policy": "traefik/traefik",
@@ -987,21 +1387,739 @@
       "sourcePaths": [
         "clusters/homelab/apps/traefik/networkpolicy.yaml"
       ],
-      "sourceRenderVerified": false,
+      "sourceRenderSpecSha256": "05e21ab9882664fee05dc9895c04125755ab5881baab3c26199088b7ab34e7c0",
+      "sourceRenderVerified": true,
       "sourceSha256": {
         "clusters/homelab/apps/traefik/networkpolicy.yaml": "e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
       },
       "trackingApplication": "traefik"
     }
   ],
+  "currentSourceRenderRecheck": {
+    "capturedAt": "2026-10-20T11:35:23.308787+00:00",
+    "sourceSha": "9841f044d282839f030d284f7ba74d1d634447ae",
+    "method": "Offline kubectl kustomize for every repository Kustomization under clusters/homelab; SHA-256 of each complete compact, sorted-key JSON NetworkPolicy spec. Comparison is to the historical policies[].sourceRenderSpecSha256 baseline. No live cluster query or generator execution was made.",
+    "kustomizationCount": 53,
+    "renderedPolicyCount": 55,
+    "historicalSourceSpecMatches": 37,
+    "historicalSourceOnlyOverlays": [
+      "media/media-postgres-restore",
+      "octelium-storage/octelium-postgres-restore-drill"
+    ],
+    "changedSinceHistoricalBaseline": {
+      "harbor/harbor-components": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "bae8160351269f41f03abe3dde109eb9d62848d3f8f628b5074191d95a43328d",
+        "historicalRenderSpecSha256": "0a07b9968e68c471b5fc66169975cac068a5d2bf99145b01ed514b5f5f15e5eb"
+      },
+      "harbor/harbor-nginx": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "3db6549252f1227580e114373247a13a0fed5a0c1b02f8633df5e80ceb727660",
+        "historicalRenderSpecSha256": "3077993944c3d956f14690d47f6b800ccbea93bb0e9fd7fba42a57c68975e496"
+      },
+      "harbor/harbor-postgres-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "0fb20b25dc8ccfa90c6655f164629e3575baf62ed80f3d2d1d1d28b115e96804",
+        "historicalRenderSpecSha256": "44c969a8a91a811e0917ece1032e79c0074da57bdd0c24148d1b800a0dae2590"
+      },
+      "harbor/harbor-vulnerability-exporter": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/harbor/networkpolicy.yaml": "3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        "currentRenderSpecSha256": "e9469e165ce1a7731a3a62b4a1566e0537b2d6420fbc7c5515d8fbe4f0004d3d",
+        "historicalRenderSpecSha256": "80e4b31e30cd5d56667c387c4d00e0534e46a877d72012f952c6c3153c9ee38d"
+      },
+      "mastodon/mastodon-datastores": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/mastodon/networkpolicy.yaml": "e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        "currentRenderSpecSha256": "b8158fa4f9fdd1783149fff29a326a75e152067493a2717c50935d3cf0faa6be",
+        "historicalRenderSpecSha256": "ba4eaa1326467d692a57e256320cd0be9ccb9e7a6d296b5d890a38a9c8cb4911"
+      },
+      "mastodon/mastodon-gateway-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/mastodon/networkpolicy.yaml": "e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        "currentRenderSpecSha256": "5169ae6d245019505bf787b87186257091d6ed0ae159f9c5f286eb0fb019196b",
+        "historicalRenderSpecSha256": "a833c11e143e9ccc041a280db7359cfe9b1742cf93a0e59c376c71c7770c0b9b"
+      },
+      "nix-builder/nix-builder": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/nix-builder/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/nix-builder/networkpolicy.yaml": "3ef10e43a5e4942ad69b81c28936ec78b8e9bc298c80f606ef89f7c933a063ab"
+        },
+        "currentRenderSpecSha256": "c85fe8cd501a2581c6ff4a03be98d27e34e32c75c295a50c229fa0fa61ef554f",
+        "historicalRenderSpecSha256": "23461b9c3832c10c17c77c613d135bd503e4bf4981744242a9db941d2ea3f8c3"
+      },
+      "octelium-public/cloudflared-egress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-public/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/octelium-public/networkpolicy.yaml": "22487ad94034680e20936d33d7703a37858801be8e9e591aa719597f3542bff0"
+        },
+        "currentRenderSpecSha256": "731c8bae79c208b35a0cac3c8a021283bc1c005b7d174c113e21a327077ebd13",
+        "historicalRenderSpecSha256": "422496ace5d03a89fab65fb3124407031f506a850ba1884df448c9ff8c17db27"
+      },
+      "octelium/cordium-cluster-config": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/cordium/networkpolicy.yaml": "ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246"
+        },
+        "currentRenderSpecSha256": "dd36d5583a69f40f6f06e7c66b1db4672a90b6a395598562371dfe8d5aacbc88",
+        "historicalRenderSpecSha256": "79a7ded64e2f1b4d04b0f4994d70660635ff734f6874138ec1221b4c10d116af"
+      },
+      "octelium/cordium-genesis": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/cordium/networkpolicy.yaml": "ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246"
+        },
+        "currentRenderSpecSha256": "1cfb413eadbb9f9feaadb5fee19c3946e4960d0b18332cafe20d9cf11c355bc9",
+        "historicalRenderSpecSha256": "bd922455363c37ca125b76f84a1e7456aab7a3217320632b748e15baab433be2"
+      },
+      "traefik/traefik": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/traefik/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/traefik/networkpolicy.yaml": "a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
+        },
+        "currentRenderSpecSha256": "1af0b69b77174a3b68867b6489df78356be8c28f130a0e83e8d57faf61bac695",
+        "historicalRenderSpecSha256": "05e21ab9882664fee05dc9895c04125755ab5881baab3c26199088b7ab34e7c0"
+      }
+    },
+    "notInHistoricalPolicyRows": {
+      "media/media-postgres-restore": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/media-postgres-recovery/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/media-postgres-recovery/restore-job.yaml": "2eb7096bdc78ca1930b0b2a5b6d5a5363d95066fb8defb64542952878765983b"
+        },
+        "currentRenderSpecSha256": "2bb9a88d1b38b8ac1b35c1cbef124eb795bb24a8b5868eabb923dfc53634ed31"
+      },
+      "monitoring/kiali-server-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/kiali/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/kiali/networkpolicy.yaml": "2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
+        },
+        "currentRenderSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7"
+      },
+      "octelium-storage/octelium-postgres-restore-drill": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-storage/restore-drill-candidate/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/octelium-storage/restore-drill-candidate/restore-drill-cronjob.yaml": "2e4adb79cbd05dcca8220b8c1629d61c734fc2866b1dc49efc693bc265be841b"
+        },
+        "currentRenderSpecSha256": "0531d8a86d3e23741a721b1ccc7b28e688600411dafac8c5c6afcfefa5ab5042"
+      },
+      "openclaw-system/occ-postgres-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml": "611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
+        },
+        "currentRenderSpecSha256": "ce49609122796422dfc7777109c8b0419da83c23e2c6d9c2ba5f43643f482182"
+      },
+      "openclaw-system/occ-postgres-restore-drill-isolation": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml": "611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
+        },
+        "currentRenderSpecSha256": "f1c622f164bf27498ef6dda1e483ec9e756c13ded7300a3f10a5a0814265f3ad"
+      },
+      "openclaw-system/oce-lifecycle-hooks": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise/hooks.yaml": "f06e97ebd6a5b909313a0897dab25f36badec8fce58a0cfb6a39c446eccdf87e"
+        },
+        "currentRenderSpecSha256": "cb1a077ec56637fe74a2431cb51ab0fc14134619270f95bfc443d9fd77032bf9"
+      },
+      "openclaw-system/openclaw-system-default-deny-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "sourceSha256": {
+          "clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml": "611c7630886cfbb2d2a8dbfa32e28a4340279ed43ac3a63a6ec89512a5f190b7"
+        },
+        "currentRenderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440"
+      }
+    },
+    "strictFindingDisposition": "Historical wildcard-egress findings remain open. Stock Enterprise public TCP/443 with private-range exclusions remains a separate documented exception, not a waiver of strict findings.",
+    "correctionDecision": "No additional behavior-changing manifest edit is justified by source render equality alone. Generated Cordium ws-main and Octelium svc-upstream all-port public egress require pinned generator patches or reviewed forks, then new renders and isolated-canary traffic. Other broad source policies and the current live policy set need traffic and owner review before narrowing.",
+    "status": "source-only recheck; T018 remains incomplete pending fresh live inventory, generator render/correction, ingress and egress owner decisions, and isolated-canary traffic"
+  },
+  "currentLiveAudit": {
+    "capturedAt": "2026-10-20T17:59:49Z",
+    "sourceSha": "e88278aede0a433493781bf05aa03ca1090b606c",
+    "method": "Read-only all-namespace Pod and NetworkPolicy snapshots, live managedFields, kubectl kustomize for all 53 repository Kustomizations, and scripts/network-policy-inventory.py. Complete-spec hashes are SHA-256 of compact sorted-key JSON; inventory normalizes only absent versus empty ingress/egress lists. No generator binary or traffic test was run; private snapshots remain off-repository.",
+    "activePodCount": 209,
+    "livePolicyCount": 66,
+    "kustomizationCount": 53,
+    "renderedPolicyOccurrences": 57,
+    "distinctRenderedPolicyCount": 55,
+    "matchingSourceOwnedLivePolicyCount": 49,
+    "generatedLiveOnlyPolicyCount": 17,
+    "sourceOnlyPolicyIds": [
+      "media/media-postgres-restore",
+      "octelium-storage/octelium-postgres-restore-drill",
+      "openclaw-system/occ-postgres-ingress",
+      "openclaw-system/occ-postgres-restore-drill-isolation",
+      "openclaw-system/oce-lifecycle-hooks",
+      "openclaw-system/openclaw-system-default-deny-ingress"
+    ],
+    "driftedPolicyIds": [],
+    "ownerRenderHashes": {
+      "affine/affine-data-services": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/affine/kustomization.yaml"
+        ],
+        "renderSpecSha256": "753b9423d796c620ce0d923957edac92ab5bb000be1ce04ddc55103e152b49f1"
+      },
+      "affine/affine-server": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/affine/kustomization.yaml"
+        ],
+        "renderSpecSha256": "c25908dc667e764459aa3777a188784919e7c516cc8579c4b4e3f7ed6c0501f0"
+      },
+      "ai/litellm-postgres": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/litellm/kustomization.yaml"
+        ],
+        "renderSpecSha256": "db1827239f09158adacce7b40e0e632f069a3c9d900e4839c4fc320d427e0f68"
+      },
+      "ai/multica-postgres": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/multica/kustomization.yaml"
+        ],
+        "renderSpecSha256": "5d453a51ccad57e5d8849ce27a759de66a35b04bc9fcf01dae473ba7295448ea"
+      },
+      "ai/multica-runtime": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/multica/kustomization.yaml"
+        ],
+        "renderSpecSha256": "4e3018b1f292d1283dce469f2e31741b3e0ed90b372e6f2e5c67b7d08b6e821d"
+      },
+      "ai/openclaw": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw/kustomization.yaml"
+        ],
+        "renderSpecSha256": "0a7f1a2ba649115c934887cef7caa2d65e982c3100c841a7cff2541a80f3e4ea"
+      },
+      "ai/openclaw-retirement-reader": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw/kustomization.yaml"
+        ],
+        "renderSpecSha256": "ff1d9b0906106ff14436ea018e9b240b6586119f6def73fb7772f2bb0c535a3d"
+      },
+      "automation/n8n-postgres": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/n8n-postgres/kustomization.yaml"
+        ],
+        "renderSpecSha256": "26f956339b77961c8c0c8c1e0bfea3af71e6f7666b898ea86f71b017fe099259"
+      },
+      "automation/policy-bot": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/policy-bot/kustomization.yaml"
+        ],
+        "renderSpecSha256": "7b0cdd7c1b78d7494d7e9c7ddeb9c06974f111a0155f04babd2fdc9eb917f123"
+      },
+      "automation/renovate": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/renovate/kustomization.yaml"
+        ],
+        "renderSpecSha256": "23158f339fb693a9f1bc5bdc7d17238ed210f2931d306546043e3bc86e84f415"
+      },
+      "cordium/cordium-user-namespace-sysctl": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "renderSpecSha256": "d155cb130bc84f41b73c175c64c4206f9f2f217e4bc2484bf22f0b3d34c3cb65"
+      },
+      "fleet/fleet-ambient": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/fleet/kustomization.yaml"
+        ],
+        "renderSpecSha256": "e119f15b3ecd128f032c059990a4d6712ca2a34a0f907002211f81935cdd2d5a"
+      },
+      "fleet/fleet-datastores": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/fleet/kustomization.yaml"
+        ],
+        "renderSpecSha256": "657a33813c074ce9a086a6e63e5634770b34577d427c55cef0d298fb790ba675"
+      },
+      "fleet/fleet-default-deny": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/fleet/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440"
+      },
+      "fleet/fleet-mysql-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/fleet/kustomization.yaml"
+        ],
+        "renderSpecSha256": "7bfb9f07eea98f6fc4d7bf077c631f2307009936b114430d84e8d559a96d74d4"
+      },
+      "fleet/fleet-server": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/fleet/kustomization.yaml"
+        ],
+        "renderSpecSha256": "809e70abb1550ea4909a3fa4c8aa15a690142774bef208e0e434cbafe2e04755"
+      },
+      "harbor/harbor-components": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "bae8160351269f41f03abe3dde109eb9d62848d3f8f628b5074191d95a43328d"
+      },
+      "harbor/harbor-core-bootstrap": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "6da2821d1ff64c879b35ec2a85e229f9bf3054cb1e5f2c0e4260cf0a2ded1b22"
+      },
+      "harbor/harbor-default-deny-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440"
+      },
+      "harbor/harbor-image-signing": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "d8afb48961f7ce2720a57917d44fd7fb392f692984bc1dec997f131ffc5a6c1f"
+      },
+      "harbor/harbor-nginx": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3db6549252f1227580e114373247a13a0fed5a0c1b02f8633df5e80ceb727660"
+      },
+      "harbor/harbor-postgres": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "6b4aa24078093186cad9d831aab90d8b2d9b4967fc28f884deb8e1cb84fde295"
+      },
+      "harbor/harbor-postgres-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "0fb20b25dc8ccfa90c6655f164629e3575baf62ed80f3d2d1d1d28b115e96804"
+      },
+      "harbor/harbor-vulnerability-exporter": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/harbor/kustomization.yaml"
+        ],
+        "renderSpecSha256": "e9469e165ce1a7731a3a62b4a1566e0537b2d6420fbc7c5515d8fbe4f0004d3d"
+      },
+      "langfuse/langfuse-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/langfuse/kustomization.yaml"
+        ],
+        "renderSpecSha256": "bef6e1da607c8448b5827645bc7d9d38a5ebdcfcbf2a3c0d0369ebe199584f3b"
+      },
+      "mastodon/mastodon-datastores": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "renderSpecSha256": "b8158fa4f9fdd1783149fff29a326a75e152067493a2717c50935d3cf0faa6be"
+      },
+      "mastodon/mastodon-federation-egress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "renderSpecSha256": "2a4543b2d7475f3d4e07be61aa649060aa3b157e34b3b2d560124fc356d4e63d"
+      },
+      "mastodon/mastodon-gateway-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/mastodon/kustomization.yaml"
+        ],
+        "renderSpecSha256": "5169ae6d245019505bf787b87186257091d6ed0ae159f9c5f286eb0fb019196b"
+      },
+      "media/bazarr": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/bazarr/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3f1dad52f6d8dbc0e001f5c5351aff115d037eab6124f022033a7c78cfddcb43"
+      },
+      "media/bazarr-config-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/bazarr/kustomization.yaml"
+        ],
+        "renderSpecSha256": "b1e201a829721455c0800790e6f3af6cd23fbad5b9a7e6da37a92d29e33baa87"
+      },
+      "media/bazarr-reconcile": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/bazarr/kustomization.yaml"
+        ],
+        "renderSpecSha256": "9cdc6223b9c4f4e38486a63d65bb4f85fa503d948ab852268e2067472946a4ec"
+      },
+      "media/dispatcharr-postgres": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/dispatcharr/kustomization.yaml"
+        ],
+        "renderSpecSha256": "a49205d75e7c67bd54b3d71320903ec420082e7e3e0e36af767064eeb3ba707e"
+      },
+      "media/media-downloads-directories": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/deluge/kustomization.yaml"
+        ],
+        "renderSpecSha256": "d4e3911e9b0a4b01b5368dce61fc9a1d1b237b1aec6f52f9c634b20e7a136b50"
+      },
+      "media/media-movies-directories": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/radarr/kustomization.yaml"
+        ],
+        "renderSpecSha256": "45bd9dcf4a636f532d1c32df23e591a54fba64ea223d6fcccb77afc47185c796"
+      },
+      "media/media-postgres": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/media-postgres-recovery/kustomization.yaml",
+          "clusters/homelab/apps/media-postgres/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3397b96eb8b0db842387d2eb792ca9f4bd2784e4b9223c5bd3ea35de91fb4123"
+      },
+      "media/media-postgres-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/media-postgres-recovery/kustomization.yaml",
+          "clusters/homelab/apps/media-postgres/kustomization.yaml"
+        ],
+        "renderSpecSha256": "0b120e4741276f64dcb4a1105290732e94ee18a67d40d70d4f99b045b84afe5e"
+      },
+      "media/media-postgres-restore": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/media-postgres-recovery/kustomization.yaml"
+        ],
+        "renderSpecSha256": "2bb9a88d1b38b8ac1b35c1cbef124eb795bb24a8b5868eabb923dfc53634ed31"
+      },
+      "media/media-tv-directories": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/sonarr/kustomization.yaml"
+        ],
+        "renderSpecSha256": "5d424360fd5392d3d898e5965a148c557d385294eb830d44e23458060067939f"
+      },
+      "monitoring/kiali-server-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/kiali/kustomization.yaml"
+        ],
+        "renderSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7"
+      },
+      "nix-builder/nix-builder": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/nix-builder/kustomization.yaml"
+        ],
+        "renderSpecSha256": "c85fe8cd501a2581c6ff4a03be98d27e34e32c75c295a50c229fa0fa61ef554f"
+      },
+      "nofx/nofx-backend": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/nofx/kustomization.yaml"
+        ],
+        "renderSpecSha256": "ebd021480cf2df5f830558950bc326f421c4bd722403dd64c2663762da191ac6"
+      },
+      "nofx/nofx-frontend": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/nofx/kustomization.yaml"
+        ],
+        "renderSpecSha256": "45295d73af3e1f632dce91da9259f4e07c3d571b8f1703c88803da09c403644b"
+      },
+      "octelium-client/octelium-demo-allow-client": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium/kustomization.yaml"
+        ],
+        "renderSpecSha256": "cad3c4f6f62be7778edb82f378912b8ccdca2d4f0891f05d375c32e5cfedf6ed"
+      },
+      "octelium-public/cloudflared-egress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-public/kustomization.yaml"
+        ],
+        "renderSpecSha256": "731c8bae79c208b35a0cac3c8a021283bc1c005b7d174c113e21a327077ebd13"
+      },
+      "octelium-storage/octelium-postgres-backup": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-storage/kustomization.yaml"
+        ],
+        "renderSpecSha256": "464863e1993e5841e0da3966cdec5c462f53ce483f91ff59737473b0c30fe3a6"
+      },
+      "octelium-storage/octelium-postgres-restore-drill": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-storage/restore-drill-candidate/kustomization.yaml"
+        ],
+        "renderSpecSha256": "0531d8a86d3e23741a721b1ccc7b28e688600411dafac8c5c6afcfefa5ab5042"
+      },
+      "octelium-storage/octelium-storage": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-storage/kustomization.yaml"
+        ],
+        "renderSpecSha256": "5be9783190b9787b258b13bef76fc8a865b445edc6777c80801c67ae0b930f9a"
+      },
+      "octelium-storage/octelium-storage-default-deny": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/octelium-storage/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440"
+      },
+      "octelium/cordium-cluster-config": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "renderSpecSha256": "dd36d5583a69f40f6f06e7c66b1db4672a90b6a395598562371dfe8d5aacbc88"
+      },
+      "octelium/cordium-genesis": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/cordium/kustomization.yaml"
+        ],
+        "renderSpecSha256": "1cfb413eadbb9f9feaadb5fee19c3946e4960d0b18332cafe20d9cf11c355bc9"
+      },
+      "openclaw-system/occ-postgres-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "renderSpecSha256": "ce49609122796422dfc7777109c8b0419da83c23e2c6d9c2ba5f43643f482182"
+      },
+      "openclaw-system/occ-postgres-restore-drill-isolation": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "renderSpecSha256": "f1c622f164bf27498ef6dda1e483ec9e756c13ded7300a3f10a5a0814265f3ad"
+      },
+      "openclaw-system/oce-lifecycle-hooks": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise/kustomization.yaml"
+        ],
+        "renderSpecSha256": "cb1a077ec56637fe74a2431cb51ab0fc14134619270f95bfc443d9fd77032bf9"
+      },
+      "openclaw-system/openclaw-system-default-deny-ingress": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml"
+        ],
+        "renderSpecSha256": "3946ffa5362c53eb6b72e0c5e7b30c3c600ede2f1700be2e4dbf3327b9585440"
+      },
+      "traefik/traefik": {
+        "ownerKustomizations": [
+          "clusters/homelab/apps/traefik/kustomization.yaml"
+        ],
+        "renderSpecSha256": "1af0b69b77174a3b68867b6489df78356be8c28f130a0e83e8d57faf61bac695"
+      }
+    },
+    "rawHashDifferencesFromEmptyListSerialization": [
+      "ai/multica-postgres",
+      "ai/multica-runtime",
+      "automation/renovate",
+      "nix-builder/nix-builder"
+    ],
+    "generatedOwnerFixtureRecheck": {
+      "cordium-genesis": {
+        "fixture": "clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json",
+        "fixtureSha256": "2f6410a4d6dde1e6d5545692d1f7d91f812849749417cb8496e3b54b0f6d7ea0",
+        "matchingCompleteLiveSpecs": 3
+      },
+      "octelium-genesis": {
+        "fixture": "clusters/homelab/apps/octelium/generated-networkpolicies.json",
+        "fixtureSha256": "21fa8b28e09fef82aa93d143b531c14d0b201ad06170c625c06342b10c146ac7",
+        "matchingCompleteLiveSpecs": 4
+      },
+      "octeliumee-genesis": {
+        "fixture": "clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json",
+        "fixtureSha256": "c30a3a0191b7d423b30cf9b14444a2a2ad8ab2987632b0dc3597b4ae14ae45b2",
+        "matchingCompleteLiveSpecs": 10
+      }
+    },
+    "changedFromHistoricalLiveBaselineButNowSourceMatched": [
+      "harbor/harbor-components",
+      "harbor/harbor-nginx",
+      "harbor/harbor-postgres-backup",
+      "harbor/harbor-vulnerability-exporter",
+      "mastodon/mastodon-datastores",
+      "mastodon/mastodon-gateway-ingress",
+      "nix-builder/nix-builder",
+      "octelium-public/cloudflared-egress",
+      "octelium/cordium-cluster-config",
+      "octelium/cordium-genesis",
+      "traefik/traefik"
+    ],
+    "sourceOwnedKialiReplacement": "monitoring/kiali-server-ingress",
+    "allSourceIngressPolicyIds": [
+      "affine/affine-server",
+      "ai/openclaw",
+      "automation/policy-bot",
+      "fleet/fleet-ambient",
+      "langfuse/langfuse-ingress",
+      "monitoring/kiali-server-ingress",
+      "nofx/nofx-backend",
+      "nofx/nofx-frontend",
+      "traefik/traefik"
+    ],
+    "findingCounts": {
+      "pod-requires-separate-review": 178,
+      "source-only-ingress-policy": 2,
+      "source-only-policy": 4,
+      "unisolated-pod": 196,
+      "unowned-ingress-policy": 15,
+      "unowned-policy": 2,
+      "unreviewed-egress-policy": 21,
+      "wildcard-egress": 10
+    },
+    "strictWildcardPolicyIds": [
+      "cordium/ws-main",
+      "mastodon/mastodon-datastores",
+      "mastodon/mastodon-federation-egress",
+      "nix-builder/nix-builder",
+      "nofx/nofx-backend",
+      "octelium-public/cloudflared-egress",
+      "octelium/cordium-cluster-config",
+      "octelium/cordium-genesis",
+      "octelium/svc-upstream"
+    ],
+    "strictWildcardRuleCount": 10,
+    "correctionDecision": "No additional source-owned live policy drift was found. Keep strict broad-egress findings. Cordium ws-main and Octelium svc-upstream all-port public egress require pinned generator patches or reviewed forks, then actual generator renders and isolated-canary traffic. Do not narrow all-source ingress or other broad egress from hash equality alone. The accepted stock OCE public TCP/443/private-range boundary remains separate and does not waive strict findings.",
+    "status": "read-only current inventory complete; T018 still open pending generator corrections, owner intent, and isolated-canary traffic before enforcement"
+  },
+  "generatedBroadEgressFollowup": {
+    "capturedAt": "2026-10-25T17:52:04Z",
+    "sourceSha": "ab28b8d1823e07e8222d33d46fd74f6b6c86d7b6",
+    "method": "Read-only kubectl get of the two live NetworkPolicies, managedFields, and selected Pod counts; SHA-256 of each complete compact sorted-key JSON spec. Compared with the pinned upstream constructors and repository traffic contracts. No generator binary, packet capture, or enforced canary was run.",
+    "policies": [
+      {
+        "policy": "cordium/ws-main",
+        "manager": "cordium-genesis",
+        "liveSpecSha256": "3a236c4b99915e3b782080b21343d01d3a37b4006e9055858514456ac6b4618e",
+        "generatorSourceRef": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254-L390",
+        "repositoryTrafficRefs": [
+          "clusters/homelab/apps/cordium/README.md",
+          "docs/cordium-ci.md",
+          ".cordium/workspace.yaml"
+        ],
+        "observedRule": "Workspace selector; one all-port public IPv4/IPv6 egress rule with private-range exclusions, separate Octelium/registry TCP 8080 and DNS TCP/UDP 53 rules.",
+        "trafficGap": "The repository uses Workspaces for remote repository checkout and Nix execution and supports interactive developer commands. It has no reviewed destination, protocol, and port contract for arbitrary Workspace activity or denied alternatives; the current selected Pod count cannot establish one.",
+        "sourceCorrection": "Define the accepted Workspace egress contract, then change and pin the Cordium Genesis constructor and image; compare its actual generated spec and qualify real Workspace access, checkout, execution, and denials on the isolated canary."
+      },
+      {
+        "policy": "octelium/svc-upstream",
+        "manager": "octelium-genesis",
+        "liveSpecSha256": "09c86331a6a384a28f6ed34e5b185c3706efdf18395bd8ef82b44c374a69c4b9",
+        "generatorSourceRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237-L327",
+        "selectedWorkloadSourceRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/nocturne/nocturne/controllers/services/k8s_upstream.go#L41-L110",
+        "observedRule": "Shared svc-k8s-upstream selector; one all-port public IPv4/IPv6 egress rule with private-range exclusions. A single selected container-backed Service Pod was present at this read-only check.",
+        "trafficGap": "The upstream controller creates Pods from Service-supplied container configuration, so one current Pod and the repository catalog of URL-backed Services do not bound all present or future container-backed Service ports. No owner-approved allow/deny matrix or enforced traffic trace exists.",
+        "sourceCorrection": "Define category or per-Service egress requirements, then change and pin the Octelium Genesis constructor and installer image selection for init and upgrade; compare its actual generated spec and qualify container-backed Service traffic and denials on the isolated canary."
+      }
+    ],
+    "updateSemanticsRef": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/common/k8sutils/resources.go#L248-L265",
+    "correctionDecision": "Both Genesis paths call CreateOrUpdateNetworkPolicy, which replaces an existing spec. Additive Kubernetes NetworkPolicies cannot subtract these all-port allows. No repository-only manifest correction is safe; retain strict broad-egress findings and keep T018 open until the owner contracts, reviewed generator changes, actual renders, and canary evidence exist."
+  },
   "requiredCorrections": [
-    "Resolve chart/controller-generated owners with no repository source path and compare their exact renders to live specs.",
-    "Review ingress selectors and peers for every policy before enabling enforcement.",
-    "Add explicit egress rules for affected workloads where denied-by-default behavior is intended; verify DNS, API, database, mesh, NFS and private-access traffic on the canary.",
-    "Review and narrow listed wildcard egress rules where stock workload behavior permits; preserve strict broad-egress findings.",
-    "Run canary and per-node live traffic/lifecycle qualification before enabling kube-router firewall enforcement."
+    "All 17 Cordium, Octelium and Octelium Enterprise generated policies now have source-reviewed complete-spec fixtures, and the former Kiali operator policy has a source-owned replacement. Recheck complete live specs after any generator upgrade and qualify real ingress, egress, and lifecycle behavior on the isolated canary before enforcement.",
+    "Pinned Cordium v0.12.7 ws-main and Octelium v0.35.0 svc-upstream constructors hardcode all-port public IPv4/IPv6 egress without an egress input; Cordium creates its policy in non-dev Genesis and Octelium InstallCommon always creates its policy. Patch the owning generators upstream or build reviewed forks, publish and pin corrected images; Octelium also needs reviewed octops image selection for both init and upgrade. Refresh expected-spec fixtures from actual generator renders, then prove required destinations and private-range denial on an isolated canary. Additive NetworkPolicies cannot narrow either current rule.",
+    "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
+    "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
+    "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
+    "Review all current strict wildcard-egress findings (ten rules across nine policies at the 2026-10-20 live audit), including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
+    "The six source-corrected DNS policies now match live specs; prove TCP/UDP Service DNS through exact CoreDNS Pod peers on the isolated canary before enforcement.",
+    "Qualify the full allowed/denied and lifecycle matrix on an isolated tainted Talos canary, then each expanded node; current render equality alone is insufficient."
   ],
+  "repositoryDnsCorrection": {
+    "allCoreDnsDependentPolicyIds": [
+      "harbor/harbor-image-signing",
+      "harbor/harbor-postgres-backup",
+      "harbor/harbor-vulnerability-exporter",
+      "mastodon/mastodon-datastores",
+      "nix-builder/nix-builder",
+      "nofx/nofx-frontend",
+      "octelium/cordium-cluster-config",
+      "octelium/cordium-genesis",
+      "octelium-public/cloudflared-egress"
+    ],
+    "checkedAt": "2026-10-19T17:47:06+00:00",
+    "decision": "Limit the six source-owned TCP/UDP 53 egress peers from every kube-system Pod to the CoreDNS Pods selected by the live kube-dns Service.",
+    "dnsReferenceSha256": {
+      "clusters/homelab/platform/dns/coredns-deployment.yaml": "b374aca7b1ae9a9733511c0b2250fdcc1cf13da18cb6e89e6473addc50d0ff34",
+      "clusters/homelab/platform/dns/coredns-service.yaml": "4478aceefb861cc9792a89a6f89d9812e8439b9eed20baaa7994134c9bb88921"
+    },
+    "liveServiceCheck": "Read-only kube-dns Service selector was k8s-app=kube-dns with UDP and TCP 53; repository CoreDNS Service and Deployment declare the same selector.",
+    "policies": [
+      "octelium/cordium-genesis",
+      "octelium/cordium-cluster-config",
+      "harbor/harbor-postgres-backup",
+      "mastodon/mastodon-datastores",
+      "nix-builder/nix-builder",
+      "octelium-public/cloudflared-egress"
+    ],
+    "sourceRenderSpecSha256": {
+      "octelium/cordium-cluster-config": "3c44ccbfa0a258d2966889ef7b87a6184d4978c497f28af5ce31a07255b719ab",
+      "octelium/cordium-genesis": "3c117cd69806f379c4f31b6eda9914251c78630a4c4e1150f75137bc7ce8354c",
+      "harbor/harbor-postgres-backup": "7f542a30bb0fcf91ef254a880111589f25567ee55e5291d8fc208cc8d916d6f3",
+      "mastodon/mastodon-datastores": "0c356964006d20969aaa6461742d422f6abee0dbed56dc1cac7ac3781f2b3a42",
+      "nix-builder/nix-builder": "29bf38d6a0d47af9d5595650476176f4d0d16ad3bc9d0b5e4ca3d1cc27fc921a",
+      "octelium-public/cloudflared-egress": "132830347f268b9600aea18717b0458351a92ad082b604daf35c259161a09be4"
+    },
+    "sourceSha256": {
+      "clusters/homelab/apps/cordium/networkpolicy.yaml": "ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246",
+      "clusters/homelab/apps/harbor/networkpolicy.yaml": "873b48f0fb79646a85a0813b65e8854baf5501927ddb8853e26b7a4ebc574ea6",
+      "clusters/homelab/apps/mastodon/networkpolicy.yaml": "3b040f069a6808fe0b02809993c31dc055b15ecf67df365d28d3f8dc2fcec6d4",
+      "clusters/homelab/apps/nix-builder/networkpolicy.yaml": "3ef10e43a5e4942ad69b81c28936ec78b8e9bc298c80f606ef89f7c933a063ab",
+      "clusters/homelab/apps/octelium-public/networkpolicy.yaml": "6a840d9f711aac333fed74444fc6d0256e77ec4b192cfd5a0ed9f5dc45779ac2"
+    },
+    "status": "Source render asserted; baseline live/source equality is historical. Live reconciliation and enforced TCP/UDP DNS traffic remain unverified."
+  },
   "schemaVersion": 1,
-  "scope": "Read-only live baseline; source renders, ingress semantics and enforcement traffic have not been verified",
+  "scope": "Read-only live baseline; 48 repository Kustomize full specs match after empty-list normalization. Generated owner renders, ingress intent and live traffic are unverified.",
+  "sourceRenderAudit": {
+    "emptyListNormalizedPolicies": [
+      "ai/multica-postgres",
+      "ai/multica-runtime",
+      "automation/renovate",
+      "nix-builder/nix-builder"
+    ],
+    "liveOnlyGeneratedPolicyCount": 18,
+    "matchedLivePolicyCount": 48,
+    "method": "kubectl kustomize for all 51 repository Kustomizations; compare complete NetworkPolicy spec to live, normalizing only absent versus empty ingress/egress lists",
+    "rawSpecMatchCount": 44,
+    "renderSpecSha256": "30fbdb537e593cb0dd2d88971b5452c48e06938d4bee91ea94a3da72146f7d3d",
+    "renderedPolicyCount": 50,
+    "sourceOnlyPolicies": [
+      "media/media-postgres-restore",
+      "octelium-storage/octelium-postgres-restore-drill"
+    ]
+  },
   "status": "incomplete"
 }

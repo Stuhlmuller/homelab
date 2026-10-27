@@ -90,6 +90,15 @@ base intentionally adopts them again and the documentation explains why.
   emergency administrator. Do not use Graph beta, Graph/API writes, browser
   automation, user creation, alias changes, or another portal action; all other
   manual cloud mutations remain prohibited.
+- Narrow Renovate NAS exception: after direct owner authorization and the
+  reviewed dedicated-cache staging PR merges, one QTS setup may create only a
+  20 GiB thick volume in existing Storage Pool 1 and its `renovate-cache`
+  shared folder and NFSv3 export at `10.1.0.2:/renovate-cache`. Grant read/write
+  access only to `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`
+  with `sys` security and guest all-squash. Do not change a pool or existing
+  export. Verify the separate volume and exact export before activating the
+  staged PV and PVC through reviewed GitOps. No other manual NAS change is
+  authorized by this exception.
 - Do not change live cluster state until the relevant validation commands have
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,
@@ -121,8 +130,8 @@ base intentionally adopts them again and the documentation explains why.
 3. Before nontrivial code with a relevant upstream or peer implementation,
    search the pinned XERJ reference corpus and inspect the cited source. See
    [reference coding](docs/xerj-reference-coding.md).
-4. Run the repo validation gate when available, such as `nix run .#validate` or
-   the documented replacement.
+4. Run the change-specific validation gates in `README.md` and
+   `docs/validation-runbook.md`.
 5. Make the smallest code and documentation change that solves the request.
 6. Update affected knowledge-base notes under `openwiki/` when the
    change creates, removes, renames, or materially changes an app, platform
@@ -230,7 +239,7 @@ PR as the operational change.
 - OpenWiki Markdown documentation under `openwiki` + project-local Codex
   skill `homelab-knowledge-base` for cross-change architecture notes,
   inventories, build patterns, and knowledge-base update workflow
-- HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
+- HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/terragrunt-catalog/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
 - Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
 
 ## Repository OpenWiki Policy
@@ -244,15 +253,15 @@ precedence over upstream OpenWiki defaults.
 
 ## OpenWiki
 
-This repository has a generated `openwiki/` evidence index. It is optional just-in-time context, not required startup reading.
+Read `openwiki/quickstart.md` for the repository task route. Retrieve other wiki pages only when they are relevant.
 
-- Do not enumerate, preload, or search wikis at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
+- Do not enumerate, preload, or search the rest of the wiki at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
 - When those conditions apply and OpenWiki retrieval tools are available, use `openwiki_search` for just-in-time context and `openwiki_read` for the relevant complete sections. If search returns `workspace_required`, ask which listed workspace to use and retry with its ID.
 - Use `openwiki_list_workspaces` or `openwiki_list_wikis` when workspace membership itself needs to be discovered.
-- If the retrieval tools are unavailable, read `openwiki/quickstart.md` and follow its links to the relevant pages.
+- If the retrieval tools are unavailable, follow the relevant links from `openwiki/quickstart.md`.
 - Treat source code and tests as authoritative. A brief's unknowns and review items are verification gaps, not automatic requirements.
 - Prefer the narrowest quiet validation that proves the changed behavior. Preserve complete failure output.
 
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+No scheduled wiki workflow is installed. Update affected authored pages in the same PR through the OpenWiki update workflow. Do not hand-edit generated indexes, Claims, provenance, or run state.
 
 <!-- OPENWIKI:END -->

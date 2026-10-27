@@ -83,6 +83,16 @@ http:
       rule: Host(`openclaw.stinkyboi.com`)
       service: openclaw
       tls: {}
+    oce-console:
+      entryPoints: [websecure]
+      rule: Host(`console.oce.stinkyboi.com`)
+      service: octelium-cluster
+      tls: {}
+    oce-native-admin:
+      entryPoints: [websecure]
+      rule: HostRegexp(`^agent-[0-9a-f]{32}\.agents\.oce\.stinkyboi\.com$`)
+      service: oce-api
+      tls: {}
     policy-bot:
       entryPoints: [websecure]
       rule: Host(`policy-bot.stinkyboi.com`)
@@ -139,6 +149,11 @@ http:
       rule: Host(`policy-bot-hook.tail67beb.ts.net`) && Path(`/api/github/hook`)
       middlewares: [reject-ambiguous-paths]
       service: policy-bot
+    bulldozer-hook:
+      entryPoints: [funnel]
+      rule: Host(`bulldozer-hook.tail67beb.ts.net`) && Path(`/api/github/hook`)
+      middlewares: [reject-ambiguous-paths]
+      service: bulldozer
     harbor-registry:
       entryPoints: [registry]
       rule: Host(`harbor.stinkyboi.com`) && (Path(`/v2`) || PathPrefix(`/v2/`) || Path(`/service/token`))
@@ -222,10 +237,18 @@ http:
       loadBalancer:
         servers:
           - url: http://openclaw.ai.svc.cluster.local:8080
+    oce-api:
+      loadBalancer:
+        servers:
+          - url: http://openclaw-enterprise-api.openclaw-system.svc.cluster.local:8080
     policy-bot:
       loadBalancer:
         servers:
           - url: http://policy-bot.automation.svc.cluster.local:8080
+    bulldozer:
+      loadBalancer:
+        servers:
+          - url: http://bulldozer.automation.svc.cluster.local:8080
     prowlarr:
       loadBalancer:
         servers:

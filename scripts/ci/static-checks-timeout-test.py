@@ -14,18 +14,67 @@ class Timeout(unittest.TestCase):
     def test_ci_override_and_local_preservation(self):
         with tempfile.TemporaryDirectory(prefix="static-timeout-") as folder:
             root = Path(folder)
-            for name in ("scripts/ci", "IaC/operator/github-actions-role-policy",
-                         "IaC/modules/aws-github-actions-role-policy",
-                         "IaC/.catalog/units/live/aws-ssm-parameters", "bin"):
+            for name in ("scripts/ci", "IaC/homelab/us-west-2/operator/github-actions-role-policy",
+                         "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy",
+                         "IaC/terragrunt-catalog/units/live/aws-ssm-parameters", "bin"):
                 (root / name).mkdir(parents=True)
             for name in ("scripts/ci/static-checks.sh",
-                         "IaC/modules/aws-github-actions-role-policy/main.tf",
-                         "IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
+                         "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf",
+                         "IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
                 shutil.copyfile(ROOT / name, root / name)
             for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
                          "openclaw-retirement-status-test.py",
-                         "openclaw-enterprise-operations-test.py", "renovate-config-test.js",
-                         "tailnet-dns-test.py"):
+                         "openclaw-enterprise-operations-test.py",
+                         "openclaw-legacy-netns-preflight-test.py",
+                         "openclaw-discord-cache-publication-test.py",
+                         "openclaw-legacy-netns-preflight-test.py",
+                         "openclaw-enterprise-resume-test.py",
+                         "openclaw-enterprise-journal-operator-test.py",
+                         "openclaw-enterprise-operator-image-test.py",
+                         "openclaw-enterprise-full-sync-test.py",
+                         "openclaw-enterprise-access-test.py",
+                         "renovate-config-test.js",
+                         "renovate-cache-corruption-drill-test.mjs",
+                         "renovate-cache-capacity-drill-test.py",
+                         "renovate-acceptance-app-test.py",
+                         "renovate-acceptance-observer-test.js",
+                         "renovate-acceptance-inventory-test.js",
+                         "renovate-acceptance-review-test.py",
+                         "renovate-acceptance-schedule-test.py",
+                         "renovate-acceptance-schedule-job-test.py",
+                         "renovate-acceptance-schedule-collector-test.js",
+                         "renovate-acceptance-schedule-assemble-test.py",
+                         "renovate-acceptance-report-test.js",
+                         "renovate-acceptance-pr-proof-test.js",
+                         "renovate-acceptance-policy-proof-test.js",
+                         "renovate-acceptance-source-review-test.js",
+                         "renovate-acceptance-secret-boundary-test.py",
+                         "renovate-acceptance-final-report-test.py",
+                         "renovate-acceptance-ledger-cleanup-test.py",
+                         "tailnet-dns-test.py",
+                         "openclaw-enterprise-foundation-test.py",
+                         "openclaw-enterprise-postgres-test.py",
+                         "openclaw-enterprise-chart-hooks-test.py",
+                         "openclaw-enterprise-registration-test.py",
+                         "openclaw-enterprise-lifecycle-test.py",
+                         "openclaw-enterprise-startup-test.py",
+                         "openclaw-enterprise-quiesce-test.py",
+                         "openclaw-enterprise-bind-installation-test.py",
+                         "openclaw-enterprise-test.py",
+                         "openclaw-enterprise-active-test.py",
+                         "openclaw-enterprise-recovery-test.py",
+                         "platform-maintenance-test.py",
+                         "platform-maintenance-stage-test.py",
+                         "platform-maintenance-credentials-test.py",
+                         "istio-image-overlays-test.py",
+                         "network-policy-canary-node-test.py",
+                         "network-policy-enforcement-test.py",
+                         "network-policy-qualification-test.py",
+                         "network-policy-ownership-test.py",
+                         "network-policy-cleanup-test.py",
+                         "envoy-gateway-prerequisite-test.py",
+                         "envoy-gateway-registration-test.py",
+                         "network-policy-registration-test.py"):
                 (root / "scripts/ci" / name).write_text("")
             (root / "scripts/ci/terragrunt-filter-base.sh").write_text(
                 "terragrunt_generate_stack() { :; }\n")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject the protected OpenRouter credential into its fixed SSM SecureString."""
+"""Inject a protected OpenRouter credential into one fixed SSM SecureString."""
 import json
 import os
 from pathlib import Path
@@ -10,13 +10,15 @@ import tempfile
 import urllib.request
 
 PARAMETER = '/homelab/litellm/openai-api-key'
+ENTERPRISE_PARAMETER = '/homelab/openclaw-enterprise/model-api-key'
 REGION = 'us-west-2'
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def command(args):
     env = {k: v for k, v in os.environ.items()
-           if k != 'LITELLM_OPENROUTER_API_KEY' and not k.startswith('AWS_ENDPOINT_URL')}
+           if k not in ('LITELLM_OPENROUTER_API_KEY', 'OCE_MODEL_API_KEY')
+           and not k.startswith('AWS_ENDPOINT_URL')}
     env.update(AWS_IGNORE_CONFIGURED_ENDPOINT_URLS='true', AWS_PAGER='')
     result = subprocess.run(args, capture_output=True, text=True, timeout=60, cwd=ROOT, env=env)
     if result.returncode:
@@ -44,27 +46,33 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise RuntimeError('Provider redirect rejected')
 
 
-def store(key):
-    with tempfile.TemporaryDirectory(prefix='litellm-ssm-') as directory:
+def store(key, parameter=PARAMETER):
+    with tempfile.TemporaryDirectory(prefix='openrouter-ssm-') as directory:
         path = Path(directory) / 'parameter.json'
         with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
-            json.dump({'Name': PARAMETER, 'Type': 'SecureString', 'KeyId': 'alias/aws/ssm',
+            json.dump({'Name': parameter, 'Type': 'SecureString', 'KeyId': 'alias/aws/ssm',
                        'Value': key, 'Overwrite': True}, stream)
         return json.loads(command(['aws', 'ssm', 'put-parameter', '--region', REGION,
                                    '--cli-input-json', f'file://{path}', '--output', 'json']))
 
 
 def rotate():
-    if len(sys.argv) != 1:
-        raise RuntimeError('No command-line inputs supported')
-    key = os.environ.pop('LITELLM_OPENROUTER_API_KEY', '')
+    targets = {
+        (): (PARAMETER, 'LITELLM_OPENROUTER_API_KEY'),
+        ('--openclaw-enterprise',): (ENTERPRISE_PARAMETER, 'OCE_MODEL_API_KEY'),
+    }
+    try:
+        parameter, secret_name = targets[tuple(sys.argv[1:])]
+    except KeyError as error:
+        raise RuntimeError('Unsupported fixed credential target') from error
+    key = os.environ.pop(secret_name, '')
     if not re.fullmatch(r'sk-or-v1-[a-f0-9]{64}', key):
         raise RuntimeError('Invalid provider credential')
     validate_context()
     metadata = json.loads(command(['aws', 'ssm', 'describe-parameters', '--region', REGION,
-                                  '--parameter-filters', f'Key=Name,Option=Equals,Values={PARAMETER}',
+                                  '--parameter-filters', f'Key=Name,Option=Equals,Values={parameter}',
                                   '--output', 'json'])).get('Parameters', [])
-    if (len(metadata) != 1 or metadata[0].get('Name') != PARAMETER
+    if (len(metadata) != 1 or metadata[0].get('Name') != parameter
             or metadata[0].get('Type') != 'SecureString'
             or metadata[0].get('KeyId') != 'alias/aws/ssm'):
         raise RuntimeError('Declared SecureString required')
@@ -72,14 +80,19 @@ def rotate():
                                      headers={'Authorization': 'Bearer ' + key})
     with urllib.request.build_opener(NoRedirect()).open(request, timeout=20) as response:
         data = json.loads(response.read(1048576))['data']
-    if not isinstance(data, dict) or not isinstance(data.get('label'), str):
+    if (not isinstance(data, dict) or not isinstance(data.get('label'), str)
+            or data.get('is_management_key') is not False
+            or data.get('is_provisioning_key') is not False):
         raise RuntimeError('Provider validation failed')
     validate_context()
-    result = store(key)
+    result = store(key, parameter)
     version = result.get('Version')
     if type(version) is not int or version < 1:
         raise RuntimeError('Uncertain write result')
-    print(f'OpenRouter credential validated; bootstrap SSM version {version} stored. Advance the GitOps ExternalSecret revision; an already-imported UI credential is unchanged.')
+    if parameter == PARAMETER:
+        print(f'OpenRouter credential validated; bootstrap SSM version {version} stored. Advance the GitOps ExternalSecret revision; an already-imported UI credential is unchanged.')
+    else:
+        print(f'OpenRouter credential validated; Enterprise SSM version {version} stored. Advance the GitOps ExternalSecret revision before using the key.')
 
 
 def main():
@@ -87,7 +100,7 @@ def main():
         rotate()
     except Exception:
         # HTTP/subprocess errors may echo secrets. Never print exception bodies.
-        print('LiteLLM credential transfer failed; private details withheld.', file=sys.stderr)
+        print('OpenRouter credential transfer failed; private details withheld.', file=sys.stderr)
         return 1
     return 0
 

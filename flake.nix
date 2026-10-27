@@ -44,6 +44,26 @@
           archive = xerjArchives.${system};
         in
         {
+          openwiki = pkgs.buildNpmPackage {
+            pname = "homelab-openwiki";
+            version = "0.7.0";
+            src = ./builds/openwiki;
+            npmDepsHash = "sha256-jz+cp/j9RCcW+v9idCrdvrXOOo5OXiBUSD26Ld1qQuk=";
+            dontNpmBuild = true;
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            installPhase = ''
+              runHook preInstall
+              mkdir -p "$out/libexec/openwiki" "$out/bin"
+              cp -R node_modules "$out/libexec/openwiki/"
+              substituteInPlace "$out/libexec/openwiki/node_modules/openwiki/dist/ingestion/code-mode.js" \
+                --replace-fail '    await writeCodeModeAgentSnippets(cwd);' \
+                '    if (options.createWorkflow) await writeCodeModeAgentSnippets(cwd);'
+              makeWrapper ${pkgs.nodejs}/bin/node "$out/bin/openwiki" \
+                --add-flags "$out/libexec/openwiki/node_modules/openwiki/dist/cli/cli.js"
+              runHook postInstall
+            '';
+            meta.mainProgram = "openwiki";
+          };
           xerj = pkgs.stdenvNoCC.mkDerivation {
             pname = "xerj";
             version = xerjVersion;
@@ -68,7 +88,10 @@
           pkgs = import nixpkgs { inherit system; };
           validate = pkgs.writeShellApplication {
             name = "validate";
-            runtimeInputs = self.devShells.${system}.default.nativeBuildInputs;
+            runtimeInputs = self.devShells.${system}.default.nativeBuildInputs ++ [
+              (pkgs.lib.getBin pkgs.postgresql_14)
+              (pkgs.lib.getBin pkgs.postgresql_18)
+            ];
             text = ''
               (cd IaC && terragrunt stack generate)
               terragrunt hcl fmt --check
@@ -79,6 +102,11 @@
           };
         in
         {
+          openwiki = {
+            type = "app";
+            program = "${self.packages.${system}.openwiki}/bin/openwiki";
+            meta.description = "Run the pinned OpenWiki MCP with repository agent-policy preservation";
+          };
           validate = {
             type = "app";
             program = "${validate}/bin/validate";
@@ -102,7 +130,12 @@
             name: command:
             pkgs.runCommand name
               {
-                nativeBuildInputs = tools;
+                # mkShell exposes PostgreSQL dev outputs here; restore fixtures
+                # also need both server/client bin outputs in the check sandbox.
+                nativeBuildInputs = tools ++ [
+                  (pkgs.lib.getBin pkgs.postgresql_14)
+                  (pkgs.lib.getBin pkgs.postgresql_18)
+                ];
                 __darwinAllowLocalNetworking = true;
               }
               ''
@@ -128,6 +161,13 @@
               '';
         in
         {
+          openwiki-setup = pkgs.runCommand "homelab-openwiki-setup-test" {
+            nativeBuildInputs = [ pkgs.nodejs ];
+          } ''
+            node ${./scripts/ci/openwiki-package-test.mjs} ${self.packages.${system}.openwiki}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
           offline-tests = check "homelab-offline-tests" "bash scripts/ci/offline-checks.sh";
           manifest-policy = check "homelab-manifest-policy" "bash scripts/ci/conftest-policies.sh";
         }
@@ -176,6 +216,7 @@
             openssl
             pre-commit
             postgresql_14
+            postgresql_18
             prometheus.cli
             python3
             regctl

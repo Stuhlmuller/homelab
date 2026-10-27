@@ -43,6 +43,32 @@ The monitoring AuthorizationPolicies allow the Kiali service account to query
 Prometheus and Grafana, and allow Prometheus plus the Octelium service-proxy path
 to reach Kiali. Kiali has no persistent storage requirement.
 
+## NetworkPolicy ownership
+
+The pinned Kiali operator creates `monitoring/kiali`, an ingress-only
+NetworkPolicy that selects Kiali and admits TCP 20001 and 9090 from any source.
+Its supported `deployment.network_policy.enabled` setting can only enable or
+disable that policy. The [pinned operator delete task](https://github.com/kiali/kiali-operator/blob/v2.26.0/roles/default/kiali-deploy/tasks/kubernetes/k8s-main.yml#L58-L67)
+targets only `monitoring/kiali` when disabled.
+
+This application therefore applies `kiali-server-ingress` at Argo CD sync wave
+0, before the Kiali custom resource at wave 1 disables the operator policy.
+The repository policy has the same complete spec as the observed operator
+policy, including its broad source set. The distinct name prevents the
+operator's deletion from removing the replacement. This is an ownership
+handoff, not an ingress tightening or proof of network enforcement: Flannel
+does not enforce NetworkPolicy, and narrower sources still require the
+runtime-isolation canary and real Kiali client-traffic evidence.
+
+Before sync, render `clusters/homelab/apps/kiali` and compare the replacement
+policy spec to the read-only `monitoring/kiali` spec. After sync, verify that
+`kiali-server-ingress` exists, `kiali` is absent, and Kiali remains reachable
+through Octelium and scrapeable by Prometheus. If this handoff must be rolled
+back after enforcement is active, first re-enable the operator policy while
+retaining the repository policy and sync Kiali; remove the repository policy
+in a second GitOps change after the operator policy exists. This preserves an
+ingress allow rule throughout the rollback.
+
 ## Configuration and connections
 
 Use **Select all** in the namespace selector. **Istio Config** lists declared
@@ -69,6 +95,13 @@ directly, retries 60 times with a five-second delay, then exits nonzero so
 Kubernetes restarts it. Inspect `wait-for-prometheus` logs if initialization
 stalls. A failure between the readiness check and server startup is still
 possible; the live check below detects that case.
+
+The Kiali CR pins the server image by digest. The operator expects a bare hash
+in `deployment.image_version` and `sha256` in `deployment.image_digest`; it
+builds the image reference and uses the version value in Kubernetes labels.
+Including `@sha256:` in `image_version` makes the ServiceAccount label invalid
+and stops reconciliation before a server Deployment exists. The static gate
+checks the CR fields against the existing Harbor mirror catalog entry.
 
 ## Validation
 
@@ -99,4 +132,6 @@ that path has its own authentication policy.
 For telemetry rollback, revert the Kiali values and Prometheus monitor changes
 in git and let Argo CD reconcile both apps. Historical metrics remain until
 normal retention expires. A green Argo CD status alone does not prove traffic
-visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.
+visibility: `scripts/kiali-check.py` requires Kiali metrics enabled and graph
+edges from recent real mesh traffic. The direct Kubernetes API server proxy
+to Prometheus currently resets, while Kiali's allowed in-mesh query works.

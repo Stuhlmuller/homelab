@@ -16,11 +16,12 @@ from datetime import datetime, timezone
 SPEC = importlib.util.spec_from_file_location('etcd_offsite', Path(__file__).with_name('etcd-offsite-backup.py'))
 OFFSITE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(OFFSITE)
-CONFIG = Path(__file__).resolve().parents[1] / 'IaC/config/application-backup-storage.json'
+CONFIG = Path(__file__).resolve().parents[1] / 'IaC/application-backup-storage.hcl'
 CONTRACTS = {
     'octelium': ('globals.sql', 'octelium.dump'),
     'multica': ('globals.sql', 'multica.dump', 'uploads.tar', 'capture.json'),
     'affine': ('globals.sql', 'affine.dump', 'blobs.tar', 'config.tar', 'capture.json'),
+    'dispatcharr': ('globals.sql', 'dispatcharr.dump', 'data.tar', 'capture.json'),
     'media-postgres': ('globals.sql', 'sonarr-main.dump', 'sonarr-log.dump',
                        'radarr-main.dump', 'radarr-log.dump', 'prowlarr-main.dump', 'prowlarr-log.dump'),
 }
@@ -29,7 +30,7 @@ ID = re.compile(r'[0-9]{8}T[0-9]{6}Z-[0-9a-f]{64}')
 
 
 def target():
-    value = json.loads(CONFIG.read_text())
+    value = OFFSITE.read_inputs(CONFIG)
     if (set(value) != {'account_id', 'region', 'bucket'}
             or not re.fullmatch(r'[0-9]{12}', value['account_id'])
             or value['region'] != 'us-east-1'
@@ -121,7 +122,7 @@ def prepare(source, workspace, app):
             raise ValueError('source checksum failure')
     if sum(item['bytes'] for item in objects.values()) > 5 * 1024**3:
         raise ValueError('recovery set exceeds 5 GiB publication budget')
-    if app in ('multica', 'affine'):
+    if app in ('multica', 'affine', 'dispatcharr'):
         if (pending / 'capture.json').stat().st_size > 16384:
             raise ValueError('oversized capture record')
         capture = json.loads((pending / 'capture.json').read_text())

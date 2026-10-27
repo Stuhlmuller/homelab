@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: private-archive-directory
-          image: ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
+          image: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
           command: [/bin/sh, -ec]
           args:
             - test ! -L /archive/private && mkdir -p /archive/private && chmod 700 /archive/private
@@ -56,7 +56,7 @@ spec:
               mountPath: /archive
       containers:
         - name: reader
-          image: ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
+          image: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
           command: [python3, -c]
           args: ["import time; time.sleep(10**9)"]
           securityContext:
@@ -69,7 +69,8 @@ spec:
               cpu: 25m
               memory: 128Mi
             limits:
-              cpu: 250m
+              # Offline archive compression is throttled at 250m on the retained 30 GiB state.
+              cpu: 1000m
               memory: 512Mi
           readinessProbe:
             exec:
@@ -99,6 +100,9 @@ spec:
               mountPath: /archive
             - name: private
               mountPath: /private
+            # SQLite needs writable temporary space during independent archive restore.
+            - name: private
+              mountPath: /tmp
             - name: scripts
               mountPath: /etc/openclaw-assistant
               readOnly: true

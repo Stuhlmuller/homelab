@@ -21,6 +21,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
       ports:
         - protocol: UDP
           port: 53
@@ -62,8 +65,6 @@ spec:
         - protocol: TCP
           port: 443
         - protocol: TCP
-          port: 465
-        - protocol: TCP
           port: 587
 ---
 apiVersion: networking.k8s.io/v1
@@ -86,8 +87,14 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
       ports:
         - protocol: TCP
           port: 3000
         - protocol: TCP
           port: 4000
+        # Ambient HBONE reaches the Pod before forwarding to 3000/4000.
+        - protocol: TCP
+          port: 15008

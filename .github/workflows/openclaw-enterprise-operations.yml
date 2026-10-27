@@ -10,15 +10,26 @@ on:
         type: string
       legacy_stage:
         description: Fixed legacy retention operation
-        required: true
+        required: false
+        default: none
         type: choice
-        options: [inventory, publish-inventory, archive, verify]
+        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore, resume-restore, network-preflight, publish-discord-cache, transfer-discord-cache]
+      enterprise_stage:
+        description: Fixed Enterprise operation (binding needs a private bootstrap key; other stages need a durable journal)
+        required: false
+        default: none
+        type: choice
+        options: [none, bind-installation, full-sync, reconcile, stop, verification, restore, acceptance]
       baseline_ref:
         description: Inventory source SHA and run ID for publish or archive (SHA/run-id)
         required: false
         type: string
       archive_ref:
-        description: Archive source SHA and run ID for verify (SHA/run-id)
+        description: Archive source SHA and run ID for publish or verify (SHA/run-id)
+        required: false
+        type: string
+      cache_ref:
+        description: Published Discord cache source SHA and run ID for transfer (SHA/run-id)
         required: false
         type: string
 
@@ -29,7 +40,7 @@ env:
 
 jobs:
   static-policy:
-    name: Validate Legacy Operation
+    name: Validate Fixed Operation
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -39,9 +50,45 @@ jobs:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          LEGACY_STAGE: ${{ inputs.legacy_stage }}
+          ENTERPRISE_STAGE: ${{ inputs.enterprise_stage }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          ARCHIVE_REF: ${{ inputs.archive_ref }}
+          CACHE_REF: ${{ inputs.cache_ref }}
         run: |
+          set -euo pipefail
           test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
+            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+            *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
+          esac
+          if [[ "$ENTERPRISE_STAGE" != none ]]; then
+            test -z "$BASELINE_REF"
+            test -z "$ARCHIVE_REF"
+            test -z "$CACHE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" != transfer-discord-cache ]]; then
+            test -z "$CACHE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" == resume-restore ]]; then
+            test "$ARCHIVE_REF" = '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221'
+            test -z "$BASELINE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" == network-preflight ]]; then
+            test -z "$BASELINE_REF"
+            test -z "$ARCHIVE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" == publish-discord-cache ]]; then
+            test -z "$BASELINE_REF"
+            test -z "$ARCHIVE_REF"
+            test -z "$CACHE_REF"
+          fi
+          if [[ "$LEGACY_STAGE" == transfer-discord-cache ]]; then
+            [[ "$CACHE_REF" =~ ^[0-9a-f]{40}/[1-9][0-9]*$ ]]
+            test -z "$BASELINE_REF"
+            test -z "$ARCHIVE_REF"
+          fi
 
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
@@ -67,17 +114,230 @@ jobs:
   legacy:
     name: Protected Legacy Retention
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 360
     concurrency:
       group: openclaw-enterprise-operations-production
       cancel-in-progress: false
+      queue: max
+    environment:
+      name: homelab-production
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Prior Restore Run
+        env:
+          RUN_STAGE: ${{ inputs.legacy_stage }}
+          PRIOR_RUN_ID: '39988927652'
+          ARCHIVE_REF: ${{ inputs.archive_ref }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "$RUN_STAGE" == resume-restore ]]; then
+            sha256sum --check --status <<<'ac9b3903723c7cede72cb01642b31cdd3a88b31c2cf2e4efe56e282d21af1555  scripts/ci/openclaw-enterprise-resume-provenance.py'
+            python3 -I scripts/ci/openclaw-enterprise-resume-provenance.py \
+              --prior-run-id "$PRIOR_RUN_ID" --archive-ref "$ARCHIVE_REF" \
+              --current-sha "$EXPECTED_SHA" \
+              --receipt "${RUNNER_TEMP}/oce-resume-provenance.json"
+          fi
+
+      - name: Verify Protected Inputs
+        env:
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          test -n "$OCTELIUM_AUTH_TOKEN"
+
+      - name: Verify AWS Role Input
+        if: inputs.legacy_stage != 'network-preflight'
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+        run: |
+          test -n "$AWS_APPLY_ROLE_ARN"
+
+      - name: Configure AWS Credentials
+        if: inputs.legacy_stage != 'network-preflight'
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-duration-seconds: 25200
+          role-session-name: homelab-openclaw-legacy-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Run Legacy Stage
+        env:
+          RUN_STAGE: ${{ inputs.legacy_stage }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          ARCHIVE_REF: ${{ inputs.archive_ref }}
+          CACHE_REF: ${{ inputs.cache_ref }}
+          OPENCLAW_RESUME_PROVENANCE: ${{ runner.temp }}/oce-resume-provenance.json
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
+          if [[ "$RUN_STAGE" == network-preflight ]]; then
+            printf '%s\n' network-nix-entry >"$OPENCLAW_PHASE_FILE"
+          fi
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          if [[ "$RUN_STAGE" == resume-restore ]]; then
+            export PRIOR_RUN_ID=39988927652
+          fi
+          if [[ "$RUN_STAGE" == network-preflight ]]; then
+            printf '%s\n' network-kubeconfig >"$OPENCLAW_PHASE_FILE"
+          fi
+          bash scripts/ci/install-kubeconfig.sh
+          if [[ "$RUN_STAGE" == network-preflight ]]; then
+            printf '%s\n' network-kubectl-version >"$OPENCLAW_PHASE_FILE"
+          fi
+          kubectl --request-timeout=15s version >/dev/null
+          if [[ "$RUN_STAGE" == network-preflight ]]; then
+            printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
+          fi
+          sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'
+          sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'
+          sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'
+          sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'
+          sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'
+          bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
+          EOF
+          then
+            phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+            case "$phase" in preflight|network-nix-entry|network-kubeconfig|network-kubectl-version|network-source|network-current-main|network-stopped-reader|network-namespace|network-postcheck|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore|cache-build|cache-publication|cache-transfer)
+              echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+            *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+            esac
+            rm -f "$OPENCLAW_RESUME_PROVENANCE"
+            exit 1
+          fi
+          rm -f "$OPENCLAW_RESUME_PROVENANCE"
+          echo "Legacy operation completed; private receipts withheld."
+
+  enterprise:
+    name: Protected Enterprise Stage
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    concurrency:
+      group: openclaw-enterprise-operations-production
+      cancel-in-progress: false
+      queue: max
     environment:
       name: homelab-production
     permissions:
       contents: read
-      id-token: write
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recheck Current Main Commit Before Enterprise Stage
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Run Fixed Enterprise Stage
+        env:
+          RUN_STAGE: ${{ inputs.enterprise_stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! {
+            sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
+            sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+            sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+            timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
+          } >"$private_log" 2>&1; then
+            echo '::error::Enterprise stage blocked; private diagnostics withheld.'
+            exit 1
+          fi
+          echo 'Enterprise stage passed; private receipts withheld.'
+
+  binding:
+    name: Protected Enterprise Installation Binding
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'bind-installation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: openclaw-enterprise-operations-production
+      cancel-in-progress: false
+      queue: max
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
     steps:
       - name: Verify Current Main Commit Before Credentials
         env:
@@ -103,47 +363,45 @@ jobs:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify Protected Inputs
+      - name: Recheck Current Main Commit Before Binding
         env:
-          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Bind Reviewed Installation
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
-          test -n "$AWS_APPLY_ROLE_ARN"
-          test -n "$OCTELIUM_AUTH_TOKEN"
-
-      - name: Configure AWS Credentials
-        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
-        with:
-          aws-region: us-east-1
-          mask-aws-account-id: true
-          role-session-name: homelab-openclaw-legacy-${{ github.run_id }}
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
-          unset-current-credentials: true
-
-      - name: Run Legacy Stage
-        env:
-          RUN_STAGE: ${{ inputs.legacy_stage }}
-          BASELINE_REF: ${{ inputs.baseline_ref }}
-          ARCHIVE_REF: ${{ inputs.archive_ref }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: |
+          set -euo pipefail
+          umask 077
           private_log="$(mktemp)"
+          chmod 600 "$private_log"
           trap 'rm -f "$private_log"' EXIT
-          export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          if ! {
+            ulimit -f 1024 &&
+            sha256sum --check --status <<<'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996  scripts/openclaw-enterprise-bind-installation.py' &&
+            test "$(jq -r '.bootstrap.serviceKeyFile // empty' scripts/config/openclaw-enterprise.json)" = /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+            test -f /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+            test -s /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
+            test "$(stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json)" = "$(id -u):600" &&
+            test -n "$OCTELIUM_AUTH_TOKEN" &&
+            timeout 10m nix develop --command bash <<'EOF'
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'3491fe8b6c80454d522b7d03dba1baf7e0101519467368ba4bf9c471a91efb6d  scripts/ci/openclaw-enterprise-operations.sh'
-          bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
+          python3 -I scripts/openclaw-enterprise-bind-installation.py --expected-sha "$EXPECTED_SHA" --credential-file /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json
           EOF
-          then
-            phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
-            case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)
-              echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
-            *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
-            esac
+          } >"$private_log" 2>&1; then
+            echo '::error::Enterprise Installation binding blocked; private diagnostics withheld.'
             exit 1
           fi
-          echo "Legacy operation completed; private receipts withheld."
+          echo 'Enterprise Installation binding verified; private receipts withheld.'

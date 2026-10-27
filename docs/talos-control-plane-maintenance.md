@@ -1,8 +1,8 @@
 # Talos Control-Plane Maintenance
 
 This runbook owns repository-backed control-plane maintenance for Talos and
-Kubernetes. It covers service-account issuer maintenance and the upgrade
-checklist for Talos and Kubernetes patch releases.
+Kubernetes. It covers service-account issuer maintenance and the declared,
+still-inactive Talos minor-version and Kubernetes upgrade ladder.
 
 Do not use this runbook to make ad hoc live changes. First express desired
 state in this repository, validate the rendered Talos machine config, then
@@ -351,6 +351,191 @@ The private `talos-api.homelab` Octelium TCP Service forwards raw port `50000`
 to `10.1.0.199`. Its policy permits only the `homelab-owner` human client;
 Talos mutual TLS still authenticates every request.
 
+The separate private `talos-api-ci.homelab` service uses the same upstream but
+allows only the `homelab-ci` workload in a `CLIENT` session. Octelium's
+clientless mode supports HTTP-based services, not Talos's raw TCP transport.
+The staged `platform-maintenance.yml` lane uses the pinned Octelium CLI in
+rootless mode to publish only `talos-api-ci.homelab` to runner-local port
+`15000`; it maps the reviewed Talos certificate hostname to that listener and
+still requires Talos mTLS. The existing clientless Kubernetes token remains
+limited to the separate Kubernetes Service. Apply the reviewed Octelium
+catalog through its repository workflow before attempting this path. See
+[Octelium client-based access](https://octelium.com/docs/octelium/latest/user/cli/connect)
+and [clientless service limits](https://octelium.com/docs/octelium/latest/management/core/service/clientless).
+
+Before the protected inspection can run, provision a distinct Octelium
+`CLIENT` workload credential as the `homelab-production` environment secret
+`OCE_OCTELIUM_CLIENT_AUTH_TOKEN`, and a separate authenticated Talos client
+config as `OCE_TALOSCONFIG_B64`. The CI policy admits that workload only to
+`talos-api-ci.homelab`; it does not grant access to the owner's Talos Service.
+From an exact, clean `main` checkout, use the fixed repository helper after
+the reviewed Octelium catalog is live:
+
+```sh
+nix develop --command bash scripts/platform-maintenance-credentials.sh octelium-client
+nix develop --command bash \
+  scripts/platform-maintenance-credentials.sh talos-client \
+  --operator-talosconfig /absolute/private/path/to/operator-talosconfig
+```
+
+The first command requires an authenticated Octelium administrator, verifies
+the dedicated WORKLOAD user, CLIENT policy, and TCP service, then creates or
+rotates only the `homelab-platform-talos-ci` authentication-token Credential.
+An Octelium access-token Credential is an HTTP bearer token and cannot serve
+the client tunnel; see [Credential types](https://octelium.com/docs/octelium/latest/management/core/credential).
+The helper does not reset the user's separate clientless Kubernetes sessions.
+The second command requires a valid operator `os:admin`
+client and direct control-plane access. Talos issues a distinct 30-day
+`os:admin` client; the helper tests it against `10.1.0.199`, sets its stored
+endpoint to the reviewed private certificate hostname, and only then publishes
+it. Renew before expiry. Neither command displays the token or client config.
+If Talos issuance fails, restore the original private CA or operator access
+through the documented recovery path; never copy the owner's client certificate
+to CI. A failed GitHub secret write requires a repeat run and a fresh credential.
+
+Protected inspect run `39362087271` on 2026-10-20 passed its static,
+exact-main, and AWS gates, then stopped at `connect_talos`: both dedicated
+environment inputs were empty. The repository helper had not yet been run, and
+the local operator Talos client was valid for read-only direct access; CI
+issuance and Octelium CLIENT access remain unverified until the fixed path is
+run and protected inspect produces a complete receipt. No authenticated
+Octelium administrator session was available to run the credential helper at
+the time of this finding.
+Verify from a protected runner that the fixed local TCP port is reachable and
+`talosctl version` succeeds with the decoded mode-`0600` config. Failure must
+stop before any upgrade; inspect the private S3 receipt under
+`openclaw-enterprise/platform/<source-sha>/<run-id>/inspect.json` and keep
+runner logs private. Removing the CI credential or restoring the previous
+Octelium policy disables this access without changing the owner route.
+
+`platform-maintenance.yml` accepts only fixed stage names and the exact
+current `main` SHA and rechecks it immediately before AWS credentials. Inspect
+uses the separate clientless Kubernetes token and kubeconfig for its API reads
+alongside the client-based Talos tunnel. The canary fixtures are applied and
+removed through the reviewed Argo CD path; `qualify` only runs the first
+traffic probe. T019/T027 qualification still needs an admitted isolated canary
+and live lifecycle proof. Any probe receipt leaves lifecycle qualification
+unresolved.
+The dormant `canary-admit` stage requires a fresh, reviewed placement and empty
+pre-enable firewall baseline receipt. Its guarded Node JSON Patches add the
+dedicated taint before the selector label. Admission rejects another Node
+carrying that label, including a change detected just before or after labeling.
+After verified `owned-cleanup`,
+`canary-release` requires that run's receipt, empty fixture namespace, absent
+enforcer, and empty owned firewall before removing the label, waiting for all
+cleanup DaemonSet Pods to be deleted, rechecking that the complete node Pod
+inventory contains only the reviewed system DaemonSet identities, and removing
+the taint. A stalled deletion or changed Pod identity
+leaves the node tainted for direct recovery review. Release follows the
+cleanup receipt to its immutable ownership receipt and original placement at
+the qualify SHA, and verifies the exact qualify, fixture-prune, firewall-prune
+commit order on the first-parent history of current `main` before touching the
+Node. Unrelated commits may land around the two dedicated prune commits;
+changes outside the documented prose/evidence allowlist, including the private
+receipt bucket and validation inputs, do not. A newer `main` requires fresh
+SHA-bound ownership capture, approval, and cleanup receipts before release.
+Both stages retain private attempt and completion receipts and stay blocked
+while `canary.node` is null. `owned-cleanup` reads the original verified
+`placement.json` under `receipts/<evidence-sha>/` and the immutable approved
+`firewall-ownership/<capture-run-id>.json` under `receipts/<source-sha>/`.
+The placement proves an empty pre-enable firewall baseline; the ownership
+receipt binds a reviewed full IPv4/IPv6/ipset snapshot hash to the same node
+UID and boot ID. Both stay in the KMS-encrypted, versioned application-backup
+bucket under `openclaw-enterprise/platform/`. The separately reviewed
+cleanup DaemonSet must be synced through Argo; the enforcer DaemonSet must be
+absent and Enterprise tenants quiesced. A changed snapshot refuses deletion,
+including foreign rules or ipsets added after review. An interrupted cleanup
+receipt is uploaded privately and requires a fresh ownership review before
+retry. The stage retains a versioned `cleanup-attempt.json` before invoking
+the firewall helper, so an unavailable final receipt still leaves a private
+attempt marker. `ownership-capture` now retains the full private firewall
+snapshot after a successful traffic probe on the qualify main SHA, followed by
+exact fixture-prune and enforcer-prune commits, with the fixture namespace and
+enforcer gone and the cleanup Pod Ready. Capture, approval, cleanup, and
+release compare a complete live canary-node Pod inventory to the reviewed
+system DaemonSet Pod identities plus that validated cleanup Pod while it runs.
+Release rechecks only the reviewed system Pod identities after cleanup Pod
+deletion. An incomplete inventory or foreign, terminating, or replaced Pod
+blocks the stage. A normal system DaemonSet Pod restart changes
+its UID and also blocks capture, approval, cleanup, and release. The immutable
+qualify-SHA placement cannot be refreshed after removal in this workflow;
+stop for a separately reviewed recovery path. Pre-enable placement and probe
+receipts stay bound to the qualify SHA. Keep the empty canary Application
+automated until owned cleanup and release checks complete.
+Inventory checks and firewall deletion are not atomic: a Pod tolerating the
+isolation taint could arrive during deletion. Live activation remains blocked
+until isolated placement rules out that arrival or a reviewed repository-owned
+isolation path is added.
+The repository owner checks that versioned capture
+outside public logs, then freshly dispatches `ownership-approve` with its run
+ID and exact snapshot SHA-256. The protected job rechecks placement,
+qualification, live identity,
+the full firewall snapshot, owner actor ID `57728706`, first run attempt, and
+current `main` before writing an immutable receipt keyed by capture run ID.
+`owned-cleanup` requires that exact ID; partial deletion requires a fresh
+capture and approval of the remaining snapshot before retry. This attests
+ownership, not the still-pending canary
+lifecycle scenarios. Do not infer completion from a partially deleted chain
+set.
+The protected upgrade branch now connects through the same authenticated Talos
+tunnel, strictly validates both private role configs with the committed
+image-only patches, and invokes the ordered Talos or Kubernetes upgrade API.
+The executor first requires the canonical platform input file to match the
+exact dispatched commit, so a runner-local activation or canary override stops.
+The image-only Talos patches cannot alter `machine.install.disk`; the executor
+also compares each node's active and persistent role, disk, and registry mirror
+configuration before and after a Talos hop. It checks node/API health between
+serial workers and the sole control plane. It never applies the Kubernetes
+version patches to live nodes.
+
+Before execution, the helper downloads exactly one checksummed, KMS-encrypted
+S3 version of each `placement`, `direct-recovery`, `off-node-etcd-backup`, and
+`artifact-publication` receipt from
+`openclaw-enterprise/platform/receipts/<current-main-sha>/`. The placement
+receipt must attest measured capacity and the admitted isolated canary. Direct
+recovery must attest authenticated Talos access to `10.1.0.199:50000` and all
+four named nodes from the LAN. The off-node etcd receipt must bind a snapshot
+SHA-256 and versioned object with an offline restore check. The latter two
+checks must be at most six hours old; all four receipts must be verified and
+bound to the dispatched SHA. A protected producer and review path for these
+receipts remains T023 work, so no operator should set `activationEnabled` or
+the canary node yet.
+
+The executor writes a `started` marker to the KMS-encrypted, versioned backup
+bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its
+exact version and checksum before each Talos node command or the Kubernetes
+cluster command. Separate per-node `verified` markers follow node and cluster
+health checks. On another runner it restores prior stage and node receipts;
+an unknown write outcome, missing completion, changed local copy, duplicate
+version, or delete marker stops the retry for direct-LAN recovery review.
+After an unrelated merge, a new exact-current-`main` run may skip earlier
+verified nodes only when their durable marker pair, pinned ladder, live version,
+boot ID, and health still match. Istio completion receipts for the three
+reviewed stages must also be published once under
+`openclaw-enterprise/platform/stages/istio-<version>/verified.json` before the
+Kubernetes stage; T025 owns their production.
+Immediately before the Kubernetes command, the helper also reads the live
+`istiod`, CNI, ztunnel, and both gateway workloads. The first three template
+images and the gateways' injected Pod images must match the reviewed Istio
+1.30.6 pins. Their Deployment/DaemonSet rollouts must be fully observed and
+ready on all scheduled nodes. Deployment total replicas must equal desired,
+including during termination of old replicas. It repeats this read-only check after the
+upgrade; a controller marked for deletion or an old or degraded mesh stops the stage.
+Istio 1.30.6 charts currently default to `registry.istio.io/release`, while
+the reviewed catalog pins `docker.io/istio`; T025 must align the chart image
+hub and set digest-bearing images in the workload templates and injected
+gateway Pods before this gate can pass. Matching mutable tags are rejected.
+
+Talos v1.14.4 appends `:v<target>` to the five `upgrade-k8s` image bases for
+[control-plane images](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L175)
+and [kubelet](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/kubelet.go#L207).
+The executor checks each resulting public Harbor tag's digest and immutable
+status against the reviewed catalog and checks the active no-fallback Harbor
+mirror routes on all nodes before invoking that API. The exact five-tag Harbor
+lock is still disabled in bootstrap. T023 must enable and verify it after a
+full-catalog mirror receipt and Harbor restore proof. The source lane alone is
+not authorization for a live upgrade.
+
 After the control-plane patch and Octelium catalog workflow both complete,
 validate from an off-LAN workstation before withdrawing the Tailscale subnet
 route:
@@ -365,6 +550,25 @@ talosctl --talosconfig .talos/talosconfig \
 
 The node addresses select Talos API targets; the client connection itself uses
 the Octelium Service endpoint. Keep direct IP access as the LAN recovery path.
+
+Before any protected upgrade, verify the independent direct path from a LAN
+machine with the current private Talos client config:
+
+```sh
+talosctl --talosconfig /path/to/private/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.199,10.1.0.200,10.1.0.201,10.1.0.202 version
+talosctl --talosconfig /path/to/private/talosconfig \
+  --endpoints 10.1.0.199 --nodes 10.1.0.199 etcd status
+```
+
+Expect all four server versions and a healthy etcd member. If direct mTLS,
+etcd, the fresh off-node snapshot, any node's disk/role, or the private receipt
+readback fails, stop the workflow. Do not rerun a stage with a `started` marker
+and no matching `verified` marker; inspect the node through direct LAN access,
+preserve the previous compatible Talos boot image, and record a new reviewed
+recovery decision before attempting another change. A Kubernetes partial
+upgrade requires separate recovery review; this workflow never downgrades it.
 
 ## Remote Worker Reboot
 
@@ -924,7 +1128,7 @@ emergency Deployments in place. Inspect every Pod bound to `zimaboard-2`,
 including terminating Pods; if any mounts a PVC, stop and establish a separate
 writer-fencing and data-recovery plan before proceeding.
 
-Apply the reviewed `IaC/live/kubernetes-node-labels` unit through the
+Apply the reviewed `IaC/homelab/us-west-2/shared/kubernetes-node-labels` unit through the
 [documented saved-plan recovery path](ci-cd.md#octelium-ci-access-setup).
 Its `zimaboard-2 = {}` input removes the Terragrunt-owned dataplane label while
 retaining the label-management resource and Node. The expected plan updates

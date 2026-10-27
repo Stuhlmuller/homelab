@@ -38,6 +38,10 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
+          changed_paths="$(git diff --name-only "origin/${BASE_REF}...HEAD")" || {
+            echo "::error::Unable to determine live Terragrunt plan scope." >&2
+            exit 1
+          }
           requires_live_plan=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
@@ -48,7 +52,7 @@ jobs:
                 requires_live_plan=true
                 ;;
             esac
-          done < <(git diff --name-only "origin/${BASE_REF}...HEAD")
+          done <<<"${changed_paths}"
 
           echo "requires-live-plan=${requires_live_plan}" >>"${GITHUB_OUTPUT}"
           if [ "${requires_live_plan}" = "true" ]; then
@@ -139,10 +143,9 @@ jobs:
         run: |
           private_dir="$(mktemp -d)"
           chmod 700 "$private_dir"
-          private_log="$private_dir/plan.log"
           azuread_report="$private_dir/azuread-report.json"
           trap 'rm -rf -- "$private_dir"' EXIT
-          if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash <<'EOF'
           set -euo pipefail
           umask 077
           echo "::group::Kubeconfig setup"
@@ -152,14 +155,6 @@ jobs:
           echo "::group::Argo CD bootstrap plan"
           bash scripts/ci/terragrunt-plan.sh
           EOF
-          then
-            if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then
-              HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"
-            fi
-            echo "::error::Live plan failed; detailed output was withheld because this is a public repository. Reproduce it locally."
-            exit 1
-          fi
-          echo "Live plan and policy checks passed; details withheld."
 
   terragrunt-plan-skipped:
     name: Terragrunt Plan Skipped

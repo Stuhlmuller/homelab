@@ -9,17 +9,18 @@
       "requiredRevisionLabel": "org.opencontainers.image.revision",
       "controller": {
         "repository": "harbor.stinkyboi.com/homelab/homelab-oce-controller",
-        "digest": "sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164"
+        "digest": "sha256:b3de708695efcd5797c188912085dc46bb1408fa320d8f4fa03db4f2a45a06b2"
       },
       "runtime": {
         "repository": "harbor.stinkyboi.com/homelab/homelab-oce-runtime",
-        "digest": "sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6"
+        "digest": "sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1"
       }
     },
     "cli": {
       "sourcePath": "cmd/occ",
       "buildRevision": "33bb74590a749f37934da4502fca6035cd234a55",
-      "artifactDigest": null
+      "imageRepository": "harbor.stinkyboi.com/homelab/homelab-oce-cli",
+      "artifactDigest": "sha256:9d77fddb3f099f329494910609459e7bc8076d74ab797ca3382fe80edf9f12d2"
     },
     "imagePairingPolicy": "all-artifacts-built-from-source-revision-and-verified-by-publication-receipt"
   },
@@ -38,6 +39,7 @@
   },
   "privateOrigins": {
     "console": "https://console.oce.stinkyboi.com",
+    "nativeOrigin": null,
     "agentSuffix": "agents.oce.stinkyboi.com",
     "cookieDomain": "oce.stinkyboi.com",
     "gateway": "oce-private-gateway"
@@ -55,11 +57,14 @@
     "postgresAdmin": "/homelab/openclaw-enterprise/postgres-admin-password",
     "postgresMigrator": "/homelab/openclaw-enterprise/postgres-migrator-password",
     "postgresApp": "/homelab/openclaw-enterprise/postgres-app-password",
+    "postgresBackup": "/homelab/openclaw-enterprise/postgres-backup-password",
     "sessionAuth": "/homelab/openclaw-enterprise/session-auth-secret"
   },
   "model": {
     "provider": "openai",
-    "id": null
+    "id": "openrouter/free",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "api": "openai-completions"
   },
   "privateJournal": {
     "required": true,
@@ -68,6 +73,21 @@
     "mountPath": "/private/openclaw-enterprise/journal.json",
     "mode": "0600",
     "lockRequired": true
+  },
+  "journalOperator": {
+    "enabled": false,
+    "namespace": "openclaw-system",
+    "serviceAccount": "oce-journal-operator",
+    "journalClaim": "occ-operator-journal",
+    "journalClaimUid": null,
+    "journalVolumeUid": null,
+    "journalPath": null,
+    "bootstrapClaim": "occ-bootstrap-admin-password",
+    "bootstrapClaimUid": null,
+    "node": null,
+    "runAsUser": 10001,
+    "image": "harbor.stinkyboi.com/homelab/homelab-oce-operator@sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08",
+    "imageSourceSha": "fda0d68cd2fc5d4689b6f1b048d329ae66ef3727"
   },
   "privateArchives": {
     "legacy": {
@@ -109,8 +129,7 @@
     ]
   },
   "executionBlockers": [
-    "Matching published controller/runtime images and source-built CLI are not verified",
-    "Model ID and dedicated credential are not configured",
+    "Dedicated OpenRouter credential is not configured",
     "Storage placement and private recovery paths are not validated"
   ],
   "installationPhases": [

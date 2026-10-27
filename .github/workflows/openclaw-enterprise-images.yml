@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Exact reviewed current main commit for the Enterprise image pair
+        description: Exact reviewed current main commit for Enterprise images, CLI and journal operator
         required: true
         type: string
 
@@ -13,7 +13,7 @@ permissions: {}
 
 jobs:
   publish:
-    name: Build And Publish Paired Stock Images
+    name: Build And Publish Pinned Stock Images, CLI And Journal Operator
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -50,9 +50,13 @@ jobs:
       - name: Validate Pinned Source And Publication Gates
         run: |
           nix develop --command python3 -I scripts/ci/openclaw-enterprise-image-test.py
+          nix develop --command python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
           nix develop --command python3 -I scripts/ci/harbor-publish-test.py
 
-      - name: Build Stock Controller And Runtime Before Registry Login
+      - name: Build Journal Operator Before Registry Login
+        run: nix develop --command bash builds/openclaw-enterprise/build-operator.sh
+
+      - name: Build Stock Controller Runtime And CLI Before Registry Login
         run: nix develop --command bash builds/openclaw-enterprise/build.sh
 
       - name: Verify Current Main Commit Before Credentials
@@ -77,7 +81,7 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
-      - name: Publish And Verify Signed Harbor Pair
+      - name: Publish And Verify Signed Harbor Images, CLI And Operator
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
@@ -95,10 +99,21 @@ jobs:
           then
             python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
               "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
-            echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+            phase=unclassified
+            if [[ -f "$GITHUB_STEP_SUMMARY" ]]; then
+              phase_line="$(tail -n 1 "$GITHUB_STEP_SUMMARY")"
+              if [[ "$phase_line" == "Enterprise image publication failed at phase: "* ]]; then
+                candidate="${phase_line#*phase: }"
+                case "$candidate" in
+                  preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator)
+                    phase="$candidate" ;;
+                esac
+              fi
+            fi
+            echo "::error::Enterprise image publication failed at phase: $phase; private transport and registry output withheld."
             exit 1
           fi
-          echo "Pinned Enterprise controller/runtime pair published, signed, and fully pulled; private output withheld."
+          echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."
 
       - name: Retain Only Encrypted Failure Diagnostic
         if: failure()

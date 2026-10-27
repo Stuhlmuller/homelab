@@ -28,6 +28,51 @@ restore job for PostgreSQL, Valkey, or ClickHouse. Retained PVCs protect
 against accidental GitOps deletion but are not an independent recovery copy.
 Treat state recovery as unverified until a restore procedure and drill exist.
 
+## One-shot PostgreSQL checkpoint
+
+The protected, manual
+[`Langfuse PostgreSQL Checkpoint`](../../../../.github/workflows/langfuse-postgres-checkpoint.yml)
+workflow captures the sole Ready PostgreSQL Pod without stopping writers. It
+uploads a consistent custom dump to the versioned, SSE-KMS application-backup
+bucket, downloads the exact object version, checks its SHA-256 digest, and
+restores it in a disposable copy of the pinned PostgreSQL 17/pgvector image
+with Docker networking disabled. The workflow leaves the live database and PVC
+untouched. It is a one-shot safety copy for the proposed database move, not a
+scheduled backup.
+
+After this workflow is merged and its live run is authorized, dispatch it from
+exact current `main`; `homelab-production` admits only that branch:
+
+```sh
+main_sha="$(gh api repos/Stuhlmuller/homelab/commits/main --jq .sha)"
+gh workflow run langfuse-postgres-checkpoint.yml -R Stuhlmuller/homelab \
+  --ref main -f expected_sha="$main_sha" \
+  -f expected_pvc_uid='<pre-move-pvc-uid>' -f expected_pv_uid='<pre-move-pv-uid>'
+```
+
+The successful job prints the object key, version ID, SHA-256 digest, byte
+count, restored table count, and source PVC/PV identities. Keep that receipt
+with the migration record. Supply the expected UIDs from the independently
+checked pre-move source inventory, and compare them with the bound claim before
+the move; the object version remains in the private backup bucket. A failed job
+may leave an unverified S3 object at its run-specific key; inspect it
+privately and do not count it as a usable checkpoint. Preflight rejects stale main, missing CI
+Pod/PVC/PV read and exec rights, an incomplete Pod list, a replaced claim,
+multiple or unready PostgreSQL Pods, an image mismatch,
+wrong AWS account, unversioned or unencrypted storage, and a database over
+1 GiB. The hosted runner needs sufficient scratch disk for dump, retrieval,
+and restored data. Verify the protected CI role still has S3/KMS read/write
+access before relying on a live run. Offline fixture:
+
+```sh
+nix develop --command python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
+```
+
+This proves only PostgreSQL logical restore. It does not recover ClickHouse,
+Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
+startup and ingestion. Keep the existing PVC and require a separate reviewed
+cutover and rollback before moving the database.
+
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.

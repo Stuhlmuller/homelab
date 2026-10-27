@@ -60,7 +60,7 @@ def verify_main():
 def read_identity():
     values = read_json([
         "terragrunt", "--log-disable", "--working-dir",
-        str(ROOT / "IaC/operator/azuread-ci-identities"), "output", "-json",
+        str(ROOT / "IaC/homelab/us-west-2/operator/azuread-ci-identities"), "output", "-json",
     ], "operator identity outputs")
     try:
         clients = values["client_ids"]["value"]

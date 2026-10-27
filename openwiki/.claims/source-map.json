@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8977e50640cfff9f3b75078928e5f9d1230d1ce1f5a2df48e5fbad60c9154818",
+  "pageVersion": "sha256:09a916bb357bab02f48e0b876c3c29e4a8aabe27e8e94b9c76dae3e896ad32ad",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
       "statement": "The Octelium Entra bootstrap retains immutable owner identity; the owner-mail module now documents a retired Graph PATCH and state-only removal. The Fleet runbook records retired Company Portal/Platform SSO and the separate guarded Entra owner conversion.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "resource": "repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md",
           "version": "repo-file-v1:sha256:133992059c332d4630fdbc23331576eb6ae8e363d4382035da7b888567254c23"
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
+          "version": "repo-file-v1:sha256:666cac04c8a446019f22c1244e8d5dcc7a86f28aa36fe1f63b725aa6e6165b65"
         },
         {
           "resource": "repo://scripts/entra-owner-conversion.py",
@@ -40,15 +40,15 @@
     },
     {
       "id": "claim_8d503c93f9684f708a42cd045c5bdf97",
-      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, interrupted-signature recovery, rotation and previous-authority retirement.",
+      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites. The Tailscale module owns tailnet DNS, settings, contacts, policy, federated identities, and CI keys through a separate Terragrunt OAuth client. CI publisher scripts own signed-key publication, interrupted-signature recovery, rotation and previous-authority retirement.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+          "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:9d74896c117ecad19849a7dc462fdb8dbd243166f90f28f70082dbd78ff30f38"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
+          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
@@ -73,12 +73,12 @@
           "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
         },
         {
-          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "resource": "repo://IaC/mastodon/stack.hcl",
           "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
+          "version": "repo-file-v1:sha256:bb743191af5d81a378430caea6d4c72cf0cc248acc55ae1806afbf48f87c3be2"
         }
       ]
     },
@@ -119,26 +119,262 @@
       "statement": "The source map links the separate tailnet DNS resolver, its Terragrunt stack, direct DNS checker, and guarded public address retirement helper to their operational wiki pages.",
       "evidence": [
         {
-          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "resource": "repo://IaC/tailnet-dns/stack.hcl",
           "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
         },
         {
           "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
-          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+          "version": "repo-file-v1:sha256:4fcdd662b1bb132bc101e7d54fd6b33002d8a84068a805397640d6a417e94806"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:b39004f10c5d7c5f4224f74702c49eae590a70acc8d26e6703a54bc779abff0f"
+          "version": "repo-file-v1:sha256:bf2a6a9e4309725e30df462a4f1d5ae04ae07ccdef4cd4b399a7ec7b7222b0f6"
+        }
+      ]
+    },
+    {
+      "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
+      "statement": "The unsynced Enterprise foundation owns namespace, ExternalSecret, TLS, PostgreSQL and network-policy source. The Python helper owns journaled inactive reconciliation and source-only active, native-origin generation-2, stop and recovery paths; CI fixtures exercise them, while activation stays disabled and protected journal-dependent runtime stages block mutation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
+          "version": "repo-file-v1:sha256:3301427456e8b89e110f93f62ed440b3f848de64624c6d0d764de9d95c2a96c1"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
+          "version": "repo-file-v1:sha256:95baa44ed471d8efc23d3d652cc8c78d320cf6874fc3982514ce8acbc201ced9"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py",
+          "version": "repo-file-v1:sha256:9424e8212a161d0c5649fdb1e6b39f54cad3d8848b2d4d652beeee2afbc98ec7"
+        }
+      ]
+    },
+    {
+      "id": "claim_0f2f901e413048fa888c8d802aace266",
+      "statement": "The source map links the scoped OpenClaw Enterprise Octelium catalog and exact-main reconciler to the Octelium runbook, and points its native host boundary to private ingress guidance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-access-test.py",
+          "version": "repo-file-v1:sha256:7608acd5a8521547b9e60ebf4f0fedd2e5a4c1fc20b3ca938b6c4912222bc571"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-access.py",
+          "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3e8ee280c8f41418b4316bb5b025934",
+      "statement": "The dormant Enterprise app directory owns pinned stock-chart values, reviewed Installation startup bytes, hooks and one Envoy image override; a separate exact-main workflow and startup script own immutable Secret creation, while focused CI fixtures exercise chart and lifecycle gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-startup.yml",
+          "version": "repo-file-v1:sha256:62bae033a75b2d17f6b82ae5af4c5d0a60a8ab8ade04bf1ae07dabf2615024e7"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:e8bc3a7ce13355d37351296f7830bdbf8e4b689978df9630cfc1c8823599c65e"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
+          "version": "repo-file-v1:sha256:2f669c4878b0e6b2ec8988f0958629f299ae254e55ce9bdd96f0fe009425372b"
+        }
+      ]
+    },
+    {
+      "id": "claim_31cc2638d1bc4ac5ac37886991d4d7c8",
+      "statement": "The Enterprise operations workflow owns protected binding and fixed runtime stages. Its pinned full-sync helper checks source and installation phase, then rejects current-main drift after final Argo sync and health readback; the committed unselected phase blocks Kubernetes sync. Offline fixtures include a forced-race check. Reconcile, stop, and verification route through a source-bound one-shot Job dispatcher, but the disabled operator gate blocks their Job writes. Restore and acceptance remain separately blocked.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
+          "version": "repo-file-v1:sha256:30eb84c73bb905192dac10f81a75d227c95e0032a68b2a919e93972d90ae5d5e"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py",
+          "version": "repo-file-v1:sha256:6bdd356907a800d9ee5c0a4b9de040aca8b513931be7acbd9f8dfe397c5560b4"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
+          "version": "repo-file-v1:sha256:d31eedff5fe90b4438c87396ac22bdb59a224dba6160afdc56bccf567986f022"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+        }
+      ]
+    },
+    {
+      "id": "claim_991945f52bbd4e61bc94ef79e6cf733f",
+      "statement": "The Enterprise Installation binder has offline fixtures and a protected workflow invocation, but private bootstrap service-key delivery and live binding are not yet proven.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
+          "version": "repo-file-v1:sha256:01c0a5ea9d09dee52723bf5a2944a38d630f205e8c3a9a7131eb692623be1b91"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-bind-installation.py",
+          "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
+        }
+      ]
+    },
+    {
+      "id": "claim_a034ea78041d43fab0f1639f39e991cd",
+      "statement": "The platform maintenance workflow dispatches protected firewall ownership, cleanup, and canary release stages. network-policy-ownership.py owns private versioned snapshot and approval receipts; network-policy-cleanup.py enforces fixture absence and reviewed assigned Pod identities before deletion; network-policy-canary-node.py rechecks only reviewed system Pod identities after cleanup Pod deletion before taint removal.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-canary-node.py",
+          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-cleanup.py",
+          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+        },
+        {
+          "resource": "repo://scripts/network-policy-ownership.py",
+          "version": "repo-file-v1:sha256:e9bf6b3255d79dc5a49d6c9b3f24553214fbf5ba2f2f4f7b6b43db32b896f8f3"
+        }
+      ]
+    },
+    {
+      "id": "claim_b1aa58ffb6564cadbdf1b7a734ac8ecc",
+      "statement": "The root Terragrunt stack declares separate auto-sync-disabled Enterprise foundation and chart Applications, and a focused registration fixture checks their rendered source and project boundaries.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
+        },
+        {
+          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
+          "version": "repo-file-v1:sha256:9bbb0c6b8ccb48a27ded3657d09bb64fe546694e815df0e3d689d2440b2355d7"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0419af8920742eea4cd194e30f9e74f",
+      "statement": "The unregistered Enterprise operator directory owns the retained journal claim and local class, scoped proof RBAC and private Job network intent, while the dispatcher owns exact source and claim identity checks; actual PV placement and activation remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L53",
+          "version": "repo-lines-v1:sha256:df48c9814c36d7d48a552aab7ea26b9a5fa487ae5cabef2364eba07a5b5f8eab:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
+          "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml",
+          "version": "repo-file-v1:sha256:689536c34469f4160f3513dad5445ffa65c57113a03501f03aa4e9ab48cf3303"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L55-L200",
+          "version": "repo-lines-v1:sha256:db2262f8e869c112acfb09cf22a0369ace21c28cfb68a4445b0ca936fd3014c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NjY3ZTMwM2Q1OWFiYmQ0ZTYxNDJlMDkwNzYzZTNjOTEzMGIxMDk4NzllMGFmNGMzOGY1Yjg2M2ZlNzI3ZWQ0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmZWVmOTliYjg5NTU0NTE0ZTMyMTU3MTk0NzY3YzMyYTM1YWMxNjRhODQwMDY4OGU2MmRlMDI4NzFhNDA3Y2JiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3OGMzYTQxYjM0NWQxNGZkOTljNzJiNzA5YThmODg0NjA2ODhmMjBiMjQ2NGM1MjUyNWFkOWQ4M2JkYTI5NDg5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlNTNkODI4MmNjM2M5N2E5YzQyZjBlZGM3OTVmMDFlNjlmNjIzYjQwYjMxZDQzN2RlYWUzMDZiNjU5ZjUxMDAyIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_79820478796241609bac8eb1d5e66534",
+      "statement": "The Enterprise operator image recipe builds from an exact clean source checkout, embeds its SHA, and checks a non-root read-only runtime before credentials. Protected publisher run 40056484158 signed and fully pulled the exact-source operator and other three images; the operator digest/source SHA are pinned in a disabled declaration. The live Job remains disabled pending placement and bootstrap credential proof.",
+      "evidence": [
+        {
+          "resource": "repo://builds/openclaw-enterprise/build-operator.sh",
+          "version": "repo-file-v1:sha256:f13433ae9373cb1e6a201408a326b0eccf2c7ce0e38c224509b0d22e8b94daa4"
+        },
+        {
+          "resource": "repo://builds/openclaw-enterprise/operator.Dockerfile",
+          "version": "repo-file-v1:sha256:179f3c1243fb848ea4055b849df0eb4fa02661a41d05c2ed0ea16e6b85bda216"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
+          "version": "repo-file-v1:sha256:1ef8b8d531ae9d5fd475d851cb9375d9d843d6b410e4e1c5856ee2ea8f713b93"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+        }
+      ]
+    },
+    {
+      "id": "claim_9f239d61c134455f957409ef4b9ceb63",
+      "statement": "The protected operations workflow and legacy retirement helpers own exact-version archive verification and guarded isolated restore-copy. Runs 39942297939, 39951803625 and 39966041305 failed before receipt download and worker execution. The source range downloader checks exact S3 version and range metadata, verifies reader slices, rolls back interrupted appends, and promotes only complete matching bytes; fixed public subphases distinguish failure boundaries. Later guarded resume-restore run 40050057926 passed prior-job provenance, verified cached archive and receipt, and prepared a separate private NAS scratch recovery tree. T014 compatible old-image boot remains pending.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
+          "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-25T01:38:00.583Z"
   }
 }

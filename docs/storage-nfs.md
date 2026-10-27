@@ -74,7 +74,8 @@ Verify the export path and allow-list from an operator workstation:
 showmount -e 10.1.0.2
 ```
 
-Expected result:
+The existing exports should appear before and after the dedicated Renovate
+setup; line and client order may vary:
 
 ```text
 Exports list on 10.1.0.2:
@@ -82,9 +83,14 @@ Exports list on 10.1.0.2:
 /homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
 
+After the authorized one-off QTS setup, also require `/renovate-cache` with
+exactly those four Talos node addresses. Confirm in QTS that this export uses
+the separate 20 GiB thick volume before activating its staged PV through
+GitOps. Do not change the existing exports.
+
 ## GitOps Desired State
 
-`IaC/live/argocd-apps/platform-storage/terragrunt.hcl` registers the parent
+`IaC/homelab/us-west-2/apps/platform-storage/stack.hcl` registers the parent
 `platform-storage` Application through the Terragrunt catalog. That parent
 points at `clusters/homelab/platform/storage` and auto-syncs by default.
 
@@ -107,7 +113,13 @@ Important settings:
 | `provisionerName` | `k8s-sigs.io/qnap-nfs` | Stable provisioner identity |
 | `accessModes` | `ReadWriteMany` | NFS can support multi-node mounts |
 | `reclaimPolicy` | `Retain` | Protects workload data from accidental PVC deletion |
-| `allowVolumeExpansion` | `true` | Allows planned PVC growth |
+| `allowVolumeExpansion` | `false` | The provisioner cannot resize PVCs |
+
+The pinned [NFS subdir provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner/blob/nfs-subdir-external-provisioner-4.0.18/README.md#nfs-provisioner-limitationspitfalls)
+does not enforce requested PVC sizes or support resize. A claim's requested
+capacity neither reserves NAS space nor limits that claim's usage. Restore a
+full export through a declared NAS-capacity path; changing a PVC request does
+not restore free space.
 
 The parent `platform-storage` Application auto-syncs by default. Treat it as a
 readiness gate anyway: verify the QNAP export is visible and the child
@@ -119,6 +131,14 @@ The default `nfs-default` StorageClass remains the path for application config,
 most PostgreSQL data, dashboards, metrics, and other app-owned state. The
 exceptions are:
 
+- Renovate's proposed `renovate-cache-dedicated` static claim on a separate
+  20 GiB QTS thick volume and `/renovate-cache` NFS export. The PV, PVC, and
+  read-only claim probe remain outside their live Kustomizations. The owner
+  authorized one QTS setup after the staging PR merges; verify the separate
+  volume and exact export before activating the PV, then the PVC and probe,
+  through separate reviewed GitOps changes. The current `renovate-cache`
+  continues to use `nfs-default` until a later reviewed claim switch. See
+  `clusters/homelab/apps/renovate/README.md`.
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
 - `deluge-config-local`, `radarr-config-local`, and `sonarr-config-local`,
@@ -223,9 +243,10 @@ app has acceptable backup and restore coverage.
   `10.1.0.202`.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
-- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
-  Radarr, Sonarr, LiteLLM, OpenClaw, and n8n each explicitly depend on
-  `IaC/live/argocd-apps/platform-storage`.
+- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
+  Grafana, Deluge, Dispatcharr, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw,
+  and n8n now name `platform-storage` as a stack dependency. Its Application
+  is configured in `IaC/homelab/us-west-2/apps/platform-storage/stack.hcl`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

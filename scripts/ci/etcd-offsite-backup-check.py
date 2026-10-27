@@ -21,6 +21,15 @@ spec.loader.exec_module(offsite)
 
 
 class PublicationFixture(unittest.TestCase):
+    def test_destination_rejects_extra_hcl(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "destination.hcl"
+            path.write_text('inputs = {\n  account_id = "123456789012"\n  region = "us-east-1"\n'
+                            '  bucket = "homelab-etcd-backups-123456789012-us-east-1"\n'
+                            '  injected = "unexpected"\n}\n')
+            with self.assertRaises(ValueError):
+                offsite.destination(path)
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

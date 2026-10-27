@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: openclaw-enterprise
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Scoped Enterprise installation; no Argo ownership of tenant workloads.
+  sourceRepos:
+    - https://github.com/Stuhlmuller/homelab.git
+    - https://github.com/openclaw/openclaw-enterprise.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: openclaw-system
+    - server: https://kubernetes.default.svc
+      namespace: openclaw-agents
+    - server: https://kubernetes.default.svc
+      namespace: envoy-gateway-system
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ServiceAccount
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: StatefulSet
+    - group: batch
+      kind: Job
+    - group: cert-manager.io
+      kind: Certificate
+    - group: cert-manager.io
+      kind: Issuer
+    - group: external-secrets.io
+      kind: ExternalSecret
+    - group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+    - group: gateway.envoyproxy.io
+      kind: SecurityPolicy
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding

@@ -1,0 +1,70 @@
+# Stage outside Kustomize. Activate only after the local ledger is bound and SC-001 is ready.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate-acceptance-schedule-collector
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV_K8S_38=This temporary collector requires its dedicated read-only Kubernetes API ServiceAccount token to snapshot Jobs, Pods, and logs.
+  labels:
+    app.kubernetes.io/name: renovate-acceptance-schedule-collector
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  schedule: "5,20,35,50 * * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 180
+      backoffLimit: 0
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+            app.kubernetes.io/name: renovate-acceptance-schedule-collector
+            app.kubernetes.io/part-of: homelab-automation
+        spec:
+          serviceAccountName: renovate-acceptance-schedule-collector
+          automountServiceAccountToken: true
+          nodeSelector:
+            kubernetes.io/hostname: acer
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 12021
+            runAsGroup: 0
+            runAsNonRoot: true
+            fsGroup: 12021
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: collector
+              image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+              imagePullPolicy: IfNotPresent
+              command: [node, /usr/src/app/acceptance-schedule-collector.js]
+              resources:
+                requests: {cpu: 50m, memory: 128Mi, ephemeral-storage: 128Mi}
+                limits: {cpu: 500m, memory: 512Mi, ephemeral-storage: 1Gi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              volumeMounts:
+                - name: observer
+                  mountPath: /usr/src/app/acceptance-schedule-collector.js
+                  subPath: acceptance-schedule-collector.js
+                  readOnly: true
+                - name: ledger
+                  mountPath: /ledger
+          volumes:
+            - name: observer
+              configMap:
+                name: renovate-acceptance-observer
+            - name: ledger
+              persistentVolumeClaim:
+                claimName: renovate-acceptance-ledger

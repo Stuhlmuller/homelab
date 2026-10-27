@@ -1,0 +1,173 @@
+# Candidate for T045; deliberately excluded from the foundation Kustomization.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: occ-postgres-restore-drill
+  namespace: openclaw-system
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The official PostgreSQL image runs initdb as non-root UID 999 and must retain ownership of restored data.
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: occ-postgres-restore-drill
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        runAsNonRoot: true
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: restore
+          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          imagePullPolicy: IfNotPresent
+          terminationMessagePath: /root/restore-termination-log
+          terminationMessagePolicy: File
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              umask 0077
+              work=/scratch/restore
+              mkdir "$work"
+              # Keep raw detail private; only fixed stage/result text reaches Pod logs.
+              exec 3>&2
+              exec </dev/null >"$work/details.log" 2>&1
+              test ! -x /root
+              test ! -w /root/restore-termination-log
+              stage=selection
+              started=false
+              cleanup() {
+                result=$?
+                trap - EXIT HUP INT TERM
+                if [ "$started" = true ]; then
+                  pg_ctl -D "$work/pgdata" -m immediate -w stop >/dev/null 2>&1 || result=1
+                fi
+                if [ "$result" -eq 0 ]; then
+                  echo 'OpenClaw Enterprise isolated restore passed' >&3
+                else
+                  echo "OpenClaw Enterprise isolated restore failed at $stage" >&3
+                fi
+                exit "$result"
+              }
+              trap cleanup EXIT
+              trap 'exit 1' HUP INT TERM
+              find /backup/openclaw-enterprise -mindepth 1 -maxdepth 1 -type d \
+                -name '20[0-9][0-9][01][0-9][0-3][0-9]T[0-2][0-9][0-5][0-9][0-5][0-9]Z' \
+                -printf '%f\n' | LC_ALL=C sort > "$work/backup-ids"
+              backup_id="$(tail -n 1 "$work/backup-ids")"
+              test -n "$backup_id"
+              backup="/backup/openclaw-enterprise/$backup_id"
+              test ! -L "$backup"
+              stage=integrity
+              test -z "$(find "$backup" ! -type f ! -type d -print -quit)"
+              # The completed archive is read-only; do not duplicate the
+              # potentially full DB and agent snapshot onto local scratch.
+              cd "$backup" || exit 1
+              find database.dump database-bootstrap.sql material -type f -print0 \
+                | sort -z | xargs -0 sha256sum > "$work/recomputed"
+              cmp -s SHA256SUMS "$work/recomputed"
+              pg_restore --list database.dump >/dev/null
+              for file in recovery.json postgres-root/tls.crt postgres-root/tls.key \
+                postgres-admin/password postgres-migrator/password postgres-app/password \
+                postgres-backup/password auth/secret gateway/occ bootstrap/output.json \
+                journal/journal.json tenant/metadata.json agent/identity.json; do
+                test -s "material/$file"
+              done
+              for directory in tenant/secrets agent/state; do
+                test -n "$(find "material/$directory" -type f -print -quit)"
+              done
+              stage=isolated-postgres
+              mkdir "$work/socket"
+              initdb -D "$work/pgdata" -U occ_admin \
+                --pwfile="$backup/material/postgres-admin/password" \
+                --auth-local=trust --auth-host=reject --encoding=UTF8 --locale=C
+              started=true
+              pg_ctl -D "$work/pgdata" -l "$work/postgres.log" -w \
+                -o "-c listen_addresses= -c unix_socket_directories=$work/socket" start
+              stage=recovery-marker
+              psql -X -v ON_ERROR_STOP=1 \
+                -v marker_path="$backup/material/recovery.json" \
+                -h "$work/socket" -U occ_admin -d postgres -At <<'SQL' | grep -qx t
+              SELECT jsonb_typeof(marker) = 'object'
+                 AND marker->'writerStopped' = 'true'::jsonb
+                 AND jsonb_typeof(marker->'claimUid') = 'string'
+                 AND length(marker->>'claimUid') > 0
+              FROM (SELECT pg_read_file(:'marker_path')::jsonb AS marker) recovered;
+              SQL
+              stage=globals
+              # Roles come from committed bootstrap SQL and recovered password
+              # material. Do not replay arbitrary global role grants from a dump.
+              psql -X -v ON_ERROR_STOP=1 -h "$work/socket" -U occ_admin -d postgres <<'SQL'
+              CREATE ROLE occ_migrator NOLOGIN;
+              CREATE ROLE occ_app NOLOGIN;
+              CREATE ROLE occ_backup NOLOGIN;
+              SQL
+              stage=database
+              pg_restore --create --exit-on-error -h "$work/socket" -U occ_admin \
+                -d postgres database.dump
+              mkdir -p /run/secrets
+              for name in occ-postgres-migrator occ-postgres-app occ-postgres-backup; do
+                case "$name" in
+                  occ-postgres-migrator) source=postgres-migrator ;;
+                  occ-postgres-app) source=postgres-app ;;
+                  occ-postgres-backup) source=postgres-backup ;;
+                esac
+                mkdir "/run/secrets/$name"
+                cp "material/$source/password" "/run/secrets/$name/password"
+              done
+              psql -X -v ON_ERROR_STOP=1 -h "$work/socket" -U occ_admin \
+                -d openclaw_enterprise -f database-bootstrap.sql
+              stage=verification
+              psql -X -v ON_ERROR_STOP=1 -h "$work/socket" -U occ_admin \
+                -d openclaw_enterprise -Atqc "SELECT count(*) > 0 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='occ' AND c.relkind IN ('r','p')" \
+                | grep -qx t
+              psql -X -v ON_ERROR_STOP=1 -h "$work/socket" -U occ_admin \
+                -d openclaw_enterprise -Atqc "SELECT count(*) = 0 FROM pg_index WHERE NOT indisvalid OR NOT indisready" \
+                | grep -qx t
+              psql -X -v ON_ERROR_STOP=1 -h "$work/socket" -U occ_admin \
+                -d openclaw_enterprise -Atqc "SELECT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole FROM pg_roles WHERE rolname='occ_app'" \
+                | grep -qx t
+              psql -X -v ON_ERROR_STOP=1 -h "$work/socket" -U occ_admin \
+                -d openclaw_enterprise -Atqc "SELECT rolcanlogin AND rolsuper FROM pg_roles WHERE rolname='occ_admin'" \
+                | grep -qx t
+              stage=archive-stability
+              find database.dump database-bootstrap.sql material -type f -print0 \
+                | sort -z | xargs -0 sha256sum > "$work/recomputed-after"
+              cmp -s SHA256SUMS "$work/recomputed-after"
+              pg_ctl -D "$work/pgdata" -m fast -w stop
+              started=false
+          resources:
+            requests: {cpu: 100m, memory: 256Mi, ephemeral-storage: 24Gi}
+            limits: {cpu: "1", memory: 1Gi, ephemeral-storage: 25Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: backup
+              mountPath: /backup
+              readOnly: true
+            - name: scratch
+              mountPath: /scratch
+            - name: secrets
+              mountPath: /run/secrets
+      volumes:
+        - name: backup
+          persistentVolumeClaim:
+            claimName: occ-postgres-recovery
+            readOnly: true
+        - name: scratch
+          emptyDir:
+            sizeLimit: 24Gi
+        - name: secrets
+          emptyDir:
+            medium: Memory

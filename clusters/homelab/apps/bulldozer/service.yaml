@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bulldozer
+  namespace: automation
+spec:
+  selector:
+    app.kubernetes.io/name: bulldozer
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

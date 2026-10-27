@@ -1,6 +1,6 @@
 # Dedicated Etcd Offsite Storage
 
-`IaC/operator/etcd-backup-storage` declares a dedicated S3 bucket for verified
+`IaC/homelab/us-west-2/operator/etcd-backup-storage` declares a dedicated S3 bucket for verified
 etcd snapshots. It uses the existing AWS account and shared encrypted state
 backend, while owning its bucket independently of the backend bucket's objects
 and lifecycle rules. The unit declares storage only. The separate
@@ -11,7 +11,7 @@ offsite copy is not implied by a successful bucket apply.
 ## Ownership And Retention
 
 These are this homelab's public deployment values. Other deployments must change
-the [committed destination](../IaC/config/etcd-backup-storage.json), consumed by
+the [committed destination](../IaC/etcd-backup-storage.hcl), consumed by
 both the catalog inputs/provider guard and manual publisher.
 
 | Setting | Declared value |
@@ -59,7 +59,7 @@ terragrunt --log-disable run --no-auto-init -- test -no-color
 Tests use dummy credentials and override identity reads. They reject the wrong
 account, region, or shared bucket name, and check retention and private storage
 controls without accessing AWS. The normal static gate runs these tests. The
-GitHub plan/apply workflows **do not traverse `IaC/operator`**: green generic CI
+GitHub plan/apply workflows **do not traverse `IaC/homelab/us-west-2/operator`**: green generic CI
 is not a live plan or deployment receipt for this bucket.
 
 Use the existing administrator session through the default AWS credential
@@ -151,9 +151,9 @@ Preserve stored versions and state while investigating an incomplete apply.
 
 ## Sources
 
-- [Bucket module](../IaC/modules/aws-backup-bucket/main.tf)
-- [Catalog unit](../IaC/.catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
-- [Operator ownership](../IaC/operator/README.md)
+- [Bucket module](../IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf)
+- [Catalog unit](../IaC/terragrunt-catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
+- [Operator ownership](operator-infrastructure.md)
 - [Local etcd verification](talos-etcd-backup.md)
 - [AWS lifecycle rule scope](https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html)
 - [AWS incomplete-upload cleanup](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-abort-incomplete-mpu-lifecycle-config.html)

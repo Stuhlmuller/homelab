@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # CI/CD Pipeline
 
 <!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
@@ -24,8 +26,8 @@ This repository uses GitHub Actions for the review and rollout path:
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
-  Octelium, and run the live plan with details withheld. Other same-repository
-  changes use a no-permission skip-check job;
+  Octelium, and stream the live Terragrunt plan to the Actions log. Other
+  same-repository changes use a no-permission skip-check job;
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
@@ -36,8 +38,10 @@ This repository uses GitHub Actions for the review and rollout path:
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
   main-only `homelab-production` environment, then
-  verifies `main` again before referencing
-  environment credentials or running live commands. Full applies run the Argo
+  verifies `main` again before referencing environment credentials and before
+  each state import or apply. The root Terragrunt `before_hook` repeats the
+  check for every unit in a multi-unit apply. Bootstrap's `after_hook` checks
+  before each Argo CD self-management manifest write. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
   They compare against the latest successful historical push apply or full
@@ -47,8 +51,9 @@ This repository uses GitHub Actions for the review and rollout path:
   `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
-  production branch gates, never prunes, and proves a second apply has no
-  live diff.
+  production branch gates, rechecks current `main` immediately before both
+  catalog writes, never prunes, and proves a second apply has no live diff.
+  An unresolved or advanced `main` stops the next write.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -84,8 +89,9 @@ Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache
 Static jobs verify cache signatures or build on a miss; live plans and cluster
 checks remain fresh.
 
-- Workflows use `pull_request` and `push`; they do not use
-  `pull_request_target`.
+- Workflows use `pull_request` and `push`, except the exact trusted-base native
+  Chainguard receipt provenance workflow. Its pinned `pull_request_target`
+  path reads PR state as bounded API data and owns only its receipt status.
 - The lint workflow is a lightweight changed-file gate that preserves the
   required `Lint` status context without replacing the repository's stricter
   static and Terragrunt gates. It runs the upstream Super-Linter action with
@@ -98,11 +104,27 @@ checks remain fresh.
   effect after the policy change lands on `main`.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
+- The protected OpenClaw Enterprise startup and operations policies accept only
+  `workflow_dispatch`. Their regression fixtures reject an added `workflow_call`
+  trigger that could bypass manual invocation of credentialed jobs. The shared
+  policy rejects unreviewed workflow and job run defaults or environment,
+  per-step shell and working-directory overrides, and `BASH_ENV` or `ENV` on
+  any step. The credentialed legacy stage requires its exact four-variable map.
+- The Platform Maintenance policy pins both the static gate and protected job:
+  only `workflow_dispatch`, explicit empty workflow permissions, exact check
+  commands, action identities and inputs, job settings, and the private
+  credential mapping. A reusable trigger, renamed or skipped static check,
+  substituted action, or `continue-on-error` cannot satisfy the reviewed
+  workflow contract. The same run-setting guard prevents shell or environment
+  overrides from changing checked commands.
+  This is a source gate; private recovery and capacity receipts still control
+  whether a maintenance stage may run.
 - The `main` ruleset requires pull requests, squash-only linear history,
-  verified signatures, strict always-on checks, and blocks branch deletion and
-  force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
-  `Analyze (python)`, `analyze-actions`, `release-dry-run`, and
-  `Terragrunt Gate`, confirmed in active ruleset `14700233` on 2026-08-30.
+  verified signatures, and seven checks, and blocks branch deletion and force
+  pushes. A branch need not be up to date with `main` to merge. The required
+  checks are `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`,
+  `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`, confirmed in
+  active ruleset `14700233` on 2026-10-24. `github-iac` owns this ruleset.
 - Live Terragrunt plan and apply jobs retain their Actions development-shell
   cache. Static jobs use the signed binary cache instead of restoring an
   arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
@@ -139,14 +161,15 @@ checks remain fresh.
   the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
   briefly affects CI, operator, and Cordium access, so validate both Services
   after rotation.
-- Plans are not uploaded, printed, or copied into pull requests because
-  Terraform/OpenTofu plans can include sensitive state context. Trusted
-  same-repository jobs evaluate private plans with Conftest and delete them on
-  exit. The required check is the only public plan result. Live plan, apply,
-  diagnostic, and Cloudflare reconciliation output is also withheld from public
-  Actions logs; reproduce failures from an approved local operator session.
-  Workflow policy
-  rejects direct live CLI output or reading the private log after the wrapper.
+- Saved plans and JSON exports are not uploaded or copied into pull requests.
+  Trusted same-repository jobs evaluate them with Conftest and delete them on
+  exit. The PR plan streams Terraform's human-readable output, including
+  failures, to the Actions log. Secret values in Terraform are marked sensitive
+  so the human-readable plan redacts them. Terraform's sensitivity markers do
+  not redact provider error messages; review new providers and resources before
+  adding them to this public-log plan scope. Apply, diagnostic, and Cloudflare
+  reconciliation output remains withheld from public Actions logs. Workflow
+  policy permits only the reviewed PR plan command to stream live CLI output.
   On a protected apply failure, a reviewed classifier may print one fixed
   phase label after verifying its SHA-256; raw output remains withheld.
   Live credentials exist only on the exact step that consumes them. Static
@@ -158,9 +181,9 @@ checks remain fresh.
   workflow security hashes updated in the same PR after review. PR #1233's
   artifact-action update failed the Terragrunt static gate because those
   companion updates were missing; rerunning an unchanged PR cannot fix it.
-- Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
+- Automatic PR plans intentionally skip `IaC/homelab/us-west-2/shared/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
-  protected production apply role. They also skip `IaC/live/kubernetes-secrets`
+  protected production apply role. They also skip `IaC/homelab/us-west-2/shared/kubernetes-secrets`
   because that unit reads decrypted AWS SSM parameters.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or a
@@ -189,11 +212,15 @@ checks remain fresh.
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
+- For a layout-only reconciliation, `existing_argocd_only=true` selects only
+  Argo CD Applications already registered live. The saved-plan gate rejects
+  any creation in that selection; new registrations still require their
+  separately reviewed targeted dispatch and prerequisites.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
-  scripts diff the base and head refs for deleted units under `IaC/bootstrap`
-  and `IaC/live`, including units removed from the explicit stack. Catalog
-  templates and administrator-owned `IaC/operator` units are excluded. They
+  scripts diff the base and head refs for deleted units under the historical `IaC/bootstrap`
+  and `IaC/live` state paths, including units removed from the explicit stack. Catalog
+  templates and administrator-owned `IaC/homelab/us-west-2/operator` units are excluded. They
   create temporary empty Terragrunt units at the deleted deployment paths and
   reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
   the original backend key. Synthetic Kubernetes and Helm providers reuse the
@@ -324,7 +351,7 @@ test "$(kubectl config view --minify \
 kubectl --request-timeout=15s version
 
 (cd IaC && terragrunt stack generate)
-cd IaC/live/kubernetes-node-labels
+cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
 umask 077
 plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-node-labels.XXXXXX")"
 trap 'rm -rf -- "$plan_dir"' EXIT
@@ -357,26 +384,31 @@ create or rotate the GitHub environment secret in both CI environments:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
-scripts/octelium-ci-credential.sh
+scripts/octelium-ci-credential.sh --apply-catalog
 ```
 
 The helper requires an authenticated Octelium admin session for `octeliumctl`
-and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
-or rotates the `homelab-ci` credential, pipes the generated token directly into
-the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
+and GitHub CLI access to `Stuhlmuller/homelab`. The bootstrap command applies
+the full catalog before creating the credential. Routine rotations omit
+`--apply-catalog` and verify the existing dedicated User, Policy, Service, and
+credential binding without changing the catalog. The helper pipes the token
+directly into the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 `homelab-production`, and removes the temporary token file before exit.
 For existing credentials, the helper verifies GitHub environment secret write
-access by writing and deleting a temporary preflight secret, reconciles the
-credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
-User so Octelium cannot reuse its old expiry, then rotates the token. It
-refuses to rotate an existing credential when GitHub secret updates are
+access by writing and deleting a temporary preflight secret. Routine rotation
+fails if the credential binding differs from User `homelab-ci` and Policy
+`homelab-ci-kubernetes-api-access`; explicit catalog application may reconcile
+that binding. The helper deletes every Session for the dedicated User so
+Octelium cannot reuse its old expiry, then rotates the token. It reads every
+listing page first and stops before deletion if that inventory is incomplete.
+It refuses to rotate an existing credential when GitHub secret updates are
 disabled, because that would invalidate the old CI token without storing the
 replacement.
 Run rotation in a quiet window: deleting the old Session invalidates the
 current bearer before the two GitHub environment secrets are updated. After
-token generation, the helper retries each secret write until both environments
-hold the replacement; if interrupted, rerun the helper.
+token generation, the helper retries each secret write five times. If either
+environment still fails, or rotation is interrupted, rerun the helper to put a
+fresh replacement in both environments.
 When recovering through a temporary Octelium CLI session, pass the unique home
 created by the recovery block below. If the public Octelium API path is not
 carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
@@ -392,10 +424,11 @@ Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
 policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
 CI receives Octelium `401` from authenticated `kubectl` against
-`kubernetes-api-ci`, reapply the catalog and rotate the credential with
-`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
-failure before rotating. Reconcile the upstream kubeconfig Secret when its
-Kubernetes credential changes.
+`kubernetes-api-ci`, first try routine rotation with
+`scripts/octelium-ci-credential.sh`. Apply the full catalog with
+`--apply-catalog` only after reviewing a relevant catalog change or drift.
+Treat `403` as a policy or User-state failure before rotating. Reconcile the
+upstream kubeconfig Secret when its Kubernetes credential changes.
 Recover the primary credential directly with the checked helper. Run this block
 from the repository root; it uses a private, unique admin home and removes it
 only after Octelium confirms logout:
@@ -432,9 +465,9 @@ only after Octelium confirms logout:
 )
 ```
 
-The helper applies the primary catalog with checked resource verification,
-invalidates its stale Sessions, and writes the replacement token to both GitHub
-environments. Dispatch and bind verification to the exact `main` commit:
+The helper verifies the primary CI access resources, invalidates stale Sessions,
+and writes the replacement token to both GitHub environments. Dispatch and bind
+verification to the exact `main` commit:
 
 ```sh
 set -euo pipefail
@@ -597,12 +630,12 @@ state encryption access to `alias/homelab-opentofu` in the state region
 `kms:ReEncrypt*`.
 
 The role trust and additive IAM grant required to manage the chunked SSM reader
-policies are declared in `IaC/operator/github-actions-role-policy`. The unit is
+policies are declared in `IaC/homelab/us-west-2/operator/github-actions-role-policy`. The unit is
 deliberately outside the GitHub workflow traversal: an automation role must not
 be able to widen its own trust or replace the policy attached to itself.
 
 For a trust-only change, use the targeted operator runbook in
-`IaC/operator/README.md`. It conditionally imports only the existing role,
+`docs/operator-infrastructure.md`. It conditionally imports only the existing role,
 saves a plan for `aws_iam_role.github_actions`, rejects non-trust role drift and
 any subject outside the four environments, applies those exact reviewed plan
 bytes, and verifies live IAM. Do not run an un-targeted operator apply to roll
@@ -613,7 +646,7 @@ administrator-authenticated un-targeted plan after backend-free validation:
 
 ```sh
 aws sso login --profile <administrator-profile>
-cd IaC/operator/github-actions-role-policy
+cd IaC/homelab/us-west-2/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
@@ -668,20 +701,20 @@ A production failure that reports
 been applied or has drifted; repair it through this unit, then rerun the failed
 `Terragrunt Apply` workflow.
 
-It also needs runtime-secret KMS access for `IaC/live/aws-ssm-parameters`. That
+It also needs runtime-secret KMS access for `IaC/homelab/us-west-2/shared/aws-ssm-parameters`. That
 unit manages SecureString parameters in `us-west-2` using the AWS-managed
 `alias/aws/ssm` key. The
 production apply role needs identity-based KMS permissions on the resolved
 `us-west-2` key ARN as well as the state key in `us-east-1`. At minimum, an
 existing-key refresh needs `kms:DescribeKey`; normal SSM declaration applies
 also need the IAM and SSM write actions represented by
-`IaC/live/aws-ssm-parameters`, plus the AWS SSM writes generated by
-`IaC/live/azuread-applications/grafana`.
+`IaC/homelab/us-west-2/shared/aws-ssm-parameters`, plus the AWS SSM writes generated by
+`IaC/homelab/us-west-2/apps/grafana/azuread`.
 
 If the production apply fails while reading a KMS key in `us-west-2` with an
 error like `AccessDeniedException` for `kms:DescribeKey`, update the relevant
 operator-owned identity policy through the reviewed
-[`github-actions-role-policy` full-unit saved-plan path](../IaC/operator/README.md#full-unit-reconciliation).
+[`github-actions-role-policy` full-unit saved-plan path](operator-infrastructure.md#full-unit-reconciliation).
 The September 29, 2026 Langfuse apply had exactly this failure: its identity
 policy covered the former runtime key but omitted the current AWS-managed SSM
 key. For that repair, accept only the single managed-policy update adding
@@ -695,7 +728,7 @@ only `kms:DescribeKey` on the current SSM key; `kms:Decrypt` and
 `kms:ScheduleKeyDeletion` remain implicitly denied.
 
 On September 30, 2026 PDT (October 1 UTC), an administrator applied the
-reviewed 12-resource `IaC/live/langfuse-blob-storage` bootstrap through its
+reviewed 12-resource `IaC/homelab/us-west-2/apps/langfuse/blob-storage` bootstrap through its
 normal remote state; its fresh plan was a no-op. Live checks confirmed all four
 bucket public-access blocks, versioning, and both exact S3 SSM parameters as
 current SecureStrings under `alias/aws/ssm`. The unit keeps the bucket,
@@ -721,6 +754,16 @@ not configured, production apply skips
 that phase only if the unapplied range did not change the AzureAD stack or its
 shared root configuration. Every root source change requires the credentials
 so identity drift is not silently ignored.
+
+For pull requests, a changed AzureAD stack or shared root, or changed plan
+inputs (`flake.nix`, `flake.lock`, `policy/terraform.rego`,
+`scripts/ci/terragrunt-filter-base.sh`, or `scripts/ci/terragrunt-plan.sh`),
+requires the `homelab-plan` environment's `AZUREAD_CLIENT_ID` and
+`AZUREAD_TENANT_ID` secrets plus a complete GitHub OIDC session. The
+`Terragrunt Plan` job fails if these are unavailable or the diff cannot be
+determined; it skips AzureAD only for unrelated changes. Restore the plan
+identity using the [Entra provider runbook](entra-terraform-provider.md),
+rerun the PR check, and verify its protected plan succeeds before merging.
 
 The `Entra OIDC Verify` dispatch takes an exact current-main SHA and runs
 refresh-enabled no-change plans for all four Entra units under both protected

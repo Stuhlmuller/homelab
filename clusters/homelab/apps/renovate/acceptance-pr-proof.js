@@ -1,0 +1,512 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const observer = require('./acceptance-observer.js');
+
+const privateDir = '/ledger/private';
+const bot = 'rstuhlmuller-renovate[bot]';
+const maxHeadFileBytes = 1024 * 1024;
+const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const validTime = (value) => typeof value === 'string' && Number.isFinite(Date.parse(value));
+const blobSha = (bytes) => crypto.createHash('sha1')
+  .update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+
+function privateFile(file, limit = 128 * 1024 * 1024) {
+  const metadata = fs.lstatSync(file);
+  if (!metadata.isFile() || metadata.uid !== process.getuid() ||
+      (metadata.mode & 0o077) || metadata.size > limit) throw new Error('invalid-private-file');
+  return fs.readFileSync(file);
+}
+
+function* verifiedReports(directory = privateDir, since = null, onlyUids = null) {
+  const folder = path.join(directory, 'reports');
+  const metadata = fs.lstatSync(folder);
+  if (!metadata.isDirectory() || metadata.uid !== process.getuid() ||
+      (metadata.mode & 0o077)) throw new Error('invalid-report-directory');
+  let totalBytes = 0;
+  const names = fs.readdirSync(folder).filter((name) =>
+    /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}\.receipt\.json$/.test(name));
+  if (names.length > 192) throw new Error('report-set-too-large');
+  for (const name of names) {
+      const uid = name.slice(0, 36);
+      if (onlyUids && !onlyUids.has(uid)) continue;
+      const receiptBytes = privateFile(path.join(folder, name), 8192);
+      const receipt = JSON.parse(receiptBytes);
+      if (receipt.schema !== 1 || receipt.podUid !== uid ||
+          receipt.image !== 'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d' ||
+          !/^[a-f0-9]{64}$/.test(receipt.policySha256 || '') ||
+          !validTime(receipt.startedAt) || !validTime(receipt.completedAt) ||
+          Date.parse(receipt.startedAt) > Date.parse(receipt.completedAt) ||
+          Date.parse(receipt.completedAt) > Date.now()) throw new Error('invalid-report-receipt');
+      if (since && Date.parse(receipt.completedAt) < Date.parse(since)) continue;
+      const reportBytes = privateFile(path.join(folder, `${uid}.json`));
+      totalBytes += reportBytes.length;
+      if (totalBytes > 192 * 128 * 1024 * 1024) throw new Error('report-set-too-large');
+      if (receipt.report?.file !== `${uid}.json` || receipt.report.bytes !== reportBytes.length ||
+          receipt.report.sha256 !== sha256(reportBytes) ||
+          !validTime(receipt.report.modifiedAt)) throw new Error('invalid-report-receipt');
+      const report = JSON.parse(reportBytes);
+      if (!report || !Array.isArray(report.problems) || report.problems.length || !report.repositories ||
+          typeof report.repositories !== 'object' || Array.isArray(report.repositories)) {
+        throw new Error('invalid-report');
+      }
+      yield { receipt, report };
+  }
+}
+
+function candidate(item, event, reports) {
+  const numbers = new Map();
+  for (const { receipt, report } of reports) {
+    if (Date.parse(receipt.completedAt) < Date.parse(event.lastAbsent)) continue;
+    const repository = Object.entries(report.repositories).find(([name]) =>
+      name.toLowerCase() === item.repository.toLowerCase())?.[1];
+    for (const branch of repository?.branches || []) {
+      if (!Number.isSafeInteger(branch.prNo) || branch.prNo <= 0 ||
+          !Array.isArray(branch.upgrades)) continue;
+      if (branch.upgrades.some((upgrade) => upgrade.datasource === item.datasource &&
+          (upgrade.packageName || upgrade.depName) === item.packageName &&
+          upgrade.packageFile === item.packageFile && upgrade.newVersion === event.version)) {
+        const prior = numbers.get(branch.prNo);
+        if (!prior || Date.parse(receipt.completedAt) < Date.parse(prior.receipt.completedAt)) {
+          numbers.set(branch.prNo, { number: branch.prNo, receipt, branch });
+        }
+      }
+    }
+  }
+  return numbers.size === 1 ? [...numbers.values()][0] : null;
+}
+
+function matchingBranches(item, event, report) {
+  const repository = Object.entries(report.repositories).find(([name]) =>
+    name.toLowerCase() === item.repository.toLowerCase())?.[1];
+  return (repository?.branches || []).filter((branch) => Array.isArray(branch.upgrades) &&
+    branch.upgrades.some((upgrade) => upgrade.datasource === item.datasource &&
+      (upgrade.packageName || upgrade.depName) === item.packageName &&
+      upgrade.packageFile === item.packageFile && upgrade.newVersion === event.version));
+}
+
+function reportDecision(item, event, reports) {
+  const eligibleResults = new Set(['not-scheduled', 'needs-pr-approval', 'done',
+    'pr-created', 'pr-edited', 'already-existed', 'pending', 'update-not-scheduled']);
+  let eligibility = null;
+  let deferral = null;
+  for (const { receipt, report } of [...reports].sort((a, b) =>
+    Date.parse(a.receipt.completedAt) - Date.parse(b.receipt.completedAt))) {
+    if (Date.parse(receipt.completedAt) < Date.parse(event.lastAbsent)) continue;
+    const branches = matchingBranches(item, event, report).filter((branch) =>
+      eligibleResults.has(branch.result));
+    if (!branches.length) continue;
+    if (!eligibility) eligibility = { receipt, branches };
+    const branch = branches.length === 1 ? branches[0] : null;
+    const reason = branch && !branch.prNo &&
+      ((branch.result === 'not-scheduled' && !branch.prBlockedBy && 'schedule') ||
+        (branch.result === 'needs-pr-approval' && branch.prBlockedBy === 'NeedsApproval' &&
+          'pull-request-approval'));
+    if (reason) {
+      deferral = { receipt, branches, reason };
+      break;
+    }
+  }
+  return eligibility ? { ...eligibility, deferral } : null;
+}
+
+function samePullSnapshot(before, after) {
+  if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return false;
+  return before.number === after.number &&
+    before?.changed_files === after?.changed_files &&
+    before?.state === after?.state && before?.merged === after?.merged &&
+    before?.closed_at === after?.closed_at && before?.merged_at === after?.merged_at &&
+    before?.head?.sha === after?.head?.sha && before?.head?.ref === after?.head?.ref &&
+    before?.head?.repo?.full_name === after?.head?.repo?.full_name &&
+    before?.base?.ref === after?.base?.ref &&
+    before?.base?.repo?.full_name === after?.base?.repo?.full_name &&
+    before?.user?.login === after?.user?.login;
+}
+
+function pullSnapshot(pull) {
+  return {
+    number: pull?.number, changed_files: pull?.changed_files,
+    state: pull?.state, merged: pull?.merged, closed_at: pull?.closed_at,
+    merged_at: pull?.merged_at, created_at: pull?.created_at,
+    user: { login: pull?.user?.login },
+    head: { sha: pull?.head?.sha, ref: pull?.head?.ref,
+      repo: { full_name: pull?.head?.repo?.full_name } },
+    base: { ref: pull?.base?.ref,
+      repo: { full_name: pull?.base?.repo?.full_name } },
+  };
+}
+
+function terraformSourceVersionLine(source, lineNumber, packageName, version) {
+  const stack = [];
+  for (const [index, line] of source.split('\n').entries()) {
+    // These constructs need a full HCL parser. Leave the candidate unknown.
+    if (line.includes('/*') || line.includes('*/') || line.includes('<<')) return false;
+    let quoted = false;
+    let escaped = false;
+    const braces = [];
+    for (let offset = 0; offset < line.length; offset++) {
+      const char = line[offset];
+      if (quoted) {
+        if (escaped) escaped = false;
+        else if (char === '\\') escaped = true;
+        else if (char === '"') quoted = false;
+      } else if (char === '"') quoted = true;
+      else if (char === '#' || (char === '/' && line[offset + 1] === '/')) break;
+      else if (char === '{' || char === '}') braces.push(char);
+    }
+    if (quoted) return false;
+    const parent = stack.at(-1);
+    if (parent?.kind === 'provider') {
+      const sourceValue = line.match(/^\s*source\s*=\s*"([^"]+)"\s*$/);
+      if (sourceValue) {
+        if (parent.source !== null) parent.invalid = true;
+        parent.source = sourceValue[1];
+      }
+      const versionValue = line.match(/^\s*version\s*=\s*"([^"]+)"\s*$/);
+      if (versionValue) {
+        if (parent.versionLine !== null) parent.invalid = true;
+        parent.versionLine = index + 1;
+        parent.version = versionValue[1];
+      }
+    }
+    if (braces.length === 1 && braces[0] === '{') {
+      let kind = 'other';
+      if (stack.length === 0 && /^terraform\s*\{\s*$/.test(line)) kind = 'terraform';
+      else if (parent?.kind === 'terraform' &&
+        /^\s*required_providers\s*\{\s*$/.test(line)) kind = 'required-providers';
+      else if (parent?.kind === 'required-providers' &&
+        /^\s*[A-Za-z_][\w-]*\s*=\s*\{\s*$/.test(line)) kind = 'provider';
+      if (parent?.kind === 'provider') parent.invalid = true;
+      stack.push({ kind, source: null, versionLine: null, version: null, invalid: false });
+    } else {
+      for (const brace of braces) {
+        if (brace === '{') {
+          if (stack.at(-1)?.kind === 'provider') stack.at(-1).invalid = true;
+          stack.push({ kind: 'other' });
+        } else {
+          const closed = stack.pop();
+          if (!closed) return false;
+          if (closed.kind === 'provider' && !closed.invalid &&
+              closed.source === packageName && closed.versionLine === lineNumber &&
+              typeof closed.version === 'string' && version.test(closed.version)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function terraformProviderVersion(patch, headFile, packageName, version, headSha, filename) {
+  if (!headFile || headFile.ref !== headSha || headFile.path !== filename ||
+      typeof headFile.content !== 'string' || headFile.content.includes('\0') ||
+      Buffer.byteLength(headFile.content) > maxHeadFileBytes ||
+      blobSha(Buffer.from(headFile.content)) !== headFile.blobSha) return false;
+  const sourceLines = headFile.content.split('\n');
+  const candidates = [];
+  let block = null;
+  let nextLine = null;
+  let oldRemaining = 0;
+  let newRemaining = 0;
+  for (const line of patch.split('\n')) {
+    if (line.startsWith('@@')) {
+      if (nextLine !== null && (oldRemaining || newRemaining)) return false;
+      const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+      if (!hunk) return false;
+      nextLine = Number(hunk[3]);
+      oldRemaining = Number(hunk[2] ?? 1);
+      newRemaining = Number(hunk[4] ?? 1);
+      block = null;
+      continue;
+    }
+    if (line.startsWith('\\ No newline at end of file')) continue;
+    if (nextLine === null || ![' ', '+', '-'].includes(line[0])) return false;
+    const kind = line[0];
+    const content = line.slice(1);
+    const at = nextLine;
+    if (kind !== '-') {
+      if (sourceLines[nextLine - 1] !== content) return false;
+      nextLine++;
+      newRemaining--;
+    }
+    if (kind !== '+') oldRemaining--;
+    if (oldRemaining < 0 || newRemaining < 0) return false;
+    if (!block) {
+      if (kind !== '-' && /^\s*[A-Za-z_][\w-]*\s*=\s*\{\s*$/.test(content)) {
+        block = { source: null, replaced: false, changedLine: null, invalid: false };
+      }
+      continue;
+    }
+    if (kind !== '-' && /^\s*\}\s*$/.test(content)) {
+      if (!block.invalid && block.source === packageName && block.changedLine !== null) {
+        candidates.push(block.changedLine);
+      }
+      block = null;
+      continue;
+    }
+    if (/[{}]/.test(content)) { block = null; continue; }
+    const source = kind !== '-' && content.match(/^\s*source\s*=\s*"([^"]+)"\s*$/);
+    if (source) {
+      if (block.source !== null) block.invalid = true;
+      block.source = source[1];
+    }
+    const oldVersion = kind === '-' && /^\s*version\s*=\s*"[^"]+"\s*$/.test(content);
+    const newVersion = kind === '+' && content.match(/^\s*version\s*=\s*"([^"]+)"\s*$/);
+    if (block.replaced && newVersion && version.test(newVersion[1])) {
+      if (block.changedLine !== null) block.invalid = true;
+      block.changedLine = at;
+    }
+    block.replaced = oldVersion;
+  }
+  if (nextLine === null || oldRemaining || newRemaining) return false;
+  return candidates.some((line) =>
+    terraformSourceVersionLine(headFile.content, line, packageName, version));
+}
+
+function proposalProof(item, event, match, pull, files, observedAt, baseBranch,
+  snapshot = null) {
+  const open = pull?.state === 'open' && pull.merged === false &&
+    pull.closed_at == null && pull.merged_at == null;
+  const merged = pull?.state === 'closed' && pull.merged === true &&
+    validTime(pull.closed_at) && validTime(pull.merged_at) &&
+    Date.parse(pull.merged_at) >= Date.parse(pull.created_at) &&
+    Date.parse(pull.merged_at) <= Date.parse(observedAt);
+  if (!match || typeof event.version !== 'string' || !event.version ||
+      event.version.length > 256 || /[\r\n]/.test(event.version) ||
+      !validTime(observedAt) || Date.parse(observedAt) < Date.parse(event.firstPresent) ||
+      !Array.isArray(files) || !Number.isSafeInteger(pull?.changed_files) ||
+      pull.changed_files !== files.length || pull.number !== match.number ||
+      !(open || merged) ||
+      pull.user?.login !== bot || pull.base?.repo?.full_name !== item.repository ||
+      pull.head?.repo?.full_name !== item.repository ||
+      pull.head?.ref !== match.branch.branchName || pull.base?.ref !== baseBranch ||
+      !/^[a-f0-9]{40}$/.test(pull.head?.sha || '') ||
+      !validTime(pull.created_at) || Date.parse(pull.created_at) > Date.parse(observedAt)) return null;
+  const escaped = event.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const version = new RegExp(`(?:^|[^A-Za-z0-9._-])${escaped}(?:$|[^A-Za-z0-9._-])`);
+  const escapedPackage = item.packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const packageName = new RegExp(`(?:^|[^A-Za-z0-9_/@.-])${escapedPackage}(?:$|[^A-Za-z0-9_/@.-])`);
+  const file = files.find((entry) => entry?.filename === item.packageFile &&
+    typeof entry.patch === 'string' && (entry.patch.split('\n').some((line) =>
+      line.startsWith('+') && !line.startsWith('+++') &&
+      packageName.test(line.slice(1)) && version.test(line.slice(1))) ||
+      (item.datasource === 'terraform-provider' && /\.(?:tf|tofu)$/.test(item.packageFile) &&
+        terraformProviderVersion(entry.patch, entry.headFile, item.packageName,
+          version, pull.head.sha, item.packageFile))));
+  if (!file) return null;
+  return {
+    claim: { kind: 'proposal', at: merged ? pull.merged_at : observedAt,
+      verifiedAt: observedAt },
+    material: { provenance: 'github-pr-file-snapshot-v1', repository: item.repository,
+      pullNumber: pull.number, createdAt: pull.created_at, observedAt,
+      mergedAt: merged ? pull.merged_at : null,
+      branchName: match.branch.branchName, headSha: pull.head.sha,
+      reportPodUid: match.receipt.podUid,
+      reportSha256: match.receipt.report.sha256, packageFile: item.packageFile,
+      patch: file.patch, ...(snapshot ? { github: snapshot } : {}) },
+  };
+}
+
+async function github(token, route) {
+  const response = await fetch(`https://api.github.com${route}`, {
+    headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`,
+      'User-Agent': 'homelab-renovate-acceptance-proof',
+      'X-GitHub-Api-Version': '2022-11-28' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!response.ok) throw new Error('github-read-failed');
+  const serverTime = Date.parse(response.headers.get('date'));
+  if (!Number.isFinite(serverTime) || Math.abs(serverTime - Date.now()) > 60000) {
+    throw new Error('github-clock-unverified');
+  }
+  return response.json();
+}
+
+async function readHeadFile(token, repository, filename, headSha) {
+  const segments = typeof filename === 'string' ? filename.split('/') : null;
+  if (!/^[a-f0-9]{40}$/.test(headSha) || !Array.isArray(segments) ||
+      segments.some((part) => !part || part === '.' || part === '..' ||
+        /[\\\r\n\0]/.test(part))) return null;
+  const route = `/repos/${repository}/contents/${segments.map(encodeURIComponent).join('/')}` +
+    `?ref=${headSha}`;
+  const file = await github(token, route);
+  if (file?.type !== 'file' || file.path !== filename ||
+      file.encoding !== 'base64' || !Number.isSafeInteger(file.size) ||
+      file.size > maxHeadFileBytes || typeof file.content !== 'string') return null;
+  const encoded = file.content.replace(/\n/g, '');
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) return null;
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.length !== file.size || bytes.toString('base64') !== encoded ||
+      blobSha(bytes) !== file.sha) return null;
+  let content;
+  try { content = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return null; }
+  if (content.includes('\0')) return null;
+  return { ref: headSha, path: filename, blobSha: file.sha, content };
+}
+
+async function pullFiles(token, repository, number, count) {
+  if (count < 1 || count > 1000) return null;
+  const files = [];
+  for (let page = 1; files.length < count; page++) {
+    const part = await github(token,
+      `/repos/${repository}/pulls/${number}/files?per_page=100&page=${page}`);
+    if (!Array.isArray(part) || !part.length || files.length + part.length > count) return null;
+    files.push(...part);
+  }
+  return files;
+}
+
+async function collect(directory = privateDir) {
+  const metadata = fs.lstatSync(directory);
+  if (!metadata.isDirectory() || metadata.uid !== process.getuid() ||
+      (metadata.mode & 0o077)) throw new Error('invalid-private-directory');
+  const ledger = JSON.parse(privateFile(path.join(directory, 'ledger.json')));
+  observer.verifyFrozenSample(ledger);
+  const outcomesPath = path.join(directory, 'outcomes.json');
+  const outcomes = fs.existsSync(outcomesPath) ? JSON.parse(privateFile(outcomesPath)) :
+    { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
+  observer.aggregateReport(ledger, outcomes);
+  const byEvent = new Map(outcomes.receipts.map((entry) =>
+    [JSON.stringify([entry.key, entry.version]), entry]));
+  const pending = ledger.sample.flatMap((item) => item.events.filter((event) => {
+    const entry = byEvent.get(JSON.stringify([item.key, event.version]));
+    return entry?.eligibility?.status !== 'eligible' || !entry.outcome;
+  }).map((event) => ({ item, event })));
+  if (!pending.length) {
+    console.log(JSON.stringify({ mode: 'proposal-proof', candidates: 0, proven: 0,
+      eligible: 0, deferred: 0, unknown: 0 }));
+    return;
+  }
+  const since = pending.length ? new Date(Math.min(...pending.map(({ event }) =>
+    Date.parse(event.lastAbsent)))).toISOString() : null;
+  const reports = [];
+  for (const { receipt, report } of verifiedReports(directory, since)) {
+    const repositories = new Map();
+    for (const { item, event } of pending) {
+      for (const branch of matchingBranches(item, event, report)) {
+        if (!repositories.has(item.repository)) repositories.set(item.repository, new Set());
+        repositories.get(item.repository).add(branch);
+      }
+    }
+    if (repositories.size) reports.push({ receipt, report: { repositories: Object.fromEntries(
+      [...repositories].map(([name, branches]) => [name, { branches: [...branches] }])) } });
+  }
+  const work = [];
+  const decisions = [];
+  for (const item of ledger.sample) {
+    const baseBranch = ledger.inventory.provenance.repositories.find((entry) =>
+      entry.repository === item.repository)?.baseBranch;
+    if (!baseBranch) throw new Error('invalid-inventory');
+    for (const event of item.events) {
+      const id = JSON.stringify([item.key, event.version]);
+      const existing = byEvent.get(id);
+      if (existing?.eligibility?.status === 'eligible' && existing.outcome) continue;
+      const decision = reportDecision(item, event, reports);
+      if (decision && (existing?.eligibility?.status !== 'eligible' ||
+          (decision.deferral && !existing?.outcome))) {
+        decisions.push({ item, event, id, decision });
+      }
+      if (existing?.outcome || decision?.deferral) continue;
+      const match = candidate(item, event, reports);
+      if (match) work.push({ item, event, id, match, baseBranch });
+    }
+  }
+  const token = work.length ? await observer.readToken({ contents: 'read', metadata: 'read', pull_requests: 'read' }) : null;
+  const folder = path.join(directory, 'evidence');
+  fs.mkdirSync(folder, { recursive: true, mode: 0o700 });
+  const folderMetadata = fs.lstatSync(folder);
+  if (!folderMetadata.isDirectory() || folderMetadata.uid !== process.getuid() ||
+      (folderMetadata.mode & 0o077)) throw new Error('invalid-evidence-directory');
+  const verified = [];
+  const headFiles = new Map();
+  for (const { item, event, id, match, baseBranch } of work) {
+    const repository = item.repository;
+    if (!/^Stuhlmuller\/[A-Za-z0-9_.-]+$/.test(repository)) throw new Error('invalid-repository');
+    const route = `/repos/${repository}/pulls/${match.number}`;
+    const pull = await github(token, route);
+    const files = await pullFiles(token, repository, match.number, pull.changed_files);
+    if (!files) continue;
+    const snapshot = { before: pullSnapshot(pull), after: null,
+      files: files.map(({ filename, patch }) => ({ filename, patch })) };
+    if (item.datasource === 'terraform-provider' && /\.(?:tf|tofu)$/.test(item.packageFile)) {
+      const entry = snapshot.files.find((file) => file.filename === item.packageFile &&
+        typeof file.patch === 'string');
+      if (entry) {
+        const key = JSON.stringify([repository, pull.head?.sha, entry.filename]);
+        if (!headFiles.has(key)) headFiles.set(key, await readHeadFile(token,
+          repository, entry.filename, pull.head?.sha));
+        const headFile = headFiles.get(key);
+        if (headFile) entry.headFile = headFile;
+      }
+    }
+    const finalPull = await github(token, route);
+    if (!samePullSnapshot(pull, finalPull)) continue;
+    snapshot.after = pullSnapshot(finalPull);
+    // The upper bound allows for the maximum accepted difference from GitHub's Date header.
+    if (Buffer.byteLength(JSON.stringify(snapshot)) > 8 * 1024 * 1024) continue;
+    const result = proposalProof(item, event, match, snapshot.after,
+      snapshot.files, new Date(Date.now() + 60000).toISOString(), baseBranch, snapshot);
+    if (!result) continue;
+    verified.push({ item, event, id, result });
+  }
+  function saveEvidence(item, event, kind, claim, material) {
+    const source = `evidence/${kind}-${crypto.randomUUID()}.json`;
+    const envelope = { schema: 1, key: item.key, version: event.version, kind, claim, material };
+    const bytes = Buffer.from(`${JSON.stringify(envelope)}\n`);
+    fs.writeFileSync(path.join(directory, source), bytes, { flag: 'wx', mode: 0o600, flush: true });
+    return { ...claim, source, sha256: sha256(bytes) };
+  }
+  function outcomeReceipt(item, event, id) {
+    let entry = byEvent.get(id);
+    if (!entry) {
+      entry = { key: item.key, version: event.version, eligibility: { status: 'unknown' } };
+      outcomes.receipts.push(entry);
+      byEvent.set(id, entry);
+    }
+    return entry;
+  }
+  let eligibility = 0;
+  let deferred = 0;
+  for (const { item, event, id, decision } of decisions) {
+    const entry = outcomeReceipt(item, event, id);
+    const { receipt, branches, deferral } = decision;
+    const verifiedAt = new Date().toISOString();
+    const reportMaterial = (source, matched) => ({ provenance: 'renovate-full-dry-run-v1',
+      repository: item.repository, packageFile: item.packageFile, reportPodUid: source.podUid,
+      reportSha256: source.report.sha256, reportCompletedAt: source.completedAt,
+      branches: matched });
+    if (entry.eligibility.status !== 'eligible') {
+      entry.eligibility = saveEvidence(item, event, 'eligibility',
+        { status: 'eligible', verifiedAt }, reportMaterial(receipt, branches));
+      eligibility++;
+    }
+    if (deferral && !entry.outcome) {
+      entry.outcome = saveEvidence(item, event, 'outcome',
+        { kind: 'deferral', reason: deferral.reason, at: deferral.receipt.completedAt,
+          verifiedAt }, reportMaterial(deferral.receipt, deferral.branches));
+      deferred++;
+    }
+  }
+  for (const { item, event, id, result } of verified) {
+    const entry = outcomeReceipt(item, event, id);
+    entry.outcome = saveEvidence(item, event, 'outcome', result.claim, result.material);
+  }
+  if (eligibility || deferred || verified.length) {
+    const temporary = `${outcomesPath}.${crypto.randomUUID()}.tmp`;
+    try {
+      fs.writeFileSync(temporary, `${JSON.stringify(outcomes)}\n`, { flag: 'wx', mode: 0o600, flush: true });
+      fs.renameSync(temporary, outcomesPath);
+    } finally {
+      if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+    }
+  }
+  console.log(JSON.stringify({ mode: 'proposal-proof', candidates: work.length, proven: verified.length,
+    eligible: eligibility, deferred, unknown: work.length - verified.length }));
+}
+
+if (require.main === module) collect().catch(() => {
+  console.error(JSON.stringify({ mode: 'proposal-proof', error: 'verification-failed' }));
+  process.exitCode = 1;
+});
+
+module.exports = { privateFile, verifiedReports, candidate, reportDecision, samePullSnapshot,
+  pullSnapshot, proposalProof, pullFiles, readHeadFile, collect };

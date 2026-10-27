@@ -2,6 +2,22 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+## Helm charts
+
+`scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
+chart in `scripts/config/harbor-image-charts.json`, including local-path and
+OpenClaw Enterprise charts packaged from pinned Git revisions. The protected
+`harbor-helm-charts.yml` workflow accepts only the exact current `main` SHA,
+fetches those upstream packages, checks their identity and bytes, and pushes
+them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
+separate mirror reader robot and compares the package SHA-256. A retry checks
+existing artifacts before pushing; a mismatched artifact stops publication.
+
+Publish and verify all chart packages before changing Argo CD sources. Argo CD
+uses the repository Secret in `clusters/homelab/argocd/self-management` and its
+read-only mirror credential. If Harbor cannot serve charts, restore its registry
+and re-run the protected publication workflow before asking Argo CD to sync.
+
 ## Chainguard source provenance
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
@@ -53,6 +69,12 @@ digest-pinned private reference such as
 `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 The image gate requires that reference in the declared target of a migrated
 consumer, with the exact receipt-backed digest.
+The trusted workflow checks the event PR when its head changes. On each `main`
+push, it rechecks only open PR heads whose native receipt entries differ from
+the exact `main` state; unreadable state or a missing receipt map is rechecked
+and fails closed. Unchanged heads keep their prior status. This bounds repeated
+status writes for unrelated long-lived PRs while preserving base-revision
+checks for receipt imports.
 Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.
@@ -77,12 +99,36 @@ The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
 The protected `openclaw-enterprise-images.yml` workflow builds the stock
-controller and runtime Dockerfiles from the checksum-verified Enterprise source
-revision in `builds/openclaw-enterprise/source.json`. It verifies both revision
-labels before using Harbor credentials, then publishes, signs and completely
-pulls the paired images in the private `homelab` project. Dispatch it only with
-the current `main` SHA; use its immutable digest receipts for the Enterprise
-chart and CLI. A source revision change requires a new reviewed archive hash.
+controller, runtime, and CLI from the checksum-verified Enterprise source
+revision in `builds/openclaw-enterprise/source.json`. It also builds the
+repository-owned journal operator from the exact clean `main` checkout, with
+its source SHA embedded in the image. It verifies revision labels and the
+operator's non-root offline startup before using Harbor credentials, then
+publishes, signs and completely pulls all four images in the private `homelab`
+project. Dispatch it only with the current `main` SHA; use its immutable digest
+receipts for the Enterprise chart, CLI and later operator activation. The
+operator remains disabled until placement, journal PV, bootstrap file ownership
+and network-policy proofs pass. On failure, the job summary and public error
+annotation report one allowlisted publisher phase, or `unclassified` when the
+phase is absent or invalid. Private transport and registry output remains
+encrypted, and no successful digest receipt is issued. A source revision change
+requires a new reviewed archive hash.
+
+Talos 1.14.4 [`upgrade-k8s`](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L177)
+appends `:v1.35.9` to the five component image bases,
+so validating catalog digests before passing those bases does not pin the
+upgrade pulls. Harbor bootstrap carries a disabled lock for only those five
+`mirror` repository/tag pairs. After a protected full-catalog mirror receipt,
+enable it in a reviewed change: bootstrap first checks all five aliases against
+the reviewed digests, then creates exact
+[tag-immutability rules](https://goharbor.io/docs/2.15.0/working-with-projects/working-with-images/create-tag-immutability-rules/)
+and requires Harbor's immutable-tag readback. Keep mirror publication idle
+during that sync. A wrong existing alias blocks activation and
+must be repaired through the protected mirror workflow while the lock is off.
+The Kubernetes upgrade stage remains blocked until a protected pre-upgrade
+readback, strict Talos mirror mapping on every node, and a Harbor restore test
+prove these rules remain effective.
+
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public
@@ -103,11 +149,23 @@ Retries reuse an existing digest-named tag only after its manifest hash matches
 the catalog; a missing tag is copied from upstream. Missing-content detection
 accepts registry manifest/name-unknown errors and Harbor's exact expected
 artifact or repository `not found` message. Generic 404 responses and messages
-for another repository or digest tag still stop publication. Other lookup errors
-and unexpected digest-tag hashes stop publication. Source-tag aliases are copied
+for another repository or digest tag still stop publication. Alias lookups retry
+transient transport errors up to three times; other lookup errors and unexpected
+digest-tag hashes stop publication. Source-tag aliases are copied
 from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
+Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
+read failures up to five times, with 2/4/8/16-second delays. Other authenticated
+reads have at most three attempts. Before each retry, the
+publisher replaces its Kubernetes port-forward and requires a fresh TLS/401
+registry challenge. Failed forward readiness is retried at most twice, stopping
+the failed process between attempts. It retains completed content in one
+temporary OCI directory and forces a recursive check of nested manifests and
+blobs on each attempt.
+HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
+exhausted HTTP 5xx reads keep the public `server-error` category. The complete
+pull and root digest checks remain mandatory.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
 digest, the mirror uses `regctl` for that exact copy error. It also retries an
 OCI index with `regctl` when Harbor reports that the exact root artifact is
@@ -155,8 +213,20 @@ retain registry blobs together with Harbor database/encryption-key backups.
    k8s_gateway image. Require a successful digest-preserving copy and complete
    authenticated Harbor pull before merging the resolver Application.
 
+   To qualify the exact Prometheus digest after a full-catalog copy failure,
+   use the fixed one-image scope:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=prometheus
+   ```
+
+   `scripts/config/harbor-prometheus-images.json` selects only the reviewed
+   `v3.11.3-distroless` source digest already in the full catalog. A successful
+   scoped run proves that image's preserved digest and complete authenticated
+   pull, not the full catalog or other Prometheus stack images.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `prometheus`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -186,17 +256,18 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
-   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
-   those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require seven
-   complete authenticated pulls before merging any consuming Renovate PR:
+   The `renovate` scope selects eight pinned source references in
+   `scripts/config/harbor-renovate-images.json`. Five new digests cover
+   #1607, #1606, #1537, #1535, #1533, and #1492; the two PostgreSQL tags
+   share one digest. These candidates use digest-only source references so
+   the existing tag aliases keep their current mapping. It copies and
+   verifies only those eight entries while the unrelated full catalog is held.
+   After this catalog change merges, dispatch
+   it at exact current `main` and require eight complete authenticated
+   pulls before merging any consuming Renovate PR.
 
-   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
-   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
-   catalog by digest, and the same new index was verified in the earlier
-   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+   The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
+   `afc7e2d` and `7d38526` pins remain for existing consumers.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
@@ -282,6 +353,15 @@ retain registry blobs together with Harbor database/encryption-key backups.
    time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
+   During `destination-copy`, fixed `blob-upload-failed` and
+   `manifest-upload-failed` categories distinguish Skopeo's write stage when
+   its private diagnostic says so. Unknown copy errors remain
+   `command-failed`; no write is retried or handed to another client on that
+   basis. A scoped receipt never substitutes for a required full-catalog
+   receipt.
+   Transient authenticated pull failures restart the private Harbor port-forward
+   and recheck its TLS registry challenge before retrying either Docker manifests
+   or OCI indexes. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.
@@ -484,7 +564,7 @@ dependencies:
 
 ```sh
 (cd IaC && terragrunt stack generate)
-cd IaC/live/aws-ssm-parameters
+cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-push-password"]' \
   -out /path/to/private/mirror-publisher-secret.plan
@@ -511,7 +591,7 @@ first stage. It has a separate saved plan from the publisher bootstrap:
 
 ```sh
 (cd IaC && terragrunt stack generate)
-cd IaC/live/aws-ssm-parameters
+cd IaC/homelab/us-west-2/shared/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-pull-password"]' \
   -out /path/to/private/mirror-reader-secret.plan
@@ -559,10 +639,10 @@ retaining the active 2.15.2 entries. Publish the fixed Harbor scope with
 `image_scope=harbor` and require fresh authenticated pulls of the nine new digests
 before merging a Harbor 2.15.4 consumer. This catalog change does not alter
 running Pods. The scoped receipt proves these nine components only; the full
-catalog remains held on the separate LiteLLM duplicate-index repair. The
-consuming upgrade must verify that the singleton nginx Deployment retains a
-rolling update that keeps Harbor reachable during its
-replacement image pull.
+catalog remains pending until the LiteLLM child-consumer change and a new
+full-catalog receipt. The consuming upgrade must verify that the singleton
+nginx Deployment retains a rolling update that keeps Harbor reachable during
+its replacement image pull.
 
 The chart remains 1.19.2 even though `apps/harbor/values.yaml` overrides all
 nine coupled Harbor components to 2.15.4. Keep every component and its image
@@ -674,13 +754,36 @@ Its eight descriptors reference four child digests twice. The second failure
 correlates with Harbor PostgreSQL's `unique_reference` violation at
 `08:53:38.389Z`; registry child writes succeeded but the parent was unavailable.
 This matches [upstream Harbor issue #16718](https://github.com/goharbor/harbor/issues/16718).
+A fresh full-catalog attempt on October 19 (`39190983355`) reached the same
+pinned index and PostgreSQL constraint while its child writes succeeded.
 
-Keep the source index, attestations and pinned digest intact. Do not alter the
-live database schema to bypass this failure. Compatible full-catalog publication
-requires a separately reviewed repair. The fixed Traefik scope publishes the
-native pause probe independently; its success authorizes only those artifacts.
+The source index lists the same Linux amd64 child digest
+`sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8`
+twice. An anonymous GHCR GET verified the child manifest's bytes against that
+digest; all four observed Kubernetes nodes were Linux amd64 on October 19.
+The fixed `litellm` mirror scope copied and completely pulled that exact child
+without changing the running LiteLLM workload. It passed on exact `main`
+`0183db1cfb860609e665532aa5642341e890b429` in
+[protected run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031),
+including the source manifest digest and a fresh authenticated Harbor pull:
+
+```sh
+gh workflow run harbor-mirror.yml --ref main -f expected_sha="<reviewed-current-main-sha>" -f image_scope=litellm
+```
+
+The separate consumer/catalog PR pins LiteLLM to the verified child and removes
+the failing index from the full catalog. That pin retains the image these nodes
+select but excludes arm64 and attestation descriptors; re-evaluate it before
+adding arm64 nodes. The scoped receipt does not establish full-catalog coverage
+or authorize strict Talos mirrors. Re-run `image_scope=all` after the
+consumer/catalog PR merges, and keep T004 pending until that run passes.
+
+Do not alter the live database schema to bypass this failure. The fixed Traefik
+scope publishes the native pause probe independently; its success authorizes
+only those artifacts.
 Node hostname migration still requires successful native pulls from every node.
 Cluster-wide `skipFallback` mirrors remain gated on successful full publication.
+
 ## Custom-image publication acceptance
 
 The fixed custom-image publisher completely downloads each pushed private

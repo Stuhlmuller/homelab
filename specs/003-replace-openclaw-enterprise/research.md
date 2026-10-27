@@ -46,10 +46,22 @@ Istio 1.30 is the shortest currently supported branch spanning 1.34 and 1.35.
 3. Kubernetes `1.34.11 -> 1.35.9` through Talos's ordered upgrade operation;
    never apply version-image patches directly or promise a supported downgrade.
 
+Talos 1.14.4's `upgrade-k8s` appends `:v<target>` to each component image-base
+flag ([upstream source](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L175)). Passing a
+`tag@sha256` reference to those flags would create an invalid reference. The
+maintenance helper therefore accepts only image bases whose generated target
+tags have exact digest-pinned entries in the reviewed Harbor catalog; the
+protected publication receipt must verify those tags before upgrade.
+
 Talos 1.14 uses the image factory's `metal-installer` path. Preserve the verified
 machine schematic, extensions, disk identity, and authenticated client access.
 The current repository has no version-upgrade helper/workflow; create a narrow
 maintenance lane before any node changes. Existing mirror helpers are not that lane.
+The existing `talos-api.homelab` Octelium TCP policy allows only the owner's
+human session ([service policy](../../docs/examples/octelium/homelab-services.yaml));
+the protected CI workload has no Talos transport yet. The maintenance workflow
+must declare and validate a scoped CI route with authenticated Talos mTLS, while
+retaining the direct LAN recovery path, before any upgrade stage is enabled.
 
 Read-only authenticated inspection on 2026-10-17 returned no
 `extensionstatus` resources on any of the four nodes. The selected Talos 1.14
@@ -189,16 +201,26 @@ the default NFS StorageClass is not suitable for its authoritative SQLite state.
 
 Use native IAM/password login and one fresh Embedded OpenClaw agent. No channels,
 repository broker, optional collector, Slack proxy, Backend, or Codex Harness.
-Provider is the stock supported OpenAI path; model identifier and a dedicated
-provider key must be supplied explicitly before activation. Do not adopt the
-example model or reuse LiteLLM/old assistant credentials. Agent deployment runs a
-real model probe, so it is an inference action, not a free readiness test.
+Use OpenRouter's `openrouter/free` model through the pinned OCE driver's
+supported `openai` provider, `openai-completions` API and
+`https://openrouter.ai/api/v1` base URL. OCE's model reference is
+`openai/openrouter/free`; the upstream wire model remains `openrouter/free`.
+Direct `openrouter/free` as an OCE reference is rejected by the
+[pinned Kubernetes driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L2267-L2275), while its
+[conformance test](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/tests/conformance/kubernetes-compute.test.mjs#L8248-L8255) accepts nested model IDs under `openai`.
+[OpenRouter's free-router contract](https://openrouter.ai/docs/guides/routing/routers/free-router) uses `openrouter/free` on the wire.
+A dedicated OpenRouter key must be supplied through Agent `harnessAuth` before
+inference; do not adopt the example model or reuse LiteLLM/old assistant
+credentials. A real model probe is an inference action, not a read-only readiness test.
 
 Use `console.oce.stinkyboi.com` and returned per-agent origins under
-`agents.oce.stinkyboi.com`, cookie scope `oce.stinkyboi.com`. Keep both behind
-Octelium and route them to OCE API. OCE authorizes the exact agent and forwards
-through private Envoy to its gateway. Never expose private Envoy directly.
-Keep `openclaw.stinkyboi.com` as an authenticated redirect.
+`agents.oce.stinkyboi.com`, cookie scope `oce.stinkyboi.com`. The console stays
+behind an authenticated Octelium Service. Octelium's fixed Service FQDN cannot
+represent OCE's opaque per-Agent hosts, so private Tailscale/Traefik sends only
+`agent-<32-hex>.agents.oce.stinkyboi.com` to OCE API. OCE requires the shared
+session and exact Agent `administer` permission, then forwards through private
+Envoy to the gateway. Never expose private Envoy directly. Keep
+`openclaw.stinkyboi.com` as a post-Octelium-authentication redirect.
 
 Stock egress permits public TCP/443 and excludes private ranges. This feature
 proves the stock boundary; it does not claim domain-level internet filtering or
@@ -213,6 +235,7 @@ contradicts the owner's clarified scope.
 Sources: [database roles](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/settings/operations.md),
 [storage](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md),
 [native admin](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/native-admin.md),
+[Octelium Service name handling](https://github.com/octelium/octelium/blob/v0.35.0/pkg/apiutils/ucorev1/ucorev1.go),
 [workspace routing](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/workspace-routing.md).
 
 ## R7 — Reconcile through supported interfaces; retain independent archives
@@ -222,6 +245,29 @@ and a protected journal mapping the logical installation/agent/configuration to
 server IDs. Use exact generation checks for updates; recover unknown outcomes
 before retrying creation/deployment. Embedded does not support the dedicated
 provision endpoint's idempotency protocol.
+
+The pinned `GET /installation` response schema contains only ID, name,
+creation time and optional capabilities. It does not report selected Compute,
+Configuration, Secret, IAM or Sandbox Driver identities/settings; `occ
+installation get` uses the same route. `GET /installation/deployment-inventory`
+reports deployment state, not Driver selection. Thus an API-only checker cannot
+prove the installation matches the intended profile. The reconciler must stop
+before mutation until a separate, repository-owned comparison of installed and
+reviewed Driver configuration is defined and validated; Embedded capability is
+insufficient evidence.
+
+The stock chart instead mounts one operator-created Installation Secret into
+the API, worker and initialization Job. Both serving components set
+`OCC_CONFIG_PATH` to that file and read it at startup; the chart can place the
+rendered Installation checksum on their Pod templates. A repository-owned
+read-only verifier can therefore compare a reviewed candidate with a
+version-named immutable Secret, then verify the current Ready Pods use that
+exact Secret/checksum and were created after it. Double-reading Secret UID,
+resource version and workload identities around `GET /installation` closes a
+normal rollout race. This is an inference from Kubernetes workload evidence,
+not an OCE API field. A mutable Secret, an old Pod, or candidate bytes not
+owned by the repository cannot establish the selected settings. T039 has not
+yet added the candidate source, so the current CLI remains fail-closed.
 
 Legacy recovery must cover both local databases and NAS content. Existing
 `openclaw-assistant-check.py`, `openclaw-runtime-storage-check.py`, and
@@ -234,6 +280,12 @@ unnecessary infrastructure. Blind create retries can duplicate resources.
 Keeping only daily database snapshots loses workspace and configuration coverage.
 
 Source: [OCE API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/api.md),
+[Installation response schema](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/resources.ts#L296-L352),
+[Installation routes](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/routes.ts#L381-L409),
+[chart startup volume and checksum](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/deployments.yaml#L37-L40),
+[startup file reader](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/composition/startup-file.ts#L87-L137),
+[upstream Secret comparison](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/upgrade-production-images#L470-L496),
+[Kubernetes immutable Secret behavior](https://kubernetes.io/docs/concepts/configuration/secret/#immutable-secrets),
 [legacy recovery contract](../../clusters/homelab/apps/openclaw/README.md#durable-runtime-state-and-recovery).
 
 ## R8 — Shared Gateway API ownership and supported private Envoy
@@ -274,5 +326,5 @@ Sources: [Envoy compatibility](https://gateway.envoyproxy.io/news/releases/matri
 Product-scope questions are resolved by the owner's clarification. No technical
 selection remains unspecified. Execution gates remain: capacity/canary allocation,
 immutable artifact receipts, actual platform compatibility and isolation tests,
-provider model/key input, full restores, and real browser/inference acceptance.
+the dedicated OpenRouter key, full restores, and real browser/inference acceptance.
 These must fail closed during implementation; this document does not mark them passed.

@@ -2,11 +2,31 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: automation
 resources:
+  - acceptance-observer-cronjob.yaml
+  - acceptance-pr-proof-cronjob.yaml
+  - acceptance-schedule-assemble-networkpolicy.yaml
+  - acceptance-schedule-collector-rbac.yaml
+  - acceptance-schedule-collector-networkpolicy.yaml
+  - acceptance-source-review-networkpolicy.yaml
+  - acceptance-final-report-networkpolicy.yaml
   - cronjob.yaml
   - externalsecret.yaml
   - networkpolicy.yaml
   - pvc.yaml
+  - serviceaccount.yaml
 configMapGenerator:
+  - name: renovate-acceptance-observer
+    files:
+      - acceptance-observer.js
+      - acceptance-inventory.js
+      - acceptance-report-config.js
+      - acceptance-report-runner.js
+      - acceptance-pr-proof.js
+      - acceptance-policy-proof.js
+      - acceptance-schedule-collector.js
+      - acceptance-source-review.js
+      - renovate-acceptance-schedule.py
+      - renovate-acceptance-schedule-assemble.py
   - name: renovate-config
     files:
       - config.js

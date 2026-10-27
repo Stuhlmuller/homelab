@@ -22,16 +22,84 @@ sources:
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-c0ca5e405a32db452e0a5896
+    resource: repo://.github/workflows/openclaw-enterprise-startup.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-cd4f78e3208dc4d64a31699a
+    resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
+  - id: openwiki-source-d15d8af567654cd0f94c3158
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-fdad4f74fd023e19134fcc88
+    resource: repo://policy/workflows_test.rego
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
+  - id: openwiki-source-6044cd3de00b52da78c6cf44
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-a176afce8833edc1068e3844
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply-test.py
+  - id: openwiki-source-2b445535596913b662665f3c
+    resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
+  - id: openwiki-source-d0de55404aabd71445d94e5a
+    resource: repo://scripts/ci/openclaw-enterprise-download.py
+  - id: openwiki-source-8483d28614308625b1073872
+    resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-b3bdcadf54edf75020440bdd
+    resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-38f54948f5bf90d0cb9bddb7
+    resource: repo://scripts/ci/openclaw-enterprise-stage.sh
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-8564baaf10e1673a998e5188
+    resource: repo://scripts/ci/terragrunt-apply.sh
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-60b00db0363e7f9e27d7fa7f
+    resource: repo://scripts/ci/terragrunt-plan.sh
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-79ade26d1f528d349dc08fed
+    resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-1d91dece74882a3fae04c364
+    resource: repo://scripts/network-policy-cleanup.py
+  - id: openwiki-source-ba849f5dbd0942cee0b0087d
+    resource: repo://scripts/network-policy-ownership.py
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
+generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # CI/CD
@@ -44,13 +112,43 @@ exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
 
+The production apply rejects a dispatch whose SHA is no longer current `main`.
+It rechecks `main` before each live import or apply. Terragrunt's root hook
+repeats the check for each unit in a multi-unit apply, and the Argo CD
+bootstrap hook checks before each self-management manifest write. A failed
+lookup stops the write. These source guards await a live apply run.
+
+The Octelium catalog stages a separate `homelab-ci-plan` User and a
+read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither
+applies the catalog nor issues a plan token; the PR plan still reads its
+environment secret.
+
+The separate Octelium Private Kubernetes Apply dispatch verifies the selected
+`main` commit before the protected job. Its fixed helper rechecks current `main`
+immediately before each of two catalog writes; a failed lookup or newer commit
+stops the next write. The second write must report no changes. These source
+guards have not been exercised by a live dispatch in this update.
+
+An AzureAD stack, shared root, or plan-input change requires
+`AZUREAD_CLIENT_ID` and `AZUREAD_TENANT_ID` in `homelab-plan` plus a complete
+GitHub OIDC session. Missing inputs fail `Terragrunt Plan`. Restore the plan
+identity through the [Entra provider runbook](../../docs/entra-terraform-provider.md),
+rerun the protected PR plan, and verify `Terragrunt Gate` before merging.
+If the static job cannot read the PR base diff, it fails before deciding to
+skip the live plan.
+
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
 
 The pull-request `Lint` job reports its own conclusion without commit-status
 write permission. The static gate rejects that permission in any PR workflow;
 the trusted-base native Chainguard receipt workflow alone sets its provenance
-status after checking the current main and PR head.
+status after checking the current main and PR head. Its tightly pinned
+`pull_request_target` exception checks only the event PR head after confirming
+it remains in the open `main` PR list. On `main` pushes it compares exact
+base/head native receipt entries and rechecks changed entries; unreadable state
+or an absent receipts map also requires verification. Unrelated heads keep
+their prior status.
 Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
@@ -66,6 +164,148 @@ verification now run on matching `main` pushes or reviewed manual dispatches,
 without optional pull-request runs. Image automation no longer observes every
 five minutes; dispatch its `verify` operation from `main` for a deliberate
 journal check. Required pull-request checks retain their existing producers.
+
+The protected [Enterprise images workflow](../../.github/workflows/openclaw-enterprise-images.yml)
+builds the stock controller, runtime, and CLI plus the source-bound journal
+operator from exact current `main`. The operator build and non-root smoke checks
+run before registry credentials; publication signs and completely pulls all
+four images. Protected
+[run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
+passed all four authenticated pulls and signatures from source `fda0d68`; its
+operator digest is pinned in the disabled declaration. A failed run
+reports only a fixed publication phase in its job summary; private transport
+and registry output remains encrypted. A failure produces no accepted image
+receipt. Retry from current `main` after resolving that phase.
+
+The separate [OpenClaw Enterprise model-credential workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
+accepts only an exact current-`main` dispatch into `homelab-production`. Its
+protected job validates the owner-supplied OpenRouter key, then writes only the
+new Enterprise SSM parameter. It has not run because the key is not yet supplied;
+this source change does not activate Enterprise.
+
+The [Enterprise startup workflow](../../.github/workflows/openclaw-enterprise-startup.yml)
+is a separate protected, exact-current-`main` dispatch. After static checks
+and the production environment gate, its pinned script creates or attests only
+the versioned immutable Installation Secret from reviewed repository bytes.
+The create-only path does not register the dormant Application or run an Agent;
+the post-bootstrap installation-ID annotation and live Pod binding remain
+separate proof work.
+
+The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+keeps legacy retention behind `legacy_stage` and reserves fixed
+`bind-installation`, `full-sync`, `reconcile`, `stop`, `verification`, `restore`
+and `acceptance` Enterprise selections. Select exactly one stage. Each protected
+job rechecks exact current `main` and shares a non-canceling production queue.
+The binding lane pins the reviewed binder and requires an owner-controlled 0600
+bootstrap service-key file; no hosted-runner delivery is declared. The other
+stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh).
+Its `full-sync` branch invokes the pinned
+[helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), which rechecks current
+`main` after the final Argo sync and health readback; a forced-race fixture
+requires a blocked result when `main` advances during sync. The committed
+`unselected` installation phase blocks sync before Kubernetes access.
+`reconcile`, `stop`, and `verification` now call the pinned
+[one-shot Job dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py)
+only after `journalOperator.enabled` is true. It rechecks current `main`,
+source and configuration identity, retained journal and bootstrap claim/PV
+identity, and prior Job state before a fresh Job per workflow attempt. The
+[operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
+declares a local journal claim and scoped proof permissions but is absent from
+active GitOps; the disabled gate stops before Job creation. The hosted runner
+does not mount the private journal. `restore` and `acceptance` still exit before
+mutation pending separate recovery and owner-session proof. No Enterprise
+stage has passed live acceptance.
+
+For legacy `publish-archive`, the workflow reports fixed public pre-upload and
+post-upload phases while withholding private diagnostics. Run `39466313228`
+completed bounded upload but failed under the former broad
+`publication-version` phase; that attempt produced no final receipt.
+
+Detached archive worker `39366476872` produced the private source result.
+Protected [publication run `39501240221`](https://github.com/Stuhlmuller/homelab/actions/runs/39501240221)
+used that worker and succeeded after versioned offsite upload, restore, archive
+verification and private final receipt. Later retries `39700564687` and
+`39908653791` incorrectly used the publication run as the source worker; both
+failed before upload, with the latter reporting `publication-archive-result`.
+The separate [verify run `39910018168`](https://github.com/Stuhlmuller/homelab/actions/runs/39910018168)
+succeeded at 2026-10-23 09:52 UTC against publication reference
+`9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221`. Its protected
+stage retrieved the exact versioned archive and receipt and restored the full
+local/NAS trees, both SQLite databases and historical backups. T013 is complete;
+compatible legacy boot remains open under T014.
+
+Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) added the fixed
+legacy `prepare-restore` choice to the protected operations workflow. Dispatch
+requires the exact current `main` SHA and the successful publication SHA/run ID
+as `archive_ref`. The worker rechecks stopped writers and source identities,
+fetches the recorded S3 object versions and retains a separate verified tree
+and private symlink report under `/archive/private/rehearsal-<RUN_ID>`. Its first
+[protected run `39942297939`](https://github.com/Stuhlmuller/homelab/actions/runs/39942297939)
+left an incomplete, unverified archive in scratch. The [retry
+`39951803625`](https://github.com/Stuhlmuller/homelab/actions/runs/39951803625)
+failed in fixed `verification-archive-download`; neither reached receipt
+download or the restore worker. The [third run
+`39966041305`](https://github.com/Stuhlmuller/homelab/actions/runs/39966041305)
+failed in the same broad phase, before receipt download or worker start. It did
+not identify whether the source range, reader transfer or finalization failed;
+those three runs produced no accepted copy. The source
+repair fetches pinned S3 versions in at most 128 MiB ranges, validates version,
+interval and length, then uploads at most 8 MiB reader slices with SHA-256
+checks. Interrupted appends roll back; full size and digest checks precede
+no-clobber promotion. Future failures report fixed source-range,
+reader-transfer or finalization subphases for either versioned download, plus
+the restore phase, without private diagnostics. Guarded
+[`resume-restore` run `40050057926`](https://github.com/Stuhlmuller/homelab/actions/runs/40050057926)
+later verified the cached archive and receipt and prepared a separate private
+NAS scratch recovery tree. That copy did not boot or accept the old gateway;
+T014 remains open.
+
+The startup and operations [workflow policy](../../policy/workflows.rego) rules
+accept only `workflow_dispatch`. Regression fixtures reject an added
+`workflow_call` event, so another workflow cannot reuse those protected jobs
+without manual dispatch. They also reject unreviewed workflow or job run
+defaults and environment, step shell or working-directory overrides, and
+`BASH_ENV` or `ENV` on any step. The credentialed legacy stage binds its exact
+four-variable environment. This is source validation, not a live execution
+receipt.
+
+The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
+accepts fixed inspect, canary and upgrade stages only from the exact current
+`main` commit. It runs static checks before the protected job, rechecks the SHA
+before AWS credentials, and verifies the pinned stage helper before execution.
+The executor keeps activation and canary placement disabled until private
+recovery, image-publication and isolated-node evidence is available; no upgrade
+stage has run from this source change.
+
+The [workflow policy](../../policy/workflows.rego) accepts only manual
+`workflow_dispatch`, requires explicit empty workflow permissions, and pins both
+jobs' commands, actions, settings and private credential mapping. Regression
+tests reject an added reusable `workflow_call` trigger, run defaults, environment
+overrides, and custom shells that could bypass the reviewed commands. This is a
+source guard, not live readiness.
+
+The protected canary and firewall stages require a configured canary node and
+exact-current-main dispatch. Admission verifies private placement and
+adds the dedicated isolation taint before the selector label. It checks the
+cluster-wide label selector before mutation, immediately before labeling, and
+after the patch. A preflight conflict blocks mutation; a later conflict
+retains the taint and removes this Node's label. After the exact qualify →
+fixture-prune → firewall-prune commits, with unrelated merges allowed only when
+operational source and Nix flake inputs stay invariant, `ownership-capture`
+requires the live
+fixture namespace and all fixture workloads to be absent and stores a
+versioned private snapshot. `ownership-approve` requires the owner actor and
+an exact reviewed digest before it writes an immutable capture-run-specific
+receipt. `owned-cleanup` loads that receipt under current main and the
+original placement under the qualify SHA, then records a private attempt
+before deletion. Capture through release also require a complete node Pod
+list matching the reviewed system DaemonSet UIDs and validated cleanup Pod
+while it runs. A system Pod restart blocks this immutable placement path until
+separately reviewed recovery. Release verifies the same source chain and
+reviewed cleanup run, removes the label, waits for cleanup DaemonSet Pods to
+disappear cluster-wide, then rechecks that only reviewed system Pods remain
+before removing the taint. An incomplete inventory or changed Pod retains
+isolation.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 

@@ -17,6 +17,7 @@ spec:
     - https://charts.crossplane.io/stable
     - https://grafana-community.github.io/helm-charts
     - https://helm.goharbor.io
+    - https://blob.istio.io/istio-release/charts
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
@@ -30,6 +31,7 @@ spec:
     - ghcr.io/langfuse/langfuse-k8s/charts
     - ghcr.io/multica-ai/charts
     - codeberg.org/k8s-gateway/charts
+    - docker.io/envoyproxy
   destinations:
     - server: https://kubernetes.default.svc
       namespace: ai
@@ -52,6 +54,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
+      namespace: envoy-gateway-system
+    - server: https://kubernetes.default.svc
       namespace: fleet
     - server: https://kubernetes.default.svc
       namespace: harbor
@@ -67,6 +71,8 @@ spec:
       namespace: media
     - server: https://kubernetes.default.svc
       namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: network-policy-canary
     - server: https://kubernetes.default.svc
       namespace: nix-builder
     - server: https://kubernetes.default.svc

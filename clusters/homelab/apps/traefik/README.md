@@ -20,17 +20,20 @@ file provider does not discover or publish arbitrary Kubernetes Services.
 | --- | --- | --- | --- |
 | `web` | 8000 | Private Tailscale LoadBalancer | Redirect to HTTPS port 443 |
 | `websecure` | 8443 | Private Tailscale LoadBalancer | Application and Cordium/control hosts |
-| `funnel` | 8080 | Two Tailscale Ingress proxies | Only the callbacks below |
-| `registry` | 9443 | Declared Talos node addresses | Only Harbor OCI and token endpoints |
+| `funnel` | 8080 | Three Tailscale Ingress proxies | Only the callbacks below |
+| `registry` | 9443 | Talos nodes and Renovate | Only Harbor OCI and token endpoints |
 
 The `traefik-registry` ClusterIP Service reserves `10.96.0.50:443` for Talos
-image pulls. Host-only resolution sends `harbor.stinkyboi.com` there on the
-nodes; TLS still validates that hostname. Its router permits only `/v2`,
-`/v2/` descendants, and `/service/token`, preserving Authorization headers.
+image pulls and Renovate's Docker lookups. Host-only resolution on nodes and a
+Pod-local alias in Renovate send `harbor.stinkyboi.com` there; TLS still validates
+that hostname. Its router permits only `/v2`, `/v2/` descendants, and
+`/service/token`, preserving Authorization headers.
 Harbor dashboards, management APIs, and every other application host are excluded.
 The ambient AuthorizationPolicy restricts the registry listener to the declared
-node source addresses; local-node traffic also follows Istio's trusted probe
-bypass. Talos host-to-ClusterIP routing can SNAT the source to its `cni0` bridge
+node source addresses and `cluster.local/ns/automation/sa/renovate`; it does not
+allow Renovate onto the shared private TLS listener. Local-node traffic also
+follows Istio's trusted probe bypass. Talos host-to-ClusterIP routing can SNAT
+the source to its `cni0` bridge
 for a local endpoint or its `flannel.1` interface for a remote endpoint. The
 registry policies allow the four LAN node addresses, verified bridge addresses
 `10.244.1.1` through `10.244.4.1`, and verified overlay addresses `10.244.1.0`
@@ -53,10 +56,22 @@ tailnet DNS names; private custom application hostnames retain the certificate
 from [`certificate.yaml`](certificate.yaml).
 [Tailscale Funnel documentation](https://tailscale.com/kb/1223/funnel).
 
+During the 2026-10-27 ztunnel image-pull outage on `zimaboard-0`, Traefik is
+temporarily pinned to `zimaboard-1`, whose ztunnel is Ready. This moves all four
+listeners together without changing their routes or Service addresses. Verify
+the target can pull the pinned Traefik image; the controller uses one surge Pod
+and zero unavailable Pods, retaining the old Pod until the replacement is Ready.
+An image-pull failure stalls the rollout with the old Pod retained. Verify
+the replacement Pod, Argo CD health, a tailnet HTTPS request, and a Harbor
+registry request before treating access as restored. After the upstream-image
+ztunnel fix restores all four nodes, remove the pin through a reviewed PR; a
+node failure while pinned otherwise removes the only Traefik replica.
+
 | Public callback | Allowed paths | Application authentication |
 | --- | --- | --- |
 | `n8n-webhook.tail67beb.ts.net` | `/webhook`, `/webhook-test`, `/webhook-waiting`, and their slash-separated descendants | Workflow-specific webhook credentials/signatures |
 | `policy-bot-hook.tail67beb.ts.net` | Exactly `/api/github/hook` | GitHub webhook HMAC |
+| `bulldozer-hook.tail67beb.ts.net` | Exactly `/api/github/hook` | GitHub webhook HMAC |
 
 All other paths on the callback hosts return 404. Supplying a private application
 Host header to the Funnel listener cannot select a private router. No Fleet
@@ -94,7 +109,7 @@ Tailscale state; normal pod replacement retains the controller-managed state.
 The helper deliberately accepts no arbitrary node or key argument. Review a
 replaced identity before re-running; do not disable lock to bypass a failure.
 See [Tailnet Lock](https://tailscale.com/docs/features/tailnet-lock) and the
-[CI key rotation runbook](../../../../IaC/modules/tailscale-access/README.md).
+[CI key rotation runbook](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 ## Mesh and certificates
 
@@ -117,8 +132,8 @@ ztunnel; trusted local-node probe traffic bypasses normal policy enforcement.
 [Ambient L4 policy](https://istio.io/latest/docs/ambient/usage/l4-policy/),
 [Istio ambient and NetworkPolicy](https://istio.io/latest/docs/ambient/usage/networkpolicy/).
 
-The certificate covers the apex, `*.stinkyboi.com`, and
-`*.cordium.stinkyboi.com`. ConfigMap and Secret files share one watched projected
+The certificate covers the apex, `*.stinkyboi.com`,
+`*.cordium.stinkyboi.com`, `console.oce.stinkyboi.com`, and `*.agents.oce.stinkyboi.com`. ConfigMap and Secret files share one watched projected
 directory. Kubernetes swaps its `..data` symlink on updates; watching the directory
 lets the file provider reload certificate changes. Do not replace the projection
 with a `subPath` mount. A plain update to an unwatched certificate file does not
@@ -127,8 +142,10 @@ reload Traefik.
 [certificate reload behavior](https://doc.traefik.io/traefik/getting-started/faq/#why-is-my-tls-certificate-not-reloaded-when-its-contents-change).
 
 Octelium's private API uses `h2c` to its ingress dataplane, preserving native
-HTTP/2 gRPC. Cordium, Multica, and OpenClaw retain WebSocket upgrades through
-their HTTP Services. Harbor receives the original Authorization header and
+HTTP/2 gRPC. The Enterprise console routes through Octelium; only exact opaque
+native Agent hosts reach Enterprise's API directly. The old OpenClaw hostname
+remains on the suspended legacy backend until the final cutover. The Agent
+route preserves Host and WebSocket upgrades. Harbor receives the original Authorization header and
 continues to authenticate registry clients itself.
 
 ## Validation and cutover

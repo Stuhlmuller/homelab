@@ -12,7 +12,7 @@ encryption-key settings, and file-backed runtime data.
 
 The Terragrunt-generated encryption key comes from AWS SSM Parameter Store
 through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. Both the app and
-the workflow-migration init container export it as `N8N_ENCRYPTION_KEY` only
+the staged one-time workflow-migration Job export it as `N8N_ENCRYPTION_KEY` only
 when `/home/node/.n8n/config` does not exist yet, so a restored or
 already-initialized PVC keeps using the key in its persisted settings file
 instead of crashlooping on an accidental mismatch.
@@ -36,22 +36,50 @@ instance key; do not rotate the SSM value without following an n8n-supported
 - `/homelab/n8n/postgres-app-password`: n8n database user password mounted from
   `n8n-postgres-client` and read through `DB_POSTGRESDB_PASSWORD_FILE`.
 - `/homelab/n8n/litellm-token`: dedicated inference-only gateway key. External
-  Secrets renders it into `CREDENTIALS_OVERWRITE_DATA`, so an intentionally
-  blank `openAiApi` credential resolves to
-  `http://litellm.ai.svc.cluster.local:4000/v1` without serializing the key in
-  a workflow. The `migrate-ai-workflow` init container idempotently replaces
-  the three inventoried model nodes (one active and two inactive workflows)
-  with that credential and `openrouter/free` through n8n's supported CLI.
-  Exact workflow/node IDs and previous model settings are checked before edits;
-  changed provider options or built-in tools fail closed. Only previously active
-  workflows are republished; inactive workflows stay inactive. Its credential is
-  still serialized as a one-element JSON array because `import:credentials`
-  requires an array input. The exported target workflow remains in n8n's
-  one-element array through reimport. It refuses an unexpected node shape rather
-  than changing another workflow. Run `nix develop --command python3 -I
-  scripts/ci/n8n-ai-migration-check.py` for the synthetic preservation check.
-  Verify a resulting Langfuse generation before
-  retiring the AWS credential.
+  Secrets renders it into `CREDENTIALS_OVERWRITE_DATA`, so a blank `openAiApi`
+  credential resolves to `http://litellm.ai.svc.cluster.local:4000/v1` without
+  serializing the key in a workflow.
+
+The n8n Deployment no longer runs the AI migration as an init container.
+`migration-v1.values.yaml` contains the guarded, versioned Job but is
+**not** listed in `IaC/homelab/us-west-2/apps/n8n/stack.hcl` Helm valueFiles.
+The current GitOps render contains no migration Job and this availability fix
+makes no workflow database edits. A read-only PostgreSQL query on 2026-10-24
+found all three inventoried model nodes already set to `openrouter/free` and
+`litellm-managed`; one workflow is active and two are inactive.
+
+A separate activation PR may add the staged file to Helm valueFiles if a
+restored or stale database needs migration. Before that PR merges, verify a
+paired off-NAS PostgreSQL logical dump and n8n PVC backup plus a restore path.
+The [database notes](../n8n-postgres/README.md#backup-and-restore) show a
+`pg_dump` command but do not yet establish this paired backup receipt. The
+staged Job uses exact workflow/node IDs and previous settings as guards; it
+skips missing or edited workflows, fails on list/export/parse/import errors,
+and republishes only previously active workflows. It inspects the LiteLLM
+credential only when a workflow needs migration. A matching existing credential
+with blank stored data is preserved; an absent one is created with blank data.
+The decrypted inspection uses container memory (`/dev/shm`) and removes its
+temporary file without logging credential values. Inspection failures,
+unexpected metadata or nonblank stored data stop the Job before workflow
+import. This avoids n8n's same-ID credential import overwrite on retries or
+restored DBs; type-wide credential overwrites fill only blank fields.
+Credentials and workflow exports retain n8n's required one-element JSON arrays.
+The key never enters workflow JSON. Run `nix develop --command python3 -I
+scripts/ci/n8n-ai-migration-check.py` to exercise these cases.
+
+When activated, Argo CD applies the Job at sync wave 1 after n8n is healthy and
+its PostgreSQL schema exists. Required affinity places the Job on n8n's node
+for the existing `ReadWriteOnce` NFS PVC. The Job uses the n8n service account,
+file-backed PostgreSQL client secret, and persisted config key; the bootstrap
+key applies only when `/home/node/.n8n/config` is absent. Its stable versioned
+name means ordinary n8n restarts and Argo resyncs do not rerun a completed Job.
+Failures remain visible in Job status and logs while the Deployment serves.
+`N8N_AI_MIGRATION_APPLIED` logs only workflow ID, prior active state, and
+`restart_required`. If an active workflow changes, a separately reviewed
+GitOps Deployment revision must restart n8n before the published change is
+live. Verify a real workflow/Langfuse generation before retiring the AWS key.
+Rollback needs the paired database dump and n8n PVC restore; editing the Job
+cannot undo database changes.
 
 ## Access Contract
 
@@ -68,21 +96,27 @@ plain HTTP on the Service's port `5678`; TLS terminates at Traefik, so an HTTPS
 Service URL fails. The workload AuthorizationPolicy allows the n8n principal
 to call itself without widening other workload access.
 
-Move existing external registrations from `n8n-webhook.stinkyboi.com` to the
-Funnel host only after the [callback cutover gates](../traefik/CUTOVER.md).
-The fixed helper previews the two existing homelab GitHub hooks, `589400612`
-(Codex Review Helper) and `636944763` (Github Emergency Bot):
+Move the surviving external registration from `n8n-webhook.stinkyboi.com` to
+the Funnel host only after the [callback cutover gates](../traefik/CUTOVER.md).
+The helper previews the Github Emergency Bot hook `636944763` and the exact
+retirement of unused Codex Review Helper hook `589400612`:
 
 ```sh
 python3 -I scripts/n8n-github-webhooks.py
+python3 -I scripts/n8n-github-webhooks.py --retire-helper
 ```
 
-Its guarded `--execute` changes only those URL hosts, preserving paths, secrets,
-events and settings. It first requires root 404 and safe OPTIONS 204 responses
-for both POST-only hooks; it never POSTs or triggers redelivery. After cutover,
-`--require-delivery` requires newer delivery IDs and timestamps from the saved
-receipts. Historical success does not establish current callback acceptance.
-Keep the legacy Tunnel route until fresh signed deliveries pass.
+Its guarded `--execute` changes only the Emergency hook URL, preserving its
+path, secret, events, and settings. It requires root 404 and a safe OPTIONS 204
+response for that POST-only hook; it never POSTs or triggers redelivery.
+`--retire-helper --execute --expected-sha REVIEWED_MAIN_SHA` removes only the
+reviewed helper hook after a fresh successful Emergency delivery. Here
+`REVIEWED_MAIN_SHA` is the full reviewed current `main` commit. Repeating it
+after verified absence is a no-op. `--require-delivery` requires the retired
+ID and callback path to be absent and a newer successful Emergency delivery
+than its saved cutover receipt. Historical success does not establish current
+callback acceptance. Keep the legacy Tunnel route until the surviving Policy
+Bot and Emergency callbacks pass their fresh delivery checks.
 
 ## Database Readiness
 
@@ -129,11 +163,20 @@ curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http
 grep -i webhook /tmp/n8n-webhook-body.txt
 ```
 
+After a separately approved migration activation, inspect the Job without
+changing it:
+
+```sh
+kubectl -n automation get job/n8n-migrate-ai-workflow-v1
+kubectl -n automation logs job/n8n-migrate-ai-workflow-v1 -c migrate
+```
+
 Expected route behavior: the editor is reachable on the mesh, and the Funnel
 host reaches n8n only under webhook prefixes. An unknown webhook path returns
 an n8n not-found response; a generic 404 without n8n webhook text does not prove
-backend reachability. Also require Funnel root/admin denial and fresh signed
-deliveries for both fixed GitHub hooks after their guarded URL change. The internal database-aware health request from the n8n pod should
+backend reachability. Also require Funnel root/admin denial, absence of the
+retired helper hook, and fresh signed deliveries for the surviving Emergency
+and Policy Bot callbacks. The internal database-aware health request from the n8n pod should
 print `200` after the AuthorizationPolicy syncs. HTTP 503 with `Database is not
 ready!` means the callback reached n8n but n8n cannot use PostgreSQL; inspect
 both pods and confirm the database-aware liveness probe replaces the stale n8n
@@ -142,7 +185,7 @@ process.
 ## Rollback
 
 Revert a failed application revision through GitOps while preserving the working
-Funnel URL and fixed external registrations. A transport rollback needs a
+Funnel URL and surviving external registrations. A transport rollback needs a
 separate reviewed route/URL change and fresh delivery verification; do not point
 public webhooks at the private editor or restore the deleted DNS writer.
 Retain the legacy routes until replacement acceptance. Preserve both the n8n

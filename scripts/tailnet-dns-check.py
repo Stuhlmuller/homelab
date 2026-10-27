@@ -55,12 +55,13 @@ def declared_names(value, initial):
     raw = value.get("metadata", {}).get("annotations", {}).get("coredns.io/hostname", "")
     names = [item.strip() for item in raw.split(",")]
     if not names or len(names) != len(set(names)) or any(
-        not re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*stinkyboi\.com|\*\.cordium\.stinkyboi\.com", item)
+        not (re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*stinkyboi\.com|\*\.cordium\.stinkyboi\.com", item)
+             or item == "*.agents.oce.stinkyboi.com")
         for item in names
     ):
         raise RuntimeError("Approved hostname annotation is missing, duplicate, or outside the zone")
     if initial and set(names) != set(json.loads(INVENTORY.read_text())["hostnames"]):
-        raise RuntimeError("Initial handoff requires the reviewed 27-name migration set")
+        raise RuntimeError("Initial handoff requires the reviewed private hostname inventory")
     return names
 
 
@@ -98,7 +99,7 @@ def verify(server, initial=False):
         raise RuntimeError("DNS Service must expose only its declared tailnet DNS ports")
     if server != published_ip(dns):
         raise RuntimeError("Supplied resolver IP differs from the live DNS Service")
-    peer = SIGNER.inspect_target(SIGNER.TARGETS[3], SIGNER.local_signer())
+    peer = SIGNER.inspect_target(SIGNER.TARGETS[-1], SIGNER.local_signer())
     if not peer["signed"] or peer["dns"] != "homelab-dns." + SIGNER.TAILNET:
         raise RuntimeError("DNS proxy must be online and signed under Tailnet Lock")
 
@@ -130,7 +131,7 @@ def verify(server, initial=False):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--server", required=True, help="Observed tailnet IPv4 of the DNS Service")
-    parser.add_argument("--initial-handoff", action="store_true", help="Require the fixed 27-name migration set")
+    parser.add_argument("--initial-handoff", action="store_true", help="Require the reviewed private hostname inventory")
     args = parser.parse_args(argv)
     try:
         verify(args.server, args.initial_handoff)

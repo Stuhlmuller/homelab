@@ -359,6 +359,12 @@ test_allows_reviewed_funnel_callback if {
 	count(violations) == 0
 }
 
+test_allows_bulldozer_funnel_callback if {
+	resource := object.union(reviewed_callback, {"metadata": object.union(reviewed_callback.metadata, {"name": "bulldozer-hook"}), "spec": object.union(reviewed_callback.spec, {"tls": [{"hosts": ["bulldozer-hook"]}]})})
+	violations := deny with input as resource
+	count(violations) == 0
+}
+
 test_rejects_funnel_to_private_entrypoint if {
 	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {
 		"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}},
@@ -416,4 +422,34 @@ test_allows_only_declared_renovate_app_keys if {
 	violations := deny with input as renovate_secret("/homelab/renovate/github-app/other-key")
 	some msg in violations
 	contains(msg, "outside its allowed application prefixes")
+}
+
+oce_secret(namespace, key) := {
+	"apiVersion": "external-secrets.io/v1",
+	"kind": "ExternalSecret",
+	"metadata": {"name": "oce", "namespace": namespace},
+	"spec": {
+		"secretStoreRef": {"kind": "ClusterSecretStore", "name": "aws-ssm"},
+		"data": [{"secretKey": "value", "remoteRef": {"key": key}}],
+	},
+}
+
+test_openclaw_enterprise_secret_names_are_exact_and_split_by_namespace if {
+	system := {"postgres-admin-password", "postgres-migrator-password", "postgres-app-password", "postgres-backup-password", "session-auth-secret", "gateway-api-key"}
+	every suffix in system {
+		key := sprintf("/homelab/openclaw-enterprise/%s", [suffix])
+		violations := deny with input as oce_secret("openclaw-system", key)
+		count(violations) == 0
+	}
+	agent_allowed := deny with input as oce_secret("openclaw-agents", "/homelab/openclaw-enterprise/model-api-key")
+	count(agent_allowed) == 0
+	system_denials := deny with input as oce_secret("openclaw-system", "/homelab/openclaw-enterprise/model-api-key")
+	some system_denial in system_denials
+	contains(system_denial, "outside its allowed application prefixes")
+	agent_denials := deny with input as oce_secret("openclaw-agents", "/homelab/openclaw-enterprise/postgres-admin-password")
+	some agent_denial in agent_denials
+	contains(agent_denial, "outside its allowed application prefixes")
+	unknown_denials := deny with input as oce_secret("openclaw-agents", "/homelab/openclaw-enterprise/other-key")
+	some unknown_denial in unknown_denials
+	contains(unknown_denial, "outside its allowed application prefixes")
 }
