@@ -67,6 +67,7 @@ python3 -I scripts/ci/fleet-airvpn-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/openclaw-enterprise-image-test.py
 python3 -I scripts/ci/openclaw-enterprise-restore-image-test.py
+python3 -I scripts/ci/openclaw-enterprise-reader-pod-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-active-test.py
 python3 -I scripts/ci/openclaw-enterprise-backup-transaction-test.py

@@ -23,6 +23,9 @@ SHA = re.compile(r"[0-9a-f]{40}\Z")
 UID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 DNS = re.compile(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\Z")
 GATEWAY_CLAIM = re.compile(r"gateway-state-[0-9a-f]{12}\Z")
+IMAGE = re.compile(
+    r"harbor\.stinkyboi\.com/homelab/homelab-oce-restore:homelab-"
+    r"([0-9a-f]{40})@sha256:[0-9a-f]{64}\Z")
 MAX_INPUT_BYTES = 1024 * 1024
 MAX_ARCHIVE_BYTES = 16 * 1024 ** 3
 MAX_ARCHIVE_FILES = 100_000
@@ -60,8 +63,12 @@ def read_observation(stream):
     return json.loads(data)
 
 
-def validate_observation(kind, source_sha, pod_uid, expected_uids, observation):
+def validate_observation(kind, source_sha, pod_uid, expected_uids, observation,
+                         expected_image):
     require(kind in ROOTS and SHA.fullmatch(source_sha) and UID.fullmatch(pod_uid))
+    expected_match = (IMAGE.fullmatch(expected_image)
+                      if isinstance(expected_image, str) else None)
+    require(expected_match is not None and expected_match.group(1) == source_sha)
     namespace = NAMESPACES[kind]
     keys = {"schemaVersion", "sourceSha", "readerPod", "claims"}
     if kind == "tenant":
@@ -82,7 +89,9 @@ def validate_observation(kind, source_sha, pod_uid, expected_uids, observation):
             spec.get("hostNetwork") is False and
             spec.get("hostPID") in (None, False) and
             spec.get("hostIPC") in (None, False) and
+            spec.get("enableServiceLinks") is False and
             spec.get("restartPolicy") == "Never" and
+            spec.get("activeDeadlineSeconds") == 7200 and
             spec.get("initContainers") in (None, []) and
             spec.get("ephemeralContainers") in (None, []) and
             spec.get("securityContext") == {
@@ -95,6 +104,23 @@ def validate_observation(kind, source_sha, pod_uid, expected_uids, observation):
                 "allowPrivilegeEscalation": False,
                 "readOnlyRootFilesystem": True,
                 "capabilities": {"drop": ["ALL"]}})
+    container = containers[0]
+    image = container.get("image")
+    match = IMAGE.fullmatch(image) if isinstance(image, str) else None
+    require(container.get("name") == "reader" and match is not None and
+            match.group(1) == source_sha and
+            image == expected_image and
+            container.get("imagePullPolicy") == "IfNotPresent" and
+            container.get("command") == ["/bin/sleep", "7200"] and
+            container.get("resources") == {
+                "requests": {"cpu": "50m", "memory": "256Mi"},
+                "limits": {"cpu": "500m", "memory": "512Mi"}} and
+            all(field not in container for field in (
+                "args", "env", "envFrom", "lifecycle", "startupProbe",
+                "readinessProbe", "livenessProbe", "ports", "volumeDevices")) and
+            all(container.get(field) in (None, False)
+                for field in ("stdin", "stdinOnce", "tty")) and
+            container.get("terminationMessagePolicy") in (None, "File"))
     claims = observation["claims"]
     required = {"journal", "bootstrap"} if kind == "operator" else {"gateway"}
     require(isinstance(claims, dict) and set(claims) == required and
@@ -266,9 +292,10 @@ def tar_info(name, size=0, directory=False):
     return info
 
 
-def emit(kind, source_sha, pod_uid, expected_uids, observation, roots, output):
+def emit(kind, source_sha, pod_uid, expected_uids, observation, roots, output,
+         expected_image):
     namespace = validate_observation(kind, source_sha, pod_uid,
-                                     expected_uids, observation)
+                                     expected_uids, observation, expected_image)
     require(set(roots) == set(ROOTS[kind]))
     opened = {}
     try:
@@ -335,6 +362,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--kind", choices=("operator", "tenant"), required=True)
     parser.add_argument("--source-sha", required=True)
+    parser.add_argument("--expected-image", required=True)
     parser.add_argument("--reader-pod-uid", required=True)
     parser.add_argument("--journal-claim-uid")
     parser.add_argument("--bootstrap-claim-uid")
@@ -349,7 +377,7 @@ def main(argv=None):
                  args.journal_claim_uid is None and args.bootstrap_claim_uid is None))
         emit(args.kind, args.source_sha, args.reader_pod_uid, expected,
              read_observation(sys.stdin.buffer), ROOTS[args.kind],
-             sys.stdout.buffer)
+             sys.stdout.buffer, args.expected_image)
     except (Blocked, OSError, ValueError, TypeError, KeyError, UnicodeError,
             tarfile.TarError):
         print("Enterprise private reader archive blocked", file=sys.stderr)

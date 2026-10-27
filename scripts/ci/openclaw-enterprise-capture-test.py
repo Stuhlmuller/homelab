@@ -30,6 +30,8 @@ def module(name, path):
 OCE = module("oce_capture_base", "scripts/openclaw-enterprise.py")
 CAPTURE = module("oce_capture", "scripts/ci/openclaw-enterprise-capture.py")
 SHA = "a" * 40
+READER_IMAGE = ("harbor.stinkyboi.com/homelab/homelab-oce-restore:homelab-" +
+                SHA + "@sha256:" + "c" * 64)
 UIDS = {
     "journal": "11111111-1111-4111-8111-111111111111",
     "bootstrap": "22222222-2222-4222-8222-222222222222",
@@ -74,13 +76,20 @@ def pv(namespace, name, claim_uid, storage_class):
 def pod(namespace, name, uid, claims):
     return {"metadata": {"name": name, "namespace": namespace, "uid": uid},
             "spec": {"automountServiceAccountToken": False,
-                     "hostNetwork": False, "restartPolicy": "Never",
+                     "hostNetwork": False, "enableServiceLinks": False,
+                     "activeDeadlineSeconds": 7200, "restartPolicy": "Never",
                      "securityContext": {"runAsUser": 1000, "runAsNonRoot": True,
                                          "seccompProfile": {"type": "RuntimeDefault"}},
                      "volumes": [{"name": key, "persistentVolumeClaim": {
                          "claimName": value, "readOnly": True}}
                          for key, value in claims.items()],
-                     "containers": [{"name": "reader", "volumeMounts": [
+                     "containers": [{"name": "reader", "image": READER_IMAGE,
+                                     "imagePullPolicy": "IfNotPresent",
+                                     "command": ["/bin/sleep", "7200"],
+                                     "resources": {
+                                         "requests": {"cpu": "50m", "memory": "256Mi"},
+                                         "limits": {"cpu": "500m", "memory": "512Mi"}},
+                                     "volumeMounts": [
                          {"name": key, "mountPath": "/source/" + key,
                           "readOnly": True} for key in claims],
                          "securityContext": {"allowPrivilegeEscalation": False,
@@ -231,7 +240,7 @@ class CaptureAssembler(unittest.TestCase):
                               UIDS["tenantPod"], {"gateway": UIDS["gateway"]},
                               directories=("state/workspace/empty",))
         return CAPTURE.assemble(self.config, SHA, self.observations,
-                                operator, tenant, self.output)
+                                operator, tenant, self.output, READER_IMAGE)
 
     def test_assembles_complete_private_tree_without_authorizing_publication(self):
         marker = self.run_assemble()
@@ -373,7 +382,7 @@ class CaptureAssembler(unittest.TestCase):
                                          "bootstrap": UIDS["bootstrap"]})
                 with self.assertRaises(CAPTURE.Blocked):
                     CAPTURE.assemble(self.config, SHA, self.observations,
-                                     operator, archive, self.output)
+                                     operator, archive, self.output, READER_IMAGE)
                 self.assertFalse(self.output.exists())
         operator = self.archive("operator.tar", self.operator_files,
                                 "openclaw-system", UIDS["operatorPod"],
@@ -389,7 +398,7 @@ class CaptureAssembler(unittest.TestCase):
                 tar.addfile(info)
             with self.subTest(link_type=link_type), self.assertRaises(CAPTURE.Blocked):
                 CAPTURE.assemble(self.config, SHA, self.observations,
-                                 operator, archive, self.output)
+                                 operator, archive, self.output, READER_IMAGE)
             self.assertFalse(self.output.exists())
         archive = self.archive("tenant.tar", self.tenant_files, "openclaw-agents",
                                UIDS["tenantPod"], {"gateway": UIDS["gateway"]})
@@ -400,7 +409,7 @@ class CaptureAssembler(unittest.TestCase):
             tar.addfile(info, io.BytesIO(b"x"))
         with self.assertRaises(CAPTURE.Blocked):
             CAPTURE.assemble(self.config, SHA, self.observations,
-                             operator, archive, self.output)
+                             operator, archive, self.output, READER_IMAGE)
         self.assertFalse(self.output.exists())
 
     def test_reader_manifest_mismatch_blocks_without_output(self):
@@ -419,7 +428,7 @@ class CaptureAssembler(unittest.TestCase):
                                  "bootstrap": UIDS["bootstrap"]})
         with self.assertRaises(CAPTURE.Blocked):
             CAPTURE.assemble(self.config, SHA, self.observations,
-                             operator, archive, self.output)
+                             operator, archive, self.output, READER_IMAGE)
         self.assertFalse(self.output.exists())
 
     def test_unmanifested_empty_directory_blocks_without_output(self):
@@ -437,7 +446,7 @@ class CaptureAssembler(unittest.TestCase):
             tar.addfile(info)
         with self.assertRaises(CAPTURE.Blocked):
             CAPTURE.assemble(self.config, SHA, self.observations,
-                             operator, tenant, self.output)
+                             operator, tenant, self.output, READER_IMAGE)
         self.assertFalse(self.output.exists())
 
     def test_cli_failure_does_not_print_private_diagnostics(self):
@@ -450,7 +459,8 @@ class CaptureAssembler(unittest.TestCase):
         tenant = self.archive("tenant.tar", self.tenant_files, "openclaw-agents",
                               UIDS["tenantPod"], {"gateway": UIDS["gateway"]})
         stderr = io.StringIO()
-        argv = ["--expected-sha", SHA, "--observations", str(observations),
+        argv = ["--expected-sha", SHA, "--expected-reader-image", READER_IMAGE,
+                "--observations", str(observations),
                 "--operator-archive", str(operator), "--tenant-archive", str(tenant),
                 "--output", str(self.output)]
         with patch.object(CAPTURE, "assemble", side_effect=CAPTURE.Blocked("private-secret")), \

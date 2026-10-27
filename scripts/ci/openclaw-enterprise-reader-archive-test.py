@@ -83,7 +83,7 @@ class ReaderArchive(unittest.TestCase):
         READER.emit(kind, SHA, pod_uid or UIDS[kind + "Pod"],
                     expected or self.expected[kind],
                     observation or self.observations[kind],
-                    self.roots[kind], output)
+                    self.roots[kind], output, FIXTURE.READER_IMAGE)
         return output.getvalue()
 
     def archive(self, kind):
@@ -96,7 +96,8 @@ class ReaderArchive(unittest.TestCase):
         operator = self.archive("operator")
         tenant = self.archive("tenant")
         marker = CAPTURE.assemble(self.fixture.config, SHA, self.fixture.observations,
-                                  operator, tenant, self.fixture.output)
+                                  operator, tenant, self.fixture.output,
+                                  FIXTURE.READER_IMAGE)
         self.assertFalse(marker["continuousFenceVerified"])
         self.assertEqual(marker["operatorReaderPodUid"], UIDS["operatorPod"])
         self.assertEqual(marker["tenantReaderPodUid"], UIDS["tenantPod"])
@@ -192,6 +193,7 @@ class ReaderArchive(unittest.TestCase):
         stdout = SimpleNamespace(buffer=io.BytesIO())
         stderr = io.StringIO()
         argv = ["--kind", "operator", "--source-sha", SHA,
+                "--expected-image", FIXTURE.READER_IMAGE,
                 "--reader-pod-uid", UIDS["operatorPod"],
                 "--journal-claim-uid", UIDS["journal"],
                 "--bootstrap-claim-uid", UIDS["bootstrap"]]
