@@ -186,6 +186,16 @@ with tempfile.TemporaryDirectory() as directory:
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    cluster = check.ROOT / "clusters/homelab/apps/example/values.yaml"
+    cluster.parent.mkdir(parents=True)
+    cluster.write_text("image: busybox:1.38\n")
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Non-Harbor Argo image:" in str(error)
+    else:
+        raise AssertionError("Public Argo image passed the desired-state gate")
+    cluster.unlink()
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source.replace("0b556", "0b557")}]}))
     try:
         check.check()

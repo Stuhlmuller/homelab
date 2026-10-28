@@ -187,6 +187,7 @@
             postgresql_18
             prometheus.cli
             python3
+            python3Packages.bc-python-hcl2
             regctl
             ripgrep
             ruff

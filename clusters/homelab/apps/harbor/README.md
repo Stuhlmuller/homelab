@@ -41,7 +41,12 @@ The PostSync bootstrap creates the private `homelab` project and reconciles:
 | `robot$mirror+publisher` | Pull/push within `mirror` | Protected upstream image copies |
 | `robot$mirror+pull` | Pull within `mirror` | Node registry authentication and publication receipt |
 
-Bootstrap and Harbor image references retain upstream names. The initial
+Bootstrap uses upstream image names. The steady-state Harbor Application uses
+explicit digest-pinned `harbor.stinkyboi.com/mirror/...` references after the
+node hostname route, complete authenticated pulls, and twelve-image node pre-pull.
+The protected Harbor cutover commit can be reverted through a protected PR to
+restore upstream GitOps references during registry recovery; the Talos rollback
+patch alone changes transport and does not rewrite Pod images. The initial
 `mirror` project stays public only while the dedicated pull robot is reconciled
 and each node's registry authentication is validated. A later reviewed privacy
 flip makes it private after every node can authenticate. Talos redirects pulls

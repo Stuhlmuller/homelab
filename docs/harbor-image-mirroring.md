@@ -79,12 +79,14 @@ Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.
 
-Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
-project. Repository and Pod image names retain upstream provenance; their bytes
-come from `harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>`.
-This covers Helm defaults, init containers, hooks, injected sidecars,
-operator-created Pods, Kubernetes static Pods, pause, kubelet and etcd without
-adding an admission webhook or rewriting controller-generated resources.
+Talos/containerd can redirect upstream system-image pulls to the Harbor
+`mirror` project. Argo-owned workload references instead name
+`harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>@sha256:<digest>`
+directly. The `homelab` project remains the destination for custom images.
+The scoped admission webhook rewrites reviewed controller-generated Pods in
+`octelium`, `monitoring`, and `ai`, including hardcoded Helm test hooks; unknown
+images are rejected. Argo CD's own control plane and Talos static/system images
+are outside this workload cutover.
 
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed
@@ -548,6 +550,54 @@ that same in-cluster registry: bootstrap their upstream images first, then
 enable the private hostname route and any separately reviewed strict mirrors.
 Cached restarts do not prove cold bootstrap. This change has no image-cache
 deletion or workload restart path.
+
+## Explicit Argo workload cutover
+
+Keep the stages as separate protected PRs: the node hostname route first,
+supporting Applications and the scoped admission service second, generated
+Octelium workloads third, and Harbor itself last. The route and catalog are
+prerequisites, not evidence that Pods use direct Harbor references. Run the
+protected `harbor-mirror.yml` `image_scope=all` workflow on exact current
+`main` after every catalog change; require successful source/destination
+digest and platform checks and full authenticated destination pulls before
+merging consumers. An earlier successful run covers only its unchanged bundle.
+
+The Argo source gate checks declared images and the render gate checks all
+chart and Kustomize sources, init containers and hooks. The
+[cutover audit ledger](harbor-argo-image-audit.md) keeps current and historical
+Pod counts separately. `image-rewrite` in `kube-system`
+has two replicas, a cert-manager-issued serving certificate and a fail-closed
+webhook scoped to `octelium`, `monitoring` and `ai`. It maps only catalog
+sources to pinned Harbor destinations, including ephemeral containers. It
+rejects unknown images; update `scripts/config/harbor-images.json` and the
+generated `clusters/homelab/platform/image-policy/images.json` together after
+review and publication. The hardcoded `busybox` Helm test hooks in Compass and
+LiteLLM are accepted by the render gate only because that namespace-scoped
+webhook rewrites their Pod image. Check both webhook replicas, Certificate
+readiness and the injected CA before the Octelium stage.
+
+Before the Harbor Application PR, on clean reviewed current `main`, pre-pull
+the twelve Harbor Application images through the private Harbor route
+onto all four nodes:
+
+```sh
+for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --talosctl /path/to/talosctl-1.11.3 \
+    --talosconfig /path/to/private/talosconfig \
+    --prepull-active-harbor-runtime --execute \
+    --expected-sha '<reviewed-main-sha>'
+done
+```
+
+Repeat without `--execute` immediately before merging Harbor. Each node must
+report twelve cached Harbor references. Check Argo Application sync/health,
+Deployment/StatefulSet/DaemonSet/CronJob/Job templates and current Pods after
+each stage. Retain completed and failed Pods in the audit ledger but exclude
+them from the current-workload count. Correlate a previously uncached node
+pull with Harbor registry access logs to prove the route. Test upstream
+recovery through a protected GitOps revert of the Harbor cutover PR; the Talos
+mirror rollback below is insufficient once Pod specs directly name Harbor.
 
 ## Initial secret plan scope
 

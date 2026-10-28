@@ -1,8 +1,8 @@
 {
-  "image": "docker.io/istio/pilot@sha256:cc661a8540a2cc459a29ba9ba832df542afcae90b52833ca81225b55f4def752",
+  "image": "harbor.stinkyboi.com/mirror/docker.io/istio/pilot:1.28.10-distroless@sha256:cc661a8540a2cc459a29ba9ba832df542afcae90b52833ca81225b55f4def752",
   "global": {
     "proxy": {
-      "image": "docker.io/istio/proxyv2@sha256:550b498e9cc350392e10cbe329111134d0e82c234a924fe17eebc65ddf6ffa73"
+      "image": "harbor.stinkyboi.com/mirror/docker.io/istio/proxyv2:1.28.10-distroless@sha256:550b498e9cc350392e10cbe329111134d0e82c234a924fe17eebc65ddf6ffa73"
     }
   }
 }
