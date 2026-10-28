@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f026c42993f134c95cd1aea643a2931bfa8b83c1930c93b658ffa991893edc3e",
+  "pageVersion": "sha256:9b184ed77e29d9be8c7e00cf45c78d937e1c2fac0d0e0184b0090b09479f0fbd",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
+          "version": "repo-file-v1:sha256:f3bbf9aa6148657fe6ab42872e089f5e6f6285a0d7e4da74719964d9e54ca2a0"
         }
       ]
     },
@@ -92,7 +92,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -191,7 +191,7 @@
           "version": "repo-lines-v1:sha256:ba9c47bd7b588eb40c7987e173bc49ac2dcdca77c3803cccc1acfa34f34716bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQ4ZDE0OGI4ZWU3NzBlMDQ2NDA5NTE3NGEwM2E1NmFiZmM4NTZmYTdhYjg0NWQxNDY1YzY0NzcyMjc0NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NGIyODhiMjk5NTc2ODQxMTc2YmM4ZTgxNDdjYmJhYjM1NTgwZmI2OGM1MjFkOTkxM2Y5ZDQ3ZmJiZWI2YjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmZGZjMTAwZmVkNTgxMjc2ZjBjMDQ5ZWEyMDkyMmIzZjBiZDNhZjRkODQwYWM2Mzc5NDFjZDFkYjE4NmI5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjc0N2E1MTcxZGQwOGMwMzc5YzdiZWEzZGYwYjIzZWM1NjRhZGQ4OTY3MTk4MDcyY2E1ZjYyZjFkNWFlMWUifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L699-L793",
+          "resource": "repo://policy/workflows.rego#L703-L797",
           "version": "repo-lines-v1:sha256:878ce88de52696eedf20590376360bcdc352b1972f6cae4ecd77db91d9d5ef66:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
         },
         {
@@ -254,7 +254,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -287,7 +287,7 @@
           "version": "repo-lines-v1:sha256:8262c5e3f51c69b969d5d15b29da28dd2bb9a0a4f013485dd0a2dd09bfa47f7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZWFlNDk2Yjc4ZmQ0OTU1ZGFiNThmNmFjMTJiNDcxMDg3ZWZmY2FkYjhjNGE1ZDc1OWE5YjczZDdjMWVhN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMzIwMjgwODNjNDdhNmQ5ZmE0YTY0NzFjZGFmMjY1OGJjNzA1ZTlkNTg2ZTY1MTZjNTdhNThmNjFhYmU2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlODA3MGYyNThkMzFhMjUxNmZjZDQzYWZlZjVmZjUyZDhlZDI3ZmJiMTY1MjBmZDc4ZjJlYmRmYjg3MGY1MWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjYmI2YjFiNzJkNzNmMDdkYzlmMTNlMTU0Y2JmMzk2MDI3ZWM4ZTA5NzhhZTRmZjgwMmZmYmQwOGRhNWM1NDMifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L681-L695",
+          "resource": "repo://policy/workflows.rego#L685-L699",
           "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
         },
         {
@@ -302,11 +302,11 @@
       "evidence": [
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
+          "version": "repo-file-v1:sha256:d89f42c0240dbd5d8d4279e378eba7a873b8b9c840ec9b4df0603d2b56baa167"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:f5bd86053e28019b39b4a2605fa53eca82cee411241306f9dcb337dcbafbed57"
+          "version": "repo-file-v1:sha256:e71e12c5bf9dd7f6e4c599d98a65a71d431506e62226f9f81df6d431c4894274"
         }
       ]
     },
@@ -396,13 +396,31 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
+          "version": "repo-file-v1:sha256:d89f42c0240dbd5d8d4279e378eba7a873b8b9c840ec9b4df0603d2b56baa167"
+        }
+      ]
+    },
+    {
+      "id": "claim_417b9d3e5ccb4495ae2445646cd122eb",
+      "statement": "The staged protected Platform Maintenance workflow selects a dedicated 9,000-second etcd-reader OIDC profile after its exact-main guard, verifies that role and pinned offsite versions before each Talos/Kubernetes mutation, and stops before a durable start marker if the reader fails; no role apply or live upgrade is proven.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml#L120-L157",
+          "version": "repo-lines-v1:sha256:370d8b19b3d6516417de6a2276c9801d3f920702b65f4d4692136fed6ef02347:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzMDk3NWM3ZTIwZWJhODg1N2VmZDMxZTYyYjY2NWY3ODdlNTE2NDE5NTFhNjYwNzg5ZmJhOTMzYTYzNDcyMTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMzJiOTg3MjYzZGYyMTYzZTcyNmQ0OGI5MmY2Zjk2NTE0OGNiNmI2ZDI4MzE3OTE1MTRjOTM5ZjgzN2ExNDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlOTI0MzcwYTY4ZDBlMTg5NDM2ZmY5NjRkYzQ1ZWNiYjRlNGJjOTk3ZTU1OTkyNGExNTkxNTI3MDJkMDg2N2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAwMmM2NjFlYjAwMmE1NGY5YmU5MTc1ZTQ5NmU4NDE0NGExZjE3YmQzYjUxYTdiYzU1NzE3MzRiZjY1OWEwNmYifQ"
+        },
+        {
+          "resource": "repo://docs/platform-maintenance-etcd-version-gate.md",
+          "version": "repo-file-v1:sha256:054fb03a2a91a4700f8b8f8434aa7b41df108363b2ec8f66fd88d166f17ef5c2"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L330-L441",
+          "version": "repo-lines-v1:sha256:0992674c3f475efc79b76b9b3a81633a8b1b47f823435609132f2b29e94674cd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlMGM3NThmZDQwNzliYTgxY2Q0YzM3NTA0NmM0ZjAxNDMwYjY0NTMyMmIxMjA1NjA0N2M1MjM0OWE3OWJkOWE4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZjMzMGU5YzFkOWIyYTQ4N2FiNjk2ZDcxODA3NGE5YWYxYzQ4NzVhNDE3NDZlYWFmZTEzOGQxYTc1OWEyYjNhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2YzE2NjM3Y2Y3NjIzNmRhYWE2NmYzOTdkMmRjMmFhMjNjNjkzZmEwNDg2OGQ0NjY0OTcwN2MyODRjNjNjNDNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNmY0MGRmZmZiZDM0MzI0YzY1ZDkzYTU0MjAxZTQ1ZGRiOTgyMWFkMjMxZGUzOTU1MTRmNzE2NzY4YThhY2Q4In0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:17:59.106Z"
+    "at": "2026-10-28T03:23:45.356Z"
   }
 }

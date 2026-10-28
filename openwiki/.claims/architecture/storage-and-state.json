@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a7a831847e9faa743a111e552e9347faa89ea07bad6ab320227167ed17d76d5",
+  "pageVersion": "sha256:9efe468c428ec5aad43deb585cc15decd60428d770bf5247f41f39a557fae855",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -341,10 +341,28 @@
           "version": "repo-file-v1:sha256:7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c"
         }
       ]
+    },
+    {
+      "id": "claim_e110e3df41d14d7c85a5e2ed2ace4f6c",
+      "statement": "The staged maintenance executor rechecks pinned offsite snapshot and manifest S3 versions, metadata and checksums immediately before each Talos and Kubernetes mutation, failing before its durable start marker on drift; this metadata gate does not replace byte-level readback, offline restore or bootable control-plane proof.",
+      "evidence": [
+        {
+          "resource": "repo://docs/platform-maintenance-etcd-version-gate.md",
+          "version": "repo-file-v1:sha256:054fb03a2a91a4700f8b8f8434aa7b41df108363b2ec8f66fd88d166f17ef5c2"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L330-L441",
+          "version": "repo-lines-v1:sha256:0992674c3f475efc79b76b9b3a81633a8b1b47f823435609132f2b29e94674cd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlMGM3NThmZDQwNzliYTgxY2Q0YzM3NTA0NmM0ZjAxNDMwYjY0NTMyMmIxMjA1NjA0N2M1MjM0OWE3OWJkOWE4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZjMzMGU5YzFkOWIyYTQ4N2FiNjk2ZDcxODA3NGE5YWYxYzQ4NzVhNDE3NDZlYWFmZTEzOGQxYTc1OWEyYjNhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2YzE2NjM3Y2Y3NjIzNmRhYWE2NmYzOTdkMmRjMmFhMjNjNjkzZmEwNDg2OGQ0NjY0OTcwN2MyODRjNjNjNDNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNmY0MGRmZmZiZDM0MzI0YzY1ZDkzYTU0MjAxZTQ1ZGRiOTgyMWFkMjMxZGUzOTU1MTRmNzE2NzY4YThhY2Q4In0"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L950-L1040",
+          "version": "repo-lines-v1:sha256:1680f18e7a26a5106ba014b3643e58b6e3412d3fd5d78be78165dd2b60a96082:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlZDdjYTc2MGZmZTU4NDljNmI5NDFjOWQ4YmRjYTJlMzBlMmJkYWIyYmZlOTM4ZDJlOTM0NzBlNzU3MzhkNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNzA3MjkyZWEyNTVkNTEzMDVjMzQ2Y2ViOWM1MWUzMWViYTM2MWNiYWQ1YzBlODk4NWVhMjYwMThmYWM3YmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1ZWQ3NjY3MzFiYmRmMjBiZGRiY2UyOGNmZWY4NmM2YjQxNDE1OGIxOWU2NTZlMzcyZWZjYWJjYmNjYzllYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzM5OWNkYzUyM2EzMjg1ZjgwNjBhYzYxYTEzNGZiOGIzNjQxYmY2MjlhNzZhODUwMGYwOTMxOGQ0YWYzNGYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:17:59.106Z"
+    "at": "2026-10-28T03:23:45.356Z"
   }
 }

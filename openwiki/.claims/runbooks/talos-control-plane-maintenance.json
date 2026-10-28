@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2cb4e57f85dfca6c6f80bb4fffbe84a7a80b5c1ce77f9d464dbfcd9aa4d8e843",
+  "pageVersion": "sha256:0fe866e6d453a219d9e4d70f9fb75c714cb61cb18f3a716155b7efddf580de76",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -80,7 +80,7 @@
         },
         {
           "resource": "repo://scripts/platform-maintenance.py",
-          "version": "repo-file-v1:sha256:45bae2e4ca143e1d81dd36ae314eec4a61fd51b67f7c4da3405b12602f859f9f"
+          "version": "repo-file-v1:sha256:bd1456a5dbae54a9d5a920231374731b38e1136f6b05e25279f6b5f535ce7b21"
         }
       ]
     },
@@ -90,7 +90,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -134,7 +134,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/platform-maintenance-test.py",
-          "version": "repo-file-v1:sha256:da54c743d37f792d062d73be7acbcdbe4caaceda210ece0c43297d6c98be44ab"
+          "version": "repo-file-v1:sha256:35263b311e77fbc137f07c80fc4983e3d3f9df5498c87cf202dd178944546b56"
         },
         {
           "resource": "repo://scripts/config/platform-maintenance.json",
@@ -142,7 +142,7 @@
         },
         {
           "resource": "repo://scripts/platform-maintenance.py",
-          "version": "repo-file-v1:sha256:45bae2e4ca143e1d81dd36ae314eec4a61fd51b67f7c4da3405b12602f859f9f"
+          "version": "repo-file-v1:sha256:bd1456a5dbae54a9d5a920231374731b38e1136f6b05e25279f6b5f535ce7b21"
         }
       ]
     },
@@ -155,11 +155,11 @@
           "version": "repo-lines-v1:sha256:5524801df2b9518ffb02c5bf53c72b7ee183cd1863a9e8fe84a673cb2de0db65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
-          "resource": "repo://scripts/ci/platform-maintenance-test.py#L1006-L1086",
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L1133-L1213",
           "version": "repo-lines-v1:sha256:4ccb1c85028c8db039eaec2d99492d183e523823f46817ece3da7b3a547af4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YzhkY2Q2MzI5M2E1OTczZDMyNjMwNjJmYTM2MjViNjVhMGE3MGJhNmExZDVjYmFmNGNhMjdmNWUxZDE4N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmJiYTM4YTA0MWE5ZjdhOTdjZDlkZTRkN2U0YWUwYTZhYmRmOGJkZTFkNTNiYWFiNDJhNjdmZjUwODBmNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjYwNTdmNGQzNTdmNGE2NjFjODVmNzMyZmU5ZDY0MDIwMjRjOTYzYjQ2ZTkwY2EwNjEyZmQxMjMzZDQ5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2MTdhZmI4YjQxZmNkN2FlMDFlYjRlMTM0YTA3N2Q5NDA0NWJjNTMwYjhiNzVmZjJmNTIxZmI1NWM2M2YwMGYifQ"
         },
         {
-          "resource": "repo://scripts/platform-maintenance.py#L610-L698",
+          "resource": "repo://scripts/platform-maintenance.py#L714-L802",
           "version": "repo-lines-v1:sha256:45f630b8ea44c02806fabc6b01460d26740c9439ee9d12b717411b9066b52d28:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExOGVmYTc2OWZjNGQ0NTBiNTNlMzcxYzZjYjJkNzlkMGQ0YTdmZmU4ZDBlOTc3OTA0ZTcyODZhODdmN2UwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYzJiOWZlMTUzYWVjYWYyZjljYWI0NzVmNjMwOTExY2Q4NzBjNWQ3YjZlYTU3YjZjMzRlYTkzNWQ2YzdjZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhMWEwM2RjOGNkNTM5YTFjOTNmODI0MDViODZhNGY1ZmM5ZTJlMGVmYTgxYTM4YmQ3MGE3MmQyNDdkMGExNDQifQ"
         }
       ]
@@ -217,10 +217,28 @@
           "version": "repo-file-v1:sha256:7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c"
         }
       ]
+    },
+    {
+      "id": "claim_dce05043eeb144988c4f22d506089bef",
+      "statement": "The staged Talos/Kubernetes executor rechecks exact offsite snapshot and manifest versions, checksums and bucket protection immediately before each mutation and stops before a durable marker on drift or reader failure; it does not repeat byte-level restore or establish a bootable control-plane recovery.",
+      "evidence": [
+        {
+          "resource": "repo://docs/platform-maintenance-etcd-version-gate.md",
+          "version": "repo-file-v1:sha256:054fb03a2a91a4700f8b8f8434aa7b41df108363b2ec8f66fd88d166f17ef5c2"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L330-L441",
+          "version": "repo-lines-v1:sha256:0992674c3f475efc79b76b9b3a81633a8b1b47f823435609132f2b29e94674cd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlMGM3NThmZDQwNzliYTgxY2Q0YzM3NTA0NmM0ZjAxNDMwYjY0NTMyMmIxMjA1NjA0N2M1MjM0OWE3OWJkOWE4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZjMzMGU5YzFkOWIyYTQ4N2FiNjk2ZDcxODA3NGE5YWYxYzQ4NzVhNDE3NDZlYWFmZTEzOGQxYTc1OWEyYjNhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2YzE2NjM3Y2Y3NjIzNmRhYWE2NmYzOTdkMmRjMmFhMjNjNjkzZmEwNDg2OGQ0NjY0OTcwN2MyODRjNjNjNDNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNmY0MGRmZmZiZDM0MzI0YzY1ZDkzYTU0MjAxZTQ1ZGRiOTgyMWFkMjMxZGUzOTU1MTRmNzE2NzY4YThhY2Q4In0"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L950-L1040",
+          "version": "repo-lines-v1:sha256:1680f18e7a26a5106ba014b3643e58b6e3412d3fd5d78be78165dd2b60a96082:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlZDdjYTc2MGZmZTU4NDljNmI5NDFjOWQ4YmRjYTJlMzBlMmJkYWIyYmZlOTM4ZDJlOTM0NzBlNzU3MzhkNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNzA3MjkyZWEyNTVkNTEzMDVjMzQ2Y2ViOWM1MWUzMWViYTM2MWNiYWQ1YzBlODk4NWVhMjYwMThmYWM3YmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1ZWQ3NjY3MzFiYmRmMjBiZGRiY2UyOGNmZWY4NmM2YjQxNDE1OGIxOWU2NTZlMzcyZWZjYWJjYmNjYzllYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzM5OWNkYzUyM2EzMjg1ZjgwNjBhYzYxYTEzNGZiOGIzNjQxYmY2MjlhNzZhODUwMGYwOTMxOGQ0YWYzNGYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:17:59.106Z"
+    "at": "2026-10-28T03:23:45.356Z"
   }
 }
