@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a91ef0d2b761dd05eb17f701df8278023d92501e1b72536cc65f488c75f8e997",
+  "pageVersion": "sha256:01b098fd03d21fc06f87baab5f3d17242a149a1b4357d519aaa2a2949b740659",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,11 +8,11 @@
       "evidence": [
         {
           "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:6737df409a10ba2e69d3e6e19128734679d28d48a78b31514107ad16dc574184"
+          "version": "repo-file-v1:sha256:9d74896c117ecad19849a7dc462fdb8dbd243166f90f28f70082dbd78ff30f38"
         },
         {
           "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf",
-          "version": "repo-file-v1:sha256:a252bd4eb32ef86b5c10c3d33be6db8357b054e3e03f990e6d7387154f3d0512"
+          "version": "repo-file-v1:sha256:75fe9d47c5700e7b4ea37b46e9f915698c78f7feb4df5b1ae46087926240415a"
         },
         {
           "resource": "repo://IaC/traefik/stack.hcl",
@@ -101,10 +101,28 @@
           "version": "repo-file-v1:sha256:5d1ea47ef327933bfaa51615ae3d29ead6b462a1f15aa3a83adb66abc4173f23"
         }
       ]
+    },
+    {
+      "id": "claim_2f297b670729448ab00f9626104df9d4",
+      "statement": "The operator-only Tailscale Terragrunt unit adopts the existing tailnet policy, DNS configuration, tailnet settings, and contacts into encrypted state and uses private OAuth credentials separate from the Kubernetes operator.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:9d74896c117ecad19849a7dc462fdb8dbd243166f90f28f70082dbd78ff30f38"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf",
+          "version": "repo-file-v1:sha256:75fe9d47c5700e7b4ea37b46e9f915698c78f7feb4df5b1ae46087926240415a"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:377d55df41907934770e56cf8e53113ef3630fe3a1f83db3825202990bb7d82c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-20T19:18:26.448Z"
+    "at": "2026-10-25T01:38:00.583Z"
   }
 }
