@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f95852d9ddc2701f295d36e339cab0800b7d03ea707e2658e9ee3646ea7c7d1b",
+  "pageVersion": "sha256:b9200881fd9d7dd5e6424cee60974d93dc814d2fef39b270c1f3c5b35d9ba076",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -272,7 +272,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
@@ -407,10 +407,28 @@
           "version": "repo-file-v1:sha256:7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c"
         }
       ]
+    },
+    {
+      "id": "claim_26b57ae5c0ad4aeab679ff9ce7759338",
+      "statement": "The source map routes the staged exact-version maintenance gate and its dedicated raw etcd reader module/unit to Talos maintenance, identity, storage and offline validation owners; the source does not establish an applied role or live upgrade.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-platform-etcd-reader/main.tf",
+          "version": "repo-file-v1:sha256:236edb277bdf06aa9b7025f53a022510228ca376caf1beb2f6306cd0adc3d247"
+        },
+        {
+          "resource": "repo://docs/platform-maintenance-etcd-version-gate.md",
+          "version": "repo-file-v1:sha256:054fb03a2a91a4700f8b8f8434aa7b41df108363b2ec8f66fd88d166f17ef5c2"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L330-L441",
+          "version": "repo-lines-v1:sha256:0992674c3f475efc79b76b9b3a81633a8b1b47f823435609132f2b29e94674cd:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlMGM3NThmZDQwNzliYTgxY2Q0YzM3NTA0NmM0ZjAxNDMwYjY0NTMyMmIxMjA1NjA0N2M1MjM0OWE3OWJkOWE4IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZjMzMGU5YzFkOWIyYTQ4N2FiNjk2ZDcxODA3NGE5YWYxYzQ4NzVhNDE3NDZlYWFmZTEzOGQxYTc1OWEyYjNhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2YzE2NjM3Y2Y3NjIzNmRhYWE2NmYzOTdkMmRjMmFhMjNjNjkzZmEwNDg2OGQ0NjY0OTcwN2MyODRjNjNjNDNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzNmY0MGRmZmZiZDM0MzI0YzY1ZDkzYTU0MjAxZTQ1ZGRiOTgyMWFkMjMxZGUzOTU1MTRmNzE2NzY4YThhY2Q4In0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:17:59.106Z"
+    "at": "2026-10-28T03:23:45.356Z"
   }
 }

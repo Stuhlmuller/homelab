@@ -40,6 +40,7 @@ class PlatformMaintenance(unittest.TestCase):
         self.machine_state_function = self.module.active_machine_state
         self.mirror_tag_function = self.module.verify_kubernetes_mirror_tags
         self.istio_target_function = self.module.verify_live_istio_target
+        self.offsite_versions_function = self.module.verify_offsite_versions
         mirrors = {registry: {"endpoints": [
             f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
             "overridePath": True, "skipFallback": True}
@@ -50,6 +51,7 @@ class PlatformMaintenance(unittest.TestCase):
             ("verify_kubernetes_mirror_routes", {}),
             ("verify_kubernetes_mirror_tags", {}),
             ("verify_live_istio_target", {}),
+            ("verify_offsite_versions", {}),
         ):
             replacement = patch.object(self.module, name, **kwargs)
             replacement.start()
@@ -69,7 +71,15 @@ class PlatformMaintenance(unittest.TestCase):
             "off-node-etcd-backup": {"sourceSha": sha, "verified": True,
                                      "capturedAt": captured, "offNode": True,
                                      "offlineRestoreVerified": True,
-                                     "snapshotSha256": "a" * 64, "objectVersionId": "version-1"},
+                                     "offsiteBucket": self.module.ETCD_BUCKET,
+                                     "snapshotSha256": "a" * 64,
+                                     "snapshotKey": f"etcd/{'a' * 64}/{'b' * 32}/etcd.snapshot",
+                                     "objectVersionId": "snapshot-version-1",
+                                     "snapshotBytes": 1048576,
+                                     "manifestKey": f"etcd/{'a' * 64}/{'b' * 32}/manifest.json",
+                                     "manifestVersionId": "manifest-version-1",
+                                     "manifestSha256": "c" * 64,
+                                     "manifestBytes": 4096},
             "artifact-publication": {"sourceSha": sha, "verified": True,
                                      "talosImages": {f"talos-{item['to']}": item["installerImage"]
                                                      for item in config["talosStages"]},
@@ -607,6 +617,98 @@ class PlatformMaintenance(unittest.TestCase):
                     self.config, stage, sha, Path("/private/talosconfig"), Path(directory), store)
         self.assertEqual(commands, [])
 
+    def test_exact_offsite_versions_use_scoped_profile_and_scrub_shared_credentials(self):
+        sha = "a" * 40
+        receipt = self.prerequisites(sha)["off-node-etcd-backup"]
+        calls = []
+
+        def fake_run(command, **kwargs):
+            calls.append(command)
+            self.assertEqual(command[:6], ["aws", "--profile", "oce-platform-etcd-reader",
+                                           "--region", "us-east-1", "--endpoint-url"])
+            self.assertNotIn("AWS_ACCESS_KEY_ID", kwargs["env"])
+            self.assertNotIn("HTTPS_PROXY", kwargs["env"])
+            service = "sts" if "sts" in command else "s3api"
+            operation = command[command.index(service) + 1]
+            if operation == "get-caller-identity":
+                body = {"Account": "716182248480", "Arn":
+                        "arn:aws:sts::716182248480:assumed-role/"
+                        "homelab-platform-etcd-reader/homelab-etcd-read-123"}
+            elif operation == "get-bucket-versioning":
+                body = {"Status": "Enabled"}
+            elif operation == "get-bucket-encryption":
+                body = {"ServerSideEncryptionConfiguration": {"Rules": [{
+                    "ApplyServerSideEncryptionByDefault": {
+                        "SSEAlgorithm": "aws:kms",
+                        "KMSMasterKeyID": "arn:aws:kms:us-east-1:716182248480:alias/aws/s3"},
+                    "BucketKeyEnabled": True}]}}
+            else:
+                key = command[command.index("--prefix") + 1] if operation == "list-object-versions" else command[command.index("--key") + 1]
+                snapshot = key == receipt["snapshotKey"]
+                version = receipt["objectVersionId" if snapshot else "manifestVersionId"]
+                if operation == "list-object-versions":
+                    body = {"IsTruncated": False, "DeleteMarkers": [], "Versions": [
+                        {"Key": key, "VersionId": version, "IsLatest": True}]}
+                else:
+                    digest = receipt["snapshotSha256" if snapshot else "manifestSha256"]
+                    size = receipt["snapshotBytes" if snapshot else "manifestBytes"]
+                    body = {"VersionId": version, "ContentLength": size,
+                            "ChecksumSHA256": base64.b64encode(bytes.fromhex(digest)).decode(),
+                            "ServerSideEncryption": "aws:kms", "BucketKeyEnabled": True,
+                            "SSEKMSKeyId": "arn:aws:kms:us-east-1:716182248480:key/test-key"}
+            return subprocess.CompletedProcess(command, 0, json.dumps(body), "")
+
+        context = {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main",
+                   "GITHUB_SHA": sha, "GITHUB_WORKFLOW": "Platform Maintenance",
+                   "GITHUB_ACTOR_ID": "57728706", "GITHUB_RUN_ATTEMPT": "1",
+                   "GITHUB_RUN_ID": "123", "AWS_ACCESS_KEY_ID": "shared-test-key",
+                   "HTTPS_PROXY": "https://example.invalid"}
+        with patch.dict(os.environ, context), \
+                patch.object(self.module.subprocess, "run", side_effect=fake_run):
+            self.offsite_versions_function(receipt, sha)
+        self.assertEqual(len(calls), 7)
+        self.assertEqual([command[command.index("s3api") + 1] for command in calls[1:]],
+                         ["get-bucket-versioning", "get-bucket-encryption",
+                          "list-object-versions", "head-object",
+                          "list-object-versions", "head-object"])
+        self.assertTrue(all("--expected-bucket-owner" in command for command in calls[1:]))
+
+        def changed_checksum(command, **kwargs):
+            response = fake_run(command, **kwargs)
+            if "head-object" not in command:
+                return response
+            metadata = json.loads(response.stdout)
+            metadata["ChecksumSHA256"] = "unexpected-checksum"
+            return subprocess.CompletedProcess(command, 0, json.dumps(metadata), "")
+
+        with patch.dict(os.environ, context), \
+                patch.object(self.module.subprocess, "run", side_effect=changed_checksum), \
+                self.assertRaisesRegex(ValueError, "checksum or KMS state differs"):
+            self.offsite_versions_function(receipt, sha)
+
+    def test_offsite_version_failure_blocks_talos_before_start_marker(self):
+        sha, stage = "a" * 40, "talos-1.11.6"
+        state = {node: {"talos": "1.11.3", "kubelet": "v1.34.11", "ready": True,
+                        "bootID": "boot"} for node in self.config["nodeOrder"]}
+        store = unittest.mock.Mock()
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main",
+                                     "GITHUB_SHA": sha}), \
+                patch.object(self.module, "read_only_inspection", return_value={"nodes": state}), \
+                patch.object(self.module, "cluster_health"), \
+                patch.object(self.module, "current_main_sha", return_value=sha), \
+                patch.object(self.module, "verify_offsite_versions",
+                             side_effect=ValueError("source version unavailable")), \
+                patch.object(self.module.subprocess, "run") as run:
+            self.write_publication(directory, sha)
+            with self.assertRaisesRegex(ValueError, "source version unavailable"):
+                self.module.execute_talos_stage(
+                    self.config, stage, sha, Path("/private/talosconfig"), Path(directory), store)
+            self.assertFalse(self.module.node_receipt_path(Path(directory), stage,
+                          self.config["nodeOrder"][0]).exists())
+            store.write.assert_not_called()
+            run.assert_not_called()
+
     def test_durable_start_failure_prevents_kubernetes_command(self):
         sha, stage = "a" * 40, "kubernetes-1.35.9"
         state = {node: {"talos": "1.14.4", "kubelet": "v1.34.11", "ready": True,
@@ -752,6 +854,7 @@ class PlatformMaintenance(unittest.TestCase):
                              [self.config["expectedStart"]["nodes"][node]["address"]
                               for node in self.config["nodeOrder"]])
             self.assertEqual(len(receipt["nodes"]), 4)
+            self.assertEqual(self.module.verify_offsite_versions.call_count, 4)
             self.assertEqual(events, [event for node in self.config["nodeOrder"]
                                       for event in ((node, "started"), (node, "upgrade"),
                                                     (node, "verified"))] + [(None, "verified")])
@@ -863,11 +966,35 @@ class PlatformMaintenance(unittest.TestCase):
                 receipt = self.module.execute_kubernetes_stage(
                     self.config, stage, sha, Path("/private/talosconfig"), path, store)
             self.assertEqual(len(commands), 1)
+            self.module.verify_offsite_versions.assert_called_once()
             self.assertEqual(events[:2], [(None, "started"), (None, "upgrade")])
             self.assertEqual(events[-1], (None, "verified"))
             self.assertTrue(receipt["verified"])
             self.module.verify_stage_receipt(self.config, stage, receipt, path)
             self.assertEqual(len(receipt["nodes"]), 4)
+
+    def test_offsite_version_failure_blocks_kubernetes_before_start_marker(self):
+        sha, stage = "a" * 40, "kubernetes-1.35.9"
+        state = {node: {"talos": "1.14.4", "kubelet": "v1.34.11", "ready": True,
+                        "bootID": "boot"} for node in self.config["nodeOrder"]}
+        store = unittest.mock.Mock()
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main",
+                                     "GITHUB_SHA": sha}), \
+                patch.object(self.module, "read_only_inspection", return_value={"nodes": state}), \
+                patch.object(self.module, "kubernetes_server_version", return_value="1.34.11"), \
+                patch.object(self.module, "cluster_health"), \
+                patch.object(self.module, "current_main_sha", return_value=sha), \
+                patch.object(self.module, "verify_offsite_versions",
+                             side_effect=ValueError("source version unavailable")), \
+                patch.object(self.module.subprocess, "run") as run:
+            self.write_publication(directory, sha)
+            with self.assertRaisesRegex(ValueError, "source version unavailable"):
+                self.module.execute_kubernetes_stage(
+                    self.config, stage, sha, Path("/private/talosconfig"), Path(directory), store)
+            self.assertFalse((Path(directory) / f"{stage}.json").exists())
+            store.write.assert_not_called()
+            run.assert_not_called()
 
     def test_kubernetes_interruption_cannot_reinvoke_upgrade(self):
         sha, stage = "a" * 40, "kubernetes-1.35.9"

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:75b7bf43f49205dbd3d0b7145fa880f323f1f68b793a4574fc4d55259ac83ce8",
+  "pageVersion": "sha256:a349cc7c16ff5931ac9f0568ac7448011d5005371a082bda89a1ea8703dd3068",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
+          "version": "repo-file-v1:sha256:f3bbf9aa6148657fe6ab42872e089f5e6f6285a0d7e4da74719964d9e54ca2a0"
         }
       ]
     },
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
+          "version": "repo-file-v1:sha256:d89f42c0240dbd5d8d4279e378eba7a873b8b9c840ec9b4df0603d2b56baa167"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py#L964-L990",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
+          "version": "repo-file-v1:sha256:f3bbf9aa6148657fe6ab42872e089f5e6f6285a0d7e4da74719964d9e54ca2a0"
         }
       ]
     },
@@ -884,7 +884,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -895,8 +895,8 @@
           "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
         },
         {
-          "resource": "repo://scripts/platform-maintenance.py#L208-L353",
-          "version": "repo-lines-v1:sha256:f23092fdf222d34cc5556fef096f466ce2e41d5f2d33087061c8be5061e8ee7d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYTMyZjcxZmUxNjk5MTM0ZTJmOTVmYmQ3Y2U3MTc2YzM2M2UwYjkyMjhjNjQ0MGM5M2M1ZTMxNDZkMWI5YWRjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJiNjk1ODExZDYyYmM3OWZmNzg0YTNlYjI4ZmRmNThjNzVhYTg2Mzk3ZmVhZTUwZjcwZmE2MWY0MmQ4OGI5MmU4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjMzBiOGU0YmM4MTQ2ODdiY2Y5YTQ3Njc5ZmQyZjM3OWE1ZWNhODAyZDY4YTViZjBjNzI1N2QwMWVhOTI0YjIxIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzM2N2NhZGM2MDI1MjVhODcxODZkZTY4ODcwMGMxMTA3MjdlMjE4MzY4MDBiZmRjZjdkYzljNWNlODAxMjVkIn0"
+          "resource": "repo://scripts/platform-maintenance.py#L211-L457",
+          "version": "repo-lines-v1:sha256:8873a512a92d1b81789df4e93ee603302aeb2386384ae0fff8add739987da7ab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQ3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYTMyZjcxZmUxNjk5MTM0ZTJmOTVmYmQ3Y2U3MTc2YzM2M2UwYjkyMjhjNjQ0MGM5M2M1ZTMxNDZkMWI5YWRjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJiNjk1ODExZDYyYmM3OWZmNzg0YTNlYjI4ZmRmNThjNzVhYTg2Mzk3ZmVhZTUwZjcwZmE2MWY0MmQ4OGI5MmU4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJjMzBiOGU0YmM4MTQ2ODdiY2Y5YTQ3Njc5ZmQyZjM3OWE1ZWNhODAyZDY4YTViZjBjNzI1N2QwMWVhOTI0YjIxIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzM2N2NhZGM2MDI1MjVhODcxODZkZTY4ODcwMGMxMTA3MjdlMjE4MzY4MDBiZmRjZjdkYzljNWNlODAxMjVkIn0"
         }
       ]
     },
@@ -1138,7 +1138,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
+          "version": "repo-file-v1:sha256:f3bbf9aa6148657fe6ab42872e089f5e6f6285a0d7e4da74719964d9e54ca2a0"
         }
       ]
     },
@@ -1551,11 +1551,11 @@
           "version": "repo-lines-v1:sha256:5524801df2b9518ffb02c5bf53c72b7ee183cd1863a9e8fe84a673cb2de0db65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
-          "resource": "repo://scripts/ci/platform-maintenance-test.py#L1006-L1086",
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L1133-L1213",
           "version": "repo-lines-v1:sha256:4ccb1c85028c8db039eaec2d99492d183e523823f46817ece3da7b3a547af4a0:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0YzhkY2Q2MzI5M2E1OTczZDMyNjMwNjJmYTM2MjViNjVhMGE3MGJhNmExZDVjYmFmNGNhMjdmNWUxZDE4N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMmJiYTM4YTA0MWE5ZjdhOTdjZDlkZTRkN2U0YWUwYTZhYmRmOGJkZTFkNTNiYWFiNDJhNjdmZjUwODBmNGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjYwNTdmNGQzNTdmNGE2NjFjODVmNzMyZmU5ZDY0MDIwMjRjOTYzYjQ2ZTkwY2EwNjEyZmQxMjMzZDQ5YTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2MTdhZmI4YjQxZmNkN2FlMDFlYjRlMTM0YTA3N2Q5NDA0NWJjNTMwYjhiNzVmZjJmNTIxZmI1NWM2M2YwMGYifQ"
         },
         {
-          "resource": "repo://scripts/platform-maintenance.py#L610-L698",
+          "resource": "repo://scripts/platform-maintenance.py#L714-L802",
           "version": "repo-lines-v1:sha256:45f630b8ea44c02806fabc6b01460d26740c9439ee9d12b717411b9066b52d28:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExOGVmYTc2OWZjNGQ0NTBiNTNlMzcxYzZjYjJkNzlkMGQ0YTdmZmU4ZDBlOTc3OTA0ZTcyODZhODdmN2UwZWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRlYzJiOWZlMTUzYWVjYWYyZjljYWI0NzVmNjMwOTExY2Q4NzBjNWQ3YjZlYTU3YjZjMzRlYTkzNWQ2YzdjZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhMWEwM2RjOGNkNTM5YTFjOTNmODI0MDViODZhNGY1ZmM5ZTJlMGVmYTgxYTM4YmQ3MGE3MmQyNDdkMGExNDQifQ"
         }
       ]
@@ -1573,7 +1573,7 @@
           "version": "repo-lines-v1:sha256:8262c5e3f51c69b969d5d15b29da28dd2bb9a0a4f013485dd0a2dd09bfa47f7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZWFlNDk2Yjc4ZmQ0OTU1ZGFiNThmNmFjMTJiNDcxMDg3ZWZmY2FkYjhjNGE1ZDc1OWE5YjczZDdjMWVhN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMzIwMjgwODNjNDdhNmQ5ZmE0YTY0NzFjZGFmMjY1OGJjNzA1ZTlkNTg2ZTY1MTZjNTdhNThmNjFhYmU2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlODA3MGYyNThkMzFhMjUxNmZjZDQzYWZlZjVmZjUyZDhlZDI3ZmJiMTY1MjBmZDc4ZjJlYmRmYjg3MGY1MWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjYmI2YjFiNzJkNzNmMDdkYzlmMTNlMTU0Y2JmMzk2MDI3ZWM4ZTA5NzhhZTRmZjgwMmZmYmQwOGRhNWM1NDMifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L681-L695",
+          "resource": "repo://policy/workflows.rego#L685-L699",
           "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
         },
         {
@@ -1592,11 +1592,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
+          "version": "repo-file-v1:sha256:d89f42c0240dbd5d8d4279e378eba7a873b8b9c840ec9b4df0603d2b56baa167"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:f5bd86053e28019b39b4a2605fa53eca82cee411241306f9dcb337dcbafbed57"
+          "version": "repo-file-v1:sha256:e71e12c5bf9dd7f6e4c599d98a65a71d431506e62226f9f81df6d431c4894274"
         }
       ]
     },
@@ -1688,7 +1688,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/platform-maintenance.yml",
-          "version": "repo-file-v1:sha256:bf9d9c266bbe258082c5035945cd77ea10dd21c0e2e51794c3550ababd2dbda9"
+          "version": "repo-file-v1:sha256:afb776cb9a9180f0aff19d8c4fb7fa78e5977a7adf2962b135e938e135790cdf"
         },
         {
           "resource": "repo://scripts/ci/network-policy-registration-test.py",
@@ -1980,17 +1980,39 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
+          "version": "repo-file-v1:sha256:d89f42c0240dbd5d8d4279e378eba7a873b8b9c840ec9b4df0603d2b56baa167"
         },
         {
           "resource": "repo://scripts/ci/platform-recovery-receipt-publish-test.py#L135-L245",
           "version": "repo-lines-v1:sha256:12c4155384c71fab417f21b391441b62883e2eae2e50817591e34988818fbd70:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiOGEwMTk5NDZiMTFjYjQ4ODhmNjFhMWVmYTc1ZmVlNTk2ZmNkMDAyNTExNDBlNDg1MTAxNmRjNDkzYzdkYzAyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDg2ZmY1Y2Y5MzYzYjQ0MjkzMzY4MDNiMmM5NjBlNzNkYThjNDdmYTBjNmY2NzY1OGQxNGIzMjNjZDIyZDM0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOWY2YTg5ZTUwNDk4Y2Q0YTViMjczNjMyYzZhYmZkY2MxNGM2MmYxZDcyNDlkNjI5Y2IzNTQyMDc1ZmVhMWRlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkZTkzZDg5MzkwNmVlYWYyY2FkY2M2NTU4NTk3YmQ5MzMwZTJlYjY5ZGZiNjBhOWM4MTc1MjE4NTI3ZTcyNjgxIn0"
         }
       ]
+    },
+    {
+      "id": "claim_3e9ec6be2ef2456a94969bdf646daf50",
+      "statement": "Source fixtures require a scoped AWS profile and exact offsite etcd snapshot/manifest version, metadata, checksum and current receipt SHA before any durable start marker or Talos/Kubernetes mutation; the module's plan tests and workflow policy do not prove a deployed role, byte-level restore or live upgrade.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-platform-etcd-reader/reader.tftest.hcl",
+          "version": "repo-file-v1:sha256:3a74f7926341248ff670a0330f1e87852f673a151c5a424641cc6e91d2b1f260"
+        },
+        {
+          "resource": "repo://docs/platform-maintenance-etcd-version-gate.md",
+          "version": "repo-file-v1:sha256:054fb03a2a91a4700f8b8f8434aa7b41df108363b2ec8f66fd88d166f17ef5c2"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L620-L711",
+          "version": "repo-lines-v1:sha256:630d0513c036e9b4d180bc75541567aab386166d3f0a5c15ff067c61d9543791:eyJzZWxlY3RlZExpbmVDb3VudCI6OTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMzEwM2QzY2JhYzk1OWZjOGI2ZmRlMmE1OWEzODkzN2MxYzhjNzIxM2UzZTk2MmIyMzdiYjg2Nzk1MDhmOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyZjUxZDNmYWZmMWJiM2I4ODQyZWUzYmJjZjhkYzNlMTMyNmI0ZmFjMzU4OWFiYTllNTE4NjIyMTMxNThjZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJlOGQ1YzQwODYyNjdmMjU3ZThjYjQwMjEyNTYyYjNiZGY0MjNkYzJhOTcxNGYzYzFkZGQyOThlNTUyYzJkZDkifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-test.py#L976-L998",
+          "version": "repo-lines-v1:sha256:aa2a404082b4b3d596d1a6beadcc999de5d57f8394a57bb0babb3f5badbd021d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3N2NlNDUzZTdiZDc1MzRiYTU2YjFhMzk0MDk0ZmY4OGNhYzk0Nzc5YWFhMzZmNzljNWQ2ZGVlNDAyYzdlNTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2NDY2Nzg3M2M0ZTliMmUwNjY2N2IyMjI0ZTRjNTlmM2IwZjJjZjlmNWNhNjYxZGEwNTc2ODIwMWQ5Yzc4M2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3NWVjMTdkODBiMmMyMDc1Y2M3Y2Y4YTRhYWVhZDMzZTlkNmUzYWY1MzU5OTQyZTliY2RlY2E1ZWNiNzlhYzQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:17:59.106Z"
+    "at": "2026-10-28T03:23:45.356Z"
   }
 }

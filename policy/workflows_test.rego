@@ -226,11 +226,15 @@ test_rejects_platform_workflow_run_shell_default if {
 test_rejects_changed_platform_actions_and_credentials if {
 	steps := platform_maintenance_fixture.jobs.maintenance.steps
 	every candidate_steps in [
-		[steps[0], object.union(steps[1], {"uses": "attacker/checkout@0000000000000000000000000000000000000000"}), steps[2], steps[3], steps[4], steps[5]],
-		[steps[0], steps[1], object.union(steps[2], {"with": {"github_access_token": "${{ secrets.GITHUB_TOKEN }}", "enable_kvm": true}}), steps[3], steps[4], steps[5]],
-		[steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"uses": "attacker/credentials@0000000000000000000000000000000000000000"}), steps[5]],
-		[steps[0], steps[1], steps[2], object.union(steps[3], {"continue-on-error": true}), steps[4], steps[5]],
-		[steps[0], steps[1], steps[2], steps[3], steps[4], object.union(steps[5], {"env": object.union(steps[5].env, {"EXFIL": "${{ secrets.GITHUB_TOKEN }}"})})],
+		[steps[0], object.union(steps[1], {"uses": "attacker/checkout@0000000000000000000000000000000000000000"}), steps[2], steps[3], steps[4], steps[5], steps[6]],
+		[steps[0], steps[1], object.union(steps[2], {"with": {"github_access_token": "${{ secrets.GITHUB_TOKEN }}", "enable_kvm": true}}), steps[3], steps[4], steps[5], steps[6]],
+		[steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"uses": "attacker/credentials@0000000000000000000000000000000000000000"}), steps[5], steps[6]],
+		[steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"if": "true"}), steps[5], steps[6]],
+		[steps[0], steps[1], steps[2], steps[3], object.union(steps[4], {"with": object.union(steps[4]["with"], {"role-duration-seconds": 3600})}), steps[5], steps[6]],
+		[steps[0], steps[1], steps[2], steps[3], steps[4], object.union(steps[5], {"uses": "attacker/credentials@0000000000000000000000000000000000000000"}), steps[6]],
+		[steps[0], steps[1], steps[2], object.union(steps[3], {"continue-on-error": true}), steps[4], steps[5], steps[6]],
+		[steps[0], steps[1], steps[2], steps[3], steps[4], steps[5], object.union(steps[6], {"env": object.union(steps[6].env, {"EXFIL": "${{ secrets.GITHUB_TOKEN }}"})})],
+		[steps[0], steps[1], steps[2], steps[3], steps[4], steps[5], object.union(steps[6], {"run": replace(platform_maintenance_private_run, "sha256sum --check --status <<<'bd1456a5dbae54a9d5a920231374731b38e1136f6b05e25279f6b5f535ce7b21  scripts/platform-maintenance.py'", "true")})],
 	] {
 		candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
 		candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
@@ -274,6 +278,7 @@ platform_maintenance_fixture := {
 				platform_maintenance_private_checkout,
 				platform_maintenance_install_nix,
 				{"name": "Recheck Current Main Commit Before AWS Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+				platform_maintenance_etcd_reader_credentials,
 				platform_maintenance_aws_credentials,
 				{"name": "Run Reviewed Platform Stage", "env": platform_maintenance_private_env, "run": platform_maintenance_private_run},
 			],

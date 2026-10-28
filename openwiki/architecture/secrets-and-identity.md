@@ -80,6 +80,8 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
+  - id: openwiki-source-21115763f71de0c30fdd5f71
+    resource: repo://docs/platform-maintenance-etcd-version-gate.md
   - id: openwiki-source-becefa8af5bf5cfe71144bc0
     resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -88,6 +90,8 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-cdcc93f57849ad6d5ea83f0d
     resource: repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf
+  - id: openwiki-source-38dd5a33ad49d2bc76f902cf
+    resource: repo://IaC/terragrunt-catalog/modules/aws-platform-etcd-reader/main.tf
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -146,10 +150,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
+generated: { by: "codex", at: "2026-10-28T03:23:45.356Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:17:59.106Z
+    at: 2026-10-28T03:23:45.356Z
 ---
 
 # Secrets And Identity
@@ -623,6 +627,14 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   in the application backup bucket. That bucket denies other writers and all
   deletion of those keys. The role and bucket policy are source declarations;
   no IAM apply or receipt publication is established by them.
+  The separately declared `homelab-platform-etcd-reader` role is trusted only
+  by the owner-started protected Platform Maintenance workflow on production
+  `main`. Its `oce-platform-etcd-reader` profile may inspect exact versions
+  under the dedicated bucket's `etcd/*` prefix and use the bucket S3 KMS key.
+  `s3:GetObjectVersion` can also download raw etcd data, so the role is not
+  shared with `Github-TF-State`, general plans, or other workflows. The
+  reviewed Terragrunt unit has not been applied; source alone supplies no AWS
+  credential or live version read.
   The dormant firewall cleanup lane keeps capture, approval, attempt, and
   completion evidence in the private versioned maintenance bucket. The owner
   reviews the full capture outside public logs and supplies its exact digest

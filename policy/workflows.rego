@@ -342,8 +342,8 @@ approved_platform_maintenance if {
 	job.concurrency == {"group": "platform-maintenance-production", "cancel-in-progress": false}
 	job.permissions == {"contents": "read", "id-token": "write"}
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
-	count(job.steps) == 6
-	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
+	count(job.steps) == 7
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name, job.steps[6].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure Scoped Etcd Recovery Reader", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
 	verify := job.steps[0]
 	count(object.keys(verify)) == 3
 	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "RUN_STAGE": "${{ inputs.stage }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
@@ -354,9 +354,11 @@ approved_platform_maintenance if {
 	count(object.keys(recheck)) == 3
 	recheck.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(recheck.run, "\n") == platform_maintenance_main_check
-	job.steps[4] == platform_maintenance_aws_credentials
+	job.steps[4] == platform_maintenance_etcd_reader_credentials
+	job.steps[5] == platform_maintenance_aws_credentials
 	some run in job.steps
 	run.name == "Run Reviewed Platform Stage"
+	run == job.steps[6]
 	count(object.keys(run)) == 3
 	run.env == platform_maintenance_private_env
 	trim(run.run, "\n") == platform_maintenance_private_run
@@ -379,6 +381,7 @@ nix develop --command python3 -I scripts/ci/platform-maintenance-stage-test.py`
 platform_maintenance_static_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 2, "persist-credentials": false}}
 platform_maintenance_private_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}}
 platform_maintenance_install_nix := {"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}}
+platform_maintenance_etcd_reader_credentials := {"name": "Configure Scoped Etcd Recovery Reader", "if": "startsWith(inputs.stage, 'talos-') || startsWith(inputs.stage, 'kubernetes-')", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-etcd-read-${{ github.run_id }}", "role-to-assume": "arn:aws:iam::716182248480:role/homelab-platform-etcd-reader", "role-duration-seconds": 9000, "aws-profile": "oce-platform-etcd-reader", "output-env-credentials": false, "unset-current-credentials": true}}
 platform_maintenance_aws_credentials := {"name": "Configure AWS Credentials", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-platform-${{ github.run_id }}", "role-to-assume": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}", "unset-current-credentials": true}}
 platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
 
@@ -404,6 +407,7 @@ set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
 sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'bd1456a5dbae54a9d5a920231374731b38e1136f6b05e25279f6b5f535ce7b21  scripts/platform-maintenance.py'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then

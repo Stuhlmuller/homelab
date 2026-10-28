@@ -138,6 +138,8 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-21115763f71de0c30fdd5f71
+    resource: repo://docs/platform-maintenance-etcd-version-gate.md
   - id: openwiki-source-becefa8af5bf5cfe71144bc0
     resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-556eb082b86343ef048df9f7
@@ -154,6 +156,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
+  - id: openwiki-source-9daca3d209997824f26abc81
+    resource: repo://IaC/terragrunt-catalog/modules/aws-platform-etcd-reader/reader.tftest.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-d15d8af567654cd0f94c3158
@@ -372,10 +376,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
+generated: { by: "codex", at: "2026-10-28T03:23:45.356Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:17:59.106Z
+    at: 2026-10-28T03:23:45.356Z
 ---
 
 # Validation Gates
@@ -1934,6 +1938,13 @@ policy, and conditional KMS writes with exact-version readback for only the
 direct-recovery and off-node-etcd-backup keys. The role has not been applied,
 the candidate has not been staged, and no protected receipt has been issued;
 placement, artifact publication, isolated recovery, and canary gates remain.
+The new maintenance version-reader fixtures check the selected scoped AWS
+profile and assumed role, exact snapshot and manifest S3 versions, current
+receipt SHA, bucket versioning and encryption, object checksum and byte count,
+and rejection before any durable start marker or Talos/Kubernetes command on
+failure. The reader module's plan-only tests and workflow policy checks are
+source evidence. No role apply, live S3 check, byte-level restore, or platform
+upgrade follows from those fixtures.
 The static registration fixture accepts only five exact policy/canary GitOps
 source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
 canary retired. It rejects mismatched sync settings and manifests. Protected

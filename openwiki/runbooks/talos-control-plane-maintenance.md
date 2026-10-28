@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-21115763f71de0c30fdd5f71
+    resource: repo://docs/platform-maintenance-etcd-version-gate.md
   - id: openwiki-source-becefa8af5bf5cfe71144bc0
     resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
@@ -42,10 +44,10 @@ sources:
     resource: repo://scripts/platform-recovery-candidate.py
   - id: openwiki-source-e3d34fdb2d932e5c649a644e
     resource: repo://scripts/platform-recovery-receipt-publish.py
-generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
+generated: { by: "codex", at: "2026-10-28T03:23:45.356Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:17:59.106Z
+    at: 2026-10-28T03:23:45.356Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -226,6 +228,15 @@ etcd objects, then conditionally write and read back the two fixed recovery
 receipts. It cannot create placement or artifact-publication evidence. No IAM
 apply, candidate stage, publisher dispatch, or bootable recovery proof has
 occurred; keep the maintenance activation gate closed.
+The staged [offsite etcd version gate](../../docs/platform-maintenance-etcd-version-gate.md)
+adds a dedicated protected reader profile. Immediately before each Talos node
+or Kubernetes command, the executor would verify the receipt's exact snapshot
+and manifest versions, S3 metadata, checksum and byte count, plus bucket
+versioning and encryption. A missing/deleted/changed version or unavailable
+reader stops before its durable start marker. This check does not re-download
+database bytes or replace the publisher's offline restore, Talos secret
+recovery, or an isolated control-plane boot. Its IAM role has not been applied
+and no live upgrade has used it.
 The Kubernetes stage also checks live Istiod, CNI, ztunnel and both injected
 gateway workloads immediately before the command and after verification. It
 requires the reviewed Istio 1.30.6 digest in every relevant image reference,

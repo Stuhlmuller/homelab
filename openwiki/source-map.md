@@ -60,6 +60,8 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-21115763f71de0c30fdd5f71
+    resource: repo://docs/platform-maintenance-etcd-version-gate.md
   - id: openwiki-source-81eb22463f7e995fa8bd3b58
     resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
   - id: openwiki-source-249f8996a9ec8263ee227cf0
@@ -70,6 +72,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-cdcc93f57849ad6d5ea83f0d
     resource: repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf
+  - id: openwiki-source-38dd5a33ad49d2bc76f902cf
+    resource: repo://IaC/terragrunt-catalog/modules/aws-platform-etcd-reader/main.tf
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
@@ -124,6 +128,8 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
   - id: openwiki-source-d7226bf67678f656c372644e
     resource: repo://scripts/platform-recovery-candidate.py
   - id: openwiki-source-e3d34fdb2d932e5c649a644e
@@ -136,10 +142,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
+generated: { by: "codex", at: "2026-10-28T03:23:45.356Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:17:59.106Z
+    at: 2026-10-28T03:23:45.356Z
 ---
 
 # Source Map
@@ -215,6 +221,7 @@ desired state.
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
 | `.github/workflows/platform-maintenance.yml`, `scripts/network-policy-ownership.py`, `scripts/network-policy-cleanup.py`, and `scripts/network-policy-canary-node.py` | [Protected firewall ownership, cleanup and release stages](runbooks/ci-cd.md), [versioned receipt, fixture, and post-deletion canary Pod identity gates](operations/validation-gates.md) |
+| `docs/platform-maintenance-etcd-version-gate.md`, `scripts/platform-maintenance.py`, `scripts/ci/platform-maintenance-test.py`, `IaC/terragrunt-catalog/modules/aws-platform-etcd-reader/`, and `IaC/terragrunt-catalog/units/operator/platform-etcd-reader/terragrunt.hcl` | [Before-mutation exact etcd version gate](runbooks/talos-control-plane-maintenance.md#staged-enterprise-platform-maintenance), [raw reader identity](architecture/secrets-and-identity.md), and [offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/homelab/us-west-2/apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |

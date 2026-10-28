@@ -16,6 +16,12 @@ unit "operator_etcd_backup_storage" {
   no_dot_terragrunt_stack = true
 }
 
+unit "operator_platform_etcd_reader" {
+  source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/operator/platform-etcd-reader"
+  path                    = "platform-etcd-reader"
+  no_dot_terragrunt_stack = true
+}
+
 unit "operator_application_backup_storage" {
   source                  = "${dirname(find_in_parent_folders("root.hcl"))}/terragrunt-catalog/units/operator/application-backup-storage"
   path                    = "application-backup-storage"

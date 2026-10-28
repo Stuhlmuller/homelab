@@ -50,6 +50,8 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-21115763f71de0c30fdd5f71
+    resource: repo://docs/platform-maintenance-etcd-version-gate.md
   - id: openwiki-source-becefa8af5bf5cfe71144bc0
     resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -100,10 +102,12 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
+generated: { by: "codex", at: "2026-10-28T03:23:45.356Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:17:59.106Z
+    at: 2026-10-28T03:23:45.356Z
 ---
 
 # CI/CD
@@ -279,6 +283,14 @@ before AWS credentials, and verifies the pinned stage helper before execution.
 The executor keeps activation and canary placement disabled until private
 recovery, image-publication and isolated-node evidence is available; no upgrade
 stage has run from this source change.
+The maintenance job now declares a separate `oce-platform-etcd-reader` AWS
+profile from a dedicated production OIDC role after the exact-main guard. The
+executor selects and verifies that role before rechecking the pinned offsite
+snapshot and manifest versions immediately before each Talos node or
+Kubernetes mutation. Its 9,000-second role session exceeds the 7,200-second
+job timeout; the shared maintenance identity remains separate. A failed or
+expired reader stops before the durable start marker. The role has not been
+applied and no live version check or upgrade is established.
 
 The [workflow policy](../../policy/workflows.rego) accepts only manual
 `workflow_dispatch`, requires explicit empty workflow permissions, and pins both

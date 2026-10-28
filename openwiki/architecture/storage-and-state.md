@@ -36,6 +36,8 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-21115763f71de0c30fdd5f71
+    resource: repo://docs/platform-maintenance-etcd-version-gate.md
   - id: openwiki-source-becefa8af5bf5cfe71144bc0
     resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
@@ -60,6 +62,8 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
   - id: openwiki-source-d7226bf67678f656c372644e
     resource: repo://scripts/platform-recovery-candidate.py
   - id: openwiki-source-e3d34fdb2d932e5c649a644e
@@ -72,10 +76,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
+generated: { by: "codex", at: "2026-10-28T03:23:45.356Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:17:59.106Z
+    at: 2026-10-28T03:23:45.356Z
 ---
 
 # Storage And State
@@ -187,6 +191,14 @@ application backup bucket. The bucket policy reserves all four platform
 prerequisite keys for its dedicated role and denies deletion. Neither the IAM
 role nor publisher has been applied or run; placement and artifact-publication
 producers, live LAN proof, and isolated recovery remain open.
+The staged [maintenance version gate](../../docs/platform-maintenance-etcd-version-gate.md)
+would recheck the pinned snapshot and manifest S3 versions, metadata, byte
+counts and checksums immediately before each Talos node or Kubernetes mutation.
+It stops before a durable start marker if a version is missing or deleted,
+versioning or encryption changed, or the protected reader role is unavailable.
+This metadata check does not re-read snapshot bytes, repeat the independent
+offline restore, recover Talos secrets, or prove a bootable control plane. The
+reader role has not been applied and no live upgrade has used this gate.
 
 ## Durable Storage
 
