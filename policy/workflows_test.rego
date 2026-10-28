@@ -2,6 +2,62 @@ package main
 
 import rego.v1
 
+test_allows_exact_platform_recovery_publisher if {
+	approved_platform_recovery_receipt_publication with input as platform_recovery_publisher_fixture
+}
+
+test_rejects_mutated_platform_recovery_publisher if {
+	job := platform_recovery_publisher_fixture.jobs.publish
+	steps := job.steps
+	mutated := object.union(steps[5], {"run": replace(platform_recovery_private_run,
+		"sha256sum --check --status", "true # sha256sum --check --status")})
+	candidate := object.union(platform_recovery_publisher_fixture, {"jobs": object.union(
+		platform_recovery_publisher_fixture.jobs, {"publish": object.union(job, {"steps":
+		[steps[0], steps[1], steps[2], steps[3], steps[4], mutated]})})})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform recovery receipts require owner-only")
+}
+
+platform_recovery_publisher_fixture := {
+	"name": "Platform Recovery Receipt Publication",
+	"on": {"workflow_dispatch": {"inputs": {
+		"expected_sha": {"required": true, "type": "string"},
+		"candidate_id": {"required": true, "type": "string"},
+		"direct_sha256": {"required": true, "type": "string"},
+		"backup_sha256": {"required": true, "type": "string"},
+		"restore_sha256": {"required": true, "type": "string"},
+	}}},
+	"permissions": {},
+	"jobs": {
+		"validate": {
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"runs-on": "ubuntu-24.04", "permissions": {"contents": "read"},
+			"steps": [
+				{"name": "Check Owner, Inputs And Current Main", "run": `test "$GITHUB_ACTOR_ID" = 57728706; test "$GITHUB_RUN_ATTEMPT" = 1; gh api --hostname github.com`},
+				{"uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"persist-credentials": false}},
+				{"uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"},
+				{"run": "nix develop --command python3 -I scripts/ci/platform-recovery-receipt-publish-test.py"},
+			],
+		},
+		"publish": {
+			"needs": ["validate"],
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"runs-on": "ubuntu-24.04", "environment": {"name": "homelab-production"},
+			"permissions": {"contents": "read", "id-token": "write"},
+			"concurrency": {"group": "platform-recovery-receipt-publication", "cancel-in-progress": false},
+			"steps": [
+				{"name": "Verify Current Main Before Credentials", "run": `test "$GITHUB_ACTOR_ID" = 57728706; test "$GITHUB_RUN_ATTEMPT" = 1`},
+				{"uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"persist-credentials": false}},
+				{"uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"},
+				{"name": "Recheck Main Before Scoped OIDC", "run": "gh api --hostname github.com"},
+				{"uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"role-to-assume": "arn:aws:iam::716182248480:role/homelab-platform-receipt-publisher", "role-session-name": "homelab-platform-${{ github.run_id }}", "unset-current-credentials": true}},
+				{"name": "Promote Reviewed Private Candidates", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "CANDIDATE_ID": "${{ inputs.candidate_id }}", "DIRECT_SHA256": "${{ inputs.direct_sha256 }}", "BACKUP_SHA256": "${{ inputs.backup_sha256 }}", "RESTORE_SHA256": "${{ inputs.restore_sha256 }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_recovery_private_run},
+			],
+		},
+	},
+}
+
 test_allows_exact_openclaw_startup if {
 	approved_openclaw_startup with input as openclaw_startup_fixture
 }

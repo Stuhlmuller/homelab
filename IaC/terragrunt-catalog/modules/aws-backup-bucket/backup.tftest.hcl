@@ -174,6 +174,82 @@ run "scopes_optional_enterprise_publisher" {
   }
 }
 
+run "scopes_protected_platform_receipt_publisher" {
+  command = plan
+  variables {
+    platform_receipt_publisher = {
+      role_name     = "homelab-platform-receipt-publisher"
+      source_bucket = "homelab-etcd-backups-123456789012-us-east-1"
+      subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
+      workflow      = "Platform Recovery Receipt Publication"
+      ref           = "refs/heads/main"
+      repository_id = 973476220
+    }
+  }
+
+  assert {
+    condition = (
+      length(aws_iam_role.platform_receipt_publisher) == 1 &&
+      length(aws_iam_policy.platform_receipt_boundary) == 1 &&
+      length(aws_iam_role_policy.platform_receipt_publisher) == 1 &&
+      length(aws_iam_role.publisher) == 0 &&
+      aws_iam_role.platform_receipt_publisher[0].name == "homelab-platform-receipt-publisher" &&
+      jsondecode(aws_iam_role.platform_receipt_publisher[0].assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:workflow"] == "Platform Recovery Receipt Publication" &&
+      jsondecode(aws_iam_role.platform_receipt_publisher[0].assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:Stuhlmuller/homelab:environment:homelab-production" &&
+      jsondecode(aws_iam_role.platform_receipt_publisher[0].assume_role_policy).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:actor_id"] == "57728706" &&
+      jsondecode(aws_iam_role_policy.platform_receipt_publisher[0].policy) == jsondecode(aws_iam_policy.platform_receipt_boundary[0].policy)
+    )
+    error_message = "The platform publisher must be a separate protected production role with an identical permissions boundary."
+  }
+
+  assert {
+    condition = (
+      length(jsondecode(aws_s3_bucket_policy.backup.policy).Statement) == 3 &&
+      jsondecode(aws_s3_bucket_policy.backup.policy).Statement[1].Sid == "DenyOtherPrerequisiteWriters" &&
+      jsondecode(aws_s3_bucket_policy.backup.policy).Statement[1].Condition.ArnNotEquals["aws:PrincipalArn"] == "arn:aws:iam::123456789012:role/homelab-platform-receipt-publisher" &&
+      jsondecode(aws_s3_bucket_policy.backup.policy).Statement[2].Sid == "DenyPrerequisiteDeletion" &&
+      toset(jsondecode(aws_s3_bucket_policy.backup.policy).Statement[2].Action) == toset(["s3:DeleteObject", "s3:DeleteObjectVersion"]) &&
+      toset(jsondecode(aws_s3_bucket_policy.backup.policy).Statement[1].Resource) == toset([
+        for name in ["placement", "direct-recovery", "off-node-etcd-backup", "artifact-publication"] :
+        "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/platform/receipts/*/${name}.json"
+      ])
+    )
+    error_message = "Only the dedicated role may write the four prerequisite keys, and no principal may delete them."
+  }
+
+  assert {
+    condition = (
+      toset(jsondecode(aws_iam_policy.platform_receipt_boundary[0].policy).Statement[3].Resource) == toset([
+        "arn:aws:s3:::homelab-etcd-backups-123456789012-us-east-1/platform-candidates/*",
+        "arn:aws:s3:::homelab-etcd-backups-123456789012-us-east-1/etcd/*"
+      ]) &&
+      jsondecode(aws_iam_policy.platform_receipt_boundary[0].policy).Statement[1].Action == ["s3:GetBucketPolicy"] &&
+      jsondecode(aws_iam_policy.platform_receipt_boundary[0].policy).Statement[1].Resource == "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1" &&
+      toset(jsondecode(aws_iam_policy.platform_receipt_boundary[0].policy).Statement[6].Resource) == toset([
+        for name in ["placement", "direct-recovery", "off-node-etcd-backup", "artifact-publication"] :
+        "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/platform/receipts/*/${name}.json"
+      ]) &&
+      !contains(flatten([for statement in jsondecode(aws_iam_policy.platform_receipt_boundary[0].policy).Statement : statement.Action]), "s3:DeleteObject")
+    )
+    error_message = "The publisher can read only staged candidate and etcd versions and write fixed receipt keys, without deletion."
+  }
+}
+
+run "rejects_wrong_platform_publisher_source" {
+  command = plan
+  variables {
+    platform_receipt_publisher = {
+      role_name     = "homelab-platform-receipt-publisher"
+      source_bucket = "other-backup-bucket"
+      subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
+      workflow      = "Platform Recovery Receipt Publication"
+      ref           = "refs/heads/main"
+      repository_id = 973476220
+    }
+  }
+  expect_failures = [var.platform_receipt_publisher]
+}
+
 run "rejects_unprotected_publisher_ref" {
   command = plan
   variables {

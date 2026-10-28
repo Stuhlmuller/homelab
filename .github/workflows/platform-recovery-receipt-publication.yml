@@ -1,0 +1,158 @@
+name: Platform Recovery Receipt Publication
+
+# checkov:skip=CKV_GHA_7: fixed private candidate IDs are bound to an exact current main SHA.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current protected main commit
+        required: true
+        type: string
+      candidate_id:
+        description: Opaque UUID from the private operator staging receipt
+        required: true
+        type: string
+      direct_sha256:
+        description: SHA-256 of the privately reviewed direct-LAN candidate
+        required: true
+        type: string
+      backup_sha256:
+        description: SHA-256 of the privately reviewed off-node backup candidate
+        required: true
+        type: string
+      restore_sha256:
+        description: SHA-256 of the privately reviewed offline restore receipt
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  validate:
+    name: Validate Protected Recovery Source
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check Owner, Inputs And Current Main
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          DIRECT_SHA256: ${{ inputs.direct_sha256 }}
+          BACKUP_SHA256: ${{ inputs.backup_sha256 }}
+          RESTORE_SHA256: ${{ inputs.restore_sha256 }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CANDIDATE_ID" =~ ^[0-9a-f]{32}$ ]]
+          for digest in "$DIRECT_SHA256" "$BACKUP_SHA256" "$RESTORE_SHA256"; do
+            [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+          done
+          test "$EXPECTED_SHA" = "$(gh api --hostname github.com \
+            repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Private Publisher Fixtures
+        run: nix develop --command python3 -I scripts/ci/platform-recovery-receipt-publish-test.py
+
+  publish:
+    name: Publish Two Reviewed Recovery Prerequisites
+    needs: [validate]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    concurrency:
+      group: platform-recovery-receipt-publication
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Before Credentials
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api --hostname github.com \
+            repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recheck Main Before Scoped OIDC
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTOR_ID" = 57728706
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api --hostname github.com \
+            repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+
+      - name: Configure Dedicated Receipt Publisher
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-session-name: homelab-platform-${{ github.run_id }}
+          role-to-assume: arn:aws:iam::716182248480:role/homelab-platform-receipt-publisher
+          unset-current-credentials: true
+
+      - name: Promote Reviewed Private Candidates
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          DIRECT_SHA256: ${{ inputs.direct_sha256 }}
+          BACKUP_SHA256: ${{ inputs.backup_sha256 }}
+          RESTORE_SHA256: ${{ inputs.restore_sha256 }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          sha256sum --check --status <<<'7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c  scripts/platform-recovery-receipt-publish.py'
+          if ! nix develop --command python3 -I scripts/platform-recovery-receipt-publish.py \
+            --expected-sha "$EXPECTED_SHA" --candidate-id "$CANDIDATE_ID" \
+            --direct-sha256 "$DIRECT_SHA256" --backup-sha256 "$BACKUP_SHA256" \
+            --restore-sha256 "$RESTORE_SHA256" >"$private_log" 2>&1; then
+            echo '::error::Recovery receipt publication blocked; private evidence withheld.'
+            exit 1
+          fi
+          echo 'Two reviewed recovery prerequisites published and read back; private evidence withheld.'
