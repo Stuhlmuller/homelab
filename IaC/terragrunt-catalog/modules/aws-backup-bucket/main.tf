@@ -217,6 +217,12 @@ locals {
         }
       },
       {
+        Sid      = "AbortRecoveryMultipartUploads"
+        Effect   = "Allow"
+        Action   = ["s3:AbortMultipartUpload"]
+        Resource = "${local.bucket_arn}/${var.publisher.object_prefix}*"
+      },
+      {
         Sid      = "UseOnlyBucketS3Key"
         Effect   = "Allow"
         Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
