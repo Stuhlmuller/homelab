@@ -1032,7 +1032,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "aeca9fa2eea6a0127812e3739d8f95e51c86d33c1cbb66e60438385e41406ee3", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
@@ -1330,6 +1330,30 @@ test_encrypted_oce_image_artifact_exception_is_exact if {
 	forged_phase := object.union(base, {"jobs": {"publish": forged_phase_job}})
 	forged_phase_denials := deny with input as forged_phase
 	count(forged_phase_denials) > 0
+}
+
+test_encrypted_policy_generator_artifact_exception_is_exact if {
+	base := workflow_with_live_run(policy_generator_image_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [policy_generator_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"publish": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(policy_generator_encrypted_diagnostic_step, {"with": object.union(policy_generator_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(policy_generator_encrypted_diagnostic_step, {"with": object.union(policy_generator_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(policy_generator_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"publish": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
+	forged_run := replace(policy_generator_image_private_run, "harbor-encrypt-diagnostic.py", "cat")
+	forged_job := object.union(job, {"steps": [{"run": forged_run}, policy_generator_encrypted_diagnostic_step]})
+	forged := object.union(base, {"jobs": {"publish": forged_job}})
+	forged_denials := deny with input as forged
+	count(forged_denials) > 0
 }
 
 with_job_run_defaults(workflow, job_name) := candidate if {

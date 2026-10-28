@@ -29,6 +29,11 @@ Passing this source check does not qualify deployment: require protected Harbor
 publication with pinned digests, actual generated-policy renders, and allowed
 and denied traffic on an isolated canary before enabling enforcement. See
 [`docs/runtime-isolation.md`](runtime-isolation.md#staged-networkpolicy-enforcement).
+The protected `policy-generator-images.yml` dispatch accepts the exact reviewed
+current `main` SHA and returns three authenticated-pull and signature-verified
+Harbor digests. It has not been dispatched. Record its successful receipt and
+pin those digests before changing bootstrap consumers; a source check or
+workflow definition alone is not a publication receipt.
 
 Render or dry-run GitOps sources:
 

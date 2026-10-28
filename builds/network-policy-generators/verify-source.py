@@ -48,9 +48,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cordium-repo", type=Path, help="existing pinned clone for offline verification")
     parser.add_argument("--octelium-repo", type=Path, help="existing pinned clone for offline verification")
+    parser.add_argument("--output-dir", type=Path, help="retain verified patched sources for a build")
     args = parser.parse_args()
     source = json.loads((HERE / "source.json").read_text())
     go_env = dict(os.environ, GOTOOLCHAIN=source["goToolchain"])
+    if args.output_dir and (args.output_dir.exists() or not args.output_dir.parent.is_dir()):
+        raise ValueError("output directory must be absent and its parent must exist")
     with tempfile.TemporaryDirectory(prefix="policy-generators-") as temp:
         root = Path(temp)
         for name in ("cordium", "octelium"):
@@ -62,6 +65,10 @@ def main() -> None:
         run("go", "test", "./commands/install", "./commands/upgrade", "-run",
             "^Test(PinGenesisImage|InstallRejectsMissingImageBeforeWrites|UpgradeGenesisUsesPinnedImage)$",
             "-count=1", cwd=root / "octelium/client/octops", env=go_env)
+        if args.output_dir:
+            for name in ("cordium", "octelium"):
+                run("git", "diff", "--check", cwd=root / name)
+            os.rename(root, args.output_dir)
     print("Pinned policy sources and targeted tests passed")
 
 

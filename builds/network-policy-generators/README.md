@@ -16,15 +16,40 @@ This intentionally denies service-upstream egress until a reviewed per-service
 allow rule and actual traffic qualification exist. Additive Kubernetes policies
 cannot subtract either upstream-generated all-port rule.
 
-These patches are source candidates only. Before using them, build and review
-the Cordium Genesis, Octelium Genesis, and octops artifacts from these pinned
-sources; publish and pin exact Harbor digests through a protected workflow;
-wire the repository's current `scripts/octelium-cluster-bootstrap.sh` wrapper
-to pass the reviewed Genesis digest to the patched octops binary; render the
-real generated policies and refresh the expected-spec fixtures; then prove
-required destinations and private-range denial through actual traffic on an
-isolated canary. The current wrapper cannot pass `--genesis-image`, and these
-patches have not produced or deployed any image. Keep enforcement disabled
-until the other T018/T027 gates and live capacity admit it. Retain the upstream
-`LICENSE` files in each source and any distributed artifacts. Cordium Genesis
+The protected `policy-generator-images.yml` workflow checks the exact current
+`main` commit, verifies the two pinned source revisions and patch hashes, runs
+the targeted tests, and builds three Linux/amd64 images before receiving
+registry credentials. `build.sh` sets upstream GitCommit, GitTag, image registry,
+and image prefix in each
+binary, overlays it on the exact pinned upstream runtime image, checks that
+the upstream user, entrypoint, environment, commands, and runtime tools remain,
+and keeps the relevant upstream license files in each image. The guarded
+publisher pushes fixed Harbor names,
+pulls each exact digest with authentication, signs them, verifies signatures,
+and emits `cordium_genesis`, `octelium_genesis`, and `octops` digest references.
+The publication receipts contain a `:homelab-<main SHA>` tag as well as the
+digest; the future `octops --genesis-image` consumer must pass the tagless
+`harbor.stinkyboi.com/homelab/homelab-octelium-genesis@sha256:<digest>` form.
+The workflow has not been dispatched, and no image has been published by this
+change. A failed protected publication retains only a one-day encrypted private
+diagnostic; public logs carry a generic error.
+
+The bootstrap wrapper reads `octelium.publishedGenesisImage` from
+`source.json`. It is `null` until a protected publication has produced an
+authenticated digest. Once a reviewed digest is committed, the wrapper accepts
+only the fixed tagless Harbor Genesis reference, checks that both installed
+`octops` commands support `--genesis-image`, and passes the digest to init or
+upgrade before any live writes. While the pin is absent, it checks for the
+network-policy enforcer before prerequisite waits and again when octops runs;
+either check fails closed if the DaemonSet is installed or unreadable. The
+wrapper does not yet install the patched octops binary. Its `--help` check
+proves flag support, not binary provenance. Before using these artifacts, pin
+both successful Harbor digests and provide a reviewed installation path that
+verifies the patched octops binary came from its authenticated, signed image
+digest. Render real generated policies and refresh the expected-spec fixtures,
+then prove required destinations and private-range denial through actual
+traffic on an isolated canary. These patches have not
+deployed any image. Keep enforcement disabled until the other T018/T027 gates
+and live capacity admit it. Retain the upstream `LICENSE` files in each source
+and any distributed artifacts. Cordium Genesis
 uses Apache-2.0; Octelium Genesis is AGPL-3.0; octops is Apache-2.0.

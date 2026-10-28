@@ -36,8 +36,8 @@ Prerequisites:
   - platform-multus Argo CD Application synced and healthy
   - octelium-storage Argo CD Application synced and healthy
   - IaC/homelab/us-west-2/shared/kubernetes-node-labels applied
-  - octops, kubectl, and base64 installed locally
-  - octeliumctl and jq installed locally when upgrading an existing Cluster
+  - octops, kubectl, jq, and base64 installed locally
+  - octeliumctl installed locally when upgrading an existing Cluster
   - Octelium admin login available to octeliumctl when upgrading
 USAGE
 }
@@ -99,6 +99,7 @@ fi
 require_command kubectl
 require_command octops
 require_command base64
+require_command jq
 
 decode_base64() {
   if base64 --decode >/dev/null 2>&1 <<<""; then
@@ -128,6 +129,7 @@ ensure_octelium_namespace_labels() {
     return 0
   fi
 
+  assert_genesis_write_safe || return 1
   "${kubectl_cmd[@]}" label namespace octelium \
     app.kubernetes.io/name=octelium \
     app.kubernetes.io/part-of=octelium \
@@ -139,6 +141,7 @@ ensure_octelium_namespace_labels() {
     pod-security.kubernetes.io/warn-version=latest \
     --overwrite
 
+  assert_genesis_write_safe || return 1
   "${kubectl_cmd[@]}" annotate namespace octelium \
     "homelab.rst.io/privileged-namespace-justification=Octelium data-plane workloads are installed by octops and require privileged network access." \
     --overwrite
@@ -202,8 +205,78 @@ apply_quic_cluster_config() {
     exit 1
   fi
 
+  assert_genesis_write_safe || return 1
   octeliumctl apply --domain "$domain" "$cluster_config_file"
 }
+
+assert_unpinned_enforcer_absent() {
+  local daemonsets=""
+  # A missing publication may retain today's bootstrap path only before
+  # network-policy enforcement is installed. This read must fail closed.
+  if ! daemonsets="$("${kubectl_cmd[@]}" -n kube-system get daemonsets \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')"; then
+    echo "error: cannot verify network-policy enforcer state" >&2
+    return 1
+  fi
+  if [[ $'\n'"$daemonsets"$'\n' == *$'\nkube-router-network-policy\n'* ]]; then
+    echo "error: publish and pin patched Octelium Genesis before running octops with network-policy enforcement" >&2
+    return 1
+  fi
+}
+
+assert_genesis_write_safe() {
+  [[ -n "$genesis_image" ]] || assert_unpinned_enforcer_absent
+}
+
+preflight_genesis_image() {
+  local source_file="$1"
+  local help_text=""
+  local mode=""
+  genesis_image="$(jq -sr '
+    if length != 1 then error("expected one image contract") else .[0] end |
+    .octelium as $octelium |
+    if ($octelium | type) != "object" or ($octelium | has("publishedGenesisImage") | not) then
+      error("missing octelium.publishedGenesisImage")
+    elif $octelium.publishedGenesisImage == null then
+      ""
+    elif ($octelium.publishedGenesisImage | type) == "string" then
+      $octelium.publishedGenesisImage
+    else
+      error("octelium.publishedGenesisImage must be a string or null")
+    end
+  ' "$source_file")" || {
+    echo "error: invalid published Octelium Genesis image contract" >&2
+    return 1
+  }
+
+  if [[ -n "$genesis_image" ]]; then
+    if [[ ! "$genesis_image" =~ ^harbor[.]stinkyboi[.]com/homelab/homelab-octelium-genesis@sha256:[0-9a-f]{64}$ ]]; then
+      echo "error: published Octelium Genesis image must use the fixed Harbor digest reference" >&2
+      return 1
+    fi
+    if [[ "$version" != "0.35.0" ]]; then
+      echo "error: published Octelium Genesis image is pinned to Octelium 0.35.0" >&2
+      return 1
+    fi
+    for mode in init upgrade; do
+      if ! help_text="$("${octops_cmd[@]}" "$mode" --help 2>&1)"; then
+        echo "error: octops ${mode} --help failed; cannot verify --genesis-image support" >&2
+        return 1
+      fi
+      if [[ "$help_text" != *--genesis-image* ]]; then
+        echo "error: octops ${mode} lacks --genesis-image; install the reviewed patched octops binary" >&2
+        return 1
+      fi
+    done
+    return 0
+  fi
+
+  assert_unpinned_enforcer_absent
+}
+
+genesis_image=""
+generator_source_file="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/builds/network-policy-generators/source.json"
+preflight_genesis_image "$generator_source_file"
 
 echo "Checking Octelium bootstrap prerequisites..."
 "${kubectl_cmd[@]}" get crd network-attachment-definitions.k8s.cni.cncf.io >/dev/null
@@ -275,9 +348,14 @@ fi
 if [[ "$version" != "latest" ]]; then
   action+=(--version "$version")
 fi
+if [[ -n "$genesis_image" ]]; then
+  action+=(--genesis-image "$genesis_image")
+fi
 
 echo "Running octops ${action[0]} for ${domain} in front-proxy mode..."
 run_octops() {
+  # Prerequisite waits can outlast the first read; recheck at invocation.
+  assert_genesis_write_safe || return 1
   OCTELIUM_INGRESS_FRONT_PROXY=true OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "$@"
 }
 

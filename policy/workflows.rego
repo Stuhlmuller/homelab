@@ -154,6 +154,7 @@ deny contains msg if {
 	not encrypted_harbor_diagnostic(job_name, job, step)
 	not native_receipt_artifact(job_name, job, step)
 	not encrypted_oce_diagnostic(job_name, job, step)
+	not encrypted_policy_generator_diagnostic(job_name, job, step)
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
@@ -596,6 +597,26 @@ oce_encrypted_diagnostic_step := {
 	},
 }
 
+encrypted_policy_generator_diagnostic(job_name, job, step) if {
+	job_name == "publish"
+	some command in job.steps
+	trim(object.get(command, "run", ""), "\n") == policy_generator_image_private_run
+	step == policy_generator_encrypted_diagnostic_step
+}
+
+policy_generator_encrypted_diagnostic_step := {
+	"name": "Retain Only Encrypted Failure Diagnostic",
+	"if": "failure()",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "policy-generator-image-error-${{ github.run_id }}-${{ github.run_attempt }}",
+		"path": "${{ runner.temp }}/policy-generator-image-error.gpg",
+		"if-no-files-found": "ignore",
+		"retention-days": 1,
+		"include-hidden-files": false,
+	},
+}
+
 deny contains msg if {
 	jobs := object.get(input, "jobs", {})
 	some job_name, job in jobs
@@ -962,6 +983,27 @@ private_live_output(run) if {
 	trim(run, "\n") == oce_image_private_run
 }
 
+private_live_output(run) if {
+	trim(run, "\n") == policy_generator_image_private_run
+}
+
+policy_generator_image_private_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/harbor-publish.sh publish-policy-generators
+EOF
+then
+  python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
+    "$RUNNER_TEMP/policy-generator-image-error.gpg" >/dev/null 2>&1 || true
+  echo "::error::Patched generator publication failed; private transport and registry output withheld."
+  exit 1
+fi
+echo "Patched generator digests published, fully pulled, signed, and verified; private output withheld."`
+
 oce_image_private_run := `set -euo pipefail
 umask 077
 private_log="$(mktemp)"
@@ -1037,7 +1079,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'aeca9fa2eea6a0127812e3739d8f95e51c86d33c1cbb66e60438385e41406ee3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
