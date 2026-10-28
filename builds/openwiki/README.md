@@ -53,9 +53,15 @@ Verify the package and setup behavior with:
 ```sh
 nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).openwiki-setup
 nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).openwiki-recovery
+nix build .#checks.$(nix eval --raw --impure --expr builtins.currentSystem).openwiki-focused-update
 ```
 
 The checks exercise setup and a complete native recovery lifecycle in disposable
 Git repositories.
+Focused `update` plans may set `deferUnplannedClaimIssues: true` to leave
+unrelated stale Claim pages unchanged. The native run records those pages as
+deferred, excludes them from verification and manifest advancement, and leaves
+`.last-update.json` interrupted. Planned pages and mandatory baseline recovery
+jobs still require normal Claim review.
 To roll back this integration, restore the prior `.codex/config.toml` npm
 command and remove the local Nix package. Wiki pages and Claims are unaffected.

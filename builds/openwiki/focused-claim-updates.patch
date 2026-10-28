@@ -1,0 +1,214 @@
+diff --git a/dist/claims/brains/code/runtime.js b/dist/claims/brains/code/runtime.js
+index 4231aec..de42fc4 100644
+--- a/dist/claims/brains/code/runtime.js
++++ b/dist/claims/brains/code/runtime.js
+@@ -64,7 +64,7 @@ function buildClaimsRuntime(session, issues, store, onWarning) {
+                 at,
+             }, excludedPages);
+             const warnings = [...result.warnings];
+-            warnings.push(...(await finalizeVerificationProjection(session, store, result.verificationByPage)));
++            warnings.push(...(await finalizeVerificationProjection(session, store, result.verificationByPage, excludedPages)));
+             for (const warning of warnings)
+                 onWarning(warning);
+             if (warnings.length > 0) {
+@@ -81,8 +81,8 @@ function buildClaimsRuntime(session, issues, store, onWarning) {
+  * @param verificationByPage - Durable verification eligibility by factual page.
+  * @returns Page-version synchronization warnings requiring run failure.
+  */
+-async function finalizeVerificationProjection(session, store, verificationByPage) {
+-    const originals = await synchronizeClaimsVerification(store, verificationByPage);
++async function finalizeVerificationProjection(session, store, verificationByPage, excludedPages) {
++    const originals = await synchronizeClaimsVerification(store, verificationByPage, excludedPages);
+     // Deterministic finalizers may have changed code-owned frontmatter without
+     // changing the verification event. Refresh every represented page so Claims
+     // sidecars always describe the final Markdown bytes.
+diff --git a/dist/generation/page-jobs.d.ts b/dist/generation/page-jobs.d.ts
+index 0061ef6..d2cff0e 100644
+--- a/dist/generation/page-jobs.d.ts
++++ b/dist/generation/page-jobs.d.ts
+@@ -79,6 +79,8 @@ export interface ProposedRepositoryPlan {
+      * Existing generated pages explicitly selected for deletion.
+      */
+     deletePages?: string[];
++    /** Leave unrelated stale Claim pages for a later full update. */
++    deferUnplannedClaimIssues?: boolean;
+ }
+ /**
+  * Validates and deterministically normalizes the persisted ordered page queue.
+diff --git a/dist/generation/page-jobs.js b/dist/generation/page-jobs.js
+index 3afd7c2..02dbf26 100644
+--- a/dist/generation/page-jobs.js
++++ b/dist/generation/page-jobs.js
+@@ -38,10 +38,14 @@ export function createRepositoryPlan(mode, proposed, claimIssues, requiredRewrit
+     }
+     if (mode === "update") {
+         const deleted = new Set(deletePages);
+-        addRequiredClaimIssueJobs(pages, pagePaths, deleted, claimIssues);
++        if (!proposed.deferUnplannedClaimIssues)
++            addRequiredClaimIssueJobs(pages, pagePaths, deleted, claimIssues);
+         addRequiredRewriteJobs(pages, pagePaths, deleted, requiredRewritePages);
+         addRequiredBaselineRecoveryJobs(pages, pagePaths, deleted, requiredBaselineRecoveryPages);
+     }
++    else if (proposed.deferUnplannedClaimIssues) {
++        throw new RepositoryRunError("invalid_input", "Init cannot defer Claim issues.");
++    }
+     // Quickstart is the synthesis/navigation page; generate it after domain pages.
+     pages.sort((left, right) => {
+         const leftQuickstart = left.path === "/openwiki/quickstart.md";
+@@ -50,7 +54,11 @@ export function createRepositoryPlan(mode, proposed, claimIssues, requiredRewrit
+             return leftQuickstart ? 1 : -1;
+         return compareCodeUnits(left.path, right.path);
+     });
+-    return { pages, deletePages };
++    const deferredClaimPages = proposed.deferUnplannedClaimIssues
++        ? uniqueSorted(claimIssues.map((issue) => normalizeWikiPagePath(issue.page)))
++            .filter((page) => !pagePaths.has(page) && !deletePages.includes(page))
++        : [];
++    return { pages, deletePages, deferredClaimPages };
+ }
+ /** Requires an explicit complete Claim review before an old baseline is replaced. */
+ function addRequiredBaselineRecoveryJobs(pages, pagePaths, deletePages, requiredPages) {
+diff --git a/dist/generation/repository-run.js b/dist/generation/repository-run.js
+index 28a01df..5e41026 100644
+--- a/dist/generation/repository-run.js
++++ b/dist/generation/repository-run.js
+@@ -666,6 +666,7 @@ function samePlanIgnoringJobIds(left, right) {
+             instructions,
+         })),
+         deletePages: [...plan.deletePages],
++        deferredClaimPages: [...(plan.deferredClaimPages ?? [])],
+     });
+     return JSON.stringify(simplify(left)) === JSON.stringify(simplify(right));
+ }
+@@ -906,9 +907,12 @@ export async function submitRepositoryPage(run, input) {
+             // worker may be mid-edit on them, so projecting a verification stamp
+             // into their front matter or rehashing their sidecar here would record
+             // transient bytes. Their own submit (or finish) finalizes them.
+-            const otherPendingPages = new Set(latestPlan.pages
+-                .filter(({ id, status }) => status === "pending" && id !== current.id)
+-                .map(({ path }) => path));
++            const otherPendingPages = new Set([
++                ...latestPlan.pages
++                    .filter(({ id, status }) => status === "pending" && id !== current.id)
++                    .map(({ path }) => path),
++                ...(latestPlan.deferredClaimPages ?? []),
++            ]);
+             await run.claimsRuntime.finalize(run.state.startedAt, otherPendingPages);
+             await assertPageClaimsDurable(run, current.path);
+         }
+@@ -1113,7 +1117,10 @@ export async function finishRepositoryRun(run, options = {}) {
+         skippedJobs.some((job) => snapshotsByJobId.get(job.id)?.path !== job.path)) {
+         throw new RepositoryRunError("invalid_state", "Every skipped OpenWiki page job requires its original page snapshot before finish.");
+     }
+-    const skippedPages = new Set(skippedJobs.map(({ path }) => path));
++    const skippedPages = new Set([
++        ...skippedJobs.map(({ path }) => path),
++        ...(plan.deferredClaimPages ?? []),
++    ]);
+     const sourceChangedBeforeFinish = await hasRepositorySourceChanged(run);
+     if (run.state.requiredBaselineRecoveryPages.length > 0 &&
+         sourceChangedBeforeFinish) {
+@@ -1152,7 +1159,11 @@ export async function finishRepositoryRun(run, options = {}) {
+         at: run.state.startedAt,
+         producerActor: run.state.actor.producerActor,
+         producerActorsByPage,
+-        claimSources: run.claimsRuntime.session.getEvidenceResourcesByPage(),
++        claimSources: new Map(
++            [...run.claimsRuntime.session.getEvidenceResourcesByPage()].filter(
++                ([page]) => !skippedPages.has(page),
++            ),
++        ),
+         runOperation: captureFrontmatterReport,
+     });
+     for (const snapshot of snapshots) {
+diff --git a/dist/generation/run-state.d.ts b/dist/generation/run-state.d.ts
+index da7e9b0..22d164c 100644
+--- a/dist/generation/run-state.d.ts
++++ b/dist/generation/run-state.d.ts
+@@ -88,6 +88,8 @@ export interface RepositoryRunPlan {
+      * Existing pages explicitly selected for deletion by an update.
+      */
+     deletePages: string[];
++    /** Stale Claim pages intentionally left for a later full update. */
++    deferredClaimPages?: string[];
+ }
+ /**
+  * Complete JSON checkpoint required to resume repository generation.
+diff --git a/dist/generation/run-state.js b/dist/generation/run-state.js
+index d63fbbb..c03c3ac 100644
+--- a/dist/generation/run-state.js
++++ b/dist/generation/run-state.js
+@@ -85,6 +85,7 @@ const RepositoryRunStateSchema = z
+         .object({
+         pages: z.array(PageJobSchema),
+         deletePages: z.array(z.string()),
++        deferredClaimPages: z.array(z.string()).optional(),
+     })
+         .strict()
+         .optional(),
+diff --git a/dist/integrations/core/protocol.d.ts b/dist/integrations/core/protocol.d.ts
+index 7d5df29..1cdeced 100644
+--- a/dist/integrations/core/protocol.d.ts
++++ b/dist/integrations/core/protocol.d.ts
+@@ -79,6 +79,7 @@ export declare const SubmitPlanInput: z.ZodObject<{
+         instructions: z.ZodOptional<z.ZodArray<z.ZodString>>;
+     }, z.core.$strict>>;
+     deletePages: z.ZodOptional<z.ZodArray<z.ZodString>>;
++    deferUnplannedClaimIssues: z.ZodOptional<z.ZodBoolean>;
+ }, z.core.$strict>;
+ /**
+  * Strict MCP schema for `openwiki_next_page`.
+diff --git a/dist/integrations/core/protocol.js b/dist/integrations/core/protocol.js
+index 7194ba6..d98a740 100644
+--- a/dist/integrations/core/protocol.js
++++ b/dist/integrations/core/protocol.js
+@@ -51,6 +51,7 @@ export const SubmitPlanInput = z
+     // planned deletions. Init validation still requires quickstart downstream.
+     pages: z.array(PlanPageInput),
+     deletePages: z.array(CanonicalString).optional(),
++    deferUnplannedClaimIssues: z.boolean().optional(),
+ })
+     .strict();
+ /**
+diff --git a/dist/integrations/core/session-manager.js b/dist/integrations/core/session-manager.js
+index 8dc3c89..8c39b14 100644
+--- a/dist/integrations/core/session-manager.js
++++ b/dist/integrations/core/session-manager.js
+@@ -97,6 +97,7 @@ export class HostSessionManager {
+             return submitRepositoryPlan(run, {
+                 pages: input.pages,
+                 deletePages: input.deletePages,
++                deferUnplannedClaimIssues: input.deferUnplannedClaimIssues,
+             });
+         });
+     }
+diff --git a/dist/okf/claims-verification.d.ts b/dist/okf/claims-verification.d.ts
+index ea45eed..47d1548 100644
+--- a/dist/okf/claims-verification.d.ts
++++ b/dist/okf/claims-verification.d.ts
+@@ -23,7 +23,7 @@ export type ClaimsVerificationChanges = ReadonlyMap<string, string>;
+  * @param verificationByPage - Active durable event per Claims page.
+  * @returns Original Markdown for changed pages, used for transactional rollback.
+  */
+-export declare function synchronizeClaimsVerification(store: ClaimsVerificationPageStore, verificationByPage: ReadonlyMap<string, ClaimsVerificationEvent | null>): Promise<ClaimsVerificationChanges>;
++export declare function synchronizeClaimsVerification(store: ClaimsVerificationPageStore, verificationByPage: ReadonlyMap<string, ClaimsVerificationEvent | null>, excludedPages?: ReadonlySet<string>): Promise<ClaimsVerificationChanges>;
+ /**
+  * Restores exact Markdown for pages whose sidecar hash refresh failed.
+  */
+diff --git a/dist/okf/claims-verification.js b/dist/okf/claims-verification.js
+index e56bcaa..5497484 100644
+--- a/dist/okf/claims-verification.js
++++ b/dist/okf/claims-verification.js
+@@ -12,9 +12,11 @@ import { parseFrontmatterFields, repairOkfFrontmatter, setOkfVerified, } from ".
+  * @param verificationByPage - Active durable event per Claims page.
+  * @returns Original Markdown for changed pages, used for transactional rollback.
+  */
+-export async function synchronizeClaimsVerification(store, verificationByPage) {
++export async function synchronizeClaimsVerification(store, verificationByPage, excludedPages = new Set()) {
+     const changes = new Map();
+     for (const page of await store.discoverPages()) {
++        if (excludedPages.has(page))
++            continue;
+         const content = await store.readMarkdown(page);
+         const repaired = repairOkfFrontmatter(content, page).content;
+         const current = readVerificationEvents(repaired);

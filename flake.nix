@@ -64,6 +64,8 @@
                 < ${./builds/openwiki/baseline-recovery.patch}
               patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
                 < ${./builds/openwiki/squash-provenance.patch}
+              patch -p1 -d "$out/libexec/openwiki/node_modules/openwiki" \
+                < ${./builds/openwiki/focused-claim-updates.patch}
               makeWrapper ${pkgs.nodejs}/bin/node "$out/bin/openwiki" \
                 --add-flags "$out/libexec/openwiki/node_modules/openwiki/dist/cli/cli.js"
               runHook postInstall
@@ -178,6 +180,13 @@
             nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
           } ''
             node ${./scripts/ci/openwiki-baseline-recovery-test.mjs} ${self.packages.${system}.openwiki}
+            mkdir "$out"
+            printf 'passed\n' > "$out/result"
+          '';
+          openwiki-focused-update = pkgs.runCommand "homelab-openwiki-focused-update-test" {
+            nativeBuildInputs = [ pkgs.nodejs pkgs.git ];
+          } ''
+            node ${./scripts/ci/openwiki-focused-update-test.mjs} ${self.packages.${system}.openwiki}
             mkdir "$out"
             printf 'passed\n' > "$out/result"
           '';
