@@ -327,7 +327,10 @@ class Kubectl:
                 value.get("spec", {}).get("schedulingGates") and
                 not current.get("spec", {}).get("volumes") and
                 not metadata(current).get("ownerReferences"))
-        self._command("--request-timeout=30s", "delete", "--raw=" + PODS + "/" + name)
+        options = {"apiVersion": "meta.k8s.io/v1", "kind": "DeleteOptions",
+                   "preconditions": {"uid": uid}}
+        self._command("--request-timeout=30s", "delete", "--raw=" + PODS + "/" + name,
+                      "-f", "-", stdin=json.dumps(options).encode())
 
 
 class PodWatch:

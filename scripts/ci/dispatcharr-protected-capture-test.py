@@ -2,6 +2,7 @@
 """Focused fail-closed checks for the protected Dispatcharr capture candidate."""
 
 import importlib.util
+import json
 from pathlib import Path
 import unittest
 
@@ -87,6 +88,23 @@ class ProtectedCaptureTest(unittest.TestCase):
             "clusters/homelab/apps/dispatcharr/recovery-capture-candidate")
         self.assertEqual(capture.spec_hash(rendered["spec"]),
                          capture.JOB_SPEC_SHA256)
+
+    def test_barrier_delete_requires_exact_uid_precondition(self):
+        client = object.__new__(capture.Kubectl)
+        client.get = lambda path: self.barrier
+        calls = []
+        client._command = lambda *args, **kwargs: calls.append((args, kwargs))
+        client.delete_barrier(self.barrier)
+        self.assertEqual(calls[0][0][-3:],
+                         ("--raw=" + capture.PODS + "/" +
+                          self.barrier["metadata"]["name"], "-f", "-"))
+        options = json.loads(calls[0][1]["stdin"])
+        self.assertEqual(options["preconditions"]["uid"], "barrier-uid")
+        client.get = lambda path: {**self.barrier,
+                                   "metadata": {**self.barrier["metadata"],
+                                                "uid": "replacement-uid"}}
+        with self.assertRaises(capture.Blocked):
+            client.delete_barrier(self.barrier)
 
     def test_writer_cronjob_blocks_controller_inventory(self):
         paths = {
