@@ -10,6 +10,7 @@ import runpy
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,6 +31,42 @@ BASE = load("oce_recovery_base", ROOT / "scripts/ci/openclaw-enterprise-test.py"
 LEGACY = load("oce_recovery_legacy", ROOT / "scripts/ci/openclaw-retirement-test.py")
 OCE = BASE.OCE
 CLEANUP = runpy.run_path(str(ROOT / "scripts/network-policy-cleanup.py"))
+
+
+def backup_tools_path(cache):
+    """Run the Linux backup fixture with real GNU tools on macOS too."""
+    path = os.environ["PATH"]
+    if sys.platform != "darwin":
+        return path
+
+    def has_gnu_tools(candidate):
+        for name in ("find", "sort", "cp", "mv", "sha256sum"):
+            executable = shutil.which(name, path=candidate)
+            if executable is None:
+                return False
+            try:
+                result = subprocess.run([executable, "--version"], text=True,
+                                        capture_output=True, timeout=5, check=False)
+            except (OSError, subprocess.TimeoutExpired):
+                return False
+            if result.returncode != 0 or "GNU" not in result.stdout:
+                return False
+        return True
+
+    if has_gnu_tools(path):
+        return path
+    cache.mkdir(mode=0o700)
+    environment = {**os.environ, "XDG_CACHE_HOME": str(cache)}
+    try:
+        result = subprocess.run(
+            ["nix", "develop", "--command", "sh", "-c", 'printf %s "$PATH"'],
+            cwd=ROOT, env=environment, text=True, capture_output=True,
+            timeout=120, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        raise AssertionError("GNU backup tools are unavailable from the Nix development shell") from None
+    if result.returncode != 0 or not has_gnu_tools(result.stdout):
+        raise AssertionError("GNU backup tools are unavailable from the Nix development shell")
+    return result.stdout
 
 
 class RecoveryBoundaries(unittest.TestCase):
@@ -436,9 +473,10 @@ class RecoveryBoundaries(unittest.TestCase):
             source = source.replace(original, replacement)
         script = root / "backup.sh"
         script.write_text(source)
-        real_cp = shutil.which("cp")
+        tool_path = backup_tools_path(root / "nix-cache")
+        real_cp = shutil.which("cp", path=tool_path)
         self.assertIsNotNone(real_cp)
-        environment = {**os.environ, "PATH": str(fake_bin) + ":" + os.environ["PATH"]}
+        environment = {**os.environ, "PATH": str(fake_bin) + ":" + tool_path}
         mountpoint.write_text('#!/bin/sh\nexit 1\n')
         unmounted = subprocess.run(["sh", str(script)], text=True, capture_output=True,
                                    env=environment, check=False)

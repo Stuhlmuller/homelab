@@ -301,6 +301,6 @@ else
 fi
 echo "::endgroup::"
 
-echo "::group::Whitespace"
-git diff --check
-echo "::endgroup::"
+if [[ "${GITHUB_ACTIONS:-}" != true ]]; then
+  git diff --check HEAD
+fi

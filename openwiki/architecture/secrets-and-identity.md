@@ -574,9 +574,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every
   21 days with
-  `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
-  Sessions first so Octelium cannot retain an older Session expiry, then retries
-  GitHub environment writes until both store the replacement token.
+  `scripts/octelium-ci-credential.sh`; routine rotation first verifies the
+  existing User, Policy, Service, and credential binding without applying the
+  full catalog. It rejects unknown or duplicate Service policy attachments;
+  only the primary CI policy and optional staged plan policy are accepted, and
+  it checks all three staged plan rules when that policy is attached.
+  The helper deletes the dedicated User's Sessions so Octelium
+  cannot retain an older Session expiry, then retries each GitHub environment
+  write up to five times. Bootstrap catalog application is explicit with
+  `--apply-catalog`.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly

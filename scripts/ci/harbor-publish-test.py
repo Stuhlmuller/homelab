@@ -964,11 +964,16 @@ class HarborPublicationGates(unittest.TestCase):
                                                    + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-harbor")
 
-    def test_renovate_scope_has_seven_reviewed_digests(self):
+    def test_renovate_scope_has_eight_reviewed_sources(self):
         selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
-        self.assertEqual(len(selected), 7)
+        self.assertEqual(len(selected), 8)
         self.assertTrue(all(item in catalog for item in selected))
+        self.assertEqual(len({item["source"].split("@", 1)[0] for item in selected}), len(selected))
+        for item in selected:
+            alias = item["source"].split("@", 1)[0]
+            self.assertEqual(next(entry["source"] for entry in reversed(catalog)
+                                  if entry["source"].split("@", 1)[0] == alias), item["source"])
         self.assertEqual(sum(item["source"].startswith("ghcr.io/renovatebot/renovate:")
                              for item in selected), 1)
 
