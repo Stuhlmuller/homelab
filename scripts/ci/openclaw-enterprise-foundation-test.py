@@ -107,7 +107,9 @@ class FoundationContract(unittest.TestCase):
         self.assertIn("| grep -qx 1", readiness)
         self.assertEqual(next(volume["configMap"]["name"] for volume in pod["volumes"]
                               if volume["name"] == "bootstrap"), bootstrap["metadata"]["name"])
-        self.assertFalse(any(item["kind"] == "Job" for item in self.resources.values()))
+        jobs = {name: item for (kind, name), item in self.resources.items() if kind == "Job"}
+        self.assertEqual(set(jobs), {"occ-operations-journal-probe"})
+        self.assertTrue(jobs["occ-operations-journal-probe"]["spec"]["suspend"])
 
     def test_postgres_cert_renewal_invalidates_health_probes_until_restart(self):
         container = self.resources["StatefulSet", "occ-postgres"]["spec"]["template"]["spec"]["containers"][0]
