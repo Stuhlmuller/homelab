@@ -84,8 +84,8 @@ The retained operator [journal claim](../openclaw-enterprise-operator/journal.ya
 belongs to `openclaw-system`, while the pinned Compute Driver would create the
 Agent's [gateway-state claim](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L31-L54)
 in `openclaw-agents`. [PVC mounts stay in the Pod's namespace](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#claims-as-volumes);
-one ordinary backup Pod cannot mount both claims. Coordinate the two sources and verify
-their UIDs before publishing one completed set.
+one ordinary backup Pod cannot mount both claims. Coordinate the two sources
+and verify their UIDs before publishing one completed set.
 
 The pinned [Kubernetes Secret Driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-secret.md#L136-L143)
 never returns value bytes through the OCC API; capture the tenant's exact
