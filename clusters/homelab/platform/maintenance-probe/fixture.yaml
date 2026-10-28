@@ -18,8 +18,8 @@ metadata:
   name: platform-maintenance-probe
   namespace: monitoring
   annotations:
-    checkov.io/skip1: CKV_K8S_8=The idle probe has no listening endpoint; the protected workflow checks its runtime paths.
-    checkov.io/skip2: CKV_K8S_9=The protected workflow checks Pod phase and functional probes before upgrade receipts.
+    checkov.io/skip1: CKV_K8S_8=Idle probe has no endpoint; CI checks path.
+    checkov.io/skip2: CKV_K8S_9=CI checks Pod phase and functional probes.
   labels:
     app.kubernetes.io/name: platform-maintenance-probe
 spec:
@@ -69,3 +69,28 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: platform-maintenance-probe
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: platform-maintenance-probe
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: platform-maintenance-probe
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53

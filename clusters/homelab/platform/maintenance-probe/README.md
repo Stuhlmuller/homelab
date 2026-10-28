@@ -38,6 +38,8 @@ Grafana, Octelium, and webhook checks
 originate from the protected runner; the per-node evidence covers DNS and NFS
 I/O from the named node. Each command has a deadline; only structured results
 go into the private per-node/stage receipts. Public CI prints fixed labels.
+The staged NetworkPolicy selects only fixture Pods, denies ingress, and permits
+TCP/UDP DNS to CoreDNS; rerun the path proof after any policy-enforcer change.
 The Pods do not mount ServiceAccount tokens. The Grafana check uses the
 workflow's existing Octelium Kubernetes credential and adds no ingress or mesh
 authorization grant.
