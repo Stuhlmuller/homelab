@@ -179,13 +179,13 @@ def direct_environment_from(source):
 
 
 def direct_route(address, *, run=quiet, connect=None):
-    """Require a physical macOS en-interface and same-subnet TCP source."""
+    """Require a macOS en-interface and same-subnet TCP source."""
     if sys.platform != "darwin" or ipaddress.ip_address(address) not in LAN:
         raise ValueError("direct recovery requires the operator LAN Mac")
     route = run(["/sbin/route", "-n", "get", address])
     matches = re.findall(r"^\s*interface:\s*(en[0-9]+)\s*$", route, re.MULTILINE)
     if len(matches) != 1:
-        raise ValueError("Talos route is not a physical LAN interface")
+        raise ValueError("Talos route is not a macOS en interface")
     if connect is None:
         def connect():
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as stream:

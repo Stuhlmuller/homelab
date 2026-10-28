@@ -527,9 +527,11 @@ python3 scripts/platform-recovery-candidate.py capture \
   --receipt-directory /absolute/private/platform-candidates
 ```
 
-Capture requires a physical `en` interface and a same-subnet TCP source for
+Capture requires a macOS `en` interface and a same-subnet TCP source for
 each Talos node. It uses that node's direct IP endpoint for authenticated
 version checks, then queries Acer's etcd status and direct cluster health.
+An `en` name alone is not hardware attestation; the operator must review the
+actual LAN route before a protected publisher can promote this evidence.
 Talos client output and errors remain private. It downloads the snapshot and
 manifest by their exact S3 version IDs, checks both digests, and runs the
 checksum-enabled offline restore on the downloaded copy. Two mode-`0600`
