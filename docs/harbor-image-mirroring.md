@@ -2,6 +2,22 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+## Helm charts
+
+`scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
+chart in `scripts/config/harbor-image-charts.json`, including local-path and
+OpenClaw Enterprise charts packaged from pinned Git revisions. The protected
+`harbor-helm-charts.yml` workflow accepts only the exact current `main` SHA,
+fetches those upstream packages, checks their identity and bytes, and pushes
+them to `harbor.stinkyboi.com/mirror/helm`. It then pulls each package with the
+separate mirror reader robot and compares the package SHA-256. A retry checks
+existing artifacts before pushing; a mismatched artifact stops publication.
+
+Publish and verify all chart packages before changing Argo CD sources. Argo CD
+uses the repository Secret in `clusters/homelab/argocd/self-management` and its
+read-only mirror credential. If Harbor cannot serve charts, restore its registry
+and re-run the protected publication workflow before asking Argo CD to sync.
+
 ## Chainguard source provenance
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
@@ -240,17 +256,18 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
-   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
-   those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require seven
-   complete authenticated pulls before merging any consuming Renovate PR:
+   The `renovate` scope selects eight pinned source references in
+   `scripts/config/harbor-renovate-images.json`. Five new digests cover
+   #1607, #1606, #1537, #1535, #1533, and #1492; the two PostgreSQL tags
+   share one digest. These candidates use digest-only source references so
+   the existing tag aliases keep their current mapping. It copies and
+   verifies only those eight entries while the unrelated full catalog is held.
+   After this catalog change merges, dispatch
+   it at exact current `main` and require eight complete authenticated
+   pulls before merging any consuming Renovate PR.
 
-   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
-   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
-   catalog by digest, and the same new index was verified in the earlier
-   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+   The new PostgreSQL source selects the `bbf8359` index by digest. Earlier
+   `afc7e2d` and `7d38526` pins remain for existing consumers.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate

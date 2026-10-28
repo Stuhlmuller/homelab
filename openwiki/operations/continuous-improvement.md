@@ -6,10 +6,14 @@ tags: ["operations", "security", "reliability", "stewardship"]
 sources:
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
-generated: { by: "codex", at: "2026-10-10T22:45:18.562Z" }
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
+generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Continuous Improvement
@@ -284,12 +288,15 @@ observations below retain their original dates.
   `KUBE_CONFIG_B64`, `TAILSCALE_AUTH_KEY`, and `TS_AUTH_KEY` were removed.
 - **Update:** The operator requested no deployment approval for `main`.
   `homelab-production` retains its exact main-only branch restriction, with no
-  required reviewers; `homelab-plan` retains reviewers for PR branches.
+  required reviewers. On 2026-10-24, github-iac PR #120 removed the
+  `homelab-plan` reviewer requirement for PR branches, then a saved Terragrunt
+  plan applied that single environment update.
   The source is `github-iac/Stuhlmuller/repositories/terragrunt.hcl`; its
   focused reconciler verifies both boundaries before and after apply.
 - **Risk:** Main jobs receive production credentials without another human
   checkpoint; merged-code review and branch protections remain the boundary.
-- **Next step:** Keep credentials environment-scoped and retain PR-plan review.
+- **Next step:** Keep credentials environment-scoped and review PR plans before
+  merge.
 
 - **Status:** blocked by organization policy and authority
 - **Area:** dependency security

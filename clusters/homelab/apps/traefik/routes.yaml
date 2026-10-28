@@ -149,6 +149,11 @@ http:
       rule: Host(`policy-bot-hook.tail67beb.ts.net`) && Path(`/api/github/hook`)
       middlewares: [reject-ambiguous-paths]
       service: policy-bot
+    bulldozer-hook:
+      entryPoints: [funnel]
+      rule: Host(`bulldozer-hook.tail67beb.ts.net`) && Path(`/api/github/hook`)
+      middlewares: [reject-ambiguous-paths]
+      service: bulldozer
     harbor-registry:
       entryPoints: [registry]
       rule: Host(`harbor.stinkyboi.com`) && (Path(`/v2`) || PathPrefix(`/v2/`) || Path(`/service/token`))
@@ -240,6 +245,10 @@ http:
       loadBalancer:
         servers:
           - url: http://policy-bot.automation.svc.cluster.local:8080
+    bulldozer:
+      loadBalancer:
+        servers:
+          - url: http://bulldozer.automation.svc.cluster.local:8080
     prowlarr:
       loadBalancer:
         servers:

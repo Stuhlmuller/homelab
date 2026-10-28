@@ -12,6 +12,11 @@ spec = importlib.util.spec_from_file_location("check", Path(__file__).with_name(
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
 real_yaml_documents = check.yaml_documents
+sha = "a" * 64
+images, _ = check.declared_images({"image": {"registry": "harbor.stinkyboi.com",
+                                               "repository": "mirror/docker.io/library/busybox",
+                                               "tag": "1.38", "sha": sha}})
+assert images == {"harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@sha256:" + sha}
 # Shared stack defaults and sparse sources must not hide chart upgrades from
 # the image inventory gate. A chart needs no Helm overrides to deploy.
 with tempfile.TemporaryDirectory() as directory:
@@ -39,6 +44,21 @@ with tempfile.TemporaryDirectory() as directory:
         assert "literal repoURL, chart and targetRevision" in str(error)
     else:
         raise AssertionError("A chart omitted from inventory extraction passed")
+    stack.write_text(stack.read_text().replace("local.hidden_version", '"2.1.0"'))
+    enterprise = check.ROOT / "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl"
+    enterprise.parent.mkdir()
+    enterprise.write_text('sources = [{ repoURL = "https://github.com/openclaw/openclaw-enterprise.git" '
+                          'path = "deploy/helm/openclaw-enterprise" targetRevision = "' + 'a' * 40 + '" '
+                          'helm = { releaseName = "oce" } }]')
+    assert {"source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
+            "repoURL": "https://github.com/openclaw/openclaw-enterprise.git",
+            "chart": "git:deploy/helm/openclaw-enterprise", "targetRevision": 'a' * 40} in check.chart_sources()
+    enterprise.write_text('sources = [{ repoURL = "harbor.stinkyboi.com/mirror/helm" '
+                          'chart = "openclaw-enterprise" targetRevision = "0.1.0" '
+                          'helm = { releaseName = "oce" } }]')
+    assert {"source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
+            "repoURL": "harbor.stinkyboi.com/mirror/helm",
+            "chart": "openclaw-enterprise", "targetRevision": "0.1.0"} in check.chart_sources()
     check.ROOT = original_root
 
 # App inputs retain their own provenance, even when apps share a chart/version.

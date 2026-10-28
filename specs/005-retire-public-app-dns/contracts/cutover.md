@@ -31,7 +31,10 @@ mode. Its private evidence file must be outside the repository.
    and the live Deployment both specify zero replicas.
 3. Fleet setup denial and device check-in, uncached Harbor pulls on every
    Talos node, native API, Cordium reconnect, and restricted public callbacks
-   pass their documented checks. `off_tailnet` records `migrated` or
+   pass their documented checks. The unused Codex Review Helper GitHub hook
+   `589400612` and its callback path are absent after reviewed retirement;
+   surviving Github Emergency Bot and Policy Bot hooks have fresh successful
+   deliveries. `off_tailnet` records `migrated` or
    `accepted_loss` for each of the 26 names, including the Cordium wildcard,
    after reviewing known callers that bypass ordinary tailnet DNS.
 4. The preview has matched the selected Cloudflare API zone's nameservers to

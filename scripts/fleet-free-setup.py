@@ -14,11 +14,12 @@ import json
 import plistlib
 import re
 import subprocess
+import time
 import urllib.parse
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,6 +103,79 @@ def ios_host(api, mdm, token, host_id):
         raise SetupError("Selected host is not a Fleet-enrolled iPhone or iPad")
     mdm.device_identifier(host["uuid"])
     return host["uuid"]
+
+
+def ios_pending_work_clear(host_id):
+    # Fleet 4.92.3 keeps deliverable Apple MDM commands in nano_enrollment_queue.
+    # Check device and user channels, desired profiles/declarations, and host actions.
+    if type(host_id) is not int or host_id < 1:
+        raise SetupError("A positive Fleet iPhone host ID is required")
+    sql = f"""SELECT
+      (SELECT COUNT(*) FROM nano_enrollments e JOIN hosts h ON e.id = h.uuid
+       WHERE h.id = {host_id} AND e.device_id = h.uuid AND e.type = 'Device' AND e.enabled = 1),
+      (SELECT COUNT(*) FROM nano_enrollment_queue q
+       JOIN nano_enrollments e ON e.id = q.id JOIN hosts h ON e.device_id = h.uuid
+       LEFT JOIN nano_command_results r ON r.id = q.id AND r.command_uuid = q.command_uuid
+         AND r.status <> 'NotNow'
+       WHERE h.id = {host_id} AND q.active = 1 AND r.id IS NULL),
+      (SELECT COUNT(*) FROM host_mdm_apple_profiles p JOIN hosts h ON p.host_uuid = h.uuid
+       WHERE h.id = {host_id} AND (p.status IS NULL OR p.status <> 'verified')),
+      (SELECT COUNT(*) FROM host_mdm_apple_declarations d JOIN hosts h ON d.host_uuid = h.uuid
+       WHERE h.id = {host_id} AND (d.status IS NULL OR d.status <> 'verified')),
+      (SELECT COUNT(*) FROM upcoming_activities WHERE host_id = {host_id}),
+      (SELECT COUNT(*) FROM host_mdm_commands WHERE host_id = {host_id})"""
+    try:
+        result = subprocess.run(
+            ["kubectl", "-n", "fleet", "exec", "statefulset/fleet-mysql", "-c", "mysql", "--",
+             "mysql", "--defaults-extra-file=/run/secrets/fleet-mysql/client.cnf", "--database=fleet",
+             "--batch", "--skip-column-names", "--execute", sql],
+            capture_output=True, timeout=30, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise SetupError("Cannot verify iPhone pending MDM work; APNs ping withheld") from error
+    if result.returncode != 0 or result.stdout.strip() != b"1\t0\t0\t0\t0\t0":
+        raise SetupError("iPhone pending MDM work is present or unverified; APNs ping withheld")
+
+
+def ios_checkin(api, mdm, token, host_id):
+    host_uuid = ios_host(api, mdm, token, host_id)
+    path = f"/api/v1/fleet/hosts/{host_id}"
+
+    def checked_in_at(timeout=60):
+        host = api.request("GET", path, token=token, timeout=timeout)["host"]
+        if (host.get("id") != host_id or host.get("platform") != "ios"
+                or host.get("uuid") != host_uuid
+                or host.get("mdm", {}).get("connected_to_fleet") is not True):
+            raise SetupError("Selected iPhone identity or enrollment changed")
+        try:
+            stamp = datetime.fromisoformat(host["last_mdm_checked_in_at"].replace("Z", "+00:00"))
+        except (AttributeError, KeyError, ValueError) as error:
+            raise SetupError("Fleet iPhone MDM check-in timestamp is unavailable") from error
+        if stamp.tzinfo is None:
+            raise SetupError("Fleet iPhone MDM check-in timestamp has no timezone")
+        return stamp
+
+    checked_in_at()
+    ios_pending_work_clear(host_id)
+    # Recheck identity after the database preflight, immediately before the push.
+    previous = checked_in_at()
+    started = datetime.now(timezone.utc)
+    api.request("POST", path + "/apns_ping", token=token, accepted_status=204)
+    deadline = time.monotonic() + 90
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        current = checked_in_at(timeout=min(60, remaining))
+        if (previous < current <= datetime.now(timezone.utc) + timedelta(minutes=1)
+                and current >= started - timedelta(minutes=2)):
+            print("Enrolled iPhone MDM check-in advanced after one APNs ping", flush=True)
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(3, remaining))
+    raise SetupError("iPhone did not complete a fresh Fleet MDM check-in after one APNs ping")
 
 
 def mac_host(api, mdm, token, host_id):
@@ -367,6 +441,8 @@ def execute(args):
             console_sso(api, token, current_password, recovery_password)
         elif args.action == "reporting":
             reporting(api, token)
+        elif args.action == "ios-checkin":
+            ios_checkin(api, mdm, token, args.host_id)
         elif args.action == "mac-baseline-catalog":
             mac_baseline_catalog(api, token, remove=args.remove)
         elif args.action == "validate-profiles":
@@ -401,18 +477,18 @@ def execute(args):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline",
-                                            "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"))
+                                            "ios-baseline", "ios-checkin", "mac-baseline-catalog", "console-sso", "reporting"))
     parser.add_argument("--host-id", type=int,
-                        help="Explicit enrolled Fleet ID; required for mac-baseline or ios-baseline")
+                        help="Explicit enrolled Fleet ID; required for mac-baseline, ios-baseline, or ios-checkin")
     parser.add_argument("--remove", action="store_true",
                         help="Remove only the selected repository profiles; does not restore old passwords")
     parser.add_argument("--current-password-file", type=Path,
                         help="Private current target-local Fleet password file for a legacy console SSO migration")
     parser.add_argument("--execute", action="store_true", help="Apply through the authenticated Fleet API")
     args = parser.parse_args(argv)
-    if ((args.action in ("mac-baseline", "ios-baseline")) != (args.host_id is not None)
+    if ((args.action in ("mac-baseline", "ios-baseline", "ios-checkin")) != (args.host_id is not None)
             or (args.host_id is not None and args.host_id < 1)):
-        parser.error("Only mac-baseline and ios-baseline require --host-id with a positive Fleet host ID")
+        parser.error("mac-baseline, ios-baseline, and ios-checkin require --host-id with a positive Fleet host ID")
     if args.remove and args.action not in ("mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog"):
         parser.error("--remove applies only to device profiles")
     if args.current_password_file is not None and args.action != "console-sso":
@@ -430,6 +506,7 @@ def main(argv=None):
                   "Profile writes replace only stable repository identifiers, preserve other profiles, and never auto-retry.\n"
                   "mac-baseline targets only the selected Fleet-enrolled Mac; future Macs require an explicit install.\n"
                   "ios-baseline targets only the selected iPhone or iPad; install and removal never use a global catalog.\n"
+                  "ios-checkin sends one blank APNs ping to the selected enrolled iPhone and waits for a fresh MDM timestamp.\n"
                   "mac-baseline-catalog --remove retires the old global assignment after host-scoped Mac installs.\n"
                   "console-sso stages or verifies the SSO/recovery topology from local recovery; "
                   "--current-password-file is legacy-only.\n"

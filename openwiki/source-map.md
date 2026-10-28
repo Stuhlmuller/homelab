@@ -124,10 +124,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Source Map
@@ -154,10 +154,11 @@ desired state.
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
+| `clusters/homelab/apps/bulldozer/README.md`, `.github/workflows/bulldozer-credential.yml`, and `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl` | [Staged Bulldozer workload](workloads/inventory.md), [GitHub App secret contract](runbooks/secrets-aws-ssm.md#bulldozer-github-app), and [Funnel callback](runbooks/tailnet-ingress.md#route-boundaries) |
 | `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
-| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale tailnet DNS, settings, contacts, policy, and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
@@ -211,3 +212,6 @@ Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/
 See the [inventory](workloads/inventory.md),
 [credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
 and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
+Database role provisioning: [SQL and initial extensions](../clusters/homelab/apps/mastodon/initdb-configmap.yaml),
+[ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
+[PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).

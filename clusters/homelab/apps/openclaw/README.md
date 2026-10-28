@@ -181,6 +181,24 @@ archive into Enterprise.
 
 ### T014 isolated legacy boot gate
 
+The protected `network-preflight` legacy stage checks whether the existing
+read-only retirement reader can create a rootless network namespace. Dispatch it
+only on exact current `main` with empty `baseline_ref` and `archive_ref`. It
+checks the stopped writer and reader identity, starts a disposable process
+namespace with only loopback, rejects routable interfaces and routes, and
+requires direct IPv4/IPv6 egress probes to return `ENETUNREACH` (an unsupported
+IPv6 address family is accepted only when the IPv4 probes and route checks pass).
+Inside `Run Legacy Stage`, failures expose only a fixed category: Nix shell
+entry, kubeconfig install, Kubernetes version check, source integrity, current
+main, stopped reader, namespace proof, or post-check. Earlier setup steps have
+their own check status. Private diagnostics stay on the protected runner. It
+does not copy state, start the old gateway, create a Kubernetes object, or
+prove that a later rehearsal Pod has the same seccomp and namespace behavior.
+A failed stage leaves
+T014 blocked; a successful stage is capability evidence only. The eventual
+isolated boot must repeat these checks in the same namespace that runs the
+pinned old image, with separate writable copies and no external deliveries.
+
 A read-only stopped-source review found 37 NAS symlinks. Nine absolute targets
 leave both archived roots. Six point into `/app`: `plugin-skills` links for
 `browser-automation`, `obsidian-vault-maintainer`, `wiki-maintainer`, and
@@ -191,11 +209,26 @@ all five target directories present and nonempty. This proves that the pinned
 image supplies a baseline for those six links. The former gateway did not set
 `readOnlyRootFilesystem`, so its `/app` overlay could have held added or changed
 files that the reader cannot see. The original contents of all six targets
-remain unclassified until compared with retained evidence. The other three
-external targets are dangling in the reader; their individual dependencies
-and disposition also remain unclassified. The archive preserves each link,
-but no external target payload. Do not assume the baseline image recovers the
-gateway's exact contents or that the dangling links are harmless.
+remain unclassified until compared with retained evidence. A 2026-10-25
+read-only check of the private restore report found 37 links: 27 contained,
+nine external, and one pointing to a missing target within the archived roots.
+The six `/app` links resolve to five nonempty directories in the pinned image,
+but the former writable overlay is unproven. The other three external links
+originate in the archived workspace and point under `/home`; the fresh reader
+has no targets there. The old Pod declared no `/home` volume, so their former
+overlay dependency is unknown. The missing-in-archive link points within the
+retained NAS to a skill target absent from both the archive and original
+read-only mount. Its source link still matches the archive, so this was already
+dangling, not an archive omission; its purpose remains unknown. The archive
+preserves each link but no external target payload. Do not assume the image
+baseline recovers the gateway's exact contents or that dangling links are
+harmless.
+The three dangling workspace links point into absent `/home/node/.cache`
+Terraform provider caches.
+The pinned 2026.9.5 image lacks `@openclaw/discord`; the archived package is
+2026.5.22. A compatible boot also needs the complete global npm install tree
+and metadata for `@openclaw/discord@2026.9.5`, with the former writable
+overlay classified before claiming an exact recovery.
 
 Archive verification and the retained original PVCs do not pass T014. The
 reader restores into NAS scratch and does not start the old image. A rehearsal
@@ -210,8 +243,59 @@ the verified offsite archive receipt before running it. A reviewed offline
 Linux container run with `--network none` could supply the network boundary,
 but it still needs a proven container host, space for separate restored copies,
 the pinned image digest, and UID 1000 writable mounts; no such rehearsal has run.
+The cached compressed archive is 18,917,154,522 bytes. The
+[standard public `ubuntu-24.04` runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
+has a 14 GB SSD, so it cannot hold even this archive before extraction. Select
+a reviewed larger isolated Linux host with measured space for the archive,
+restored roots and image before adding the boot stage.
 Without evidence of the former writable overlay, do not claim exact compatible
 recovery from the image baseline alone.
+
+The 2026.9.5 image does not contain the matching external Discord package;
+the retained install is 2026.5.22. The
+[offline cache builder](../../../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image digest and the npm tarball integrity, installs the exact
+package in a disposable state, then tests a fresh state with `--network none`
+using only an archive round-trip of npm's content cache. The warm home and state
+are removed from the Docker bind mount before that test. The fresh pinned CLI
+creates its own SQLite install record and must report the expected global npm
+origin, spec and version. It also requires the online and offline npm project
+lockfiles to agree, except for npm's generated project-root name. Package paths,
+versions, integrity hashes, dependency edges and other metadata remain exact.
+Its output is a private-transfer contract:
+`npm-cache.tar`, `dependency-lock.json`, and `manifest.json` with both SHA-256
+hashes. It contains no
+retained OpenClaw state, credentials, or install records. The
+[CI check](../../../../.github/workflows/openclaw-discord-offline-cache.yml)
+builds and tests but discards that output. After its pinned-image offline proof
+passes on protected `main`, the `publish-discord-cache` stage of the
+[protected operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
+rebuilds the public package closure and stores all three files under a fresh
+`openclaw-enterprise/legacy-discord-cache/<SOURCE_SHA>/<RUN_ID>/` prefix in the
+versioned KMS backup bucket. It verifies exact downloaded object versions and
+writes `final.json` last. Do not reuse a partial prefix. `transfer-discord-cache`
+accepts that exact SHA/run ID as `cache_ref`, checks the final receipt, each
+version, manifest, lock and tar safety, then copies exact versions into new
+owner-only `/archive/private/discord-cache-<TRANSFER_RUN_ID>` scratch through
+bounded reader slices. It writes `completed.json` only after all copied hashes
+match. Both stages require the stopped legacy writer and unchanged reader/PVC
+identity. They never mount or edit the retained source claims. Run each stage
+from a fresh exact current `main` SHA; keep private receipts out of Git and
+public CI logs. A successful transfer does not prove a no-egress old-image
+boot, real turn, or scheduled job, so T014 remains open.
+
+```sh
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-discord-cache
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=transfer-discord-cache \
+  -f cache_ref=<PUBLICATION_SHA>/<PUBLICATION_RUN_ID>
+```
+
+The first run must finish successfully before transfer. A failed or partial run
+keeps its unique prefix or scratch directory for private diagnosis; retry with
+a new workflow run after fixing the cause. Neither stage should be dispatched
+until the pinned offline cache check and protected review have passed.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
