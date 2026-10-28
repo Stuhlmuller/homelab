@@ -363,7 +363,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Validation Gates
@@ -1561,9 +1561,10 @@ terragrunt stack run plan
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
-then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
-details and live command output are withheld from the public PR and Actions
-logs. Run the same order locally when reproducing a failure.
+then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. The
+human-readable plan streams to the Actions log. Saved plan files and
+JSON policy inputs remain temporary and are removed on exit. Run the same
+order locally when reproducing a failure.
 
 The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
 stack or shared root sources, or plan inputs, change. Missing client and tenant
@@ -1812,6 +1813,17 @@ receipt, and prepared a separate private NAS scratch recovery tree and link
 report. This source-bound copy does not prove an isolated old-image boot or
 complete T014.
 
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image and npm package integrity, then checks a fresh pinned-CLI
+install and runtime inspection from a restored npm cache under Docker
+`--network none`. The
+[fixture](../../scripts/ci/openclaw-discord-offline-cache-test.py)
+checks integrity and dependency-lock comparison; the
+[PR workflow](../../.github/workflows/openclaw-discord-offline-cache.yml)
+runs the proof and discards the artifacts. This validates public-package
+installation feasibility only. It does not publish a private cache, verify a
+transfer to the recovery host, or boot the retained state, so T014 stays open.
+
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
@@ -1950,7 +1962,8 @@ receipt,
 admission verifies the exact Node UID and boot
 ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
 Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
-then the selector label. A complete cluster-wide selector inventory must show
+admission-run annotation atomically, then the selector label. A complete
+cluster-wide selector inventory must show
 no labeled Node before mutation and again just before labeling; if another
 Node appears after the patch, admission removes its own label and retains the
 taint. If the Node patch succeeds but the final admission receipt cannot be
@@ -1961,11 +1974,23 @@ version, refuses a final admission receipt under the original SHA, then
 runs a UID-owned privileged host probe. It requires an empty live IPv4/IPv6/ipset
 kube-router snapshot, deleted probe Pod, absent enforcer/fixtures, matching
 Node UID/boot and system Pods, and no other selected Node. It removes only the
-owned label/taint with resource-version and UID tests. This rollback remains
+owned label, then the annotation and taint atomically with resource-version and
+UID tests. A taint-only attempt needs this protected recovery before another
+admission run. This rollback remains
 available after placement expiry or a newer current-main commit, provided
 the configured canary node and taint still match the original placement. An
 orphaned probe has token/UID-bound `firewall-baseline-recover` cleanup using
 the recovery run and admission IDs.
+After a verified admission with no enforcer or fixtures deployed, owner-only
+`canary-abort` selects the immutable final admission and placement receipt by
+original SHA and run ID. Current protected `main` must retain the admission's
+runtime manifests and disabled activation. A same-run UID-owned host probe
+must prove the kube-router firewall empty and be deleted before the stage
+checks absent runtime and matching Node/Pod identities, removes only the
+selected label, then removes the annotation and taint atomically.
+Interrupted and already-clean retries are idempotent. A newer admission marker
+or changed source blocks the abort; an orphaned abort probe uses
+`firewall-baseline-recover` first.
 `canary-release` requires the reviewed cleanup receipt
 and an empty owned firewall. It removes the label, waits until cleanup
 DaemonSet Pods are gone cluster-wide, then rechecks the complete canary-node
@@ -1973,6 +1998,27 @@ Pod inventory against reviewed system Pod UIDs before removing the taint. A
 survivor, incomplete inventory, changed Pod or timeout leaves the taint and an
 interrupted private receipt. Source fixtures do not supply live capacity or
 traffic qualification.
+After an interrupted unlabel, `canary-release` cannot retry the taint-only
+state. Owner-only `canary-release-recover` selects the immutable original
+release attempt, verified cleanup, ownership, and placement. The attempt must
+bind the cleanup run and Pod UID; earlier attempts without those fields fail
+closed. The original release SHA must be on current first-parent `main`, with
+its runtime manifests, canary settings, and activation state unchanged. The
+stage requires the matching admission marker on the unlabeled, tainted Node,
+a reviewed dormant
+cleanup DaemonSet with no Pods anywhere, and absent enforcer and fixtures.
+Before untaint it requires the original system Pod UIDs. Its same-run
+UID-owned host probe must prove an
+empty firewall and be deleted before one resource-version/UID-guarded patch
+removes the marker and taint. An orphaned probe uses protected
+`firewall-baseline-recover` with the release recovery run ID. See
+[the canary Node stage](../../scripts/network-policy-canary-node.py); manual
+untaint is barred. If the Node was cleared but the final receipt was lost,
+the same selected receipts can produce a read-only `observedClean` receipt
+after a fresh empty firewall probe and complete, unchanged current Pod
+inventory. It permits ordinary post-untaint workloads but rejects firewall
+and cleanup Pods. It records `mutationPerformed: false` and does not
+attribute the earlier patch.
 
 The dormant foundation adds
 [`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)

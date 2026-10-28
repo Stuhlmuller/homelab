@@ -52,7 +52,7 @@ spec:
           env:
             - name: GOMEMLIMIT
               value: 161MiB
-          image: registry.k8s.io/coredns/coredns:v1.12.4@sha256:986f04c2e15e147d00bdd51e8c51bcef3644b13ff806be7d2ff1b261d6dfbae1
+          image: harbor.stinkyboi.com/mirror/registry.k8s.io/coredns/coredns:v1.12.4@sha256:986f04c2e15e147d00bdd51e8c51bcef3644b13ff806be7d2ff1b261d6dfbae1
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 5

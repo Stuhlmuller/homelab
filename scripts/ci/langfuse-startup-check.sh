@@ -53,11 +53,17 @@ kubectl kustomize clusters/homelab/apps/langfuse |
     [.[] | select(.kind == "ConfigMap" and
       (.metadata.name | startswith("langfuse-empty-schema-recovery")))] as $code |
     [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.name == "langfuse-migration-recovery")] as $claims |
+    [.[] | select(.kind == "Deployment" and .metadata.name == "langfuse-postgres")] as $postgres |
     ($jobs | length == 0) and ($code | length == 0) and ($claims | length == 1) and
+    ($postgres | length == 1) and
+    ($postgres[0] | .spec.strategy.type == "Recreate" and
+      .spec.template.spec.nodeSelector["kubernetes.io/hostname"] == "acer" and
+      ([.spec.template.spec.volumes[] | select(.name == "data" and
+        .persistentVolumeClaim.claimName == "langfuse-postgres-data")] | length == 1)) and
     ($claims[0] | .metadata.namespace == "langfuse" and
       .spec.storageClassName == "nfs-default" and
       .spec.accessModes == ["ReadWriteOnce"] and
       .spec.resources.requests.storage == "1Gi" and
       .metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false")
   ' >/dev/null
-echo "Langfuse: recovery volume retained and one-shot Job/ConfigMap absent"
+echo "Langfuse: PostgreSQL placement, data claim and recovery volume verified"

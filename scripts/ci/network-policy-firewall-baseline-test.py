@@ -89,6 +89,17 @@ class FirewallBaselineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "differs"):
                 SUT["require_reviewed_manifest"](SHA)
 
+    def test_recovery_probe_rejects_another_admission_marker_before_pod_access(self):
+        state = {"metadata": {"uid": "node-uid", "annotations": {
+            SUT["CANARY"]["ADMISSION"]: f"{EVIDENCE_SHA}:124"}},
+            "status": {"nodeInfo": {"bootID": "boot"}}}
+        with patch.dict(SUT["CANARY"], {
+                "node_state": lambda *_: (state, False, True)}), patch.dict(
+                SUT["CLEANUP"], {"kubernetes_json": lambda *_: self.fail(
+                    "probe should not inspect or create a Pod")}), self.assertRaisesRegex(
+                ValueError, "admission marker"):
+            SUT["recovery_node_identity"]({}, EVIDENCE_SHA, "123")
+
     def test_probe_rejects_wrong_node_token_command_and_capability(self):
         valid = pod()
         self.assertEqual(SUT["require_probe_pod"](valid, "token", "pod-uid", True),
@@ -183,6 +194,11 @@ class FirewallBaselineTests(unittest.TestCase):
                                                           placement), attempt)
             self.assertEqual(SUT["read_attempt"](Path("/unused"), SHA, "123",
                                                   stage=None), attempt)
+            attempt["stage"] = "canary-abort"
+            self.assertEqual(SUT["read_recovery_attempt"](Path("/unused"), SHA,
+                                                          EVIDENCE_SHA, "123",
+                                                          placement), attempt)
+            attempt["stage"] = "canary-admit-recover"
             with self.assertRaisesRegex(ValueError, "preflight ownership"):
                 SUT["read_attempt"](Path("/unused"), SHA, "123")
             for changed in ({"admissionRunId": ""}, {"evidenceSourceSha": SHA},
@@ -195,13 +211,63 @@ class FirewallBaselineTests(unittest.TestCase):
                                                      EVIDENCE_SHA, "123",
                                                      placement)
 
+    def test_release_probe_requires_taint_only_and_binds_attempt(self):
+        placement = {"placementRunId": "456", "nodeUid": "node-uid", "bootID": "boot-id"}
+        attempt = {"format": 1, "stage": "canary-release-recover", "status": "attempted",
+                   "verified": False, "sourceSha": SHA, "runId": "123",
+                   "evidenceSourceSha": EVIDENCE_SHA, "node": SUT["NODE"],
+                   "nodeUid": "node-uid", "bootID": "boot-id", "admissionRunId": "789",
+                   "placementRunId": "456", "placementVersionId": "version-2",
+                   "releaseSourceSha": SHA, "releaseRunId": "234",
+                   "cleanupRunId": "345", "captureRunId": "456",
+                   "cleanupPodUid": "cleanup-uid", "podToken": "1" * 48}
+        with patch.dict(SUT["PLATFORM"], {"read_private_json": lambda *_: attempt}):
+            self.assertEqual(SUT["read_recovery_attempt"](
+                Path("/unused"), SHA, EVIDENCE_SHA, "123", placement, True), attempt)
+            self.assertEqual(SUT["read_attempt"](
+                Path("/unused"), SHA, "123", stage=None), attempt)
+            with patch.dict(attempt, {"cleanupRunId": ""}):
+                with self.assertRaisesRegex(ValueError, "release recovery probe"):
+                    SUT["read_recovery_attempt"](
+                        Path("/unused"), SHA, EVIDENCE_SHA, "123", placement, True)
+        state = {"metadata": {"uid": "node-uid", "annotations": {
+            SUT["CANARY"]["ADMISSION"]: f"{EVIDENCE_SHA}:789"}},
+            "status": {"nodeInfo": {"bootID": "boot-id"}}}
+        for labeled, tainted, release_clean in ((True, True, False),
+                                                 (False, False, False),
+                                                 (False, True, True)):
+            with self.subTest(labeled=labeled, tainted=tainted), patch.dict(SUT["CANARY"], {
+                    "node_state": lambda *_: (state, labeled, tainted)}), patch.dict(
+                    SUT["CLEANUP"], {"kubernetes_json": lambda *_: self.fail(
+                        "release probe should reject before Pod access")}), self.assertRaisesRegex(
+                    ValueError, "isolation state changed"):
+                SUT["recovery_node_identity"](placement, EVIDENCE_SHA, "789",
+                                              True, release_clean)
+
+    def test_release_probe_requires_owner_before_cluster_access(self):
+        config = json.loads(SUT["CONFIG"].read_text())
+        with patch.dict(SUT["PLATFORM"], {
+                "require_reviewed_execution_config": lambda *_: None,
+                "validate_config": lambda *_: config,
+                "protected_context": lambda *_: None}), patch.dict(SUT["OWNERSHIP"], {
+                "require_owner_attestation": lambda: (_ for _ in ()).throw(
+                    ValueError("owner required"))}), patch.dict(SUT["CLEANUP"], {
+                "require_current_main": lambda *_: self.fail("cluster or main access")}), \
+                self.assertRaisesRegex(ValueError, "owner required"):
+            SUT["execute"](argparse.Namespace(
+                config=SUT["CONFIG"], expected_sha=SHA, release_recovery=True,
+                recovery_placement=Path("/unused")))
+
     def run_baseline(self, plan, identities=None, delete_fails=False, create_fails=False,
-                     recovery=False, assigned=None):
+                     recovery=False, assigned=None, release=False,
+                     release_clean=False):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)
             path.chmod(0o700)
             output = path / "baseline.json"
             config = json.loads(SUT["CONFIG"].read_text())
+            if release:
+                config["activationEnabled"] = True
             events = []
             stale = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime(
                 "%Y-%m-%dT%H:%M:%SZ")
@@ -224,6 +290,10 @@ class FirewallBaselineTests(unittest.TestCase):
                       "bootID": "boot-id", "admissionRunId": "987",
                       "placementRunId": "456", "placementVersionId": "version-2",
                       "podToken": "1" * 48}
+            if release:
+                marker.update(stage="canary-release-recover", releaseSourceSha=EVIDENCE_SHA,
+                              releaseRunId="234", cleanupRunId="345", captureRunId="456",
+                              cleanupPodUid="cleanup-uid")
 
             class Store:
                 def __init__(self, _bucket):
@@ -278,8 +348,18 @@ class FirewallBaselineTests(unittest.TestCase):
                         "snapshot": lambda *_: state,
                         "cleanup_plan": lambda *_: plan,
                         "snapshot_sha256": lambda *_: "0" * 64}), \
-                    patch.dict(SUT["CANARY"], {"require_runtime_absent": absent}), \
-                    patch.dict(SUT["OWNERSHIP"], {"PrivateStore": lambda *_: store}), \
+                    patch.dict(SUT["CANARY"], {
+                        "require_runtime_absent": absent,
+                        "node_state": lambda *_: ({}, False, not release_clean),
+                        "clean_release_pods": lambda *_: ([{
+                            "namespace": "default", "name": "workload", "uid": "workload-uid"}]
+                            if assigned is None else assigned),
+                        "require_release_runtime_quiesced": lambda *_: events.append(
+                            "release-runtime-quiesced"),
+                        "require_release_source": lambda *_: events.append(
+                            "release-source-checked")}), \
+                    patch.dict(SUT["OWNERSHIP"], {"PrivateStore": lambda *_: store,
+                                                  "require_owner_attestation": lambda: None}), \
                     patch.dict(helper, {"require_reviewed_manifest": lambda *_:
                                      json.loads(SUT["MANIFEST"].read_text()),
                                      "read_attempt": lambda *_, **__: marker if recovery else
@@ -298,7 +378,8 @@ class FirewallBaselineTests(unittest.TestCase):
                         config=SUT["CONFIG"], expected_sha=SHA,
                         bucket="bucket", attempt=path / "attempt.json", output=output,
                         evidence_source_sha=EVIDENCE_SHA if recovery else None,
-                        recovery_placement=path / "placement.json" if recovery else None))
+                        recovery_placement=path / "placement.json" if recovery else None,
+                        release_recovery=release))
                 except ValueError as exc:
                     result = None
                     error = str(exc)
@@ -361,6 +442,7 @@ class FirewallBaselineTests(unittest.TestCase):
         self.assertIsNone(error)
         proof = json.loads(receipt)
         self.assertEqual(proof["stage"], "firewall-recovery-proof")
+
         self.assertEqual(proof["sourceSha"], SHA)
         self.assertEqual(proof["evidenceSourceSha"], EVIDENCE_SHA)
         self.assertEqual(proof["runId"], "123")
@@ -380,6 +462,27 @@ class FirewallBaselineTests(unittest.TestCase):
         self.assertIn("snapshot", capture[1])
         self.assertLess(events.index("delete"), events.index("capture"))
         self.assertEqual(result["captureKey"], proof["captureKey"])
+
+    def test_release_probe_accepts_active_config_only_with_quiesced_runtime(self):
+        result, error, events, receipt, capture = self.run_baseline(
+            ([], 0, 0), recovery=True, release=True)
+        self.assertIsNone(error)
+        self.assertEqual(result["stage"], "firewall-release-recovery-proof")
+        self.assertEqual(result["cleanupRunId"], "345")
+        self.assertEqual(result["releaseRunId"], "234")
+        self.assertTrue(result["podDeleted"])
+        self.assertLess(events.index("delete"), events.index("capture"))
+        self.assertEqual(events.count("release-runtime-quiesced"), 2)
+        self.assertNotIn("runtime-absent", events)
+        self.assertEqual(result["observedState"], "taint-only")
+        clean, error, events, _, _ = self.run_baseline(
+            ([], 0, 0), recovery=True, release=True, release_clean=True)
+        self.assertIsNone(error)
+        self.assertEqual(clean["observedState"], "clean")
+        self.assertEqual(clean["observedPods"], [{"namespace": "default",
+                                                  "name": "workload",
+                                                  "uid": "workload-uid"}])
+        self.assertTrue(clean["podDeleted"])
 
     def test_recovery_refuses_owned_firewall_and_deletes_probe(self):
         result, error, events, receipt, capture = self.run_baseline(

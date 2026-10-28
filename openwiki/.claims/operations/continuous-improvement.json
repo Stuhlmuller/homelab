@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7290f89eb69d96f9cb4600f47bafd9f244c5711326b3d95e4b49908d929317be",
+  "pageVersion": "sha256:45fe7bf909c3c603b82a81b2519aa3d5309f2177adb1e01ee8de050a24f09e5a",
   "claims": [
     {
       "id": "claim_90504df127484cc1967cce8cc178ca30",
@@ -11,10 +11,24 @@
           "version": "repo-file-v1:sha256:3fb023d451c0421894984fe2ebff2e8464dc662f4a414988fd94c9ae73ea8020"
         }
       ]
+    },
+    {
+      "id": "claim_09f68c7ee1b143c8b485b3b3444c1240",
+      "statement": "On 2026-10-24, github-iac PR 120 removed the required reviewer from homelab-plan through a saved Terragrunt plan; homelab-production remains main-only without reviewers.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
+        },
+        {
+          "resource": "repo://docs/secrets-aws-ssm.md",
+          "version": "repo-file-v1:sha256:2eddbcd22dcd5540dd472c933585834dcb80b9bfb7b08fc505ea03d4ac8a2eb5"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-25T04:28:23.381Z"
   }
 }

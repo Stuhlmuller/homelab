@@ -26,8 +26,8 @@ This repository uses GitHub Actions for the review and rollout path:
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
-  Octelium, and run the live plan with details withheld. Other same-repository
-  changes use a no-permission skip-check job;
+  Octelium, and stream the live Terragrunt plan to the Actions log. Other
+  same-repository changes use a no-permission skip-check job;
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
@@ -161,14 +161,15 @@ checks remain fresh.
   the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
   briefly affects CI, operator, and Cordium access, so validate both Services
   after rotation.
-- Plans are not uploaded, printed, or copied into pull requests because
-  Terraform/OpenTofu plans can include sensitive state context. Trusted
-  same-repository jobs evaluate private plans with Conftest and delete them on
-  exit. The required check is the only public plan result. Live plan, apply,
-  diagnostic, and Cloudflare reconciliation output is also withheld from public
-  Actions logs; reproduce failures from an approved local operator session.
-  Workflow policy
-  rejects direct live CLI output or reading the private log after the wrapper.
+- Saved plans and JSON exports are not uploaded or copied into pull requests.
+  Trusted same-repository jobs evaluate them with Conftest and delete them on
+  exit. The PR plan streams Terraform's human-readable output, including
+  failures, to the Actions log. Secret values in Terraform are marked sensitive
+  so the human-readable plan redacts them. Terraform's sensitivity markers do
+  not redact provider error messages; review new providers and resources before
+  adding them to this public-log plan scope. Apply, diagnostic, and Cloudflare
+  reconciliation output remains withheld from public Actions logs. Workflow
+  policy permits only the reviewed PR plan command to stream live CLI output.
   On a protected apply failure, a reviewed classifier may print one fixed
   phase label after verifying its SHA-256; raw output remains withheld.
   Live credentials exist only on the exact step that consumes them. Static
@@ -211,6 +212,10 @@ checks remain fresh.
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
+- For a layout-only reconciliation, `existing_argocd_only=true` selects only
+  Argo CD Applications already registered live. The saved-plan gate rejects
+  any creation in that selection; new registrations still require their
+  separately reviewed targeted dispatch and prerequisites.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted units under the historical `IaC/bootstrap`

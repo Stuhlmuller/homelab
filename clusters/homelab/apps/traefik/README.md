@@ -20,7 +20,7 @@ file provider does not discover or publish arbitrary Kubernetes Services.
 | --- | --- | --- | --- |
 | `web` | 8000 | Private Tailscale LoadBalancer | Redirect to HTTPS port 443 |
 | `websecure` | 8443 | Private Tailscale LoadBalancer | Application and Cordium/control hosts |
-| `funnel` | 8080 | Two Tailscale Ingress proxies | Only the callbacks below |
+| `funnel` | 8080 | Three Tailscale Ingress proxies | Only the callbacks below |
 | `registry` | 9443 | Talos nodes and Renovate | Only Harbor OCI and token endpoints |
 
 The `traefik-registry` ClusterIP Service reserves `10.96.0.50:443` for Talos
@@ -60,6 +60,7 @@ from [`certificate.yaml`](certificate.yaml).
 | --- | --- | --- |
 | `n8n-webhook.tail67beb.ts.net` | `/webhook`, `/webhook-test`, `/webhook-waiting`, and their slash-separated descendants | Workflow-specific webhook credentials/signatures |
 | `policy-bot-hook.tail67beb.ts.net` | Exactly `/api/github/hook` | GitHub webhook HMAC |
+| `bulldozer-hook.tail67beb.ts.net` | Exactly `/api/github/hook` | GitHub webhook HMAC |
 
 All other paths on the callback hosts return 404. Supplying a private application
 Host header to the Funnel listener cannot select a private router. No Fleet

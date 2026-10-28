@@ -36,12 +36,12 @@ terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
       $spec.syncPolicy.automated.selfHeal == true and
       ([ $spec.sources[] | select(has("chart")) |
         [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
-        ["https://istio-release.storage.googleapis.com/charts", "base", "istio-base", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "istiod", "istiod", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "cni", "istio-cni", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "ztunnel", "ztunnel", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "istio-ingressgateway", "1.27.3"],
-        ["https://istio-release.storage.googleapis.com/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
       ]) and
       any($spec.sources[];
         .chart == "ztunnel" and
@@ -79,7 +79,7 @@ if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[
   exit 1
 fi
 if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
-  echo "The public PR plan job must not render live plan or state details." >&2
+  echo "The PR plan job must not render saved plan or state details." >&2
   exit 1
 fi
 if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
@@ -374,7 +374,7 @@ yq -o=json '.' "$kiali_values" |
       | select(.name == "wait-for-prometheus")
     ] | (
       length == 1 and
-      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
       .[0].imagePullPolicy == "IfNotPresent" and
       .[0].command == ["curl"] and
       .[0].args == [
@@ -974,6 +974,8 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
+    '.github/workflows/bulldozer-credential.yml:credential' \
+    '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
@@ -1070,6 +1072,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
@@ -1082,14 +1085,14 @@ done <<'EOF'
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/langfuse-postgres-checkpoint.yml 10fcf54954c0c3020582a993f792cc0923a1d6c631d0bc5d9fdd103d0a0d58fb
+.github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 31a190f5e8fb0f4feea6f9a238277d8f8f864d4318fcea44c435713207e0b170
+.github/workflows/openclaw-enterprise-operations.yml 867502c8ef32d55cbc4341ab99385f5ff31530408ac8da34c2b84745b397e37c
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml 940ed650bcf761b9552959d810e2f12e9a99f3a2322a7b955d17195300e7775e
+.github/workflows/platform-maintenance.yml 6b3fcd75d9e286565b5a79385da5dba8b0533c180c0a31c7a6f7bd046e8b447d
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -1097,13 +1100,14 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
-.github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
+.github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
+.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
 EOF
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/bulldozer-credential.yml:static-policy' \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
@@ -1280,6 +1284,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "default": false,
       "type": "boolean"
     } and
+    .on.workflow_dispatch.inputs.existing_argocd_only == {
+      "description": "Reconcile only Argo CD Applications already registered live",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
     .on.workflow_dispatch.inputs.application_backup_storage == {
       "description": "Apply only the versioned OpenClaw legacy archive bucket",
       "required": false,
@@ -1304,10 +1314,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
+      "TERRAGRUNT_EXISTING_ARGOCD_ONLY",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_EXISTING_ARGOCD_ONLY == "${{ inputs.existing_argocd_only }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
@@ -1636,20 +1648,7 @@ yq -o=json '.' "$cert_manager_values" \
       .startupapicheck.image.digest
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
-tag_only_images="$(
-  {
-    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
-    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } \
-    | rg -v '@sha256:' \
-    || true
-)"
-
-if [[ -n "$tag_only_images" ]]; then
-  echo "Container images must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
-  exit 1
-fi
+python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

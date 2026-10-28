@@ -66,8 +66,13 @@ def node_identity():
     return uid, boot_id
 
 
-def recovery_node_identity(placement):
-    node, _, _ = CANARY["node_state"]({"canary": {"node": NODE}}, placement)
+def recovery_node_identity(placement, evidence_sha, admission_run_id, release=False,
+                           release_clean=False):
+    node, labeled, tainted = CANARY["node_state"]({"canary": {"node": NODE}}, placement)
+    if release and (labeled or tainted == release_clean):
+        raise ValueError("release probe Node isolation state changed")
+    if tainted:
+        CANARY["require_admission_marker"](node, evidence_sha, admission_run_id)
     uid = node["metadata"]["uid"]
     listing = CLEANUP["kubernetes_json"]("get", "nodes", "-l",
                                         f"kubernetes.io/hostname={NODE}", "--chunk-size=0")
@@ -99,9 +104,11 @@ def get_pod():
 def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
     attempt = PLATFORM["read_private_json"](path)
     token = attempt.get("podToken") if isinstance(attempt, dict) else None
+    allowed_stages = (("firewall-baseline", "canary-admit-recover", "canary-abort",
+                       "canary-release-recover")
+                      if stage is None else stage if isinstance(stage, tuple) else (stage,))
     if (not isinstance(attempt, dict) or attempt.get("format") != 1 or
-            attempt.get("stage") not in (("firewall-baseline", "canary-admit-recover")
-                                         if stage is None else (stage,)) or
+            attempt.get("stage") not in allowed_stages or
             attempt.get("status") != "attempted" or
             attempt.get("verified") is not False or
             attempt.get("sourceSha") != source_sha or
@@ -112,8 +119,11 @@ def read_attempt(path, source_sha, run_id, stage="firewall-baseline"):
     return attempt
 
 
-def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement):
-    attempt = read_attempt(path, source_sha, run_id, "canary-admit-recover")
+def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement,
+                          release=False):
+    attempt = read_attempt(path, source_sha, run_id,
+                           "canary-release-recover" if release else
+                           ("canary-admit-recover", "canary-abort"))
     if (not isinstance(attempt.get("admissionRunId"), str) or
             not OWNERSHIP["RUN_ID"].fullmatch(attempt["admissionRunId"]) or
             attempt.get("evidenceSourceSha") != evidence_sha or
@@ -124,6 +134,14 @@ def read_recovery_attempt(path, source_sha, evidence_sha, run_id, placement):
             attempt.get("nodeUid") != placement.get("nodeUid") or
             attempt.get("bootID") != placement.get("bootID")):
         raise ValueError("recovery probe attempt differs from selected placement")
+    if release and (not PLATFORM["SHA"].fullmatch(attempt.get("releaseSourceSha", "")) or
+                    not OWNERSHIP["RUN_ID"].fullmatch(attempt.get("releaseRunId", "")) or
+                    not OWNERSHIP["RUN_ID"].fullmatch(attempt.get("cleanupRunId", "")) or
+                    not OWNERSHIP["RUN_ID"].fullmatch(attempt.get("captureRunId", "")) or
+                    not isinstance(attempt.get("cleanupPodUid"), str) or
+                    not attempt["cleanupPodUid"] or
+                    attempt.get("node") != NODE):
+        raise ValueError("release recovery probe selection is incomplete")
     return attempt
 
 
@@ -281,11 +299,17 @@ def delete_probe(token, private_dir, uid=None, timeout_seconds=120):
 
 def execute(args):
     recovery = getattr(args, "recovery_placement", None) is not None
+    release = bool(getattr(args, "release_recovery", False))
+    if release and not recovery:
+        raise ValueError("release probe requires selected placement")
     PLATFORM["require_reviewed_execution_config"](args.config, args.expected_sha)
     config = PLATFORM["validate_config"](json.loads(args.config.read_text()))
-    if config["activationEnabled"] is not False or config["canary"]["node"] != NODE:
+    if config["canary"]["node"] != NODE or (not release and
+                                               config["activationEnabled"] is not False):
         raise ValueError("baseline requires pre-enable canary configuration")
     PLATFORM["protected_context"](args.expected_sha)
+    if release:
+        OWNERSHIP["require_owner_attestation"]()
     CLEANUP["require_current_main"](args.expected_sha)
     manifest = require_reviewed_manifest(args.expected_sha)
     placement = None
@@ -296,7 +320,10 @@ def execute(args):
         CANARY["validate_placement"](placement, config, args.evidence_source_sha, False)
         attempt = read_recovery_attempt(args.attempt, args.expected_sha,
                                         args.evidence_source_sha,
-                                        os.environ["GITHUB_RUN_ID"], placement)
+                                        os.environ["GITHUB_RUN_ID"], placement, release)
+        if release:
+            CANARY["require_release_source"](config, attempt["releaseSourceSha"],
+                                              args.expected_sha)
         manifest["spec"]["tolerations"] = [CANARY_TOLERATION]
     else:
         attempt = read_attempt(args.attempt, args.expected_sha, os.environ["GITHUB_RUN_ID"])
@@ -305,13 +332,31 @@ def execute(args):
         raise ValueError("baseline output already exists")
     store = OWNERSHIP["PrivateStore"](args.bucket)
     store.store.check()
-    CANARY["require_runtime_absent"](True)
-    inspect_identity = (lambda: recovery_node_identity(placement)) if recovery else node_identity
+    def require_runtime():
+        if release:
+            CANARY["require_release_runtime_quiesced"](
+                config, placement, attempt["cleanupPodUid"])
+        else:
+            CANARY["require_runtime_absent"](True)
+
+    require_runtime()
+    release_clean = False
+    if release:
+        node, labeled, tainted = CANARY["node_state"](config, placement)
+        if labeled:
+            raise ValueError("release probe requires unlabeled canary Node")
+        release_clean = not tainted
+    inspect_identity = (lambda: recovery_node_identity(
+        placement, args.evidence_source_sha, attempt["admissionRunId"], release,
+        release_clean)) \
+        if recovery else node_identity
     identity = inspect_identity()
-    assigned = system_pods()
-    if recovery and assigned != placement["systemDaemonSetPods"]:
+    inventory = (lambda: CANARY["clean_release_pods"](config)) if release_clean else system_pods
+    assigned = inventory()
+    if recovery and not release_clean and assigned != placement["systemDaemonSetPods"]:
         raise ValueError("recovery probe system Pods differ from selected placement")
-    record = {"format": 1, "stage": "firewall-recovery-proof" if recovery else
+    record = {"format": 1, "stage": "firewall-release-recovery-proof" if release else
+              "firewall-recovery-proof" if recovery else
               "firewall-baseline", "status": "started",
               "verified": False, "sourceSha": args.expected_sha, "runId":
               os.environ["GITHUB_RUN_ID"], "node": NODE,
@@ -322,6 +367,15 @@ def execute(args):
                       admissionRunId=attempt["admissionRunId"],
                       placementRunId=attempt["placementRunId"],
                       placementVersionId=attempt["placementVersionId"])
+    if release:
+        record.update(releaseSourceSha=attempt["releaseSourceSha"],
+                      releaseRunId=attempt["releaseRunId"],
+                      cleanupRunId=attempt["cleanupRunId"],
+                      captureRunId=attempt["captureRunId"],
+                      cleanupPodUid=attempt["cleanupPodUid"],
+                      observedState="clean" if release_clean else "taint-only")
+        if release_clean:
+            record["observedPods"] = assigned
     CLEANUP["write_record"](output, record)
     token = attempt["podToken"]
     manifest["metadata"]["annotations"][RUN_ANNOTATION] = token
@@ -332,7 +386,7 @@ def execute(args):
     try:
         try:
             CLEANUP["require_current_main"](args.expected_sha)
-            if inspect_identity() != identity or system_pods() != assigned:
+            if inspect_identity() != identity or inventory() != assigned:
                 raise ValueError("preflight Node identity or assigned Pods changed before creation")
             create_attempted = True
             created = CLEANUP["kubernetes_json"]("-n", "kube-system", "create", "-f",
@@ -354,15 +408,18 @@ def execute(args):
             if create_attempted:
                 delete_probe(token, output.parent, created_uid)
             pod_file.unlink(missing_ok=True)
-        CANARY["require_runtime_absent"](True)
-        if inspect_identity() != identity or system_pods() != assigned:
+        require_runtime()
+        if inspect_identity() != identity or inventory() != assigned:
             raise ValueError("preflight Node or assigned Pods changed")
+        if release:
+            CANARY["require_release_source"](config, attempt["releaseSourceSha"],
+                                              args.expected_sha)
         CLEANUP["require_current_main"](args.expected_sha)
         capture = dict(record, status="verified", verified=True,
                        firewallBaselineEmpty=True, ownedChains=0, ownedSets=0,
                        backend=state["backend"], snapshot=state,
                        snapshotSha256=CLEANUP["snapshot_sha256"](state),
-                       systemDaemonSetPods=assigned,
+                       **({} if release_clean else {"systemDaemonSetPods": assigned}),
                        podDeleted=True,
                        completedAt=datetime.now(timezone.utc).isoformat())
         key = (f"openclaw-enterprise/platform/{args.expected_sha}/"
@@ -429,13 +486,15 @@ def main():
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--attempt", type=Path, required=True)
     parser.add_argument("--recovery-placement", type=Path)
+    parser.add_argument("--release-recovery", action="store_true")
     parser.add_argument("--evidence-source-sha")
     parser.add_argument("--baseline-source-sha")
     parser.add_argument("--baseline-run-id")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.action == "recover" and (args.recovery_placement or args.evidence_source_sha):
+        if args.action == "recover" and (args.recovery_placement or args.evidence_source_sha or
+                                         args.release_recovery):
             raise ValueError("orphan probe cleanup does not use placement evidence")
         if args.action != "recover" and not args.recovery_placement and args.evidence_source_sha:
             raise ValueError("baseline capture does not use admission evidence")

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cf0879e8eeb758c5c7f59d89ebc025009eb830f5f96242e8183807c058f0e3e7",
+  "pageVersion": "sha256:bbadc2e056fde12f6f9a9636b0722e2a925f204add451ab69969a10cedb7a5d0",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ba96d393e96eef109996906f46deba7d5ace54d237d9d4477667ea9f224f03c9"
+          "version": "repo-file-v1:sha256:c4b63d069880fed82d1d27d4504dd415300563d478e6ecf5bf312f21ff3ace82"
         }
       ]
     },
@@ -82,7 +82,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:82d41263cc122fda34f19c95f33e350857f4087edf78a6c646ac44d6ec018c07"
+          "version": "repo-file-v1:sha256:2eddbcd22dcd5540dd472c933585834dcb80b9bfb7b08fc505ea03d4ac8a2eb5"
         }
       ]
     },
@@ -202,35 +202,23 @@
     },
     {
       "id": "claim_4b9b5fcced3c4153a2e256588f44b2aa",
-      "statement": "The Enterprise operations workflow retains legacy stages and fixed binding, full-sync, reconcile, stop, verification, restore, and acceptance selections under exact-current-main guards and a shared protected queue. The full-sync helper also rejects current-main drift after the final Argo sync and health readback, with a forced-race regression fixture. Binding still lacks hosted delivery of the owner-controlled 0600 key; full-sync is blocked by the unselected phase; reconcile, stop, and verification dispatch source-bound one-shot Jobs only after a disabled-by-default gate is enabled, while restore and acceptance remain separately blocked. No Enterprise stage has passed live acceptance.",
+      "statement": "The Enterprise operations workflow retains legacy stages and fixed binding, full-sync, reconcile, stop, verification, restore, and acceptance selections under exact-current-main guards and a shared protected queue. The full-sync helper also rejects current-main drift after final Argo sync and health readback. Binding still lacks hosted delivery of the owner-controlled private key; full-sync is blocked by the unselected phase; reconcile, stop, and verification require the disabled-by-default operator gate, while restore and acceptance remain separately blocked. No Enterprise stage has passed live acceptance.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L202-L276",
-          "version": "repo-lines-v1:sha256:81e53e968943b24e2de4e61d7e157aa651ddaafa22b2c16b366e1343d0c5ad59:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkODM0NjZmMDIwNTZjMDMyMWZkM2MzZTM5MzllOGRjYTg3YmY0MjczOTlhY2ZjYWZjYjM4NjI2MjAxZmFjOGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjZmM2YWYxNzhlNTVjNjZhODhhMGY5NDg0OGMwNzNmYWYyYjMwZDc0OWRmNGRkNzlmOWNhZDA4YzVhMmFkMzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQwNzgwOWM5MjEwNmI3ZTI1NmM1ZGU0YTZlZWZjNmZmYWU5NDU4NjBmN2MwMDhjOThmYTU5NWJlYzlmY2Y3MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzZGQwZjE5YTJmYjhlZmU1ZmM5NDc4YzQyNzNhMTYxNDMwYmYxMTIwZDdjNjRiZWY4ZmZkZDlkOGE5ZDA1Y2EifQ"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L53",
-          "version": "repo-lines-v1:sha256:df48c9814c36d7d48a552aab7ea26b9a5fa487ae5cabef2364eba07a5b5f8eab:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py#L167-L172",
-          "version": "repo-lines-v1:sha256:4adda92d1b3e6140200e9cd57b7f923f44d34abe303aea9d50aca092bcdbd192:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDJkMmM5ZjBkNjcxMWY2MTFmM2MzZjA3M2M1NDNlZGRhY2FiZDkxMmFhNTYzMDgyZDU1NzlhODE0NDkyZGYwMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWIwODM5NGIxODE5YmRlMmRiMDQ3ZGRkNjQxMWMyYTkxMDRiZTc0ZTM1YmI4MzQ2MmQ4ZWVjNjBiZWZkMGU2ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2ViNmRjODIwODhhNTAxODlkNzI3ODAwODAzZGUzOWRmODIyYTFlNzYwNWU2OTVjYmQ5YmUyYWY2ZDRkMWI0YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2Q0MTM0MGNjMjM5YTE1OWNlOWI2MDIyZTlmNjMyMjgzMmUyZWFkNzZjYWU5ZTQ3NTRkMjEwZWI4ZmI2ZDVlOCJ9"
+          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh",
+          "version": "repo-file-v1:sha256:23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-full-sync.sh#L59-L78",
-          "version": "repo-lines-v1:sha256:ea8be6c1ced83cbce5ab70d26bf151c93bcb2c280ef0ec27ed0488b5ec4a5c2e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNjM5YjdkNjczNGM4NjAwMWRjODQ2NWE0M2Y5M2U3NzE5NGYwZjczZGI5MjExOWFiMmZhOTczZmUzZDIwNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhY2EwMTU3OTlmZmVjMjA5NmRjNjY5NDY0NTlmYmMxMjgwZDUwMWI3ODA1MzI0ZmQ1ZDRjZTEzOTIwZDY4MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwMGU4MmVmY2IwNjY4ZTI2YjZhZDFkOTNlNDdkNGRjZDcxMjM2OTMwZmE0YWQ3OWU1N2U5NWMzY2NhMDNjODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L200-L389",
-          "version": "repo-lines-v1:sha256:1f9211b9b8ee46da82e15710cc6389ec325244a51d7b5202f1999eb373115c55:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmZWVmOTliYjg5NTU0NTE0ZTMyMTU3MTk0NzY3YzMyYTM1YWMxNjRhODQwMDY4OGU2MmRlMDI4NzFhNDA3Y2JiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJiMzA4NjZlMWJjYzVhYjc2ZTNlZjU5MDEyZDBhZDM5YTY4N2FiZTAwMjNiNDM4YWNiMTEzMGExODgyNWU4MTkzIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2OWIzNjY5YjdhYmNjMzBhM2RlYWMzNjgyN2UyMDcyMzgwYmQwOThmOTllNjkwODQzNzVmZDM4OWZkMTcxZDBhIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwNjhlY2ZmODM4ZjU0ZjUzZTRhNDNiYjNiNDY5YmExODZmZmUxOTBiYTlmYzU0MWZjZmIzNjJiMzcyY2NhMjkzIn0"
-        },
-        {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L1-L46",
-          "version": "repo-lines-v1:sha256:9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
-        },
-        {
-          "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
+          "version": "repo-file-v1:sha256:73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2"
         }
       ]
     },
@@ -318,7 +306,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:c344fbb89500ccaab008614a28480fcdb1e63a7a27d07ca5cd3a60fe71352ac1"
+          "version": "repo-file-v1:sha256:6eb41f3988c8b362be3a1d14b0dd6fc925cebced35bbd78459209e2d7826792a"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
@@ -354,7 +342,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:026daf83ba1171ae5cbb7bee2b109c3f2f11f6aef0b5a1f2970cc70f035731f0"
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -386,7 +374,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:026daf83ba1171ae5cbb7bee2b109c3f2f11f6aef0b5a1f2970cc70f035731f0"
+          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
@@ -405,6 +393,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-24T03:50:35.181Z"
+    "at": "2026-10-25T04:28:23.381Z"
   }
 }

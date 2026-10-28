@@ -63,7 +63,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Runtime Isolation
@@ -141,7 +141,7 @@ Do not enable default-deny egress, `REGISTRY_ONLY`, an egress waypoint, or the
 existing NetworkPolicies globally. Some policies are incomplete or deliberately
 broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
-limited capacity, system DaemonSets, and a live backup workload.
+limited capacity, system DaemonSets, and unrelated workloads.
 
 The reviewed 214-image catalog passed protected publication and authenticated
 Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
@@ -166,18 +166,29 @@ remains disabled. The 08:18 UTC recheck on `main` `bcc08cb` separates this
 2,304 MiB declared floor from the [initial 4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
 for API, worker, database, Envoy and gateway: if co-located on `acer`, that
 budget exceeds unreserved requests by about 2,295 MiB before startup or peak
-margin. `zimaboard-2` has four unrelated Pods, including single-replica
-`Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
-requests after the enforcer and fixtures, without measured peak or continuity
-proof. T022 still has no admitted canary or storage placement.
+margin. The 2026-10-23 snapshot found four unrelated Pods on `zimaboard-2`,
+including single-replica `Recreate` Langfuse PostgreSQL. The proposed moves
+could leave only 428 MiB by requests after the enforcer and fixtures, without
+measured peak or continuity proof. T022 still has no admitted canary or storage
+placement.
+The [evacuation manifests](../../clusters/homelab/apps/multica/values.yaml)
+move Multica frontend to `acer`, the [Harbor exporter](../../clusters/homelab/apps/harbor/vulnerability-exporter.yaml)
+to `zimaboard-1`, and [Cloudflared](../../clusters/homelab/apps/octelium-public/deployment.yaml)
+across those two nodes. The [admission check](../../scripts/network-policy-canary-node.py)
+allows `istio-cni-node` only as a system DaemonSet; it still rejects unrelated
+Pods. A read-only 2026-10-26 check found Langfuse PostgreSQL on
+`zimaboard-1`; this stage leaves its source placement unchanged. It also
+found `zimaboard-2` at 1,330 MiB used (101% of allocatable) with 885 MiB
+requested and Harbor exporter plus system Pods still present. A later
+PostgreSQL move to `acer` remains backup-gated. After source merges, verify
+Argo, endpoints, client paths, and fresh node capacity before treating the
+evacuation as live or admitting a canary.
 
-The 2026-10-25 read-only observation found about 941 MiB in use of 1,308 MiB
-allocatable on `zimaboard-2`. The planned enforcer and fixtures have 704 MiB
-in memory limits plus a 128 MiB reserve, so pre-canary measured use must be at
-most 476 MiB. The four slated evacuees used about 268 MiB; simple subtraction
-projects about 673 MiB after evacuation, still above the admission gate. This
-is a projection, not post-rollout proof. Re-measure after any declared
-evacuation, and do not lower the guard without hardware evidence.
+The planned enforcer and fixtures have 704 MiB in memory limits plus a 128 MiB
+reserve, so pre-canary measured use must be at most 476 MiB of the observed
+1,308 MiB allocatable. The 2026-10-26 measurement exceeds that gate; re-measure
+after any declared evacuation, and do not lower the guard without hardware
+evidence.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
@@ -217,7 +228,8 @@ identities. It re-reads the bound firewall
 capture and repeats Pod, metrics, node filesystem, and headroom checks before
 mutation. It checks that the enforcer, cleanup Pods, and fixture traffic are
 absent, then adds the dedicated
-`NoSchedule` taint before the selector label. A complete cluster-wide label
+`NoSchedule` taint and admission-run annotation atomically before the selector
+label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
 the taint. If admission changed the Node but
@@ -226,11 +238,43 @@ runs on current `main` with the original admission SHA and run ID. That SHA
 must be an ancestor of current `main`. It uses the original immutable attempt
 and selected placement version. A same-run privileged probe
 confirms the host firewall remains empty and deletes its owned Pod before
-UID/resource-version guarded removal of only the canary label and taint. It
+UID/resource-version guarded removal of only the canary label, then the
+annotation and taint atomically. A taint-only attempt must use this protected
+recovery before any new admission run. It
 works after placement expiry or a newer `main` commit while the reviewed
 canary node and taint remain unchanged.
 An orphaned recovery probe uses the protected `firewall-baseline-recover`
 token/UID deletion path with its recovery run and admission IDs.
+For a verified admission abandoned before enforcer activation, owner-only
+`canary-abort` loads that final admission and exact placement version. It
+requires disabled activation and unchanged runtime manifests on current
+`main`, proves the same node's kube-router firewall empty with a deleted
+UID-owned probe, and checks enforcer and fixtures absent before removing the
+matching label, then the admission annotation and taint atomically.
+Taint-only and already-clean retries are safe; a new admission marker or
+changed source blocks abort. Restore the reviewed source contract through a
+protected PR or add a reviewed recovery path; do not hand-remove the taint.
+An orphaned abort probe uses
+`firewall-baseline-recover` with the abort run and original admission IDs.
+[The canary Node stage](../../scripts/network-policy-canary-node.py) cannot
+retry `canary-release` after an interrupted unlabel leaves only the taint.
+Owner-only `canary-release-recover` selects the immutable original release
+attempt, cleanup, ownership, and placement receipts. The attempt binds the
+cleanup run and Pod UID; an older attempt without this binding fails closed.
+The original release SHA must be on current first-parent `main`, with its
+runtime manifests, canary settings, and activation state unchanged. Recovery
+requires the same unlabeled, tainted Node and admission marker, reviewed
+cleanup DaemonSet with no Pods anywhere and absent enforcer and fixtures.
+Before untaint, the original system Pod UIDs must match.
+A same-run UID-owned host probe must prove the firewall empty and be deleted
+before one guarded patch removes the marker and taint. An orphaned probe uses
+protected `firewall-baseline-recover` with the recovery run ID. Manual untaint
+is barred. If the Node was cleared but the final receipt was lost, the same
+selected receipts can produce a read-only `observedClean` receipt after a
+fresh empty firewall probe and complete, unchanged current Pod inventory.
+It permits ordinary post-untaint workloads but rejects firewall and cleanup
+Pods. It records `mutationPerformed: false` without attributing the earlier
+patch.
 After a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full

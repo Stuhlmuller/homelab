@@ -77,21 +77,23 @@ have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
 snapshot. It must also list every permitted system DaemonSet Pod under
 `systemDaemonSetPods` as exact `{namespace, name, uid}` identities; an empty
 list is valid only when the node has no assigned Pods. Only `kube-system`
-(including Flannel and Multus) and `istio-system` (currently only the
-`ztunnel` DaemonSet) are eligible. The `istio-cni-node` eligibility update
-must be merged before dispatching the baseline stage on a node running that
-DaemonSet. The guard checks namespace, DaemonSet controller
-ownership, and exact reviewed Pod UID; it cannot identify arbitrary
-`kube-system` applications, so review each listed identity. The stage rejects
+(including Flannel and Multus) and `istio-system` (only the `ztunnel` and
+`istio-cni-node` DaemonSets) are eligible. The guard checks namespace,
+DaemonSet controller ownership, and exact reviewed Pod UID; it cannot identify
+arbitrary `kube-system` applications, so review each listed identity. The stage rejects
 existing enforcer/cleanup DaemonSets and fixture namespace, adds the dedicated
-taint, then checks the live assigned Pod list before adding the selector label.
+taint and admission-run annotation in one Node patch, then checks the live
+assigned Pod list before adding the selector label.
 It requires a complete cluster-wide Node label inventory with no other canary
 selected before mutation and immediately before labeling; a post-label check
 removes this Node's label if another selected Node appears. It checks the Pod
 list again after labeling. Each Node patch tests
-`resourceVersion` and UID and touches only the owned taint or label. A
-taint-only interrupted attempt can retry with a fresh matching placement
-receipt; a labeled Node needs direct review before another admission attempt.
+`resourceVersion` and UID and touches only the owned taint, label, or admission
+annotation. The annotation binds the selected admission SHA and run ID for the
+whole taint lifetime, so an older receipt cannot remove a later attempt's
+taint. A taint-only interrupted attempt requires protected
+`canary-admit-recover` with its original receipt before a new admission;
+a labeled Node needs direct review before another admission attempt.
 If the Node patch succeeded but the final `canary-admit.json` upload failed,
 dispatch owner-only protected `canary-admit-recover` on current `main` with the
 original admission SHA as `evidence_source_sha` and its `admission_run_id`.
@@ -109,6 +111,48 @@ stored before Pod creation; if the probe remains, use protected
 `firewall-baseline-recover` with its recovery run ID as `baseline_run_id`, the
 same main SHA as `baseline_source_sha`, and the original `admission_run_id` to
 delete only that token/UID-matched Pod before retrying.
+
+If `canary-admit.json` was verified but activation is abandoned before the
+enforcer or fixtures exist, dispatch owner-only `canary-abort` on exact current
+`main` with the admission SHA as `evidence_source_sha` and its
+`admission_run_id`. It loads the immutable verified admission and placement,
+requires activation still disabled and the reviewed runtime manifests unchanged,
+then proves the host firewall empty with the same UID-owned probe. It requires
+the enforcer, cleanup DaemonSet and fixture namespace absent before removing
+the matching admission label, then the annotation and taint atomically. A
+retry after an interrupted unlabel or completed abort is safe; a changed Node,
+source manifest, or new admission marker blocks it. Restore the reviewed
+source contract in a protected PR or add a reviewed recovery path; never
+hand-remove the taint.
+If the abort probe is
+orphaned, run `firewall-baseline-recover` with the abort run ID as
+`baseline_run_id`, its main SHA as `baseline_source_sha`, and the original
+`admission_run_id` before retrying.
+
+If `canary-release` removes the label but stops before removing the taint,
+dispatch owner-only protected `canary-release-recover` with the original
+`release_source_sha`, `release_run_id`, and `cleanup_run_id`. It requires that
+release's immutable attempt, cleanup, ownership, and placement receipts. The
+attempt must name the selected cleanup run and Pod UID; older attempts without
+that binding fail closed. The original release source must be on current
+first-parent `main`, with its reviewed runtime manifests, canary settings,
+and activation state unchanged. Recovery requires the matching admission
+marker on the same unlabeled, tainted Node, a reviewed cleanup DaemonSet with
+no Pods anywhere,
+and absent enforcer and fixtures. Before untaint, it requires the original
+system Pod UIDs. A same-run
+UID-owned probe must prove the host firewall empty and be deleted before the
+stage atomically removes the marker and taint. A newer admission marker or
+changed Node, Pod, runtime source, or firewall blocks recovery. Do not remove
+the taint manually. If the probe is orphaned, dispatch
+`firewall-baseline-recover` with the recovery run ID as `baseline_run_id`, its
+main SHA as `baseline_source_sha`, and the original `release_run_id` before
+retrying. If the marker and taint were removed but the verified receipt was
+not retained, rerun with the same selected receipts. A fresh empty firewall
+probe and complete, unchanged current Pod inventory produce a read-only
+`observedClean` receipt with `mutationPerformed: false`. It reports the
+clean state without attributing the earlier patch. This check permits ordinary
+workloads that scheduled after untaint but rejects firewall and cleanup Pods.
 
 Admission only gates the Node taint and label. The later enforcer and fixture
 rollout still needs its own protected fresh capacity gate; that gate is not
@@ -256,9 +300,10 @@ capture run, and node identity all match. Keep the cleanup DaemonSet present
 until release: the stage rechecks that its node-local firewall has no
 owned objects, removes the selector label, waits for every cleanup DaemonSet Pod
 across the cluster to be deleted, rechecks the complete node Pod inventory,
-then removes the dedicated taint. If Pod
-deletion stalls, the taint remains
-and recovery requires direct review. It checks Node UID, boot ID, and
+then removes the dedicated taint. If Pod deletion stalls, the taint remains;
+use the protected release-recovery path above after every cleanup Pod is gone
+and the selected receipts and live state are verified. It checks Node UID,
+boot ID, and
 `resourceVersion` before each patch and retains private attempt, interrupted,
 and final receipts. A newer `main` invalidates the SHA-bound capture and cleanup
 receipts; recapture, approve, and verify cleanup again on current `main` before

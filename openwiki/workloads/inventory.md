@@ -221,7 +221,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Workload Inventory
@@ -255,10 +255,17 @@ later passed protected `all` publication and authenticated Harbor pulls in
 The staged migration foundation adds private Traefik ingress and the Tailscale
 operator API proxy while retaining existing Octelium/Cloudflare routes until
 live cutover passes. The new route inventory keeps Fleet mesh-only, exposes only
-n8n and Policy Bot callbacks through Funnel, and retains Octelium for Cordium
-and control services. Existing per-app access notes below describe the retained
+n8n, Policy Bot, and staged Bulldozer callbacks through Funnel, and retains
+Octelium for Cordium and control services. Existing per-app access notes below describe the retained
 source path; they are not proof that cutover has happened. See
 [the staged ingress runbook](../runbooks/tailnet-ingress.md).
+
+Bulldozer is registered from `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl`
+into `automation` using `clusters/homelab/apps/bulldozer`. Its Deployment starts
+at zero replicas while the dedicated GitHub App credentials and generated
+webhook secret are delivered. It has no persistent volume. See the
+[workload runbook](../../clusters/homelab/apps/bulldozer/README.md) for activation
+and all-repository merge behavior.
 
 ## Platform And Support Applications
 
@@ -418,7 +425,7 @@ checks that the active source remains unchanged until that review.
 | `radarr`               | `media`            | `clusters/homelab/apps/radarr`                  | `IaC/homelab/us-west-2/apps/radarr/argocd`               | active config on a retained local volume on `zimaboard-0`; the app pod no longer mounts the old NFS claim, which remains for nightly verified archives and rollback; database state in local `media-postgres`; movies and downloads on QNAP `/media`; live cutover and first backup validated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage                                             |
 | `sonarr`               | `media`            | `clusters/homelab/apps/sonarr`                  | `IaC/homelab/us-west-2/apps/sonarr/argocd`               | active config on a retained local volume on `zimaboard-0`; the app's Pod no longer mounts the old NFS claim, which remains for nightly verified archives and rollback; database state in local `media-postgres`; TV and downloads on QNAP `/media`; live cutover and first backup validated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage                                             |
 | `litellm`              | `ai`               | `clusters/homelab/apps/litellm`                 | `IaC/homelab/us-west-2/apps/litellm/argocd`              | internal OpenAI-compatible gateway exposing only `openrouter/free`; the existing SSM `openai-api-key` is mounted only as its OpenRouter upstream credential, while OpenClaw, Multica, NOFX and n8n receive dedicated caller keys; guarded pre-auth admission exports trusted attribution to Langfuse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | external-secrets, cert-manager, istio, platform-storage                                                             |
-| `langfuse`             | `langfuse`         | `clusters/homelab/apps/langfuse`                | `IaC/homelab/us-west-2/apps/langfuse/argocd`             | operator UI for LiteLLM's trusted caller-attributed traces. Octelium-protected UI: `https://langfuse.stinkyboi.com`. Retained NFS PVCs: PostgreSQL `20Gi`, Valkey `8Gi`, ClickHouse `100Gi`; S3 raw events retain 30 days. No database operator/automatic logical backup; restore unverified.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, langfuse-blob-storage; Octelium for UI |
+| `langfuse`             | `langfuse`         | `clusters/homelab/apps/langfuse`                | `IaC/homelab/us-west-2/apps/langfuse/argocd`             | operator UI for LiteLLM's trusted caller-attributed traces. Octelium-protected UI: `https://langfuse.stinkyboi.com`. Retained NFS PVCs: PostgreSQL `20Gi`, Valkey `8Gi`, ClickHouse `100Gi`; S3 raw events retain 30 days. No database operator or scheduled logical backup; PostgreSQL offline restore verified 2026-10-25, full-service recovery unverified.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, langfuse-blob-storage; Octelium for UI |
 | `multica`              | `ai`               | `clusters/homelab/apps/multica`                 | `IaC/homelab/us-west-2/apps/multica/argocd`              | Multica `v0.4.29` self-host chart with frontend, backend API/WebSocket server, dedicated pgvector PostgreSQL, generated JWT, database, and private fixed sign-in code secrets; development-mode authentication behind Octelium without email delivery; Postgres and uploads PVCs on `nfs-default`; UI at `https://multica.stinkyboi.com`; persistent OpenCode daemon on acer uses LiteLLM with its dedicated caller key, max one task.                                                                                                                                                                                                                                                                                                                                                                                        | external-secrets, cert-manager, istio, platform-storage                                                             |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/homelab/us-west-2/apps/openclaw/argocd` | Legacy gateway and backup writer stopped by GitOps; node-local SQLite, NAS workspace, snapshots, and four PVC/PV identities retained. Post-shutdown inventory, off-NAS archive publication, and separate multi-root restore verification passed; compatible old-image boot remains pending. No Discord or LiteLLM state moves to Enterprise. | platform-storage, external-secrets (retained recovery only) |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/homelab/us-west-2/apps/n8n/argocd`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
@@ -613,10 +620,16 @@ Argo pruned it in a separate revision before this writer restart. The separate 1
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
 
-The draft protected [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
-is a manual, one-shot safety copy for a later database move. It verifies an
-exact versioned dump through an isolated restore, but no live receipt exists;
-ClickHouse, Valkey, raw objects, and secrets still need separate recovery.
+The manual [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
+now verifies the exact Bound source PVC/PV identities. The
+[2026-10-25 run](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316)
+restored 75 tables but predates that identity check and is not sufficient for
+the move; ClickHouse, Valkey, raw objects, and secrets need separate recovery.
+The draft [PostgreSQL move](../../clusters/homelab/apps/langfuse/README.md#postgresql-placement-on-acer)
+pins the single `Recreate` Pod to `acer` with its existing NFS claim. A
+read-only 2026-10-26 check found the source Pod on `zimaboard-1`; recheck before
+rollout. The move requires a fresh source-bound checkpoint and reviewed rollout;
+source does not prove live placement or restore success.
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening

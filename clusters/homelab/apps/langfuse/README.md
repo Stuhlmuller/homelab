@@ -40,21 +40,33 @@ with Docker networking disabled. The workflow leaves the live database and PVC
 untouched. It is a one-shot safety copy for the proposed database move, not a
 scheduled backup.
 
-After this workflow is merged and its live run is authorized, dispatch it from
-exact current `main`; `homelab-production` admits only that branch:
+To capture a fresh checkpoint, dispatch the workflow from exact current
+`main`; `homelab-production` admits only that branch:
 
 ```sh
 main_sha="$(gh api repos/Stuhlmuller/homelab/commits/main --jq .sha)"
 gh workflow run langfuse-postgres-checkpoint.yml -R Stuhlmuller/homelab \
-  --ref main -f expected_sha="$main_sha"
+  --ref main -f expected_sha="$main_sha" \
+  -f expected_pvc_uid='<pre-move-pvc-uid>' -f expected_pv_uid='<pre-move-pv-uid>'
 ```
 
-The successful job prints only an object key, version ID, SHA-256 digest, byte
-count, and restored table count. Keep that receipt with the migration record;
-the object version remains in the private backup bucket. A failed job may leave
-an unverified S3 object at its run-specific key; inspect it privately and do
-not count it as a usable checkpoint. Preflight rejects stale main, missing CI
-Pod read/exec rights, multiple or unready PostgreSQL Pods, an image mismatch,
+The [2026-10-25 protected run](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316)
+on exact `main` `3f5d8789ce8e821e8806bd944c1bc7c621d115e9` verified
+S3 object version `p7sNhZuyxRC4BIwad_iUPSx7pajjoHoM` readback, SHA-256
+`8b7c8f46a152337af28199ebf94de001af7e00b8ff50a3461edb2cd089c0f9a8`,
+323,964 bytes, and 75 public tables in an isolated restore. It predates the source
+PVC/PV UID check, so it is historical evidence and does not qualify the pending
+placement change.
+
+The current workflow prints the object key, version ID, SHA-256 digest, byte
+count, restored table count, and source PVC/PV identities. Keep that receipt
+with the migration record. Supply expected UIDs from an independently checked
+pre-move source inventory and confirm they still match the bound claim before
+the move. The object version remains in the private backup bucket. A failed job
+may leave an unverified S3 object at its run-specific key; inspect it privately
+and do not count it as a usable checkpoint. Preflight rejects stale main, missing
+CI Pod/PVC/PV read and exec rights, an incomplete Pod list, a replaced claim,
+multiple or unready PostgreSQL Pods, an image mismatch,
 wrong AWS account, unversioned or unencrypted storage, and a database over
 1 GiB. The hosted runner needs sufficient scratch disk for dump, retrieval,
 and restored data. Verify the protected CI role still has S3/KMS read/write
@@ -69,11 +81,39 @@ Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
 startup and ingestion. Keep the existing PVC and require a separate reviewed
 cutover and rollback before moving the database.
 
+## PostgreSQL placement on `acer`
+
+A read-only check on 2026-10-26 found the running PostgreSQL Pod on
+`zimaboard-1`. Recheck its source node immediately before rollout; scheduling
+can change. The proposed Deployment pins to `acer` and keeps its existing NFS
+PVC and `Recreate` strategy. This changes only Pod placement; it does not copy
+or reset database files. Recheck `acer` memory, node health, and the claim's
+live binding immediately before rollout.
+
+Before merging the placement change, run a fresh protected checkpoint from
+exact current `main` for the independently inspected Bound, Retain NFS source
+PVC/PV UIDs. Match both UIDs in its receipt to the live claim immediately
+before rollout; retain the private S3 object key, version, SHA-256 digest, and
+isolated-restore table count. The 2026-10-25 receipt predates UID binding and
+does not qualify this move. Stop if the source identity changes or the
+checkpoint or restore check fails. This same-PVC Pod relocation does not
+establish whole-service recovery; a whole-service move or retirement requires
+the stopped-writer, all-store gate in
+[`docs/application-recovery.md`](../../../../docs/application-recovery.md).
+
+The `Recreate` rollout stops the old Pod before starting it on `acer`. Database
+access stays down until NFS remount and PostgreSQL startup finish; the duration
+is not guaranteed. Verify the new Pod is Ready on `acer`, the same PVC is mounted,
+Langfuse web and worker recover, and a fresh event is ingested. If remount fails,
+keep the canary taint disabled and use a reviewed GitOps change to restore
+the verified pre-move placement while preserving the PVC. Do not restore a dump
+over a running database.
+
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
-The worker cannot schedule on `zimaboard-2`: its 1 GiB limit can overwhelm that
-worker's 1.28 GiB allocatable memory alongside node services and PostgreSQL.
+The worker is unsafe on `zimaboard-2`: its 1 GiB limit can overwhelm that
+node's 1.28 GiB allocatable memory alongside system services.
 The pinned image uses Node 24 with no runtime heap override. Reserve the full
 container budget so scheduling accounts for memory beyond the JavaScript heap.
 The pinned-chart check verifies both rendered web memory values.
@@ -427,8 +467,9 @@ drill. Those acceptance gaps remain in the knowledge base.
 
 The October 17 [Acer capacity audit](../../../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 sets PostgreSQL's memory request to 128 MiB, above its observed seven-day peak
-working set of 63.8 MiB. Its 1 GiB limit, storage, placement and replica count stay
-unchanged. The existing `Recreate` update briefly interrupts database access;
+working set of 63.8 MiB. That request change left its 1 GiB limit, storage,
+placement and replica count unchanged. The existing `Recreate` update briefly
+interrupts database access;
 require SQL readiness and recovery of web/worker before accepting the rollout.
 
 The stateless web Pod moves from `zimaboard-1` to Acer with a 1280 MiB request,

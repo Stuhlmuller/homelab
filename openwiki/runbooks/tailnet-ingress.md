@@ -120,7 +120,7 @@ flowchart LR
     TLS --> Cordium[Octelium Cordium and control]
     Public[Public callback] --> Funnel[Tailscale Funnel]
     Funnel --> HTTP[Traefik callback listener]
-    HTTP --> Hooks[n8n and Policy Bot webhooks]
+    HTTP --> Hooks[n8n, Policy Bot, and Bulldozer webhooks]
     Nodes[Talos nodes] --> Registry[Traefik registry listener]
     Renovate[Renovate Pod] --> Registry
     Registry --> Harbor[Harbor OCI and token endpoints]
@@ -149,9 +149,10 @@ authoritative NODATA for approved AAAA; it does not use the peer's other
 addresses. See the
 [IP-family contract and pinned upstream sources](../../docs/networking-tailnet-ingress.md#dns-model).
 
-Only `n8n-webhook.tail67beb.ts.net` and `policy-bot-hook.tail67beb.ts.net` use
-Funnel. The former accepts the three declared webhook path families; the latter
-accepts exactly `/api/github/hook`. Application webhook authentication remains
+`n8n-webhook.tail67beb.ts.net`, `policy-bot-hook.tail67beb.ts.net`, and the
+staged `bulldozer-hook.tail67beb.ts.net` use Funnel. n8n accepts the three
+declared webhook path families; each GitHub App callback accepts exactly
+`/api/github/hook`. Application webhook authentication remains
 required. Root/admin paths and spoofed private Host headers fail at the callback
 listener. Encoded reserved path characters are rejected on these sensitive routes.
 
@@ -204,11 +205,11 @@ python3 -I scripts/tailscale-ingress-sign.py
 python3 -I scripts/tailscale-ingress-sign.py --execute
 ```
 
-The fixed signer checks the private Service, two Funnel Ingresses, and the
+The fixed signer checks the private Service, three Funnel Ingresses, and the
 separate `tailnet-dns` Service against
 controller-owned Ready Pods, exact parent UID, hostname, tag, addresses and
 local lock-peer identity. It reads public node/rotation keys from those Pods and
-signs only those four targets. For the DNS handoff, `--dns-only` previews or
+signs only those five targets. For the DNS handoff, `--dns-only` previews or
 signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.
@@ -416,6 +417,30 @@ Repeat the trusted CLI and normal-client checks, Fleet setup, n8n and Policy Bot
 callback checks, and every remaining [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 gate from reviewed `main` before any public deletion. This dated observation is
 not a cutover receipt.
+
+### Public app DNS retirement (2026-10-25)
+
+The guarded [retirement helper](../../scripts/tailscale-private-dns.sh) ran from
+clean reviewed `main` `e10199f2` and read back all 26 approved non-apex owners
+without public A/AAAA/CNAME records. After the previous 60-second TTL,
+324/324 address queries for those owners and a concrete Cordium wildcard child
+were empty at both Cloudflare authorities and two public recursive resolvers.
+The public apex, callback/CI/carrier names, and unrelated records matched all
+51 saved pre-cutover DNS comparisons. Cloudflare delegation and DNS-01
+references remained intact; the ExternalSecret, ClusterIssuer, and two
+Certificates remained Ready.
+
+The signed resolver still answered all 29 approved names, and normal macOS DNS
+and the original 27 HTTPS migration routes passed. Fleet's enrolled iPhone
+checked in after a guarded APNs ping; a Harbor node pulled its reviewed image
+without reboot, and native Octelium and Cordium calls passed. Fresh Emergency
+Bot and Policy Bot deliveries returned HTTP 200. Emergency deliveries also
+intermittently returned HTTP 500 at GitHub's client deadline before and after
+retirement. On another timeout, correlate its GitHub delivery timestamp and
+status with `ts-n8n-webhook` proxy context-canceled logs and n8n
+request-body-aborted logs, then fix latency through reviewed source. The
+[cutover tasks](../../specs/005-retire-public-app-dns/tasks.md) record the
+receipts and callback follow-up.
 
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and
