@@ -106,6 +106,16 @@ class FakeAws:
 
 
 class S3ProofTest(unittest.TestCase):
+    def test_uploader_object_readback_requires_exact_unpromoted_identity(self):
+        source = source_receipt()
+        candidate = {key: source[key] for key in PROOF.OBJECT_FIELDS}
+        result = PROOF.verify_object_version(candidate, run=FakeAws(source))
+        self.assertEqual(result["ciphertextSha256"], source["ciphertextSha256"])
+        self.assertIs(result["publishable"], False)
+        with self.assertRaises(PROOF.Blocked):
+            PROOF.verify_object_version(dict(candidate, publishable=True),
+                                        run=FakeAws(source))
+
     def test_exact_version_is_read_back_in_bounded_ranges_without_promotion(self):
         receipt = source_receipt()
         fake = FakeAws(receipt)

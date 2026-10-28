@@ -34,6 +34,10 @@ RECEIPT_FIELDS = {
     "ciphertextSha256", "ciphertextBytes", "bucket", "key", "versionId",
     "publisherRunId", "restoreRunId",
 }
+OBJECT_FIELDS = {
+    "sourceSha", "backupId", "materialSha256", "ciphertextSha256",
+    "ciphertextBytes", "bucket", "key", "versionId",
+}
 
 
 class Blocked(RuntimeError):
@@ -67,24 +71,14 @@ def _aws(run, operation, *args, timeout=90, outfile=None):
         raise Blocked("Enterprise S3 request failed") from None
 
 
-def _inputs(receipt):
-    require(isinstance(receipt, dict) and set(receipt) == RECEIPT_FIELDS and
-            receipt["scope"] == "source-only-recovery-chain" and
-            receipt["publishable"] is False and
+def _object_inputs(receipt):
+    require(isinstance(receipt, dict) and set(receipt) == OBJECT_FIELDS and
             all(isinstance(receipt.get(key), str) and HEX64.fullmatch(receipt[key])
                 for key in ("backupId", "materialSha256", "ciphertextSha256")) and
             isinstance(receipt.get("sourceSha"), str) and
             SHA.fullmatch(receipt["sourceSha"]) and
             type(receipt.get("ciphertextBytes")) is int and
             0 < receipt["ciphertextBytes"] <= CHAIN.MAX_CIPHERTEXT_BYTES and
-            all(CHAIN.OCE._valid_resource_id(receipt.get(field), prefix)
-                for field, prefix in (("installationId", "ins_"),
-                                      ("namespaceId", "ns_"),
-                                      ("agentId", "agt_"),
-                                      ("revisionId", "rev_"))) and
-            all(type(receipt.get(key)) is int and receipt[key] > 0
-                for key in ("publisherRunId", "restoreRunId")) and
-            receipt["publisherRunId"] != receipt["restoreRunId"] and
             isinstance(receipt.get("versionId"), str) and
             0 < len(receipt["versionId"]) <= 1024 and
             receipt["versionId"] != "null" and
@@ -102,6 +96,21 @@ def _inputs(receipt):
     return destination
 
 
+def _inputs(receipt):
+    require(isinstance(receipt, dict) and set(receipt) == RECEIPT_FIELDS and
+            receipt["scope"] == "source-only-recovery-chain" and
+            receipt["publishable"] is False and
+            all(CHAIN.OCE._valid_resource_id(receipt.get(field), prefix)
+                for field, prefix in (("installationId", "ins_"),
+                                      ("namespaceId", "ns_"),
+                                      ("agentId", "agt_"),
+                                      ("revisionId", "rev_"))) and
+            all(type(receipt.get(key)) is int and receipt[key] > 0
+                for key in ("publisherRunId", "restoreRunId")) and
+            receipt["publisherRunId"] != receipt["restoreRunId"])
+    return _object_inputs({key: receipt[key] for key in OBJECT_FIELDS})
+
+
 def _kms(value, account):
     require(value.get("ServerSideEncryption") == "aws:kms" and
             isinstance(value.get("SSEKMSKeyId"), str) and
@@ -114,9 +123,8 @@ def _file_identity(value):
             value.st_ctime_ns, value.st_mode, value.st_uid, value.st_nlink)
 
 
-def _verify_version(receipt, run):
+def _readback(receipt, run, destination):
     """Hash every byte of the exact S3 version through bounded range reads."""
-    destination = _inputs(receipt)
     account = destination["account_id"]
     identity = _aws(run, ("sts", "get-caller-identity"))
     require(identity.get("Account") == account and
@@ -198,7 +206,16 @@ def verify_version(receipt, *, run=subprocess.run):
     """Run the readback with private local file creation for AWS CLI bodies."""
     previous_umask = os.umask(0o077)
     try:
-        return _verify_version(receipt, run)
+        return _readback(receipt, run, _inputs(receipt))
+    finally:
+        os.umask(previous_umask)
+
+
+def verify_object_version(receipt, *, run=subprocess.run):
+    """Read back an uploader's exact version before any restore-run exists."""
+    previous_umask = os.umask(0o077)
+    try:
+        return _readback(receipt, run, _object_inputs(receipt))
     finally:
         os.umask(previous_umask)
 

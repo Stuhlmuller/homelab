@@ -100,7 +100,17 @@ The source-only [S3 version readback](../../../../scripts/ci/openclaw-enterprise
 requires the dedicated production publisher role, declared versioned KMS
 bucket and exact object metadata. It hashes every byte of the immutable
 ciphertext version in bounded ranges and returns only an unpublishable receipt.
-No protected caller, upload, independent restore or schedule uses it yet.
+The dormant [ciphertext publisher](../../../../scripts/ci/openclaw-enterprise-s3-publish.py)
+checks a private staged `.tar.age` with age v1 X25519 framing and the dedicated
+role, uploads to only the
+declared new-state key through conditional multipart completion, and invokes
+that exact-version readback before returning an unpublishable source receipt.
+It refuses an existing key and never retries an unknown completion as a new
+upload; an uncertain result needs separate version reconciliation. The role's
+permissions boundary allows abort only under the new-state prefix, so failed
+parts can be discarded. No protected workflow assumes the role or invokes the
+publisher. No recipient identity, independent restore, continuous live writer
+fence, or schedule is proved by this source-only component.
 The source-only
 [reader emitter](../../../../scripts/ci/openclaw-enterprise-reader-archive.py)
 streams each namespace's complete read-only claim tree over a private exec

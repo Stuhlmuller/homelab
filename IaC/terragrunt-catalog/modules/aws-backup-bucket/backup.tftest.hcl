@@ -156,6 +156,12 @@ run "scopes_optional_enterprise_publisher" {
           } }
         },
         {
+          Sid      = "AbortRecoveryMultipartUploads"
+          Effect   = "Allow"
+          Action   = ["s3:AbortMultipartUpload"]
+          Resource = "arn:aws:s3:::test-etcd-backups-123456789012-us-east-1/openclaw-enterprise/new/*"
+        },
+        {
           Sid      = "UseOnlyBucketS3Key"
           Effect   = "Allow"
           Action   = ["kms:GenerateDataKey", "kms:Decrypt"]
