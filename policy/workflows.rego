@@ -221,7 +221,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 bash scripts/ci/install-kubeconfig.sh
-sha256sum --check --status <<<'08de19e4a74ae7521889d600edaae58b500bb9bdd6d9f5e7e2464d7fe45fb289  scripts/openclaw-enterprise-startup.py'
+sha256sum --check --status <<<'1ea9b290420dfbb2db5ce70331c16f664b91b6cffbb3618bb38b9d492cbf22a8  scripts/openclaw-enterprise-startup.py'
 python3 -I scripts/openclaw-enterprise-startup.py --execute --expected-sha "$EXPECTED_SHA"
 EOF
 then
@@ -348,9 +348,9 @@ approved_openclaw_operations if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
-	count(dispatch.inputs) == 5
+	count(dispatch.inputs) == 6
 	dispatch.inputs.expected_sha.required == true
-	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore", "resume-restore", "network-preflight", "publish-discord-cache", "transfer-discord-cache"]
 	dispatch.inputs.legacy_stage.default == "none"
 	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
@@ -366,23 +366,59 @@ approved_openclaw_legacy_operation if {
 	job.environment.name == "homelab-production"
 	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job["timeout-minutes"] == 360
-	job.permissions == {"contents": "read", "id-token": "write"}
+	job.permissions == {"actions": "read", "contents": "read", "id-token": "write"}
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
+	count(job.steps) == 8
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name, job.steps[6].name, job.steps[7].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Verify Prior Restore Run", "Verify Protected Inputs", "Verify AWS Role Input", "Configure AWS Credentials", "Run Legacy Stage"]
+	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
+	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	job.steps[1].with == {"fetch-depth": 0, "persist-credentials": false}
+	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	job.steps[2].with == {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}
+	provenance := [step | step := job.steps[_]; step.name == "Verify Prior Restore Run"]
+	count(provenance) == 1
+	provenance[0] == job.steps[3]
+	provenance[0].env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "PRIOR_RUN_ID": "39988927652", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(provenance[0].run, "\n") == openclaw_resume_provenance_run
 	credentials := [step | step := job.steps[_]; step.name == "Configure AWS Credentials"]
 	count(credentials) == 1
+	credentials[0] == job.steps[6]
+	credentials[0].if == "inputs.legacy_stage != 'network-preflight'"
 	credentials[0]["with"]["role-duration-seconds"] == 25200
+	job.steps[4].name == "Verify Protected Inputs"
+	job.steps[4].env == {"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(job.steps[4].run, "\n") == `test -n "$OCTELIUM_AUTH_TOKEN"`
+	job.steps[5].name == "Verify AWS Role Input"
+	job.steps[5].if == "inputs.legacy_stage != 'network-preflight'"
+	job.steps[5].env == {"AWS_APPLY_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}"}
+	trim(job.steps[5].run, "\n") == `test -n "$AWS_APPLY_ROLE_ARN"`
 	some step in job.steps
 	step.name == "Run Legacy Stage"
-	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	step == job.steps[7]
+	step.env == {"RUN_STAGE": "${{ inputs.legacy_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}", "OPENCLAW_RESUME_PROVENANCE": "${{ runner.temp }}/oce-resume-provenance.json", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'6d3e5d18b7670d04e97b2bfac7e3dd27bc737db8f515dce29a5bd73fa65259ca  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, "if [[ \"$RUN_STAGE\" == resume-restore ]]; then\n  export PRIOR_RUN_ID=39988927652\nfi\n")
+	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-nix-entry >"$OPENCLAW_PHASE_FILE"
+fi`)
+	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-kubeconfig >"$OPENCLAW_PHASE_FILE"
+fi`)
+	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-kubectl-version >"$OPENCLAW_PHASE_FILE"
+fi`)
+	contains(step.run, `if [[ "$RUN_STAGE" == network-preflight ]]; then
+  printf '%s\n' network-source >"$OPENCLAW_PHASE_FILE"
+fi`)
+	contains(step.run, concat("", [`sha256sum --check --status <<<'4020ebdc7b66a6e74477f4b6ea679e97aed3080bffa64b687936b1fbdbf22aa0  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `sha256sum --check --status <<<'24e540b78832995a011f37441701dc98167dc905fafb391c098d43e6db41e278  scripts/ci/openclaw-legacy-netns-preflight.py'`, "\n", `sha256sum --check --status <<<'71dffb033928d510d91a252b056ce540c8a377314b44dafb2b732d6fa8822d79  scripts/ci/openclaw-enterprise-upload.py'`, "\n", `sha256sum --check --status <<<'c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708  scripts/ci/openclaw-enterprise-download.py'`, "\n", `sha256sum --check --status <<<'be00c82ecc835d07b2a0da4b002ec075d81e998a6bf98a643269e89d218b3a59  scripts/openclaw-discord-offline-cache.py'`, "\n", `sha256sum --check --status <<<'2f94ac3ba85ed358056672640beb2f1656021e598a944d67760ece086718320b  scripts/ci/openclaw-discord-cache-publication.py'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 
 approved_openclaw_enterprise_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	count(dispatch.inputs) == 5
+	count(dispatch.inputs) == 6
 	dispatch.inputs.expected_sha.required == true
 	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
@@ -391,7 +427,7 @@ approved_openclaw_enterprise_operation if {
 	static := input.jobs["static-policy"]
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
-	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}"}
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}", "CACHE_REF": "${{ inputs.cache_ref }}"}
 	trim(static.steps[0].run, "\n") == openclaw_dispatch_guard
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.enterprise
@@ -441,12 +477,43 @@ openclaw_dispatch_guard := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
   *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
 esac
 if [[ "$ENTERPRISE_STAGE" != none ]]; then
   test -z "$BASELINE_REF"
   test -z "$ARCHIVE_REF"
+  test -z "$CACHE_REF"
+fi
+if [[ "$LEGACY_STAGE" != transfer-discord-cache ]]; then
+  test -z "$CACHE_REF"
+fi
+if [[ "$LEGACY_STAGE" == resume-restore ]]; then
+  test "$ARCHIVE_REF" = '9f64b56a15c8a1c1b81606e0fa751157b09f47fb/39501240221'
+  test -z "$BASELINE_REF"
+fi
+if [[ "$LEGACY_STAGE" == network-preflight ]]; then
+  test -z "$BASELINE_REF"
+  test -z "$ARCHIVE_REF"
+fi
+if [[ "$LEGACY_STAGE" == publish-discord-cache ]]; then
+  test -z "$BASELINE_REF"
+  test -z "$ARCHIVE_REF"
+  test -z "$CACHE_REF"
+fi
+if [[ "$LEGACY_STAGE" == transfer-discord-cache ]]; then
+  [[ "$CACHE_REF" =~ ^[0-9a-f]{40}/[1-9][0-9]*$ ]]
+  test -z "$BASELINE_REF"
+  test -z "$ARCHIVE_REF"
+fi`
+
+openclaw_resume_provenance_run := `set -euo pipefail
+if [[ "$RUN_STAGE" == resume-restore ]]; then
+  sha256sum --check --status <<<'ac9b3903723c7cede72cb01642b31cdd3a88b31c2cf2e4efe56e282d21af1555  scripts/ci/openclaw-enterprise-resume-provenance.py'
+  python3 -I scripts/ci/openclaw-enterprise-resume-provenance.py \
+    --prior-run-id "$PRIOR_RUN_ID" --archive-ref "$ARCHIVE_REF" \
+    --current-sha "$EXPECTED_SHA" \
+    --receipt "${RUNNER_TEMP}/oce-resume-provenance.json"
 fi`
 
 openclaw_enterprise_stage_run := `set -euo pipefail
@@ -454,9 +521,9 @@ umask 077
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'9712a252197c65adc5d45af2e665ab342f915a5a1cfef4f60f697286397cbe9c  scripts/ci/openclaw-enterprise-stage.sh' &&
-  sha256sum --check --status <<<'6bdd356907a800d9ee5c0a4b9de040aca8b513931be7acbd9f8dfe397c5560b4  scripts/ci/openclaw-enterprise-journal-operator.py' &&
-  sha256sum --check --status <<<'e1345d5fae7bd6f7261cb439fbc8cdab3d9eb0854aa44a2fff000b32ed4ad111  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+  sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise stage blocked; private diagnostics withheld.'
@@ -820,6 +887,27 @@ private_live_output(run) if {
 	azuread_plan_private_live_tail(tail)
 }
 
+# The PR plan streams the CLI's redacted human output. Its report and saved
+# plans remain in private temporary files; allow only this reviewed command.
+private_live_output(run) if {
+	trim(run, "\n") == visible_terragrunt_plan_run
+}
+
+visible_terragrunt_plan_run := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash <<'EOF'
+set -euo pipefail
+umask 077
+echo "::group::Kubeconfig setup"
+bash scripts/ci/install-kubeconfig.sh
+echo "::group::Kubernetes API check"
+kubectl --request-timeout=15s version >/dev/null
+echo "::group::Argo CD bootstrap plan"
+bash scripts/ci/terragrunt-plan.sh
+EOF`
+
 # Harbor exposes only the reviewed publisher's fixed status fields. Keep this
 # exception exact: other private wrappers cannot print arbitrary files or logs.
 private_live_output(run) if {
@@ -886,7 +974,18 @@ EOF
 then
   python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
     "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
-  echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+  phase=unclassified
+  if [[ -f "$GITHUB_STEP_SUMMARY" ]]; then
+    phase_line="$(tail -n 1 "$GITHUB_STEP_SUMMARY")"
+    if [[ "$phase_line" == "Enterprise image publication failed at phase: "* ]]; then
+      candidate="${phase_line#*phase: }"
+      case "$candidate" in
+        preflight|private-route|harbor-auth|cleanup|signing-prepare|signing-create|signing-wait|signing-key|signature-verify|receipt|push-controller|push-runtime|push-cli|push-operator|upload-verify-controller|upload-verify-runtime|upload-verify-cli|upload-verify-operator|authenticated-pull-controller|authenticated-pull-runtime|authenticated-pull-cli|authenticated-pull-operator)
+          phase="$candidate" ;;
+      esac
+    fi
+  fi
+  echo "::error::Enterprise image publication failed at phase: $phase; private transport and registry output withheld."
   exit 1
 fi
 echo "Pinned Enterprise controller/runtime/CLI/operator images published, signed, and fully pulled; private output withheld."`
@@ -931,11 +1030,14 @@ case "$IMAGE_SCOPE" in
   litellm)
     bash scripts/ci/harbor-publish.sh mirror-litellm
     ;;
+  prometheus)
+    bash scripts/ci/harbor-publish.sh mirror-prometheus
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'203a68f5c7bfd76b2a9330cae0f5ba3f9f18e992e65d5c1e26e5446ad558df03  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -958,12 +1060,14 @@ private_live_tail(tail) if {
 	lines == [
 		"then",
 		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
-		`case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-receipt|verification)`,
+		`case "$phase" in preflight|network-nix-entry|network-kubeconfig|network-kubectl-version|network-source|network-current-main|network-stopped-reader|network-namespace|network-postcheck|baseline|baseline-s3-read|baseline-mounted-compare|baseline-source-status|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-archive-result|publication-source-validation|publication-destination-absence|publication-source-size|publication-upload|publication-source-read|publication-s3-create|publication-s3-part|publication-s3-complete|publication-digest|publication-version|publication-archive-head|publication-archive-metadata|publication-receipt-upload|publication-receipt-head|publication-restore-prepare|publication-restore-archive|publication-restore-archive-source-range|publication-restore-archive-reader-transfer|publication-restore-archive-finalize|publication-restore-receipt|publication-restore-receipt-source-range|publication-restore-receipt-reader-transfer|publication-restore-receipt-finalize|verification|verification-archive-download|verification-archive-download-source-range|verification-archive-download-reader-transfer|verification-archive-download-finalize|verification-receipt-download|verification-receipt-download-source-range|verification-receipt-download-reader-transfer|verification-receipt-download-finalize|verification-restore|cache-build|cache-publication|cache-transfer)`,
 		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
 		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
 		"esac",
+		`rm -f "$OPENCLAW_RESUME_PROVENANCE"`,
 		"exit 1",
 		"fi",
+		`rm -f "$OPENCLAW_RESUME_PROVENANCE"`,
 		`echo "Legacy operation completed; private receipts withheld."`,
 	]
 }

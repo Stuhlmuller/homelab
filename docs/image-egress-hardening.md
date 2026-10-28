@@ -2,8 +2,9 @@
 
 ## Target and delivery gates
 
-Applications pull only from `harbor.stinkyboi.com`. Use public Chainguard
-images where the actual application and runtime contract are compatible;
+The target is for applications to pull only from `harbor.stinkyboi.com`; the
+full catalog publication and consuming-reference cutover remain pending. Use
+public Chainguard images where the application and runtime contracts permit;
 retain digest-pinned Harbor copies for unavailable equivalents. Public sources
 remain recorded in the publication catalog, never as a reason to allow public
 registry access from application pods.
@@ -221,4 +222,8 @@ behavior; a one-shot probe is insufficient. Cleanup is a separate guarded
 GitOps stage because deleting the DaemonSet can leave iptables/ipset rules.
 Stock Enterprise's required public TCP/443 access remains a broad-egress
 finding: Kubernetes NetworkPolicy cannot turn that into an FQDN allowlist.
+Pinned Cordium `ws-main` and Octelium `svc-upstream` generators also allow
+public IPv4/IPv6 egress on every port; an additional NetworkPolicy cannot
+narrow those allows. Correct the generators and qualify their traffic on the
+isolated canary before enforcement.
 Publication and offline fixture tests alone do not establish live isolation.

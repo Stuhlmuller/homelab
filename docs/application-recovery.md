@@ -49,8 +49,8 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | Multica runtime (`apps/multica`, runtime manifests) | Node-local runtime PVC, PAT and native OAuth/session material | No loss accepted / 8h | Stop runtime before capture; separately approve recovery or re-enrollment of credentials; never export OAuth to SSM to make backup easier |
 | n8n (`apps/n8n`, `apps/n8n-postgres`) | NFS DB, config and file-backed state; no independent scheduled set | 24h / 8h | Quiesce workflows/webhook writers, pair dump and files, retain the exact credential encryption key; disable outbound workflows during drill |
 | Harbor (`apps/harbor`) | Local DB with logical backups to QNAP, NFS registry blobs | 24h / 8h | Fence pushes/GC and pair DB/blobs; restore encryption key and signing Secret separately; retain public verification key. DB dump excludes private signing key |
-| Langfuse (`apps/langfuse`) | NFS PostgreSQL/ClickHouse/Valkey; S3 raw events expire after 30d; no logical backup pipeline | 24h / 8h | Coordinate relational, ClickHouse and raw-object versions; recover application encryption/salt secrets; decide queue losses. A lifecycle-managed raw-event bucket is not a backup |
-| Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files | 24h / 8h | Paired stopped-writer dump/files, private provider credentials; no adapter scheduled |
+| Langfuse (`apps/langfuse`) | NFS PostgreSQL/ClickHouse/Valkey; S3 raw events expire after 30d; protected one-shot PostgreSQL checkpoint and isolated restore [passed on October 25, 2026](https://github.com/Stuhlmuller/homelab/actions/runs/40178714316) | 24h / 8h | Before a move or retirement, coordinate fresh stopped-writer PostgreSQL, ClickHouse, Valkey and raw-object-version captures; independently restore them with the application encryption/salt secrets and verify startup/ingestion. Decide queue losses. The PostgreSQL-only receipt and lifecycle-managed raw-event bucket do not establish whole-service recovery |
+| Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files; paired publication contract is dormant | 24h / 8h | Capture `globals.sql`, `dispatcharr.dump`, `data.tar` and a reviewed writer-fence attestation from one stopped state; independently restore with private provider credentials. No producer, offsite receipt or restore drill exists |
 | OpenClaw, NOFX (`apps/openclaw`, `apps/nofx`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
 
 <!-- markdownlint-enable MD013 -->
@@ -140,7 +140,7 @@ activation gates below are satisfied.
    account `716182248480`, `us-east-1`, AWS-managed `alias/aws/s3`, versioned,
    no completed-object expiry. Reuse `IaC/terragrunt-catalog/modules/aws-backup-bucket`; the staged
    catalog unit is `IaC/terragrunt-catalog/units/operator/application-backup-storage`.
-   The unit is staged in `IaC/terragrunt.stack.hcl` for the measured OpenClaw
+   The unit is staged in `IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl` for the measured OpenClaw
    Enterprise legacy archive; the protected apply must still pass its scoped
    plan before the bucket exists. It does not activate the separate application
    backup host or timer. Review storage, request and KMS costs after measuring

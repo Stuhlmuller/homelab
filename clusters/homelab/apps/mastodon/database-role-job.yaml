@@ -1,0 +1,83 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mastodon-database-role
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-database-role
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '0'
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mastodon-database-role
+    spec:
+      serviceAccountName: mastodon
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: role
+          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              umask 077
+              trap 'rm -f /tmp/mastodon-role.log' EXIT
+              for attempt in $(seq 1 60); do
+                if pg_isready -h /local -U mastodon -d mastodon >/dev/null 2>&1; then break; fi
+                sleep 2
+              done
+              if ! psql -X -q -h /local -U mastodon -d mastodon -v ON_ERROR_STOP=1 \
+                -f /initdb/20-mastodon-app-role.sql >/tmp/mastodon-role.log 2>&1; then
+                echo 'Mastodon database role provisioning failed; private SQL output withheld.' >&2
+                exit 1
+              fi
+              echo 'Mastodon limited application database role provisioned.'
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: local-data
+              mountPath: /local
+              readOnly: true
+            - name: initdb
+              mountPath: /initdb
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: local-data
+          persistentVolumeClaim:
+            claimName: mastodon-postgres-local
+            readOnly: true
+        - name: initdb
+          configMap:
+            name: mastodon-initdb
+        - name: tmp
+          emptyDir:
+            sizeLimit: 8Mi

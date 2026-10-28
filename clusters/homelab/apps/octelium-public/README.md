@@ -26,14 +26,13 @@ the legacy source, not the target access contract:
 
 ## Mastodon public transport exception
 
-The Mastodon draft adds `mastodon.stinkyboi.com` as an intentional public site
-for native clients and federation, routing directly to its Istio backend.
-Mastodon authenticates users. Its fixed-host `mastodon-public-dns.yml` workflow
-owns only that new CNAME; it does not restore the retired public DNS writer or
-private application records. Keep this connector while Mastodon depends on it;
-retirement now requires a separately reviewed replacement and federation test.
-See the [Mastodon activation contract](../mastodon/README.md#public-dns-activation).
-This declaration remains undeployed until its owning PR is merged and applied.
+Mastodon exposes only its anchored federation/media allowlist anonymously.
+All other `mastodon.stinkyboi.com` paths forward to the Octelium ingress
+and require the catalog's non-anonymous `mastodon.default` human-access Service.
+Establish and verify that Service before rolling this connector revision.
+The public DNS record remains necessary for federation; it is not permission
+to expose login, administration or client APIs. See the
+[Mastodon access boundary](../mastodon/README.md#public-federation-boundary).
 
 ## Secret Contract
 

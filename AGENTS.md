@@ -90,6 +90,15 @@ base intentionally adopts them again and the documentation explains why.
   emergency administrator. Do not use Graph beta, Graph/API writes, browser
   automation, user creation, alias changes, or another portal action; all other
   manual cloud mutations remain prohibited.
+- Narrow Renovate NAS exception: after direct owner authorization and the
+  reviewed dedicated-cache staging PR merges, one QTS setup may create only a
+  20 GiB thick volume in existing Storage Pool 1 and its `renovate-cache`
+  shared folder and NFSv3 export at `10.1.0.2:/renovate-cache`. Grant read/write
+  access only to `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`
+  with `sys` security and guest all-squash. Do not change a pool or existing
+  export. Verify the separate volume and exact export before activating the
+  staged PV and PVC through reviewed GitOps. No other manual NAS change is
+  authorized by this exception.
 - Do not change live cluster state until the relevant validation commands have
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,

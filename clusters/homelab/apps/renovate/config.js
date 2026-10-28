@@ -76,18 +76,10 @@ async function installationToken() {
   return result.token;
 }
 
-module.exports = async function config() {
-  const probe = `/cache/renovate/.storage-probe-${crypto.randomUUID()}`;
-  try {
-    fs.writeFileSync(probe, Buffer.alloc(4096), { flush: true });
-    fs.unlinkSync(probe);
-  } catch {
-    try { fs.unlinkSync(probe); } catch {}
-    throw new Error('Renovate cache volume is unavailable or full');
-  }
+function renovatePolicy(token) {
   return {
     platform: 'github',
-    token: await installationToken(),
+    token,
     username: 'rstuhlmuller-renovate[bot]',
     gitAuthor: 'rstuhlmuller-renovate[bot] <239054205+rstuhlmuller-renovate[bot]@users.noreply.github.com>',
     globalExtends: [
@@ -112,7 +104,21 @@ module.exports = async function config() {
     cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
-    logLevelRemap: [{ matchMessage: '/^Returning cached value$/', newLogLevel: 'info' }],
     dryRun: 'full',
   };
-};
+}
+
+async function config() {
+  const probe = `/cache/renovate/.storage-probe-${crypto.randomUUID()}`;
+  try {
+    fs.writeFileSync(probe, Buffer.alloc(4096), { flush: true });
+    fs.unlinkSync(probe);
+  } catch {
+    try { fs.unlinkSync(probe); } catch {}
+    throw new Error('Renovate cache volume is unavailable or full');
+  }
+  return renovatePolicy(await installationToken());
+}
+
+config.renovatePolicy = renovatePolicy;
+module.exports = config;

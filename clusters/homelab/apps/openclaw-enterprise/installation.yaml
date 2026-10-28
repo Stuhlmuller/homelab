@@ -21,8 +21,8 @@ drivers:
       authentication:
         mode: inCluster
       images:
-        gateway: harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6
-        agent: harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6
+        gateway: harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1
+        agent: harbor.stinkyboi.com/homelab/homelab-oce-runtime@sha256:b8ddf3ad1f70a524e99392bbbc93bcd38a2b7ef640b76ed1552f432ce25a01e1
         requireImmutableDigest: true
       resources:
         gateway:

@@ -108,7 +108,7 @@ def main():
             # every configured resource is refreshed and desired drift fails.
             command([
                 "terragrunt", "--log-disable", "--working-dir",
-                str(ROOT / "IaC/live/azuread-applications" / unit),
+                str(ROOT / "IaC/homelab/us-west-2/apps" / unit / "azuread"),
                 "run", "--source-update", "--", "plan", "-input=false", "-lock=false",
                 "-refresh=true", "-detailed-exitcode", "-no-color",
             ], f"Entra unit {unit}", detailed_exitcode=True)

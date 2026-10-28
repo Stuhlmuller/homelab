@@ -39,7 +39,7 @@ BINDINGS = {
 def read_identity():
     values = GUARDS.read_json([
         "terragrunt", "--log-disable", "--working-dir",
-        str(ROOT / "IaC/operator/tailscale-access"), "output", "-json",
+        str(ROOT / "IaC/homelab/us-west-2/operator/tailscale-access"), "output", "-json",
     ], "private Tailscale operator outputs")
     try:
         output = values["github_auth_keys"]

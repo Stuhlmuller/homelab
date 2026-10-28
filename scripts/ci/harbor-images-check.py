@@ -20,6 +20,7 @@ BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 DNS_CATALOG = ROOT / "scripts/config/harbor-dns-images.json"
 LITELLM_CATALOG = ROOT / "scripts/config/harbor-litellm-images.json"
+PROMETHEUS_CATALOG = ROOT / "scripts/config/harbor-prometheus-images.json"
 HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
@@ -98,6 +99,8 @@ def declared_images(value):
                 image += ":" + str(value["tag"])
             if value.get("digest"):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
+            elif value.get("sha"):
+                image = image.split("@", 1)[0] + "@sha256:" + str(value["sha"]).removeprefix("sha256:")
             images.add(image)
         for key, child in value.items():
             if key in {"name", "newName", "repository", "destination"} and isinstance(child, str):
@@ -171,7 +174,7 @@ def declared_mastodon_images():
 
 def chart_sources():
     charts = []
-    stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC").glob("*/stack.hcl"))]
+    stacks = sorted((ROOT / "IaC/homelab/us-west-2/apps").glob("*/stack.hcl"))
     for stack in stacks:
         for match in re.finditer(r"\{([^{}]*\bchart\s*=[^{}]*)", stack.read_text()):
             fields = dict(re.findall(r'(repoURL|chart|targetRevision)\s*=\s*"([^\"]+)"', match[1]))
@@ -179,6 +182,15 @@ def chart_sources():
                 raise SystemExit(f"{stack.relative_to(ROOT)}: Stack chart sources must keep literal "
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
+    enterprise = ROOT / "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl"
+    if enterprise.exists() and not re.search(r'\bchart\s*=', enterprise.read_text()):
+        match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'
+                          r'targetRevision\s*=\s*"([^"]+)"\s*helm\s*=', enterprise.read_text())
+        if not match:
+            raise SystemExit(f"{enterprise.relative_to(ROOT)}: Git Helm chart source must keep literal fields")
+        repository, path, revision = match.groups()
+        charts.append({"source": str(enterprise.relative_to(ROOT)), "repoURL": repository,
+                       "chart": "git:" + path, "targetRevision": revision})
     bootstrap = ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
@@ -415,6 +427,8 @@ def check():
          {"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}),
         ("LiteLLM", LITELLM_CATALOG,
          {"ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"}),
+        ("Prometheus", PROMETHEUS_CATALOG,
+         {"quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"}),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}

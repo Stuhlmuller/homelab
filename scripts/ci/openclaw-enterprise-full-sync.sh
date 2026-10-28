@@ -75,3 +75,4 @@ kubectl --request-timeout=15s -n argocd get application openclaw-enterprise -o j
     .status.sync.revisions == ["33bb74590a749f37934da4502fca6035cd234a55", $sha, $sha] and
     .status.health.status == "Healthy"
   ' >/dev/null
+[[ "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" == "$EXPECTED_SHA" ]] || exit 2

@@ -26,6 +26,7 @@ CANARY = "homelab.stinkyboi.com/network-policy-canary"
 FIXTURE_NAMESPACE = "network-policy-canary"
 CLEANUP = "kube-router-network-policy-cleanup"
 ENFORCER = "kube-router-network-policy"
+ISTIO_SYSTEM_DAEMONSETS = {"ztunnel", "istio-cni-node"}
 ROOT_CHAINS = {"INPUT": "KUBE-ROUTER-INPUT", "FORWARD": "KUBE-ROUTER-FORWARD",
                "OUTPUT": "KUBE-ROUTER-OUTPUT"}
 FIXED_CHAINS = {*ROOT_CHAINS.values(), "KUBE-NWPLCY-DEFAULT", "KUBE-NWPLCY-COMMON",
@@ -129,7 +130,8 @@ def require_reviewed_node_pods(node_name, placement, cleanup_pod, daemonset_uid)
                      any(isinstance(owner, dict) and owner.get("kind") == "DaemonSet" and
                          owner.get("controller") is True and
                          isinstance(owner.get("name"), str) and owner["name"] and
-                         (owner["name"] == "ztunnel" if identity[0] == "istio-system"
+                         (owner["name"] in ISTIO_SYSTEM_DAEMONSETS if
+                          identity[0] == "istio-system"
                           else owner["name"] not in {ENFORCER, CLEANUP})
                          for owner in owners))
         if not valid:
@@ -421,7 +423,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
             evidence_sha == source_sha):
         raise ValueError("firewall evidence is not from the reviewed pre-removal commit")
     canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
-    canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+    canary_application = "IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl"
     # Native OpenWiki may update only these non-runtime pages and their provenance.
     wiki_paths = {
         "openwiki/.last-update.json",
@@ -440,7 +442,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
     old_canary_sync = "        enabled = true\n        prune   = true\n"
     new_sync = "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"
     manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
-    application = "IaC/platform-network-policy/stack.hcl"
+    application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
     old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
     old_sync = "        enabled = true\n        prune   = true\n"
     def non_operational(path):

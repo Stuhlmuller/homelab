@@ -67,6 +67,46 @@ class QuiesceContract(unittest.TestCase):
     def tearDown(self):
         MODULE.api, MODULE.pods = self.original_api, self.original_pods
 
+    def test_incomplete_pod_list_never_proves_writer_termination(self):
+        complete = {"kind": "PodList", "metadata": {"resourceVersion": "42"}, "items": []}
+        for listing in (
+            {}, {**complete, "kind": "Status"}, {**complete, "metadata": None},
+            {**complete, "metadata": {}},
+            {**complete, "metadata": {"resourceVersion": "0"}},
+            {**complete, "metadata": {"resourceVersion": "42", "continue": "next"}},
+            {**complete, "metadata": {"resourceVersion": "42", "continue": 0}},
+            {**complete, "items": None},
+            {**complete, "items": [None]},
+        ):
+            with self.subTest(listing=listing):
+                MODULE.api = lambda path: listing
+                with self.assertRaisesRegex(RuntimeError, "Pod list is incomplete"):
+                    MODULE.pods()
+        MODULE.api = lambda path: complete
+        self.assertEqual(MODULE.pods(), [])
+
+    def test_incomplete_pod_list_blocks_before_scaling(self):
+        fake = FakeAPI()
+        MODULE.api = lambda path, *args, **kwargs: (
+            {"kind": "PodList", "metadata": {"resourceVersion": "42", "continue": "next"},
+             "items": []} if path == "/api/v1/namespaces/openclaw-system/pods"
+            else fake(path, *args, **kwargs))
+        with self.assertRaisesRegex(RuntimeError, "Pod list is incomplete"):
+            MODULE.main()
+        self.assertEqual(fake.updates, [])
+
+    def test_missing_writer_labels_do_not_hide_a_running_pod(self):
+        fake = FakeAPI()
+        orphan = pod("api")
+        orphan["metadata"]["labels"] = {}
+        MODULE.api = lambda path, *args, **kwargs: (
+            {"kind": "PodList", "metadata": {"resourceVersion": "42"},
+             "items": [orphan]} if path == "/api/v1/namespaces/openclaw-system/pods"
+            else fake(path, *args, **kwargs))
+        with self.assertRaisesRegex(RuntimeError, "uncertain"):
+            MODULE.main()
+        self.assertEqual(fake.updates, [])
+
     def test_empty_first_install_requires_zero_matching_pods(self):
         fake = FakeAPI(present=())
         MODULE.api, MODULE.pods = fake, lambda: []

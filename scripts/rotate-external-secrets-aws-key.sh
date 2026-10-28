@@ -48,7 +48,7 @@ for command in aws base64 conftest git jq kubectl rg shasum terragrunt; do
 done
 
 repo_root="$(git rev-parse --show-toplevel)"
-unit="$repo_root/IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth"
+unit="$repo_root/IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth"
 catalog_unit="$repo_root/IaC/terragrunt-catalog/units/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terragrunt.hcl"
 
 if [[ "$(git -C "$repo_root" branch --show-current)" != "main" ]] ||

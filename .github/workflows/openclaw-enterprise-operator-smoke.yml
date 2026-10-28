@@ -1,0 +1,34 @@
+name: OpenClaw Enterprise Operator Image Smoke
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/openclaw-enterprise-operator-smoke.yml
+      - builds/openclaw-enterprise/**
+      - scripts/openclaw-enterprise.py
+      - scripts/ci/openclaw-enterprise-operator-image-test.py
+      - clusters/homelab/apps/openclaw-enterprise/installation.yaml
+      - clusters/homelab/apps/openclaw-enterprise/values.yaml
+      - flake.nix
+      - flake.lock
+
+permissions: {}
+
+jobs:
+  build-operator:
+    name: Build And Smoke Pinned Operator On Linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check Out Reviewed Source
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Check Operator Build Contract
+        run: nix develop --command python3 -I scripts/ci/openclaw-enterprise-operator-image-test.py
+      - name: Build And Smoke Linux Amd64 Operator
+        run: nix develop --command bash builds/openclaw-enterprise/build-operator.sh
