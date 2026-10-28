@@ -73,6 +73,27 @@ Valkey, raw-event S3 objects, application encryption/salt secrets, or Langfuse
 startup and ingestion. Keep the existing PVC and require a separate reviewed
 cutover and rollback before moving the database.
 
+## Raw-object version copy candidate
+
+The manual [`Langfuse Raw Version Backup`](../../../../.github/workflows/langfuse-raw-version-backup.yml)
+workflow is a separate source-only candidate. Once its dedicated bounded IAM
+role has passed a protected plan and apply, an exact-current-main dispatch can
+copy every extant raw S3 object version into the versioned application-backup
+bucket in `us-east-1`. It preserves HTTP headers, user metadata and per-version
+tags with each object's bytes. It reads back each exact destination version and
+rechecks mutable source tags before writing private `complete.json` last. A
+changed source inventory or tag set blocks completion;
+failed runs can leave partial objects in their run-specific prefix. The public
+job output contains only counts, bytes and the private manifest's SHA-256.
+
+Do not use this component receipt to retire Langfuse. The raw bucket expires
+current objects after 30 days and noncurrent versions after seven days. The
+workflow has not been run, does not fence PostgreSQL, ClickHouse or Valkey
+writers, and does not preserve application encryption/salt secrets. A reviewed
+coordinated capture and isolated whole-service restore remain required. The
+offline copy contract is checked with
+`python3 -I scripts/ci/langfuse-raw-version-backup-test.py`.
+
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.

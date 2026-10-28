@@ -28,6 +28,11 @@ override_data {
   values = { arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
 }
 
+override_resource {
+  target = aws_iam_policy.langfuse_raw_backup_boundary
+  values = { arn = "arn:aws:iam::123456789012:policy/homelab-langfuse-raw-backup-boundary" }
+}
+
 variables {
   apply_role_name                       = "test-apply"
   aws_region                            = "us-west-2"
@@ -35,9 +40,70 @@ variables {
   external_secrets_user_name            = "test"
   kms_key_id                            = "alias/test"
   langfuse_bucket_name                  = "homelab-langfuse-123456789012-us-west-2"
+  application_backup_bucket_name        = "homelab-application-backups-123456789012-us-east-1"
   parameter_reader_group_name           = "test-readers"
   parameter_reader_policy_name_prefix   = "test-reader-"
   policy_name                           = "test-policy"
+}
+
+run "dedicated_raw_backup_role_is_production_workflow_only" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [aws_iam_role.langfuse_raw_backup]
+  }
+
+  assert {
+    condition = (
+      aws_iam_role.langfuse_raw_backup.name == "homelab-langfuse-raw-backup" &&
+      aws_iam_role.langfuse_raw_backup.max_session_duration == 21600 &&
+      aws_iam_role.langfuse_raw_backup.permissions_boundary == aws_iam_policy.langfuse_raw_backup_boundary.arn &&
+      jsondecode(data.aws_iam_policy_document.langfuse_raw_backup_assume_role.json).Statement[0].Condition.StringEquals == {
+        "token.actions.githubusercontent.com:aud"           = "sts.amazonaws.com"
+        "token.actions.githubusercontent.com:sub"           = "repo:Stuhlmuller/homelab:environment:homelab-production"
+        "token.actions.githubusercontent.com:workflow"      = "Langfuse Raw Version Backup"
+        "token.actions.githubusercontent.com:ref"           = "refs/heads/main"
+        "token.actions.githubusercontent.com:repository_id" = "973476220"
+      }
+    )
+    error_message = "The raw backup role must require the exact protected production workflow and a permissions boundary."
+  }
+}
+
+run "dedicated_raw_backup_role_has_only_two_bucket_scopes" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [aws_iam_role_policy.langfuse_raw_backup]
+  }
+
+  assert {
+    condition = (
+      aws_iam_role_policy.langfuse_raw_backup.role == "homelab-langfuse-raw-backup" &&
+      jsondecode(aws_iam_role_policy.langfuse_raw_backup.policy) == jsondecode(aws_iam_policy.langfuse_raw_backup_boundary.policy) &&
+      toset([for statement in jsondecode(data.aws_iam_policy_document.langfuse_raw_backup.json).Statement : statement.Sid]) == toset([
+        "InspectRawAndBackupBuckets", "ListLangfuseRawVersions",
+        "ReadLangfuseRawVersions", "WriteAndReadLangfuseBackupVersions",
+        "DecryptLangfuseRawVersions", "EncryptAndDecryptLangfuseBackupVersions",
+      ]) &&
+      alltrue([for statement in jsondecode(data.aws_iam_policy_document.langfuse_raw_backup.json).Statement :
+        statement.Effect == "Allow" &&
+        !contains(flatten([statement.Action]), "s3:DeleteObject") &&
+        !contains(flatten([statement.Action]), "s3:DeleteObjectVersion") &&
+        !contains(flatten([statement.Action]), "kms:CreateGrant")
+      ]) &&
+      toset(flatten([for statement in jsondecode(data.aws_iam_policy_document.langfuse_raw_backup.json).Statement : flatten([statement.Action])])) == toset([
+        "s3:GetBucketVersioning", "s3:GetEncryptionConfiguration", "s3:ListBucketVersions",
+        "s3:GetObjectVersion", "s3:GetObjectVersionTagging", "s3:PutObject",
+        "s3:PutObjectTagging", "kms:Decrypt", "kms:GenerateDataKey",
+      ]) &&
+      [for statement in jsondecode(data.aws_iam_policy_document.langfuse_raw_backup.json).Statement : statement.Resource if statement.Sid == "WriteAndReadLangfuseBackupVersions"][0] ==
+      "arn:aws:s3:::homelab-application-backups-123456789012-us-east-1/langfuse/raw-versions/*"
+    )
+    error_message = "The raw backup role must read only Langfuse source versions and write only its offsite prefix without delete or grant access."
+  }
 }
 
 run "legacy_archive_role_session_outlives_job" {

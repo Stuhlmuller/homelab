@@ -12,3 +12,8 @@ output "langfuse_raw_inventory_role_arn" {
   description = "Dedicated production-only GitHub OIDC role for the Langfuse raw-version inventory."
   value       = aws_iam_role.langfuse_raw_inventory.arn
 }
+
+output "langfuse_raw_backup_role_arn" {
+  description = "Dedicated production-only GitHub OIDC role for exact raw-version offsite copies."
+  value       = aws_iam_role.langfuse_raw_backup.arn
+}

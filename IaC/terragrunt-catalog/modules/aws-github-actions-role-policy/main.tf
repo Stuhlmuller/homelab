@@ -22,6 +22,7 @@ locals {
   ]
   langfuse_blob_storage_user_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
   langfuse_bucket_arn            = "arn:${data.aws_partition.current.partition}:s3:::${var.langfuse_bucket_name}"
+  application_backup_bucket_arn  = "arn:${data.aws_partition.current.partition}:s3:::${var.application_backup_bucket_name}"
 }
 
 data "aws_iam_policy_document" "langfuse_raw_inventory" {
@@ -60,6 +61,93 @@ data "aws_iam_policy_document" "langfuse_raw_inventory" {
       test     = "StringEquals"
       variable = "kms:EncryptionContext:aws:s3:arn"
       values   = [local.langfuse_bucket_arn]
+    }
+  }
+}
+
+# This second role can copy exact source versions into one offsite prefix. The
+# read-only inventory role remains unchanged and cannot publish backup data.
+data "aws_iam_policy_document" "langfuse_raw_backup" {
+  statement {
+    sid       = "InspectRawAndBackupBuckets"
+    effect    = "Allow"
+    actions   = ["s3:GetBucketVersioning", "s3:GetEncryptionConfiguration"]
+    resources = [local.langfuse_bucket_arn, local.application_backup_bucket_arn]
+  }
+
+  statement {
+    sid       = "ListLangfuseRawVersions"
+    effect    = "Allow"
+    actions   = ["s3:ListBucketVersions"]
+    resources = [local.langfuse_bucket_arn]
+  }
+
+  statement {
+    sid       = "ReadLangfuseRawVersions"
+    effect    = "Allow"
+    actions   = ["s3:GetObjectVersion", "s3:GetObjectVersionTagging"]
+    resources = ["${local.langfuse_bucket_arn}/*"]
+  }
+
+  statement {
+    sid    = "WriteAndReadLangfuseBackupVersions"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionTagging",
+    ]
+    resources = ["${local.application_backup_bucket_arn}/langfuse/raw-versions/*"]
+
+    condition {
+      test     = "StringEqualsIfExists"
+      variable = "s3:x-amz-server-side-encryption"
+      values   = ["aws:kms"]
+    }
+  }
+
+  statement {
+    sid       = "DecryptLangfuseRawVersions"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = [data.aws_kms_alias.langfuse_s3.target_key_arn]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.${var.aws_region}.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:s3:arn"
+      values   = [local.langfuse_bucket_arn]
+    }
+  }
+
+  statement {
+    sid       = "EncryptAndDecryptLangfuseBackupVersions"
+    effect    = "Allow"
+    actions   = ["kms:GenerateDataKey", "kms:Decrypt"]
+    resources = ["arn:${data.aws_partition.current.partition}:kms:us-east-1:${data.aws_caller_identity.current.account_id}:key/*"]
+
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values   = ["alias/aws/s3"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["s3.us-east-1.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:s3:arn"
+      values   = [local.application_backup_bucket_arn]
     }
   }
 }
@@ -205,6 +293,48 @@ data "aws_iam_policy_document" "langfuse_raw_inventory_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "langfuse_raw_backup_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      identifiers = [data.aws_iam_openid_connect_provider.github_actions.arn]
+      type        = "Federated"
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:Stuhlmuller/homelab:environment:homelab-production"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:workflow"
+      values   = ["Langfuse Raw Version Backup"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:ref"
+      values   = ["refs/heads/main"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:repository_id"
+      values   = ["973476220"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "external_secrets_boundary" {
   statement {
     sid       = "DenyTemporarySessionCredentials"
@@ -293,6 +423,41 @@ resource "aws_iam_role_policy" "langfuse_raw_inventory" {
     precondition {
       condition     = var.langfuse_bucket_name == "homelab-langfuse-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
       error_message = "The raw-version inventory grant must match the declared Langfuse bucket owner and region."
+    }
+  }
+}
+
+resource "aws_iam_policy" "langfuse_raw_backup_boundary" {
+  name        = "homelab-langfuse-raw-backup-boundary"
+  description = "Caps raw-version backup access to the two declared buckets and their S3 KMS keys."
+  policy      = data.aws_iam_policy_document.langfuse_raw_backup.json
+  tags        = var.tags
+}
+
+resource "aws_iam_role" "langfuse_raw_backup" {
+  name                 = "homelab-langfuse-raw-backup"
+  assume_role_policy   = data.aws_iam_policy_document.langfuse_raw_backup_assume_role.json
+  permissions_boundary = aws_iam_policy.langfuse_raw_backup_boundary.arn
+  max_session_duration = 21600
+  tags                 = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_role_policy" "langfuse_raw_backup" {
+  name   = "langfuse-raw-version-backup"
+  role   = aws_iam_role.langfuse_raw_backup.name
+  policy = data.aws_iam_policy_document.langfuse_raw_backup.json
+
+  lifecycle {
+    precondition {
+      condition = (
+        var.langfuse_bucket_name == "homelab-langfuse-${data.aws_caller_identity.current.account_id}-${var.aws_region}" &&
+        var.application_backup_bucket_name == "homelab-application-backups-${data.aws_caller_identity.current.account_id}-us-east-1"
+      )
+      error_message = "The raw-version backup role must match both declared bucket owners and regions."
     }
   }
 }
