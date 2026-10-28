@@ -2,6 +2,7 @@
   "revision": "33bb74590a749f37934da4502fca6035cd234a55",
   "archiveSha256": "23714b91b364ff87ec767d5555687788969f05980574b717542c269f8cd940b4",
   "nodeBaseImage": "docker.io/library/node:24-bookworm@sha256:3d27e5c11e5786e309ec3e03f93ae536eb36e6e5eb3714d5eb3300a36157add0",
+  "nodeRuntimeBaseImage": "docker.io/library/node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20",
   "cliGoToolchain": "go1.27.1",
   "cliBinarySha256": "70eae2060a8fe11d6905af6689a61212b2254977661bbc51e3c10e25f5b60eb9"
 }

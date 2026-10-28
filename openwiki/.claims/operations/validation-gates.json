@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f57b740ba357712cdf211d34907c6028737610301c27587b7fa2d325fe8b0f67",
+  "pageVersion": "sha256:a275977dbfce8958b8f46383e6000fb18a0a461b5206b807538a6beaf1431fe7",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -570,23 +570,15 @@
     },
     {
       "id": "claim_0e3c1afd23034474b5208b12c395dfbf",
-      "statement": "The fixed Harbor 2.15.4 publication scope contains exactly nine digests from the reviewed full catalog; publisher fixtures reject unreviewed scope entries and require selected-image pull verification. Scoped success does not prove full-catalog acceptance; the revised LiteLLM catalog still requires an all-scope receipt.",
+      "statement": "The fixed Harbor 2.15.4 scope contains exactly nine full-catalog digests and publisher fixtures require selected-image pull verification. Scoped success does not prove full-catalog acceptance; the later protected all-scope run 40011909180 passed the then-current 214-image catalog.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L20",
+          "version": "repo-lines-v1:sha256:5e534b254980a2b138713311fe25822cde58c3659cf9b808303d7b2f2730428a:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjkxZWFjODU3MzkzYWUzODY5OTVjNDJjZjdkYzM4MWM3ZDU1OWI5OWNhOGU1YTdkYmMzOGJmOTE2NGVkNzBkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWEwZDcxZTJiZWFmNzA1MGE4MjE0ZTc4ZjJiZTg5ZDVkOTAxNjYxYjk3NTg1NWJhNTMzMjc1YjY4MWEzZjkyMCJ9"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:21012f8291b5091ab22abb115ad01e8312ac2af6f036edb353bbccca9a5337b9"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:29d7e0bca0ed43d97ac2358f1d172999329571ea6c814d0ec5425a728ebffba3"
-        },
-        {
-          "resource": "repo://scripts/config/harbor-runtime-images.json",
-          "version": "repo-file-v1:sha256:e69efee20a05e1b789cd7ee0d3915bf3e7686997e292d2de7b9051ad57b9a466"
+          "version": "repo-file-v1:sha256:30b8e1d4198256b1cdfdf96afa591bd39c568bded0ab7e06a4ea3b4415185fc6"
         }
       ]
     },
@@ -840,11 +832,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:4d82f12d5f95644839e9f061d3d37f4654f607dab48dafee2e1429740c3f93aa"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:9e0893b70cfa2934172197981401fe28cdce50f67995ca304ab3c5b375198585"
+          "version": "repo-file-v1:sha256:2c19f5bd7da992b71d83cbcfc09a1240cb52a010f27778ed007e677489aa515c"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -856,7 +848,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:026933b0eeb647618150c58326f6c811a61f20eedeb231df73e2c8c2a835e7eb"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -866,15 +858,19 @@
     },
     {
       "id": "claim_c77965dc42ad4f329385376a55d6e76e",
-      "statement": "The OpenClaw Enterprise model-credential workflow binds to exact current main and validates an owner-supplied OpenRouter key before writing only its distinct SSM path; no key is supplied. Stopped legacy inventory and independent off-NAS archive/restore passed. Protected all runs 40011909180 and 40172274517 passed the historical 214-image and expanded 215-source catalogs at their dated revisions, but current-source T004 operator publication remains open. Isolated canary, platform upgrades, compatible legacy boot and new-state restore remain acceptance gates.",
+      "statement": "The OpenClaw Enterprise model-credential workflow requires exact current main and validates an owner-supplied OpenRouter key for its distinct SSM path; no key has been supplied. Stopped legacy inventory and independent off-NAS archive and restore passed. Protected all runs 40011909180 and 40172274517 passed historical 214-image and 215-source catalogs, while current T004 needs a full mirror of the proposed 222-source catalog and a newly signed, fully pulled CLI image pinned in source. Isolated canary, platform upgrades, compatible legacy boot and new-state restore remain open.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-model-credential.yml",
-          "version": "repo-file-v1:sha256:be0b014fb7de7d184a44d232ef7a443c84b33e4486051f876708b69233679fc4"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L27",
+          "version": "repo-lines-v1:sha256:56ff71ef6759b2fabc063e99fc7187ef11bfda475cb890772546f0a3aaeba6af:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ODY4NDFjYWU1Y2JjOGQyNDc5YWE4YTQ5ZmUzMDE5MmRhYmM1MjIwOTRjMjAxZTJkYTE4NjVmY2E0ZThjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzMTIyODk1M2Q0MDUwOTRkODYxNTM3MDBiMDU1ODQxOWE5ZGJiMWRjOWZmMmQwZTE4M2VkYmRmY2I1YjNiZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3YWNkZGIwZTRhYTA0ODAxZDI3ZGQyYmNhMDdkZGI2MTM4MGIxMWJhNDNlZTMyZmYxNDU1YzQzZjRkOTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ODFkYTJkZDUyYzMxYWJkMDJjYzBiYzY5ZjJhZTc5NjM0MjRkZDk3NzY5Mzg4M2UzNDk5OWJjNGI2MTVhNjAifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L86",
-          "version": "repo-lines-v1:sha256:4f211921c9b59795c65c6c37fe0b08069395ab7df4b3c7434b583ff520527914:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4ODY4NDFjYWU1Y2JjOGQyNDc5YWE4YTQ5ZmUzMDE5MmRhYmM1MjIwOTRjMjAxZTJkYTE4NjVmY2E0ZThjMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyMmUyZTYzZTgzZDFjZDJiMWQxNzBmY2I4YjBiYTgyMzZiMjI4YzY1YzM3MmYwNDQxYWRhNTI1ZTZkZjE2NGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3YWNkZGIwZTRhYTA0ODAxZDI3ZGQyYmNhMDdkZGI2MTM4MGIxMWJhNDNlZTMyZmYxNDU1YzQzZjRkOTFlNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgwOGMwZGZkOWRhYTJlZDhhOTc5OWYyYTllYmNlZDRiYmQyOWNjNWZjZmMwODY1ODZlZmU1YTM3YzQyNDlmYjkifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L79-L92",
+          "version": "repo-lines-v1:sha256:62af01068cf0b9294a886687b55bf95007959b28388746e01a51475f58a474de:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhZDEyMDcyMDM3NDYxMjkxYmEzZDJhMDgxMmU4MDNlYzZmZTM0OTU2ODQ0ZWQxNWE0NWM0ODU1OWExMzhmNzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlMmQzZWNmYmJiNjc0NjJhMDAwZTU3ZGM4YmNkYWEyN2E0MGM4ZGE5YTViNTVkZDk5YjQxODQ1YmMzYzU2NTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4YjI3MjhkYjEwNDhmMTBiY2I0M2ZlNWMzZmIxNDA4ZDJiNzBhZGM0ZmJiNDRhZTNlN2E5MjE5MzVjY2E4OTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViODc5YzViNWIwNzk4M2Y0ZGRiYzA1Zjc3ZWVjNzcyMjQ2OGEzYzcyNzNlNDliY2EzOGZhYWY1NDg3Zjk2MmUifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:026933b0eeb647618150c58326f6c811a61f20eedeb231df73e2c8c2a835e7eb"
         }
       ]
     },
@@ -932,7 +928,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:4d82f12d5f95644839e9f061d3d37f4654f607dab48dafee2e1429740c3f93aa"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -1134,7 +1130,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:4d82f12d5f95644839e9f061d3d37f4654f607dab48dafee2e1429740c3f93aa"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -1273,7 +1269,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown read-only recheck leaves T022 blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise steady request, 6,308 MiB actual use and 9.74 GB root-filesystem space free. Every worker has less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern; acer has only 1,802 MiB unreserved versus the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L360-L386",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L365-L391",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -1660,7 +1656,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:4d82f12d5f95644839e9f061d3d37f4654f607dab48dafee2e1429740c3f93aa"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -1673,7 +1669,7 @@
       "statement": "A read-only 2026-10-20 21:00 UTC recheck found all nodes Ready and untainted, no worker with 10 GiB free for one new local claim, Acer below the database-plus-gateway memory request, and unrelated Pods without canary tolerations. T022, T027, and T035 remain blocked with no live admission.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L388-L401",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L393-L406",
           "version": "repo-lines-v1:sha256:7794ffeefeafaff42b81ab054effa995cdde664e2d8720514f1d5b79b3723046:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyYzdhYTY2MDllNjcxNDE2M2Y4ZGEzMjhlZjY1NzRmZjJlMTgwMTU4Mzg1OWJiMzMzZjU2OWM4MTI0Yjg0N2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViYzZhOTQ3NjgwMDRmYWVjM2I2YzU1NjNiMDk0MjQ1MGQzOTc3ODA1ZmE1MTQ0ZDBlNGU0ZTcwYWY0ZDdkM2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ZDJmMjhkYTg3N2M3N2RhMDQ5YzVkMWRiYWRjYjAwNjhjODNkMDFjZmNjY2FiOWQ0MDU2M2FlNWI1ZTQ1Y2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNzM5ZmRlYWFmODY5YWNmNTk2Mzg5ZGY2NWNhNGJjMWIwN2ZiZGQ0YTA2NGRlZjk0YjI1YzJjNTgzMzA3YzcifQ"
         },
         {
@@ -1720,7 +1716,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:4d82f12d5f95644839e9f061d3d37f4654f607dab48dafee2e1429740c3f93aa"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -1741,7 +1737,7 @@
           "version": "repo-lines-v1:sha256:1b65e73dec72885a328c8f136fc42bf9271f59d985c6eb416cb9ba6759d867f5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGU0Y2VkYzhlMDQzYWU5MzdjMzk0NjJkYjczMDg3NTk1YTJmYmZjZDkxOTFlYjZhMmRjMzE5NThlNzdmM2ZkYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODRlNTc1MDJiNmFkZDk5Zjg3NWRmMDJkYzA3MjA0MTc0MGE1OTRhZmNiNWJmMGM3OTc4NmI0MGYzZjkxN2M1YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGNhNmE5NTEzMGY0Zjc0ZTQ0NDIzNmU3NTE4MzFmMDk0MmQ1ODhiMDdlOGNmYmNlMDExODg2OWQ2MzhlNjBjZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGY3MzlhMDZjMWNiYjEyNDRlMzM2M2QzOGJjZjlmYTUwY2U4NGZlZDM5OWMyMTkzYTNjN2YwOGQ1OTkxOGIyYSJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L424-L470",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L429-L475",
           "version": "repo-lines-v1:sha256:d3735aea2956f14cd38233891d8beeb46b11b3b1381e897c34bbd3fb72b33b72:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmMmY3YmE1YzU4N2JjMWI4OWZhMDFmZDEwNDRmZGQ4Mjk4MWU1MjAwMDZjMDQxZGM5MWE3NzI0MmU3MWIxNTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhOThmMGYwZjdlOGNmMjExYTVmNzNmOTYxNGRlMjVhOThhNWJjODI3NTdmNTQxY2ZkYjRkNDgyODY1ZTM4NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZDU2MGM5ZDEyNDYxN2YzOTg3ZjcyNTdiY2VlMjFjNmY1MjAxNWMyZDQ1ZGQ3YWIyMzU4YWJkZTM5MTZlZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBlMWE1M2U5YmVhNjU5ODE4MTExYzZmMmJlNzAwNjNhMzYwZjc1ZDU0MWRmZDczMDFhMWViNTJlZTc0N2FmN2MifQ"
         },
         {
@@ -1850,7 +1846,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:4d82f12d5f95644839e9f061d3d37f4654f607dab48dafee2e1429740c3f93aa"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -1867,8 +1863,8 @@
       "statement": "Offline inventory and publisher fixtures pin the one-image Prometheus qualification scope to the exact full-catalog digest and reject altered or extra entries before credentials.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-images-check-test.py#L150-L210",
-          "version": "repo-lines-v1:sha256:ae870a85d2bfdb487c57ba96974f78676930cb04fdd885e1cb23737f6659d393:eyJzZWxlY3RlZExpbmVDb3VudCI6NjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlMzc3NWUyZjA4MzUxZDVmYzI2ZWI5Y2ViYWVkYWMyN2Q3MDRmZGJmYmJlY2Y5YzJlZWI1NjY1ZmMzMTBhN2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NmQzNjMyMDE0OGRkNWRhYjIyZTQyM2RhMDg1ZjBmZWU3MDI2NTEwMDRmYjJkMjljNzE1NGRlYTk2NjlkNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxN2FmMGMwOWQ0MGU3Y2RhZjliZDA4ZjQ4NWRlMDU0ZGRlMmZjODYyMmJmYzI2YTk2ZGRlYmRkZGNkNjg4Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxYTJjM2I1ZWEzYWE0YjFlODY3ZmMxZGJlOWZiOGM1OTVhZDUyZDc3MjY5YzQ5ZjdlNDZmZGE2OTc3NjI2YTYifQ"
+          "resource": "repo://scripts/ci/harbor-images-check-test.py#L172-L241",
+          "version": "repo-lines-v1:sha256:f2b46273639dc166acc5fe815bd257cb7f94ae377db1c7a307a87e2e4343676d:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlMzc3NWUyZjA4MzUxZDVmYzI2ZWI5Y2ViYWVkYWMyN2Q3MDRmZGJmYmJlY2Y5YzJlZWI1NjY1ZmMzMTBhN2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NmQzNjMyMDE0OGRkNWRhYjIyZTQyM2RhMDg1ZjBmZWU3MDI2NTEwMDRmYjJkMjljNzE1NGRlYTk2NjlkNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxN2FmMGMwOWQ0MGU3Y2RhZjliZDA4ZjQ4NWRlMDU0ZGRlMmZjODYyMmJmYzI2YTk2ZGRlYmRkZGNkNjg4Y2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYxYTJjM2I1ZWEzYWE0YjFlODY3ZmMxZGJlOWZiOGM1OTVhZDUyZDc3MjY5YzQ5ZjdlNDZmZGE2OTc3NjI2YTYifQ"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py#L701-L735",
@@ -1896,23 +1892,19 @@
     },
     {
       "id": "claim_57937e8d1ca34d2587899b9cc9daff78",
-      "statement": "Full mirror run 39906968373 stopped at pinned Prometheus item 196 of 214 and produced no complete receipt; one-image qualification alone cannot pass the full-catalog gate. Later protected all runs 40011909180 and 40172274517 passed the historical 214-image and expanded 215-source catalogs with matching digests and complete authenticated Harbor pulls at their dated revisions. Changed Enterprise operator source keeps current-source T004 open.",
+      "statement": "Full mirror run 39906968373 stopped at pinned Prometheus item 196 of 214 and produced no complete receipt; the one-image qualification alone did not pass full-catalog T004. Later protected all runs 40011909180 and 40172274517 passed the historical 214-image and 215-source catalogs at their dated revisions. The later operator is pinned after signed publication, but the proposed 222-source catalog and changed CLI base still need current-main mirror and signed CLI publication.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L14-L20",
-          "version": "repo-lines-v1:sha256:86b18cb76686e7c9951efa39761b7793a33c95868264aa3e40b34d22b064ba7d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTg4Njg0MWNhZTVjYmM4ZDI0NzlhYThhNDlmZTMwMTkyZGFiYzUyMjA5NGMyMDFlMmRhMTg2NWZjYTRlOGMyZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjkxZWFjODU3MzkzYWUzODY5OTVjNDJjZjdkYzM4MWM3ZDU1OWI5OWNhOGU1YTdkYmMzOGJmOTE2NGVkNzBkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTdhY2RkYjBlNGFhMDQ4MDFkMjdkZDJiY2EwN2RkYjYxMzgwYjExYmE0M2VlMzJmZjE0NTVjNDNmNGQ5MWU0YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWEwZDcxZTJiZWFmNzA1MGE4MjE0ZTc4ZjJiZTg5ZDVkOTAxNjYxYjk3NTg1NWJhNTMzMjc1YjY4MWEzZjkyMCJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L16-L20",
+          "version": "repo-lines-v1:sha256:263c87356e32a33fdf63dc7b9d448919f73df85f67db70ce059e5b342503aabe:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjczZjFhMGFkZGM3ZDJhMzJiYzA5Mzk5YmI1ZjQ3N2QxMjFmYjA1OGIyODhmNzVmODlhMzRmZWQ4ZGJiNWY1ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjkxZWFjODU3MzkzYWUzODY5OTVjNDJjZjdkYzM4MWM3ZDU1OWI5OWNhOGU1YTdkYmMzOGJmOTE2NGVkNzBkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjkxMGMxYWY0Yzg1YTBhNzRmMDgyYTZhYzEwMDRhM2ExNjI2NDg4NjA0NDM0ODFlNDVjMGI4YzFlMzM3YmFkNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWEwZDcxZTJiZWFmNzA1MGE4MjE0ZTc4ZjJiZTg5ZDVkOTAxNjYxYjk3NTg1NWJhNTMzMjc1YjY4MWEzZjkyMCJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L79-L86",
-          "version": "repo-lines-v1:sha256:9f4a35059848084c9c2d2e6dd237c80d2c222b53a5fcbe23b301d33c7abbb0ea:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGFkMTIwNzIwMzc0NjEyOTFiYTNkMmEwODEyZTgwM2VjNmZlMzQ5NTY4NDRlZDE1YTQ1YzQ4NTU5YTEzOGY3MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDIyZTJlNjNlODNkMWNkMmIxZDE3MGZjYjhiMGJhODIzNmIyMjhjNjVjMzcyZjA0NDFhZGE1MjVlNmRmMTY0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODI5NzYxOGI4OGZhYTE2ODUxYjE4MjYzNjY5ZGU5MTk1ZThkNmE0MzQxNjNkMTBhM2E2NGZlMzNjZTJmOGY2MyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODA4YzBkZmQ5ZGFhMmVkOGE5Nzk5ZjJhOWViY2VkNGJiZDI5Y2M1ZmNmYzA4NjU4NmVmZTVhMzdjNDI0OWZiOSJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L79-L92",
+          "version": "repo-lines-v1:sha256:62af01068cf0b9294a886687b55bf95007959b28388746e01a51475f58a474de:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhZDEyMDcyMDM3NDYxMjkxYmEzZDJhMDgxMmU4MDNlYzZmZTM0OTU2ODQ0ZWQxNWE0NWM0ODU1OWExMzhmNzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlMmQzZWNmYmJiNjc0NjJhMDAwZTU3ZGM4YmNkYWEyN2E0MGM4ZGE5YTViNTVkZDk5YjQxODQ1YmMzYzU2NTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU4YjI3MjhkYjEwNDhmMTBiY2I0M2ZlNWMzZmIxNDA4ZDJiNzBhZGM0ZmJiNDRhZTNlN2E5MjE5MzVjY2E4OTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViODc5YzViNWIwNzk4M2Y0ZGRiYzA1Zjc3ZWVjNzcyMjQ2OGEzYzcyNzNlNDliY2EzOGZhYWY1NDg3Zjk2MmUifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L519-L530",
-          "version": "repo-lines-v1:sha256:5064247f1de40612b6aac9374e64288c43210637606a5b32546a8a6770c5c70e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyNWM0NDNmNjE3M2ZmZDVmZDUxMjU1ZDIxNjQyYThiNzBhYzg2MTk3Mzc0MTRmYjU5NDgxOGJmMjMxM2ZhMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE1ZDllMjYyZDQxYzUxOTAxMzMwNGM1NzJiZWFlYmM5ZWMwNTU3NDVmZmM5ODk1NWY4OGZjNGVkMDQ2MjUzNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZhZGFhNzBmZjQ5OGFmNjViNjUzMzljMzI0YmEyMzY1Y2E0NzUwY2YwMjE3MjNhMmZjZmYwYjE0Njg3MTNiMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzYzNlY2U3NDU4ZmY0YWVkMDU5NjIxNjg2NThkNTE4YTAzZTc4MTVmNmQ2MmE3ZTM1NTEwOTE5MTQyZTY3YWUifQ"
-        },
-        {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:026933b0eeb647618150c58326f6c811a61f20eedeb231df73e2c8c2a835e7eb"
         }
       ]
     },
@@ -1947,10 +1939,46 @@
           "version": "repo-lines-v1:sha256:6454c9305336d4edf1d2f2b5e4e86dfd40468a7e9357467780daa09dd932eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ0NWE2NTFjMmQ0NDkyNjk5Yzc2ZjlkNTBiNTAwZjg3MTE5MjczMzM2MDQwZjZhOTAxZjdjM2JhNjIyODhlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRkYTNiZDExNDAwZjg1MzljZDFhMjA0ZDIxMmUwOTI0ODdmMTUzNjUyNjYwMzY4NTE2NWU0MjJmOGU0YzlmMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODhkNzQ4YmNhYWU3NTE4NzA2NmMyNDU3OWJjMTZiZWZjM2RhZjY1MDkyNzI2YTE3N2IwOTQ5NWJhMmQ5NTJjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWRlZDIzYjM1NWY2NzIzMGRiZTUxOGM3YjM1MGRmYzJjOGM1ZTlhYzQ4OGE4Zjg0ODRlYTc1Nzg0MWZhZDNhYiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_6f769b01982b4bbe97cf269789d5e499",
+      "statement": "Offline Harbor coverage now includes pinned Enterprise build-only bases from source.json and literal CLI/operator Dockerfiles, requiring sha256 references; the proposed full catalog declares 222 pinned public sources including both stock Node bases and the CLI static base.",
+      "evidence": [
+        {
+          "resource": "repo://builds/openclaw-enterprise/source.json#L1-L7",
+          "version": "repo-lines-v1:sha256:a49f65b9d35faee8ebf37003466daed45d6ac619c309ce0733de9f66d144a103:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGY4NjRkNGE2ZmVlZWZlMTk0MmNlNTkzOWYzYTYwMjJmNDkxNzkyYmMwNGRhYTgyMjg2NGI3NGZiNzU1YjA4OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py#L123-L138",
+          "version": "repo-lines-v1:sha256:230249cb5369b1946ec7a9d42867308b01bee0d32491fb8df2e350bf31fe39ce:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3MWQ0MjRhZDAxODY2NWMyNThiMWEwZWQ1ZmY2NDcxNWI2ZWU0NTZlZTk5ODUwYWUyZWQ3N2Y4NWU5YTBmMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjYwYTVmZjY4NWZjYzBlMDcyNmQ5YTg5Y2Y4OTNhZTNlZGZlNzBkOTUyN2Y1NGQwMDhjNjgzNTBjOTQ1NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5MjlmZWZmYjA5ZmRlYzVkMGE0Mzc1YzA1NzgzMzVlYmZkMWMwMDAzNWFiM2RlYzI4YzhjYjQ3M2E3Y2Y4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA4MzE1YTlhYzczNzAwZGQ0NDBkMzY1ZTZjMDAzOGYxYWZjNTNlY2QxNTUxZTIxY2IwZWNmNTNkNmRmZDY0ZmUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py#L413-L425",
+          "version": "repo-lines-v1:sha256:de53a195b0763636650b7dd53976eb9abb19064a9823509c1903a9671238a966:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4Mjg3MzUyM2I1NDkwMTBkZTQxMDVhZjUwODZjYzUxNDdiZWI4MWJhMmE5MzY0NzFjMDc1YzY2MzMwNGEwMGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlODZkM2FiNmFkNWIwNzhhOTkxNjUwYTNmNThmM2ZhNTYxMGU1YjlmNGFhNWFiNGUyNjg5ODM3M2YzNzM0YjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlNjFlZWQ0MDMzNGI2NzViODM5OWU3MzdmZWM0ZDhmOWI4MmM3NzA3MDJjMzEyM2RkNjhmMGUyM2UyYzI1NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5NWRlMDVlMmZkMDFmMGFlOTNhNWZiZTE2ODRiN2Y5OTlmOGFkZjFkMTMwOGRhMmQ3NjFjMWE4ZjM4NjJkNTUifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:026933b0eeb647618150c58326f6c811a61f20eedeb231df73e2c8c2a835e7eb"
+        }
+      ]
+    },
+    {
+      "id": "claim_57474a5718724bc58fdcb5dec1007d62",
+      "statement": "The stock Enterprise build verifies the source archive checksum, then checks both archived controller/runtime Dockerfiles use the pinned slim Node runtime base before passing that digest into both builds. This source validation does not publish an image.",
+      "evidence": [
+        {
+          "resource": "repo://builds/openclaw-enterprise/build.sh#L23-L49",
+          "version": "repo-lines-v1:sha256:10fe8c34fc9eaf3ee6b7b68ae4f07d99375c872aff17aad5ec227ef4f0f4e28d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkYmYwMTc4ZDg2ZmE1YTExNzAyOGQ2OGNlYjNiZTNhYzRlYzkwMWVmNjBlNGFjYmZjYTgzYmMyZmI3OGFmNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlmZWU2ZTkyZjRiOThhODYxN2JhNjI3NDQ0YWQyNjJmYWMzODNlMDczZDBkODVmMDU1Y2UzMDY5N2JmYmFjMGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE2NTE5MTM3MzQxOWFjODQyNzZlOGEzYmE1ZWExZDE3YjE2MGNmN2QwMTc0MjQxOWE5NmNmZTIyOThkNzAzZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4NTYyYzI0NzUxZjE1ZDNmMmY3OTM1Y2NlOTYzNmRjMjI1MThmNGFlZDZhZTk1MzQ3NmRhZGI2YWZmN2U1NGYifQ"
+        },
+        {
+          "resource": "repo://builds/openclaw-enterprise/source.json#L1-L7",
+          "version": "repo-lines-v1:sha256:a49f65b9d35faee8ebf37003466daed45d6ac619c309ce0733de9f66d144a103:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGY4NjRkNGE2ZmVlZWZlMTk0MmNlNTkzOWYzYTYwMjJmNDkxNzkyYmMwNGRhYTgyMjg2NGI3NGZiNzU1YjA4OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T01:30:28.100Z"
+    "at": "2026-10-28T03:14:23.362Z"
   }
 }

@@ -31,7 +31,7 @@
       "source": "cgr.dev/chainguard/redis:latest@sha256:deddaf0f4b0b81113096bd0ff91bd0f20edc9c7314aaa6276266d8854da33902"
     },
     {
-      "source": "cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327"
+      "source": "cgr.dev/chainguard/static:latest@sha256:c12f0107f8afb0bbc1b0eff96ff8675e85a10c6083d039b777c51fef5c27420f"
     },
     {
       "source": "cgr.dev/chainguard/valkey:latest@sha256:52e142902ab8edd43a7202e2f8422a6c87932d0bb29f89edf93e879e0450d3f1"
