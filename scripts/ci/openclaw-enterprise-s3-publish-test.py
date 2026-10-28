@@ -21,7 +21,10 @@ ACCOUNT = PUBLISH.CHAIN.OFFSITE.read_inputs(
 BUCKET = f"homelab-application-backups-{ACCOUNT}-us-east-1"
 KEY_ALIAS = f"arn:aws:kms:us-east-1:{ACCOUNT}:alias/aws/s3"
 KEY_ID = f"arn:aws:kms:us-east-1:{ACCOUNT}:key/11111111-1111-1111-1111-111111111111"
-PAYLOAD = b"synthetic-age-ciphertext"
+# Generated once with age 1.3.1 and an ephemeral test-only X25519 recipient.
+# The private identity was discarded; no production recovery identity is involved.
+PAYLOAD = (ROOT / "scripts/ci/fixtures/openclaw-enterprise/"
+           "s3-publisher-fixture.tar.age").read_bytes()
 
 
 def material():
@@ -145,7 +148,7 @@ class PublisherTest(unittest.TestCase):
         self.aws = FakeAws(self.ciphertext)
 
     def publish(self):
-        with mock.patch.object(PUBLISH, "PART_SIZE", 5), \
+        with mock.patch.object(PUBLISH, "PART_SIZE", 50), \
                 mock.patch.object(PUBLISH.PROOF, "PART_SIZE", 4):
             return PUBLISH.publish_ciphertext(
                 material(), self.ciphertext, self.scratch, run=self.aws)
@@ -197,8 +200,17 @@ class PublisherTest(unittest.TestCase):
         with self.assertRaises(PUBLISH.Blocked):
             self.publish()
 
+    def test_small_parts_fixture_can_reach_upload(self):
+        with mock.patch.object(PUBLISH, "PART_SIZE", 1), \
+                mock.patch.object(PUBLISH, "MAX_PARTS", 1000):
+            result = PUBLISH.publish_ciphertext(
+                material(), self.ciphertext, self.scratch, run=self.aws)
+        self.assertEqual(result["ciphertextBytes"], len(PAYLOAD))
+        self.assertEqual(len(self.aws.parts), len(PAYLOAD))
+
     def test_unsafe_inputs_and_part_limit_block_without_aws(self):
-        for change in ("material", "source_mode", "scratch_mode", "too_many_parts"):
+        for change in ("material", "source_mode", "scratch_mode", "too_many_parts",
+                       "plaintext", "renamed", "truncated_age"):
             with self.subTest(change=change):
                 self.aws = FakeAws(self.ciphertext)
                 candidate = material()
@@ -208,21 +220,32 @@ class PublisherTest(unittest.TestCase):
                     self.ciphertext.chmod(0o644)
                 if change == "scratch_mode":
                     self.scratch.chmod(0o755)
+                if change == "plaintext":
+                    self.ciphertext.write_bytes(b"fixture-private-material-" * 12)
+                if change == "truncated_age":
+                    self.ciphertext.write_bytes(PAYLOAD[:100])
+                source = self.ciphertext
+                if change == "renamed":
+                    source = self.ciphertext.with_suffix("")
+                    self.ciphertext.rename(source)
                 try:
                     with mock.patch.object(PUBLISH, "PART_SIZE", 1), \
                             mock.patch.object(PUBLISH, "MAX_PARTS", 2):
                         if change != "too_many_parts":
-                            with mock.patch.object(PUBLISH, "MAX_PARTS", 100):
+                            with mock.patch.object(PUBLISH, "MAX_PARTS", 1000):
                                 with self.assertRaises(PUBLISH.Blocked):
                                     PUBLISH.publish_ciphertext(
-                                        candidate, self.ciphertext, self.scratch,
+                                        candidate, source, self.scratch,
                                         run=self.aws)
                         else:
                             with self.assertRaises(PUBLISH.Blocked):
                                 PUBLISH.publish_ciphertext(
-                                    candidate, self.ciphertext, self.scratch,
+                                    candidate, source, self.scratch,
                                     run=self.aws)
                 finally:
+                    if change == "renamed":
+                        source.rename(self.ciphertext)
+                    self.ciphertext.write_bytes(PAYLOAD)
                     self.ciphertext.chmod(0o600)
                     self.scratch.chmod(0o700)
                 self.assertEqual(self.aws.calls, [])

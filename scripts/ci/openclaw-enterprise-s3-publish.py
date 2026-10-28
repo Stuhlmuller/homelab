@@ -30,6 +30,8 @@ CHAIN = module("oce_s3_publish_chain", "scripts/ci/openclaw-enterprise-recovery-
 PROOF = module("oce_s3_publish_proof", "scripts/ci/openclaw-enterprise-s3-proof.py")
 PART_SIZE = 64 * 1024 * 1024
 MAX_PARTS = 10_000
+AGE_HEADER = b"age-encryption.org/v1\n"
+AGE_BASE64 = rb"[A-Za-z0-9+/]{43}"
 MATERIAL_FIELDS = {
     "scope", "publishable", "sourceSha", "backupId", "materialSha256",
     "markerSha256", "installationId", "namespaceId", "agentId", "revisionId",
@@ -114,10 +116,28 @@ def _unused_key(run, common, key):
 
 
 def _stable_ciphertext(path):
+    """Check private bytes and age v1 framing; restore must authenticate them."""
     try:
+        path = Path(path)
+        require(path.name.endswith(".tar.age"))
         record = CHAIN._private_file_digest(path, CHAIN.MAX_CIPHERTEXT_BYTES)
-        metadata = Path(path).lstat()
-        require(record["bytes"] > 0 and stat.S_ISREG(metadata.st_mode))
+        metadata = path.lstat()
+        require(record["bytes"] > len(AGE_HEADER) + 16 and
+                stat.S_ISREG(metadata.st_mode))
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW |
+                             os.O_CLOEXEC | os.O_NONBLOCK)
+        with os.fdopen(descriptor, "rb") as source:
+            require(CHAIN._identity(os.fstat(source.fileno())) ==
+                    CHAIN._identity(metadata))
+            header = [source.readline(128) for _ in range(4)]
+            require(header[0] == AGE_HEADER and
+                    re.fullmatch(rb"-> X25519 " + AGE_BASE64 + rb"\n", header[1]) and
+                    re.fullmatch(AGE_BASE64 + rb"\n", header[2]) and
+                    re.fullmatch(rb"--- " + AGE_BASE64 + rb"\n", header[3]) and
+                    record["bytes"] - sum(map(len, header)) >= 16 and
+                    CHAIN._identity(os.fstat(source.fileno())) ==
+                    CHAIN._identity(metadata) and
+                    CHAIN._identity(path.lstat()) == CHAIN._identity(metadata))
         return record, CHAIN._identity(metadata)
     except (CHAIN.Blocked, OSError):
         raise Blocked("Enterprise ciphertext file is unavailable") from None

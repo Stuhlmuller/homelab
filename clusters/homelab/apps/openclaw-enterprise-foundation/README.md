@@ -101,7 +101,8 @@ requires the dedicated production publisher role, declared versioned KMS
 bucket and exact object metadata. It hashes every byte of the immutable
 ciphertext version in bounded ranges and returns only an unpublishable receipt.
 The dormant [ciphertext publisher](../../../../scripts/ci/openclaw-enterprise-s3-publish.py)
-checks a private staged ciphertext and the dedicated role, uploads to only the
+checks a private staged `.tar.age` with age v1 X25519 framing and the dedicated
+role, uploads to only the
 declared new-state key through conditional multipart completion, and invokes
 that exact-version readback before returning an unpublishable source receipt.
 It refuses an existing key and never retries an unknown completion as a new
