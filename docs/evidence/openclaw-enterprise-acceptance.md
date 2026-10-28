@@ -33,6 +33,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Earlier capacity and isolated canary | [05:49 UTC read-only Acer recheck](#october-27-capacity-rechecks) on `99abc4f`; last full-node sample at 05:20 UTC | — | The failed Renovate Job's Pod was gone, returning Acer to 2,895 MiB request headroom, still 1,201 MiB short of Enterprise's 4 GiB budget. A Langfuse+Dispatcharr pause would leave 1,487 MiB after modeled burst/replacement, by requests only; recovery, peak and canary proof remained absent. T022, T027, T035 open. |
 | Earlier capacity and isolated canary | [07:30 UTC read-only recheck](#october-27-capacity-rechecks) on `99abc4f` | — | An hourly Renovate ImagePullBackOff Job again reserved 512 MiB on Acer: 2,383 MiB free by request, 1,713 MiB short of Enterprise's 4 GiB budget. A Langfuse+Dispatcharr pause left only 975 MiB after the modeled burst/replacement while it persisted. Zima2 had 423 MiB request margin and 447 MiB physical working-set margin before the 346 MiB-request/704 MiB-limit canary. No peak, restart, recovery or isolation proof. T022, T027, T035 open. |
 | Latest capacity and isolated canary | [18:47 UTC post-recovery recheck](#october-27-capacity-rechecks) on `ff3fe008` | — | Acer had 2,895 MiB request headroom, 1,201 MiB short of the initial 4 GiB Enterprise budget. Splitting components across workers still lacked safe memory and local-claim disk margin; `zimaboard-2` was not an isolated canary. The screened Langfuse+Dispatcharr pause would leave 1,487 MiB after the modeled Gateway burst and one replacement, by requests only. No service was paused or moved; recovery, peak and restart proofs remain absent. T022, T027, T035 open. |
+| Octelium native off-ramp preflight | [PR #1616](https://github.com/Stuhlmuller/homelab/pull/1616), historical 2026-10-25 read-only sample | — | 25/25 native twins Ready for 24 hours; node capacity and restart margin blocked retirement. Remeasure before any off-ramp. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -442,6 +443,14 @@ leaving only about 9 MiB after the 2,304 MiB minimum. This separate drift
 follow-up would not isolate a canary or prove transient fit; no workload was
 moved or scaled.
 
+At 2026-10-25 05:45 UTC, an authenticated read-only Terragrunt plan against
+exact `main` `9380278e` selected only
+`IaC/homelab/us-west-2/apps/platform-crossplane/argocd`. It predicted one
+in-place Argo Application update: add Helm `replicas=0` and
+`rbacManager.replicas=0`, plus the standby description. There was no delete or
+replacement, and `conftest` accepted the plan. This is plan evidence, not an
+apply or a live standby receipt; both 256 MiB controllers remain running.
+
 At 2026-10-23 09:32 UTC on `main` `111b58f`, a fresh read-only check found
 `acer` at 13,459 / 15,261 MiB requested with 383.01 GiB node filesystem free.
 Every worker remained below 10 GiB free. The Embedded Gateway's local 10 GiB
@@ -456,6 +465,192 @@ placement. The earlier separate-768-MiB-Agent arithmetic was incorrect for
 Embedded mode and must not be used for capacity admission. `zimaboard-2` still
 hosts four unrelated Pods, including single-replica `Recreate` Langfuse
 PostgreSQL; no worker satisfies the zero-foreign-Pod canary gate.
+
+At 2026-10-25 04:45 UTC on `main` `95e3b99d`, a read-only, no-new-hardware
+retirement review found no admitted replacement placement. After the proposed
+`#1583`/`#1584` Pod moves, `acer` would have about 13,971 / 15,261 MiB
+requested before Enterprise. Its initial 4,096 MiB budget needs at least
+2,806 MiB freed just to schedule. Pausing Dispatcharr, Grafana and Multica
+runtime while reconciling Crossplane's declared standby state would free
+about 3,456 MiB by requests, leaving only about 650 MiB before startup and
+restart margin. Those pauses would interrupt Plex Live TV, dashboards/alerts
+and Multica service.
+
+The [read-only Octelium off-ramp preflight](../../scripts/octelium-native-offramp-preflight.py)
+found 25/25 native twins Ready for 24 hours, but `zimaboard-0` had only about
+5 MiB conservative request margin and 969 MiB observed margin against its
+2,765 MiB rolling screen. The request calculation includes Deluge's 128 MiB
+restartable init sidecar, which the node's allocated-resource display omitted.
+Pausing five node-bound media apps and Nix builder, then moving Harbor Trivy,
+would yield only about 2,677 MiB request margin on `zimaboard-0`. The proposed
+`#1584` Cloudflared/exporter evacuation could add 128 MiB, leaving just 40 MiB
+above the native rolling screen before backup Jobs. Moving Nix builder to
+`zimaboard-1` instead is unadmitted: that node has about 9 GiB filesystem free
+against the builder's 8 GiB ephemeral request and 16 GiB limit. Moving NOFX
+would need trader quiescence and a fresh SQLite PVC backup. None of these
+variants admits Enterprise API/worker on the native worker. If the native
+off-ramp qualified, pausing Dispatcharr and reconciling Crossplane standby
+could leave about 2,026 MiB request margin with the initial Enterprise budget
+on `acer`. This would stop automated media downloads and Plex Live TV; it still
+needs 24-hour whole-node peaks, placement and restart headroom, and direct
+native Pod-IP and end-to-end proof.
+Four media config backups last succeeded on 2026-10-18; later Jobs hit their
+15/30-minute deadlines on a node with only about 5 MiB conservatively free
+by requests. Dispatcharr has no complete backup/restore workflow. Pausing the
+builder first might let fresh media backups run, but no service pause is
+recovery-ready now.
+At 2026-10-25 05:28 UTC, read-only Prometheus history confirmed an
+unschedulable sample for each of the 12 Bazarr, Deluge, Radarr and Sonarr
+backup Pods across the 2026-10-22 through 2026-10-24 11:00 UTC runs. The
+following query at 13:00 UTC each day returned four series with value `1`:
+
+```promql
+max_over_time(
+  kube_pod_status_unschedulable{
+    namespace="media",
+    pod=~"(bazarr|deluge|radarr|sonarr)-config-backup-.*"
+  }[3h]
+)
+```
+
+At each 11:00 UTC schedule, running containers requested 7,148 MiB on
+`zimaboard-0`, plus
+Deluge's 128 MiB restartable init sidecar, leaving 6 MiB of 7,282 MiB
+allocatable. The backup Pods require 16 MiB each, or 64 MiB for Bazarr, and
+their local config volumes bind them to that node. All 12 Jobs later reported
+`Failed:DeadlineExceeded`; their Pods and events are no longer retained.
+Increasing deadlines or reducing requests would not create the missing
+placement. Free node capacity through reviewed placement or a chosen pause,
+then require fresh backups and an independent restore before media retirement.
+Moving Harbor Trivy's 512 MiB request from `zimaboard-0` to `zimaboard-1` is
+not admitted: that node had about 925 MiB observed room, and Trivy's seven-day
+working-set peak was 586 MiB, leaving about 339 MiB against the current
+snapshot before the proposed `#1584` moves or restart overlap. Its NFS volume
+is portable, but these separate observations do not prove safe co-peak margin.
+A reviewed temporary 1,024 MiB Nix builder pause would free enough request
+capacity for fresh backups without moving its 8 GiB ephemeral request onto
+`zimaboard-1`'s roughly 9 GiB free disk; no pause has been executed.
+Pausing Langfuse instead needs a complete PostgreSQL, ClickHouse, Valkey,
+object-store and recovery-material backup with independent restore; the
+current PostgreSQL-only checkpoint cannot authorize that pause.
+No service was paused or moved. T022, local storage and canary admission remain
+blocked; these estimates are not peak or recovery receipts.
+
+At 2026-10-25 05:49 UTC on `main` `9380278e`, the 25 live
+`emergency-octelium-*` Pods on `acer` requested 2,656 MiB in total and mounted
+no PVCs. Retiring this retained
+[fallback manifest](../../clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml)
+after the native off-ramp gate, then reconciling Crossplane's declared standby
+state, would raise `acer` request headroom from 1,801 to 4,969 MiB. The initial
+4,096 MiB Enterprise budget would leave 873 MiB by requests before peaks or
+restart overlap. The off-ramp remains blocked: `zimaboard-0` had only 5 MiB
+request margin and 1,003 MiB observed margin against its 2,765 MiB rolling
+screen, with direct native and public traffic proof still pending. Redis and
+package-store backup are separate Octelium recovery gaps, not prerequisites
+for pruning these stateless fallback Pods. Once Enterprise consumes this
+capacity, rollback must stop it through the declared path before GitOps
+restores the fallback Pods; `acer` cannot host both sets together.
+
+At 2026-10-25 06:32 UTC on `main` `e10199f2`, Crossplane's two live
+Deployments were at zero replicas; only completed historical Pods remained.
+Its earlier 512 MiB saving is already reflected in `acer`'s 12,947 / 15,261
+MiB requested / allocatable, so it cannot be counted again. `acer` had about
+2,313 MiB unreserved by requests, 10,618 MiB observed node memory use and
+411.96 GB filesystem free. The four-node read-only check still found no
+canary taint or enforcing policy DaemonSet. The initial 4,096 MiB Enterprise
+budget cannot fit on `acer` today; both distinct 10 GiB local claims still
+point there because the workers each have less than 10 GiB filesystem free.
+
+<!-- markdownlint-disable MD013 -->
+
+| Candidate pause or retirement | Memory requests released | Recovery and service effect |
+| --- | --- | --- |
+| 25 temporary Octelium fallback Pods | `acer` 2,656 MiB; about 1,527 MiB observed use | No PVCs. Native off-ramp and direct/public traffic checks must pass first; rollback would stop Enterprise before restoring fallback. |
+| Langfuse | `acer` 2,816 MiB; `zimaboard-0` 256 MiB; `zimaboard-2` 128 MiB | LLM tracing stops. PostgreSQL, ClickHouse, Valkey, object storage and secrets lack a complete independent restore. |
+| Multica | `acer` 512 MiB; `zimaboard-0` 448 MiB; `zimaboard-2` 320 MiB | Agent runtime stops. Database/uploads and local OAuth/PAT recovery are incomplete; this pause alone cannot fit Enterprise. |
+| Dispatcharr | `acer` 1,664 MiB; `zimaboard-1` 256 MiB | Plex Live TV stops. Paired database/files/provider-credential restore is missing; this pause alone leaves `acer` 119 MiB short of the Enterprise budget. |
+
+<!-- markdownlint-enable MD013 -->
+
+The temporary fallback is the smallest state-free capacity candidate: after
+its qualified removal, `acer` would have 4,969 MiB request room and only 873
+MiB after Enterprise's initial budget, before startup, backup and peak margin.
+Its current off-ramp still fails: the read-only preflight found 25/25 native
+twins with 24-hour Ready evidence, but `zimaboard-0` itself lacks 24-hour
+uninterrupted Ready, and has only 5 MiB request and 991 MiB observed margin
+against the 2,765 MiB rolling screen. Direct native Pod-IP and public
+end-to-end proof is also pending. No fallback or stateful app was paused.
+
+`zimaboard-2` has 1,308 MiB allocatable, 1,078 MiB requested and 8.65 GiB
+filesystem free. Its four unrelated application Pods (Multica frontend 320
+MiB, Langfuse PostgreSQL 128 MiB, Cloudflared 64 MiB and Harbor vulnerability
+exporter 32 MiB) reserve 544 MiB and currently use about 290 MiB. Moving or
+retiring all four would leave about 774 MiB by requests and 647 MiB against
+current observed use for the enforcer and canary fixtures, before their peak
+or restart margin. `zimaboard-1` currently uses 6,331 of 7,282 MiB
+allocatable, so it is not a proven landing zone. The proposed 250 MiB
+enforcer and three 32 MiB fixtures would leave only 428 MiB by requests on
+the cleared canary; workload continuity, taint tolerations and traffic
+qualification remain unproven. No node is admitted for T022 or T027.
+
+At 2026-10-25 07:32 UTC on `main` `8176edde`, a fresh read-only check found
+`acer` with 2,314 MiB unreserved by requests and 411.96 GB filesystem free;
+the workers had only 5.36, 9.67 and 9.28 GB free. PostgreSQL and the Embedded
+Gateway's distinct 10 GiB local claims therefore still require `acer`.
+Their 2,304 MiB combined request leaves about 10 MiB there. Moving the other
+1,792 MiB planning allowance to `zimaboard-1` would exceed its roughly 919
+MiB observed memory margin by 873 MiB before peaks. Splitting the Pods alone
+does not admit Enterprise.
+
+Without new hardware, one conditional retirement candidate is Langfuse plus
+Dispatcharr, while retaining the emergency Octelium fallback. Their current
+`acer` Pods request 2,816 and 1,664 MiB respectively. After declaratively
+relocating `zimaboard-2`'s Multica frontend (320 MiB), Cloudflared (64 MiB)
+and Harbor exporter (32 MiB) to `acer`, its request margin would be about
+2,282 MiB after the full 4,096 MiB Enterprise planning budget. Removing the
+four unrelated Pods from `zimaboard-2`, including Langfuse PostgreSQL, would
+leave about 428 MiB there after the 250 MiB enforcer and three 32 MiB
+fixtures. These are scheduling estimates, not observed peak or restart fit.
+
+At 2026-10-25 08:18 UTC, Langfuse's `acer` worker was 1/1 Ready but degraded:
+136 liveness restarts and 3,268 HTTP 500 health events since October 11. Its
+last exit was 137 followed by a kubelet kill; current use of 459 MiB under a
+1 GiB limit does not establish OOM. Require private read-only diagnosis and
+complete recovery proof before counting its retirement as safe capacity.
+
+At 2026-10-25 09:50 UTC on `main` `b32e08a3`, a read-only check found
+`acer` at 14,099 / 15,261 MiB requested, leaving 1,162 MiB before Enterprise.
+Mastodon's newly reconciled web, Sidekiq and streaming Pods account for 1,152
+MiB of requests; all are source-declared on `acer` and Argo reported the app
+Synced and Healthy. The earlier 2,282 MiB estimate predates these Pods.
+Pausing Langfuse and Dispatcharr would release 2,816 + 1,664 MiB on `acer`.
+Relocating the three remaining `zimaboard-2` applications there would add 416
+MiB. After Enterprise's 4,096 MiB initial budget, only 1,130 MiB would remain
+by requests. Removing only the 2,656 MiB stateless Octelium fallback
+would leave Enterprise 278 MiB short, or 694 MiB short with that relocation.
+Crossplane's two Deployments are already at zero and cannot be counted again.
+Moving Mastodon's three application Pods to `zimaboard-1` could recover their
+1,152 MiB request on `acer`, but would leave about 933 MiB against the worker's
+current observed memory use and 8.99 GiB node filesystem free before image
+pulls, peaks or restart overlap. That fresh workload has no 24-hour co-peak
+record. The separate protected full apply [run `40180266424`](https://github.com/Stuhlmuller/homelab/actions/runs/40180266424)
+was still in progress at this observation; repeat live measurements after it
+settles. No service pause, fallback removal or Enterprise placement is admitted.
+
+The protected Full apply [run `40180266424`](https://github.com/Stuhlmuller/homelab/actions/runs/40180266424)
+then succeeded at 2026-10-25 09:56 UTC on exact `main` `b32e08a3`. A read-only
+post-apply check still found `acer` at 14,099 / 15,261 MiB requested, leaving
+1,162 MiB; Crossplane remained at zero replicas. This confirms that dated
+snapshot, not capacity admission. Source `main` has since advanced, so repeat
+the exact-main live readback and peak/restart checks before any placement or
+merge. T022, T027 and T035 remain blocked; no service was retired or activated.
+
+Do not retire either service before independent complete restores of
+Langfuse's PostgreSQL, ClickHouse, Valkey, object store and recovery material,
+and Dispatcharr's database, files and provider credentials; retain their
+volumes and verify service/route consequences. Require measured co-peaks,
+rolling and cold restart margin, reviewed GitOps relocation, and isolated
+`zimaboard-2` taint/reboot/traffic receipts before T022 or T027 can pass.
 
 At 2026-10-25 10:57–10:58 UTC with repository `main` at `1e46ec59`, read-only
 `kubectl get nodes -o json`, `kubectl get pods -A -o json`,
