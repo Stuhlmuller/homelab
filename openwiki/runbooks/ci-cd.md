@@ -84,6 +84,10 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-378cb9d6f2d77188440a8b55
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py
+  - id: openwiki-source-faec2b4cb1727ce18fb36d15
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -106,10 +110,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
+generated: { by: "codex", at: "2026-10-28T02:54:35.847Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:48:51.051Z
+    at: 2026-10-28T02:54:35.847Z
 ---
 
 # CI/CD
@@ -203,8 +207,9 @@ separate proof work.
 
 The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
 keeps legacy retention behind `legacy_stage` and reserves fixed
-`bind-installation`, `cleanup-failed-bind`, `full-sync`, `reconcile`,
-`stop`, `verification`, `restore` and `acceptance` Enterprise selections.
+`bind-installation`, `cleanup-failed-bind`, `recover-bound-bind`,
+`full-sync`, `reconcile`, `stop`, `verification`, `restore` and
+`acceptance` Enterprise selections.
 Select exactly one stage. Each protected
 job rechecks exact current `main` and shares a non-canceling production queue.
 The binding lane pins the stage and dispatcher and calls the
@@ -242,9 +247,23 @@ It rechecks current `main` beside one Job UID/resourceVersion-preconditioned
 foreground DELETE, then proves the Job and Pod gone with Secret and storage
 unchanged. A lost response gets readback, never a second DELETE. The lane
 shares the production queue and withholds private output. It has not run;
-failed post-patch state still needs a separate reviewed recovery. `restore`
-and `acceptance` exit before mutation pending separate recovery and owner
-session proof. No Enterprise stage has passed live acceptance.
+post-patch state is outside this cleanup lane. The separate protected
+`recover-bound-bind` lane takes that historical source SHA, run ID, attempt,
+old Job and Pod UIDs, and the exact bound Secret UID, resource version and
+Installation ID. Its pinned
+[helper](../../scripts/ci/openclaw-enterprise-recover-bound-bind.py)
+proves the original in-Pod readiness result and unchanged source, candidate,
+Secret and retained storage. A new source-bound verifier Job proves the
+existing binding and Ready Pods with `alreadyBound: true`; it never patches
+an unbound Secret. The runner stores an immutable private receipt of
+identities and hashes before one guarded DELETE of the old failed Job.
+When that Job is absent, completion is read-only: the receipt, bound Secret,
+storage, source projections and completed verifier must match. Drift blocks.
+A lost DELETE response cannot identify which actor accepted it. This fixed
+lane shares exact-main, protected serialization and withheld diagnostics;
+it has no live recovery receipt. `restore` and `acceptance` exit before
+mutation pending separate recovery and owner session proof. No Enterprise
+stage has passed live acceptance.
 
 For legacy `publish-archive`, the workflow reports fixed public publication
 phases while withholding private diagnostics. The successful versioned
