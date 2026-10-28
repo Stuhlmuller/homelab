@@ -9,6 +9,12 @@ on:
         description: Exact current main commit with reviewed chart hashes
         required: true
         type: string
+      chart_scope:
+        description: Fixed reviewed chart inventory to publish
+        required: true
+        default: current
+        type: choice
+        options: [current, istio-1.28.10]
 
 permissions: {}
 
@@ -35,6 +41,7 @@ jobs:
           test "$GITHUB_SHA" = "$EXPECTED_SHA"
           bash -n scripts/ci/harbor-chart-publish.sh
           nix develop --command python3 -I scripts/ci/harbor-chart-publish.py --check
+          nix develop --command python3 -I scripts/ci/harbor-chart-publish.py --check-istio-1.28.10
           nix develop --command python3 -I scripts/ci/harbor-chart-publish-test.py
 
   publish:
@@ -62,6 +69,19 @@ jobs:
         with:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+      - name: Verify Current Main Before Credentials
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CHART_SCOPE: ${{ inputs.chart_scope }}
+        run: |
+          set -euo pipefail
+          case "$CHART_SCOPE" in current|istio-1.28.10) ;; *) exit 2 ;; esac
+          test "$GITHUB_REF" = refs/heads/main
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "$current_main_sha" = "$GITHUB_SHA"
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:
@@ -73,6 +93,8 @@ jobs:
       - name: Publish and independently verify chart packages
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CHART_SCOPE: ${{ inputs.chart_scope }}
+          HARBOR_CHART_DESTINATION: harbor.stinkyboi.com/mirror/helm
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
@@ -85,3 +107,32 @@ jobs:
             exit 1
           fi
           echo 'Reviewed Helm packages published with authenticated reader pulls and matching package hashes.'
+          if [[ "$CHART_SCOPE" == istio-1.28.10 ]]; then
+            receipt="$RUNNER_TEMP/harbor-istio-charts-receipt.json"
+            test -s "$receipt"
+            jq -e --arg sha "$GITHUB_SHA" --arg dest "$HARBOR_CHART_DESTINATION" '
+              .sourceSha == $sha and .destination == $dest and
+              (.charts | length) == 5 and
+              ([.charts[].chart] | sort) == ["base", "cni", "gateway", "istiod", "ztunnel"] and
+              all(.charts[]; .version == "1.28.10" and
+                (.packageSha256 | test("^[0-9a-f]{64}$")) and
+                (.manifestDigest | test("^sha256:[0-9a-f]{64}$")))
+            ' "$receipt" >/dev/null
+            {
+              echo '## Istio 1.28.10 Harbor OCI receipt'
+              echo "Source main: \`$GITHUB_SHA\`"
+              echo '| Chart | Package SHA-256 | OCI manifest digest |'
+              echo '| --- | --- | --- |'
+              jq -r '.charts[] | "| \(.chart) | `\(.packageSha256)` | `\(.manifestDigest)` |"' "$receipt"
+            } >>"$GITHUB_STEP_SUMMARY"
+            echo 'Five Istio OCI manifests verified; digest receipt recorded in the job summary.'
+          fi
+      - name: Upload Istio Chart Digest Receipt
+        if: inputs.chart_scope == 'istio-1.28.10'
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-istio-charts-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harbor-istio-charts-receipt.json
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false

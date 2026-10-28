@@ -374,7 +374,7 @@ external_secret_allowed_prefixes := {
 	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
 	"affine": {"/homelab/affine/"},
 	"mastodon": {"/homelab/mastodon/"},
-	"argocd": {"/homelab/argocd/"},
+	"argocd": {"/homelab/argocd/", "/homelab/harbor/mirror-robot-pull-password"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/bulldozer/github-app/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},

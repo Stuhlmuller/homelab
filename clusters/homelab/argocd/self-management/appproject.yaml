@@ -19,6 +19,11 @@ spec:
     - https://helm.goharbor.io
     - https://blob.istio.io/istio-release/charts
     - https://istio-release.storage.googleapis.com/charts
+    - oci://harbor.stinkyboi.com/mirror/helm/base
+    - oci://harbor.stinkyboi.com/mirror/helm/cni
+    - oci://harbor.stinkyboi.com/mirror/helm/gateway
+    - oci://harbor.stinkyboi.com/mirror/helm/istiod
+    - oci://harbor.stinkyboi.com/mirror/helm/ztunnel
     - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
     - https://kubernetes-sigs.github.io/metrics-server/
