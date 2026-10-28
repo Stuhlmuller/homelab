@@ -501,6 +501,62 @@ bound to the dispatched SHA. A protected producer and review path for these
 receipts remains T023 work, so no operator should set `activationEnabled` or
 the canary node yet.
 
+### Operator-LAN Recovery Candidates
+
+The reviewed [`platform-recovery-candidate.py`](../scripts/platform-recovery-candidate.py)
+is the first source-backed producer for the direct-recovery and off-node etcd
+evidence. Run it only on the operator Mac with a direct `10.1.0.x` LAN address,
+the existing private Talos client config, a clean checkout of the exact current
+`main` commit, and a verified offsite publication whose snapshot is under six
+hours old. First create a fresh snapshot with the
+[Talos backup command](talos-etcd-backup.md) and publish it with the
+[offsite command](etcd-offsite-publication.md); use that publication directory
+below. Each output directory must already exist, be owned by the operator,
+have mode `0700`, and be outside Git.
+
+```sh
+python3 scripts/platform-recovery-candidate.py capture \
+  --expected-sha <exact-current-main-sha> \
+  --talosconfig /absolute/private/operator-talosconfig \
+  --talosctl /opt/homebrew/bin/talosctl \
+  --aws-cli /absolute/path/to/aws --profile <existing-sso-profile> \
+  --publication-directory /absolute/private/publication-<id> \
+  --retrieval-directory /absolute/private/verified-downloads \
+  --restore-directory /absolute/private/offline-restores \
+  --etcd-archive /absolute/private/etcd-v3.6.5-darwin-arm64.zip \
+  --receipt-directory /absolute/private/platform-candidates
+```
+
+Capture requires a physical `en` interface and a same-subnet TCP source for
+each Talos node. It uses that node's direct IP endpoint for authenticated
+version checks, then queries Acer's etcd status and direct cluster health.
+Talos client output and errors remain private. It downloads the snapshot and
+manifest by their exact S3 version IDs, checks both digests, and runs the
+checksum-enabled offline restore on the downloaded copy. Two mode-`0600`
+candidate files bind the current SHA, node endpoints, snapshot and manifest
+keys, both versions, digests, and restore receipt. A third private file holds
+only that restore receipt, never restored database bytes. The two candidates
+contain `verified: false` and cannot satisfy the maintenance gate.
+
+After private review, `stage` can copy only those three JSON files to the
+dedicated etcd bucket under `platform-candidates/<sha>/<id>/`:
+
+```sh
+python3 scripts/platform-recovery-candidate.py stage \
+  --expected-sha <same-current-main-sha> \
+  --candidate-directory /absolute/private/platform-candidates/platform-candidate-<id> \
+  --aws-cli /absolute/path/to/aws --profile <existing-sso-profile>
+```
+
+Stage uses conditional writes, checks KMS and versioning, reads back all three
+exact versions, and retains private `staging.json`. The existing operator SSO profile
+is broad, so this step is only a non-authoritative handoff. A separate protected
+publisher with scoped IAM and independent review must validate the staged
+versions before writing any `platform/receipts/<sha>/` object. That protected
+publisher, placement and artifact-publication producers, live LAN proof, and
+fresh offsite restore remain T023 gates. The offline restore does not prove
+control-plane startup or PVC recovery.
+
 The executor writes a `started` marker to the KMS-encrypted, versioned backup
 bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its
 exact version and checksum before each Talos node command or the Kubernetes

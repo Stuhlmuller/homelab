@@ -112,6 +112,7 @@ python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
 python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
+python3 -I scripts/ci/platform-recovery-candidate-test.py
 python3 -I scripts/ci/n8n-ai-migration-check.py
 python3 -I scripts/ci/clickhouse-log-quarantine-test.py
 python3 scripts/ci/gluetun-cpu-profile-check.py
