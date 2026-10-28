@@ -11,9 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "clusters/homelab/apps/istio/upgrade-1.28.10.json"
-OLD_REPOSITORY = "https://istio-release.storage.googleapis.com/charts"
 NEW_REPOSITORY = "https://blob.istio.io/istio-release/charts"
-BASELINE_MANIFEST_SHA256 = "46693741bf78ea71aab36dd9359422a9cb21478b4c3aa7e87c979a5f24b9c3b5"
+BASELINE_MANIFEST_SHA256 = "96984fb763dc2d36c50d1730cf640ae80b3155907205e76a0e49bb4f0dd43fa6"
 REFERENCED_FILES = {
     ".argocd-values-ref-placeholder.yaml": "cb1d512dd7021fe32904661dec7f52219c58ae5ba049303f84c681a4c4f75df6",
     "clusters/homelab/apps/istio/values.yaml": "f9d20e2fb93e22e78dc07db649def6cb1c426c3ef8e8b0c89f050d4dc37211c9",
@@ -79,7 +78,7 @@ def check_sources(rendered, phase):
     charts = [source for source in sources if isinstance(source, dict) and "chart" in source]
     require(len(charts) == len(COMPONENTS), "Istio chart source count changed")
     for index, (source, (chart, release, _)) in enumerate(zip(charts, COMPONENTS)):
-        expected = (NEW_REPOSITORY, "1.28.10") if index < phase else (OLD_REPOSITORY, "1.27.3")
+        expected = (NEW_REPOSITORY, "1.28.10" if index < phase else "1.27.3")
         actual = (source.get("repoURL"), source.get("targetRevision"))
         require(actual == expected and source.get("chart") == chart and
                 source.get("helm", {}).get("releaseName") == release,
@@ -92,7 +91,6 @@ def check_sources(rendered, phase):
                 "Istio ztunnel rollout safeguard changed")
     baseline = copy.deepcopy(manifest)
     for index in range(phase):
-        baseline["spec"]["sources"][index]["repoURL"] = OLD_REPOSITORY
         baseline["spec"]["sources"][index]["targetRevision"] = "1.27.3"
     digest = hashlib.sha256(json.dumps(
         baseline, sort_keys=True, separators=(",", ":")).encode()).hexdigest()

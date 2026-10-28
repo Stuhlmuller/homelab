@@ -21,7 +21,6 @@ BASELINE = json.loads((SOURCE.parent / "fixtures/istio-application-1.27.3.json")
 def rendered(phase=0):
     manifest = copy.deepcopy(BASELINE)
     for index in range(phase):
-        manifest["spec"]["sources"][index]["repoURL"] = GATE.NEW_REPOSITORY
         manifest["spec"]["sources"][index]["targetRevision"] = "1.28.10"
     return {"inputs": {"manifest": manifest}}
 
@@ -70,7 +69,9 @@ class IstioUpgradeGateTest(unittest.TestCase):
     def test_render_rejects_unordered_or_unpinned_sources(self):
         for mutation in (
             lambda value: value["inputs"]["manifest"]["spec"]["sources"][1].update(
-                repoURL=GATE.NEW_REPOSITORY, targetRevision="1.28.10"),
+                targetRevision="1.28.10"),
+            lambda value: value["inputs"]["manifest"]["spec"]["sources"][0].update(
+                repoURL="https://unreviewed.invalid/charts"),
             lambda value: value["inputs"]["manifest"]["spec"]["sources"][0].update(
                 targetRevision="1.28.11"),
             lambda value: value["inputs"]["manifest"]["spec"]["sources"][2].update(

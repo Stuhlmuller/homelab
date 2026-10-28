@@ -29,12 +29,59 @@ if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/
 fi
 terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
   render --json --write=false --no-color | python3 scripts/ci/istio-upgrade-gate.py check-source
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+  render --json --write=false --no-color \
+  | jq -e '
+      .inputs.manifest.spec as $spec |
+      $spec.syncPolicy.automated.enabled == true and
+      $spec.syncPolicy.automated.prune == true and
+      $spec.syncPolicy.automated.selfHeal == true and
+      ([ $spec.sources[] | select(has("chart")) |
+        [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
+        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+      ]) and
+      any($spec.sources[];
+        .chart == "ztunnel" and
+        any(.helm.parameters[]?;
+          .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
+          .value == "10-1-0-199-v1") and
+        any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxSurge" and
+          .value == "0") and
+        any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxUnavailable" and
+          .value == "1")
+      )
+    ' >/dev/null
+jq -e '
+  .schemaVersion == 1 and .activationEnabled == false and
+  .from == "1.27.3" and .to == "1.28.10" and
+  .chartRepository == "https://blob.istio.io/istio-release/charts" and
+  ([.components[] | [.chart, .releaseName]] == [
+    ["base", "istio-base"], ["istiod", "istiod"], ["cni", "istio-cni"],
+    ["ztunnel", "ztunnel"], ["gateway", "istio-ingressgateway"],
+    ["gateway", "octelium-api-ingressgateway"]
+  ]) and
+  ([.components[].archiveSha256] == [
+    "32b3d9833cf6473e8e567407855c029012b1080416ae4f9ee7bd4ce93617e132",
+    "125367e6eec08c8e7fc6e165c35ecf306dc23ea069b7953aed57fe83098004f1",
+    "7fd3133f6232c590493bb94974b2647dc287cd9a3a6acde621f6d4c7c1939295",
+    "02dc5cee6532b0ed7ebf289e4dff003518a9bda5f09ab1ff7eff8c2530d6fc49",
+    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df",
+    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df"
+  ])
+' clusters/homelab/apps/istio/upgrade-1.28.10.json >/dev/null
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
 fi
 if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
-  echo "The public PR plan job must not render live plan or state details." >&2
+  echo "The PR plan job must not render saved plan or state details." >&2
   exit 1
 fi
 if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
@@ -292,22 +339,23 @@ echo "::endgroup::"
 
 echo "::group::n8n persisted encryption key"
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
-if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
+n8n_migration_values="clusters/homelab/apps/n8n/migration-v1.values.yaml"
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values" "$n8n_migration_values"; then
   echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
   exit 1
 fi
-rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_values"
+rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_migration_values"
 yq -e '
   (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
+    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
   ) and (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
+    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
   )
-' "$n8n_values" >/dev/null
+' "$n8n_migration_values" >/dev/null
 # The literal shell assignment is intentionally matched inside a yq expression.
 # shellcheck disable=SC2016
 yq -e '
-  .controllers.n8n.initContainers."migrate-ai-workflow".command |
+  .controllers."migrate-ai-workflow-v1".containers.migrate.command |
   join("\n") |
   (
     contains("if [ ! -s /home/node/.n8n/config ]; then") and
@@ -317,11 +365,21 @@ yq -e '
     contains("Array.isArray(workflows)") and
     contains("JSON.stringify(workflows)")
   )
-' "$n8n_values" >/dev/null
+' "$n8n_migration_values" >/dev/null
 echo "::endgroup::"
 
-echo "::group::Kiali shell-free Prometheus readiness"
+echo "::group::Kiali server digest and Prometheus readiness"
 kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e --slurpfile catalog scripts/config/harbor-images.json '
+    .cr.spec.deployment as $deployment |
+    $deployment.image_name == "harbor.stinkyboi.com/mirror/quay.io/kiali/kiali" and
+    $deployment.image_digest == "sha256" and
+    ($deployment.image_version | test("^[0-9a-f]{64}$")) and
+    ([$catalog[0].images[] |
+      select(.source == ("quay.io/kiali/kiali:v2.26.0@sha256:" + $deployment.image_version))
+    ] | length == 1)
+  ' >/dev/null
 yq -o=json '.' "$kiali_values" |
   jq -e '
     [
@@ -329,7 +387,7 @@ yq -o=json '.' "$kiali_values" |
       | select(.name == "wait-for-prometheus")
     ] | (
       length == 1 and
-      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
       .[0].imagePullPolicy == "IfNotPresent" and
       .[0].command == ["curl"] and
       .[0].args == [
@@ -929,6 +987,8 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
+    '.github/workflows/bulldozer-credential.yml:credential' \
+    '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
@@ -1025,24 +1085,25 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
+.github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
 .github/workflows/harbor-mirror.yml 6997115e75b9ed25943f9878cb8402fa6840a06de5783e8d7c47c362acb8f6e9
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/langfuse-postgres-checkpoint.yml 10fcf54954c0c3020582a993f792cc0923a1d6c631d0bc5d9fdd103d0a0d58fb
-.github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
+.github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
+.github/workflows/lint.yml 8408798ea388d2ee3b806d2f33f42382689448aa6aa1d5f8f616abfbef4bc321
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 31a190f5e8fb0f4feea6f9a238277d8f8f864d4318fcea44c435713207e0b170
+.github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -1050,15 +1111,16 @@ done <<'EOF'
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
-.github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
+.github/workflows/release.yml 3c5eab39c1cc573a42bbcfa1568bb4c7c7f84571b67a74927b91a5fc582c9025
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
-.github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
+.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
 EOF
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/bulldozer-credential.yml:static-policy' \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
@@ -1599,20 +1661,7 @@ yq -o=json '.' "$cert_manager_values" \
       .startupapicheck.image.digest
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
-tag_only_images="$(
-  {
-    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
-    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } \
-    | rg -v '@sha256:' \
-    || true
-)"
-
-if [[ -n "$tag_only_images" ]]; then
-  echo "Container images must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
-  exit 1
-fi
+python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

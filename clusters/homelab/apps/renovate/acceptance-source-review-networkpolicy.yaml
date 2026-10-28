@@ -1,0 +1,14 @@
+# Reconcile before activating the staged Job; selects no current Pod.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-source-review
+  namespace: automation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate
+      app.kubernetes.io/component: acceptance-source-review
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []

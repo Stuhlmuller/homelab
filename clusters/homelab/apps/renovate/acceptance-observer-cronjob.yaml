@@ -1,0 +1,101 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate-acceptance-observer
+  namespace: automation
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-observer
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  schedule: "*/15 * * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 600
+      backoffLimit: 0
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+            app.kubernetes.io/name: renovate
+            app.kubernetes.io/component: acceptance-observer
+            app.kubernetes.io/part-of: homelab-automation
+        spec:
+          automountServiceAccountToken: false
+          serviceAccountName: renovate
+          nodeSelector:
+            kubernetes.io/hostname: acer
+          # Match the runner's registry-only route while keeping TLS hostname validation.
+          hostAliases:
+            - ip: 10.96.0.50
+              hostnames: [harbor.stinkyboi.com]
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 12021
+            runAsGroup: 0
+            runAsNonRoot: true
+            fsGroup: 12021
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: observer
+              image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+              imagePullPolicy: IfNotPresent
+              command:
+                - node
+                - /usr/src/app/acceptance-observer.js
+              args:
+                - poll
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+                  ephemeral-storage: 1Gi
+                limits:
+                  cpu: "2"
+                  memory: 2Gi
+                  ephemeral-storage: 4Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - name: observer
+                  mountPath: /usr/src/app/acceptance-observer.js
+                  subPath: acceptance-observer.js
+                  readOnly: true
+                - name: github-app
+                  mountPath: /var/run/secrets/renovate-acceptance
+                  readOnly: true
+                - name: ledger
+                  mountPath: /ledger
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: observer
+              configMap:
+                name: renovate-acceptance-observer
+            - name: github-app
+              secret:
+                secretName: renovate-acceptance
+                defaultMode: 0440
+                items:
+                  - key: issuer-id
+                    path: issuer-id
+                  - key: private-key
+                    path: private-key
+            - name: ledger
+              persistentVolumeClaim:
+                claimName: renovate-acceptance-ledger
+            - name: tmp
+              emptyDir:
+                sizeLimit: 4Gi
