@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import time
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +52,7 @@ def _secret(snapshot, candidate, identity):
             not set(annotations) <= {"homelab.stuhlmuller.dev/installation-sha256",
                                      ANNOTATION} or
             (ANNOTATION in annotations and annotations[ANNOTATION] != identity) or
+            metadata.get("deletionTimestamp") is not None or
             not isinstance(metadata.get("uid"), str) or not metadata["uid"] or
             not isinstance(metadata.get("resourceVersion"), str) or
             not metadata["resourceVersion"]):
@@ -87,8 +89,9 @@ def _same_workloads(before, after):
             raise oce.Blocked("Installation workload changed during binding")
 
 
-def bind(expected_sha, config, api, kube):
-    startup.reviewed_main(expected_sha)
+def bind(expected_sha, config, api, kube, bridge=None):
+    if bridge is None:
+        startup.reviewed_main(expected_sha)
     oce._validate_config(config)
     candidate, digest, image = oce.reviewed_installation(config)
     if digest != startup.DIGEST:
@@ -102,12 +105,14 @@ def bind(expected_sha, config, api, kube):
     metadata = secret["metadata"]
     was_bound = metadata["annotations"].get(ANNOTATION) == identity
 
-    if not was_bound:
-        if _identity(api.get("/installation")) != identity:
-            raise oce.Blocked("Enterprise Installation identity changed before binding")
-    # Keep the exact-main check adjacent to the only write.
-    startup.reviewed_main(expected_sha)
-    if not was_bound:
+    if not was_bound and _identity(api.get("/installation")) != identity:
+        raise oce.Blocked("Enterprise Installation identity changed before binding")
+    if bridge is not None:
+        bridge.ready_and_wait(identity, metadata, was_bound)
+    else:
+        # Keep the exact-main check adjacent to the only write.
+        startup.reviewed_main(expected_sha)
+    if not was_bound and bridge is None:
         operations = [
             {"op": "test", "path": "/metadata/uid", "value": metadata["uid"]},
             {"op": "test", "path": "/metadata/resourceVersion",
@@ -133,18 +138,79 @@ def bind(expected_sha, config, api, kube):
             "secretResourceVersion": current["secretResourceVersion"]}
 
 
+class JobBridge:
+    """Send a bounded non-secret proof; the protected runner performs the CAS patch."""
+
+    def __init__(self, expected_sha, job_name):
+        if not re.fullmatch(r"oce-journal-bind-installation-[1-9][0-9]{0,19}-[1-9][0-9]{0,4}",
+                            job_name):
+            raise oce.Blocked("binding Job identity is invalid")
+        self.expected_sha = expected_sha
+        self.job_name = job_name
+
+    def ready_and_wait(self, identity, metadata, was_bound):
+        receipt = {"schema": 1, "expectedSha": self.expected_sha,
+                   "jobName": self.job_name, "installationId": identity,
+                   "secretUid": metadata["uid"],
+                   "secretResourceVersion": metadata["resourceVersion"],
+                   "alreadyBound": was_bound, "issuedAt": int(time.time())}
+        print("OCE_BIND_READY:" + json.dumps(
+            receipt, sort_keys=True, separators=(",", ":")), flush=True)
+        if was_bound:
+            return
+        deadline = time.monotonic() + 120
+        candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+        while time.monotonic() < deadline:
+            secret = startup.kube_json("-n", startup.NAMESPACE, "get", "secret",
+                                       startup.NAME, "-o=json")
+            _secret({"secret": secret}, candidate, identity)
+            current = secret["metadata"]
+            if current["uid"] != metadata["uid"]:
+                raise oce.Blocked("startup Secret was replaced during binding")
+            if current["annotations"].get(ANNOTATION) == identity:
+                if current["resourceVersion"] == metadata["resourceVersion"]:
+                    raise oce.Blocked("startup Secret binding did not change its version")
+                return
+            if current["resourceVersion"] != metadata["resourceVersion"]:
+                raise oce.Blocked("startup Secret changed before protected binding")
+            time.sleep(2)
+        raise oce.Blocked("protected startup Secret binding did not arrive")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--credential-file", type=Path, required=True)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--operator-source-sha")
+    parser.add_argument("--reviewed-config-sha256")
+    parser.add_argument("--job-name")
     args = parser.parse_args(argv)
     try:
-        # Check source before opening the protected credential file.
-        startup.reviewed_main(args.expected_sha)
-        config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
+        operator_mode = any((args.config, args.operator_source_sha,
+                             args.reviewed_config_sha256, args.job_name))
+        if operator_mode:
+            if not all((args.config, args.operator_source_sha,
+                        args.reviewed_config_sha256, args.job_name)):
+                raise oce.Blocked("operator binding source receipt is incomplete")
+            oce._require_projected_operator_config(
+                args.config, args.expected_sha, args.operator_source_sha,
+                args.reviewed_config_sha256)
+            bridge = JobBridge(args.expected_sha, args.job_name)
+            config_path = args.config
+        else:
+            # Check source before opening the protected credential file.
+            startup.reviewed_main(args.expected_sha)
+            bridge = None
+            config_path = ROOT / "scripts/config/openclaw-enterprise.json"
+        config = json.loads(config_path.read_text())
         oce._validate_config(config)
+        if operator_mode and (config.get("journalOperator", {}).get("imageSourceSha") !=
+                              args.operator_source_sha or
+                              config["bootstrap"]["serviceKeyFile"] != str(args.credential_file)):
+            raise oce.Blocked("operator binding source or credential path changed")
         api = oce.API(config["privateOrigins"]["console"], oce._read_key(args.credential_file))
-        bind(args.expected_sha, config, api, oce.Kubernetes())
+        bind(args.expected_sha, config, api, oce.Kubernetes(), bridge)
     except (startup.Blocked, oce.Blocked, OSError, ValueError, KeyError, TypeError) as error:
         print(f"OpenClaw Enterprise Installation binding blocked: {error}", file=sys.stderr)
         return 1

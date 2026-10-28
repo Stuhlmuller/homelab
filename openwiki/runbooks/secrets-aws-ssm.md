@@ -18,6 +18,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -36,6 +38,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
@@ -44,10 +48,10 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:34:01.303Z
 ---
 
 # AWS SSM Secret References
@@ -127,12 +131,17 @@ versioned immutable Kubernetes Secret because the stock chart mounts that
 Secret at startup. Initial creation precedes the installation ID; T041 must
 bind and attest that metadata after bootstrap before reconciliation can run.
 The [binder source](../../scripts/openclaw-enterprise-bind-installation.py)
-reads a private bootstrap-key file, verifies `GET /installation` and both Ready
-Pods, and patches only the Secret annotation with a guarded readback. Its
+reads the private bootstrap-key file only inside a staged UID-1000 Job with a
+read-only bootstrap PVC mount. It verifies `GET /installation` and both Ready
+Pods, then sends a bounded private receipt. Its
 [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
-rechecks exact current `main` and pins this source, but the hosted runner has
-no declared delivery of the owner-controlled 0600 bootstrap-key file. No live
-binding is proven.
+pins the reviewed immutable startup Secret UID, resource version and candidate
+digest before Job creation, verifies the Job and Pod identities, rechecks exact
+current `main`, and performs one guarded annotation patch. The Job checks the
+result; the runner never reads the key. The expected UID-1000-owned `0600`
+file, binder-bearing image publication, admitted placement, network fence and
+live binding remain unproved. The operator is disabled. Failed pre-patch and
+post-patch states need separately reviewed recovery before retry or activation.
 
 ## Protected Talos upgrade inputs
 

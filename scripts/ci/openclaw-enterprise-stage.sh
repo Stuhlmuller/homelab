@@ -4,7 +4,7 @@ umask 077
 
 stage="${1:-}"
 case "$stage" in
-  full-sync|reconcile|stop|verification|restore|acceptance) ;;
+  bind-installation|full-sync|reconcile|stop|verification|restore|acceptance) ;;
   *) echo 'Invalid Enterprise operation stage' >&2; exit 2 ;;
 esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
@@ -33,7 +33,8 @@ if [[ "$stage" == full-sync ]]; then
   exit
 fi
 
-if [[ "$stage" == reconcile || "$stage" == stop || "$stage" == verification ]]; then
+if [[ "$stage" == bind-installation || "$stage" == reconcile ||
+      "$stage" == stop || "$stage" == verification ]]; then
   jq -e '.journalOperator.enabled == true' scripts/config/openclaw-enterprise.json >/dev/null || {
     echo 'Enterprise operator remains disabled pending placement and credential proofs' >&2
     exit 1

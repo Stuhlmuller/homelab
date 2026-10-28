@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1c659f9d6729dc51f235e0ddec72a5022e4b0687188d2c9e4e7a04e6b4c69f19",
+  "pageVersion": "sha256:d20272795c9b07ab4af286046c2bc2d05b3372f0c87c0c2944a57d8186ca6bb1",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -76,7 +76,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
-          "version": "repo-file-v1:sha256:03a9f71825a19eb87f2c4e80a81aacc4319fc107dae9041954babb7f19132350"
+          "version": "repo-file-v1:sha256:5126efc82a6444cc01369f28486d4248a8e4b3713cad61f4709d876897a8e619"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
@@ -318,15 +318,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:18bb8ebe8e391f9bff3c3b9c79f8f6543e4e6e6b5ffde3a027c73048602717f9"
+          "version": "repo-file-v1:sha256:1cf1d8be0fb7fb5184e7b2cba1d43a21210fa7123e54bc9dbb63ff55565253de"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:fc78690a3faa25aceea489207e1ffd59686fd9cb94793fce03a1be1e26afe851"
         }
       ]
     },
@@ -352,7 +352,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         }
       ]
     },
@@ -370,11 +370,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:4f2e5004716ef0370a488205e3084f89b07483c1b47c88be3606d3492401513d"
+          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
         }
       ]
     },
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
+          "version": "repo-file-v1:sha256:22fe8686a09771aff67128be40a28a1682029b82931eab6a5989e8922d877350"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml",
@@ -414,7 +414,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
+          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
         }
       ]
     },
@@ -440,7 +440,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
+          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
         }
       ]
     },
@@ -454,7 +454,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
-          "version": "repo-file-v1:sha256:06035a065ff89209aca83993145bd9b0994ab84e541e128f55bd33a3b8e8ccda"
+          "version": "repo-file-v1:sha256:557a3962af051478d7953fd0b97868d01899a6b86cf2668cf12717a1417b69ab"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -468,7 +468,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -476,7 +476,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:178b1c19d578f11014be522d29f07ef0bedd5d1370dd5327986bcba0c454cdb6"
+          "version": "repo-file-v1:sha256:5954814c1db5f6896e1596de098504fd1f09640f4226149641aa5ca173410368"
         }
       ]
     },
@@ -539,7 +539,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck leaves Enterprise placement blocked: the best worker has about 3,398 MiB unreserved versus a 4,096 MiB initial steady request and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent NoSchedule taint isolation.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L346-L372",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L360-L386",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -582,47 +582,59 @@
     },
     {
       "id": "claim_177aaa90270b469cb95319ead02bf1a7",
-      "statement": "The protected Enterprise workflow invokes a pinned full-sync helper, but the committed unselected installation phase blocks Kubernetes sync. Reconcile, stop, and verification route through a source-bound exact-main one-shot Job dispatcher, yet the disabled operator gate prevents Job creation; restore and acceptance remain separately blocked. Offline fixtures check source, identity, and dependency ordering.",
+      "statement": "The protected Enterprise workflow invokes a pinned full-sync helper, but the committed unselected phase blocks Kubernetes sync. Binding, reconcile, stop and verification route through a source-bound exact-main one-shot Job dispatcher, yet the disabled operator gate prevents Job creation; restore and acceptance remain separately blocked. Offline fixtures check source, Job/Pod and Secret identities, patch ordering and dependency gates.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
+          "version": "repo-file-v1:sha256:978ecc76c1c6df6af94bbd5a7cc5576150698fce03e17fd6971a5e904ab23fa6"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator-test.py",
-          "version": "repo-file-v1:sha256:5610a0a5ec4ad00547c063588f47567d7f68aa7c85cfacc5b22babdcde63d0aa"
+          "version": "repo-file-v1:sha256:e26fb8509929a4b2ec13f7dc9b2dacfc7bbca4ae80e23ce9215153ac947dceac"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
-          "version": "repo-file-v1:sha256:73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2"
+          "version": "repo-file-v1:sha256:806a0f51a6efcb1923f54f8618e26a7cca27c3128145c9330460b47627b4b2fb"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:fc78690a3faa25aceea489207e1ffd59686fd9cb94793fce03a1be1e26afe851"
         }
       ]
     },
     {
       "id": "claim_8911c2014ec54c3ea616c5fd2a949369",
-      "statement": "An offline-tested Enterprise Installation binder can attest and bind the reviewed startup Secret. A fixed protected binding lane is declared, but hosted-runner delivery of its owner-controlled 0600 bootstrap key and any live binding receipt remain absent.",
+      "statement": "The offline-tested Enterprise Installation binder has a staged protected in-cluster UID-1000 Job path. The Job reads the expected 0600 key through a read-only bootstrap PVC mount and sends a bounded private proof; the runner checks Job/Pod and reviewed immutable Secret identities, rechecks current main, then makes one UID/resourceVersion-guarded annotation patch. The key is never delivered to the runner. Key ownership, binder-bearing image publication, network enforcement, recovery and live binding remain unproved.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
+          "version": "repo-file-v1:sha256:978ecc76c1c6df6af94bbd5a7cc5576150698fce03e17fd6971a5e904ab23fa6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
-          "version": "repo-file-v1:sha256:01c0a5ea9d09dee52723bf5a2944a38d630f205e8c3a9a7131eb692623be1b91"
+          "version": "repo-file-v1:sha256:c1584c407933f1662df58ab090852c221e510e5c9f44ffd4e58b436e48fbf0df"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py",
+          "version": "repo-file-v1:sha256:c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise-bind-installation.py",
-          "version": "repo-file-v1:sha256:fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996"
+          "version": "repo-file-v1:sha256:fac69267ae324654f20a469310c01e493260cbd9dfc46ad814d9fae0f6214ac3"
         }
       ]
     },
     {
       "id": "claim_d1d962b833b04ae7a4921efec5f8d8dd",
-      "statement": "The source-only Enterprise reconciler journals one logical Namespace, Configuration and stopped Embedded Agent; its offline-tested active path guards a native-origin generation-2 update and second revision while preserving uncertain stop intent. A one-shot operator Job path and clean-source operator image recipe are staged, and protected publisher run 40056484158 signed and fully pulled the selected exact-source operator digest. No Job or Agent is live: activation is disabled, the distinct OpenRouter key is absent, and PV placement and bootstrap file proof remain pending.",
+      "statement": "The source-only Enterprise reconciler journals one logical Namespace, Configuration and stopped Embedded Agent; offline active fixtures guard native-origin generation-2 update, second revision and uncertain stop intent. A one-shot operator Job path and clean-source image recipe are staged. Protected publisher run 40056484158 signed and fully pulled an older operator image; the binder-bearing source has not been published or deployed. No Job or Agent is live: activation is disabled, the distinct OpenRouter key is absent, and PV placement, bootstrap key ownership and enforced network proof remain pending.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
@@ -630,15 +642,19 @@
         },
         {
           "resource": "repo://builds/openclaw-enterprise/build-operator.sh",
-          "version": "repo-file-v1:sha256:f13433ae9373cb1e6a201408a326b0eccf2c7ce0e38c224509b0d22e8b94daa4"
+          "version": "repo-file-v1:sha256:a60e9934517107fedfcc28a74758fda9870218ce9d4b2eb69c61a57f748e95ea"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
+          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -646,11 +662,11 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
-          "version": "repo-file-v1:sha256:1ef8b8d531ae9d5fd475d851cb9375d9d843d6b410e4e1c5856ee2ea8f713b93"
+          "version": "repo-file-v1:sha256:e365a36b4f2144ba6079b7f754b8a15382826ed1412c6d54f05645cfe269f470"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:90f17d07895a3e57a1ba270c7a6bb7c64ad4c236b1fc302c204e2b3d7dbf415b"
+          "version": "repo-file-v1:sha256:fc78690a3faa25aceea489207e1ffd59686fd9cb94793fce03a1be1e26afe851"
         }
       ]
     },
@@ -696,7 +712,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
+          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml",
@@ -721,7 +737,7 @@
           "version": "repo-file-v1:sha256:c31eb368bc2d8e6505a527bc8d2a49cf07aef7c90704f6edf8b7acfe76c07395"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L816-L829",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L830-L843",
           "version": "repo-lines-v1:sha256:39e4c9beb4d6b7330b1aeca53b18172b4a6df2a1f944ebe9c067868c5da8f991:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MjBjMzM3MWY0Zjk1YmRhZmUwMDllN2U2Y2UyYWRhMzIwN2U2M2U2ZTFhZTJmNjc5MjI2N2U2MTdkNzg2NDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkODc2ODQwYWFjMDc0ZTUyMWE5MGU0OTljNTY3MTM0YTMxNjkxYTIzN2IxOWI4OGU5MzhiZDcxMzNhYmZiYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwYjBlYWE5NzUxYzhkOTFlOTc4NzMyNDdiODliNTI0MWZjN2RkZTJkNjFiMTNkOTE4ZWZhNjY3MDU4NmNhMDMifQ"
         }
       ]
@@ -732,7 +748,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
+          "version": "repo-file-v1:sha256:22fe8686a09771aff67128be40a28a1682029b82931eab6a5989e8922d877350"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh",
@@ -804,11 +820,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:18bb8ebe8e391f9bff3c3b9c79f8f6543e4e6e6b5ffde3a027c73048602717f9"
+          "version": "repo-file-v1:sha256:1cf1d8be0fb7fb5184e7b2cba1d43a21210fa7123e54bc9dbb63ff55565253de"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -823,6 +839,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-28T02:38:59.035Z"
   }
 }

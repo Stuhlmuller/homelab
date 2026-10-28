@@ -140,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:28:18.554Z" }
+generated: { by: "codex", at: "2026-10-28T02:38:59.035Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:28:18.554Z
+    at: 2026-10-28T02:38:59.035Z
 ---
 
 # Secrets And Identity
@@ -339,19 +339,27 @@ A protected exact-`main` workflow can create and reread only that fixed Secret
 after the foundation namespace exists; this PR does not run it. The initial
 Secret has no installation ID. The source-only
 [`bind-installation.py`](../../scripts/openclaw-enterprise-bind-installation.py)
-attests both Ready controller Pods and the returned `GET /installation` ID,
-then patches only the Secret annotation with UID/resource-version guards and
-readback. A fixed [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
-rechecks exact current `main` and pins the reviewed binder. The bootstrap
-service key is expected on the retained claim as a UID-1000-owned `0600`
-file; live presence and ownership are unproved. No declared path delivers
-it to the hosted runner. Binding has not run. A reviewed in-cluster reader
-must use UID 1000 and the exact bootstrap PVC/PV, withhold private output,
-and recheck protected current `main` immediately before the final Secret
-annotation patch. The committed disabled operator and unenforced policy
-block that reader now. No live binding or readback exists; activation remains
-blocked. SSM-backed model, database, auth, and gateway credentials remain
-separate from these startup bytes.
+attests both Ready controller Pods and the `GET /installation` ID. The fixed
+[binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
+now stages a source-bound, UID-1000 in-cluster Job with a read-only bootstrap
+PVC mount. The service key is expected there as a UID-1000-owned `0600` file;
+live presence and ownership remain unproved. The hosted runner never receives
+or reads the key. Before Job creation it verifies the immutable reviewed
+startup Secret and pins its UID, resource version, and candidate digest in the
+Pod template. The Job sends a bounded private proof; the runner checks its
+Pod, image, mounts, account, source, and Secret baseline, rechecks exact
+current `main`, then patches only the Secret installation-ID annotation with
+UID/resource-version guards. The Job verifies binding and unchanged workloads.
+An uncertain patch is read back once without repeating the write.
+
+The binder-bearing operator image has not been published or deployed from
+this source. The operator remains disabled, and network-policy enforcement,
+key ownership, placement, Installation identity, and recovery are unproved.
+A failed unbound Job needs a separately reviewed identity-checked cleanup;
+a post-patch failure may leave the Secret bound and needs a separate recovery
+path. No live binding, readback, or activation is established. SSM-backed
+model, database, auth, and gateway credentials remain separate from startup
+bytes.
 
 The staged [journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 has a dedicated ServiceAccount with automatic token mounting disabled. Its

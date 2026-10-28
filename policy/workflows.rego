@@ -458,18 +458,18 @@ approved_openclaw_enterprise_operation if {
 	binding.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	binding.environment.name == "homelab-production"
 	binding.permissions == {"contents": "read"}
-	binding["timeout-minutes"] == 30
+	binding["timeout-minutes"] == 45
 	count(binding.steps) == 5
 	[binding.steps[0].name, binding.steps[1].name, binding.steps[2].name, binding.steps[3].name, binding.steps[4].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before Binding", "Bind Reviewed Installation"]
 	binding.steps[0].env == job.steps[0].env
 	trim(binding.steps[0].run, "\n") == platform_maintenance_main_check
 	binding.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
-	binding.steps[1].with["persist-credentials"] == false
+	binding.steps[1].with == {"persist-credentials": false, "fetch-depth": 0}
 	binding.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
 	binding.steps[2].with.enable_kvm == false
 	binding.steps[3].env == job.steps[0].env
 	trim(binding.steps[3].run, "\n") == platform_maintenance_main_check
-	binding.steps[4].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	binding.steps[4].env == {"EXPECTED_SHA": job.steps[4].env.EXPECTED_SHA, "OCTELIUM_AUTH_TOKEN": job.steps[4].env.OCTELIUM_AUTH_TOKEN, "GH_REPO": job.steps[4].env.GH_REPO, "GH_TOKEN": job.steps[4].env.GH_TOKEN}
 	trim(binding.steps[4].run, "\n") == openclaw_enterprise_binding_run
 }
 
@@ -521,8 +521,8 @@ umask 077
 private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! {
-  sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
-  sha256sum --check --status <<<'25b44620fd1148e019802769243ddd86be671bfdaa84cafdf047e8c0c80b991e  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  sha256sum --check --status <<<'806a0f51a6efcb1923f54f8618e26a7cca27c3128145c9330460b47627b4b2fb  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
   sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
@@ -538,18 +538,9 @@ chmod 600 "$private_log"
 trap 'rm -f "$private_log"' EXIT
 if ! {
   ulimit -f 1024 &&
-  sha256sum --check --status <<<'fedf388eaee3a30d53858e2e5141b6ed737307c7e9f8e7a0008588056a136996  scripts/openclaw-enterprise-bind-installation.py' &&
-  test "$(jq -r '.bootstrap.serviceKeyFile // empty' scripts/config/openclaw-enterprise.json)" = /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
-  test -f /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
-  test -s /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json &&
-  test "$(stat -c '%u:%a' /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json)" = "$(id -u):600" &&
-  test -n "$OCTELIUM_AUTH_TOKEN" &&
-  timeout 10m nix develop --command bash <<'EOF'
-set -euo pipefail
-umask 077
-bash scripts/ci/install-kubeconfig.sh
-python3 -I scripts/openclaw-enterprise-bind-installation.py --expected-sha "$EXPECTED_SHA" --credential-file /private/openclaw-enterprise/bootstrap/initial-admin-service-key.json
-EOF
+  sha256sum --check --status <<<'806a0f51a6efcb1923f54f8618e26a7cca27c3128145c9330460b47627b4b2fb  scripts/ci/openclaw-enterprise-stage.sh' &&
+  sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+  timeout 40m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh bind-installation
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise Installation binding blocked; private diagnostics withheld.'
   exit 1

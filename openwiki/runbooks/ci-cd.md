@@ -38,6 +38,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-d2d8ff2161af78b658d004f0
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -48,6 +50,8 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -72,6 +76,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-8483d28614308625b1073872
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -96,10 +102,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:34:01.303Z
 ---
 
 # CI/CD
@@ -196,15 +202,23 @@ keeps legacy retention behind `legacy_stage` and reserves fixed
 `bind-installation`, `full-sync`, `reconcile`, `stop`, `verification`, `restore`
 and `acceptance` Enterprise selections. Select exactly one stage. Each protected
 job rechecks exact current `main` and shares a non-canceling production queue.
-The binding lane pins the reviewed binder and requires an owner-controlled 0600
-bootstrap service-key file; no hosted-runner delivery is declared. The other
-stages call a pinned [guard](../../scripts/ci/openclaw-enterprise-stage.sh).
+The binding lane pins the stage and dispatcher and calls the
+[guard](../../scripts/ci/openclaw-enterprise-stage.sh). A source-bound
+UID-1000 Job reads the expected `0600` key from the bootstrap PVC read-only;
+the hosted runner never receives it. Before Job creation the runner verifies
+the immutable startup Secret bytes and pins its UID, resource version and
+candidate digest. It checks the Job and Pod identity plus a bounded private
+readiness receipt, rechecks current `main`, and makes one guarded Secret
+annotation patch. The Job verifies the result. An uncertain write is read
+back once without retrying the patch. The binder-bearing image is not yet
+published or deployed from this source; operator and network enforcement
+remain disabled, so no live binding has run.
 Its `full-sync` branch invokes the pinned
 [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh), which rechecks current
 `main` after the final Argo sync and health readback; a forced-race fixture
 requires a blocked result when `main` advances during sync. The committed
 `unselected` installation phase blocks sync before Kubernetes access.
-`reconcile`, `stop`, and `verification` now call the pinned
+`bind-installation`, `reconcile`, `stop`, and `verification` call the pinned
 [one-shot Job dispatcher](../../scripts/ci/openclaw-enterprise-journal-operator.py)
 only after `journalOperator.enabled` is true. It rechecks current `main`,
 source and configuration identity, retained journal and bootstrap claim/PV
@@ -212,9 +226,11 @@ identity, and prior Job state before a fresh Job per workflow attempt. The
 [operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a local journal claim and scoped proof permissions but is absent from
 active GitOps; the disabled gate stops before Job creation. The hosted runner
-does not mount the private journal. `restore` and `acceptance` still exit before
-mutation pending separate recovery and owner-session proof. No Enterprise
-stage has passed live acceptance.
+does not mount the private journal or key. Failed pre-patch binding Jobs block
+later attempts until a separately reviewed identity-checked cleanup; a
+post-patch failure needs its own Secret-bound recovery. `restore` and
+`acceptance` still exit before mutation pending separate recovery and
+owner-session proof. No Enterprise stage has passed live acceptance.
 
 For legacy `publish-archive`, the workflow reports fixed public publication
 phases while withholding private diagnostics. The successful versioned

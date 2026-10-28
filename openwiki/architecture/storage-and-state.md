@@ -64,10 +64,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T02:22:00.727Z" }
+generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:22:00.727Z
+    at: 2026-10-28T02:34:01.303Z
 ---
 
 # Storage And State
@@ -452,9 +452,17 @@ Retain policy, local class, and placement on the journal node. The committed
 `bootstrapVolumeUid: null` and `journalOperator.enabled: false` keep the
 operator blocked; these checks are source-only, not live volume proof.
 `restore` and `acceptance` remain separately blocked. The hosted runner never
-mounts the private journal. Live reconciliation needs admitted local volumes
-and the in-cluster Job; binding also lacks a declared key reader on the
-bootstrap claim.
+mounts the private journal or bootstrap key. The staged binding Job reads the
+expected UID-1000-owned `0600` key from the exact bootstrap PVC through a
+read-only mount. The dispatcher checks both PVC/PV identities and local
+placement, then pins the immutable startup Secret UID, resource version and
+candidate digest in the Job template before creation. The Job gives a bounded
+private proof to the runner for one exact-main, UID/resourceVersion-guarded
+Secret annotation patch and checks the result. The binder-bearing image is not
+published or deployed from this source, and the disabled operator and
+unenforced network policy block live binding. Key ownership, admitted volumes,
+placement, and a recovery path for failed Jobs still need proof. Live
+reconciliation also needs admitted local volumes and the in-cluster Job.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

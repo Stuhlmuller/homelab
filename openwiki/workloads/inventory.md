@@ -190,6 +190,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -218,10 +220,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T02:38:59.035Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:38:59.035Z
 ---
 
 # Workload Inventory
@@ -501,20 +503,24 @@ applied or synced. The candidate's
 placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. The
 [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-offers fixed `full-sync`, `reconcile`, `stop`, `verification`, `restore` and
-`acceptance` stages. Its pinned stage helper calls the full-sync helper, but the
+offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
+`verification`, `restore` and `acceptance` stages. Its pinned stage helper
+calls the full-sync helper, but the
 committed `unselected` installation phase blocks sync before Kubernetes access.
 The staged [journal operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a separate retained 1Gi local claim, scoped proof RBAC, and private
 network intent. It is not registered in active GitOps and has no static PV or
-admitted node. `reconcile`, `stop`, and `verification` have an exact-main
-one-shot Job dispatcher but the committed disabled operator gate stops before
-Job creation; `restore` and `acceptance` remain separately blocked. A
+admitted node. `bind-installation`, `reconcile`, `stop`, and `verification`
+have an exact-main one-shot Job dispatcher, but the committed disabled operator
+gate stops before Job creation; `restore` and `acceptance` remain
+separately blocked. A
 clean-source [operator image recipe](../../builds/openclaw-enterprise/build-operator.sh)
 and offline fixture are staged; protected
 [run `40056484158`](https://github.com/Stuhlmuller/homelab/actions/runs/40056484158)
 signed and fully pulled all four images from source `fda0d68`. The selected
-operator digest and source SHA are pinned in the disabled declaration.
+operator digest and source SHA are pinned in the disabled declaration. That
+older image predates the binder-bearing source; its replacement has not been
+published or deployed.
 The source-only [reconciler](../../scripts/openclaw-enterprise.py) journals
 one logical Namespace, native Configuration and stopped unauthenticated
 Embedded Agent; no live Agent or operator Job exists. Its staged dispatcher
@@ -533,9 +539,14 @@ clear a stop intent. The tenant Role grants only the required `pods/list` read.
 Committed `activationEnabled: false` and the missing dedicated OpenRouter
 key still block activation; these fixtures are not live acceptance.
 An offline-tested [Installation ID binder](../../scripts/openclaw-enterprise-bind-installation.py)
-exists in source. A fixed protected binding lane is declared, but hosted
-runner delivery of the owner-controlled 0600 bootstrap key and live Secret
-binding remain absent.
+now has a staged protected in-cluster Job path. It reads the expected
+UID-1000-owned `0600` bootstrap key through a read-only PVC mount; the runner
+never reads it. The runner pins the reviewed immutable startup Secret UID,
+resource version and candidate digest before Job creation, checks the Job and
+Pod plus a bounded private proof, then rechecks current `main` before one
+guarded annotation patch. The Job checks the result. Key ownership, admitted
+placement, network enforcement, failed-Job recovery and live Secret binding
+remain unproved; automatic retry and activation are blocked.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy

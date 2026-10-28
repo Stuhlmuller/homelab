@@ -25,7 +25,9 @@ policy permits DNS, that API endpoint, and Traefik's private console listener;
 Traefik has a matching ingress rule for this Job label. Prove the actual DNS answer, TLS
 certificate, CNI policy behavior, and no sidecar before enabling. A Job needs
 a signed, fully pulled Harbor operator image from a prior reviewed homelab
-source commit with `python3`, `kubectl`, and `yq`. The protected
+source commit with `python3`, `kubectl`, and `yq`. Its image also carries the
+reviewed binder, startup checks, and config needed to verify Installation
+binding beside the read-only bootstrap key. The protected
 `openclaw-enterprise-images.yml` workflow builds it from a clean exact `main`
 checkout, embeds the source SHA, then signs and completely pulls it. The
 dispatcher requires its embedded reconciler, Installation, and values bytes to
@@ -58,11 +60,37 @@ mode, exact startup Secret hash, and live network proof before wiring the
 bundle into GitOps or setting `enabled: true`. Stop and restore/acceptance
 stages still require their own live recovery and owner-session receipts.
 
-The protected `bind-installation` workflow currently looks for the bootstrap
-service key on its hosted runner. The key is written on the bootstrap PVC, and
-no declared handoff mounts or delivers it to that runner. Binding therefore
-remains blocked. A reviewed in-cluster reader must read the key only as UID
-1000 from the exact PVC/PV and withhold private output; the final Secret patch
-must retain the protected current-main check immediately before its write.
-The committed disabled operator and unenforced network policy prevent a live
-reader now.
+The protected `bind-installation` workflow keeps the bootstrap service key on
+its PVC. Its checkout fetches full history so the dispatcher can prove the
+pinned image source is an ancestor of current `main`. A source-bound UID-1000
+Job reads the key through a read-only mount and
+performs private Installation proof. Before creating that Job, the runner
+verifies the exact immutable startup Secret and reviewed candidate bytes, then
+pins its UID, resource version, candidate digest and immutable state in the
+Job's Pod template. Job and Pod identity checks reject a changed baseline or
+resources pending deletion. Pod readback admits only the two Kubernetes default
+not-ready/unreachable `NoExecute` tolerations for 300 seconds. An unassigned
+`Pending` Pod may wait within the bounded proof loop; a running Pod must be on
+the pinned node before its proof is accepted.
+The protected runner rechecks current `main` immediately before its
+UID/resourceVersion-guarded patch of the one
+startup Secret annotation, then requires an in-cluster post-patch proof. The
+operator ServiceAccount has no Secret patch grant, and no key crosses to the
+runner or public logs. The committed disabled operator and unenforced network
+policy still prevent a live bind until placement, image, and network receipts
+are reviewed.
+
+If `main` advances after Job creation but before the Secret patch, the Job
+times out without binding. The dispatcher then refuses any fresh attempt while
+that failed Job remains. Inspect its private log, Pod and Job UIDs, and the
+startup Secret against the pinned Pod-template baseline read-only. A separate
+reviewed cleanup workflow must prove those identities and remove only that
+failed Job before a fresh exact-main dispatch. No automatic deletion or patch
+retry is authorized by this source slice. T041 stays open until this recovery
+path and the live prerequisites are proven.
+
+If the Secret patch commits but the Job or its post-patch proof fails, the
+startup Secret may already name the Installation. The pre-patch cleanup path
+cannot recover that state. Keep binding, retry, automatic Job cleanup, agent
+activation and acceptance blocked until T041 supplies a separately reviewed
+post-patch identity check and recovery path.

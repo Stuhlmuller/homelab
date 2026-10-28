@@ -366,10 +366,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:24:48.541Z" }
+generated: { by: "codex", at: "2026-10-28T02:38:59.035Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:24:48.541Z
+    at: 2026-10-28T02:38:59.035Z
 ---
 
 # Validation Gates
@@ -2031,6 +2031,8 @@ exact-source build context, embedded SHA, non-root read-only startup, and fixed
 signed and fully pulled all four images from source `fda0d68`; the selected
 operator is pinned at
 `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
+This pinned operator digest predates the binder-bearing image source; it is
+not an image publication or pull receipt for the staged binding Job.
 The dispatcher now also requires a reviewed bootstrap PV UID, matching
 bound PVC UID, Retain policy, local class and placement on the journal node.
 The offline
@@ -2075,30 +2077,35 @@ and one generated `octeliumee-secretman` policy name paired with its reviewed
 spec hash. The static gate rejects any wider baseline. These offline checks do
 not establish running Pod/Secret binding or a successful live hook.
 The static gate also runs the source-only
-[Installation binder fixture](../../scripts/ci/openclaw-enterprise-bind-installation-test.py).
-It checks the exact-main guard, returned Installation ID, stable Ready-Pod
-proof, UID/resource-version guarded Secret annotation patch, and idempotent
-readback. The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-now offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
-`verification`, `restore` and `acceptance` selections. It rechecks exact
-current `main`, pins the binder and stage helper, serializes the production
-jobs, and withholds private output. Binding requires the configured
-owner-controlled 0600 service-key file held on the bootstrap PVC; no
-declared hosted-runner delivery or live binding exists. A future in-cluster
-reader must use UID 1000 on the exact PVC/PV and preserve a protected
-current-main check immediately before the Secret annotation patch. The
-committed disabled operator and unenforced policy block that path now. The
-six runtime selections invoke the
-[stage guard](../../scripts/ci/openclaw-enterprise-stage.sh). Its `full-sync`
+[binder test](../../scripts/ci/openclaw-enterprise-bind-installation-test.py)
+and [Job test](../../scripts/ci/openclaw-enterprise-journal-operator-test.py).
+They check stable Ready-controller and returned-ID proof, exact immutable
+startup Secret bytes, UID/resourceVersion baseline pinned in the Job template,
+Pod owner, source, image, mounts, tolerations and placement, bounded private
+readiness, one exact-main guarded annotation patch, and post-patch readback.
+The [workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
+offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
+`verification`, `restore` and `acceptance` selections. It rechecks current
+`main`, pins the stage and dispatcher, serializes protected jobs, and withholds
+private output. The staged UID-1000 Job reads the expected `0600` service key
+from a read-only bootstrap PVC mount; the runner never reads it. The committed
+disabled operator and unenforced policy block live dispatch, and key ownership,
+admitted canary, image publication, placement and recovery still need proof.
+A failed pre-patch Job blocks retry until reviewed identity-checked cleanup.
+A post-patch failure can leave the Secret bound and needs separate recovery.
+No live binding or activation receipt exists. All seven Enterprise selections
+invoke the [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh).
+Its `full-sync`
 branch calls the pinned [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh),
 which checks source, approved installation phase, and Application state before
 sync, then rechecks current `main` after the final Argo health readback. A
 [forced-race fixture](../../scripts/ci/openclaw-enterprise-full-sync-test.py)
 requires a blocked result if `main` advances during sync. The committed
 `unselected` phase blocks sync before cluster access.
-`reconcile`, `stop`, and `verification` now enter the pinned dispatcher only if
-its reviewed gate is enabled; the committed disabled gate stops before a Job
-write. The dispatcher checks current `main`, source parity, both journal and
+`bind-installation`, `reconcile`, `stop`, and `verification` enter the
+pinned dispatcher only if its reviewed gate is enabled; the committed
+disabled gate stops before a Job write. The dispatcher checks current `main`,
+source parity, both journal and
 bootstrap PVC/PV UIDs, local placement, and prior Job state before creating a
 fresh one-shot Job per
 workflow attempt. It keeps the journal and lock inside the future in-cluster

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline failure and restart checks for the dormant Enterprise Job runner."""
 
+import base64
 import copy
 from contextlib import redirect_stderr, redirect_stdout
 import hashlib
@@ -11,6 +12,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import unittest
 import unittest.mock as mock
 
@@ -27,6 +29,7 @@ source_spec.loader.exec_module(source)
 SHA = "a" * 40
 IMAGE_SHA = "c" * 40
 UUID = "12345678-1234-1234-1234-123456789abc"
+POD_UID = "87654321-4321-4321-4321-cba987654321"
 
 
 def ready_operator():
@@ -56,7 +59,368 @@ def complete_job(job):
     return actual
 
 
+def running_job(job):
+    actual = copy.deepcopy(job)
+    actual["status"] = {"active": 1}
+    return actual
+
+
+def binding_objects():
+    config = ready_operator()
+    operator = config["journalOperator"]
+    candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+    digest = hashlib.sha256(candidate).hexdigest()
+    secret = {"kind": "Secret", "type": "Opaque", "immutable": True,
+              "metadata": {"name": "occ-installation-startup-" + digest[:32],
+                           "namespace": "openclaw-system", "uid": UUID,
+                           "resourceVersion": "100",
+                           "labels": {"app.kubernetes.io/part-of": "openclaw-enterprise"},
+                           "annotations": {"homelab.stuhlmuller.dev/installation-sha256":
+                                           digest}},
+              "data": {"installation.yaml": base64.b64encode(candidate).decode()}}
+    baseline = {runner.BINDING_UID: UUID, runner.BINDING_VERSION: "100",
+                runner.BINDING_DIGEST: digest, runner.BINDING_IMMUTABLE: "true"}
+    job = runner.build_job("bind-installation", SHA, "12345", operator,
+                           projection(config), baseline=baseline)
+    actual = copy.deepcopy(job)
+    actual["metadata"]["uid"] = UUID
+    pod = {"metadata": {"name": job["metadata"]["name"] + "-abcde",
+                        "namespace": "openclaw-system",
+                        "uid": POD_UID,
+                        "labels": copy.deepcopy(job["spec"]["template"]["metadata"]["labels"]),
+                        "annotations": copy.deepcopy(baseline),
+                        "ownerReferences": [{"controller": True, "kind": "Job",
+                                             "name": job["metadata"]["name"], "uid": UUID}]},
+           "spec": copy.deepcopy(job["spec"]["template"]["spec"]),
+           "status": {"phase": "Running", "containerStatuses": [
+               {"name": "operator", "state": {"running": {"startedAt": "now"}}}]}}
+    pod["spec"]["nodeName"] = operator["node"]
+    pod["spec"]["tolerations"] = [
+        {"effect": "NoExecute", "key": "node.kubernetes.io/not-ready",
+         "operator": "Exists", "tolerationSeconds": 300},
+        {"effect": "NoExecute", "key": "node.kubernetes.io/unreachable",
+         "operator": "Exists", "tolerationSeconds": 300},
+    ]
+    pod["metadata"]["labels"].update({
+        "batch.kubernetes.io/job-name": job["metadata"]["name"],
+        "batch.kubernetes.io/controller-uid": UUID})
+    proof = {"schema": 1, "expectedSha": SHA, "jobName": job["metadata"]["name"],
+             "installationId": "ins_one", "secretUid": UUID,
+             "secretResourceVersion": "100",
+             "alreadyBound": False, "issuedAt": int(time.time())}
+    return operator, job, actual, pod, secret, proof
+
+
 class JournalOperator(unittest.TestCase):
+    def test_binding_job_reads_exact_bootstrap_claim_as_rootless_operator(self):
+        operator, job, _, _, _, _ = binding_objects()
+        self.assertEqual(runner.contract(ready_operator(), "bind-installation", SHA),
+                         operator)
+        container = job["spec"]["template"]["spec"]["containers"][0]
+        self.assertEqual(container["command"], [
+            "python3", "-I", "/opt/homelab/scripts/openclaw-enterprise-bind-installation.py"])
+        self.assertIn("--job-name", container["args"])
+        self.assertEqual(container["args"][-1], job["metadata"]["name"])
+        self.assertEqual(container["securityContext"]["readOnlyRootFilesystem"], True)
+        self.assertEqual(container["volumeMounts"][1]["readOnly"], True)
+        self.assertEqual(job["spec"]["template"]["metadata"]["annotations"][
+            runner.BINDING_UID], UUID)
+        self.assertEqual(job["spec"]["template"]["metadata"]["annotations"][
+            runner.BINDING_VERSION], "100")
+        changed_job = copy.deepcopy(job)
+        changed_job["spec"]["template"]["metadata"]["annotations"][
+            runner.BINDING_VERSION] = "101"
+        self.assertFalse(runner.job_identity(changed_job, job))
+        with self.assertRaisesRegex(runner.Blocked, "baseline is incomplete"):
+            runner.build_job("bind-installation", SHA, "12345", operator,
+                             projection(ready_operator()))
+        changed = ready_operator()
+        changed["activationEnabled"] = True
+        with self.assertRaisesRegex(runner.Blocked, "inactive"):
+            runner.contract(changed, "bind-installation", SHA)
+
+    def test_binding_baseline_proves_exact_immutable_reviewed_secret(self):
+        _, _, _, _, secret, _ = binding_objects()
+        with mock.patch.object(runner, "kubectl_json", return_value=secret) as read:
+            baseline = runner.binding_secret_baseline("openclaw-system")
+        self.assertEqual(baseline[runner.BINDING_UID], UUID)
+        self.assertEqual(baseline[runner.BINDING_VERSION], "100")
+        self.assertEqual(baseline[runner.BINDING_IMMUTABLE], "true")
+        self.assertEqual(read.call_args.args[:5], (
+            "-n", "openclaw-system", "get", "secret", secret["metadata"]["name"]))
+        for change in ("uid", "version", "immutable", "candidate", "data", "name",
+                       "deleting"):
+            altered = copy.deepcopy(secret)
+            if change == "uid":
+                altered["metadata"]["uid"] = "wrong"
+            elif change == "version":
+                altered["metadata"]["resourceVersion"] = "0"
+            elif change == "immutable":
+                altered["immutable"] = False
+            elif change == "candidate":
+                altered["metadata"]["annotations"][
+                    "homelab.stuhlmuller.dev/installation-sha256"] = "0" * 64
+            elif change == "data":
+                altered["data"]["installation.yaml"] = "Zm9yZWlnbg=="
+            elif change == "deleting":
+                altered["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            else:
+                altered["metadata"]["name"] = "foreign"
+            with self.subTest(change=change), \
+                 mock.patch.object(runner, "kubectl_json", return_value=altered), \
+                 self.assertRaisesRegex(runner.Blocked, "baseline"):
+                runner.binding_secret_baseline("openclaw-system")
+
+    def test_binding_dispatch_pins_secret_baseline_before_job_creation(self):
+        operator, job, _, _, _, _ = binding_objects()
+        baseline = job["spec"]["template"]["metadata"]["annotations"]
+        events = []
+        def read_baseline(namespace):
+            self.assertEqual(namespace, "openclaw-system")
+            events.append("baseline")
+            return baseline
+        def build(stage, expected, run_id, selected, projected, attempt, *, baseline):
+            self.assertEqual((stage, expected, run_id, attempt),
+                             ("bind-installation", SHA, "12345", "1"))
+            self.assertEqual(selected, operator)
+            self.assertEqual(baseline, job["spec"]["template"]["metadata"]["annotations"])
+            events.append("build")
+            return job
+        def dispatch(_job, *, ready):
+            self.assertEqual(_job, job)
+            self.assertTrue(callable(ready))
+            events.append("dispatch")
+        with mock.patch.object(runner, "exact_main"), \
+             mock.patch.object(runner, "prove_committed_inputs"), \
+             mock.patch.object(runner, "contract", return_value=operator), \
+             mock.patch.object(runner, "prove_image_source"), \
+             mock.patch.object(runner, "prove_claims"), \
+             mock.patch.object(runner, "config_projection", return_value=projection(
+                 ready_operator())), \
+             mock.patch.object(runner, "prove_or_create_projection"), \
+             mock.patch.object(runner, "binding_secret_baseline", side_effect=read_baseline), \
+             mock.patch.object(runner, "build_job", side_effect=build), \
+             mock.patch.object(runner, "dispatch", side_effect=dispatch), \
+             redirect_stdout(io.StringIO()):
+            result = runner.main(["bind-installation"], {
+                "EXPECTED_SHA": SHA, "GITHUB_RUN_ID": "12345", "GITHUB_RUN_ATTEMPT": "1"})
+        self.assertEqual(result, 0)
+        self.assertEqual(events, ["baseline", "build", "dispatch"])
+
+    def test_binding_ready_proof_rechecks_main_adjacent_to_named_cas_patch(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        calls = []
+        def command(argv, **_kwargs):
+            if "logs" in argv:
+                return "OCE_BIND_READY:" + json.dumps(proof) + "\n"
+            calls.append(("patch", argv))
+            return ""
+        def main(_expected, _environ):
+            calls.append(("main", None))
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual)]), \
+             mock.patch.object(runner, "command", side_effect=command), \
+             mock.patch.object(runner, "exact_main", side_effect=main):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        self.assertEqual([kind for kind, _ in calls], ["main", "patch"])
+        patch = calls[-1][1]
+        self.assertEqual(patch[patch.index("secret") + 1], secret["metadata"]["name"])
+        operations = json.loads(patch[patch.index("-p") + 1])
+        self.assertEqual(operations[0]["value"], UUID)
+        self.assertEqual(operations[1]["value"], "100")
+        self.assertEqual(operations[2]["value"], "ins_one")
+
+    def test_binding_waits_for_unassigned_pending_pod_but_rejects_wrong_node(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        pending = copy.deepcopy(pod)
+        pending["spec"].pop("nodeName")
+        pending["status"] = {"phase": "Pending"}
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pending]}, {"items": [pod]}, secret, pod,
+                running_job(actual)]), \
+             mock.patch.object(runner, "command", side_effect=lambda argv, **kwargs:
+                               "OCE_BIND_READY:" + json.dumps(proof) if "logs" in argv else ""), \
+             mock.patch.object(runner, "exact_main"), \
+             mock.patch.object(runner.time, "sleep") as sleep:
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        sleep.assert_called_once_with(2)
+        wrong_node = copy.deepcopy(pending)
+        wrong_node["spec"]["nodeName"] = "foreign-node"
+        with mock.patch.object(runner, "kubectl_json", return_value={"items": [wrong_node]}), \
+             self.assertRaisesRegex(runner.Blocked, "Pod source or owner"):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+
+    def test_binding_rejects_foreign_pod_and_stale_receipt_before_patch(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        for change in ("owner", "image", "volume", "init", "ephemeral", "host",
+                       "security", "env_from", "bootstrap_mount", "baseline",
+                       "toleration_extra", "toleration_seconds", "toleration_missing"):
+            altered = copy.deepcopy(pod)
+            if change == "owner":
+                altered["metadata"]["ownerReferences"][0]["uid"] = POD_UID
+            elif change == "image":
+                altered["spec"]["containers"][0]["image"] = "foreign"
+            elif change == "volume":
+                altered["spec"]["volumes"].append({"name": "foreign", "emptyDir": {}})
+            elif change == "init":
+                altered["spec"]["initContainers"] = [{"name": "foreign"}]
+            elif change == "ephemeral":
+                altered["spec"]["ephemeralContainers"] = [{"name": "foreign"}]
+            elif change == "host":
+                altered["spec"]["hostNetwork"] = True
+            elif change == "env_from":
+                altered["spec"]["containers"][0]["envFrom"] = [
+                    {"secretRef": {"name": "foreign"}}]
+            elif change == "bootstrap_mount":
+                altered["spec"]["containers"][0]["volumeMounts"][1]["readOnly"] = False
+            elif change == "baseline":
+                altered["metadata"]["annotations"][runner.BINDING_VERSION] = "101"
+            elif change == "toleration_extra":
+                altered["spec"]["tolerations"].append(
+                    {"key": "node-role.kubernetes.io/control-plane",
+                     "operator": "Exists", "effect": "NoSchedule"})
+            elif change == "toleration_seconds":
+                altered["spec"]["tolerations"][0]["tolerationSeconds"] = 301
+            elif change == "toleration_missing":
+                altered["spec"]["tolerations"].pop()
+            else:
+                altered["spec"]["securityContext"]["runAsUser"] = 0
+            with self.subTest(change=change), \
+                 mock.patch.object(runner, "kubectl_json", return_value={"items": [altered]}), \
+                 mock.patch.object(runner, "command") as command:
+                with self.assertRaisesRegex(runner.Blocked, "Pod source or owner"):
+                    runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+                command.assert_not_called()
+        proof["issuedAt"] -= 61
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual)]), \
+             mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                               json.dumps(proof)), \
+             mock.patch.object(runner, "exact_main") as main:
+            with self.assertRaisesRegex(runner.Blocked, "stale or invalid"):
+                runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+            main.assert_not_called()
+
+    def test_binding_rejects_secret_race_and_uncertain_patch_without_retry(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        for field, value in (("uid", POD_UID), ("resourceVersion", "101"),
+                             ("deletionTimestamp", "2026-10-25T14:00:00Z")):
+            altered = copy.deepcopy(secret)
+            altered["metadata"][field] = value
+            with self.subTest(field=field), \
+                 mock.patch.object(runner, "kubectl_json", side_effect=[
+                     {"items": [pod]}, altered]), \
+                 mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                                   json.dumps(proof)), \
+                 mock.patch.object(runner, "exact_main") as main:
+                with self.assertRaisesRegex(runner.Blocked, "differs from binding proof"):
+                    runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+                main.assert_not_called()
+        commands = []
+        def uncertain(argv, **_kwargs):
+            if "logs" in argv:
+                return "OCE_BIND_READY:" + json.dumps(proof)
+            commands.append(argv)
+            raise runner.Blocked("uncertain patch")
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual), secret]), \
+             mock.patch.object(runner, "command", side_effect=uncertain), \
+             mock.patch.object(runner, "exact_main"), \
+             self.assertRaisesRegex(runner.Blocked, "outcome is uncertain"):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        self.assertEqual(len(commands), 1)
+        bound = copy.deepcopy(secret)
+        bound["metadata"]["resourceVersion"] = "101"
+        bound["metadata"]["annotations"]["openclaw.dev/installation-id"] = "ins_one"
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual), bound]), \
+             mock.patch.object(runner, "command", side_effect=uncertain), \
+             mock.patch.object(runner, "exact_main"):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        self.assertEqual(len(commands), 2)
+        deleting = copy.deepcopy(bound)
+        deleting["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual), deleting]), \
+             mock.patch.object(runner, "command", side_effect=uncertain), \
+             mock.patch.object(runner, "exact_main"), \
+             self.assertRaisesRegex(runner.Blocked, "outcome is uncertain"):
+            runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+        self.assertEqual(len(commands), 3)
+
+    def test_binding_rejects_secret_change_after_job_creation(self):
+        operator, job, actual, pod, _, proof = binding_objects()
+        proof["secretResourceVersion"] = "101"
+        with mock.patch.object(runner, "kubectl_json", side_effect=[{"items": [pod]}]), \
+             mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                               json.dumps(proof)), \
+             mock.patch.object(runner, "exact_main") as main:
+            with self.assertRaisesRegex(runner.Blocked, "after binding Job creation"):
+                runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+            main.assert_not_called()
+
+    def test_binding_rejects_stopped_job_before_current_main_guard(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        stopped = complete_job(actual)
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, stopped]), \
+             mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                               json.dumps(proof)), \
+             mock.patch.object(runner, "exact_main") as main:
+            with self.assertRaisesRegex(runner.Blocked, "Job stopped"):
+                runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+            main.assert_not_called()
+
+    def test_binding_rejects_terminating_job_or_pod_before_patch(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        for target in ("initial_job", "initial_pod", "current_job", "current_pod"):
+            first_job, first_pod = copy.deepcopy(actual), copy.deepcopy(pod)
+            latest_job, latest_pod = running_job(actual), copy.deepcopy(pod)
+            if target == "initial_job":
+                first_job["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            elif target == "initial_pod":
+                first_pod["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            elif target == "current_job":
+                latest_job["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            else:
+                latest_pod["metadata"]["deletionTimestamp"] = "2026-10-25T14:00:00Z"
+            with self.subTest(target=target), \
+                 mock.patch.object(runner, "kubectl_json", side_effect=[
+                     {"items": [first_pod]}, secret, latest_pod, latest_job]), \
+                 mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                                   json.dumps(proof)), \
+                 mock.patch.object(runner, "exact_main") as main:
+                with self.assertRaises(runner.Blocked):
+                    runner.bind_proof_and_patch(first_job, job, SHA, operator, {})
+                main.assert_not_called()
+
+    def test_binding_rejects_proof_that_expires_during_cluster_reads(self):
+        operator, job, actual, pod, secret, proof = binding_objects()
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": [pod]}, secret, pod, running_job(actual)]), \
+             mock.patch.object(runner, "command", return_value="OCE_BIND_READY:" +
+                               json.dumps(proof)), \
+             mock.patch.object(runner.time, "time", side_effect=[
+                 proof["issuedAt"] + 1, proof["issuedAt"] + 61]), \
+             mock.patch.object(runner, "exact_main") as main:
+            with self.assertRaisesRegex(runner.Blocked, "proof expired"):
+                runner.bind_proof_and_patch(actual, job, SHA, operator, {})
+            main.assert_not_called()
+
+    def test_binding_dispatch_waits_for_runner_patch_before_job_completion(self):
+        _, job, actual, _, _, _ = binding_objects()
+        events = []
+        def command(argv, **_kwargs):
+            events.append("create" if "create" in argv else "wait")
+            return ""
+        with mock.patch.object(runner, "kubectl_json", side_effect=[
+                {"items": []}, actual, complete_job(job)]), \
+             mock.patch.object(runner, "command", side_effect=command):
+            runner.dispatch(job, ready=lambda seen, wanted: (
+                self.assertEqual(seen, actual),
+                self.assertEqual(wanted, job),
+                events.append("patch")))
+        self.assertEqual(events, ["create", "patch", "wait"])
     def test_disabled_contract_and_active_reconcile_fail_closed(self):
         config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         with self.assertRaisesRegex(runner.Blocked, "disabled"):
@@ -92,6 +456,8 @@ class JournalOperator(unittest.TestCase):
     def test_prior_image_source_must_match_current_reconciler_inputs(self):
         operator = ready_operator()["journalOperator"]
         names = ("scripts/openclaw-enterprise.py",
+                 "scripts/openclaw-enterprise-bind-installation.py",
+                 "scripts/openclaw-enterprise-startup.py",
                  "clusters/homelab/apps/openclaw-enterprise/installation.yaml",
                  "clusters/homelab/apps/openclaw-enterprise/values.yaml")
         with mock.patch.object(runner, "command", side_effect=[""] + [
