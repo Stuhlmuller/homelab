@@ -168,8 +168,9 @@ and a local container fixture are insufficient. Failures block Enterprise.
 ## 6. Install Foundation and Enterprise
 
 Apply foundation registrations through the shared protected path. Verify
-PostgreSQL TLS/role separation, independent restore, ESO readiness, local storage
-identity/ownership, bootstrap retention, GatewayClass/CRDs, private Envoy and DNS.
+PostgreSQL TLS/role separation, isolated PostgreSQL restore, ESO readiness,
+local storage identity/ownership, bootstrap retention, GatewayClass/CRDs,
+private Envoy and DNS.
 Verify Istio's watched API versions and the actual Envoy proxy digest; require
 working private routes after a cold proxy restart and no xDS rejections.
 Then perform one full Enterprise sync with the ordered hooks in the
@@ -213,7 +214,10 @@ Perform these checks through the actual owner access path:
 5. Deploy one configuration revision, restart/recreate its Pod through the
    declared lifecycle, and verify fresh Enterprise state survives.
 6. Restore a complete new recovery set into isolation; verify database, tenant
-   resources, agent state and bootstrap/auth material together.
+   resources, agent state and bootstrap/auth material together. Prove that
+   restored Kubernetes Secret UIDs match the immutable OCC database references,
+   or use a supported upstream import/rebind path. The PostgreSQL-only fixture
+   and an offline etcd parser do not establish whole-service recovery.
 7. Observe 24 hours, including a scheduled backup, node/resource health, required
    shared-service checks, and absence of legacy writes/deliveries.
 

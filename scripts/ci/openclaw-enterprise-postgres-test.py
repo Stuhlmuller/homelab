@@ -93,7 +93,9 @@ class PostgresFoundation(unittest.TestCase):
             raise AssertionError(f"fixture server must be PostgreSQL 18, found {server_version}")
         cls.material = cls.root / "material"
         files = {
-            "recovery.json": "{\"claimUid\":\"fixture\",\"writerStopped\":true}",
+            "recovery.json": ("{\"claimNamespace\":\"openclaw-agents\","
+                              "\"claimName\":\"gateway-state-0123456789ab\","
+                              "\"claimUid\":\"fixture\",\"writerStopped\":true}"),
             "postgres-root/tls.crt": cls.cert.read_text(),
             "postgres-root/tls.key": key.read_text(),
             "postgres-admin/password": "A" * 40,
@@ -101,7 +103,12 @@ class PostgresFoundation(unittest.TestCase):
             "postgres-app/password": "P" * 40,
             "postgres-backup/password": "B" * 40,
             "auth/secret": "auth-fixture", "gateway/occ": "gateway-fixture",
-            "bootstrap/output.json": "{\"bootstrap\":true}",
+            "bootstrap/initial-admin-password": "bootstrap-password-fixture",
+            "bootstrap/initial-admin-service-key.json": "{\"key\":\"fixture\"}",
+            "gateway/tls/root/tls.crt": "gateway-root-certificate-fixture",
+            "gateway/tls/root/tls.key": "gateway-root-private-key-fixture",
+            "gateway/tls/listener/tls.crt": "gateway-listener-certificate-fixture",
+            "gateway/tls/listener/tls.key": "gateway-listener-private-key-fixture",
             "journal/journal.json": "{\"status\":\"complete\"}",
             "tenant/metadata.json": "{\"tenant\":\"fixture\"}",
             "tenant/secrets/agent-key": "tenant-fixture",
@@ -279,7 +286,7 @@ class PostgresFoundation(unittest.TestCase):
             details = (self.root / "drill/details.log").read_text()
             self.fail(f"isolated restore failed: {details[-1800:]}")
         self.assertEqual(restored.stdout, "")
-        self.assertEqual(restored.stderr, "OpenClaw Enterprise isolated restore passed\n")
+        self.assertEqual(restored.stderr, "OpenClaw Enterprise isolated PostgreSQL restore passed\n")
         self.assertFalse((self.root / "drill/backup").exists(),
                          "the read-only recovery archive must stay off scratch")
         self.assertFalse((self.root / "drill/pgdata/postmaster.pid").exists())
@@ -300,8 +307,12 @@ class PostgresFoundation(unittest.TestCase):
         original_checksums = checksums.read_bytes()
         try:
             for index, invalid in enumerate((
-                    {"claimUid": "fixture", "writerStopped": False},
-                    {"claimUid": "", "writerStopped": True}), start=1):
+                    {"claimNamespace": "openclaw-agents", "claimName": "gateway-state-0123456789ab",
+                     "claimUid": "fixture", "writerStopped": False},
+                    {"claimNamespace": "openclaw-agents", "claimName": "gateway-state-0123456789ab",
+                     "claimUid": "", "writerStopped": True},
+                    {"claimNamespace": "ai", "claimName": "gateway-state-0123456789ab",
+                     "claimUid": "fixture", "writerStopped": True}), start=1):
                 marker.write_text(json.dumps(invalid))
                 checksums.write_text(run("sh", "-ec",
                     "find database.dump database-bootstrap.sql material -type f -print0 "
@@ -315,7 +326,7 @@ class PostgresFoundation(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, "")
                 self.assertEqual(result.stderr,
-                                 "OpenClaw Enterprise isolated restore failed at recovery-marker\n")
+                                 "OpenClaw Enterprise isolated PostgreSQL restore failed at recovery-marker\n")
         finally:
             marker.write_bytes(original_marker)
             checksums.write_bytes(original_checksums)
@@ -344,7 +355,7 @@ class PostgresFoundation(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(result.stdout, "")
             self.assertEqual(result.stderr,
-                             "OpenClaw Enterprise isolated restore failed at archive-stability\n")
+                             "OpenClaw Enterprise isolated PostgreSQL restore failed at archive-stability\n")
         finally:
             metadata.write_bytes(original_metadata)
 
@@ -353,7 +364,7 @@ class PostgresFoundation(unittest.TestCase):
         result = run("sh", "-ec", corrupted, check=False)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
-        self.assertEqual(result.stderr, "OpenClaw Enterprise isolated restore failed at integrity\n")
+        self.assertEqual(result.stderr, "OpenClaw Enterprise isolated PostgreSQL restore failed at integrity\n")
         self.assertNotIn("tampered", result.stderr)
 
     def test_stock_migration_app_dml_without_create_or_admin(self):

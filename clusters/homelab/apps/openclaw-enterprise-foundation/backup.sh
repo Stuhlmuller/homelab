@@ -9,6 +9,8 @@ backup_root=/backup/openclaw-enterprise
 backup_mount=${backup_root%/*}
 stopped_marker() {
   jq -es 'length == 1 and (.[0] | type == "object" and .writerStopped == true and
+    .claimNamespace == "openclaw-agents" and
+    (.claimName | type == "string" and test("^gateway-state-[0-9a-f]{12}$")) and
     (.claimUid | type == "string" and length > 0))' "$1" >/dev/null 2>&1
 }
 material_manifest() (
@@ -24,7 +26,10 @@ material_manifest() (
 )
 for file in recovery.json postgres-root/tls.crt postgres-root/tls.key \
   postgres-admin/password postgres-migrator/password postgres-app/password \
-  postgres-backup/password auth/secret gateway/occ bootstrap/output.json \
+  postgres-backup/password auth/secret gateway/occ \
+  gateway/tls/root/tls.crt gateway/tls/root/tls.key \
+  gateway/tls/listener/tls.crt gateway/tls/listener/tls.key \
+  bootstrap/initial-admin-password bootstrap/initial-admin-service-key.json \
   journal/journal.json tenant/metadata.json agent/identity.json; do
   test -s "$material/$file" || { echo "incomplete recovery material: $file" >&2; exit 1; }
 done
