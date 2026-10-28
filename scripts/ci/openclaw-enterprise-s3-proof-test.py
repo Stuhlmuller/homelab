@@ -157,7 +157,7 @@ class S3ProofTest(unittest.TestCase):
                     PROOF.verify_version(altered, run=FakeAws(altered))
 
     def test_private_receipt_is_atomic_and_never_overwritten(self):
-        with tempfile.TemporaryDirectory(dir="/private/tmp") as directory:
+        with tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve()) as directory:
             path = Path(directory) / "receipt.json"
             proof = {"scope": "s3-version-readback", "publishable": False}
             PROOF._write_private_receipt(path, proof)
