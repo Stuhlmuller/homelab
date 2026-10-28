@@ -1,0 +1,73 @@
+diff --git a/cluster/genesis/genesis/ws_init.go b/cluster/genesis/genesis/ws_init.go
+index 28d901a..4f1984e 100644
+--- a/cluster/genesis/genesis/ws_init.go
++++ b/cluster/genesis/genesis/ws_init.go
+@@ -315,32 +315,6 @@ func (s *Genesis) getWSNetworkPolicy() *networkingv1.NetworkPolicy {
+ 				},
+ 			},
+ 			Egress: []networkingv1.NetworkPolicyEgressRule{
+-				{
+-					To: []networkingv1.NetworkPolicyPeer{
+-						{
+-							IPBlock: &networkingv1.IPBlock{
+-								CIDR: "0.0.0.0/0",
+-								Except: []string{
+-									"10.0.0.0/8",
+-									"172.16.0.0/12",
+-									"192.168.0.0/16",
+-									"100.64.0.0/10",
+-									"169.254.0.0/16",
+-								},
+-							},
+-						},
+-
+-						{
+-							IPBlock: &networkingv1.IPBlock{
+-								CIDR: "::/0",
+-								Except: []string{
+-									"fc00::/7",
+-								},
+-							},
+-						},
+-					},
+-				},
+-
+ 				{
+ 					Ports: []networkingv1.NetworkPolicyPort{
+ 						{
+diff --git a/cluster/genesis/genesis/ws_init_policy_test.go b/cluster/genesis/genesis/ws_init_policy_test.go
+new file mode 100644
+index 0000000..3054761
+--- /dev/null
++++ b/cluster/genesis/genesis/ws_init_policy_test.go
+@@ -0,0 +1,30 @@
++// Copyright Octelium Labs, LLC. All rights reserved.
++// Licensed under the Apache License, Version 2.0.
++
++package genesis
++
++import (
++	"testing"
++
++	networkingv1 "k8s.io/api/networking/v1"
++)
++
++func TestWorkspacePolicyHasOnlyNamedEgress(t *testing.T) {
++	policy := (&Genesis{}).getWSNetworkPolicy()
++	if len(policy.Spec.Egress) != 3 {
++		t.Fatalf("expected three internal/DNS egress rules, got %d", len(policy.Spec.Egress))
++	}
++	if len(policy.Spec.PolicyTypes) != 2 || policy.Spec.PolicyTypes[1] != networkingv1.PolicyTypeEgress {
++		t.Fatal("workspace policy must isolate egress")
++	}
++	for _, rule := range policy.Spec.Egress {
++		if len(rule.Ports) == 0 || len(rule.To) == 0 {
++			t.Fatal("workspace egress contains an all-port or all-destination rule")
++		}
++		for _, peer := range rule.To {
++			if peer.IPBlock != nil || peer.PodSelector == nil || peer.NamespaceSelector == nil {
++				t.Fatal("workspace egress must use a pod and namespace selector")
++			}
++		}
++	}
++}

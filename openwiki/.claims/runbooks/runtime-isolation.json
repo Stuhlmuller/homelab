@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bf1a0f3b507abd189ffa5a3e303dea4342046c24bff7d2f8da669474208887b1",
+  "pageVersion": "sha256:ea75094d15de67743fb9f0689bd0fa2611614c044d9cf76d93dd4c601c368c00",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -15,7 +15,7 @@
           "version": "repo-lines-v1:sha256:673f1a0addc7d2a32bc09399bb5f477d121fb058b288f75f89a34fed8dbb5f5e:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjczZjFhMGFkZGM3ZDJhMzJiYzA5Mzk5YmI1ZjQ3N2QxMjFmYjA1OGIyODhmNzVmODlhMzRmZWQ4ZGJiNWY1ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjczZjFhMGFkZGM3ZDJhMzJiYzA5Mzk5YmI1ZjQ3N2QxMjFmYjA1OGIyODhmNzVmODlhMzRmZWQ4ZGJiNWY1ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjkxMGMxYWY0Yzg1YTBhNzRmMDgyYTZhYzEwMDRhM2ExNjI2NDg4NjA0NDM0ODFlNDVjMGI4YzFlMzM3YmFkNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDM1NDRlYWY2MWMwNDZmZjZhYzU0MGEwNTE5MDJlMmExMzZjODFmNWQ3OWJiNDczMjcyNjYwNjFiNmEwYzI0MSJ9"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L816-L829",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L830-L843",
           "version": "repo-lines-v1:sha256:39e4c9beb4d6b7330b1aeca53b18172b4a6df2a1f944ebe9c067868c5da8f991:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MjBjMzM3MWY0Zjk1YmRhZmUwMDllN2U2Y2UyYWRhMzIwN2U2M2U2ZTFhZTJmNjc5MjI2N2U2MTdkNzg2NDMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkODc2ODQwYWFjMDc0ZTUyMWE5MGU0OTljNTY3MTM0YTMxNjkxYTIzN2IxOWI4OGU5MzhiZDcxMzNhYmZiYzQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwYjBlYWE5NzUxYzhkOTFlOTc4NzMyNDdiODliNTI0MWZjN2RkZTJkNjFiMTNkOTE4ZWZhNjY3MDU4NmNhMDMifQ"
         },
         {
@@ -52,7 +52,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
-          "version": "repo-file-v1:sha256:06035a065ff89209aca83993145bd9b0994ab84e541e128f55bd33a3b8e8ccda"
+          "version": "repo-file-v1:sha256:557a3962af051478d7953fd0b97868d01899a6b86cf2668cf12717a1417b69ab"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -70,11 +70,11 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:178b1c19d578f11014be522d29f07ef0bedd5d1370dd5327986bcba0c454cdb6"
+          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
         }
       ]
     },
@@ -136,7 +136,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
         }
       ]
     },
@@ -191,7 +191,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found the best worker with about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise reservation, 6,308 MiB actual use and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent a NoSchedule taint from isolating a canary.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L346-L372",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L360-L386",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -218,21 +218,29 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
         }
       ]
     },
     {
       "id": "claim_1ff9fd9e6769482b8f537a5cae85c758",
-      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress without a public-egress input; additive NetworkPolicies cannot narrow either allow. Reviewed upstream patches or forks, rebuilt pinned images, actual generator renders, and isolated canary qualification of required destinations and private-range denial are prerequisites for enforcement.",
+      "statement": "Pinned upstream Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress, and additive NetworkPolicies cannot subtract either allow. Staged pinned source patches remove those rules, but corrected images and actual generator renders are absent; owner traffic and isolated-canary denial remain unqualified.",
       "evidence": [
+        {
+          "resource": "repo://builds/network-policy-generators/cordium-v0.12.7.patch",
+          "version": "repo-file-v1:sha256:bd54b73337f8cede7dab6fa75758f8925512a46c19c1669d4c6fc8dac1e1c2bd"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/octelium-v0.35.0.patch",
+          "version": "repo-file-v1:sha256:7b2adf913b5f14f225d5913adbc5c3420dab74da6f91d9c2434d8139b4866da5"
+        },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
           "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
         }
       ]
     },
@@ -289,7 +297,7 @@
           "version": "repo-lines-v1:sha256:2876cfbcc88a641d47fa95d5c84bbc76edd416dab54756ef08f8cf9d74c40330:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlNGEwNWExMWUyNzIxZTlhNTViNDhlMjcwYzA1NjFiYTQzYzFkNmQyNTVhMzE4YzI3ZDQzZGVjNDQ0MzBjZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2YTRmMjQyNmEwZTUwMmNjNWQyYzQxYWI1YjExNjZkY2VhMjMzZTg4NjJlN2YyMmZjMGYxZDA3ZmNlMjk4YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjU2MTkzMGUzMmRhNDZiNzViMWMxZmY5MDVlYTdmMzgzZTcxNGNkZGFjODA1ZTc4YTgyN2UzNTNlYzVkN2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlYTFlNjNiNWJhN2ZmZTVhNjJlNzk3YmJhOGZlNDQzMzU4ZTc4ZDg4M2Y1ZjViYzMwOGY3MzQxZWFhMGY5MjQifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L400-L435",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L414-L449",
           "version": "repo-lines-v1:sha256:7bc16dde62ee864193f6b9ba6aee62caa15267682fa5e9e7c5877a6b6d249ebb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwOWJjNGVlOGE1NDMzMzQ0NDBiYzUyOGZiZTRmYjYzMTk1MjM1NTNhNDI4NThjNjI3N2VlNTQwODU5Zjc3NzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjY1MzZhZGExNDZmNjBhMTQ0M2IyZmZjZmI0MDhjNDU5YmQ1ZDY2YzEzZjIwOTEwN2M2NmQzZTExMGU2NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhODljODc0OTUzNzg0OGU3YTVlMjkxZTU2Y2Y1NTZlNzFhNWI3MWU4Y2JiMmMxZmVmZDUzYjliZTMzM2I4ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2OGExMzk1NGMyOGI3YzQ5YjZlOTI4OTEwMzYwNjNkNmRlNzA1YTlkYTY0NzE5MWI2NWQ4Nzg4MTFjOWVjODAifQ"
         },
         {
@@ -315,10 +323,28 @@
           "version": "repo-lines-v1:sha256:83f2dccf7cd8605019a3b26f59c00d3b64997b7df2354d0d62345ce549183cea:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MWIxMjM1MzIyMmIwYzEyMGZlYTY3YjdkYjJlMzI4MzM2MjVjMzJjMjFlMzkzNWVkNWE4NThlZTcxMWE1N2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1MThjNjRmZjI5NTMwYjE3NzMyNWMxOTc0NWE2YjE2OWUxMDkxNDIyZDNjYzg3NzI3NjQzOWRkZTQ3NmY2ZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzZDM1NDQwMTZjODU2Njk5ZWFmYzNkNDU1OTg1ZTNkZDkyZGExYmQyN2Y1ZGE5NmRkYTk4ZWM0ZWNmOWNmNGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg2MWE0YzdkMTcwYjhmMjhjN2U4Y2M0MmQ5NjgyNWU2NDdiZjU2NmE1ZmM1YmU4YTliMTA3YzI1MTVhODgxYTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_57f2c7184dff4c078d2ba4109ae8075b",
+      "statement": "The staged Octelium source patch requires a digest-pinned Harbor Genesis image for init and upgrade before Kubernetes writes, while the current bootstrap wrapper has no argument for that image; the patched path has not been deployed.",
+      "evidence": [
+        {
+          "resource": "repo://builds/network-policy-generators/README.md",
+          "version": "repo-file-v1:sha256:ab530e5e0953b01bde7f8d3a834ef5d5384ec9338d1641b3c9fb66c07acff223"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/octelium-v0.35.0.patch",
+          "version": "repo-file-v1:sha256:7b2adf913b5f14f225d5913adbc5c3420dab74da6f91d9c2434d8139b4866da5"
+        },
+        {
+          "resource": "repo://scripts/octelium-cluster-bootstrap.sh",
+          "version": "repo-file-v1:sha256:ba7b34bb7a89f1c753d1313b6a58a74f0e55a5e4f54a1952626764f024e0c615"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-28T01:52:54.872Z"
   }
 }

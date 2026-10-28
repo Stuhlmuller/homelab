@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f57b740ba357712cdf211d34907c6028737610301c27587b7fa2d325fe8b0f67",
+  "pageVersion": "sha256:61d1a9b4c2e7782a1b19af2fb2cedabe38aad73dc3dce9de4b0d4a0245138741",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1174,7 +1174,7 @@
       "evidence": [
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:49c9f9bafd760da325b14f25af451f7bd16a9470cd0a2b6080b5ff1227c45f3a"
+          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
         },
         {
           "resource": "repo://scripts/ci/network-policy-peers-test.py",
@@ -1356,19 +1356,23 @@
     },
     {
       "id": "claim_401e6ef8883345159579fb1c697cace1",
-      "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode public IPv4 and IPv6 egress on all ports without a public-egress input; additive NetworkPolicies cannot narrow either rule. A reviewed upstream patch or fork, rebuilt and pinned images, actual generator renders, and isolated canary traffic and private-range denial qualification are required before enforcement.",
+      "statement": "The pinned upstream Cordium ws-main and Octelium svc-upstream constructors admit public IPv4 and IPv6 on all ports, and additive NetworkPolicies cannot subtract those allows. Staged pinned source patches remove the two broad rules, but corrected images, actual generated renders, owner traffic and isolated-canary denial remain unqualified.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2010-L2015",
-          "version": "repo-lines-v1:sha256:e32c8611da07afcee9990c0af726887dd232bf9fe9c35100997169b9ea1494ad:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzAzZjNiMTk0Nzg0YWE4YjQ1NWFmZmY0NmUzMzdiNzcwMjljOGEwNDZlOGY1NjVjNDlkY2Y3ZGUyMGNkMjQzYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzlkYzU0NDJkY2E3YWM3YjVkNjJjYTVmNTYxMTFhNmMzYzE5MzhmYWUwZmIzMDdkMmE3YTliZDYwMzkwNzY2ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTUxYWMyMmRjMzMwMjNjZmNmNjY1NThiZmY2OTZmNmZlYjdiYmFiMDY0YmFiNzAyZWY0ZDY0OTBmNzhlMjg5MiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzM1OWQ3M2NmYWJkYTE3ZDU0YTMyZDY4ZmE2ZjI0NjNiNzI5ZDY0OTdjMmFjNGRlN2FkZGMzMjdiMmQ0NGU3ZSJ9"
+          "resource": "repo://builds/network-policy-generators/cordium-v0.12.7.patch",
+          "version": "repo-file-v1:sha256:bd54b73337f8cede7dab6fa75758f8925512a46c19c1669d4c6fc8dac1e1c2bd"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2026-L2049",
-          "version": "repo-lines-v1:sha256:ce84b16be13d04846381553eef6eeca417efd5996dfd73d3e957a54913a131da:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0YWI0NzFiNGM4YjU5MTIyM2E3NDZkYjBhYmZkNjJmNDhlYjQwNjk2NzY1ZjU3ZWRiYjNlYjNjZGJiNzllNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY0Y2UyMmY5YmUyZTVjZDE2ZWMzZjFiYTNiOTI2NTFjOGQ5ZGJkMGM4MWMwOGM0N2MzMDliYTExYTQzODFiZjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZkZGNhNmFlZTlmZTg0NjBkMDE1YjdiODIwOWIyNjFmY2I4NTliODViNTdiMTUwZTdjYzRkNWM2Njc1ZmM1NTkifQ"
+          "resource": "repo://builds/network-policy-generators/octelium-v0.35.0.patch",
+          "version": "repo-file-v1:sha256:7b2adf913b5f14f225d5913adbc5c3420dab74da6f91d9c2434d8139b4866da5"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md#L182-L196",
-          "version": "repo-lines-v1:sha256:26f3f7a674994ab9e5ce130014ffc51807f722dd1cf5afbec6ea87d22c01bd7d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZTlkMzg5ZDJjYTkxMTlkMWZkMjY0MDljNzVmYzJhNThiOGE1MThmZGU4NTIzMmY3Y2RkNWE3YjM2NmYyZmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRmMTYxZmRmNWRmNmE1NjYxMDdhMmYwYTdhMDBmYTAzYTIzYTViYTdmZDRhMTkyMDQxYWFiMWM3OGQ5M2FhMDMifQ"
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
         }
       ]
     },
@@ -1947,10 +1951,28 @@
           "version": "repo-lines-v1:sha256:6454c9305336d4edf1d2f2b5e4e86dfd40468a7e9357467780daa09dd932eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ0NWE2NTFjMmQ0NDkyNjk5Yzc2ZjlkNTBiNTAwZjg3MTE5MjczMzM2MDQwZjZhOTAxZjdjM2JhNjIyODhlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRkYTNiZDExNDAwZjg1MzljZDFhMjA0ZDIxMmUwOTI0ODdmMTUzNjUyNjYwMzY4NTE2NWU0MjJmOGU0YzlmMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODhkNzQ4YmNhYWU3NTE4NzA2NmMyNDU3OWJjMTZiZWZjM2RhZjY1MDkyNzI2YTE3N2IwOTQ5NWJhMmQ5NTJjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWRlZDIzYjM1NWY2NzIzMGRiZTUxOGM3YjM1MGRmYzJjOGM1ZTlhYzQ4OGE4Zjg0ODRlYTc1Nzg0MWZhZDNhYiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_b986deb936a64c11849112d3a7a06751",
+      "statement": "The source-only generator verifier pins upstream revisions and patch SHA-256 values, checks licenses, applies both reviewed patches, and runs targeted Go tests; success does not publish or deploy a patched image or prove a live policy render.",
+      "evidence": [
+        {
+          "resource": "repo://builds/network-policy-generators/README.md",
+          "version": "repo-file-v1:sha256:ab530e5e0953b01bde7f8d3a834ef5d5384ec9338d1641b3c9fb66c07acff223"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/source.json",
+          "version": "repo-file-v1:sha256:7a8333dca2b2615e788b26a4653f7de61a8edd080f07aefa5f6c249ebf3bd30b"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/verify-source.py",
+          "version": "repo-file-v1:sha256:69959a816093e35037ee43c844016af1ddf727f4cab772da4f6b94d87020e397"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T01:30:28.100Z"
+    "at": "2026-10-28T01:52:54.872Z"
   }
 }

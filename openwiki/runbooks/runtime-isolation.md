@@ -4,6 +4,12 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-77506acd031f0c0e800c4c2a
+    resource: repo://builds/network-policy-generators/cordium-v0.12.7.patch
+  - id: openwiki-source-1b8e7ecff7f3e3abcd292cd7
+    resource: repo://builds/network-policy-generators/octelium-v0.35.0.patch
+  - id: openwiki-source-c73e1fecbb517a520b6d8a37
+    resource: repo://builds/network-policy-generators/README.md
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-3f6d0b26d6634f9dca554267
@@ -58,12 +64,14 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
+  - id: openwiki-source-d8dda331a329c9404cfb41cb
+    resource: repo://scripts/octelium-cluster-bootstrap.sh
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T01:52:54.872Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T01:52:54.872Z
 ---
 
 # Runtime Isolation
@@ -157,13 +165,20 @@ binds three complete policy shapes to pinned `v0.12.7` constructors. The
 binds four Genesis policies to pinned `v0.35.0` constructors. The
 [Enterprise fixture](../../clusters/homelab/apps/octelium-enterprise/generated-networkpolicies.json)
 binds the remaining ten. All 17 complete expected specs are now source-bound;
-pinned generator-binary renders remain unverified. The pinned `ws-main` and
-`svc-upstream` constructors hardcode all-port public IPv4 and IPv6 egress
-without a public-egress input; additive NetworkPolicies cannot narrow those
-allows. Patch the owning generators upstream or build reviewed forks, publish
-and pin corrected images, then refresh fixtures from actual generator renders.
-Qualify required destinations and private-range denial on an isolated canary
-before any enforcement.
+pinned generator-binary renders remain unverified. The pinned upstream
+`ws-main` and `svc-upstream` constructors hardcode all-port public IPv4 and
+IPv6 egress without a public-egress input; additive NetworkPolicies cannot
+narrow those allows.
+[Staged source patches](../../builds/network-policy-generators/README.md)
+remove those two rules. Run
+`python3 builds/network-policy-generators/verify-source.py` to check exact
+upstream revisions, patch hashes, licenses, application, and targeted Go tests.
+This is source-only: no corrected image is published or deployed, and the
+current Octelium bootstrap wrapper cannot pass the patched, digest-pinned
+Genesis image. Current live policies and expected-spec fixtures still contain
+the broad rules. Publish and pin reviewed images, use the patched bootstrap
+path, compare complete actual generator renders, and qualify owner destinations
+plus private-range denial on an isolated canary before enforcement.
 
 Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,

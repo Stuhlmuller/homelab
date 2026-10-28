@@ -1,0 +1,319 @@
+diff --git a/client/octops/commands/initcmd/cmd.go b/client/octops/commands/initcmd/cmd.go
+index 96d0fd8..471499b 100644
+--- a/client/octops/commands/initcmd/cmd.go
++++ b/client/octops/commands/initcmd/cmd.go
+@@ -43,6 +43,7 @@ type args struct {
+ 	KubeContext        string
+ 	BootstrapFile      string
+ 	Version            string
++	GenesisImage       string
+ }
+ 
+ var examples = `
+@@ -70,6 +71,7 @@ func init() {
+ 	Cmd.PersistentFlags().StringVar(&cmdArgs.KubeConfigFilePath, "kubeconfig", "", "kubeconfig file path (Default path is $HOME/.kube/config)")
+ 	Cmd.PersistentFlags().StringVar(&cmdArgs.KubeContext, "kubecontext", "", "kubecontext")
+ 	Cmd.PersistentFlags().StringVar(&cmdArgs.Version, "version", "", "The desired Octelium Cluster version to be installed")
++	Cmd.PersistentFlags().StringVar(&cmdArgs.GenesisImage, "genesis-image", "", "Harbor Genesis image pinned by SHA-256 digest")
+ 
+ 	Cmd.PersistentFlags().StringVarP(&cmdArgs.BootstrapFile, "bootstrap", "", "",
+ 		`Bootstrap configuration file path`,
+@@ -189,6 +191,7 @@ func doCmd(cmd *cobra.Command, args []string) error {
+ 		Bootstrap:         bootstrap,
+ 		K8sC:              k8sC,
+ 		Version:           cmdArgs.Version,
++		GenesisImage:      cmdArgs.GenesisImage,
+ 		AuthTokenSavePath: os.Getenv("OCTELIUM_AUTH_TOKEN_SAVE_PATH"),
+ 	})
+ }
+diff --git a/client/octops/commands/install/cmd.go b/client/octops/commands/install/cmd.go
+index 1d5bf69..0ed945f 100644
+--- a/client/octops/commands/install/cmd.go
++++ b/client/octops/commands/install/cmd.go
+@@ -39,10 +39,14 @@ type Opts struct {
+ 	Region            *corev1.Region
+ 	Bootstrap         *cbootstrapv1.Config
+ 	Version           string
++	GenesisImage      string
+ 	AuthTokenSavePath string
+ }
+ 
+ func DoInstall(ctx context.Context, o *Opts) error {
++	if err := ValidatePinnedGenesisImage(o.GenesisImage); err != nil {
++		return err
++	}
+ 
+ 	if err := setClusterResources(ctx, o); err != nil {
+ 		return err
+diff --git a/client/octops/commands/install/genesis.go b/client/octops/commands/install/genesis.go
+index dfba3ed..9f90ec1 100644
+--- a/client/octops/commands/install/genesis.go
++++ b/client/octops/commands/install/genesis.go
+@@ -18,6 +18,7 @@ import (
+ 	"context"
+ 	"fmt"
+ 	"os"
++	"regexp"
+ 
+ 	"github.com/octelium/octelium/client/common/cliutils"
+ 	"github.com/octelium/octelium/pkg/utils/ldflags"
+@@ -34,6 +35,23 @@ import (
+ 
+ const genesisNS = "default"
+ 
++var pinnedGenesisImage = regexp.MustCompile(`^harbor\.stinkyboi\.com/homelab/homelab-octelium-genesis@sha256:[0-9a-f]{64}$`)
++
++func ValidatePinnedGenesisImage(image string) error {
++	if !pinnedGenesisImage.MatchString(image) {
++		return errors.New("Octelium Genesis requires a digest-pinned Harbor image")
++	}
++	return nil
++}
++
++func PinGenesisImage(job *batchv1.Job, image string) error {
++	if err := ValidatePinnedGenesisImage(image); err != nil {
++		return err
++	}
++	job.Spec.Template.Spec.Containers[0].Image = image
++	return nil
++}
++
+ func getGenesisRole() *rbacv1.ClusterRole {
+ 	return &rbacv1.ClusterRole{
+ 		ObjectMeta: metav1.ObjectMeta{
+@@ -210,6 +228,10 @@ func GetGenesisPodSpec(domain, cmd, version, svcAccount, pkg, rgn string) corev1
+ func createGenesis(ctx context.Context, o *Opts) error {
+ 
+ 	c := o.K8sC
++	job := getGenesisJob(o.ClusterDomain, o.Region.Metadata.Name, o.Version)
++	if err := PinGenesisImage(job, o.GenesisImage); err != nil {
++		return err
++	}
+ 	if err := cleanupResources(ctx, o.K8sC, o.ClusterDomain, o.Region.Metadata.Name, o.Version); err != nil {
+ 		return errors.Errorf("Could not clean up components: %+v", err)
+ 	}
+@@ -229,8 +251,7 @@ func createGenesis(ctx context.Context, o *Opts) error {
+ 		return err
+ 	}
+ 
+-	_, err = c.BatchV1().Jobs(genesisNS).Create(ctx,
+-		getGenesisJob(o.ClusterDomain, o.Region.Metadata.Name, o.Version), metav1.CreateOptions{})
++	_, err = c.BatchV1().Jobs(genesisNS).Create(ctx, job, metav1.CreateOptions{})
+ 	if err != nil {
+ 		return err
+ 	}
+diff --git a/client/octops/commands/install/genesis_test.go b/client/octops/commands/install/genesis_test.go
+index 2129e12..44c9e22 100644
+--- a/client/octops/commands/install/genesis_test.go
++++ b/client/octops/commands/install/genesis_test.go
+@@ -16,14 +16,43 @@ package install
+ 
+ import (
+ 	"context"
++	"strings"
+ 	"testing"
+ 
+ 	"github.com/octelium/octelium/apis/main/corev1"
+ 	"github.com/octelium/octelium/apis/main/metav1"
+ 	"github.com/octelium/octelium/cluster/common/tests"
+ 	"github.com/stretchr/testify/assert"
++	"k8s.io/client-go/kubernetes/fake"
+ )
+ 
++var testGenesisImage = "harbor.stinkyboi.com/homelab/homelab-octelium-genesis@sha256:" + strings.Repeat("a", 64)
++
++func TestInstallRejectsMissingImageBeforeWrites(t *testing.T) {
++	client := fake.NewSimpleClientset()
++	if err := DoInstall(context.Background(), &Opts{K8sC: client}); err == nil {
++		t.Fatal("accepted installation without a digest-pinned Genesis image")
++	}
++	if len(client.Actions()) != 0 {
++		t.Fatal("invalid image caused Kubernetes writes")
++	}
++}
++
++func TestPinGenesisImage(t *testing.T) {
++	job := getGenesisJob("example.com", "default", "v0.35.0")
++	for _, image := range []string{"", "ghcr.io/octelium/octelium-genesis:0.35.0", "harbor.stinkyboi.com/homelab/homelab-octelium-genesis@sha256:abc"} {
++		if err := PinGenesisImage(job, image); err == nil {
++			t.Fatalf("accepted unpinned Genesis image %q", image)
++		}
++	}
++	if err := PinGenesisImage(job, testGenesisImage); err != nil {
++		t.Fatal(err)
++	}
++	if got := job.Spec.Template.Spec.Containers[0].Image; got != testGenesisImage {
++		t.Fatalf("Genesis Job uses %q", got)
++	}
++}
++
+ func TestCreateGenesis(t *testing.T) {
+ 
+ 	ctx := context.Background()
+@@ -37,6 +66,7 @@ func TestCreateGenesis(t *testing.T) {
+ 
+ 	err = createGenesis(ctx, &Opts{
+ 		ClusterDomain: "example.com",
++		GenesisImage:  testGenesisImage,
+ 		K8sC:          fakeC.K8sC,
+ 		Region: &corev1.Region{
+ 			Metadata: &metav1.Metadata{
+@@ -48,6 +78,7 @@ func TestCreateGenesis(t *testing.T) {
+ 
+ 	err = createGenesis(ctx, &Opts{
+ 		ClusterDomain: "example.com",
++		GenesisImage:  testGenesisImage,
+ 		K8sC:          fakeC.K8sC,
+ 		Region: &corev1.Region{
+ 			Metadata: &metav1.Metadata{
+diff --git a/client/octops/commands/upgrade/cmd.go b/client/octops/commands/upgrade/cmd.go
+index 2c30c65..b28bdea 100644
+--- a/client/octops/commands/upgrade/cmd.go
++++ b/client/octops/commands/upgrade/cmd.go
+@@ -37,6 +37,7 @@ type args struct {
+ 	KubeConfigFilePath string
+ 	KubeContext        string
+ 	Version            string
++	GenesisImage       string
+ 	CheckMode          bool
+ 	Wait               bool
+ }
+@@ -67,6 +68,7 @@ func init() {
+ 		"Check whether there is a more recent latest release without actually upgrading the Cluster")
+ 	Cmd.PersistentFlags().StringVar(&cmdArgs.Version, "version", "",
+ 		`The desired Octelium Cluster version. By default it is set to "latest"`)
++	Cmd.PersistentFlags().StringVar(&cmdArgs.GenesisImage, "genesis-image", "", "Harbor Genesis image pinned by SHA-256 digest")
+ 
+ 	Cmd.PersistentFlags().BoolVar(&cmdArgs.Wait, "wait", false,
+ 		"Wait until the upgrade is complete")
+@@ -97,7 +99,7 @@ func doCmd(cmd *cobra.Command, args []string) error {
+ 		return err
+ 	}
+ 
+-	if err := createGenesis(ctx, k8sC, clusterDomain, cmdArgs.Version); err != nil {
++	if err := createGenesis(ctx, k8sC, clusterDomain, cmdArgs.Version, cmdArgs.GenesisImage); err != nil {
+ 		return err
+ 	}
+ 
+diff --git a/client/octops/commands/upgrade/genesis.go b/client/octops/commands/upgrade/genesis.go
+index f9205e8..332bd88 100644
+--- a/client/octops/commands/upgrade/genesis.go
++++ b/client/octops/commands/upgrade/genesis.go
+@@ -27,10 +27,14 @@ import (
+ )
+ 
+ func createGenesis(ctx context.Context, c kubernetes.Interface, domain,
+-	version string) error {
++	version, genesisImage string) error {
++	job := getGenesisJob(domain, version)
++	if err := install.PinGenesisImage(job, genesisImage); err != nil {
++		return err
++	}
+ 
+ 	_, err := c.BatchV1().Jobs("octelium").Create(ctx,
+-		getGenesisJob(domain, version),
++		job,
+ 		metav1.CreateOptions{})
+ 	if err != nil {
+ 		return err
+diff --git a/client/octops/commands/upgrade/genesis_test.go b/client/octops/commands/upgrade/genesis_test.go
+new file mode 100644
+index 0000000..aabd49f
+--- /dev/null
++++ b/client/octops/commands/upgrade/genesis_test.go
+@@ -0,0 +1,32 @@
++// Copyright Octelium Labs, LLC. All rights reserved.
++// Licensed under the Apache License, Version 2.0.
++
++package upgrade
++
++import (
++	"context"
++	"strings"
++	"testing"
++
++	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
++	"k8s.io/client-go/kubernetes/fake"
++)
++
++func TestUpgradeGenesisUsesPinnedImage(t *testing.T) {
++	client := fake.NewSimpleClientset()
++	if err := createGenesis(context.Background(), client, "example.com", "v0.35.0", ""); err == nil {
++		t.Fatal("accepted upgrade without a pinned Genesis digest")
++	}
++	jobs, err := client.BatchV1().Jobs("octelium").List(context.Background(), metav1.ListOptions{})
++	if err != nil || len(jobs.Items) != 0 {
++		t.Fatalf("invalid image created an upgrade Job: %v, %d", err, len(jobs.Items))
++	}
++	image := "harbor.stinkyboi.com/homelab/homelab-octelium-genesis@sha256:" + strings.Repeat("b", 64)
++	if err := createGenesis(context.Background(), client, "example.com", "v0.35.0", image); err != nil {
++		t.Fatal(err)
++	}
++	jobs, err = client.BatchV1().Jobs("octelium").List(context.Background(), metav1.ListOptions{})
++	if err != nil || len(jobs.Items) != 1 || jobs.Items[0].Spec.Template.Spec.Containers[0].Image != image {
++		t.Fatalf("upgrade did not create one digest-pinned Genesis Job: %v, %d", err, len(jobs.Items))
++	}
++}
+diff --git a/cluster/genesis/genesis/components/common.go b/cluster/genesis/genesis/components/common.go
+index 02943de..13068c3 100644
+--- a/cluster/genesis/genesis/components/common.go
++++ b/cluster/genesis/genesis/components/common.go
+@@ -282,33 +282,7 @@ func getServiceUpstreamNetworkPolicy() *networkingv1.NetworkPolicy {
+ 					},
+ 				},
+ 			},
+-			Egress: []networkingv1.NetworkPolicyEgressRule{
+-				{
+-					To: []networkingv1.NetworkPolicyPeer{
+-						{
+-							IPBlock: &networkingv1.IPBlock{
+-								CIDR: "0.0.0.0/0",
+-								Except: []string{
+-									"10.0.0.0/8",
+-									"172.16.0.0/12",
+-									"192.168.0.0/16",
+-									"100.64.0.0/10",
+-									"169.254.0.0/16",
+-								},
+-							},
+-						},
+-
+-						{
+-							IPBlock: &networkingv1.IPBlock{
+-								CIDR: "::/0",
+-								Except: []string{
+-									"fc00::/7",
+-								},
+-							},
+-						},
+-					},
+-				},
+-			},
++			Egress: []networkingv1.NetworkPolicyEgressRule{},
+ 
+ 			PolicyTypes: []networkingv1.PolicyType{
+ 				networkingv1.PolicyTypeIngress,
+diff --git a/cluster/genesis/genesis/components/common_test.go b/cluster/genesis/genesis/components/common_test.go
+index 87e9e15..cd8b04a 100644
+--- a/cluster/genesis/genesis/components/common_test.go
++++ b/cluster/genesis/genesis/components/common_test.go
+@@ -24,8 +24,19 @@ import (
+ 	"github.com/octelium/octelium/apis/main/metav1"
+ 	"github.com/octelium/octelium/cluster/common/tests"
+ 	"github.com/stretchr/testify/assert"
++	networkingv1 "k8s.io/api/networking/v1"
+ )
+ 
++func TestServiceUpstreamPolicyDeniesEgress(t *testing.T) {
++	policy := getServiceUpstreamNetworkPolicy()
++	if len(policy.Spec.Egress) != 0 {
++		t.Fatalf("service upstream must have no generated egress, got %d rules", len(policy.Spec.Egress))
++	}
++	if len(policy.Spec.PolicyTypes) != 2 || policy.Spec.PolicyTypes[1] != networkingv1.PolicyTypeEgress {
++		t.Fatal("service upstream policy must isolate egress")
++	}
++}
++
+ func TestComponents(t *testing.T) {
+ 
+ 	ctx := context.Background()
