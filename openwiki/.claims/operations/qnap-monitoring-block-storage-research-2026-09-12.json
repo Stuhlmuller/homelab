@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:40eb576919e11654f3556e08471676196daa91fe328ebd4eb39596ec0cadef01",
+  "claims": [
+    {
+      "id": "claim_62343050be9e48d9afbfbfb7b672a2b9",
+      "statement": "The declared Prometheus and Alertmanager claim templates still use nfs-default with separate 50Gi and 10Gi requests, so the researched QNAP iSCSI/CSI path has not replaced their storage source.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/values.yaml#L76-L84",
+          "version": "repo-lines-v1:sha256:1bf540d0e882de87ac3f23803b3336a465aaaa58e8cde9044b1ec725d9cdb5da:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDZjMWJjYTRhOGQ4MDgwN2NhNTZiNWIyYzc2OTNiYWUzNmI5YWQ5YzBiNWMwNzAwNDhmZmFhM2NmNjcwOGVkZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzFkNDYzODZiYzYyODNkM2MwOGI0ODUxNjYwMzQ4MDYwMTE0NmEyOTYwOTcxYTAzMzlhM2Q0MmY5YzQ2M2JhMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzdjYjlmMDdiYTNjNjcxMTQ4ZTE4NDk3Y2RjNDMwMjQzYjI5OTQxYjg3Y2JkZThiMTU5ODU3YjlmMmYxNjQ0ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQxZDRlY2EzNDZkYzJiOWMyOWVlMDA4Y2M1YTJhNDAzZGY2NmUzMmU2NGU1NmI5MjgyYzc5Y2ZiYjRiNTEzMyJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/values.yaml#L98-L106",
+          "version": "repo-lines-v1:sha256:173193ac35b95204c1f4e78aed8bfb134bf8fa925228ebd6b72177b69a84215a:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWQxZDRjYWNjYzhiNGFkNzE4YWIwNjFlN2Y5YTkzMTg4OTU0ZGVjZTg0Y2M0YzEzMjc1ZTIzNmYzYjdkOWNiMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDcwMzA1MzQ4NjRiZTAxY2YxNmU5YzcyZWI4YTA2MjhlMjkxNDQ1NGZkYjYxNWZjNTE2NTZlN2RlYTBlY2Q4OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTEzYmYyNmIwOWE0Y2I5YjU5MGRjNGUyMDVmYjllZGNlNjM0OTBhNGM3NzE1MjU2YWQ3YmI1N2NiZjIzMGYwZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

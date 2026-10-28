@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9ea66d2acaa60370558ad8a6f1dbe64b422b135281cfb726e1774d1345fde21c",
+  "claims": [
+    {
+      "id": "claim_9014c2259db242869dde870d53814431",
+      "statement": "The macOS Talos etcd scheduler reports UTC check time and classifies failed snapshot or launchctl commands by fixed operation, exit code or timeout, while stating prior backups were retained and omitting command arguments and captured output.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/talos-etcd-schedule.py#L233-L247",
+          "version": "repo-lines-v1:sha256:536bacae4ab17e08a5a0671d5ded3166bcafee0bee4d59f7018d4185f8465d6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiZjUxMDM2MTA1ZTY5ZjRhMWI5ZjIwN2NlZmJmZWFhNjViYzMwYWUxNzVjNjQ3NTkzZDhlMWViNDc5MjE3OTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxYTVlMjNkZWM4NzU3YjQ2NjI2NzM4OGQxZTA4OTE1MGZjNDdmMDA1ODQwNDM1ZGJlY2IxNTc3ZTRkMTU1MGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxMGRhZjI1ZThjYTZhMDU0Yzc1OWJkODliZjZiNTRhZDgyZmZkMzI0ZjQzZjNkZGI5ZWUwMzM1ZjRlMWY2OWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3MjIzMTA2ZmQ4NzQyYjcwZWEyMzNmOWRjMzU5ZjRiMDJiYmIwNjliNzI4M2VlZjc2MjQ5OTUxNmJkN2I5YzgifQ"
+        },
+        {
+          "resource": "repo://scripts/talos-etcd-schedule.py#L460-L476",
+          "version": "repo-lines-v1:sha256:4211c220de01b20f044731a2db545968fd36f4986a9f3e97e7e4d1be5f3a8814:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5MDIyNDQ3N2ExZWU3MjJkNmI5ZGZlZGU5N2E0NjhiNWQ5ZDI3ZDUzNjFkMGMzZjBhZTM5NmUyOGY3MWZiYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3YzU5NWQ5NzkyYTQ0ZjZlOTIzZGExMmNmNjI0ZDJlY2Q1MTZhMTgzYzFlZDI5ZTBjMTk3OTgzMzQ3M2IwMmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MWQzOTI4NGUzNWYxZjMzMGNiMzNjNTRlNzIwZGE3ZDgxNjA5MWJhODAwNDE3YzRjN2Q5NGYwYWE5Y2UwYWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5ZTI1M2E3ODE0YTY1NDdhNTBlNTRkNmQ5MjM3NmY5ZmVlZDNhMDFkZTA4NDM5MDg0MjAzMmIwNjRiNThjOTEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

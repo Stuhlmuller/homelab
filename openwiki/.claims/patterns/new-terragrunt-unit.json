@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4b9cc0bab36683420b866d482f40583dc9ce3fc7f2a87673b9e395f446626e72",
+  "claims": [
+    {
+      "id": "claim_9f81612d3be4490cbf7b52a022e705cb",
+      "statement": "The platform-storage Application unit uses the shared live/argocd-app catalog template, an app-local argocd path, no_dot_terragrunt_stack, and values from adjacent stack.hcl.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/homelab/us-west-2/apps/platform-storage/terragrunt.stack.hcl#L1-L7",
+          "version": "repo-lines-v1:sha256:666f2c04317c637ae00a0268296f6556c3b2518a9e986485c2efb764ec585a8c:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYThkYTJmYjJlZDA2ZDM0NGFhOGRmYWVlZDg4ODZkZTU5ZDE5OTlmYmQ5ZTNiMmIzMGQyYjlhNmUzMmEzODZmYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

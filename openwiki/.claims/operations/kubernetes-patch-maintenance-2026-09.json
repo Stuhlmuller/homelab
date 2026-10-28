@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:04ca8569909592ff989d28e52d9669c3edde6e0165d12337742083ace1d7ec57",
+  "claims": [
+    {
+      "id": "claim_1e9892f513234f31ae38e6a92302d630",
+      "statement": "The repository's Kubernetes 1.34.11 Talos control-plane patch pins kubelet, API server, controller manager, scheduler, and kube-proxy images, while the worker patch pins only kubelet; both are labeled bootstrap/offline-render targets and reserve live ordering for talosctl upgrade-k8s.",
+      "evidence": [
+        {
+          "resource": "repo://.talos/patches/kubernetes-1.34.11.yaml#L1-L15",
+          "version": "repo-lines-v1:sha256:3a6a021b9ede104de7967433fd14c22c2e3ee1872dc63aa03b4c80a3cce2423c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNlNDFkMTI3YzFjZmVjN2NkMmJmYTQ1ZGE1YmIzMTc2MTE1MGI5Y2RmY2Q1ODdmMjgzMTRlMTZhNjg4OWI1NTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwMTM5NzY3ZWM1ZDU0NmY3NDY4ZDgzYzUwMjMyOGU0OTg5OGE1NmExOTFiZDlmMGU1YjEzNDg4MzFjZTlhNWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://.talos/patches/worker-kubernetes-1.34.11.yaml#L1-L6",
+          "version": "repo-lines-v1:sha256:0f275ddba07895297c6c093585929814848d3dabb85844be1fa6e8f9da443037:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWJhNzc4ZTZiOWU1NTQ5OWEzYTliNDA4MGVlNjdmYmI4YjFmZjM1MWNlYzBmYzE5ODE2ZGE1MTFmNTkwYTNlNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTI2NjJmNzBlNTdkNWU2YjAwOGZhMTc5OTBjNzAxNzIxY2VlMzRkYjEyNTEyNWY2MzUzNTJhODdmMjY4YjRhZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

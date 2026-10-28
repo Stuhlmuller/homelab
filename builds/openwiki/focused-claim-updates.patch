@@ -1,0 +1,579 @@
+diff --git a/dist/agent/wiki-finalizer.d.ts b/dist/agent/wiki-finalizer.d.ts
+index bac78c0..4adcfa2 100644
+--- a/dist/agent/wiki-finalizer.d.ts
++++ b/dist/agent/wiki-finalizer.d.ts
+@@ -73,6 +73,8 @@ export interface WikiLifecycleOptions {
+  * Inputs required to prepare a wiki before authoring.
+  */
+ export interface WikiPreparationOptions extends WikiLifecycleOptions {
++    /** Pages whose preflight Claim issues must remain untouched before planning. */
++    excludedPages?: ReadonlySet<string>;
+     /**
+      * Optional telemetry wrapper for individual preparation operations.
+      *
+@@ -110,6 +112,8 @@ export declare function deserializePreparedWikiState(persisted: PersistedPrepare
+  * Inputs required to finalize a prepared wiki after authoring.
+  */
+ export interface WikiFinalizerOptions extends WikiLifecycleOptions {
++    /** Deferred Claim pages that finalization must read without rewriting. */
++    excludedPages?: ReadonlySet<string>;
+     /**
+      * Localized labels used by generated indexes.
+      *
+@@ -157,11 +161,11 @@ export interface WikiFinalizerOptions extends WikiLifecycleOptions {
+  * @param options - Preparation inputs for the active wiki.
+  * @returns Run-scoped state required by finalization.
+  */
+-export declare function prepareWikiForAuthoring({ backend, outputMode, conceptType, runOperation, }: WikiPreparationOptions): Promise<PreparedWikiState>;
++export declare function prepareWikiForAuthoring({ backend, outputMode, conceptType, excludedPages, runOperation, }: WikiPreparationOptions): Promise<PreparedWikiState>;
+ /**
+  * Runs deterministic post-authoring validation, index synchronization, and
+  * generated-provenance reconciliation in internal-agent order.
+  *
+  * @param options - Finalization inputs and matching preparation state.
+  */
+-export declare function finalizeWikiArtifacts({ backend, outputMode, labels, conceptType, prepared, at, producerActor, producerActorsByPage, claimSources, runOperation, }: WikiFinalizerOptions): Promise<void>;
++export declare function finalizeWikiArtifacts({ backend, outputMode, labels, conceptType, prepared, at, producerActor, producerActorsByPage, claimSources, excludedPages, runOperation, }: WikiFinalizerOptions): Promise<void>;
+diff --git a/dist/agent/wiki-finalizer.js b/dist/agent/wiki-finalizer.js
+index 83b012e..982f650 100644
+--- a/dist/agent/wiki-finalizer.js
++++ b/dist/agent/wiki-finalizer.js
+@@ -27,8 +27,8 @@ export function deserializePreparedWikiState(persisted) {
+  * @param options - Preparation inputs for the active wiki.
+  * @returns Run-scoped state required by finalization.
+  */
+-export async function prepareWikiForAuthoring({ backend, outputMode, conceptType = ENGLISH_CONCEPT_TYPE, runOperation = runWikiOperation, }) {
+-    await runOperation("migrate", () => migrateWikiToOkf(backend, outputMode, conceptType));
++export async function prepareWikiForAuthoring({ backend, outputMode, conceptType = ENGLISH_CONCEPT_TYPE, excludedPages = new Set(), runOperation = runWikiOperation, }) {
++    await runOperation("migrate", () => migrateWikiToOkf(backend, outputMode, conceptType, excludedPages));
+     return {
+         generatedProvenance: await runOperation("provenance_snapshot", () => snapshotGeneratedProvenance(backend, outputMode)),
+     };
+@@ -39,17 +39,17 @@ export async function prepareWikiForAuthoring({ backend, outputMode, conceptType
+  *
+  * @param options - Finalization inputs and matching preparation state.
+  */
+-export async function finalizeWikiArtifacts({ backend, outputMode, labels = ENGLISH_INDEX_LABELS, conceptType = ENGLISH_CONCEPT_TYPE, prepared, at, producerActor = OPENWIKI_PRODUCER_ACTOR, producerActorsByPage, claimSources, runOperation = runWikiOperation, }) {
++export async function finalizeWikiArtifacts({ backend, outputMode, labels = ENGLISH_INDEX_LABELS, conceptType = ENGLISH_CONCEPT_TYPE, prepared, at, producerActor = OPENWIKI_PRODUCER_ACTOR, producerActorsByPage, claimSources, excludedPages = new Set(), runOperation = runWikiOperation, }) {
+     if (producerActor.trim().length === 0) {
+         throw new Error("Wiki finalization requires a non-empty producer actor.");
+     }
+     await runOperation("mermaid", () => validateWikiMermaid(backend, outputMode));
+-    await runOperation("index_sync", () => synchronizeWikiIndexes(backend, outputMode, labels, conceptType));
++    await runOperation("index_sync", () => synchronizeWikiIndexes(backend, outputMode, labels, conceptType, excludedPages));
+     await runOperation("link_validation", () => validateWikiInternalLinks(backend, outputMode));
+     if (claimSources) {
+         await runOperation("claims_sources", () => synchronizeClaimSources(backend, outputMode, claimSources));
+     }
+-    await runOperation("generated_provenance", () => finalizeGeneratedProvenance(backend, outputMode, prepared.generatedProvenance, at, producerActor, producerActorsByPage));
++    await runOperation("generated_provenance", () => finalizeGeneratedProvenance(backend, outputMode, prepared.generatedProvenance, at, producerActor, producerActorsByPage, excludedPages));
+ }
+ /**
+  * Executes a lifecycle operation directly when no caller wrapper is supplied.
+diff --git a/dist/claims/brains/code/runtime.js b/dist/claims/brains/code/runtime.js
+index 4231aec..de42fc4 100644
+--- a/dist/claims/brains/code/runtime.js
++++ b/dist/claims/brains/code/runtime.js
+@@ -64,7 +64,7 @@ function buildClaimsRuntime(session, issues, store, onWarning) {
+                 at,
+             }, excludedPages);
+             const warnings = [...result.warnings];
+-            warnings.push(...(await finalizeVerificationProjection(session, store, result.verificationByPage)));
++            warnings.push(...(await finalizeVerificationProjection(session, store, result.verificationByPage, excludedPages)));
+             for (const warning of warnings)
+                 onWarning(warning);
+             if (warnings.length > 0) {
+@@ -81,8 +81,8 @@ function buildClaimsRuntime(session, issues, store, onWarning) {
+  * @param verificationByPage - Durable verification eligibility by factual page.
+  * @returns Page-version synchronization warnings requiring run failure.
+  */
+-async function finalizeVerificationProjection(session, store, verificationByPage) {
+-    const originals = await synchronizeClaimsVerification(store, verificationByPage);
++async function finalizeVerificationProjection(session, store, verificationByPage, excludedPages) {
++    const originals = await synchronizeClaimsVerification(store, verificationByPage, excludedPages);
+     // Deterministic finalizers may have changed code-owned frontmatter without
+     // changing the verification event. Refresh every represented page so Claims
+     // sidecars always describe the final Markdown bytes.
+diff --git a/dist/claims/brains/code/store.d.ts b/dist/claims/brains/code/store.d.ts
+index ab0a684..38bd661 100644
+--- a/dist/claims/brains/code/store.d.ts
++++ b/dist/claims/brains/code/store.d.ts
+@@ -55,6 +55,8 @@ export declare class ClaimsStore {
+      * @returns Algorithm-prefixed page version.
+      */
+     hashPage(page: string): Promise<string>;
++    /** Hashes exact persisted Claim sidecar bytes through the containment gate. */
++    hashSidecar(page: string): Promise<string>;
+     /**
+      * Reads one generated Markdown page through the Claims path-containment gate.
+      *
+diff --git a/dist/claims/brains/code/store.js b/dist/claims/brains/code/store.js
+index a1c3664..b1c6ae5 100644
+--- a/dist/claims/brains/code/store.js
++++ b/dist/claims/brains/code/store.js
+@@ -183,6 +183,20 @@ export class ClaimsStore {
+             throw new ClaimsPersistenceError(`Unable to hash ${normalizeWikiPagePath(page)}: ${toErrorMessage(error)}`);
+         }
+     }
++    /** Hashes exact persisted Claim sidecar bytes through the containment gate. */
++    async hashSidecar(page) {
++        const sidecar = this.sidecarPath(page);
++        const physicalSidecar = await this.resolveExistingRegularFile(sidecar);
++        if (!physicalSidecar) {
++            throw new ClaimsPageMissingError(`Unable to hash Claims for ${normalizeWikiPagePath(page)}: file does not exist`);
++        }
++        try {
++            return `sha256:${createHash("sha256").update(await readFile(physicalSidecar)).digest("hex")}`;
++        }
++        catch (error) {
++            throw new ClaimsPersistenceError(`Unable to hash Claims for ${normalizeWikiPagePath(page)}: ${toErrorMessage(error)}`);
++        }
++    }
+     /**
+      * Reads one generated Markdown page through the Claims path-containment gate.
+      *
+diff --git a/dist/generation/page-jobs.d.ts b/dist/generation/page-jobs.d.ts
+index 0061ef6..d2cff0e 100644
+--- a/dist/generation/page-jobs.d.ts
++++ b/dist/generation/page-jobs.d.ts
+@@ -79,6 +79,8 @@ export interface ProposedRepositoryPlan {
+      * Existing generated pages explicitly selected for deletion.
+      */
+     deletePages?: string[];
++    /** Leave unrelated stale Claim pages for a later full update. */
++    deferUnplannedClaimIssues?: boolean;
+ }
+ /**
+  * Validates and deterministically normalizes the persisted ordered page queue.
+diff --git a/dist/generation/page-jobs.js b/dist/generation/page-jobs.js
+index 3afd7c2..02dbf26 100644
+--- a/dist/generation/page-jobs.js
++++ b/dist/generation/page-jobs.js
+@@ -38,10 +38,14 @@ export function createRepositoryPlan(mode, proposed, claimIssues, requiredRewrit
+     }
+     if (mode === "update") {
+         const deleted = new Set(deletePages);
+-        addRequiredClaimIssueJobs(pages, pagePaths, deleted, claimIssues);
++        if (!proposed.deferUnplannedClaimIssues)
++            addRequiredClaimIssueJobs(pages, pagePaths, deleted, claimIssues);
+         addRequiredRewriteJobs(pages, pagePaths, deleted, requiredRewritePages);
+         addRequiredBaselineRecoveryJobs(pages, pagePaths, deleted, requiredBaselineRecoveryPages);
+     }
++    else if (proposed.deferUnplannedClaimIssues) {
++        throw new RepositoryRunError("invalid_input", "Init cannot defer Claim issues.");
++    }
+     // Quickstart is the synthesis/navigation page; generate it after domain pages.
+     pages.sort((left, right) => {
+         const leftQuickstart = left.path === "/openwiki/quickstart.md";
+@@ -50,7 +54,11 @@ export function createRepositoryPlan(mode, proposed, claimIssues, requiredRewrit
+             return leftQuickstart ? 1 : -1;
+         return compareCodeUnits(left.path, right.path);
+     });
+-    return { pages, deletePages };
++    const deferredClaimPages = proposed.deferUnplannedClaimIssues
++        ? uniqueSorted(claimIssues.map((issue) => normalizeWikiPagePath(issue.page)))
++            .filter((page) => !pagePaths.has(page) && !deletePages.includes(page))
++        : [];
++    return { pages, deletePages, deferredClaimPages };
+ }
+ /** Requires an explicit complete Claim review before an old baseline is replaced. */
+ function addRequiredBaselineRecoveryJobs(pages, pagePaths, deletePages, requiredPages) {
+diff --git a/dist/generation/repository-run.js b/dist/generation/repository-run.js
+index 28a01df..2891499 100644
+--- a/dist/generation/repository-run.js
++++ b/dist/generation/repository-run.js
+@@ -164,7 +164,10 @@ export async function beginRepositoryRun(input) {
+                 sourceFingerprint: source.fingerprint,
+                 ...(source.visibleSourceFingerprint ? { visibleSourceFingerprint: source.visibleSourceFingerprint } : {}),
+                 ...(source.gitHead ? { gitHead: source.gitHead } : {}),
+-            }, new Set(requiredBaselineRecoveryPages));
++            }, new Set([
++                ...requiredBaselineRecoveryPages,
++                ...claimsRuntime.issues.map(({ page }) => page),
++            ]));
+         }
+         const seededManifest = input.mode === "update"
+             ? await readRepositoryPageManifest(input.root)
+@@ -210,11 +213,27 @@ export async function beginRepositoryRun(input) {
+             }
+         }
+         const beforeContentSnapshot = await createOpenWikiContentSnapshot(input.root, "repository");
++        const issuePages = new Set(claimsRuntime.issues.map(({ page }) => page));
++        const issuePageSnapshots = await Promise.all(initialPages
++            .filter((page) => issuePages.has(page))
++            .map(async (page) => ({ page, markdown: await claimsStore.readMarkdown(page) })));
+         const preparedWiki = await prepareWikiForAuthoring({
+             backend,
+             outputMode: "repository",
+             conceptType: resolveConceptTypeLabel(language),
++            excludedPages: issuePages,
+         });
++        // Claim issue pages can later be deferred. Preparation must never
++        // change their bytes before the host has selected a plan.
++        const changedIssuePages = [];
++        for (const snapshot of issuePageSnapshots) {
++            if (await claimsStore.readMarkdown(snapshot.page) !== snapshot.markdown) {
++                changedIssuePages.push(snapshot.page);
++            }
++        }
++        if (changedIssuePages.length > 0) {
++            throw new RepositoryRunError("invalid_state", "A Claim issue page changed during preparation; inspect its current bytes before retrying.");
++        }
+         const requiredRewritePages = input.mode === "update" && languageChanged ? initialPages : [];
+         const state = {
+             schemaVersion: 1,
+@@ -342,6 +361,7 @@ async function resumeRepositoryRun(input, state) {
+             delete nextState.targetGitHead;
+         }
+         delete nextState.plan;
++        delete nextState.deferredPageDigests;
+     }
+     else {
+         if (!nextState.visibleSourceFingerprint && currentSource.visibleSourceFingerprint) {
+@@ -639,10 +659,12 @@ export async function submitRepositoryPlan(run, input) {
+         throw new RepositoryRunError("invalid_state", "OpenWiki plan can only be submitted during planning.");
+     }
+     const plan = createRepositoryPlan(run.state.mode, input, run.claimsRuntime.issues, run.state.requiredRewritePages, run.state.requiredBaselineRecoveryPages);
++    const deferredPageDigests = await captureDeferredPageDigests(run, plan.deferredClaimPages ?? []);
+     const nextState = {
+         ...run.state,
+         phase: "generating",
+         plan,
++        deferredPageDigests,
+     };
+     await writeRepositoryRunState(run.root, nextState);
+     run.state = nextState;
+@@ -666,6 +688,7 @@ function samePlanIgnoringJobIds(left, right) {
+             instructions,
+         })),
+         deletePages: [...plan.deletePages],
++        deferredClaimPages: [...(plan.deferredClaimPages ?? [])],
+     });
+     return JSON.stringify(simplify(left)) === JSON.stringify(simplify(right));
+ }
+@@ -906,9 +929,12 @@ export async function submitRepositoryPage(run, input) {
+             // worker may be mid-edit on them, so projecting a verification stamp
+             // into their front matter or rehashing their sidecar here would record
+             // transient bytes. Their own submit (or finish) finalizes them.
+-            const otherPendingPages = new Set(latestPlan.pages
+-                .filter(({ id, status }) => status === "pending" && id !== current.id)
+-                .map(({ path }) => path));
++            const otherPendingPages = new Set([
++                ...latestPlan.pages
++                    .filter(({ id, status }) => status === "pending" && id !== current.id)
++                    .map(({ path }) => path),
++                ...(latestPlan.deferredClaimPages ?? []),
++            ]);
+             await run.claimsRuntime.finalize(run.state.startedAt, otherPendingPages);
+             await assertPageClaimsDurable(run, current.path);
+         }
+@@ -990,6 +1016,48 @@ async function assertPageClaimsDurable(run, page, retryOperation = "submit_page"
+         }
+     }
+ }
++/** Capture exact page, sidecar and manifest identities before deferral. */
++async function captureDeferredPageDigests(run, pages) {
++    if (pages.length === 0)
++        return [];
++    const store = new ClaimsStore(run.root);
++    const manifest = await readRepositoryPageManifest(run.root);
++    const digests = [];
++    for (const page of pages) {
++        await assertPageClaimsDurable(run, page, "focused update");
++        const markdownHash = await store.hashPage(page);
++        const entry = manifest.pages[page];
++        if (!entry || entry.pageVersion !== markdownHash) {
++            throw new RepositoryRunError("invalid_state", `Deferred Claim page ${page} has no matching durable coverage; include it in the plan.`);
++        }
++        digests.push({
++            page,
++            markdownHash,
++            sidecarHash: await store.hashSidecar(page),
++            manifestEntryJson: JSON.stringify(entry),
++        });
++    }
++    return digests;
++}
++/** Fail closed if any deferred page or its provenance changed during the run. */
++async function assertDeferredPagesDurable(run, pages) {
++    const snapshots = run.state.deferredPageDigests ?? [];
++    if (pages.length !== snapshots.length ||
++        pages.some((page, index) => snapshots[index]?.page !== page)) {
++        throw new RepositoryRunError("invalid_state", "Deferred Claim page identities are missing or changed; replan the update.");
++    }
++    if (pages.length === 0)
++        return;
++    const store = new ClaimsStore(run.root);
++    const manifest = await readRepositoryPageManifest(run.root);
++    for (const snapshot of snapshots) {
++        if (await store.hashPage(snapshot.page) !== snapshot.markdownHash ||
++            await store.hashSidecar(snapshot.page) !== snapshot.sidecarHash ||
++            JSON.stringify(manifest.pages[snapshot.page]) !== snapshot.manifestEntryJson) {
++            throw new RepositoryRunError("invalid_state", `Deferred Claim page ${snapshot.page} changed; inspect it and replan before finishing.`);
++        }
++    }
++}
+ /**
+  * Narrows one frontmatter value to a complete verification event.
+  *
+@@ -1113,7 +1181,11 @@ export async function finishRepositoryRun(run, options = {}) {
+         skippedJobs.some((job) => snapshotsByJobId.get(job.id)?.path !== job.path)) {
+         throw new RepositoryRunError("invalid_state", "Every skipped OpenWiki page job requires its original page snapshot before finish.");
+     }
+-    const skippedPages = new Set(skippedJobs.map(({ path }) => path));
++    const skippedPages = new Set([
++        ...skippedJobs.map(({ path }) => path),
++        ...(plan.deferredClaimPages ?? []),
++    ]);
++    await assertDeferredPagesDurable(run, plan.deferredClaimPages ?? []);
+     const sourceChangedBeforeFinish = await hasRepositorySourceChanged(run);
+     if (run.state.requiredBaselineRecoveryPages.length > 0 &&
+         sourceChangedBeforeFinish) {
+@@ -1152,9 +1224,15 @@ export async function finishRepositoryRun(run, options = {}) {
+         at: run.state.startedAt,
+         producerActor: run.state.actor.producerActor,
+         producerActorsByPage,
+-        claimSources: run.claimsRuntime.session.getEvidenceResourcesByPage(),
++        claimSources: new Map(
++            [...run.claimsRuntime.session.getEvidenceResourcesByPage()].filter(
++                ([page]) => !skippedPages.has(page),
++            ),
++        ),
++        excludedPages: skippedPages,
+         runOperation: captureFrontmatterReport,
+     });
++    await assertDeferredPagesDurable(run, plan.deferredClaimPages ?? []);
+     for (const snapshot of snapshots) {
+         await restoreRepositoryPageMarkdown(run, snapshot);
+     }
+@@ -1174,6 +1252,7 @@ export async function finishRepositoryRun(run, options = {}) {
+         .map((page) => normalizeWikiPagePath(page))
+         .filter((page) => !regeneratedPages.has(page) && !skippedPages.has(page)));
+     await replaceRepositoryPageManifest(run.root, currentPages, getRepositoryRunSourceCheckpoint(run.state), skippedPages, preserveSourcePages);
++    await assertDeferredPagesDurable(run, plan.deferredClaimPages ?? []);
+     await assertRecoveredPagesComplete(run);
+     const sourceChanged = sourceChangedBeforeFinish || (await hasRepositorySourceChanged(run));
+     if (run.state.requiredBaselineRecoveryPages.length > 0 && sourceChanged) {
+diff --git a/dist/generation/run-state.d.ts b/dist/generation/run-state.d.ts
+index da7e9b0..8b95d81 100644
+--- a/dist/generation/run-state.d.ts
++++ b/dist/generation/run-state.d.ts
+@@ -88,6 +88,8 @@ export interface RepositoryRunPlan {
+      * Existing pages explicitly selected for deletion by an update.
+      */
+     deletePages: string[];
++    /** Stale Claim pages intentionally left for a later full update. */
++    deferredClaimPages?: string[];
+ }
+ /**
+  * Complete JSON checkpoint required to resume repository generation.
+@@ -171,6 +173,13 @@ export interface RepositoryRunState {
+      * Serialized preparation state required for deterministic finalization.
+      */
+     preparedWiki: PersistedPreparedWikiState;
++    /** Exact original bytes and coverage identities of deferred Claim pages. */
++    deferredPageDigests?: Array<{
++        page: string;
++        markdownHash: string;
++        sidecarHash: string;
++        manifestEntryJson: string;
++    }>;
+     /**
+      * Active normalized plan, absent while planning or after invalidation.
+      */
+diff --git a/dist/generation/run-state.js b/dist/generation/run-state.js
+index d63fbbb..e2aac77 100644
+--- a/dist/generation/run-state.js
++++ b/dist/generation/run-state.js
+@@ -81,10 +81,17 @@ const RepositoryRunStateSchema = z
+     wikiGoal: z.string().optional(),
+     beforeContentSnapshot: z.string(),
+     preparedWiki: PersistedPreparedWikiStateSchema,
++    deferredPageDigests: z.array(z.object({
++        page: z.string().min(1),
++        markdownHash: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
++        sidecarHash: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
++        manifestEntryJson: z.string().min(1),
++    }).strict()).optional(),
+     plan: z
+         .object({
+         pages: z.array(PageJobSchema),
+         deletePages: z.array(z.string()),
++        deferredClaimPages: z.array(z.string()).optional(),
+     })
+         .strict()
+         .optional(),
+diff --git a/dist/integrations/core/protocol.d.ts b/dist/integrations/core/protocol.d.ts
+index 7d5df29..1cdeced 100644
+--- a/dist/integrations/core/protocol.d.ts
++++ b/dist/integrations/core/protocol.d.ts
+@@ -79,6 +79,7 @@ export declare const SubmitPlanInput: z.ZodObject<{
+         instructions: z.ZodOptional<z.ZodArray<z.ZodString>>;
+     }, z.core.$strict>>;
+     deletePages: z.ZodOptional<z.ZodArray<z.ZodString>>;
++    deferUnplannedClaimIssues: z.ZodOptional<z.ZodBoolean>;
+ }, z.core.$strict>;
+ /**
+  * Strict MCP schema for `openwiki_next_page`.
+diff --git a/dist/integrations/core/protocol.js b/dist/integrations/core/protocol.js
+index 7194ba6..d98a740 100644
+--- a/dist/integrations/core/protocol.js
++++ b/dist/integrations/core/protocol.js
+@@ -51,6 +51,7 @@ export const SubmitPlanInput = z
+     // planned deletions. Init validation still requires quickstart downstream.
+     pages: z.array(PlanPageInput),
+     deletePages: z.array(CanonicalString).optional(),
++    deferUnplannedClaimIssues: z.boolean().optional(),
+ })
+     .strict();
+ /**
+diff --git a/dist/integrations/core/session-manager.js b/dist/integrations/core/session-manager.js
+index 8dc3c89..8c39b14 100644
+--- a/dist/integrations/core/session-manager.js
++++ b/dist/integrations/core/session-manager.js
+@@ -97,6 +97,7 @@ export class HostSessionManager {
+             return submitRepositoryPlan(run, {
+                 pages: input.pages,
+                 deletePages: input.deletePages,
++                deferUnplannedClaimIssues: input.deferUnplannedClaimIssues,
+             });
+         });
+     }
+diff --git a/dist/okf/claims-verification.d.ts b/dist/okf/claims-verification.d.ts
+index ea45eed..47d1548 100644
+--- a/dist/okf/claims-verification.d.ts
++++ b/dist/okf/claims-verification.d.ts
+@@ -23,7 +23,7 @@ export type ClaimsVerificationChanges = ReadonlyMap<string, string>;
+  * @param verificationByPage - Active durable event per Claims page.
+  * @returns Original Markdown for changed pages, used for transactional rollback.
+  */
+-export declare function synchronizeClaimsVerification(store: ClaimsVerificationPageStore, verificationByPage: ReadonlyMap<string, ClaimsVerificationEvent | null>): Promise<ClaimsVerificationChanges>;
++export declare function synchronizeClaimsVerification(store: ClaimsVerificationPageStore, verificationByPage: ReadonlyMap<string, ClaimsVerificationEvent | null>, excludedPages?: ReadonlySet<string>): Promise<ClaimsVerificationChanges>;
+ /**
+  * Restores exact Markdown for pages whose sidecar hash refresh failed.
+  */
+diff --git a/dist/okf/claims-verification.js b/dist/okf/claims-verification.js
+index e56bcaa..5497484 100644
+--- a/dist/okf/claims-verification.js
++++ b/dist/okf/claims-verification.js
+@@ -12,9 +12,11 @@ import { parseFrontmatterFields, repairOkfFrontmatter, setOkfVerified, } from ".
+  * @param verificationByPage - Active durable event per Claims page.
+  * @returns Original Markdown for changed pages, used for transactional rollback.
+  */
+-export async function synchronizeClaimsVerification(store, verificationByPage) {
++export async function synchronizeClaimsVerification(store, verificationByPage, excludedPages = new Set()) {
+     const changes = new Map();
+     for (const page of await store.discoverPages()) {
++        if (excludedPages.has(page))
++            continue;
+         const content = await store.readMarkdown(page);
+         const repaired = repairOkfFrontmatter(content, page).content;
+         const current = readVerificationEvents(repaired);
+diff --git a/dist/okf/generated-provenance.d.ts b/dist/okf/generated-provenance.d.ts
+index a16781c..fc7b778 100644
+--- a/dist/okf/generated-provenance.d.ts
++++ b/dist/okf/generated-provenance.d.ts
+@@ -95,5 +95,5 @@ export declare function snapshotGeneratedProvenance(backend: BackendProtocolV2,
+  * @param producerActor - Producer responsible for body changes in this run.
+  * @param producerActorsByPage - Page-specific producer overrides.
+  */
+-export declare function finalizeGeneratedProvenance(backend: BackendProtocolV2, outputMode: OpenWikiOutputMode, initialConcepts: GeneratedProvenanceSnapshot, now: string, producerActor: string, producerActorsByPage?: ReadonlyMap<string, string>): Promise<void>;
++export declare function finalizeGeneratedProvenance(backend: BackendProtocolV2, outputMode: OpenWikiOutputMode, initialConcepts: GeneratedProvenanceSnapshot, now: string, producerActor: string, producerActorsByPage?: ReadonlyMap<string, string>, excludedPages?: ReadonlySet<string>): Promise<void>;
+ export {};
+diff --git a/dist/okf/generated-provenance.js b/dist/okf/generated-provenance.js
+index a3889cc..7bd7be4 100644
+--- a/dist/okf/generated-provenance.js
++++ b/dist/okf/generated-provenance.js
+@@ -65,7 +65,7 @@ export async function snapshotGeneratedProvenance(backend, outputMode) {
+  * @param producerActor - Producer responsible for body changes in this run.
+  * @param producerActorsByPage - Page-specific producer overrides.
+  */
+-export async function finalizeGeneratedProvenance(backend, outputMode, initialConcepts, now, producerActor, producerActorsByPage) {
++export async function finalizeGeneratedProvenance(backend, outputMode, initialConcepts, now, producerActor, producerActorsByPage, excludedPages = new Set()) {
+     if (producerActor.trim().length === 0) {
+         throw new Error("Generated provenance requires a non-empty producer actor.");
+     }
+@@ -75,6 +75,8 @@ export async function finalizeGeneratedProvenance(backend, outputMode, initialCo
+         }
+     }
+     for (const page of await listWikiConceptPaths(backend, outputMode)) {
++        if (excludedPages.has(page))
++            continue;
+         let content;
+         try {
+             content = await readRequiredContent(backend, page);
+diff --git a/dist/okf/index-sync.d.ts b/dist/okf/index-sync.d.ts
+index 7320c67..cef4cdf 100644
+--- a/dist/okf/index-sync.d.ts
++++ b/dist/okf/index-sync.d.ts
+@@ -25,7 +25,7 @@ export interface WikiFrontmatterReport {
+ /**
+  * Synchronizes the index for every directory in the configured wiki.
+  */
+-export declare function synchronizeWikiIndexes(backend: BackendProtocolV2, outputMode: OpenWikiOutputMode, labels?: IndexLabels, conceptType?: string): Promise<WikiFrontmatterReport>;
++export declare function synchronizeWikiIndexes(backend: BackendProtocolV2, outputMode: OpenWikiOutputMode, labels?: IndexLabels, conceptType?: string, excludedPages?: ReadonlySet<string>): Promise<WikiFrontmatterReport>;
+ /**
+  * Normalizes every concept page's OKF front matter across the wiki, without
+  * touching indexes.
+@@ -35,7 +35,7 @@ export declare function synchronizeWikiIndexes(backend: BackendProtocolV2, outpu
+  * `openwiki_generated`) up front, letting the agent read clean metadata and
+  * enrich flagged pages in the same run.
+  */
+-export declare function migrateWikiToOkf(backend: BackendProtocolV2, outputMode: OpenWikiOutputMode, conceptType?: string): Promise<void>;
++export declare function migrateWikiToOkf(backend: BackendProtocolV2, outputMode: OpenWikiOutputMode, conceptType?: string, excludedPages?: ReadonlySet<string>): Promise<void>;
+ /**
+  * Lists the non-structural Markdown concepts currently present in the wiki.
+  *
+diff --git a/dist/okf/index-sync.js b/dist/okf/index-sync.js
+index 7d377b2..35d5019 100644
+--- a/dist/okf/index-sync.js
++++ b/dist/okf/index-sync.js
+@@ -7,14 +7,14 @@ const EXCLUDED_FILES = new Set([INDEX_FILE, LOG_FILE, "INSTRUCTIONS.md"]);
+ /**
+  * Synchronizes the index for every directory in the configured wiki.
+  */
+-export async function synchronizeWikiIndexes(backend, outputMode, labels = ENGLISH_INDEX_LABELS, conceptType = ENGLISH_CONCEPT_TYPE) {
++export async function synchronizeWikiIndexes(backend, outputMode, labels = ENGLISH_INDEX_LABELS, conceptType = ENGLISH_CONCEPT_TYPE, excludedPages = new Set()) {
+     const root = outputMode === "local-wiki" ? "/" : "/openwiki";
+     const report = {
+         generatedPages: [],
+         missingDescriptionPages: [],
+     };
+     for (const directory of await collectDirectories(backend, root, true)) {
+-        await synchronizeDirectory(backend, directory, root, labels, conceptType, report);
++        await synchronizeDirectory(backend, directory, root, labels, conceptType, report, excludedPages);
+     }
+     return report;
+ }
+@@ -27,8 +27,10 @@ export async function synchronizeWikiIndexes(backend, outputMode, labels = ENGLI
+  * `openwiki_generated`) up front, letting the agent read clean metadata and
+  * enrich flagged pages in the same run.
+  */
+-export async function migrateWikiToOkf(backend, outputMode, conceptType = ENGLISH_CONCEPT_TYPE) {
++export async function migrateWikiToOkf(backend, outputMode, conceptType = ENGLISH_CONCEPT_TYPE, excludedPages = new Set()) {
+     for (const filePath of await listWikiConceptPaths(backend, outputMode)) {
++        if (excludedPages.has(filePath))
++            continue;
+         await normalizeConceptFile(backend, filePath, conceptType);
+     }
+ }
+@@ -91,7 +93,7 @@ async function collectDirectories(backend, directoryPath, allowMissing = false)
+ /**
+  * Builds and writes one directory's index when its content has changed.
+  */
+-async function synchronizeDirectory(backend, directory, root, labels, conceptType, report) {
++async function synchronizeDirectory(backend, directory, root, labels, conceptType, report, excludedPages) {
+     const files = [];
+     const directories = [];
+     for (const entry of directory.entries) {
+@@ -107,7 +109,9 @@ async function synchronizeDirectory(backend, directory, root, labels, conceptTyp
+             continue;
+         }
+         const filePath = path.posix.join(directory.path, name);
+-        const content = await normalizeConceptFile(backend, filePath, conceptType);
++        const content = excludedPages.has(filePath)
++            ? await readText(backend, filePath)
++            : await normalizeConceptFile(backend, filePath, conceptType);
+         const metadata = readIndexMetadata(content);
+         files.push({
+             description: metadata.description,

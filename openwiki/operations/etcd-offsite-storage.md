@@ -3,13 +3,25 @@ type: operation
 title: "Etcd Offsite Storage"
 description: "Operator-owned S3 bucket for etcd backups, version retention, encryption, destruction guards, and separate publication gates."
 tags: ["operations", "storage", "backup"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-4633d49da7487825a3fe7544
+    resource: repo://IaC/etcd-backup-storage.hcl
+  - id: openwiki-source-cdcc93f57849ad6d5ea83f0d
+    resource: repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf
+  - id: openwiki-source-9df99d87da02ba6376f946a7
+    resource: repo://IaC/terragrunt-catalog/units/operator/etcd-backup-storage/terragrunt.hcl
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 ---
 
 # Etcd Offsite Storage
 
-The [operator runbook](../../docs/etcd-offsite-storage.md) declares the dedicated
-`homelab-etcd-backups-716182248480-us-east-1` S3 bucket through
-`IaC/homelab/us-west-2/operator/etcd-backup-storage`. The reusable
+The [operator runbook](../../docs/etcd-offsite-storage.md) covers the dedicated
+`homelab-etcd-backups-716182248480-us-east-1` S3 bucket. The catalog generates
+`IaC/homelab/us-west-2/operator/etcd-backup-storage` from the committed
+[destination](../../IaC/etcd-backup-storage.hcl). The reusable
 [module](../../IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf) owns its complete bucket
 configuration; the [catalog unit](../../IaC/terragrunt-catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
 pins the account and region and shares the normal encrypted state backend.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:45fe7bf909c3c603b82a81b2519aa3d5309f2177adb1e01ee8de050a24f09e5a",
+  "pageVersion": "sha256:0e04b75576e88864d1c9e8f7111848fb5267d21367ec08bf95ca2a62632d11f0",
   "claims": [
     {
       "id": "claim_90504df127484cc1967cce8cc178ca30",
@@ -18,17 +18,17 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:c1a6d83362bf236d8173ccd78c972ed27761c0f8d8e4f5f7282b14ee95d51efd"
+          "version": "repo-file-v1:sha256:535ba8d5d5ed7d1cc0b3bd0d9b21553ff719b95aa740ad6b849916239e208829"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:2eddbcd22dcd5540dd472c933585834dcb80b9bfb7b08fc505ea03d4ac8a2eb5"
+          "version": "repo-file-v1:sha256:7fb83fae5af30412d3fba031d434565be317fe4712c65f4ef4bd60ddf33219d8"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T04:28:23.381Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

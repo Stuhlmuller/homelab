@@ -3,6 +3,15 @@ type: operation
 title: "Existing-Node Control-Plane Feasibility"
 description: "Read-only assessment of three-member control-plane conversion, worker memory and disk limits, quorum, and workload capacity."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-af63fdd013f0947f257aa501
+    resource: repo://.talos/patches/controlplane-kubernetes-api-san.yaml
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -10,6 +19,8 @@ tags: ["homelab", "navigation"]
 # Existing-Node Control-Plane Feasibility
 
 Status: read-only assessment; no role, disk, endpoint, or workload change.
+Capacity and health figures below are the September 12 snapshot, not current
+admission evidence.
 `acer`, `zimaboard-0`, and `zimaboard-1` could form a three-member control
 plane without new hardware. This could tolerate one control-plane failure
 after a failover API endpoint is established. It would add no workload
@@ -103,7 +114,9 @@ until kubelet stopped. See [Cluster Topology](../architecture/cluster-topology.m
 `acer` corruption finding in [Continuous Improvement](continuous-improvement.md). Quorum
 does not prove storage integrity or replace verified independent backups.
 
-The current Kubernetes endpoint is `acer`'s physical IP. Adding members alone
+The repository's canonical Kubernetes endpoint remains `acer`'s physical IP,
+`10.1.0.199`; the maintenance configuration pins that endpoint, issuer and
+API certificate SAN. Adding members alone
 leaves that client endpoint dependent on `acer`. A declared [VIP][vip] or
 load-balancer path must accompany any availability claim; VIP requires a
 reserved unused address on the shared L2 network and healthy etcd. Keep direct

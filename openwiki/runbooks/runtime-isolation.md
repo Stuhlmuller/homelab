@@ -60,10 +60,10 @@ sources:
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Runtime Isolation
@@ -122,33 +122,23 @@ broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
 limited capacity, system DaemonSets, and a live backup workload.
 
-The reviewed 214-image catalog passed protected publication and authenticated
-Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+Historical protected [214-image run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+and [215-image run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
+passed publication and authenticated Harbor pulls. Recheck the strict
+publication bundle against current `main` before accepting T004.
 Before activation, finish policy owner/render review, then admit an isolated
 tainted canary with measured capacity and local-storage
-placement. No existing worker currently qualifies without risking unrelated
-stateful workloads. The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
-found about 3,398 MiB unreserved on the best worker against an initial
-4,096 MiB Enterprise reservation, 6,308 MiB actual memory use, and 9.74 GB
-root-filesystem space free. Every worker's `/var` uses eMMC and has less than
-10.74 GB for a new 10 GiB local claim under the existing `/var/lib` pattern;
-`acer` has only 1,802 MiB unreserved against the 2,304 MiB database and gateway
-minimum. Unrelated Pods remain on every worker. A `NoSchedule` taint would
-leave those Pods in place;
-it is not an isolation proof.
-The 2026-10-23 recheck still finds `acer` 503 MiB short of the minimum request
-despite enough local disk, while the best worker has only 9.00 GiB filesystem
-free. Relocating its 38 non-DaemonSet Pods needs about 3,342 MiB against
-2,036 MiB combined free on the other nodes. Crossplane's separate 512 MiB
-source/live replica drift does not create an isolated canary. Enforcement
-remains disabled. The 08:18 UTC recheck on `main` `bcc08cb` separates this
-2,304 MiB declared floor from the [initial 4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
-for API, worker, database, Envoy and gateway: if co-located on `acer`, that
-budget exceeds unreserved requests by about 2,295 MiB before startup or peak
-margin. `zimaboard-2` has four unrelated Pods, including single-replica
-`Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
-requests after the enforcer and fixtures, without measured peak or continuity
-proof. T022 still has no admitted canary or storage placement.
+placement. No worker has an accepted current canary placement; later
+outage-affected rescheduling invalidates earlier request arithmetic as admission
+evidence. The [2026-10-27 post-recovery recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+found 2,895 MiB unreserved on `acer`, 1,201 MiB short of the initial 4,096 MiB
+Enterprise request budget. Other workers lacked a safe memory and local-storage
+split; `zimaboard-2` still hosted unrelated Pods. Pausing Langfuse and
+Dispatcharr would fit request arithmetic but lacks complete independent
+whole-service restores, measured peak/restart margin, and isolated-canary
+proof. No service was paused or canary admitted. A `NoSchedule` taint leaves
+existing Pods in place and is not an isolation proof. T022, T027 and T035
+remain open; enforcement remains disabled.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only

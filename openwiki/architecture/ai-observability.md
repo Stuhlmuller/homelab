@@ -4,26 +4,37 @@ title: "AI observability"
 description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attribution, and per-caller telemetry acceptance gates."
 tags: ["homelab", "navigation"]
 sources:
-  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
-    resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-869eecdfa0764960d85fe017
+    resource: repo://clusters/homelab/apps/n8n/migration-v1.values.yaml
+  - id: openwiki-source-2d8396976c82220440798f1a
+    resource: repo://clusters/homelab/apps/n8n/README.md
   - id: openwiki-source-cce2f8f33e3b3639655d2b33
     resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-16c66cdb690dec6706cb1de1
     resource: repo://scripts/ci/n8n-ai-migration-check.py
-generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
+generated: { by: "codex", at: "2026-10-28T01:30:28.100Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-28T01:30:28.100Z
 ---
 
 # AI observability
 
+This page records the legacy LiteLLM caller rollout and its dated acceptance
+evidence. The standalone OpenClaw gateway and scheduled writer are now stopped
+by GitOps while their state remains retained for recovery. The planned stock
+Enterprise agent is separate: it will use its own OpenRouter credential and
+will not inherit this gateway, its Langfuse traces, or the old agent history.
+See the [Enterprise rollout](../../docs/openclaw-enterprise-rollout.md).
+
 Langfuse is the operator UI for prompts, outputs, errors and token usage.
-LiteLLM is the sole in-cluster inference gateway: it accepts only
-`openrouter/free`, authenticates named callers with dedicated keys and emits
-trusted application attribution to Langfuse. The provider credential is mounted
-only by LiteLLM from `/homelab/litellm/openai-api-key`; it is an OpenRouter
-credential despite the legacy SSM parameter name.
+LiteLLM remains the in-cluster inference gateway for its declared callers: it
+accepts only `openrouter/free`, authenticates named callers with dedicated keys
+and emits trusted application attribution to Langfuse. The provider credential
+is mounted only by LiteLLM from `/homelab/litellm/openai-api-key`; it is an
+OpenRouter credential despite the legacy SSM parameter name.
 
 The gateway rejects request-supplied callback, tracing and credential overrides
 before LiteLLM parses them. Langfuse credentials are file-mounted, never passed
@@ -107,7 +118,7 @@ defaults match the External Secrets API to prevent persistent Argo drift.
 
 | Caller | Gateway identity | State |
 | --- | --- | --- |
-| OpenClaw | `/homelab/openclaw/litellm-app-token` | Routed to `openrouter/free`; Codex subscription runtime removed. |
+| Legacy OpenClaw (stopped) | `/homelab/openclaw/litellm-app-token` | Retained recovery credential; the former gateway used `openrouter/free` after Codex subscription runtime removal. |
 | Multica | `/homelab/multica/litellm-token` | OpenCode uses the internal gateway; Codex runtime removed. |
 | NOFX | `/homelab/nofx/litellm-token` | Backend uses the internal gateway through a file-backed route and dedicated read-only token mount; its pinned image includes patch `0013`. |
 | n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. A staged, one-time CLI Job retains the exact inventoried model-node guards and n8n's required one-element export arrays. The gateway key never enters workflow JSON. |
@@ -264,10 +275,10 @@ database inventory of all ten workflows confirmed the active model node uses
 still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
 A newer read-only PostgreSQL inventory on 2026-10-24 found all three exact
 target nodes using `openrouter/free` and `litellm-managed`; the same one active
-and two inactive flags remain. The old init migration still runs at each app
-startup, so the availability change removes it. The guarded, versioned Job is
+and two inactive flags remain. The availability change removed the old init
+migration from app startup. The guarded, versioned Job is
 staged in [migration-v1.values.yaml](../../clusters/homelab/apps/n8n/migration-v1.values.yaml)
-but is absent from the active Helm valueFiles: this PR generates no migration
+but is absent from the active Helm valueFiles: GitOps generates no migration
 Job and makes no workflow DB edits. A separate activation PR is needed only for
 a restored or stale database. It must first establish a verified paired off-NAS
 PostgreSQL dump and n8n PVC backup/restore path; the current database notes
@@ -367,7 +378,7 @@ and `openai/gpt-5.5` / `openai/gpt-6-astra` model and allowlist entries.
 The default used LiteLLM, but full subscription retirement was not established.
 The former bootstrap merged providers/models and appended to existing
 allowlists, so omitting old entries from the managed patch did not remove them.
-Current `assistant/bootstrap.py` replaces provider/model maps, restricts each
+The retained `assistant/bootstrap.py` replaces provider/model maps, restricts each
 configured agent to the gateway model, disables OpenAI/Codex plugins, and removes
 subscription auth-profile references. Original config and private credential
 files are retained, not revoked or erased. Offline regression covers legacy

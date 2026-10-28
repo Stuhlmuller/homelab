@@ -3,6 +3,12 @@ type: operation
 title: "Etcd Scheduler Diagnostics"
 description: "macOS etcd scheduler timestamps, failed-command classifications, retained backups, and limits of historical failure diagnosis."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-1c4181906ef8d14167adf792
+    resource: repo://scripts/talos-etcd-schedule.py
 ---
 
 # Etcd Scheduler Diagnostics

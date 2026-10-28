@@ -1,0 +1,722 @@
+diff --git a/dist/agent/types.d.ts b/dist/agent/types.d.ts
+index 025b585..1c76155 100644
+--- a/dist/agent/types.d.ts
++++ b/dist/agent/types.d.ts
+@@ -104,6 +104,7 @@ export type UpdateMetadata = {
+     updatedAt: string;
+     command: OpenWikiCommand;
+     gitHead?: string;
++    visibleSourceFingerprint?: string;
+     model: string;
+     status?: UpdateRunStatus;
+     language?: string;
+diff --git a/dist/agent/utils.d.ts b/dist/agent/utils.d.ts
+index 026476a..b523c6a 100644
+--- a/dist/agent/utils.d.ts
++++ b/dist/agent/utils.d.ts
+@@ -68,6 +68,10 @@ export interface RepositorySourceSnapshot {
+      * Versioned hash of every model-visible source input.
+      */
+     fingerprint: string;
++    /** Observed path digests; dirty/untracked values stay in memory only. */
++    visibleSourcePaths: Record<string, string>;
++    /** Source identity emitted only when visible bytes/modes match HEAD. */
++    visibleSourceFingerprint?: string;
+     /**
+      * Git commit observed by the fingerprint operation.
+      *
+@@ -75,6 +79,8 @@ export interface RepositorySourceSnapshot {
+      */
+     gitHead?: string;
+ }
++export declare function fingerprintRepositoryVisibleSourcePaths(paths: Record<string, string>): string;
++export declare function getRepositoryCoverageChangedPaths(cwd: string, openWikiIgnore: OpenWikiIgnore, baselinePaths: Record<string, string>, baselineFingerprint: string): Promise<string[]>;
+ /**
+  * Hashes model-visible source input and returns its observed Git commit.
+  *
+diff --git a/dist/agent/utils.js b/dist/agent/utils.js
+index 839f301..2f7f730 100644
+--- a/dist/agent/utils.js
++++ b/dist/agent/utils.js
+@@ -89,7 +89,14 @@ export async function getUpdateNoopStatus(cwd, openWikiIgnore = new OpenWikiIgno
+     if (meaningfulStatus.length > 0) {
+         return { shouldSkip: false, reason: "worktree has changes" };
+     }
+-    if (head !== lastUpdate.gitHead) {
++    if (lastUpdate.visibleSourceFingerprint) {
++        const currentSource = await createRepositorySourceSnapshot(cwd, openWikiIgnore);
++        if (!currentSource.visibleSourceFingerprint ||
++            currentSource.visibleSourceFingerprint !== lastUpdate.visibleSourceFingerprint) {
++            return { shouldSkip: false, reason: "visible source changed" };
++        }
++    }
++    else if (head !== lastUpdate.gitHead) {
+         const committedPaths = await getChangedPathsSinceLastUpdate(cwd, lastUpdate.gitHead);
+         if (committedPaths.length === 0 ||
+             committedPaths.some((changedPath) => !isOpenWikiPath(changedPath) && !openWikiIgnore.ignores(changedPath))) {
+@@ -124,6 +131,9 @@ export async function writeLastUpdateMetadata(command, cwd, modelId, outputMode
+         updatedAt: new Date().toISOString(),
+         command,
+         gitHead,
++        ...(outputMode === "repository" && status === "complete"
++            ? { visibleSourceFingerprint: (await createRepositorySourceSnapshot(cwd, await OpenWikiIgnore.load(cwd))).visibleSourceFingerprint }
++            : {}),
+         model: modelId,
+         status,
+         ...(language ? { language } : {}),
+@@ -155,6 +165,8 @@ export async function createOpenWikiContentSnapshot(cwd, outputMode = "repositor
+     return hash.digest("hex");
+ }
+ const SOURCE_FINGERPRINT_VERSION = "openwiki-source-fingerprint-v1";
++const VISIBLE_SOURCE_FINGERPRINT_VERSION = "openwiki-visible-source-v1";
++const VISIBLE_SOURCE_ENTRY_VERSION = "openwiki-visible-source-entry-v1";
+ const SOURCE_FINGERPRINT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+ /**
+  * Hashes model-visible source input and returns its observed Git commit.
+@@ -208,15 +220,115 @@ export async function createRepositorySourceSnapshot(cwd, openWikiIgnore) {
+         updateFingerprintField(hash, "status-code", entry.code);
+         updateFingerprintField(hash, "status-path", entry.path);
+     }
++    const visibleSourcePaths = Object.create(null);
++    const committedEntries = new Map();
++    const objectHashAlgorithm = /^[a-f0-9]{40}$/u.test(head)
++        ? "sha1"
++        : /^[a-f0-9]{64}$/u.test(head) ? "sha256" : undefined;
++    let publishable = statusEntries.length === 0 && objectHashAlgorithm !== undefined;
+     for (const sourcePath of visiblePaths) {
+-        await updateFingerprintSourceEntry(hash, cwd, sourcePath, trackedPaths.has(sourcePath));
++        const entryHash = createHash("sha256");
++        updateFingerprintField(entryHash, "format", VISIBLE_SOURCE_ENTRY_VERSION);
++        const committedEntry = await updateFingerprintSourceEntry(mirrorFingerprintHashes(hash, entryHash), cwd, sourcePath, trackedPaths.has(sourcePath), objectHashAlgorithm);
++        if (!trackedPaths.has(sourcePath) || !committedEntry)
++            publishable = false;
++        if (committedEntry)
++            committedEntries.set(sourcePath, committedEntry);
++        visibleSourcePaths[sourcePath] = `sha256:${entryHash.digest("hex")}`;
+     }
+     const fingerprint = `sha256:${hash.digest("hex")}`;
++    const [headAfter, statusAfter] = await Promise.all([
++        readFingerprintHead(cwd),
++        runFingerprintGit(cwd, ["status", "--porcelain=v1", "--untracked-files=all", "--no-renames", "-z"]),
++    ]);
++    const stableStatus = parseFingerprintStatus(statusAfter)
++        .filter(({ path: candidatePath }) => isFingerprintSourcePath(candidatePath, openWikiIgnore))
++        .sort((left, right) => compareFingerprintStrings(`${left.code}\u0000${left.path}`, `${right.code}\u0000${right.path}`));
++    if (headAfter !== head || JSON.stringify(stableStatus) !== JSON.stringify(statusEntries)) {
++        throw new Error("Repository source changed while fingerprinting.");
++    }
++    // A clean porcelain status is insufficient: assume-unchanged, sparse, and
++    // worktree filters can hide bytes that differ from committed source. Only
++    // publish path digests after every observed file matches HEAD exactly.
++    if (publishable) {
++        const treeEntries = new Map();
++        for (const record of splitFingerprintNul(await runFingerprintGit(cwd, ["ls-tree", "-r", "-z", head]))) {
++            const separator = record.indexOf("\t");
++            const match = separator < 0 ? null : /^(100644|100755|120000|160000) (blob|commit) ([a-f0-9]{40}|[a-f0-9]{64})$/u.exec(record.slice(0, separator));
++            if (!match)
++                throw new Error("Git returned malformed committed source tree output.");
++            treeEntries.set(assertFingerprintGitPath(record.slice(separator + 1)), { mode: match[1], oid: match[3] });
++        }
++        const expectedPaths = [...treeEntries.keys()]
++            .filter((sourcePath) => isFingerprintSourcePath(sourcePath, openWikiIgnore));
++        if (expectedPaths.length !== committedEntries.size)
++            publishable = false;
++        for (const [sourcePath, observed] of committedEntries) {
++            const saved = treeEntries.get(sourcePath);
++            if (saved?.mode !== observed.mode || saved?.oid !== observed.oid) {
++                publishable = false;
++                break;
++            }
++        }
++    }
++    if (await readFingerprintHead(cwd) !== head) {
++        throw new Error("Repository HEAD changed while fingerprinting.");
++    }
++    const visibleSourceFingerprint = publishable
++        ? fingerprintRepositoryVisibleSourcePaths(visibleSourcePaths)
++        : undefined;
+     return {
+         fingerprint,
++        visibleSourcePaths,
++        ...(visibleSourceFingerprint ? { visibleSourceFingerprint } : {}),
+         ...(head.startsWith("unborn:") ? {} : { gitHead: head }),
+     };
+ }
++/** Fan out one verified file read to the run and per-path digests. */
++function mirrorFingerprintHashes(first, second) {
++    return { update(value, encoding) {
++        first.update(value, encoding);
++        second.update(value, encoding);
++    } };
++}
++/** Recomputes a saved map's content address before using it as coverage. */
++export function fingerprintRepositoryVisibleSourcePaths(paths) {
++    const hash = createHash("sha256");
++    updateFingerprintField(hash, "format", VISIBLE_SOURCE_FINGERPRINT_VERSION);
++    for (const sourcePath of Object.keys(paths).sort(compareFingerprintStrings)) {
++        const digest = paths[sourcePath];
++        if (!/^sha256:[a-f0-9]{64}$/u.test(digest) || !sourcePath || sourcePath.includes("\u0000") ||
++            sourcePath === ".." || sourcePath.startsWith("../") ||
++            sourcePath === ".git" || sourcePath.startsWith(".git/") ||
++            path.posix.isAbsolute(sourcePath) ||
++            path.posix.normalize(sourcePath) !== sourcePath ||
++            sourcePath === OPEN_WIKI_DIR || sourcePath.startsWith(`${OPEN_WIKI_DIR}/`)) {
++            throw new Error("OpenWiki visible source snapshot is malformed.");
++        }
++        updateFingerprintField(hash, "path", sourcePath);
++        updateFingerprintField(hash, "entry", digest);
++    }
++    return `sha256:${hash.digest("hex")}`;
++}
++/** Compares model-visible bytes and strict dirty/untracked Git results. */
++export async function getRepositoryCoverageChangedPaths(cwd, openWikiIgnore, baselinePaths, baselineFingerprint) {
++    if (fingerprintRepositoryVisibleSourcePaths(baselinePaths) !== baselineFingerprint) {
++        throw new Error("OpenWiki visible source snapshot does not match its fingerprint.");
++    }
++    const currentPaths = (await createRepositorySourceSnapshot(cwd, openWikiIgnore)).visibleSourcePaths;
++    const changed = new Set();
++    for (const sourcePath of new Set([...Object.keys(baselinePaths), ...Object.keys(currentPaths)])) {
++        const before = Object.hasOwn(baselinePaths, sourcePath) ? baselinePaths[sourcePath] : undefined;
++        const after = Object.hasOwn(currentPaths, sourcePath) ? currentPaths[sourcePath] : undefined;
++        if (before !== after)
++            changed.add(sourcePath);
++    }
++    // Require the independent Git query to succeed, but the source-map diff is
++    // authoritative: a dirty or untracked path already present in the baseline
++    // with identical bytes is not a changed source path.
++    await getRepositoryChangedPaths(cwd, openWikiIgnore, undefined, true);
++    return [...changed].sort(compareFingerprintStrings);
++}
+ /**
+  * Hashes every model-visible repository source input for one semantic plan.
+  *
+@@ -333,7 +445,7 @@ async function fingerprintEntryExists(filePath) {
+ /**
+  * Adds one source entry's path, kind, mode, and raw content to the hash.
+  */
+-async function updateFingerprintSourceEntry(hash, cwd, sourcePath, tracked) {
++async function updateFingerprintSourceEntry(hash, cwd, sourcePath, tracked, objectHashAlgorithm) {
+     const absoluteRoot = path.resolve(cwd);
+     const absolutePath = path.resolve(absoluteRoot, sourcePath);
+     if (!absolutePath.startsWith(`${absoluteRoot}${path.sep}`)) {
+@@ -347,7 +459,7 @@ async function updateFingerprintSourceEntry(hash, cwd, sourcePath, tracked) {
+     catch (error) {
+         if (tracked && isFileNotFoundError(error)) {
+             updateFingerprintField(hash, "kind", "tracked-missing");
+-            return;
++            return undefined;
+         }
+         throw new Error(`Unable to inspect source path ${sourcePath}.`, {
+             cause: error,
+@@ -358,23 +470,31 @@ async function updateFingerprintSourceEntry(hash, cwd, sourcePath, tracked) {
+         updateFingerprintField(hash, "executable", file.executable ? "yes" : "no");
+         updateFingerprintField(hash, "kind", "file");
+         updateFingerprintField(hash, "bytes", file.bytes);
+-        return;
++        return objectHashAlgorithm ? {
++            mode: file.executable ? "100755" : "100644",
++            oid: fingerprintGitBlobOid(file.bytes, objectHashAlgorithm),
++        } : undefined;
+     }
+     updateFingerprintField(hash, "executable", (stats.mode & 73n) !== 0n ? "yes" : "no");
+     if (stats.isSymbolicLink()) {
+         updateFingerprintField(hash, "kind", "symlink");
+-        updateFingerprintField(hash, "target", await readlink(absolutePath, { encoding: "buffer" }));
+-        return;
++        const target = await readlink(absolutePath, { encoding: "buffer" });
++        updateFingerprintField(hash, "target", target);
++        return objectHashAlgorithm ? { mode: "120000", oid: fingerprintGitBlobOid(target, objectHashAlgorithm) } : undefined;
+     }
+     if (stats.isDirectory()) {
+         // A tracked gitlink is represented by its repository path, HEAD/index
+         // status, and directory kind. Normal untracked directories are expanded by
+         // git ls-files --others into their contained files.
+         updateFingerprintField(hash, "kind", "directory");
+-        return;
++        return undefined;
+     }
+     throw new Error(`Unsupported source entry type at ${sourcePath}.`);
+ }
++/** Git blob identity over the same verified bytes used by the source hash. */
++function fingerprintGitBlobOid(bytes, algorithm) {
++    return createHash(algorithm).update(`blob ${bytes.length}\u0000`).update(bytes).digest("hex");
++}
+ /**
+  * Reads one regular source file through a verified, non-following descriptor.
+  *
+@@ -474,6 +594,9 @@ async function readLastUpdate(cwd, outputMode) {
+                 gitHead: typeof parsedMetadata.gitHead === "string"
+                     ? parsedMetadata.gitHead
+                     : undefined,
++                visibleSourceFingerprint: typeof parsedMetadata.visibleSourceFingerprint === "string"
++                    ? parsedMetadata.visibleSourceFingerprint
++                    : undefined,
+                 model: parsedMetadata.model,
+                 // Metadata written before the status field existed is treated as
+                 // complete so upgrades do not force a spurious re-run.
+@@ -632,7 +755,7 @@ export async function getRepositoryChangedPaths(cwd, openWikiIgnore, baseGitHead
+     return [...paths]
+         .filter(Boolean)
+         .filter((candidate) => !isOpenWikiPath(candidate))
+-        .filter((candidate) => !openWikiIgnore.ignores(candidate))
++        .filter((candidate) => candidate === OPENWIKI_IGNORE_FILE || !openWikiIgnore.ignores(candidate))
+         .sort(compareFingerprintStrings);
+ }
+ /**
+@@ -672,7 +795,7 @@ function normalizeGitPath(value) {
+  * Whether a single line of git output names at least one ignored path.
+  */
+ function lineReferencesIgnoredPath(line, openWikiIgnore) {
+-    return extractGitPaths(line).some((changedPath) => openWikiIgnore.ignores(changedPath));
++    return extractGitPaths(line).some((changedPath) => changedPath !== OPENWIKI_IGNORE_FILE && openWikiIgnore.ignores(changedPath));
+ }
+ /**
+  * Pulls the file path(s) out of one line of `git status --short` or
+diff --git a/dist/generation/page-manifest.d.ts b/dist/generation/page-manifest.d.ts
+index a3228c3..40e0848 100644
+--- a/dist/generation/page-manifest.d.ts
++++ b/dist/generation/page-manifest.d.ts
+@@ -15,6 +15,8 @@ export interface RepositorySourceCheckpoint {
+      * @default undefined only for entries migrated from `.last-update.json`.
+      */
+     sourceFingerprint?: string;
++    /** Verified committed source identity, stable across squash merges. */
++    visibleSourceFingerprint?: string;
+ }
+ /**
+  * Durable correctness checkpoint for one factual generated page.
+@@ -49,6 +51,8 @@ export interface RepositoryPageManifest {
+      * Canonical factual page paths mapped to their latest durable coverage.
+      */
+     pages: Record<string, RepositoryPageManifestEntry>;
++    /** Shared content-addressed per-path source digests referenced by pages. */
++    visibleSources?: Record<string, Record<string, string>>;
+ }
+ /**
+  * Creates an empty V1 manifest.
+diff --git a/dist/generation/page-manifest.js b/dist/generation/page-manifest.js
+index 914b7dc..4d72fbf 100644
+--- a/dist/generation/page-manifest.js
++++ b/dist/generation/page-manifest.js
+@@ -4,16 +4,26 @@ import path from "node:path";
+ import { z } from "zod";
+ import { normalizeWikiPagePath } from "../claims/brains/code/paths.js";
+ import { ClaimsStore } from "../claims/brains/code/store.js";
++import { OpenWikiIgnore } from "../agent/openwiki-ignore.js";
++import { createRepositorySourceSnapshot, fingerprintRepositoryVisibleSourcePaths } from "../agent/utils.js";
+ import { PAGE_MANIFEST_PATH } from "../config/constants.js";
+ import { isFileNotFoundError } from "../platform/fs-errors.js";
+ import { RepositoryRunError } from "./errors.js";
+ export const REPOSITORY_PAGE_MANIFEST_SCHEMA_VERSION = 1;
+ const SourceFingerprintSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
+ const PageVersionSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/u);
++// z.record drops a JSON object's own "__proto__" key. A repository may have a
++// real source file with that name, so retain and validate every own path key.
++const VisibleSourcePathsSchema = z.custom((value) => value !== null &&
++    typeof value === "object" && !Array.isArray(value) &&
++    (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null) &&
++    Object.entries(value).every(([sourcePath, digest]) => sourcePath.length > 0 &&
++        SourceFingerprintSchema.safeParse(digest).success));
+ const ManifestEntrySchema = z
+     .object({
+     gitHead: z.string().min(1).optional(),
+     sourceFingerprint: SourceFingerprintSchema.optional(),
++    visibleSourceFingerprint: SourceFingerprintSchema.optional(),
+     pageVersion: PageVersionSchema,
+     completedBy: z.string().trim().min(1).optional(),
+     completedRunId: z.string().uuid().optional(),
+@@ -23,6 +33,7 @@ const ManifestSchema = z
+     .object({
+     schemaVersion: z.literal(REPOSITORY_PAGE_MANIFEST_SCHEMA_VERSION),
+     pages: z.record(z.string().min(1), ManifestEntrySchema),
++    visibleSources: z.record(SourceFingerprintSchema, VisibleSourcePathsSchema).optional(),
+ })
+     .strict();
+ /**
+@@ -31,7 +42,7 @@ const ManifestSchema = z
+  * @returns New mutable manifest state with no page coverage.
+  */
+ export function createEmptyRepositoryPageManifest() {
+-    return { schemaVersion: 1, pages: {} };
++    return { schemaVersion: 1, pages: {}, visibleSources: {} };
+ }
+ /**
+  * Resolves the committed page-manifest path below a repository root.
+@@ -55,6 +66,7 @@ export async function readRepositoryPageManifest(root) {
+         const parsed = JSON.parse(await readFile(file, "utf8"));
+         const manifest = ManifestSchema.parse(parsed);
+         assertCanonicalManifestPages(manifest);
++        assertRepositoryVisibleSources(manifest);
+         return manifest;
+     }
+     catch (error) {
+@@ -80,9 +92,14 @@ export async function writeRepositoryPageManifest(root, manifest) {
+     const ordered = {
+         schemaVersion: 1,
+         pages: Object.fromEntries(Object.entries(manifest.pages).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)),
++        visibleSources: Object.fromEntries(Object.entries(manifest.visibleSources ?? {})
++            .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
++            .map(([fingerprint, paths]) => [fingerprint, Object.fromEntries(Object.entries(paths)
++                .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0))])),
+     };
+     ManifestSchema.parse(ordered);
+     assertCanonicalManifestPages(ordered);
++    assertRepositoryVisibleSources(ordered);
+     const file = repositoryPageManifestPath(root);
+     await mkdir(path.dirname(file), { recursive: true });
+     const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
+@@ -112,6 +129,7 @@ export async function recordRepositoryPageCompletion(root, page, source, complet
+     const canonicalPage = normalizeWikiPagePath(page);
+     const entry = await buildManifestEntry(root, canonicalPage, source, completedBy, completedRunId);
+     const manifest = await readRepositoryPageManifest(root);
++    await attachRepositoryVisibleSource(root, manifest, source);
+     manifest.pages[canonicalPage] = entry;
+     await writeRepositoryPageManifest(root, manifest);
+     return entry;
+@@ -158,6 +176,7 @@ export async function seedRepositoryPageManifest(root, pages, gitHead) {
+ export async function replaceRepositoryPageManifest(root, pages, source, preservePages = new Set(), preserveSourcePages = new Set()) {
+     const next = createEmptyRepositoryPageManifest();
+     const previous = await readRepositoryPageManifest(root);
++    next.visibleSources = { ...(previous.visibleSources ?? {}) };
+     for (const page of pages) {
+         const canonicalPage = normalizeWikiPagePath(page);
+         if (preservePages.has(canonicalPage)) {
+@@ -180,6 +199,9 @@ export async function replaceRepositoryPageManifest(root, pages, source, preserv
+                     ...(previousEntry.sourceFingerprint
+                         ? { sourceFingerprint: previousEntry.sourceFingerprint }
+                         : {}),
++                    ...(previousEntry.visibleSourceFingerprint
++                        ? { visibleSourceFingerprint: previousEntry.visibleSourceFingerprint }
++                        : {}),
+                 }, previousEntry.completedBy, previousEntry.completedRunId);
+                 next.pages[canonicalPage] =
+                     refreshedEntry.pageVersion === previousEntry.pageVersion
+@@ -187,24 +209,59 @@ export async function replaceRepositoryPageManifest(root, pages, source, preserv
+                         : refreshedEntry;
+                 continue;
+             }
+-            // No prior coverage exists for this untouched page. Try to seed a
+-            // first coverage entry from its current durable state, but never fail
+-            // the whole run over a page it did not touch; leave it uncovered for
+-            // full review instead, matching legacy/never-covered page handling.
+-            try {
+-                next.pages[canonicalPage] = await buildManifestEntry(root, canonicalPage, source);
+-            }
+-            catch (error) {
+-                if (error instanceof RepositoryRunError)
+-                    continue;
+-                throw error;
+-            }
++            // A verified old Markdown/Claims pair cannot prove that an
++            // unreviewed page covers the current source.
+             continue;
+         }
++        if (!previous.pages[canonicalPage]?.gitHead)
++            continue;
+         next.pages[canonicalPage] = await buildManifestEntry(root, canonicalPage, source, previous.pages[canonicalPage]?.completedBy, previous.pages[canonicalPage]?.completedRunId);
+     }
++    await attachRepositoryVisibleSource(root, next, source);
++    const usedTrees = new Set(Object.values(next.pages)
++        .map((entry) => entry.visibleSourceFingerprint).filter(Boolean));
++    next.visibleSources = Object.fromEntries(Object.entries(next.visibleSources)
++        .filter(([fingerprint]) => usedTrees.has(fingerprint)));
+     await writeRepositoryPageManifest(root, next);
+ }
++/** Adds a content-addressed map only after the visible source is re-proved. */
++async function attachRepositoryVisibleSource(root, manifest, source) {
++    if (!source.visibleSourceFingerprint) {
++        throw new RepositoryRunError("invalid_state", "OpenWiki requires committed, clean model-visible source before recording page coverage; commit or ignore local source changes.");
++    }
++    const snapshot = await createRepositorySourceSnapshot(root, await OpenWikiIgnore.load(root));
++    if (snapshot.visibleSourceFingerprint !== source.visibleSourceFingerprint) {
++        throw new RepositoryRunError("invalid_state", "OpenWiki visible source changed before page coverage was recorded.");
++    }
++    const existing = manifest.visibleSources?.[source.visibleSourceFingerprint];
++    if (existing && fingerprintRepositoryVisibleSourcePaths(existing) !== source.visibleSourceFingerprint) {
++        throw new RepositoryRunError("invalid_state", "OpenWiki visible source snapshot changed after publication.");
++    }
++    manifest.visibleSources ??= {};
++    if (!existing)
++        manifest.visibleSources[source.visibleSourceFingerprint] = snapshot.visibleSourcePaths;
++}
++/** Every page checkpoint must have one unmodified native source map. */
++function assertRepositoryVisibleSources(manifest) {
++    for (const [fingerprint, paths] of Object.entries(manifest.visibleSources ?? {})) {
++        try {
++            if (fingerprintRepositoryVisibleSourcePaths(paths) !== fingerprint) {
++                throw new Error("snapshot fingerprint mismatch");
++            }
++        }
++        catch {
++            throw new RepositoryRunError("invalid_state", "OpenWiki visible source snapshot is malformed.");
++        }
++    }
++    for (const entry of Object.values(manifest.pages)) {
++        if (!entry.visibleSourceFingerprint)
++            continue;
++        const paths = manifest.visibleSources?.[entry.visibleSourceFingerprint];
++        if (!paths) {
++            throw new RepositoryRunError("invalid_state", "OpenWiki page coverage visible source snapshot is missing or malformed.");
++        }
++    }
++}
+ /**
+  * Checks whether committed coverage proves one page completed for a source.
+  *
+@@ -238,6 +295,10 @@ export async function getCurrentRepositoryPageCompletion(root, page, source) {
+     if (source.gitHead !== undefined && entry.gitHead !== source.gitHead) {
+         return null;
+     }
++    if (source.visibleSourceFingerprint !== undefined &&
++        entry.visibleSourceFingerprint !== source.visibleSourceFingerprint) {
++        return null;
++    }
+     try {
+         const store = new ClaimsStore(root);
+         const sidecar = await store.loadPage(canonicalPage);
+@@ -286,6 +347,9 @@ async function buildManifestEntry(root, page, source, completedBy, completedRunI
+         ...(source.sourceFingerprint
+             ? { sourceFingerprint: source.sourceFingerprint }
+             : {}),
++        ...(source.visibleSourceFingerprint
++            ? { visibleSourceFingerprint: source.visibleSourceFingerprint }
++            : {}),
+     };
+ }
+ /**
+diff --git a/dist/generation/repository-run.js b/dist/generation/repository-run.js
+index 78cb6d7..28a01df 100644
+--- a/dist/generation/repository-run.js
++++ b/dist/generation/repository-run.js
+@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
+ import { randomUUID } from "node:crypto";
+ import { OpenWikiLocalShellBackend } from "../agent/docs-only-backend.js";
+ import { OpenWikiIgnore } from "../agent/openwiki-ignore.js";
+-import { createOpenWikiContentSnapshot, createRepositorySourceSnapshot, createRunContext, getRepositoryChangedPaths, getUpdateNoopStatus, persistRunMetadataIfChanged, writeLastUpdateMetadata, } from "../agent/utils.js";
++import { createOpenWikiContentSnapshot, createRepositorySourceSnapshot, createRunContext, getRepositoryChangedPaths, getRepositoryCoverageChangedPaths, getUpdateNoopStatus, persistRunMetadataIfChanged, writeLastUpdateMetadata, } from "../agent/utils.js";
+ import { deserializePreparedWikiState, finalizeWikiArtifacts, prepareWikiForAuthoring, serializePreparedWikiState, } from "../agent/wiki-finalizer.js";
+ import { beginRepositoryWikiReplacement } from "../agent/wiki-replacement.js";
+ import { prepareClaimsRuntime, } from "../claims/brains/code/runtime.js";
+@@ -14,7 +14,7 @@ import { resolveConceptTypeLabel, resolveIndexLabels, } from "../okf/index-label
+ import { getPrimaryLanguageSubtag, requireResolvedLanguage, resolveLanguage, } from "../platform/language.js";
+ import { isFileNotFoundError } from "../platform/fs-errors.js";
+ import { RepositoryRunError } from "./errors.js";
+-import { getCurrentRepositoryPageCompletion, readRepositoryPageManifest, recordRepositoryPageCompletion, replaceRepositoryPageManifest, seedRepositoryPageManifest, } from "./page-manifest.js";
++import { getCurrentRepositoryPageCompletion, readRepositoryPageManifest, recordRepositoryPageCompletion, replaceRepositoryPageManifest, } from "./page-manifest.js";
+ import { createRepositoryPlan, reconcilePageClaims, } from "./page-jobs.js";
+ import { readRepositoryRunState, removeRepositoryRunState, writeRepositoryRunState, } from "./run-state.js";
+ /**
+@@ -80,6 +80,7 @@ function requirePendingJob(run, jobId, action) {
+ export function getRepositoryRunSourceCheckpoint(state) {
+     return {
+         sourceFingerprint: state.sourceFingerprint,
++        ...(state.visibleSourceFingerprint ? { visibleSourceFingerprint: state.visibleSourceFingerprint } : {}),
+         ...(state.targetGitHead ? { gitHead: state.targetGitHead } : {}),
+     };
+ }
+@@ -128,6 +129,10 @@ export async function beginRepositoryRun(input) {
+         getPrimaryLanguageSubtag(requestedLanguage) !==
+             getPrimaryLanguageSubtag(context.lastUpdate?.language);
+     const ignore = await OpenWikiIgnore.load(input.root);
++    const source = await createRepositorySourceSnapshot(input.root, ignore);
++    if (!source.visibleSourceFingerprint) {
++        throw new RepositoryRunError("invalid_state", "OpenWiki setup or local source changed; commit and retry before a repository run.");
++    }
+     const replacement = input.mode === "init"
+         ? await beginRepositoryWikiReplacement(input.root)
+         : undefined;
+@@ -141,16 +146,23 @@ export async function beginRepositoryRun(input) {
+         }
+         const claimsStore = new ClaimsStore(input.root);
+         const initialPages = await claimsStore.discoverPages();
+-        const source = await createRepositorySourceSnapshot(input.root, ignore);
+-        if (input.mode === "update" &&
+-            context.lastUpdate?.gitHead &&
+-            context.lastUpdate.status === "complete") {
+-            await seedRepositoryPageManifest(input.root, initialPages, context.lastUpdate.gitHead);
+-        }
+-        const requiredBaselineRecoveryPages = await validateRequestedRecoveryPages(input, initialPages, source.gitHead);
++        const requestedBaselineRecoveryPages = await validateRequestedRecoveryPages(input, initialPages, source.gitHead);
++        const priorCoverage = input.mode === "update"
++            ? await readRepositoryPageManifest(input.root)
++            : undefined;
++        // A page with no Git baseline cannot inherit current-source coverage
++        // from an old verified Markdown/Claims pair. Make every such page a
++        // mandatory, inspected full-review job before any replacement writes.
++        const requiredBaselineRecoveryPages = [...new Set([
++            ...requestedBaselineRecoveryPages,
++            ...(input.mode === "update"
++                ? initialPages.filter((page) => !priorCoverage?.pages[page]?.gitHead)
++                : []),
++        ])].sort(compareCodeUnits);
+         if (input.mode === "update") {
+             await fastForwardUnchangedRepositoryPageCoverage(input.root, ignore, initialPages, {
+                 sourceFingerprint: source.fingerprint,
++                ...(source.visibleSourceFingerprint ? { visibleSourceFingerprint: source.visibleSourceFingerprint } : {}),
+                 ...(source.gitHead ? { gitHead: source.gitHead } : {}),
+             }, new Set(requiredBaselineRecoveryPages));
+         }
+@@ -159,6 +171,9 @@ export async function beginRepositoryRun(input) {
+             : undefined;
+         const hasCompleteBaselineCoverage = input.mode !== "update" ||
+             initialPages.every((page) => seededManifest?.pages[page] !== undefined);
++        const hasCurrentPageCoverage = input.mode !== "update" ||
++            initialPages.every((page) => seededManifest?.pages[page]?.sourceFingerprint === source.fingerprint &&
++                seededManifest?.pages[page]?.gitHead === source.gitHead);
+         // Claims validation precedes update no-op detection. A clean Git status
+         // cannot hide stale or unresolved grounding state.
+         if (input.mode === "update" &&
+@@ -167,13 +182,15 @@ export async function beginRepositoryRun(input) {
+             const preflight = await getUpdateNoopStatus(input.root, ignore, input.language);
+             if (preflight.shouldSkip &&
+                 claimsRuntime.issueCount === 0 &&
+-                hasCompleteBaselineCoverage) {
++                hasCompleteBaselineCoverage &&
++                hasCurrentPageCoverage) {
+                 const source = await createRepositorySourceSnapshot(input.root, ignore);
+                 await claimsRuntime.finalize(now().toISOString());
+                 const stableSource = await createRepositorySourceSnapshot(input.root, ignore);
+                 if (stableSource.fingerprint === source.fingerprint) {
+                     await replaceRepositoryPageManifest(input.root, initialPages, {
+                         sourceFingerprint: source.fingerprint,
++                        ...(source.visibleSourceFingerprint ? { visibleSourceFingerprint: source.visibleSourceFingerprint } : {}),
+                         ...(source.gitHead ? { gitHead: source.gitHead } : {}),
+                     });
+                     const publishedSource = await createRepositorySourceSnapshot(input.root, ignore);
+@@ -211,6 +228,7 @@ export async function beginRepositoryRun(input) {
+             requiredBaselineRecoveryPages,
+             initialPages,
+             sourceFingerprint: source.fingerprint,
++            ...(source.visibleSourceFingerprint ? { visibleSourceFingerprint: source.visibleSourceFingerprint } : {}),
+             ...(source.gitHead ? { targetGitHead: source.gitHead } : {}),
+             ...(input.planningContext
+                 ? { planningContext: input.planningContext }
+@@ -311,6 +329,12 @@ async function resumeRepositoryRun(input, state) {
+     if (sourceChanged) {
+         nextState.phase = "planning";
+         nextState.sourceFingerprint = currentSource.fingerprint;
++        if (currentSource.visibleSourceFingerprint) {
++            nextState.visibleSourceFingerprint = currentSource.visibleSourceFingerprint;
++        }
++        else {
++            delete nextState.visibleSourceFingerprint;
++        }
+         if (currentSource.gitHead) {
+             nextState.targetGitHead = currentSource.gitHead;
+         }
+@@ -320,6 +344,9 @@ async function resumeRepositoryRun(input, state) {
+         delete nextState.plan;
+     }
+     else {
++        if (!nextState.visibleSourceFingerprint && currentSource.visibleSourceFingerprint) {
++            nextState.visibleSourceFingerprint = currentSource.visibleSourceFingerprint;
++        }
+         if (!nextState.targetGitHead && currentSource.gitHead) {
+             nextState.targetGitHead = currentSource.gitHead;
+         }
+@@ -472,7 +499,8 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
+     for (const page of pages) {
+         if (recoveryPages.has(page))
+             continue;
+-        const baseline = manifest.pages[page]?.gitHead ?? "";
++        const entry = manifest.pages[page];
++        const baseline = JSON.stringify([entry?.gitHead ?? "", entry?.visibleSourceFingerprint ?? ""]);
+         const group = pagesByBaseline.get(baseline) ?? [];
+         group.push(page);
+         pagesByBaseline.set(baseline, group);
+@@ -480,11 +508,14 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
+     const windows = [];
+     const baselines = [...pagesByBaseline.keys()].sort(compareCodeUnits);
+     for (const baseline of baselines) {
++        const group = pagesByBaseline.get(baseline) ?? [];
++        const entry = manifest.pages[group[0]];
++        const resolved = await getCoverageChangedPaths(root, ignore, entry, manifest);
+         windows.push({
+-            ...(baseline ? { baseGitHead: baseline } : {}),
+-            pages: [...(pagesByBaseline.get(baseline) ?? [])].sort(compareCodeUnits),
+-            changedPaths: await getRepositoryChangedPaths(root, ignore, baseline || undefined),
+-            fullReview: baseline.length === 0,
++            ...(resolved.baseGitHead ? { baseGitHead: resolved.baseGitHead } : {}),
++            pages: [...group].sort(compareCodeUnits),
++            changedPaths: resolved.changedPaths,
++            fullReview: !entry?.gitHead,
+         });
+     }
+     if (recoveryPages.size > 0) {
+@@ -496,6 +527,24 @@ async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBasel
+     }
+     return windows;
+ }
++/** Compares a saved visible-source map or requires complete historical Git. */
++async function getCoverageChangedPaths(root, ignore, entry, manifest) {
++    const baseGitHead = entry?.gitHead;
++    try {
++        const sourceMap = entry?.visibleSourceFingerprint
++            ? manifest.visibleSources?.[entry.visibleSourceFingerprint]
++            : undefined;
++        return {
++            baseGitHead,
++            changedPaths: sourceMap
++                ? await getRepositoryCoverageChangedPaths(root, ignore, sourceMap, entry.visibleSourceFingerprint)
++                : await getRepositoryChangedPaths(root, ignore, baseGitHead, true),
++        };
++    }
++    catch {
++        throw new RepositoryRunError("invalid_state", "Cannot advance page coverage; visible-source or Git changed-path query is unavailable.");
++    }
++}
+ /** Binds an explicit recovery request to current, factual manifest entries. */
+ async function validateRequestedRecoveryPages(input, initialPages, targetGitHead) {
+     const requested = input.recoverPageBaselines ?? [];
+@@ -558,13 +607,12 @@ async function fastForwardUnchangedRepositoryPageCoverage(root, ignore, pages, s
+         const entry = manifest.pages[page];
+         if (!entry?.gitHead || entry.gitHead === source.gitHead)
+             continue;
+-        let changedPaths;
+-        try {
+-            changedPaths = await getRepositoryChangedPaths(root, ignore, entry.gitHead, true);
+-        }
+-        catch {
+-            throw new RepositoryRunError("invalid_state", `Cannot advance page coverage for ${page}; Git changed-path query is unavailable.`);
++        if (source.visibleSourceFingerprint &&
++            entry.visibleSourceFingerprint === source.visibleSourceFingerprint) {
++            await recordRepositoryPageCompletion(root, page, source, entry.completedBy, entry.completedRunId);
++            continue;
+         }
++        const { changedPaths } = await getCoverageChangedPaths(root, ignore, entry, manifest);
+         if (changedPaths.length > 0)
+             continue;
+         await recordRepositoryPageCompletion(root, page, source, entry.completedBy, entry.completedRunId);
+diff --git a/dist/generation/run-state.d.ts b/dist/generation/run-state.d.ts
+index 854126b..da7e9b0 100644
+--- a/dist/generation/run-state.d.ts
++++ b/dist/generation/run-state.d.ts
+@@ -135,6 +135,8 @@ export interface RepositoryRunState {
+      * SHA-256 identity of the source input for the active plan.
+      */
+     sourceFingerprint: string;
++    /** Verified committed source identity, absent for dirty source. */
++    visibleSourceFingerprint?: string;
+     /**
+      * Git HEAD paired with `sourceFingerprint` for the active semantic plan.
+      *
+diff --git a/dist/generation/run-state.js b/dist/generation/run-state.js
+index c1cac49..d63fbbb 100644
+--- a/dist/generation/run-state.js
++++ b/dist/generation/run-state.js
+@@ -18,6 +18,7 @@ const UpdateMetadataSchema = z
+     updatedAt: z.string(),
+     command: z.enum(["init", "update"]),
+     gitHead: z.string().optional(),
++    visibleSourceFingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/u).optional(),
+     model: z.string(),
+     status: z.enum(["complete", "interrupted"]),
+     language: z.string().optional(),
+@@ -66,6 +67,7 @@ const RepositoryRunStateSchema = z
+     requiredBaselineRecoveryPages: z.array(z.string().min(1)).default([]),
+     initialPages: z.array(z.string().min(1)),
+     sourceFingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
++    visibleSourceFingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/u).optional(),
+     targetGitHead: z.string().min(1).optional(),
+     planningContext: z.string().min(1).optional(),
+     actor: z

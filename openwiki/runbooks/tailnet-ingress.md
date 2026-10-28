@@ -54,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
@@ -88,10 +90,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Tailnet And App Ingress
@@ -137,11 +139,13 @@ Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied
 
 During the 2026-10-27 ztunnel bootstrap outage on `zimaboard-0`, the
 [Traefik values](../../clusters/homelab/apps/traefik/values.yaml) temporarily
-pin its only replica to `zimaboard-1`, whose ztunnel is Ready. Once merged and
-reconciled, this placement moves the private, callback, and registry listeners
-together; a failure of `zimaboard-1` then removes all three paths. Verify the
-replacement Pod, normal tailnet HTTPS, and Harbor `/v2/` before declaring
-recovery. Remove the pin through a reviewed PR after the upstream-image ztunnel
+pin its only replica to `zimaboard-1`, whose ztunnel is Ready. This placement
+moves the private, callback, and registry listeners
+together; a failure of `zimaboard-1` then removes all three paths. The signed
+recovery merged as #1703; a read-only check found Traefik Synced and Healthy,
+its Pod 1/1 Ready on `zimaboard-1`, all four ztunnels Ready, and strict-TLS
+Argo CD and Harbor `/v2/` responses. Other consumers still need their own
+acceptance. Remove the pin through a reviewed PR after the upstream-image ztunnel
 fix restores all four nodes. Revert the placement through GitOps if the new Pod
 fails; do not patch the live Deployment.
 

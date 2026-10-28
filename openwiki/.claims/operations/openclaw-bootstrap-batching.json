@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b4cacaf9f704fe005871663d3e1918147756c013013aa84a17116931b841f04a",
+  "claims": [
+    {
+      "id": "claim_0f66f9dbf4e340989b1b7afae303424a",
+      "statement": "The retained legacy OpenClaw declaration keeps its batch-file bootstrap logic but sets the gateway to zero replicas and suspends the runtime-backup CronJob; its historical startup optimization does not activate a live gateway.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/runtime-backup.yaml#L1-L14",
+          "version": "repo-lines-v1:sha256:785e3774d36d978ed71ea5d66a72dbab45e9bc5a71a53ed7a8ce9c90c593b5e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NTVkOTQ2YTEyMjM4YTY3NzU4MWM3Yzc3OTcwYWI4NTMzYWI1YjRlMWM2ZGU3MjJiN2I0MzMxYzc3Y2ZmMmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0NjgzZmE0MzE4MTU5ZDc2Y2M3MGE4ZTdmMmJhMDU5ZjIyZDJjYTdlZjdlY2I3MzFjZWJhZjg3NWE1OWIwYjEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L1-L8",
+          "version": "repo-lines-v1:sha256:803864282bf6d511008564d713cd58eb6deabd9845116ad8c8ec84df54529229:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwODVlNTAxMzU4ZDRlZDg2YmViOGE1ZTAwNGQ2NmZlMmFmMGVkZDJhYjcxMzNmODQyZDk1N2VlNjA0M2Q0OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjM2ZGUxODU3M2EyMzA1NmVhOTI5YjlhOGE1ODQzNWFkYzFiOTQxYTlhNDJiODkxMmYzOGYxODliMmI0MjFiOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmM5OTM5OTJiMzY2YzY0MzA4MTgwYzczMmJhNzYzZTMyODlkYjQ4MDBhYjRjM2I1ZTBlMzg0YTBkYTNlMmFmMiJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L375-L390",
+          "version": "repo-lines-v1:sha256:23e2561c9c00a130b6d4dcc10b0dc68184e4c02545367e444ac285b29bec3a41:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNDc2NjgyYjY4M2EyMjFiMmE1YmU2Yjg0ZTZjMTYxYzIxMGQ0N2E1MDg1M2RmZDViMjQxYTk0Yzg4ODcyNzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MjJjNDJjZDE5YzZkMDNkODA4YzQ1MjcyMDU1MjgyNWI3ZWExYzViNDkxYjIxODUxMWNhYzc0MTVjZjlkOWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViOTlmMWRlNTIxNGQwMzE2NDg5YjJhZDI1MjU2YzhlMTBlODY1NzY0MjViMDU3MjhmN2NlNTEyOTRhYzdhM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmZTJkN2M5YjI1NmFkZTA1YWE0MTdkZjM5NmI3YzNkMDJlNTliNzFkODRhNmVlOTZiMGIzODNhZTA2ZjY3YTcifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:26e1324c4c6d846c51f50f4d3172d83fc24b28d0fedba44c7ea3d99b01f51ac2",
+  "claims": [
+    {
+      "id": "claim_3199cfcb79d64d11866b63db51599ed5",
+      "statement": "The operator etcd backup catalog unit reads a committed account, region and bucket destination, while its S3 module enables versioning, prevents ordinary bucket destruction, and expires only incomplete multipart uploads after seven days.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/etcd-backup-storage.hcl#L1-L5",
+          "version": "repo-lines-v1:sha256:9f795e7f710ea50b1c9385582277e3b65045c5d0e2dd425f60114fb2ce640748:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTcxM2MzZjgwYmI4OTQ1MDc5MjZmMWRlYjBmMWE0YTUwODMwMDEyNTk4MWVkMzczM2I4YmJjNThiOTkyM2VmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf#L118-L166",
+          "version": "repo-lines-v1:sha256:614f54c0bfa1d8f0cc41ec910027a90f2ebff861e81f9dabf3ac25d5958bda3d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2YTMzMmQ2MzU1NTdjMjAwMWE3OWM3MWI0NWM5NWY2MmY4MmZlOTBjZDgwOTM2OGU1MDhjYzQ3ZGRlODU4OTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmYTMzZmJhZTE1YzgxM2ZmMTQ4NTQ0ZDUyNzc1NWMxZmI3ODFlMmQ2NDI3Nzk3MzdlNWZkODI2YWE0ZDUyNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MGJmZjExN2U4MjFmMzc2ODY0NzVhZDc0M2Q3OTEwYTBjNmEwZWIyYzFhZGE4M2Q4OTA5OTE4ZWU3YWJhNTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc4NTU4ZjcyMzVmYzcxMDY0NGE5ZWY2MTRmMWUyMzI1NWY2ODM5MDgzZmJkYjY2NTRjMTE1NWY2YjMwM2NhZTIifQ"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf#L75-L84",
+          "version": "repo-lines-v1:sha256:608eb933a5b83a06413ccaec098b909d45d795b7324a43494fff9b5695c33953:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxZDY1N2NmZTY2NDY2ZWUxY2M1OTUxZDA1Y2M0ZTlmMjgxNDRiN2VhN2Y3ODNiYzI2MzUyZGZhNDU3NmE1YTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxNjM2OTJiNjAwNTMzYjE2MDA4ZWFkNDBmZjNjMmFkODg3YTg1Y2U2ZWU1Yzc1YjM5Yzg2YWI3NzZjNDEwNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyYzJlNjRiM2YxMTg5N2YzYmJkOTliNGVlOWMxYmJmMzExZWQ2ZWViOWFiMzRjMDZmYWJmNDY0YmIwNjcxYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzZGFjYmRlOWRiZTJhOTI5N2NlOGFjZGUyYzViN2VmYWQ5ZGNhYjJlZjhlYTFhYmZhMTYwMDY1NGM0ZmFhYTUifQ"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/units/operator/etcd-backup-storage/terragrunt.hcl#L1-L31",
+          "version": "repo-lines-v1:sha256:b50f7d0145b7a369535625d665f7c867c8b73766127d546ab68e2a91f079afd2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMGNmNTRmMmQxYmE1OTRmYjliOWU3Y2UyNDFiYjgyNmE0ZDY3MmU4YzBjMDJhZDI0MzY4ZGU2MjQ3NTk3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3OTViNGYwZTUxZDMzY2IxYTE3ZmM5OTA4MGZiNWRiNDc4ZjU3NzgzMWRhMTNhNjM4ODVkN2RiYmE1MmNjZGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZTBhMGEyOTdiNmRlYzljZjdjMzRiZTJlMzgwMDdmN2RmYjMwODdjMzZkYjIxOTg0MTkzMTI3NTFhZmM0YTQifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

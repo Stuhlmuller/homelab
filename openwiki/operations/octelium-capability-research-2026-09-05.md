@@ -3,6 +3,13 @@ type: operation
 title: "Octelium and Cordium capability research \u2014 2026-09-05"
 description: "Octelium and Cordium version boundaries, audit-console and agent execution capabilities, and separate live acceptance gates."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-87409b09d239a507cea24ad7
+    resource: repo://clusters/homelab/apps/octelium-enterprise/resources.yaml
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 ---
 
 # Octelium and Cordium capability research — 2026-09-05
@@ -11,6 +18,8 @@ Scope: official current documentation, pinned upstream source, and repository
 configuration. This note does not claim live activation. See
 [Homelab Audit — 2026-09-04](audit-2026-09-04.md), [Continuous Improvement](continuous-improvement.md), and
 [Secrets And Identity](../architecture/secrets-and-identity.md).
+Version and runtime observations are dated September 2026; use current source
+and acceptance records for present deployment status.
 
 ## Product and version boundaries
 

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:8cc2b1be28429ccf75307fe9cb994f79e2d8710952c56ec98943cad970e4f47b",
+  "claims": [
+    {
+      "id": "claim_992b90c68d96406bb9021d6521d3cb47",
+      "statement": "For a deleted Terragrunt unit with remote state resources, the apply helper saves a destroy plan, converts it to JSON, runs Conftest on that plan, rechecks current main, and only then applies the saved plan.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L60-L85",
+          "version": "repo-lines-v1:sha256:673811f9078b0e8ed3722a5f354ad3dd224115deac7fe6d75712a5809d261145:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4M2NlNTZjYmMzZTIxYTRlOTMxZjcxZGU5Y2M1NzEzODM2MWEzMTI1ZmIxZTc2ZjAwMjdhYTk2YWZjNDk4OGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NDQ3YTg2YTVkM2MzOTMzN2M4NmM3MWQyZDkwZjk3Y2MyZTFhYjhjZjI5YjA2ZTZiZDY4MjA4YjU0ZDZhM2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjM2M2YTU2Y2I5ZjllOGY2YWMzYjViMjA0MWYwMzJmZTllNTM1ZDI1ODg4NGJjN2RkY2U2NTZiZTMwNWYyMWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlNzdjOTVkZDc2ZGY2ODgyNjY3OTNlZjgyMmZhNzZkNzQ3ZDQ3ZDk4YzY2YThkNzdjNDNlYmVhM2YyYjg4MjcifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

@@ -12,14 +12,16 @@ sources:
     resource: repo://clusters/homelab/argocd/self-management/kustomization.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
+  - id: openwiki-source-7caf2808e7e765d8ee6ecc56
+    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
+  - id: openwiki-source-6e612a8a6f7d729d059f3093
+    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
-  - id: openwiki-source-39e11b90e7410131b2dc0a6e
-    resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-5edf712b7916c34ad7d2c410
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
   - id: openwiki-source-13b48922f1b929b52f4a0233
@@ -28,8 +30,6 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
     resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
-  - id: openwiki-source-f5339d55c401403e74eef9ec
-    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-8564baaf10e1673a998e5188
     resource: repo://scripts/ci/terragrunt-apply.sh
   - id: openwiki-source-181c84b7cc75d240ee7654cc
@@ -38,10 +38,10 @@ sources:
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-c7293ec8244333b0db0a401c
     resource: repo://specs/005-retire-public-app-dns/data-model.md
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-27T09:54:29.479Z
 ---
 
 # GitOps Flow
@@ -162,9 +162,9 @@ Funnel, or application readiness. The fixed ingress signer verifies the three
 operator-owned proxy identities before signing them; ordinary node approval
 does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
-Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
-removes the legacy public DNS helper and restoration workflow. External DNS
-writes remain behind the guarded [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
+Phase 2a changed internal CoreDNS routes and n8n's advertised Funnel URL, and
+removed the legacy public DNS helper and restoration workflow. External DNS
+writes use the separate guarded [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 for the 26 approved non-apex names from the original migration set. The
 resolver serves all 29 current private names, including two later staged
 Enterprise names. The cutover preserves the public apex, mail, certificate
@@ -174,8 +174,9 @@ proxy, and the owner setting its observed IP as a restricted tailnet nameserver.
 The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
 stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,
 old native catalog, credentials, and CI transport through their separate
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
-does not claim that traffic has moved or old native Services have been retired.
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). Application
+registration alone does not establish live traffic acceptance or retirement of
+old native Services.
 
 ## Important Paths
 

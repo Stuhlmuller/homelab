@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f635f6ba50421cb66af7b5661d09b748da368aba21a75e07124169a8a051f1a1",
+  "claims": [
+    {
+      "id": "claim_7f55f01b3e684f10802cbaeb4963d881",
+      "statement": "The current Kubernetes node-label apply path tests its saved Terragrunt plan with Conftest and verifies current main before applying that exact plan.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply.sh#L400-L408",
+          "version": "repo-lines-v1:sha256:c8e6e26218d323a470bb6a062822a8e30926d2b24582c3cdccd671c6301c2a03:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjBhNzE1OGUxMmMzNWE4ZDk0OGJlZGM1OTU4YTlkNmEwOTUwMzJmZDAxM2ZkZmI0YmExZTdlNDFhMzQ5ZjI3ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBlY2Q5NTRiMDI1NmYyNWQ2M2MxZDJkNDI1NzVmZTE5MGIwZjhjMjQwOTg1MDAwZGEwYmE2OGM3MDAwNjcxOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjg2Y2MxOGU0MjkwYjZiNzNlYzFmNzVlMDI4N2UwY2JmYTdmNzhmNzdlMDcyYzNmNmM1MmNkYWY1NDhlODIxMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDUyOTZkYjc3MzMwMDA4NDQxZTE4ZWI4MWI2MjkxZGMzODlmNjdhYjBjMTJlMzhmY2M0YjIwMjRkMWFiNzc1MCJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

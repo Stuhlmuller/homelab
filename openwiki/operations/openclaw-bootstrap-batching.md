@@ -3,9 +3,22 @@ type: operation
 title: "OpenClaw bootstrap batching"
 description: "OpenClaw slow startup measurements, typed configuration batches, progress-deadline limits, and bootstrap rollout checks."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-00d374aa17b82a33b8b28024
+    resource: repo://clusters/homelab/apps/openclaw/runtime-backup.yaml
+  - id: openwiki-source-b26876230e53fd853d7bcbea
+    resource: repo://clusters/homelab/apps/openclaw/values.yaml
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 ---
 
 # OpenClaw bootstrap batching
+
+Status: historical legacy optimization. The declared gateway is stopped with
+zero replicas and its runtime backup CronJob is suspended. Any compatible boot
+belongs to the isolated T014 recovery rehearsal, not this rollout note.
 
 Related: [OpenClaw Runtime State](openclaw-runtime-state.md), [Validation Gates](validation-gates.md),
 [Storage And State](../architecture/storage-and-state.md).
@@ -61,11 +74,10 @@ SecretRefs, ordered duplicate paths, one write versus sequential writes,
 dry-run behavior and rejected-batch atomicity.
 It starts no gateway and does not access a cluster, credentials, or backups.
 
-After an approved merge, Argo replaces the Pod. Compare Pod start, init-container
-completion, and Ready timestamps against the baseline above. Verify preserved
-sessions, no unexpected restarts, and responsive gateway and Discord operation.
-Roll back with a reviewed Git revert; another Recreate rollout incurs downtime.
-Do not manually restart or modify the Pod to shorten the measurement.
+The planned rollout comparison was Pod start, init-container completion, and
+Ready timestamps against the baseline above, plus preserved sessions and
+responsive gateway and Discord operation. The stopped legacy declaration now
+precludes treating this historical optimization as activation evidence.
 
 Sources: `clusters/homelab/apps/openclaw/values.yaml`, the app README, and the
 two configuration validation scripts under `scripts/ci/`.

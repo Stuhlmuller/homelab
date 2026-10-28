@@ -3,6 +3,12 @@ type: runbook
 title: "Homelab Onboarding"
 description: "Canonical Talos control-plane, Kubernetes API, and QNAP endpoints with links to cluster onboarding and maintenance."
 tags: ["runbook", "onboarding", "talos"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-9bdcfe9208171929589f54da
+    resource: repo://ONBOARDING.md
 ---
 
 # Homelab Onboarding

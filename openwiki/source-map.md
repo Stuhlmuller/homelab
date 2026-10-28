@@ -58,18 +58,20 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
-  - id: openwiki-source-b6af8459ba491c30ebdfcbb9
+  - id: openwiki-source-81eb22463f7e995fa8bd3b58
     resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-39e11b90e7410131b2dc0a6e
+  - id: openwiki-source-7caf2808e7e765d8ee6ecc56
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-1f0ad12bbff1986d64be6620
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-4091442a62f62f0adc73ce96
@@ -127,7 +129,7 @@ sources:
 generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Source Map

@@ -1,0 +1,485 @@
+--- a/dist/generation/page-jobs.d.ts
++++ b/dist/generation/page-jobs.d.ts
+@@ -90,7 +90,7 @@
+  * @returns Complete normalized plan ready for durable persistence.
+  * @throws RepositoryRunError when paths, deletion intent, or init shape is invalid.
+  */
+-export declare function createRepositoryPlan(mode: RepositoryRunMode, proposed: ProposedRepositoryPlan, claimIssues: readonly GroundingIssue[], requiredRewritePages?: readonly string[]): RepositoryRunPlan;
++export declare function createRepositoryPlan(mode: RepositoryRunMode, proposed: ProposedRepositoryPlan, claimIssues: readonly GroundingIssue[], requiredRewritePages?: readonly string[], requiredBaselineRecoveryPages?: readonly string[]): RepositoryRunPlan;
+ /**
+  * Reconciles one page's sparse Claim decisions into complete session operations.
+  *
+--- a/dist/generation/page-jobs.js
++++ b/dist/generation/page-jobs.js
+@@ -12,7 +12,7 @@
+  * @returns Complete normalized plan ready for durable persistence.
+  * @throws RepositoryRunError when paths, deletion intent, or init shape is invalid.
+  */
+-export function createRepositoryPlan(mode, proposed, claimIssues, requiredRewritePages = []) {
++export function createRepositoryPlan(mode, proposed, claimIssues, requiredRewritePages = [], requiredBaselineRecoveryPages = []) {
+     const pages = proposed.pages.map(normalizePlanPage);
+     const deletePages = uniqueSorted((proposed.deletePages ?? []).map(normalizePlanPagePath));
+     if (mode === "init" && deletePages.length > 0) {
+@@ -40,6 +40,7 @@
+         const deleted = new Set(deletePages);
+         addRequiredClaimIssueJobs(pages, pagePaths, deleted, claimIssues);
+         addRequiredRewriteJobs(pages, pagePaths, deleted, requiredRewritePages);
++        addRequiredBaselineRecoveryJobs(pages, pagePaths, deleted, requiredBaselineRecoveryPages);
+     }
+     // Quickstart is the synthesis/navigation page; generate it after domain pages.
+     pages.sort((left, right) => {
+@@ -50,6 +51,35 @@
+         return compareCodeUnits(left.path, right.path);
+     });
+     return { pages, deletePages };
++}
++/** Requires an explicit complete Claim review before an old baseline is replaced. */
++function addRequiredBaselineRecoveryJobs(pages, pagePaths, deletePages, requiredPages) {
++    const instruction = "Review the full page against current repository source. Inspect every existing Claim and explicitly confirm, update, or retract each Claim ID before submission; old coverage cannot be reused.";
++    for (const pageInput of requiredPages) {
++        const page = normalizeWikiPagePath(pageInput);
++        if (deletePages.has(page)) {
++            throw new RepositoryRunError("invalid_input", `Baseline recovery page cannot be deleted: ${page}`);
++        }
++        const existing = pages.find((job) => job.path === page);
++        if (existing) {
++            existing.instructions = uniqueSorted([
++                ...existing.instructions,
++                instruction,
++            ]);
++            continue;
++        }
++        pages.push({
++            id: randomUUID(),
++            path: page,
++            title: titleFromPath(page),
++            purpose: "Reverify this complete page and every Claim against current repository evidence before replacing its source baseline.",
++            seedPaths: [],
++            relatedPages: [],
++            instructions: [instruction],
++            status: "pending",
++        });
++        pagePaths.add(page);
++    }
+ }
+ /**
+  * Validates and canonicalizes one proposed page into a pending queue job.
+--- a/dist/generation/repository-run.d.ts
++++ b/dist/generation/repository-run.d.ts
+@@ -27,6 +27,11 @@
+      * Whether update no-op detection must be bypassed.
+      */
+     force?: boolean;
++    /** Exact manifest baselines selected for mandatory native full-page review. */
++    recoverPageBaselines?: readonly {
++        page: string;
++        gitHead: string;
++    }[];
+     /**
+      * Actual user and connector context supplied to planning.
+      */
+@@ -64,6 +69,8 @@
+      * Strict process-local Claims runtime rebuilt from durable state.
+      */
+     claimsRuntime: ClaimsRuntime;
++    /** Recovery pages whose full Claim set was inspected in this process. */
++    inspectedRecoveryPages: Set<string>;
+ }
+ /**
+  * Pages sharing one committed source baseline and changed-path window.
+@@ -149,6 +156,8 @@
+      * Existing factual pages grouped by their committed update baseline.
+      */
+     pageUpdateWindows: RepositoryPageUpdateWindow[];
++    /** Pages that cannot inherit their previous source coverage in this run. */
++    requiredBaselineRecoveryPages: string[];
+     /**
+      * Stable Claims preflight issues supplied to planning.
+      */
+--- a/dist/generation/repository-run.js
++++ b/dist/generation/repository-run.js
+@@ -1,3 +1,4 @@
++import { execFileSync } from "node:child_process";
+ import { randomUUID } from "node:crypto";
+ import { OpenWikiLocalShellBackend } from "../agent/docs-only-backend.js";
+ import { OpenWikiIgnore } from "../agent/openwiki-ignore.js";
+@@ -102,11 +103,23 @@
+         throw new RepositoryRunError("invalid_input", resolvedRequest.message);
+     }
+     const requestedLanguage = resolvedRequest.kind === "resolved" ? resolvedRequest.language : undefined;
++    if (input.mode !== "update" && input.recoverPageBaselines?.length) {
++        throw new RepositoryRunError("invalid_input", "Baseline recovery is available only for update runs.");
++    }
+     await ensureCodeModeRepoSetup(input.root, {
+         createWorkflow: input.mode === "init",
+     });
+     const persisted = await readRepositoryRunState(input.root);
+     if (persisted) {
++        if (input.recoverPageBaselines?.length) {
++            const requested = input.recoverPageBaselines
++                .map(({ page }) => page)
++                .sort(compareCodeUnits);
++            if (JSON.stringify(requested) !==
++                JSON.stringify(persisted.requiredBaselineRecoveryPages)) {
++                throw new RepositoryRunError("invalid_state", "An active OpenWiki run has a different baseline recovery page set.");
++            }
++        }
+         return resumeRepositoryRun(input, persisted);
+     }
+     const context = await createRunContext(input.root, "repository", input.language);
+@@ -134,11 +147,12 @@
+             context.lastUpdate.status === "complete") {
+             await seedRepositoryPageManifest(input.root, initialPages, context.lastUpdate.gitHead);
+         }
++        const requiredBaselineRecoveryPages = await validateRequestedRecoveryPages(input, initialPages, source.gitHead);
+         if (input.mode === "update") {
+             await fastForwardUnchangedRepositoryPageCoverage(input.root, ignore, initialPages, {
+                 sourceFingerprint: source.fingerprint,
+                 ...(source.gitHead ? { gitHead: source.gitHead } : {}),
+-            });
++            }, new Set(requiredBaselineRecoveryPages));
+         }
+         const seededManifest = input.mode === "update"
+             ? await readRepositoryPageManifest(input.root)
+@@ -147,7 +161,9 @@
+             initialPages.every((page) => seededManifest?.pages[page] !== undefined);
+         // Claims validation precedes update no-op detection. A clean Git status
+         // cannot hide stale or unresolved grounding state.
+-        if (input.mode === "update" && input.force !== true) {
++        if (input.mode === "update" &&
++            input.force !== true &&
++            requiredBaselineRecoveryPages.length === 0) {
+             const preflight = await getUpdateNoopStatus(input.root, ignore, input.language);
+             if (preflight.shouldSkip &&
+                 claimsRuntime.issueCount === 0 &&
+@@ -192,6 +208,7 @@
+             language,
+             languageChanged,
+             requiredRewritePages,
++            requiredBaselineRecoveryPages,
+             initialPages,
+             sourceFingerprint: source.fingerprint,
+             ...(source.gitHead ? { targetGitHead: source.gitHead } : {}),
+@@ -224,6 +241,7 @@
+             backend,
+             ignore,
+             claimsRuntime,
++            inspectedRecoveryPages: new Set(),
+         };
+         return {
+             run,
+@@ -328,6 +346,7 @@
+         backend,
+         ignore,
+         claimsRuntime,
++        inspectedRecoveryPages: new Set(),
+     };
+     return {
+         run,
+@@ -414,7 +433,7 @@
+ async function toActiveBeginView(run, resumed) {
+     const pages = run.state.plan?.pages ?? [];
+     const pageUpdateWindows = run.state.mode === "update"
+-        ? await getRepositoryPageUpdateWindows(run.root, run.ignore, run.state.initialPages)
++        ? await getRepositoryPageUpdateWindows(run.root, run.ignore, run.state.initialPages, run.state.requiredBaselineRecoveryPages)
+         : [];
+     const changedPaths = [
+         ...new Set(pageUpdateWindows.flatMap((window) => window.changedPaths)),
+@@ -432,6 +451,7 @@
+         ...(run.state.wikiGoal ? { wikiGoal: run.state.wikiGoal } : {}),
+         changedPaths,
+         pageUpdateWindows,
++        requiredBaselineRecoveryPages: run.state.requiredBaselineRecoveryPages,
+         claimIssues: run.claimsRuntime.issues,
+         completedPages: pages.filter(({ status }) => status === "complete").length,
+         ...(run.state.plan ? { totalPages: pages.length } : {}),
+@@ -445,10 +465,13 @@
+  * @param pages - Factual pages present when the run began.
+  * @returns Stable baseline cohorts with their visible changed paths.
+  */
+-async function getRepositoryPageUpdateWindows(root, ignore, pages) {
++async function getRepositoryPageUpdateWindows(root, ignore, pages, requiredBaselineRecoveryPages) {
+     const manifest = await readRepositoryPageManifest(root);
++    const recoveryPages = new Set(requiredBaselineRecoveryPages);
+     const pagesByBaseline = new Map();
+     for (const page of pages) {
++        if (recoveryPages.has(page))
++            continue;
+         const baseline = manifest.pages[page]?.gitHead ?? "";
+         const group = pagesByBaseline.get(baseline) ?? [];
+         group.push(page);
+@@ -464,7 +487,58 @@
+             fullReview: baseline.length === 0,
+         });
+     }
++    if (recoveryPages.size > 0) {
++        windows.push({
++            pages: [...recoveryPages].sort(compareCodeUnits),
++            changedPaths: [],
++            fullReview: true,
++        });
++    }
+     return windows;
++}
++/** Binds an explicit recovery request to current, factual manifest entries. */
++async function validateRequestedRecoveryPages(input, initialPages, targetGitHead) {
++    const requested = input.recoverPageBaselines ?? [];
++    if (requested.length === 0)
++        return [];
++    if (!targetGitHead) {
++        throw new RepositoryRunError("invalid_state", "Baseline recovery requires a reachable current Git HEAD.");
++    }
++    assertReachableSourceHead(input.root, targetGitHead);
++    const manifest = await readRepositoryPageManifest(input.root);
++    const factual = new Set(initialPages);
++    const pages = new Set();
++    for (const { page: requestedPage, gitHead } of requested) {
++        let page;
++        try {
++            page = normalizeWikiPagePath(requestedPage);
++        }
++        catch {
++            throw new RepositoryRunError("invalid_input", "Invalid baseline recovery page path.");
++        }
++        if (page !== requestedPage || !factual.has(page) || pages.has(page)) {
++            throw new RepositoryRunError("invalid_input", `Baseline recovery page must be a unique existing factual page: ${page}`);
++        }
++        if (!/^[a-f0-9]{40}$/u.test(gitHead) ||
++            manifest.pages[page]?.gitHead !== gitHead) {
++            throw new RepositoryRunError("invalid_state", `Baseline recovery expected Git HEAD does not match the manifest for ${page}.`);
++        }
++        pages.add(page);
++    }
++    return [...pages].sort(compareCodeUnits);
++}
++/** A recovery run must never publish provenance for an unavailable target. */
++function assertReachableSourceHead(root, gitHead) {
++    try {
++        execFileSync("git", ["cat-file", "-e", `${gitHead}^{commit}`], {
++            cwd: root,
++            stdio: "ignore",
++            timeout: 30_000,
++        });
++    }
++    catch {
++        throw new RepositoryRunError("invalid_state", "Baseline recovery requires a reachable current Git HEAD.");
++    }
+ }
+ /**
+  * Advances page coverage across commits that changed only generated wiki files.
+@@ -474,11 +548,13 @@
+  * @param pages - Factual pages present when the run began.
+  * @param source - Current source checkpoint to fast-forward to.
+  */
+-async function fastForwardUnchangedRepositoryPageCoverage(root, ignore, pages, source) {
++async function fastForwardUnchangedRepositoryPageCoverage(root, ignore, pages, source, recoveryPages = new Set()) {
+     if (!source.gitHead)
+         return;
+     const manifest = await readRepositoryPageManifest(root);
+     for (const page of [...pages].sort(compareCodeUnits)) {
++        if (recoveryPages.has(page))
++            continue;
+         const entry = manifest.pages[page];
+         if (!entry?.gitHead || entry.gitHead === source.gitHead)
+             continue;
+@@ -505,7 +581,7 @@
+     if (run.state.plan) {
+         // Do not silently replace a persisted plan. A duplicated host tool call is
+         // safe only when it describes the same semantic plan.
+-        const proposed = createRepositoryPlan(run.state.mode, input, run.claimsRuntime.issues, run.state.requiredRewritePages);
++        const proposed = createRepositoryPlan(run.state.mode, input, run.claimsRuntime.issues, run.state.requiredRewritePages, run.state.requiredBaselineRecoveryPages);
+         if (!samePlanIgnoringJobIds(run.state.plan, proposed)) {
+             throw new RepositoryRunError("invalid_state", "This OpenWiki run already has a different persisted plan.");
+         }
+@@ -514,7 +590,7 @@
+     if (run.state.phase !== "planning") {
+         throw new RepositoryRunError("invalid_state", "OpenWiki plan can only be submitted during planning.");
+     }
+-    const plan = createRepositoryPlan(run.state.mode, input, run.claimsRuntime.issues, run.state.requiredRewritePages);
++    const plan = createRepositoryPlan(run.state.mode, input, run.claimsRuntime.issues, run.state.requiredRewritePages, run.state.requiredBaselineRecoveryPages);
+     const nextState = {
+         ...run.state,
+         phase: "generating",
+@@ -595,6 +671,9 @@
+  */
+ export function inspectRepositoryPageClaims(run, jobId) {
+     const current = requirePendingJob(run, jobId, "inspected");
++    if (run.state.requiredBaselineRecoveryPages.includes(current.path)) {
++        run.inspectedRecoveryPages.add(current.path);
++    }
+     return {
+         page: current.path,
+         claims: run.claimsRuntime.session.inspectClaims(current.path),
+@@ -659,6 +738,7 @@
+             throw new Error("Repository Claims runtime was not restored.");
+         }
+         run.claimsRuntime = claimsRuntime;
++        run.inspectedRecoveryPages.delete(snapshot.path);
+         await writeLastUpdateMetadata(run.state.mode, run.root, run.state.actor.metadataModel, "repository", "interrupted", run.state.language, run.state.baseGitHead ?? null);
+         const nextState = {
+             ...run.state,
+@@ -751,6 +831,22 @@
+         }
+         if (latest.status !== "pending") {
+             throw new RepositoryRunError("invalid_state", "Only a pending OpenWiki page job may be submitted.");
++        }
++        if (run.state.requiredBaselineRecoveryPages.includes(current.path)) {
++            if (!run.inspectedRecoveryPages.has(current.path)) {
++                throw new RepositoryRunError("invalid_state", `Baseline recovery for ${current.path} requires openwiki_inspect_page_claims before submission.`);
++            }
++            const addressed = new Set([
++                ...(input.confirmedClaimIds ?? []),
++                ...(input.claims ?? []).flatMap((claim) => claim.id ? [claim.id] : []),
++                ...(input.retractedClaimIds ?? []),
++            ]);
++            const missing = run.claimsRuntime.session
++                .inspectClaims(current.path)
++                .filter((claim) => !addressed.has(claim.id));
++            if (missing.length > 0) {
++                throw new RepositoryRunError("invalid_input", `Baseline recovery for ${current.path} requires an explicit decision for every existing Claim ID.`);
++            }
+         }
+         try {
+             await reconcilePageClaims(run.claimsRuntime.session, current.path, input);
+@@ -769,6 +865,7 @@
+             await assertPageClaimsDurable(run, current.path);
+         }
+         catch (error) {
++            run.inspectedRecoveryPages.delete(current.path);
+             if (error instanceof RepositoryRunError)
+                 throw error;
+             throw new RepositoryRunError("invalid_input", error instanceof Error ? error.message : "Claims validation failed.");
+@@ -790,6 +887,7 @@
+         };
+         await writeRepositoryRunState(run.root, nextState);
+         run.state = nextState;
++        run.inspectedRecoveryPages.delete(current.path);
+         return {
+             status: "complete",
+             page: current.path,
+@@ -916,6 +1014,28 @@
+     const b = normalize(right);
+     return a.length === b.length && a.every((value, index) => value === b[index]);
+ }
++/** Proves every recovery job and its new source-bound page/Claims pair. */
++async function assertRecoveredPagesComplete(run) {
++    const required = run.state.requiredBaselineRecoveryPages;
++    if (required.length === 0)
++        return;
++    const source = getRepositoryRunSourceCheckpoint(run.state);
++    if (!source.gitHead) {
++        throw new RepositoryRunError("invalid_state", "Baseline recovery has no Git source checkpoint.");
++    }
++    assertReachableSourceHead(run.root, source.gitHead);
++    for (const page of required) {
++        const job = run.state.plan?.pages.find((candidate) => candidate.path === page);
++        const current = await getCurrentRepositoryPageCompletion(run.root, page, source);
++        if (job?.status !== "complete" ||
++            !job.completedBy ||
++            !current ||
++            current.completedRunId !== run.state.runId ||
++            current.completedBy !== job.completedBy) {
++            throw new RepositoryRunError("invalid_state", `Baseline recovery for ${page} requires a completed page job with new durable provenance.`);
++        }
++    }
++}
+ /**
+  * Deterministically finalizes a complete run and records any source drift.
+  *
+@@ -929,6 +1049,11 @@
+     if (!plan) {
+         throw new RepositoryRunError("invalid_state", "OpenWiki cannot finish before a plan is submitted.");
+     }
++    if (run.state.requiredBaselineRecoveryPages.length > 0 &&
++        plan.pages.some(({ status }) => status !== "complete")) {
++        throw new RepositoryRunError("invalid_state", "Baseline recovery cannot finish with pending or skipped page jobs.");
++    }
++    await assertRecoveredPagesComplete(run);
+     const pending = plan.pages.filter(({ status }) => status === "pending");
+     if (pending.length > 0) {
+         throw new RepositoryRunError("invalid_state", `OpenWiki cannot finish with ${pending.length} pending page job(s).`);
+@@ -942,6 +1067,10 @@
+     }
+     const skippedPages = new Set(skippedJobs.map(({ path }) => path));
+     const sourceChangedBeforeFinish = await hasRepositorySourceChanged(run);
++    if (run.state.requiredBaselineRecoveryPages.length > 0 &&
++        sourceChangedBeforeFinish) {
++        throw new RepositoryRunError("invalid_state", "Baseline recovery source changed; resume and replan before finish.");
++    }
+     const producerActorsByPage = new Map();
+     for (const [page, entry] of Object.entries((await readRepositoryPageManifest(run.root)).pages)) {
+         if (entry.completedBy && entry.completedRunId === run.state.runId) {
+@@ -997,7 +1126,11 @@
+         .map((page) => normalizeWikiPagePath(page))
+         .filter((page) => !regeneratedPages.has(page) && !skippedPages.has(page)));
+     await replaceRepositoryPageManifest(run.root, currentPages, getRepositoryRunSourceCheckpoint(run.state), skippedPages, preserveSourcePages);
++    await assertRecoveredPagesComplete(run);
+     const sourceChanged = sourceChangedBeforeFinish || (await hasRepositorySourceChanged(run));
++    if (run.state.requiredBaselineRecoveryPages.length > 0 && sourceChanged) {
++        throw new RepositoryRunError("invalid_state", "Baseline recovery source changed; resume and replan before finish.");
++    }
+     if (skippedPages.size > 0 || sourceChanged) {
+         await writeLastUpdateMetadata(run.state.mode, run.root, run.state.actor.metadataModel, "repository", "interrupted", run.state.language, run.state.baseGitHead ?? null);
+     }
+--- a/dist/generation/run-state.d.ts
++++ b/dist/generation/run-state.d.ts
+@@ -125,6 +125,8 @@
+      * Existing pages that must be rewritten after a language change.
+      */
+     requiredRewritePages: string[];
++    /** Existing pages requiring explicit full review before baseline recovery. */
++    requiredBaselineRecoveryPages: string[];
+     /**
+      * Factual pages present before this run began semantic generation.
+      */
+--- a/dist/generation/run-state.js
++++ b/dist/generation/run-state.js
+@@ -63,6 +63,7 @@
+     language: z.string().min(1),
+     languageChanged: z.boolean(),
+     requiredRewritePages: z.array(z.string().min(1)),
++    requiredBaselineRecoveryPages: z.array(z.string().min(1)).default([]),
+     initialPages: z.array(z.string().min(1)),
+     sourceFingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
+     targetGitHead: z.string().min(1).optional(),
+--- a/dist/integrations/core/protocol.d.ts
++++ b/dist/integrations/core/protocol.d.ts
+@@ -31,6 +31,11 @@
+      * Whether update no-op detection must be bypassed.
+      */
+     force?: boolean;
++    /** Exact old page baselines selected for mandatory full review. */
++    recoverPageBaselines?: Array<{
++        page: string;
++        gitHead: string;
++    }>;
+ }
+ /**
+  * Validated request addressing one active durable run.
+--- a/dist/integrations/core/protocol.js
++++ b/dist/integrations/core/protocol.js
+@@ -10,6 +10,14 @@
+     mode: z.enum(["init", "update"]),
+     language: CanonicalString.describe('BCP-47 code, e.g. "ko" (not "Korean").').optional(),
+     force: z.boolean().optional(),
++    recoverPageBaselines: z
++        .array(z
++        .object({
++        page: CanonicalString,
++        gitHead: z.string().regex(/^[a-f0-9]{40}$/u),
++    })
++        .strict())
++        .optional(),
+ })
+     .strict();
+ /**
+--- a/dist/integrations/core/session-manager.js
++++ b/dist/integrations/core/session-manager.js
+@@ -70,6 +70,7 @@
+                 mode: input.mode,
+                 language: input.language,
+                 force: input.force,
++                recoverPageBaselines: input.recoverPageBaselines,
+                 actor: {
+                     producerActor: this.producerActor,
+                     metadataModel: getHostAgentIdentity(this.host),

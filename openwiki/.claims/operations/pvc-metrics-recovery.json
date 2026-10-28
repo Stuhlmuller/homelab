@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:6c17eeac5e8699a6593a5cd9be3a211be4d9064fdcf1e400dc1373f96f5ac5f3",
+  "claims": [
+    {
+      "id": "claim_bf1de6b65166412680d2d93e0b211524",
+      "statement": "The Grafana PVC-space rule uses kubelet volume available and capacity samples for selected namespaces, warns above 85 percent, and enters Alerting after 15 minutes when the query has no data; missing telemetry must not be read as measured disk exhaustion.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/grafana/values.yaml#L934-L953",
+          "version": "repo-lines-v1:sha256:a9688ba74844d515b527b0b40be8279df86da318f509c31d63b157e809ce7d54:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMWM2ODE0YTAxYTRmYzQ0ZDE1NzRmODg5ZTA3YThjODY5YmU3MDlhNmNiMTEyMjcxYjJmNGQwYTY0ZWY5MzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiNzIzMTcwOWRiNTI1NzU2MWUyM2Q1NTYwZDQ5NjQ2NzQyZWY1ZjMwODRjN2M0ZDNjZGQ3NzlkYTA2Mjg5MDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2ZTQ1NWMxMjlhMTZjZTUyZWUxN2IwN2QxNmI0ZjA5YmViOGE0OTc2MmIzMDg2YjhhMjk2OWY1ZmI2YjhjNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyNDgxNjAxMTIzM2Q2ZGVmMTBjYTRhODMzY2I5ZTg4NjI3YmY5ZDdhOWYxNTY2NjU2NDFkOGQ2MDRkOTRjODYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/grafana/values.yaml#L974-L1005",
+          "version": "repo-lines-v1:sha256:eee2fd4efb3da90c8c7593e3089a85b8789472827a4e915006fb65f386b3806c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2N2VmZTcxZDkwYjg0NmYxMjk5NGZkMTVmNTg4MTNjN2NjZGIzMDE0ZWZjOTA2Zjk2ZTcyM2Q5YTVlMWYxNjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiNjUzN2RiMDcyNjg0N2U3ZDM5NzBjNzcyYjdiOTE0OTM2N2NlNzAyNDE0NDU5NjI4ZWNmMDkwYzRkOGI1OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc5ZmZhZGNhNzkwN2ZiZjM2YmFkZTc4NzMzMGQ1YmZlMWNlN2VmMzQ0NGE5YzEyZGU5MGI5MmVlZWI1ZmYyNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlNzJlOWNmMWEwMzEwNjY3MDZmZDljMmU1NzE0ZjQwNDUwMjUzOWQwOGM4MjQ2ZDhmOTMzNTZmNDc0OTE0YWMifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

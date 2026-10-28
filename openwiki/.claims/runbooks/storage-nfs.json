@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b6ca571036ec462e79787eb141b7468e3c41034fbf87377a98a36d0ec9ad361a",
+  "claims": [
+    {
+      "id": "claim_f11d220ec76240f7aaa84a4603ce3af1",
+      "statement": "The default nfs-default StorageClass uses QNAP NFS at 10.1.0.2, and its Retain reclaim policy protects workload data from accidental PVC deletion.",
+      "evidence": [
+        {
+          "resource": "repo://docs/storage-nfs.md#L1-L4",
+          "version": "repo-lines-v1:sha256:ac3b4ba856560b9852cf4b7beefa9fd8dbb5ace0527351428c3b6db475c20f2a:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWZhNjA0OWU2NDkzMzNmYjQyMjNkYTc1ZmFkMjJhZGM4YzYzZjQ0YmE2YTE0NTM1ODgyN2JkNjgxMjliN2QzOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTY3NDNlNWJjNmVhOTk0YjFkZjQ2YTk3Y2MyNjg1MzNjNTk2M2NlNTNkMGY1ZGY3Yzg2MjNmYTIyZGRmYjYzMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjIyMmUwYzY2NWRlMTMzZGMxOGUyNDhlOTNlYTY2NTBmZjIyYmQwODIwODg2MWU0MjY3MWMyMzk4MDg2OWRlZiJ9"
+        },
+        {
+          "resource": "repo://docs/storage-nfs.md#L105-L116",
+          "version": "repo-lines-v1:sha256:1e442976cb86124c24616bdbab7b6f43bbaccbd5d859bfc8ceea7a26369aa852:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5ZTQzNmQyYmFiZDYzOGFkZTg2NzkxZTE2MmU3ZGU1YTZiMWIzMTI4YzZhZTllZDkzNTA0ZmJmM2M1M2RjOTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzNjE0OWYyZGFkOTIzMDVhYTQyNTU5ZTE3YzgxMDk2MjFiOGZjOWI1ZWJiMWNjNDlhZGFjYTg1YzdjZGNjYjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjliZTJkMjhmMmY1ZGRmMmNhMDdmYTA4ZjE3ZThmN2Y0YmYxNjZkYjg4NTU0YTI0YTk4ODNjMjQzYWU3ZWM1YWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxNWExYWZkYzdjODkxYzk3YWYyYWM1NzEzMTIzYmE2NDJhN2E1ZDFmZmQ3MTdjMmQ2NTUxM2Q4ZjFhZjU5ZGEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}
