@@ -18,6 +18,9 @@ const { createRepositoryPlan } = await import(pathToFileURL(path.join(
 const { SubmitPlanInput } = await import(pathToFileURL(path.join(
   packagePath, "integrations/core/protocol.js",
 )));
+const { OpenWikiLocalShellBackend } = await import(pathToFileURL(path.join(
+  packagePath, "agent/docs-only-backend.js",
+)));
 
 const selected = "/openwiki/architecture/selected.md";
 const deferred = "/openwiki/architecture/deferred.md";
@@ -68,7 +71,12 @@ try {
   await mkdir(path.join(root, "openwiki/.claims/architecture"), { recursive: true });
   const manifest = { schemaVersion: 1, pages: {} };
   for (const [page, name] of [[selected, "Selected"], [deferred, "Deferred"]]) {
-    const body = markdown(name);
+    const body = name === "Deferred"
+      ? markdown("Deferred Display")
+        .replace("type: architecture\n", "")
+        .replace('title: "Deferred Display"\n', "")
+        .replace('description: "Deferred Display fixture."\n', "")
+      : markdown(name);
     const pageVersion = hash(body);
     await writeFile(path.join(root, page.slice(1)), body);
     await writeFile(path.join(root, "openwiki/.claims/architecture", `${name.toLowerCase()}.json`), JSON.stringify({
@@ -97,11 +105,36 @@ try {
   const deferredBefore = await Promise.all([
     readFile(deferredMarkdownPath), readFile(deferredSidecarPath), readFile(manifestPath),
   ]);
+  // Simulate a concurrent edit during preparation's provenance read. The
+  // operator must fail without restoring over that user change.
+  const originalReadRaw = OpenWikiLocalShellBackend.prototype.readRaw;
+  const concurrentEdit = Buffer.concat([deferredBefore[0], Buffer.from("\nConcurrent edit.\n")]);
+  let injected = false;
+  OpenWikiLocalShellBackend.prototype.readRaw = async function (filePath) {
+    const result = await originalReadRaw.call(this, filePath);
+    if (!injected && filePath === deferred) {
+      await writeFile(deferredMarkdownPath, concurrentEdit);
+      injected = true;
+    }
+    return result;
+  };
+  try {
+    const raced = HostSessionManager.create({ host: "codex", producerActor: "codex" });
+    await assert.rejects(raced.begin({ root, mode: "update" }),
+      /Claim issue page changed during preparation/);
+    assert.equal(injected, true);
+    assert.deepEqual(await readFile(deferredMarkdownPath), concurrentEdit);
+  } finally {
+    OpenWikiLocalShellBackend.prototype.readRaw = originalReadRaw;
+  }
+  await writeFile(deferredMarkdownPath, deferredBefore[0]);
   const session = HostSessionManager.create({ host: "codex", producerActor: "codex" });
   const begun = await session.begin({ root, mode: "update" });
   assert.equal(begun.status, "active");
   assert.deepEqual(begun.requiredBaselineRecoveryPages, []);
   assert.deepEqual(new Set(begun.claimIssues.map(({ page }) => page)), new Set([selected, deferred]));
+  assert.deepEqual(await readFile(deferredMarkdownPath), deferredBefore[0]);
+  assert.deepEqual(JSON.parse(await readFile(manifestPath, "utf8")).pages[deferred], manifest.pages[deferred]);
   assert.equal((await session.submitPlan({
     runId: begun.runId, pages: proposed, deferUnplannedClaimIssues: true,
   })).totalPages, 1);
@@ -116,6 +149,23 @@ try {
   await resumed.submitPage({
     runId: active.runId, jobId: next.job.id, confirmedClaimIds: ["claim_selected"],
   });
+  const editedDeferred = Buffer.concat([deferredBefore[0], Buffer.from("\nUser edit.\n")]);
+  await writeFile(deferredMarkdownPath, editedDeferred);
+  await assert.rejects(resumed.finish({ runId: active.runId }), /Deferred Claim page|do not match/);
+  assert.deepEqual(await readFile(deferredMarkdownPath), editedDeferred);
+  await writeFile(deferredMarkdownPath, deferredBefore[0]);
+  const editedSidecar = JSON.parse(deferredBefore[1]);
+  editedSidecar.claims[0].evidence[0].version = `repo-file-v1:sha256:${"1".repeat(64)}`;
+  await writeFile(deferredSidecarPath, JSON.stringify(editedSidecar));
+  await assert.rejects(resumed.finish({ runId: active.runId }), /Deferred Claim page/);
+  assert.deepEqual(await readFile(deferredSidecarPath), Buffer.from(JSON.stringify(editedSidecar)));
+  await writeFile(deferredSidecarPath, deferredBefore[1]);
+  const manifestBeforeEdit = await readFile(manifestPath);
+  const changedManifest = JSON.parse(manifestBeforeEdit);
+  changedManifest.pages[deferred].sourceFingerprint = `sha256:${"2".repeat(64)}`;
+  await writeFile(manifestPath, JSON.stringify(changedManifest));
+  await assert.rejects(resumed.finish({ runId: active.runId }), /Deferred Claim page/);
+  await writeFile(manifestPath, manifestBeforeEdit);
   assert.equal((await resumed.finish({ runId: active.runId })).status, "complete");
   const deferredAfter = await Promise.all([
     readFile(deferredMarkdownPath), readFile(deferredSidecarPath), readFile(manifestPath),
@@ -125,7 +175,25 @@ try {
   assert.deepEqual(JSON.parse(deferredAfter[2]).pages[deferred], manifest.pages[deferred]);
   const updatedManifest = JSON.parse(deferredAfter[2]);
   assert.equal(updatedManifest.pages[selected].completedRunId, begun.runId);
+  assert.match(await readFile(path.join(root, "openwiki/architecture/index.md"), "utf8"),
+    /\[deferred\]\(deferred\.md\)/);
   assert.equal(JSON.parse(await readFile(path.join(root, "openwiki/.last-update.json"), "utf8")).status, "interrupted");
+
+  // A wiki-only sidecar change can make a Claim stale while source paths have
+  // no net diff from the deferred page's old source baseline. Begin must not
+  // fast-forward that unresolved page before a focused plan exists.
+  await writeFile(path.join(root, "README.md"), originalReadme);
+  commit("fixture: return source bytes");
+  const staleSidecar = JSON.parse(await readFile(deferredSidecarPath, "utf8"));
+  staleSidecar.claims[0].evidence[0].version = `repo-file-v1:sha256:${"0".repeat(64)}`;
+  await writeFile(deferredSidecarPath, JSON.stringify(staleSidecar));
+  commit("fixture: stale wiki Claim evidence");
+  const oldDeferredEntry = JSON.parse(await readFile(manifestPath, "utf8")).pages[deferred];
+  const second = HostSessionManager.create({ host: "codex", producerActor: "codex" });
+  const secondBegin = await second.begin({ root, mode: "update" });
+  assert.equal(secondBegin.status, "active");
+  assert.ok(secondBegin.claimIssues.some(({ page }) => page === deferred));
+  assert.deepEqual(JSON.parse(await readFile(manifestPath, "utf8")).pages[deferred], oldDeferredEntry);
 } finally {
   await rm(root, { recursive: true, force: true });
 }
