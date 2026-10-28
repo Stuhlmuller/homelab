@@ -84,8 +84,8 @@ The retained operator [journal claim](../openclaw-enterprise-operator/journal.ya
 belongs to `openclaw-system`, while the pinned Compute Driver would create the
 Agent's [gateway-state claim](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L31-L54)
 in `openclaw-agents`. [PVC mounts stay in the Pod's namespace](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#claims-as-volumes);
-one ordinary backup Pod cannot mount both claims. Coordinate the two sources and verify
-their UIDs before publishing one completed set.
+one ordinary backup Pod cannot mount both claims. Coordinate the two sources
+and verify their UIDs before publishing one completed set.
 
 The pinned [Kubernetes Secret Driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-secret.md#L136-L143)
 never returns value bytes through the OCC API; capture the tenant's exact
@@ -111,6 +111,26 @@ must publish completed directories without further writes; any change detected
 during a drill fails its final hash check. Storage
 placement and 24Gi restore scratch headroom need measured admission;
 private routes, applying the registration and live recovery remain gated.
+
+The current `bootstrap/output.json` packager input is not a producer for the
+pinned chart's bootstrap PVC: that PVC holds separate `initial-admin-password`
+and `initial-admin-service-key.json` files. The fresh Embedded Agent's SQLite,
+sessions and workspace live on an OCE-owned `gateway-state-<agent-hash>` claim in
+`openclaw-agents`; the bootstrap and operator-journal claims are in
+`openclaw-system`. No source path captures these claims together with tenant
+Secrets and metadata, the operator journal, or the chart-generated gateway TLS
+root and listener Secrets. No declared operation proves the Agent and
+control-plane writers stopped throughout capture, publishes to a verified
+encrypted off-node destination, or restores the complete service in isolation.
+The static `writerStopped` marker and this database-only restore fixture do not
+close those gaps. T049 and T051 remain pending.
+These requirements follow the pinned upstream [bootstrap Job][up-bootstrap],
+[agent claim][up-agent-state], and [gateway TLS templates][up-gateway-tls].
+
+[up-bootstrap]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/jobs.yaml#L130-L138
+[up-agent-state]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L12738-L12759
+[up-gateway-tls]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/gateway-routing.yaml#L23-L54
+
 Validate this dormant boundary with
 `nix develop --command python3 -I scripts/ci/openclaw-enterprise-foundation-test.py`.
 Run `nix develop --command python3 -I scripts/ci/openclaw-enterprise-postgres-test.py`
