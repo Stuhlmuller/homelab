@@ -8,6 +8,15 @@ the targeted Go tests. For offline verification, pass `--cordium-repo` and
 clones those repositories before applying patches, so local edits cannot
 silently become the tested source.
 
+`candidate-networkpolicies.json` records full policy specs rendered by the
+unpatched and patched constructors at those exact revisions. Reproduce it with
+`verify-source.py --check-render`; `--write-render` is for an intentional
+reviewed fixture update. The check first matches the unpatched constructors to
+the current source-reviewed fixtures, then requires the patched objects to
+differ only by removal of each all-port IPv4/IPv6 egress rule. The protected
+image build repeats this check before registry credentials. This file is a
+candidate source render, not an installed policy fixture or canary receipt.
+
 The Cordium patch removes the public IPv4/IPv6 all-port egress from generated
 `cordium/ws-main`; internal TCP 8080 and DNS rules remain. The Octelium patch
 removes the equivalent egress from generated `octelium/svc-upstream` and requires
@@ -46,9 +55,10 @@ wrapper does not yet install the patched octops binary. Its `--help` check
 proves flag support, not binary provenance. Before using these artifacts, pin
 both successful Harbor digests and provide a reviewed installation path that
 verifies the patched octops binary came from its authenticated, signed image
-digest. Render real generated policies and refresh the expected-spec fixtures,
-then prove required destinations and private-range denial through actual
-traffic on an isolated canary. These patches have not
+digest. Compare the published generator's installed policies to these candidate
+renders and refresh installed expected-spec fixtures only after review. Prove
+required destinations and private-range denial through actual traffic on an
+isolated canary. These patches have not
 deployed any image. Keep enforcement disabled until the other T018/T027 gates
 and live capacity admit it. Retain the upstream `LICENSE` files in each source
 and any distributed artifacts. Cordium Genesis
