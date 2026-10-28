@@ -40,6 +40,8 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-6e81262b111476d6a48c778a
+    resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
@@ -64,10 +66,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
+generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:34:01.303Z
+    at: 2026-10-28T02:48:51.051Z
 ---
 
 # Storage And State
@@ -461,8 +463,16 @@ private proof to the runner for one exact-main, UID/resourceVersion-guarded
 Secret annotation patch and checks the result. The binder-bearing image is not
 published or deployed from this source, and the disabled operator and
 unenforced network policy block live binding. Key ownership, admitted volumes,
-placement, and a recovery path for failed Jobs still need proof. Live
-reconciliation also needs admitted local volumes and the in-cluster Job.
+placement, and live cleanup proof remain open. The staged
+[cleanup](../../scripts/ci/openclaw-enterprise-cleanup-failed-bind.py)
+checks the retained bootstrap and journal PVC/PV UIDs, ownership and specs
+before one foreground deletion of an exact terminal Failed binding Job. It
+rechecks the same storage fingerprint and unchanged unbound startup Secret
+until both Job and Pod are gone. The lane does not delete either retained
+claim or volume. A changed claim, missing failed Pod, or post-patch Secret
+state blocks cleanup. This source path has not run, so no live recovery or
+storage-retention receipt exists. Live reconciliation still needs admitted
+local volumes and the in-cluster Job.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

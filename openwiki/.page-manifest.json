@@ -31,20 +31,20 @@
       "completedRunId": "1ab5622d-2e95-4978-aa7b-cdb9101432c0"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "pageVersion": "sha256:63cd48115deb6cbe71cd24049ca2f8eb92854d08fc483a0b682816314f2d2d84",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5",
+      "pageVersion": "sha256:c621d084e316466b6c8b123a9053d2b6599fd57adc58844e1e5a855a7df7460e",
       "completedBy": "codex",
-      "completedRunId": "6d4262fd-ca03-4af9-8296-b3ea25faed44",
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f"
+      "completedRunId": "3014cd09-2a04-494c-b881-7bcae8c9092c"
     },
     "/openwiki/architecture/storage-and-state.md": {
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f",
-      "pageVersion": "sha256:28fd40769c51aeb1aea900ce567f1214c667ed1c674686aba149955f511504f5",
+      "pageVersion": "sha256:1995a407408315bf216c95f9ff12bda587cabe2371c58290c2272ec299e13723",
       "completedBy": "codex",
-      "completedRunId": "cc843b31-f7ea-4be1-8181-b2a1becfaa5e"
+      "completedRunId": "342cb1a4-e3ea-4127-bdf2-02de3ee4cffc",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5"
     },
     "/openwiki/operations/agent-workflows.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -235,12 +235,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:b938d3c604fcaccad411bef152f456e3e015567bced47cc9c858beed9350c716",
+      "pageVersion": "sha256:42343822a75fdc65b958fa870636de5f576440d20cb6c3c751fbd9e7fda8d729",
       "completedBy": "codex",
-      "completedRunId": "6d4262fd-ca03-4af9-8296-b3ea25faed44",
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f"
+      "completedRunId": "342cb1a4-e3ea-4127-bdf2-02de3ee4cffc",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -304,12 +304,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/runbooks/ci-cd.md": {
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f",
-      "pageVersion": "sha256:d0023338523a00ed0ba4da8bdc26bcef04092fd87a4e1f0abdf3a40a8a50c4a8",
+      "pageVersion": "sha256:44785c8aba63a3586c2696200aa867aab924fb3e403e87edb083250e19767a89",
       "completedBy": "codex",
-      "completedRunId": "cc843b31-f7ea-4be1-8181-b2a1becfaa5e"
+      "completedRunId": "342cb1a4-e3ea-4127-bdf2-02de3ee4cffc",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5"
     },
     "/openwiki/runbooks/homelab-onboarding.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -355,12 +355,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/runbooks/secrets-aws-ssm.md": {
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f",
-      "pageVersion": "sha256:b295401085e501a24c3f63cca5dee095508e50d27ca0cd08992afe6c68eec73e",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5",
+      "pageVersion": "sha256:2c2caf3e4ccf9e5cbfa3e06a2faf88ac589cca4996f96f3d73123fd205519646",
       "completedBy": "codex",
-      "completedRunId": "cc843b31-f7ea-4be1-8181-b2a1becfaa5e"
+      "completedRunId": "3014cd09-2a04-494c-b881-7bcae8c9092c"
     },
     "/openwiki/runbooks/storage-nfs.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -394,12 +394,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/source-map.md": {
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f",
-      "pageVersion": "sha256:09f9d2797c1110dc850a649585604bbb486f6dc3e396eb0839250da622dc6d87",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5",
+      "pageVersion": "sha256:2363c66d03fdd34376a3d33cf6b7bce29edc15d552239fab500f15e5c42be4be",
       "completedBy": "codex",
-      "completedRunId": "cc843b31-f7ea-4be1-8181-b2a1becfaa5e"
+      "completedRunId": "3014cd09-2a04-494c-b881-7bcae8c9092c"
     },
     "/openwiki/workloads/application-notes.md": {
       "gitHead": "10275ce5e3b2d0425b8b80974b43597ae078112d",
@@ -410,12 +410,12 @@
       "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7"
     },
     "/openwiki/workloads/inventory.md": {
-      "pageVersion": "sha256:d20272795c9b07ab4af286046c2bc2d05b3372f0c87c0c2944a57d8186ca6bb1",
+      "pageVersion": "sha256:93b93c541705f88602d8d3dd6a385d991135f026005f0290e00ad0d9c4e0f5ab",
       "completedBy": "codex",
-      "completedRunId": "6d4262fd-ca03-4af9-8296-b3ea25faed44",
-      "gitHead": "a0c6a1a81c897453fe242321c4ffb98f153c53e8",
-      "sourceFingerprint": "sha256:bc5cc6c45c9477af1f21ce8355b4571d7d3c4940e6749536db64c710a69b8d11",
-      "visibleSourceFingerprint": "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f"
+      "completedRunId": "342cb1a4-e3ea-4127-bdf2-02de3ee4cffc",
+      "gitHead": "755afdc788dc5a303614d58d1de55a5760124383",
+      "sourceFingerprint": "sha256:588221151f57dcdf8570fc270821ddba98caaad38dc15adf30772e080b3c55d1",
+      "visibleSourceFingerprint": "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5"
     }
   },
   "visibleSources": {
@@ -3252,7 +3252,7 @@
       "specs/005-retire-public-app-dns/spec.md": "sha256:f34527151fccab8f804cbe5aa981773065e65d6f60135b243a431dd4fd3a2ccc",
       "specs/005-retire-public-app-dns/tasks.md": "sha256:da69575d9d745651831c8be7380b7df383d1a9794bc31fce6bf0d7d2be36e266"
     },
-    "sha256:72e383f0d44edd716e42e1923d12f8eb3a9e6a78048b4e699db6c8917afa811f": {
+    "sha256:d068b82789d8c7e8fbd7520f72ae46503d0850e7a8ef27cee8dbab655efda1a5": {
       ".agents/skills/aws-sso-login/SKILL.md": "sha256:82da5da14edd71c50b0f8c9775f946576a59902be3f3f8424120c53cc6d6d04c",
       ".agents/skills/homelab-app-onboarding/SKILL.md": "sha256:ab1c33b97c9ff215c16a18526b7c849ae991f23bc29b77508c796215eab0ddf7",
       ".agents/skills/homelab-harbor-images/SKILL.md": "sha256:b3c4ff80d49ee03794476575c99d73d2f4131b758663d5e9411faacb05f23afc",
@@ -3332,7 +3332,7 @@
       ".github/workflows/openclaw-discord-offline-cache.yml": "sha256:493bd49fb131424638a2bf67f3d2a6ad4b66507619ead604f7ece61c3d977db5",
       ".github/workflows/openclaw-enterprise-images.yml": "sha256:b02afe0db88712de3b0d68a219e990d6f8572cddf08b5abc361e62c184030d9e",
       ".github/workflows/openclaw-enterprise-model-credential.yml": "sha256:1feed5e43c57db8af7c8f19f42b608e31ea3ea32dada6c8e3600f34d85428e28",
-      ".github/workflows/openclaw-enterprise-operations.yml": "sha256:d5ebbe72967177c2e10a191ff00630f1ad0de69e7da04c3c1b15a3b7c37a55dd",
+      ".github/workflows/openclaw-enterprise-operations.yml": "sha256:cbfb41473a36a122b5e0ac2e71f3c4b5cd0f90dc47f1845b3872e40aec7cabaa",
       ".github/workflows/openclaw-enterprise-operator-smoke.yml": "sha256:466e43f307af671146568f6ff37f8283cd67ca648da89ef72ff3c3c9c0e04d2c",
       ".github/workflows/openclaw-enterprise-startup.yml": "sha256:c5a21e187ac0b2cb848d5d7fe6b7bc4f847656bf91815b0940cf5a59c4605a04",
       ".github/workflows/platform-maintenance.yml": "sha256:f07d25eab0478f755bfd6d8ab7727f380bf3b2c0d229560f89e4a7cde29502e9",
@@ -3997,7 +3997,7 @@
       "clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml": "sha256:a61662c3a5590bd9ec57aa87d37f2bfe35376b48292fe9aa8f993bfe6b7ef0a6",
       "clusters/homelab/apps/openclaw-enterprise-foundation/postgres.yaml": "sha256:60fd53fec4064a578851ca441ba56c699f1e1a866a5de375580bc39413f0973d",
       "clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml": "sha256:b19e7db3d1e8361ae4db2146fe107ab68b4953930c112662617be4cba2991bce",
-      "clusters/homelab/apps/openclaw-enterprise-operator/README.md": "sha256:ed09fe4ec6a1ad0de7f204f4b8ed501bcc975d54e7de3f244159b4077ace5946",
+      "clusters/homelab/apps/openclaw-enterprise-operator/README.md": "sha256:1492d9f7b8be91403ed3099fec8306088ab93ebf92801faaac31939ba3983100",
       "clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml": "sha256:2a8121134fc95b9546c1c04db2d89f50eb06cd09e49affb00b10742a8cc52376",
       "clusters/homelab/apps/openclaw-enterprise-operator/kustomization.yaml": "sha256:e2a6001c4b63e9ada0bee13e78f9301758d2293e2c4e0ff8052db280986af696",
       "clusters/homelab/apps/openclaw-enterprise-operator/networkpolicy.yaml": "sha256:26814ed8b7db24dbe82fdd52099a9e3d5431edffa12e36b5a36d6135b7ed4251",
@@ -4213,7 +4213,7 @@
       "docs/evidence/harbor-core-binary-scan-2026-10-11.json": "sha256:ac0cfb0f8a7175fd99d289d40f48c4efa9ef49ff846e04f57efe199b298e1dda",
       "docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json": "sha256:10af4fcbc6246f49b3708b23ee76658b016a52738dfe10d5570a4d74a80d68eb",
       "docs/evidence/harbor-core-registry-fixture-2026-10-11.json": "sha256:572754acf92eb88bc0ba159d7ebd00573a3eed68d5f2d56c763ee3d976fd40bf",
-      "docs/evidence/openclaw-enterprise-acceptance.md": "sha256:df96948c863456911932d455b8cb56109cc2b6727060b7677ef54ff54ce3b18a",
+      "docs/evidence/openclaw-enterprise-acceptance.md": "sha256:d3efbf721c8f617cf4bff4fef0016904a416eec4a6fc50579e1583245a25b303",
       "docs/evidence/openclaw-enterprise-policy-review.json": "sha256:a4899590108734a632e6568f283994a9079fc8b96602bbfc26f41790057a0a08",
       "docs/examples/octelium/homelab-ci-recovery.yaml": "sha256:c45423177638c1a3a5fce8ba3b9fb9678d2b1ff3e0f3df2933c9aae1e78f7e94",
       "docs/examples/octelium/homelab-private-kubernetes-ci-credential.yaml": "sha256:e7215e0ed43fe27e54300a4e288c7a477e02aac89b17e897f140b5e1f78b91f5",
@@ -4229,7 +4229,7 @@
       "docs/nofx-private-images.md": "sha256:7202df6ce9eb929f76d037dfeb12155671bef0f958fabd80bb5c8cbee53e6846",
       "docs/octelium-nofx-reconciliation.md": "sha256:68aa4ae732ab487dc4cb1c3ab6aeffb2cb28fdcc293ce56e4b6aac4779849dcb",
       "docs/octelium.md": "sha256:e48ee58778ab6a425c6ff3be6041d25246973f7b560da89a2fae1de76b8247d7",
-      "docs/openclaw-enterprise-rollout.md": "sha256:eccab61b803d6edf5faa2f7706a73c371425b75bd7a53cdb9a7ce5f60e7bfd38",
+      "docs/openclaw-enterprise-rollout.md": "sha256:50d1f78cdb51b8268c017e5d910304193c5ea7785cdc9612ee0078649205bfc0",
       "docs/operator-infrastructure.md": "sha256:de265bc1d87b2a34c21b133d60a3b813d64e220524e2d6cd27eec01dec339439",
       "docs/pgvector-pg17-update.md": "sha256:15be6426df89a7d33ad19e341c09b6c23a2fd29b96289db8ae117c01cfc987a2",
       "docs/rollback-argocd-apps.md": "sha256:a2dd4fa7aea5d499e6c389eeeb5e19d3f60bd8381d3b5a20f81609946b8636e3",
@@ -4249,8 +4249,8 @@
       "policy/kubernetes_test.rego": "sha256:385d3d59db599cebb846d49d323b81f07cafdd4767ca344ddd44d9a5dac43fc3",
       "policy/terraform.rego": "sha256:ab6275b9e8eeb2603a73ef1c0c8d42d85e3794c5dd05c7ad4d78b083e870f073",
       "policy/terraform_test.rego": "sha256:896b46840b7a8aead225ba206a7665ccdd45aadbade863d1e0ebf898777b6cc6",
-      "policy/workflows.rego": "sha256:4ac89356dcac58e2b0091e5709bb644d45503d6aca4daad545adc197d6613e09",
-      "policy/workflows_test.rego": "sha256:298301e91d383f6c83874471b3ae448de079ff60eac1d03f992f10bc8ccc5c7d",
+      "policy/workflows.rego": "sha256:2fbec0ee3a9bc969a4c9af02912e9f2c7f18875ba3474cf37f39626db15be319",
+      "policy/workflows_test.rego": "sha256:8a87a18d973007d8f22f74962e0ba4b47e0e4ee1ff503612e6f1f85c18ae3498",
       "recovery/application-backups/application-backup.service": "sha256:8197cc8865469fe2c8d7b088e95ba316de7791b1e8250f9a244907b720297838",
       "recovery/application-backups/application-backup.timer": "sha256:97b4f3ccc155827bc5ffa5352cbc3dd9b9da203abd74701189b728208673542b",
       "recovery/application-backups/prometheusrule.yaml": "sha256:f6932992c58b7b4c883a81cc7d641fe20e7194406a0b56c1be2beff8879d4cf7",
@@ -4402,7 +4402,7 @@
       "scripts/ci/octelium-service-retire-test.py": "sha256:df9a0ee3c11b6acfba87beb3bbd6180cfd8065eaea1279b425aaf0208e4a4266",
       "scripts/ci/octelium-tunnel-check-test.py": "sha256:2f11f205cccab9cc9379122841c73e69dae0ff0e7e4ea3f114472949f7907b5b",
       "scripts/ci/offline-checks.sh": "sha256:3c3e77b6918d962d986c968e305cbedb992da6327a26bf79c015d6bd88b03439",
-      "scripts/ci/offline-static-checks.sh": "sha256:a3a39f0c4c5e55264ecdb1fb69fb3b1740babe83cbb10510cee1860daadcc89a",
+      "scripts/ci/offline-static-checks.sh": "sha256:db758dc40b1ae5cad8833718f9284c73866d4464a44cdf286b8fa82c69b107b3",
       "scripts/ci/openclaw-assistant-check.py": "sha256:c4b44341cf294664a9bac548f70bd03d153b6993bae377a9ee07928595c06eb5",
       "scripts/ci/openclaw-batch-native-check.py": "sha256:744c681df4c3cd93b70a93df03cf890ff95e23cd481a9b135aa13b1017b925af",
       "scripts/ci/openclaw-config-check.py": "sha256:9ddc56f11c23d82df6f0f6d69c202db7ac2f5d0db5498f4ea2595bb47074202f",
@@ -4413,15 +4413,18 @@
       "scripts/ci/openclaw-enterprise-active-test.py": "sha256:412fdc00d8528c0c97369017ee92d01084a11c06a9948adc15cbe4883efb87be",
       "scripts/ci/openclaw-enterprise-bind-installation-test.py": "sha256:333e242d35dbc8a8b3cc50044e0a4d9a7c9dcbb07767ede2e4e482feccb88a89",
       "scripts/ci/openclaw-enterprise-chart-hooks-test.py": "sha256:cf23a8007b3026c72c66670292f7af2814ade7b0bb4c9bd27a845addcb4d5579",
+      "scripts/ci/openclaw-enterprise-cleanup-failed-bind-test.py": "sha256:3417bb27689aee35972996806d687039c06d5a36d4b2150f513988f96049f09e",
+      "scripts/ci/openclaw-enterprise-cleanup-failed-bind.py": "sha256:47105871b0456c6399700a3dd49b6eacfafefe3b0daa607754f2b88a40b4d624",
+      "scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh": "sha256:4c4c1ebca084f72454efdbfb817c5ba89b8fb11f7ee0b92fbb73d9b4dd34713e",
       "scripts/ci/openclaw-enterprise-download.py": "sha256:a5c427b40b485ad45c539f50e11714bd48f9d5ff5fb4f59b208f92faaa26c23e",
       "scripts/ci/openclaw-enterprise-foundation-test.py": "sha256:6867206c7d24aa0d321d5e0c3d8b3029b1a9a24039dbfe3775c07af20bdcf5ab",
-      "scripts/ci/openclaw-enterprise-full-sync-test.py": "sha256:6c699df3b03f4527f7c6c1e4f7b893a12bdcc34cd03ceef6777096d4576a26f3",
+      "scripts/ci/openclaw-enterprise-full-sync-test.py": "sha256:431927cb21dc53fbc5db05f60a9392186e4fdb3e9f2b52f8667888d3dce562d8",
       "scripts/ci/openclaw-enterprise-full-sync.sh": "sha256:bb0f5b15f86671cbe405445412517a114b797b45ff6a63b0f839c2c82da13168",
       "scripts/ci/openclaw-enterprise-image-test.py": "sha256:27dafbcfde6d7d891d6bff3ffd5ac7c13fa3c081c5f50886e03036f1944a3f3e",
       "scripts/ci/openclaw-enterprise-journal-operator-test.py": "sha256:5885eb4863016985bf19f39f19286fa1682c5046e9b2d1a42c17314d0c094def",
       "scripts/ci/openclaw-enterprise-journal-operator.py": "sha256:443d5ec2a5a0098ae6d3b843f6b3a508f33f954b2fe063161718d9b209a08a2c",
       "scripts/ci/openclaw-enterprise-lifecycle-test.py": "sha256:e534e460e4d6bdcfb3eaac2dc25757f28cf7bf06beb05f810fe3b28ed6501b34",
-      "scripts/ci/openclaw-enterprise-operations-test.py": "sha256:b68fb7a129c76b5830b7942bb5e1816f18b391a5b2c37590e0a05ce31a39b3a3",
+      "scripts/ci/openclaw-enterprise-operations-test.py": "sha256:20beabaa50c922bcc522db04c38ce9cc169b03b391e168cee489c0c6a5d91754",
       "scripts/ci/openclaw-enterprise-operations.sh": "sha256:6e587b2dd9499923f9abcd5a8226437267e23441076ec5e305973088ed77702e",
       "scripts/ci/openclaw-enterprise-operator-image-test.py": "sha256:49a8e21b26bc71821b7b122dd9223623985aecc583fddac264ac4b7a5d57cddb",
       "scripts/ci/openclaw-enterprise-postgres-test.py": "sha256:7d3a42f2447211ce4911d01ff4024e456567c4357b50c5fe43f43ed73405d44b",
@@ -4475,8 +4478,8 @@
       "scripts/ci/renovate-discovery-path-test.mjs": "sha256:93b49c20c2dc9e17199e2b67056e86e6b34112de7dca5387113b89eeb79c42a8",
       "scripts/ci/secret-scan.sh": "sha256:4ed9237e321f450e2c495fd44b32a1782e3917d7ca55eab5fb19b6a36e84f3cf",
       "scripts/ci/speckit-check.py": "sha256:0988ec2819f364d10e34c2382abc4c2fa21531a175a502c631b90aaabebedb35",
-      "scripts/ci/static-checks-timeout-test.py": "sha256:b1ea31903b80f5c5753340f231f19d503610030f2ff8d2bdcb15a965efeb702f",
-      "scripts/ci/static-checks.sh": "sha256:d03bad648128f3dc348304406b7bbf8df6bb744b1d8032154c6230d78f589c9e",
+      "scripts/ci/static-checks-timeout-test.py": "sha256:1b93ec9c77c5aedb643c4934645eca2ec35ff4435bb4250eef0f30e4023eb921",
+      "scripts/ci/static-checks.sh": "sha256:cd058f1d8c00f8a7bb56dc9e17a48717679857c15f6c09eff1485f475cd32203",
       "scripts/ci/tailnet-dns-check-test.py": "sha256:47d5d6fba22279a3751fe811a17303da156f158e9069df1d0f7ce3ec066e89d7",
       "scripts/ci/tailnet-dns-test.py": "sha256:494fb3a7ca87799aa078ec3bdad3958a0aca7a78c81e3cfd446114724584958c",
       "scripts/ci/tailscale-access-check-test.py": "sha256:ccfc0ea956c8cbf5c3b546ef7d7cfa22422e7594f81c64afc55522999751e6ff",

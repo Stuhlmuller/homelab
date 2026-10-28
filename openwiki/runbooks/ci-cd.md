@@ -72,6 +72,10 @@ sources:
     resource: repo://scripts/ci/octelium-private-kubernetes-apply.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-6e81262b111476d6a48c778a
+    resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
+  - id: openwiki-source-cacbbbb7147dbe670582af9a
+    resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-8483d28614308625b1073872
@@ -102,10 +106,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
+generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:34:01.303Z
+    at: 2026-10-28T02:48:51.051Z
 ---
 
 # CI/CD
@@ -199,8 +203,9 @@ separate proof work.
 
 The [Enterprise operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
 keeps legacy retention behind `legacy_stage` and reserves fixed
-`bind-installation`, `full-sync`, `reconcile`, `stop`, `verification`, `restore`
-and `acceptance` Enterprise selections. Select exactly one stage. Each protected
+`bind-installation`, `cleanup-failed-bind`, `full-sync`, `reconcile`,
+`stop`, `verification`, `restore` and `acceptance` Enterprise selections.
+Select exactly one stage. Each protected
 job rechecks exact current `main` and shares a non-canceling production queue.
 The binding lane pins the stage and dispatcher and calls the
 [guard](../../scripts/ci/openclaw-enterprise-stage.sh). A source-bound
@@ -226,11 +231,20 @@ identity, and prior Job state before a fresh Job per workflow attempt. The
 [operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 declares a local journal claim and scoped proof permissions but is absent from
 active GitOps; the disabled gate stops before Job creation. The hosted runner
-does not mount the private journal or key. Failed pre-patch binding Jobs block
-later attempts until a separately reviewed identity-checked cleanup; a
-post-patch failure needs its own Secret-bound recovery. `restore` and
-`acceptance` still exit before mutation pending separate recovery and
-owner-session proof. No Enterprise stage has passed live acceptance.
+does not mount the private journal or key. The separate protected
+`cleanup-failed-bind` lane takes the failed binding source SHA, run ID,
+attempt, Job UID and Pod UID from read-only inspection. Its pinned
+[cleanup helper](../../scripts/ci/openclaw-enterprise-cleanup-failed-bind.py)
+requires matching historical code and candidate, a terminal Failed Job and
+Pod, exact immutable mounted ConfigMap, unchanged unbound startup Secret UID
+and resource version, disabled activation, and retained PVC/PV identities.
+It rechecks current `main` beside one Job UID/resourceVersion-preconditioned
+foreground DELETE, then proves the Job and Pod gone with Secret and storage
+unchanged. A lost response gets readback, never a second DELETE. The lane
+shares the production queue and withholds private output. It has not run;
+failed post-patch state still needs a separate reviewed recovery. `restore`
+and `acceptance` exit before mutation pending separate recovery and owner
+session proof. No Enterprise stage has passed live acceptance.
 
 For legacy `publish-archive`, the workflow reports fixed public publication
 phases while withholding private diagnostics. The successful versioned

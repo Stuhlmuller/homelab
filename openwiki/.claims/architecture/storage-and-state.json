@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:28fd40769c51aeb1aea900ce567f1214c667ed1c674686aba149955f511504f5",
+  "pageVersion": "sha256:1995a407408315bf216c95f9ff12bda587cabe2371c58290c2272ec299e13723",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         }
       ]
     },
@@ -180,7 +180,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
@@ -206,7 +206,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         }
       ]
     },
@@ -216,7 +216,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -270,11 +270,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -338,21 +338,39 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py",
           "version": "repo-file-v1:sha256:c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee"
         }
       ]
+    },
+    {
+      "id": "claim_8cb9c368982b4f88811732e536e0ad8f",
+      "statement": "The staged failed-binding cleanup checks retained journal and bootstrap PVC/PV UIDs, ownership and specs before deleting only an exact terminal Failed pre-patch binding Job. It requires the startup Secret to remain unbound at its Pod-template UID/resource version, then rechecks the retained storage fingerprint and Secret until the Job and Pod are gone. Changed storage or a post-patch Secret state blocks cleanup. The lane has not run; no live storage-retention or recovery receipt exists.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py",
+          "version": "repo-file-v1:sha256:7caf825466d1b819c4748678f5cbee911fd2fca413cf0abcc35c61bccd18d6be"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T02:34:01.303Z"
+    "at": "2026-10-28T02:48:51.051Z"
   }
 }

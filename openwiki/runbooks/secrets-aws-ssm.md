@@ -38,6 +38,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-6e81262b111476d6a48c778a
+    resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -48,10 +50,10 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
+generated: { by: "codex", at: "2026-10-28T02:44:57.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:34:01.303Z
+    at: 2026-10-28T02:44:57.760Z
 ---
 
 # AWS SSM Secret References
@@ -134,14 +136,21 @@ The [binder source](../../scripts/openclaw-enterprise-bind-installation.py)
 reads the private bootstrap-key file only inside a staged UID-1000 Job with a
 read-only bootstrap PVC mount. It verifies `GET /installation` and both Ready
 Pods, then sends a bounded private receipt. Its
-[protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
+[binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
 pins the reviewed immutable startup Secret UID, resource version and candidate
 digest before Job creation, verifies the Job and Pod identities, rechecks exact
 current `main`, and performs one guarded annotation patch. The Job checks the
 result; the runner never reads the key. The expected UID-1000-owned `0600`
 file, binder-bearing image publication, admitted placement, network fence and
-live binding remain unproved. The operator is disabled. Failed pre-patch and
-post-patch states need separately reviewed recovery before retry or activation.
+live binding remain unproved. The operator is disabled. The staged
+[cleanup helper](../../scripts/ci/openclaw-enterprise-cleanup-failed-bind.py)
+can remove one exact terminal Failed pre-patch Job only while the immutable
+startup Secret remains unbound at its Pod-template UID and resource version.
+It verifies the current mounted ConfigMap, retained claims, and exact Job/Pod
+identities before one guarded foreground DELETE; it never reads or delivers
+the bootstrap key. A running Job, changed Secret, or post-patch failure needs
+separate review. No live cleanup or binding has run, and activation stays
+blocked.
 
 ## Protected Talos upgrade inputs
 
