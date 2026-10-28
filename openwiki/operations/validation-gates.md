@@ -270,6 +270,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-719a8f57b80adfae662090ca
     resource: repo://scripts/ci/platform-maintenance-test.py
+  - id: openwiki-source-607bce162eb299934e9b55cd
+    resource: repo://scripts/ci/platform-recovery-candidate-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
@@ -364,10 +366,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T01:30:28.100Z" }
+generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:30:28.100Z
+    at: 2026-10-28T03:12:16.257Z
 ---
 
 # Validation Gates
@@ -1910,6 +1912,13 @@ flag and canary node remain unset. Dated full-catalog publication passed, but
 current-source T004, current-SHA recovery receipts, five-tag Harbor lock and an isolated
 canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
+The staged operator-LAN producer has offline fixtures for exact-main binding,
+direct subnet routing, authenticated checks against all four named nodes,
+exact-version S3 retrieval, checksum-enabled offline restore, private
+candidate shape, and fail-closed staging. Its two candidates remain
+`verified: false`; passing fixtures or staging private JSON does not create
+the protected direct-recovery or off-node-etcd receipt, prove an isolated
+control-plane boot, or authorize maintenance.
 The static registration fixture accepts only five exact policy/canary GitOps
 source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
 canary retired. It rejects mismatched sync settings and manifests. Protected

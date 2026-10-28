@@ -34,10 +34,12 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-cdfffc7b29677732b4694b38
     resource: repo://scripts/platform-maintenance.py
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+  - id: openwiki-source-d7226bf67678f656c372644e
+    resource: repo://scripts/platform-recovery-candidate.py
+generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-28T03:12:16.257Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -201,6 +203,15 @@ recovery receipt producer, isolated canary, and Istio completions remain open
 gates; `activationEnabled` is still false. No live node or control-plane
 upgrade is accepted from this source alone. The canonical runbook gives the
 direct-LAN commands and stop conditions.
+The staged [operator-LAN candidate producer](../../docs/talos-control-plane-maintenance.md#operator-lan-recovery-candidates)
+uses the Mac's direct subnet and an existing Talos client config to inspect
+all four named nodes. It retrieves the snapshot and manifest by exact S3
+versions, verifies their digests, and restores the downloaded snapshot
+offline. Its private `verified: false` JSON files may be staged under an
+exact-SHA `platform-candidates/` prefix; only a later protected publisher can
+issue maintenance receipts. No candidate has been captured or published by
+this source change, and offline restore does not prove an isolated control-plane
+boot or PVC recovery.
 The Kubernetes stage also checks live Istiod, CNI, ztunnel and both injected
 gateway workloads immediately before the command and after verification. It
 requires the reviewed Istio 1.30.6 digest in every relevant image reference,

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f57b740ba357712cdf211d34907c6028737610301c27587b7fa2d325fe8b0f67",
+  "pageVersion": "sha256:ebe2315c287465fcc51a832b82f9078ecd4e8da570bc8f1a33deebfbdf44b491",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -936,7 +936,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
@@ -1182,7 +1182,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         }
       ]
     },
@@ -1236,7 +1236,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:75952da7aca7e3289fd18600cd5f8304719797f24055a460746b69a6e8c4d7c8"
+          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
         }
       ]
     },
@@ -1316,7 +1316,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:e3faffdb28c149068ba001202c643c9f0282bd269111d3352d52a3527054a2a2"
+          "version": "repo-file-v1:sha256:06068af50ce78a8fec9be12b52aeae32b85fe5022c1f6c921fdbf1cab2bfaa8e"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
@@ -1547,7 +1547,7 @@
       "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 images and fully observed, ready controllers that are not marked for deletion, including Deployment total replicas equal to desired so old terminating replicas block the stage. Matching mutable tags are rejected. T025 must align chart image hubs and digest-bearing injection with the reviewed catalog; no live upgrade has run.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L517-L527",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L575-L585",
           "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
@@ -1947,10 +1947,28 @@
           "version": "repo-lines-v1:sha256:6454c9305336d4edf1d2f2b5e4e86dfd40468a7e9357467780daa09dd932eafe:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ0NWE2NTFjMmQ0NDkyNjk5Yzc2ZjlkNTBiNTAwZjg3MTE5MjczMzM2MDQwZjZhOTAxZjdjM2JhNjIyODhlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRkYTNiZDExNDAwZjg1MzljZDFhMjA0ZDIxMmUwOTI0ODdmMTUzNjUyNjYwMzY4NTE2NWU0MjJmOGU0YzlmMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODhkNzQ4YmNhYWU3NTE4NzA2NmMyNDU3OWJjMTZiZWZjM2RhZjY1MDkyNzI2YTE3N2IwOTQ5NWJhMmQ5NTJjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWRlZDIzYjM1NWY2NzIzMGRiZTUxOGM3YjM1MGRmYzJjOGM1ZTlhYzQ4OGE4Zjg0ODRlYTc1Nzg0MWZhZDNhYiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_e28826fa045546c295eb0e8fedbf3298",
+      "statement": "Offline fixtures exercise the staged operator-LAN candidate producer's exact-main, direct-route, named-node, exact-version snapshot, offline-restore, private-output and fail-closed staging checks; neither those fixtures nor verified-false candidates authorize maintenance or prove an isolated control-plane boot.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L504-L560",
+          "version": "repo-lines-v1:sha256:20ab7a90cbb72d59c286c514160516e924cc2ad3befa8a1cf0cdbc1b5395ed16:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMWY5ZDRhMjI0YTU5ZDk3Y2MzZGZmNzRkZDZmZThjMmU0MjA4NjhkMmMwZTNjNzk0ODA0N2YwNjU2ZDg4MGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0MDA0MDU5YWMxOGU1NTIzNTM3YWRlYWU0NTI2MjMxMzQ4NjUxMjAwZWQ4YzY3ZTFlM2JjNWI4M2NkNGQ2OTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkMjRjYmMwNTUwY2Q0M2Y2ZGMwMGU1YTgwYzE0ZGM1NDljNzFmOTdhYjcyNmQ1ZTY5MWU3NWYyMmY5MDQ0MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4OWNhYmM3N2Q0YzIwM2YxNTkwYTFmOWIwODdjMjFkNWYxY2RkYjNkNmZiNmQ5NGVmNmIyMzQzNWFlOThjMWUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh#L105-L120",
+          "version": "repo-lines-v1:sha256:a7a253ec3f81938c303f2bcccbad90d2e61ee06c5e3feff2e44a6b94e0e4e5a8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzODNmM2YzZGQ3Y2VkMTVhZWUyYjljN2UwZmMxYmZiZGQ2NDM5YzE1MzliNzIyYjY5ZDkwNWI0Zjc2MzAzMzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3OWRiYzI3YTNiODZhZjQ0YmJjZDE2N2JlNWVmMmYwMWM5OGJlMWVkOTMyMzU4ZTE5ZTFkZjZiZjA3MjM5ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMDZkNDk3ODAwMmE2ODVlNTkxZmEzNGM3MTRkZTk5ZDA4ZjM2ZjdiM2YyMmRhYjY1MWMzNTQyMzdkMWY0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMGQzYjUzMGUwYTBjYTVlY2RjMGI0NTE3YzgxZTUxZDE5NDA4ZWNjNzQyZmVmNTg5NDRlMjY1MmYwMWNmN2YifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-recovery-candidate-test.py#L112-L334",
+          "version": "repo-lines-v1:sha256:4db5eb52e1837a873e46f5d4b78adb68cf5a27d2da0e187ce375432bd84a5b83:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiZDdhMjdiODg5OTI4Mjg1MDI0Yzk2YWQ4MmU4Y2I0Y2RhN2FjODAxZTljNzU2OWRhOWZjOGU5MzUxODJjZWYzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDg2ZmY1Y2Y5MzYzYjQ0MjkzMzY4MDNiMmM5NjBlNzNkYThjNDdmYTBjNmY2NzY1OGQxNGIzMjNjZDIyZDM0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhNTYwM2M5OTBlY2M1OTc0NWMxMmU5NDhhNmM2MGUyMjliMzEzMTgwYThjOTBlYzAxM2I5N2Q5NzVhNTg0N2JmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkZTkzZDg5MzkwNmVlYWYyY2FkY2M2NTU4NTk3YmQ5MzMwZTJlYjY5ZGZiNjBhOWM4MTc1MjE4NTI3ZTcyNjgxIn0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T01:30:28.100Z"
+    "at": "2026-10-28T03:12:16.257Z"
   }
 }

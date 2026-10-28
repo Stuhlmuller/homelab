@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:05e8de0acbbee251a480df15375788dc009403c2e68271d9c9c522897a1b2780",
+  "pageVersion": "sha256:aa6c65430947b142bf87047735ae405a721aab0151d07a92fec46952d01d07eb",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -132,7 +132,7 @@
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:4fcdd662b1bb132bc101e7d54fd6b33002d8a84068a805397640d6a417e94806"
+          "version": "repo-file-v1:sha256:a2568cc946f17a09b0cb114f0bdcb31c474020035d45f7458358eac2a8ae3498"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
+          "version": "repo-file-v1:sha256:22fe8686a09771aff67128be40a28a1682029b82931eab6a5989e8922d877350"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -216,7 +216,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
+          "version": "repo-file-v1:sha256:9b51da10d90073767e90f8fd6901ca2d05dcc9c4d7ff39026fb4d4fd46810fbf"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -232,7 +232,7 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
-          "version": "repo-file-v1:sha256:e9974dffe2bb7408a416f26c80d39bb442a72091b5bc2a1222c18ac9672009c4"
+          "version": "repo-file-v1:sha256:16f11903b6a69c9be1cfb1a169c941bff0d924d7033159fb5be2b05228e9b493"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -250,7 +250,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
+          "version": "repo-file-v1:sha256:9b51da10d90073767e90f8fd6901ca2d05dcc9c4d7ff39026fb4d4fd46810fbf"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -342,7 +342,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
@@ -360,25 +360,39 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
+          "version": "repo-file-v1:sha256:9b51da10d90073767e90f8fd6901ca2d05dcc9c4d7ff39026fb4d4fd46810fbf"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:18bb8ebe8e391f9bff3c3b9c79f8f6543e4e6e6b5ffde3a027c73048602717f9"
+          "version": "repo-file-v1:sha256:1cf1d8be0fb7fb5184e7b2cba1d43a21210fa7123e54bc9dbb63ff55565253de"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
+          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
           "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
         }
       ]
+    },
+    {
+      "id": "claim_76d26f5c4a1b4261970e26a41358e9b3",
+      "statement": "The source map routes the staged operator-LAN recovery candidate helper and offline fixtures to Talos maintenance, control-plane state, and Enterprise validation gates; the helper produces private non-authoritative candidates rather than live receipts.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/platform-recovery-candidate-test.py#L112-L334",
+          "version": "repo-lines-v1:sha256:4db5eb52e1837a873e46f5d4b78adb68cf5a27d2da0e187ce375432bd84a5b83:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiZDdhMjdiODg5OTI4Mjg1MDI0Yzk2YWQ4MmU4Y2I0Y2RhN2FjODAxZTljNzU2OWRhOWZjOGU5MzUxODJjZWYzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDg2ZmY1Y2Y5MzYzYjQ0MjkzMzY4MDNiMmM5NjBlNzNkYThjNDdmYTBjNmY2NzY1OGQxNGIzMjNjZDIyZDM0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhNTYwM2M5OTBlY2M1OTc0NWMxMmU5NDhhNmM2MGUyMjliMzEzMTgwYThjOTBlYzAxM2I5N2Q5NzVhNTg0N2JmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkZTkzZDg5MzkwNmVlYWYyY2FkY2M2NTU4NTk3YmQ5MzMwZTJlYjY5ZGZiNjBhOWM4MTc1MjE4NTI3ZTcyNjgxIn0"
+        },
+        {
+          "resource": "repo://scripts/platform-recovery-candidate.py#L471-L553",
+          "version": "repo-lines-v1:sha256:48a3109c58f07c79a1fc1428c32fa1267dd8a41f0b7b4299cd4c708845cdfc34:eyJzZWxlY3RlZExpbmVDb3VudCI6ODMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZWFjNWE0ZjY0Mjc1OTdkZDFlZGQyOGZkZTNmYTUxZjIzY2M0OTNmZmNkZWJjYWVkZGY2NmU2ZWQyMmZmYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhODhhMmZiNWRjNDlhZWZlNTdiOTlmMTdkNDdlMzAxZmZlYjUyMDIxZmZmYWM3MWVmZmNiYjUxZTFiM2I3MmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhOWM5NmM1MjhjYjRhZTkzYjNmZjI2MTM5NjA5OGIyYzVlMzIwMTE3Y2RmOWFjN2M0NTY2NzFjN2E3Y2RjMjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ZjY4MDcwODZkNGI4Y2QyZDI1YTE1NDZhOTVjNzJjYTBkZDFhM2ExZTViNDE5OTY5NWQxYTFiM2RhZGIzMmMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-28T03:12:16.257Z"
   }
 }
