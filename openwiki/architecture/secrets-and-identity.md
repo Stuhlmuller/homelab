@@ -140,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:22:00.727Z" }
+generated: { by: "codex", at: "2026-10-28T02:28:18.554Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:22:00.727Z
+    at: 2026-10-28T02:28:18.554Z
 ---
 
 # Secrets And Identity
@@ -343,7 +343,8 @@ attests both Ready controller Pods and the returned `GET /installation` ID,
 then patches only the Secret annotation with UID/resource-version guards and
 readback. A fixed [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
 rechecks exact current `main` and pins the reviewed binder. The bootstrap
-service key lives on the retained bootstrap claim; no declared path delivers
+service key is expected on the retained claim as a UID-1000-owned `0600`
+file; live presence and ownership are unproved. No declared path delivers
 it to the hosted runner. Binding has not run. A reviewed in-cluster reader
 must use UID 1000 and the exact bootstrap PVC/PV, withhold private output,
 and recheck protected current `main` immediately before the final Secret
