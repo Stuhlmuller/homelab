@@ -3,3 +3,10 @@ kind: Kustomization
 resources:
   - policy.yaml
   - binding.yaml
+  - image-rewrite.yaml
+configMapGenerator:
+  - name: image-rewrite
+    namespace: kube-system
+    files:
+      - image-rewrite.py
+      - images.json

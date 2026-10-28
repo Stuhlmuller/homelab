@@ -120,7 +120,7 @@ flowchart LR
     TLS --> Cordium[Octelium Cordium and control]
     Public[Public callback] --> Funnel[Tailscale Funnel]
     Funnel --> HTTP[Traefik callback listener]
-    HTTP --> Hooks[n8n and Policy Bot webhooks]
+    HTTP --> Hooks[n8n, Policy Bot, and Bulldozer webhooks]
     Nodes[Talos nodes] --> Registry[Traefik registry listener]
     Renovate[Renovate Pod] --> Registry
     Registry --> Harbor[Harbor OCI and token endpoints]
@@ -134,6 +134,17 @@ Separate listeners prevent public callbacks from selecting private routers.
 cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
+
+During the 2026-10-27 ztunnel bootstrap outage on `zimaboard-0`, the
+[Traefik values](../../clusters/homelab/apps/traefik/values.yaml) temporarily
+pin its only replica to `zimaboard-1`, whose ztunnel is Ready. Once merged and
+reconciled, this placement moves the private, callback, and registry listeners
+together; a failure of `zimaboard-1` then removes all three paths. Verify the
+replacement Pod, normal tailnet HTTPS, and Harbor `/v2/` before declaring
+recovery. Remove the pin through a reviewed PR after the upstream-image ztunnel
+fix restores all four nodes. Revert the placement through GitOps if the new Pod
+fails; do not patch the live Deployment.
+
 The staged OpenClaw Enterprise console uses `console.oce.stinkyboi.com` through
 an authenticated Octelium Service. Only exact
 `agent-<32 hex>.agents.oce.stinkyboi.com` hosts go directly to the OCE API on
@@ -149,9 +160,10 @@ authoritative NODATA for approved AAAA; it does not use the peer's other
 addresses. See the
 [IP-family contract and pinned upstream sources](../../docs/networking-tailnet-ingress.md#dns-model).
 
-Only `n8n-webhook.tail67beb.ts.net` and `policy-bot-hook.tail67beb.ts.net` use
-Funnel. The former accepts the three declared webhook path families; the latter
-accepts exactly `/api/github/hook`. Application webhook authentication remains
+`n8n-webhook.tail67beb.ts.net`, `policy-bot-hook.tail67beb.ts.net`, and the
+staged `bulldozer-hook.tail67beb.ts.net` use Funnel. n8n accepts the three
+declared webhook path families; each GitHub App callback accepts exactly
+`/api/github/hook`. Application webhook authentication remains
 required. Root/admin paths and spoofed private Host headers fail at the callback
 listener. Encoded reserved path characters are rejected on these sensitive routes.
 
@@ -204,11 +216,11 @@ python3 -I scripts/tailscale-ingress-sign.py
 python3 -I scripts/tailscale-ingress-sign.py --execute
 ```
 
-The fixed signer checks the private Service, two Funnel Ingresses, and the
+The fixed signer checks the private Service, three Funnel Ingresses, and the
 separate `tailnet-dns` Service against
 controller-owned Ready Pods, exact parent UID, hostname, tag, addresses and
 local lock-peer identity. It reads public node/rotation keys from those Pods and
-signs only those four targets. For the DNS handoff, `--dns-only` previews or
+signs only those five targets. For the DNS handoff, `--dns-only` previews or
 signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.

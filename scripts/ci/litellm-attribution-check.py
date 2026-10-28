@@ -49,9 +49,12 @@ fixture_key_directory = None
 sys.path.insert(0, str(ROOT / "clusters/homelab/apps/litellm"))
 gateway_launcher = importlib.import_module("gateway")
 native_keys = importlib.import_module("native_keys")
-assert "tag: main-v1.80.8-stable@" in (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text(), \
-    "Update the attribution check and CI dependency when changing the gateway version"
 values = yaml.safe_load((ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
+digest = "2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
+assert values["image"] == {
+    "repository": "harbor.stinkyboi.com/mirror/ghcr.io/berriai/litellm-database",
+    "tag": f"{digest}@sha256:{digest}",
+}, "Update the attribution check and CI dependency when changing the gateway version"
 assert values["command"] == ["python", "/etc/litellm-hooks/gateway.py"], "Native CLI alone bypasses admission"
 assert values["numWorkers"] == 1, "Guarded gateway scales Pods, not worker processes"
 assert values["proxy_config"]["general_settings"]["store_model_in_db"] is True, "UI provider credentials require the native database cache"

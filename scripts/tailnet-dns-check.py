@@ -99,7 +99,7 @@ def verify(server, initial=False):
         raise RuntimeError("DNS Service must expose only its declared tailnet DNS ports")
     if server != published_ip(dns):
         raise RuntimeError("Supplied resolver IP differs from the live DNS Service")
-    peer = SIGNER.inspect_target(SIGNER.TARGETS[3], SIGNER.local_signer())
+    peer = SIGNER.inspect_target(SIGNER.TARGETS[-1], SIGNER.local_signer())
     if not peer["signed"] or peer["dns"] != "homelab-dns." + SIGNER.TAILNET:
         raise RuntimeError("DNS proxy must be online and signed under Tailnet Lock")
 

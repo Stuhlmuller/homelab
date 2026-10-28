@@ -102,7 +102,7 @@ deny contains msg if {
 deny contains msg if {
 	funnel_enabled
 	not reviewed_funnel_ingress
-	msg := "Tailscale Funnel is restricted to the two reviewed Traefik callback Ingresses"
+	msg := "Tailscale Funnel is restricted to the reviewed Traefik callback Ingresses"
 }
 
 funnel_enabled if {
@@ -118,7 +118,7 @@ funnel_enabled if {
 reviewed_funnel_ingress if {
 	input.kind == "Ingress"
 	input.metadata.namespace == "traefik"
-	input.metadata.name in {"n8n-webhook", "policy-bot-hook"}
+	input.metadata.name in {"n8n-webhook", "policy-bot-hook", "bulldozer-hook"}
 	input.metadata.annotations["homelab.rst.io/access-plane"] == "tailscale"
 	input.metadata.annotations["homelab.rst.io/public-callback"] == "true"
 	input.metadata.annotations["tailscale.com/tags"] == "tag:homelab-funnel"
@@ -375,7 +375,7 @@ external_secret_allowed_prefixes := {
 	"affine": {"/homelab/affine/"},
 	"mastodon": {"/homelab/mastodon/"},
 	"argocd": {"/homelab/argocd/"},
-	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key", "/homelab/renovate/harbor-pull-password"},
+	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/bulldozer/github-app/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key", "/homelab/renovate/harbor-pull-password"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},
 	"harbor": {"/homelab/harbor/"},

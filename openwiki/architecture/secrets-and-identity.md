@@ -507,14 +507,16 @@ gate remains disabled; these permissions are source intent, not live access.
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The pinned daemon asks the backend to renew that token in place
   when seven days or less remain; revoked or expired tokens fail startup rather
-  than silently creating a replacement. The main container exposes only
-  its own profile, including native ChatGPT OAuth state retained on the runtime
-  PVC; it does not mount the backend JWT, database password, fixed code, or a
-  model API key. This remains a trusted operator runtime because tasks can read
-  that profile. Its dedicated ServiceAccount has no Kubernetes token and
-  receives explicit Istio access only to the Multica backend. OAuth is created
-  through an interactive Codex device login and must not be copied into SSM or
-  a Kubernetes Secret.
+  than silently creating a replacement. A Ready daemon starts the renewal loop
+  but does not prove a successful renewal; verify expiry metadata during the
+  eligible window without exposing token material. The main container retains
+  its own profile and mounts the dedicated `multica-litellm` token as a read-only
+  file for model access. The committed OpenCode configuration routes through
+  LiteLLM; no ChatGPT/Codex OAuth runtime is configured. It does not mount the
+  backend JWT, database password, fixed code, or upstream OpenRouter key.
+  This remains a trusted operator runtime because tasks can read that profile.
+  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
+  Istio access only to the Multica backend.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
@@ -572,9 +574,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every
   21 days with
-  `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
-  Sessions first so Octelium cannot retain an older Session expiry, then retries
-  GitHub environment writes until both store the replacement token.
+  `scripts/octelium-ci-credential.sh`; routine rotation first verifies the
+  existing User, Policy, Service, and credential binding without applying the
+  full catalog. It rejects unknown or duplicate Service policy attachments;
+  only the primary CI policy and optional staged plan policy are accepted, and
+  it checks all three staged plan rules when that policy is attached.
+  The helper deletes the dedicated User's Sessions so Octelium
+  cannot retain an older Session expiry, then retries each GitHub environment
+  write up to five times. Bootstrap catalog application is explicit with
+  `--apply-catalog`.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly

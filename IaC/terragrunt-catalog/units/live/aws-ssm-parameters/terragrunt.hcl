@@ -774,6 +774,22 @@ inputs = {
       description   = "Policy Bot GitHub App integration ID."
       initial_value = local.placeholder
     }
+    "/homelab/bulldozer/github-app/integration-id" = {
+      description   = "Bulldozer GitHub App ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/webhook-secret" = {
+      description = "Bulldozer GitHub App webhook HMAC secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/bulldozer/github-app/private-key" = {
+      description   = "Bulldozer GitHub App private key PEM."
+      initial_value = local.placeholder
+    }
     "/homelab/policy-bot/github-app/webhook-secret" = {
       description = "Policy Bot GitHub App webhook HMAC secret."
       generated = {

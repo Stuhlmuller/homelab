@@ -255,10 +255,17 @@ later passed protected `all` publication and authenticated Harbor pulls in
 The staged migration foundation adds private Traefik ingress and the Tailscale
 operator API proxy while retaining existing Octelium/Cloudflare routes until
 live cutover passes. The new route inventory keeps Fleet mesh-only, exposes only
-n8n and Policy Bot callbacks through Funnel, and retains Octelium for Cordium
-and control services. Existing per-app access notes below describe the retained
+n8n, Policy Bot, and staged Bulldozer callbacks through Funnel, and retains
+Octelium for Cordium and control services. Existing per-app access notes below describe the retained
 source path; they are not proof that cutover has happened. See
 [the staged ingress runbook](../runbooks/tailnet-ingress.md).
+
+Bulldozer is registered from `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl`
+into `automation` using `clusters/homelab/apps/bulldozer`. Its Deployment starts
+at zero replicas while the dedicated GitHub App credentials and generated
+webhook secret are delivered. It has no persistent volume. See the
+[workload runbook](../../clusters/homelab/apps/bulldozer/README.md) for activation
+and all-repository merge behavior.
 
 ## Platform And Support Applications
 
