@@ -805,6 +805,10 @@ automatic capture. Candidate off-NAS publication and checks are not active.
 No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
 n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
 application behavior, not only a checksum or successful backup Job.
+Langfuse's [raw-version copy candidate](../../clusters/homelab/apps/langfuse/README.md)
+can preserve exact extant S3 versions offsite after its dedicated IAM role is
+reviewed and applied. It has no live receipt and leaves PostgreSQL, ClickHouse,
+Valkey and private recovery secrets outside its capture.
 
 ## Mastodon
 

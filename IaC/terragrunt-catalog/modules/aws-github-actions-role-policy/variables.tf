@@ -53,6 +53,16 @@ variable "langfuse_bucket_name" {
   }
 }
 
+variable "application_backup_bucket_name" {
+  description = "Exact account-bound offsite application backup bucket for Langfuse raw-version copies."
+  type        = string
+
+  validation {
+    condition     = can(regex("^homelab-application-backups-[0-9]{12}-us-east-1$", var.application_backup_bucket_name))
+    error_message = "application_backup_bucket_name must name the dedicated us-east-1 backup bucket."
+  }
+}
+
 variable "parameter_reader_group_name" {
   description = "Exact IAM group that receives the managed SSM parameter reader policies."
   type        = string

@@ -7,6 +7,7 @@ locals {
   aws_region           = local.root_config.locals.aws_region
   kms_key_id           = local.root_config.locals.runtime_kms_key_id
   langfuse_bucket_name = read_terragrunt_config("${get_repo_root()}/IaC/langfuse-blob-storage.hcl").inputs.bucket
+  application_backup_bucket_name = read_terragrunt_config("${get_repo_root()}/IaC/application-backup-storage.hcl").inputs.bucket
 }
 
 terraform {
@@ -31,6 +32,7 @@ inputs = {
   external_secrets_user_name            = "external-secrets_aws-ssm-auth"
   kms_key_id                            = local.kms_key_id
   langfuse_bucket_name                  = local.langfuse_bucket_name
+  application_backup_bucket_name        = local.application_backup_bucket_name
   parameter_reader_group_name           = "homelab-ssm-parameter-readers"
   parameter_reader_policy_name_prefix   = "homelab-ssm-parameter-reader-"
   parameter_reader_policy_slot_count    = 10
