@@ -124,7 +124,7 @@ controllers:
         resources:
           requests:
             cpu: 500m
-            memory: 1Gi
+            memory: 896Mi
           limits:
             memory: 4Gi
       celery:
@@ -151,7 +151,7 @@ controllers:
         resources:
           requests:
             cpu: 250m
-            memory: 512Mi
+            memory: 448Mi
           limits:
             memory: 2Gi
       redis:
@@ -180,7 +180,7 @@ controllers:
         resources:
           requests:
             cpu: 50m
-            memory: 128Mi
+            memory: 64Mi
           limits:
             memory: 512Mi
 service:

@@ -1,3 +1,5 @@
+nodeSelector:
+  kubernetes.io/hostname: zimaboard-1
 kind: Deployment
 image:
   repository: harbor.stinkyboi.com/mirror/registry.k8s.io/descheduler/descheduler
