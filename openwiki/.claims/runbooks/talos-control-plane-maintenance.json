@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1a4a244690aadecd66d6fb0c9abcbca4a122a9f63b01aa112e544de7c9b97ff1",
+  "pageVersion": "sha256:2cb4e57f85dfca6c6f80bb4fffbe84a7a80b5c1ce77f9d464dbfcd9aa4d8e843",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
       "statement": "The first 2026-10-10 zimaboard-2 stall involved NFS-backed n8n PostgreSQL and NOFX Pods, so the no-PVC remote-reboot exception did not apply; a physical power-cycle recovered the worker.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L1164-L1172",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1169-L1177",
           "version": "repo-lines-v1:sha256:8ddb89afc2ddedf13089ad08ca1770687ec67bab1e008749c64164b3b00e4586:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzkzYzAxM2JhNjI0MzY4OTBmNWY2ZGJlNjg4MzY0NDk5MGZhZGMyODgwMjU2OGI0YTBlODkxNjVjYThjMTc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBmNDEzY2Y1MTJiNzZmYTUxMjI3MzkyZTc1ZDcxMTFjZTQwODBiNTFjMjcwOGZlNTViNzFmNzU3MTZjNjE5YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2I1NTdmMDY3YzhkNWY5Y2Y1MjExNWJiMjI4OGE2NTY5MDA0YjA3ZTc4YTg4MWFlNzcyYmY1MzRkY2JjNmJmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDhjMjNkOWFkOGNlYjhlYmMwNjYwY2RiMDg4OTc0MTU1ZjM5YzdlM2U2NWI5Y2Y3YzdlZTJiMjZhNjA1YzM1NiJ9"
         }
       ]
@@ -29,7 +29,7 @@
           "version": "repo-lines-v1:sha256:ae9b60e40aac1039466761279e2049d285dc168fbf80d53c09c7714f6373184c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNThmYmFkNmJlYmI0YjdjYTUyYjA3MzhjNTEwMTBhNzU3Mzk4NGZjMjk4M2ViOTMzZmNhNTNjMGJjOTAzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTFhOWVhNWJmN2UwYTFiNzcyZjA1YmMxMjkwODhiYzFiYWI3MmZiMzkxZmFhMjM5NGVmZjUzM2EyOTZmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L1173-L1175",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1178-L1180",
           "version": "repo-lines-v1:sha256:08c23d9ad8ceb8ebc0660cdb088974155f39c7e3e65b9cf7c7ee2b26a605c356:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDNjNmM2OTEzZjc4MTQ4YzcyMzI5ODc4N2Q0NmMzMmNlMmRjODJkMDczOGE5YTM1ODlhMjI1MzA3ZTQwODYyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZkOTgwY2ExODE3YjA0NGQ4MTM2NDdhZDBkZjI4ZjRkMDczZjFhZjU5MzU1OTRjMDNmYmI2M2E1NTc1ZjE4MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE3MjVmNTBhMjQ1NzVkMmU1YzYxY2E5MTgzMzAyZTkxYThjZDhkMWM0YzhhNzU4ZWIwNDFlMzczODI0N2I5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NjNhNDkxZGNmNDY5ZTMwZWQ2MzdmZmZiNWQ1MDAwZmM1Y2M5NmNhNDRmN2UyZWUxOTVhMTNiNTMyYjgzOSJ9"
         }
       ]
@@ -76,7 +76,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:06068af50ce78a8fec9be12b52aeae32b85fe5022c1f6c921fdbf1cab2bfaa8e"
+          "version": "repo-file-v1:sha256:fd742ef2faeb8c3120a599e4c907e3b9def6e70eaaef598c384418ba87adc4b0"
         },
         {
           "resource": "repo://scripts/platform-maintenance.py",
@@ -120,7 +120,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:06068af50ce78a8fec9be12b52aeae32b85fe5022c1f6c921fdbf1cab2bfaa8e"
+          "version": "repo-file-v1:sha256:fd742ef2faeb8c3120a599e4c907e3b9def6e70eaaef598c384418ba87adc4b0"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
@@ -151,8 +151,8 @@
       "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 references, fully observed and ready controllers not marked for deletion, Deployment total replicas equal to desired, and complete DaemonSet placement. Matching mutable tags fail; T025 must align chart image hubs and injected proxy digests before the gate can pass.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L575-L585",
-          "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L579-L590",
+          "version": "repo-lines-v1:sha256:5524801df2b9518ffb02c5bf53c72b7ee183cd1863a9e8fe84a673cb2de0db65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-test.py#L1006-L1086",
@@ -170,7 +170,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:06068af50ce78a8fec9be12b52aeae32b85fe5022c1f6c921fdbf1cab2bfaa8e"
+          "version": "repo-file-v1:sha256:fd742ef2faeb8c3120a599e4c907e3b9def6e70eaaef598c384418ba87adc4b0"
         },
         {
           "resource": "repo://scripts/ci/network-policy-registration-test.py",
@@ -191,7 +191,7 @@
       "statement": "The staged operator-LAN producer can inspect all four nodes by direct Talos mTLS and verify an exact-version offsite etcd snapshot through offline restore, but outputs only private verified-false candidates for later protected publication; no candidate or bootable recovery is established by source alone.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L504-L560",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L508-L564",
           "version": "repo-lines-v1:sha256:20ab7a90cbb72d59c286c514160516e924cc2ad3befa8a1cf0cdbc1b5395ed16:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMWY5ZDRhMjI0YTU5ZDk3Y2MzZGZmNzRkZDZmZThjMmU0MjA4NjhkMmMwZTNjNzk0ODA0N2YwNjU2ZDg4MGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0MDA0MDU5YWMxOGU1NTIzNTM3YWRlYWU0NTI2MjMxMzQ4NjUxMjAwZWQ4YzY3ZTFlM2JjNWI4M2NkNGQ2OTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkMjRjYmMwNTUwY2Q0M2Y2ZGMwMGU1YTgwYzE0ZGM1NDljNzFmOTdhYjcyNmQ1ZTY5MWU3NWYyMmY5MDQ0MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4OWNhYmM3N2Q0YzIwM2YxNTkwYTFmOWIwODdjMjFkNWYxY2RkYjNkNmZiNmQ5NGVmNmIyMzQzNWFlOThjMWUifQ"
         },
         {
@@ -199,10 +199,28 @@
           "version": "repo-lines-v1:sha256:48a3109c58f07c79a1fc1428c32fa1267dd8a41f0b7b4299cd4c708845cdfc34:eyJzZWxlY3RlZExpbmVDb3VudCI6ODMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZWFjNWE0ZjY0Mjc1OTdkZDFlZGQyOGZkZTNmYTUxZjIzY2M0OTNmZmNkZWJjYWVkZGY2NmU2ZWQyMmZmYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhODhhMmZiNWRjNDlhZWZlNTdiOTlmMTdkNDdlMzAxZmZlYjUyMDIxZmZmYWM3MWVmZmNiYjUxZTFiM2I3MmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhOWM5NmM1MjhjYjRhZTkzYjNmZjI2MTM5NjA5OGIyYzVlMzIwMTE3Y2RmOWFjN2M0NTY2NzFjN2E3Y2RjMjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ZjY4MDcwODZkNGI4Y2QyZDI1YTE1NDZhOTVjNzJjYTBkZDFhM2ExZTViNDE5OTY5NWQxYTFiM2RhZGIzMmMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_29e80ef41a5248ddb9d749875e639a1f",
+      "statement": "The declared protected recovery publisher binds an exact current-main SHA, opaque candidate stage ID and three digests to single undeleted staged and etcd versions before conditional KMS publication and readback of only two fixed recovery receipts; no IAM apply, stage, dispatch or isolated boot is yet proven.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-recovery-receipt-publication.yml",
+          "version": "repo-file-v1:sha256:4467a03b0b3dcb89ada6d4b79771ccb4c9c9e8122a2fc1e576439113e423f478"
+        },
+        {
+          "resource": "repo://docs/platform-recovery-receipt-publication.md",
+          "version": "repo-file-v1:sha256:04bc917c6aa567091bb2ca294729c2766808e359041989a3f02eba875315eef4"
+        },
+        {
+          "resource": "repo://scripts/platform-recovery-receipt-publish.py",
+          "version": "repo-file-v1:sha256:7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:12:16.257Z"
+    "at": "2026-10-28T03:17:59.106Z"
   }
 }

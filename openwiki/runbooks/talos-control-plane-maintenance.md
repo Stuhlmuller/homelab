@@ -6,6 +6,8 @@ tags: ["runbook", "talos", "maintenance"]
 sources:
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-9648c132218cc0e1e3d653f9
+    resource: repo://.github/workflows/platform-recovery-receipt-publication.yml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-2d8396976c82220440798f1a
@@ -14,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-becefa8af5bf5cfe71144bc0
+    resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
@@ -36,10 +40,12 @@ sources:
     resource: repo://scripts/platform-maintenance.py
   - id: openwiki-source-d7226bf67678f656c372644e
     resource: repo://scripts/platform-recovery-candidate.py
-generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
+  - id: openwiki-source-e3d34fdb2d932e5c649a644e
+    resource: repo://scripts/platform-recovery-receipt-publish.py
+generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:12:16.257Z
+    at: 2026-10-28T03:17:59.106Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -212,6 +218,14 @@ exact-SHA `platform-candidates/` prefix; only a later protected publisher can
 issue maintenance receipts. No candidate has been captured or published by
 this source change, and offline restore does not prove an isolated control-plane
 boot or PVC recovery.
+The [protected receipt publisher](../../docs/platform-recovery-receipt-publication.md)
+is now declared with a dedicated production OIDC role. After private owner
+review, its manual workflow would bind one exact current-main SHA, opaque
+stage ID and three digests, verify undeleted exact versions of candidate and
+etcd objects, then conditionally write and read back the two fixed recovery
+receipts. It cannot create placement or artifact-publication evidence. No IAM
+apply, candidate stage, publisher dispatch, or bootable recovery proof has
+occurred; keep the maintenance activation gate closed.
 The Kubernetes stage also checks live Istiod, CNI, ztunnel and both injected
 gateway workloads immediately before the command and after verification. It
 requires the reviewed Istio 1.30.6 digest in every relevant image reference,

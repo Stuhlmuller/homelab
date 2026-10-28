@@ -20,6 +20,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-9648c132218cc0e1e3d653f9
+    resource: repo://.github/workflows/platform-recovery-receipt-publication.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
@@ -66,6 +68,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-7caf2808e7e765d8ee6ecc56
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
+  - id: openwiki-source-cdcc93f57849ad6d5ea83f0d
+    resource: repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
@@ -122,6 +126,8 @@ sources:
     resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-d7226bf67678f656c372644e
     resource: repo://scripts/platform-recovery-candidate.py
+  - id: openwiki-source-e3d34fdb2d932e5c649a644e
+    resource: repo://scripts/platform-recovery-receipt-publish.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -130,10 +136,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
+generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:12:16.257Z
+    at: 2026-10-28T03:17:59.106Z
 ---
 
 # Source Map
@@ -185,6 +191,8 @@ desired state.
 | `clusters/homelab/apps/litellm/native_keys.py` | [Native service-key migration](architecture/ai-observability.md) |
 | `docs/talos-control-plane-maintenance.md` | [Talos Control-Plane Maintenance](runbooks/talos-control-plane-maintenance.md) |
 | `scripts/platform-recovery-candidate.py` and `scripts/ci/platform-recovery-candidate-test.py` | [Private operator-LAN candidates](runbooks/talos-control-plane-maintenance.md#staged-enterprise-platform-maintenance), [off-node state boundary](architecture/storage-and-state.md#control-plane-recovery-state), and [source-only gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `.github/workflows/platform-recovery-receipt-publication.yml`, `scripts/platform-recovery-receipt-publish.py`, and `scripts/ci/platform-recovery-receipt-publish-test.py` | [Protected receipt publication](runbooks/ci-cd.md), [recovery storage boundary](architecture/storage-and-state.md#control-plane-recovery-state), and [source-only gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf` and `IaC/terragrunt-catalog/units/operator/application-backup-storage/terragrunt.hcl` | [Dedicated publisher OIDC and fixed-key bucket policy](architecture/secrets-and-identity.md) |
 | `docs/validation-runbook.md` | [Validation](runbooks/validation.md) |
 
 ## App And Platform Notes

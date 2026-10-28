@@ -36,12 +36,16 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-becefa8af5bf5cfe71144bc0
+    resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-cdcc93f57849ad6d5ea83f0d
+    resource: repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
@@ -58,6 +62,8 @@ sources:
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-d7226bf67678f656c372644e
     resource: repo://scripts/platform-recovery-candidate.py
+  - id: openwiki-source-e3d34fdb2d932e5c649a644e
+    resource: repo://scripts/platform-recovery-receipt-publish.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
@@ -66,10 +72,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
+generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:12:16.257Z
+    at: 2026-10-28T03:17:59.106Z
 ---
 
 # Storage And State
@@ -173,6 +179,14 @@ snapshot offline. Its private JSON candidates bind those checks to the current
 main SHA but remain `verified: false`; no protected publication, isolated
 control-plane boot, PVC recovery, or fresh live proof follows from this source
 alone.
+The protected [receipt publisher](../../docs/platform-recovery-receipt-publication.md)
+is now declared to read exact candidate and snapshot versions from the etcd
+bucket, then write only `direct-recovery.json` and
+`off-node-etcd-backup.json` under the current SHA in the separate versioned
+application backup bucket. The bucket policy reserves all four platform
+prerequisite keys for its dedicated role and denies deletion. Neither the IAM
+role nor publisher has been applied or run; placement and artifact-publication
+producers, live LAN proof, and isolated recovery remain open.
 
 ## Durable Storage
 

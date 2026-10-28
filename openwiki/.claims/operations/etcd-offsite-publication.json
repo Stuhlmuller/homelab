@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:76e2573dc3d304e56da6705b44bc7bab1960286327c0c8f75bf85f5d1761e9ba",
+  "pageVersion": "sha256:f175eecb28632949d497bf90b11fd4ec91d706a2910de94658f2d23f10fb9396",
   "claims": [
     {
       "id": "claim_cf755d1498fa4cc398138fd7092e8280",
@@ -19,10 +19,28 @@
           "version": "repo-lines-v1:sha256:efca0251680169ebfcec41214b49d2dac4edf1380c570c3ea747389aace243d2:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTM2MGQ5MjA4NWU5ZmRhYTgwZmRhYWQyNjMxOTRmODM4NWZlZThmNjMzYTYzYTk3NjJhNGE5OTQ2NjcxNDdhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTk3MTY3YmMwMGVhNmFiMGM4NTgxYjllZDk1NjQyODY2NjkwZGNiYmUzYzZiNjFiMDdhMWY0Y2RmZDBhOTZkOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjllZTE5MzI4NGU4MmZiNzZhZjRmNGY1ODNlNDNmMDUwN2I1ZjEzMmIxNjRlNmQzNTIzYmFmYjk0YzBjN2IxZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjllZTE5MzI4NGU4MmZiNzZhZjRmNGY1ODNlNDNmMDUwN2I1ZjEzMmIxNjRlNmQzNTIzYmFmYjk0YzBjN2IxZSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_d11e097a28af48cb9bd7238b8bc2874d",
+      "statement": "The staged platform candidate uses exact-version etcd snapshot and manifest retrieval plus offline restore, then stages private non-authoritative JSON under a separate prefix; a protected publisher is declared to promote two fixed receipts into the application backup bucket, without changing the manual snapshot publisher or proving a live recovery.",
+      "evidence": [
+        {
+          "resource": "repo://docs/platform-recovery-receipt-publication.md",
+          "version": "repo-file-v1:sha256:04bc917c6aa567091bb2ca294729c2766808e359041989a3f02eba875315eef4"
+        },
+        {
+          "resource": "repo://scripts/platform-recovery-candidate.py#L387-L470",
+          "version": "repo-lines-v1:sha256:080a2f2100c3c43423d1db4ac2ebcd2fb117764f2b63b0e8c356e05fa2d4f3ce:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2OWRlNjEwM2ZkYTE3YzFiODVjMDllNDdiMTRjYTgzNDZhNDg5ZWYyOWYyYjE4ZWRjZmY5MzcyNWNkM2EwMzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3MjIzMTA2ZmQ4NzQyYjcwZWEyMzNmOWRjMzU5ZjRiMDJiYmIwNjliNzI4M2VlZjc2MjQ5OTUxNmJkN2I5YzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwODM0MTQ0NWE0Nzg5N2E0YWNhNzE5YmY1N2ExYzY4MzRkMWIwZmUyNzUwYzAwMjk1N2Q5NWQzOWNiMzgyNmMifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-recovery-receipt-publish.py",
+          "version": "repo-file-v1:sha256:7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T21:30:24.345Z"
+    "at": "2026-10-28T03:17:59.106Z"
   }
 }

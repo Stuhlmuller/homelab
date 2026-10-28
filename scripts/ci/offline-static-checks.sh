@@ -1035,6 +1035,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-startup.yml:startup' \
     '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
+    '.github/workflows/platform-recovery-receipt-publication.yml:publish' \
+    '.github/workflows/platform-recovery-receipt-publication.yml:validate' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/platform-maintenance.yml:maintenance' \
@@ -1104,6 +1106,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
+.github/workflows/platform-recovery-receipt-publication.yml 2757e03d1a452802f9199f5a334374d1c173b7654950232777eff49f86087627
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7

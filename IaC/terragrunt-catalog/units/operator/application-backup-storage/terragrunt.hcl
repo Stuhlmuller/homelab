@@ -9,6 +9,7 @@ terraform {
 
 locals {
   destination = read_terragrunt_config("${get_repo_root()}/IaC/application-backup-storage.hcl").inputs
+  etcd_source = read_terragrunt_config("${get_repo_root()}/IaC/etcd-backup-storage.hcl").inputs
 }
 
 generate "aws_provider" {
@@ -32,6 +33,14 @@ inputs = {
     object_prefix = "openclaw-enterprise/new/"
     subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
     workflow      = "OpenClaw Enterprise Recovery Publication"
+    ref           = "refs/heads/main"
+    repository_id = 973476220
+  }
+  platform_receipt_publisher = {
+    role_name     = "homelab-platform-receipt-publisher"
+    source_bucket = local.etcd_source.bucket
+    subject       = "repo:Stuhlmuller/homelab:environment:homelab-production"
+    workflow      = "Platform Recovery Receipt Publication"
     ref           = "refs/heads/main"
     repository_id = 973476220
   }

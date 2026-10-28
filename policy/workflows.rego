@@ -164,6 +164,74 @@ deny contains msg if {
 }
 
 deny contains msg if {
+	object.get(input, "name", "") == "Platform Recovery Receipt Publication"
+	not approved_platform_recovery_receipt_publication
+	msg := "Platform recovery receipts require owner-only exact-main dispatch, scoped OIDC, private candidates, and fixed publication"
+}
+
+approved_platform_recovery_receipt_publication if {
+	events := workflow_events
+	count(object.keys(events)) == 1
+	dispatch := events.workflow_dispatch
+	object.keys(dispatch.inputs) == {"expected_sha", "candidate_id", "direct_sha256", "backup_sha256", "restore_sha256"}
+	every _, value in dispatch.inputs {
+		value.required == true
+		value.type == "string"
+	}
+	input.permissions == {}
+	object.keys(input.jobs) == {"validate", "publish"}
+	validation := input.jobs.validate
+	validation.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	validation["runs-on"] == "ubuntu-24.04"
+	validation.permissions == {"contents": "read"}
+	count(validation.steps) == 4
+	validation.steps[0].name == "Check Owner, Inputs And Current Main"
+	contains(validation.steps[0].run, `test "$GITHUB_ACTOR_ID" = 57728706`)
+	contains(validation.steps[0].run, `test "$GITHUB_RUN_ATTEMPT" = 1`)
+	contains(validation.steps[0].run, "gh api --hostname github.com")
+	validation.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	validation.steps[1].with["persist-credentials"] == false
+	validation.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	validation.steps[3].run == "nix develop --command python3 -I scripts/ci/platform-recovery-receipt-publish-test.py"
+	job := input.jobs.publish
+	job.needs == ["validate"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job["runs-on"] == "ubuntu-24.04"
+	job.environment == {"name": "homelab-production"}
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.concurrency == {"group": "platform-recovery-receipt-publication", "cancel-in-progress": false}
+	count(job.steps) == 6
+	job.steps[0].name == "Verify Current Main Before Credentials"
+	contains(job.steps[0].run, `test "$GITHUB_ACTOR_ID" = 57728706`)
+	contains(job.steps[0].run, `test "$GITHUB_RUN_ATTEMPT" = 1`)
+	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
+	job.steps[1].with["persist-credentials"] == false
+	job.steps[2].uses == "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909"
+	job.steps[3].name == "Recheck Main Before Scoped OIDC"
+	contains(job.steps[3].run, "gh api --hostname github.com")
+	job.steps[4].uses == "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508"
+	job.steps[4].with["role-to-assume"] == "arn:aws:iam::716182248480:role/homelab-platform-receipt-publisher"
+	job.steps[4].with["role-session-name"] == "homelab-platform-${{ github.run_id }}"
+	job.steps[4].with["unset-current-credentials"] == true
+	job.steps[5].name == "Promote Reviewed Private Candidates"
+	job.steps[5].env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "CANDIDATE_ID": "${{ inputs.candidate_id }}", "DIRECT_SHA256": "${{ inputs.direct_sha256 }}", "BACKUP_SHA256": "${{ inputs.backup_sha256 }}", "RESTORE_SHA256": "${{ inputs.restore_sha256 }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(job.steps[5].run, "\n") == platform_recovery_private_run
+}
+
+platform_recovery_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+sha256sum --check --status <<<'7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c  scripts/platform-recovery-receipt-publish.py'
+if ! nix develop --command python3 -I scripts/platform-recovery-receipt-publish.py \
+  --expected-sha "$EXPECTED_SHA" --candidate-id "$CANDIDATE_ID" \
+  --direct-sha256 "$DIRECT_SHA256" --backup-sha256 "$BACKUP_SHA256" \
+  --restore-sha256 "$RESTORE_SHA256" >"$private_log" 2>&1; then
+  echo '::error::Recovery receipt publication blocked; private evidence withheld.'
+  exit 1
+fi
+echo 'Two reviewed recovery prerequisites published and read back; private evidence withheld.'`
+
+deny contains msg if {
 	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
 	not approved_openclaw_enterprise_operation
 	msg := "OpenClaw Enterprise stages require exact dispatch, current-main guard, serialized permission scope, and blocked helper hash"

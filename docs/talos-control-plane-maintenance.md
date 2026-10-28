@@ -500,6 +500,10 @@ checks must be at most six hours old; all four receipts must be verified and
 bound to the dispatched SHA. A protected producer and review path for these
 receipts remains T023 work, so no operator should set `activationEnabled` or
 the canary node yet.
+The [candidate and protected publication path](platform-recovery-receipt-publication.md)
+prepares only the direct-LAN and off-node etcd receipts. The upgrade gate must
+also prove the referenced snapshot and manifest versions are still available
+at stage time; a receipt alone does not establish source availability.
 
 ### Operator-LAN Recovery Candidates
 
@@ -577,8 +581,9 @@ Immediately before the Kubernetes command, the helper also reads the live
 images and the gateways' injected Pod images must match the reviewed Istio
 1.30.6 pins. Their Deployment/DaemonSet rollouts must be fully observed and
 ready on all scheduled nodes. Deployment total replicas must equal desired,
-including during termination of old replicas. It repeats this read-only check after the
-upgrade; a controller marked for deletion or an old or degraded mesh stops the stage.
+including during termination of old replicas. Repeat this read-only check after
+the upgrade. A controller marked for deletion stops the stage, as does an old
+or degraded mesh.
 Istio 1.30.6 charts currently default to `registry.istio.io/release`, while
 the reviewed catalog pins `docker.io/istio`; T025 must align the chart image
 hub and set digest-bearing images in the workload templates and injected
@@ -1186,7 +1191,8 @@ emergency Deployments in place. Inspect every Pod bound to `zimaboard-2`,
 including terminating Pods; if any mounts a PVC, stop and establish a separate
 writer-fencing and data-recovery plan before proceeding.
 
-Apply the reviewed `IaC/homelab/us-west-2/shared/kubernetes-node-labels` unit through the
+Apply the reviewed `IaC/homelab/us-west-2/shared/kubernetes-node-labels` unit
+through the
 [documented saved-plan recovery path](ci-cd.md#octelium-ci-access-setup).
 Its `zimaboard-2 = {}` input removes the Terragrunt-owned dataplane label while
 retaining the label-management resource and Node. The expected plan updates
