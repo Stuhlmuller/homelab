@@ -49,6 +49,11 @@ def main() -> None:
     parser.add_argument("--cordium-repo", type=Path, help="existing pinned clone for offline verification")
     parser.add_argument("--octelium-repo", type=Path, help="existing pinned clone for offline verification")
     parser.add_argument("--output-dir", type=Path, help="retain verified patched sources for a build")
+    render_mode = parser.add_mutually_exclusive_group()
+    render_mode.add_argument("--check-render", action="store_true",
+                             help="compare full generated policies with the candidate fixture")
+    render_mode.add_argument("--write-render", action="store_true",
+                             help="refresh the candidate fixture for source review")
     args = parser.parse_args()
     source = json.loads((HERE / "source.json").read_text())
     go_env = dict(os.environ, GOTOOLCHAIN=source["goToolchain"])
@@ -65,6 +70,12 @@ def main() -> None:
         run("go", "test", "./commands/install", "./commands/upgrade", "-run",
             "^Test(PinGenesisImage|InstallRejectsMissingImageBeforeWrites|UpgradeGenesisUsesPinnedImage)$",
             "-count=1", cwd=root / "octelium/client/octops", env=go_env)
+        if args.check_render or args.write_render:
+            command = [sys.executable, "-I", str(HERE / "render-policies.py"),
+                       "--source-dir", str(root)]
+            if args.write_render:
+                command.append("--write")
+            run(*command, env=go_env)
         if args.output_dir:
             for name in ("cordium", "octelium"):
                 run("git", "diff", "--check", cwd=root / name)

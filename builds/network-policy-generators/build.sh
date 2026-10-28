@@ -9,7 +9,8 @@ toolchain="$(jq -er '.goToolchain | select(. == "go1.25.8")' "$contract")"
 
 context="$(mktemp -d "${TMPDIR:-/tmp}/policy-generator-build.XXXXXX")"
 trap 'rm -rf -- "$context"' EXIT
-python3 -I builds/network-policy-generators/verify-source.py --output-dir "$context/source"
+python3 -I builds/network-policy-generators/verify-source.py \
+  --output-dir "$context/source" --check-render
 
 build_image() {
   local name="$1" upstream="$2" package="$3" license="$4" license_id="$5"

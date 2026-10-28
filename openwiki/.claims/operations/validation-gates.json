@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:864020ce5d8a957b37ed56f10548259c48ed4fde0c87e11384eece2e551e6083",
+  "pageVersion": "sha256:f3b652be988599cb04b1863b30126a3526a5bf5033efbba084c64679962de082",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1954,43 +1954,43 @@
     },
     {
       "id": "claim_b986deb936a64c11849112d3a7a06751",
-      "statement": "The source-only generator verifier pins upstream revisions and patch SHA-256 values, checks licenses, applies both reviewed patches, and runs targeted Go tests; success does not publish or deploy a patched image or prove a live policy render.",
+      "statement": "The source-only generator verifier pins upstream revisions and patch hashes, checks licenses, applies reviewed patches, and runs targeted Go tests. With --check-render it also matches unpatched full policy specs to current expected fixtures and proves each patched Cordium ws-main and Octelium svc-upstream spec differs only by removal of the all-port public IPv4/IPv6 egress rule. This candidate source render does not publish images or prove installed policies or live traffic.",
       "evidence": [
         {
-          "resource": "repo://builds/network-policy-generators/README.md",
-          "version": "repo-file-v1:sha256:71997a37bd3a8f601a91c40690d256f32ba96607a45cd676e16d3c7280512b76"
+          "resource": "repo://builds/network-policy-generators/README.md#L3-L18",
+          "version": "repo-lines-v1:sha256:78f96457655339e9d5a5076cc6f18ac7bc78c94ab1be7c77400a22bd6d7eabd8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyNWFlYTUxNzE5YWRmMTVlMjljN2M3NTUyZmM1Mjc5NjQ5ZjcxNDEwNmEyMTRiNjIzNmQ0NjhmNTJhMTY1MmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlZTJkZmY4ODIwYjU3OTMwZDBjZTBmZGQxZDY5MWU1NjQ1N2FjMmUzZWYzOTJmMmI0MGY1MTU0Zjc2OWM3MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0MjU2YmNkYTllYTMxOTYxOTYwMDcxOTdhYzA3NzQ3OWIyZThiYzRmMGY0YTgxMGQ2MjcwZjNlNDY1YTZkYWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyNDg2NTBhZWIzMWQ5N2UwMWQ0YWM4MmUzMzMxODNkNjE3ZmZhODVjZmQ3YWYxMjIxNTMwZjUyODQyMzcyODAifQ"
         },
         {
-          "resource": "repo://builds/network-policy-generators/source.json",
-          "version": "repo-file-v1:sha256:40faa9f044f657ffdde383c4ed09c8620f46df1dc64ee7d3c06e80d216305028"
+          "resource": "repo://builds/network-policy-generators/render-policies.py#L68-L157",
+          "version": "repo-lines-v1:sha256:4c0edced24807af857716b6508d345be82373f25a50d89010e923a65e39dfed6:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlMTNjNjBjOTQyZDNiODJhY2YxNDJkOWZmM2I4MzFjYjkzM2E1YmY5N2Q0NWY1YjJlYzc2YjAyZjRmMDFjNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4MzYyODZlOWUwMTVjNTUzNzQ0YjdiODA4N2FiYmVlMTM2ODEyMDUwY2U3YTU1ZTc5NDUyM2M1YmU5MTY2MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUyNDVlOTkyMjNmODM4MThmY2U3OGVjOGVjNjkwZDRmODVhMzRiZDk5NzYwYWIzZjg1MWFlYzBhMGMxZGMxMjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
         },
         {
-          "resource": "repo://builds/network-policy-generators/verify-source.py",
-          "version": "repo-file-v1:sha256:e3f279c22789304b6417a5c8dc79f747054ef09f60fa548440e7118c5abfb12d"
+          "resource": "repo://builds/network-policy-generators/verify-source.py#L25-L87",
+          "version": "repo-lines-v1:sha256:18336fa7482479e6b7ffb68db4bebbdd07eda350ddd10f7d79fd35f9c7118341:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZTk5MjMyY2QzYTMwOWY1MGNiZDZmNjYyMTI3ZWVhYWZjZTFmNzM2MjkyZGVmYjExM2Q5ODFhMjBjN2Q4NTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImExZjMzZjhhNWY0NTkzMzNiNDRmYjkxZDU1ZTI2ZTM3ZTJmMDgxZmU4NTFmZDdlYjdlNWMyYzQzMDFiNGVmY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_e11bb43912324808bba4bddc1751ca1d",
-      "statement": "The staged policy-generator-images workflow requires exact current main, runs source and publisher fixtures, builds three patched images before credentials, and publishes only fixed Harbor names with complete authenticated pulls and signature verification before returning digest outputs. It has not been dispatched; no publication receipt, consumer pin, generated render, or live canary result follows from the workflow source.",
+      "statement": "The staged exact-current-main policy-generator publisher builds three patched images before credentials and repeats the full-spec source candidate render check. It publishes fixed Harbor names with complete authenticated pulls and signature verification before returning digests. It has not been dispatched; no publication, installed-policy comparison, image pin, or live canary receipt follows from this source.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/policy-generator-images.yml#L1-L104",
-          "version": "repo-lines-v1:sha256:69b45de1efcdc961c30fd3d1164e7d825bd0e10d6a6ff1a42966d3c9f614e39e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmYWFhMjIyZTBlNGI1NDk2NTZiMWU3MzhjZDc0NzQ4ODcwOGNiYmU2MTM3NmVjY2UwZWU2NjU5ZDk1ZTE0YzM3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1YWRiNjJkODkzZjUzNzM3Njc5NjM3ZTdhMGNmMTdkNjNhNTg3NTBiNDYxMDQ1NzU1ZDcyMzVkNTA1NDI5N2U1IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0N2M5NDYwY2UxMGVmN2Q1YTllZjFiMmIyNGNjY2UzNzk5NzMyNzVmZDY0NzE2MTBlNWE0NzFkMjdiZDEyMjQ0In0"
+          "resource": "repo://.github/workflows/policy-generator-images.yml#L14-L104",
+          "version": "repo-lines-v1:sha256:930f443bdc253ea3fb0087fa53dd92730ff004c75532d7b54c19534333b33388:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZDgwMTU0ZWQ0MmZjNWM3NzliMTMzMTU3OGI1OGI4OWM4MDFlYWNlNzRmMjRjZDQ4ZWI0YTIzNTc5NDBhOTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZGI2MmQ4OTNmNTM3Mzc2Nzk2MzdlN2EwY2YxN2Q2M2E1ODc1MGI0NjEwNDU3NTVkNzIzNWQ1MDU0Mjk3ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0MjdmNTI0MWI1ZGJmM2RjOGNlZjZkOTMwMDU1NTUyN2Q0OWIyMjRhNmY0ZjdkN2UzMzUxNjZlNDBlOGFkMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3Yzk0NjBjZTEwZWY3ZDVhOWVmMWIyYjI0Y2NjZTM3OTk3MzI3NWZkNjQ3MTYxMGU1YTQ3MWQyN2JkMTIyNDQifQ"
         },
         {
-          "resource": "repo://builds/network-policy-generators/README.md#L21-L52",
-          "version": "repo-lines-v1:sha256:9936a5bf0a2d962175b7bab1872b0294920f12939600900ab1614188131a9102:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYjU4NWIyZTQ3ZGQ5NTc2MDRlOWZlYWNjNzc3MmFhOTY5MzA4ZGEzOThhODM4MWFkMTcxMjYzNzc3MjM2MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmODNhNDI1MDJlN2U3NWRjOTBkODI0Nzg0N2EwYjcyZWMyMjUyNzkyODhiMTA1OTZiYTBmZGYzOTM4YzA1OGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhYzc3YTg1NDkxOGNiMGQxMDA5OGM3OWZlNWZiMjczM2I1NjRlYWI2YmQ5ZjQ0NmI5MjczMzE2MWM5MjZmMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1ZWQyODVhNmNjNWQ5YjA3YTIwZTI5OTBhYTM4ZTI1NjYxOTk0NDYzNDNkOTAzYzM2MDdiNDZkZWUxNDBiNWEifQ"
+          "resource": "repo://builds/network-policy-generators/README.md#L28-L62",
+          "version": "repo-lines-v1:sha256:7f158458d95cdb745e655546154b8d007f8ef0846603229ade0065c1aeb274d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjY2NhY2Y5MzUzMmNlODIxNjRmNmE5MDQ4YmViYzYzMGMxZDk2NTA0NmE5MTk3YWE4Y2U3ZDFhZjVjOTEwMjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmODNhNDI1MDJlN2U3NWRjOTBkODI0Nzg0N2EwYjcyZWMyMjUyNzkyODhiMTA1OTZiYTBmZGYzOTM4YzA1OGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjYTBhYzVmODcyNDFlMWVlNTE2NGYzMmM1YmVkN2FiOWFiMzM3YmYzN2YwODZlZjI4ZWMxOGRjY2MyZWFhMzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1ZWQyODVhNmNjNWQ5YjA3YTIwZTI5OTBhYTM4ZTI1NjYxOTk0NDYzNDNkOTAzYzM2MDdiNDZkZWUxNDBiNWEifQ"
         },
         {
-          "resource": "repo://docs/validation-runbook.md#L22-L45",
-          "version": "repo-lines-v1:sha256:08f4656a6faf65712203b6c24ab6c315d030eedc70e4fa079663c248efaebe04:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZTI2NDlmNmI5YTQwYThkMjZiYjgwYzkwMzEzOTAxMzljZTA4ZGM4MjBiNmJhMDkyZWZkNWJkMDc1ODcwMzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxY2M5NTJiNzdlY2RhOWVjMDJhODQxMDRjMDZhOWI3YjBlM2YyM2UzMjczMmQ0ZjIwNmU0NTYxYWI4Nzk0OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiYzJhNmExY2IzODEzOWQyMGU5ODc4OTk0YzZjZTZkMWEzMGE0ZmUxOTg5MDJmNTFiOTJjMWJhMzE4NmM5ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjOGEzZjEwNzI2NTRlZWFjNDVlZDZjZmU0YzVlNmY5YzliMmZmMDk1N2YxMzhkNTEzY2ZiYWJlNTNmZjM4MGYifQ"
+          "resource": "repo://builds/network-policy-generators/build.sh#L1-L18",
+          "version": "repo-lines-v1:sha256:577afaa0f631f315a8aaff789025a59e4293567810d79ce14b06855479f2318f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmOTNlYTk0NTI2YjAyNWExNzkxOTJhYjkzN2UzMDkzY2EzYjE3ODFkYTVmOTlmMGMyMWFjNTY5ZWIzYWEwZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxYjBmMzU3NjU1YWViOTcyYjI2ZDY4NmZjNWYxYjAwZDUzNTJmYTVhODAwOTZmNTRhNjhjMzk2MDU4M2I1OTIifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T02:01:41.290Z"
+    "at": "2026-10-28T02:07:57.520Z"
   }
 }

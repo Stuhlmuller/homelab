@@ -23,11 +23,13 @@ planned, their dependencies remain ordered by Terragrunt `dependencies` blocks,
 and unaffected units are skipped by the run queue.
 
 For the staged Cordium and Octelium NetworkPolicy generator corrections, run
-`python3 builds/network-policy-generators/verify-source.py` to verify pinned
-upstream commits, apply the reviewed patches, and test the affected Go packages.
+`python3 builds/network-policy-generators/verify-source.py --check-render` to
+verify pinned upstream commits, apply the reviewed patches, test the affected
+Go packages, and compare full constructor renders with the candidate fixture.
 Passing this source check does not qualify deployment: require protected Harbor
-publication with pinned digests, actual generated-policy renders, and allowed
-and denied traffic on an isolated canary before enabling enforcement. See
+publication with pinned digests, comparison to installed generated policies,
+and allowed and denied traffic on an isolated canary before enabling
+enforcement. See
 [`docs/runtime-isolation.md`](runtime-isolation.md#staged-networkpolicy-enforcement).
 The protected `policy-generator-images.yml` dispatch accepts the exact reviewed
 current `main` SHA and returns three authenticated-pull and signature-verified

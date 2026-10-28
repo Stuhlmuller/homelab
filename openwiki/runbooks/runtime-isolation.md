@@ -6,12 +6,14 @@ tags: ["runbook", "security", "kubernetes"]
 sources:
   - id: openwiki-source-225c4d98c899575724fbc37b
     resource: repo://.github/workflows/policy-generator-images.yml
-  - id: openwiki-source-77506acd031f0c0e800c4c2a
-    resource: repo://builds/network-policy-generators/cordium-v0.12.7.patch
-  - id: openwiki-source-1b8e7ecff7f3e3abcd292cd7
-    resource: repo://builds/network-policy-generators/octelium-v0.35.0.patch
+  - id: openwiki-source-68e58ca71bd59a525533048f
+    resource: repo://builds/network-policy-generators/build.sh
+  - id: openwiki-source-1f2a9ccb05791a264d318512
+    resource: repo://builds/network-policy-generators/candidate-networkpolicies.json
   - id: openwiki-source-c73e1fecbb517a520b6d8a37
     resource: repo://builds/network-policy-generators/README.md
+  - id: openwiki-source-af73a31811c2a4b1b9b88dd9
+    resource: repo://builds/network-policy-generators/render-policies.py
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-3f6d0b26d6634f9dca554267
@@ -70,10 +72,10 @@ sources:
     resource: repo://scripts/octelium-cluster-bootstrap.sh
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-28T02:01:41.290Z" }
+generated: { by: "codex", at: "2026-10-28T02:07:57.520Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:01:41.290Z
+    at: 2026-10-28T02:07:57.520Z
 ---
 
 # Runtime Isolation
@@ -173,9 +175,14 @@ IPv6 egress without a public-egress input; additive NetworkPolicies cannot
 narrow those allows.
 [Staged source patches](../../builds/network-policy-generators/README.md)
 remove those two rules. Run
-`python3 builds/network-policy-generators/verify-source.py` to check exact
-upstream revisions, patch hashes, licenses, application, and targeted Go tests.
-This is source-only: no corrected image is published or deployed. The staged
+`python3 builds/network-policy-generators/verify-source.py --check-render`
+to check pinned sources, patch hashes, licenses, targeted Go tests, and full
+source constructor renders. The
+[fixture](../../builds/network-policy-generators/candidate-networkpolicies.json)
+records complete `ws-main` and `svc-upstream` patched specs. Its check matches
+each unpatched constructor to the current expected-spec fixture and proves
+that only the all-port public IPv4/IPv6 rule is removed. This is source-only:
+no corrected image is published or deployed. The staged
 [publisher](../../.github/workflows/policy-generator-images.yml)
 can build and publish three patched images from exact current `main`, then
 require authenticated Harbor pulls and signature verification before emitting
@@ -188,9 +195,9 @@ installed octops commands for `--genesis-image` and forwards the pin before
 writes. It still has no reviewed path to install a patched octops binary from
 its authenticated and signed image. Its help check is not binary provenance.
 Current live policies and expected-spec fixtures retain the broad rules.
-Publish and pin reviewed images, install the patched binary, compare complete
-actual generator renders, and qualify owner destinations plus private-range
-denial on an isolated canary before enforcement.
+Publish and pin reviewed images, install the patched binary, compare
+installed policies with the candidate full specs, and qualify owner
+destinations plus private-range denial on an isolated canary before enforcement.
 
 Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,

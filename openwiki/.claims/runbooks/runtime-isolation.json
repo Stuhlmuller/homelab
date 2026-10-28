@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f0a4f7cec499fa3a16955cd29a874532e5830526eb5f7e3332e6af79c76968cb",
+  "pageVersion": "sha256:3dab9050126c4710eea3e0e3608988423f413ad4f58e71d5ac8670506e055390",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -224,23 +224,15 @@
     },
     {
       "id": "claim_1ff9fd9e6769482b8f537a5cae85c758",
-      "statement": "Pinned upstream Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress, and additive NetworkPolicies cannot subtract either allow. Staged pinned source patches remove those rules, but corrected images and actual generator renders are absent; owner traffic and isolated-canary denial remain unqualified.",
+      "statement": "Pinned upstream Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress, which additive NetworkPolicies cannot subtract. Reviewed source patches remove those rules, but corrected images are unpublished and undeployed; comparison with installed policies, owner traffic, and isolated-canary denial remain unqualified.",
       "evidence": [
         {
-          "resource": "repo://builds/network-policy-generators/cordium-v0.12.7.patch",
-          "version": "repo-file-v1:sha256:bd54b73337f8cede7dab6fa75758f8925512a46c19c1669d4c6fc8dac1e1c2bd"
+          "resource": "repo://builds/network-policy-generators/README.md#L11-L26",
+          "version": "repo-lines-v1:sha256:580445c45e2554c23d692c16c9fa42df63b8f2c949f77bbe0193abe5fb238891:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0YjkzYjdjZmYxNDViNzIwMDU5OTc1YTVjMjJlZDliMjAyM2Y4OTE4NDA5ODJlYjAyNjNlMjA0MjI0MGMxNGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyMmJhMjFjZThiOWU1YjI3NjRmZGI0NzYxNWZmYjU0YmU3OGEwY2E1NTIxNTIzMmU1YTUxMGQ4MGIzM2UzYzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI4NThlNDYzMmI0MTcyNzMwMTZkYjBiODZkNjFkOWE2ZTcyMDZiN2Y2MDY2OTFlMzViZTcxYzcwNDUyOTgyYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhYzc3YTg1NDkxOGNiMGQxMDA5OGM3OWZlNWZiMjczM2I1NjRlYWI2YmQ5ZjQ0NmI5MjczMzE2MWM5MjZmMDEifQ"
         },
         {
-          "resource": "repo://builds/network-policy-generators/octelium-v0.35.0.patch",
-          "version": "repo-file-v1:sha256:7b2adf913b5f14f225d5913adbc5c3420dab74da6f91d9c2434d8139b4866da5"
-        },
-        {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
-        },
-        {
-          "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:df294557d726a47df2605558a7798afc05e31d0c87bb12cb8e905e8d4d053f42"
+          "resource": "repo://docs/runtime-isolation.md#L182-L213",
+          "version": "repo-lines-v1:sha256:66dc61833c97536c3dca3aa192105acfdb7c275b9268c9a9ec0f1970280e211e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ZjQ3NDk0NzM4NjBiMzAwZjA4N2U3ZWY4OTVlZWNmYzIyMDEzN2QwNTM5NDc2M2I5M2Q4ZDE5OTA0NDExZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNzE3NDhiZmVmNzJjNzcwYmVmMTlhMmExOThkOTM1YTBkNTMxZTkzM2Q3MTNjNWZiZDM4ODNiM2E0ZGJhMWQifQ"
         }
       ]
     },
@@ -329,8 +321,8 @@
       "statement": "The Octelium bootstrap wrapper now consumes the reviewed Genesis image pin, currently null. With no pin it fails closed if the network-policy enforcer is installed or unreadable; with a fixed tagless Harbor digest it checks installed init and upgrade --genesis-image support and passes the pin before writes. It does not install or prove provenance of the patched octops binary, and no patched path has been deployed.",
       "evidence": [
         {
-          "resource": "repo://builds/network-policy-generators/README.md#L37-L53",
-          "version": "repo-lines-v1:sha256:3cd8e216c7571afb293bb510bc738792cce091fc0601176ab9abac2a3fcb228d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZDk0NWQ5NTA1NDE4YzM5ZjU5ZWY5MjJhM2Y2M2JhYjdlMjViNDRhYmFiN2JlZTJjNjE0OWMwNGIzZGUzMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmNkYjA5NDdkZWM4Yzk0NTk3NjRjMWI1MzBiYzA0MTEwZjg0YjJkMGNhMzg5ZjM0NjljMmU0NzIwOTI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5OGI4M2E1Y2FiMDlhYTVlNjM4OWI5YmNlMzZjMzI3MGNjNDRjMTU3NWNkYTZmM2VmZGJjODA0YjkxMDhhNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YjliY2JlMmQ0YWRiM2ZlMGM3MDQwYjhkMDc5MDQwNDViYmE5YjcwZDViODcwOWZlOGU3ZWE1MjIzZWM4ZmQifQ"
+          "resource": "repo://builds/network-policy-generators/README.md#L46-L63",
+          "version": "repo-lines-v1:sha256:7d6446b9090e69772594cb52d5dbe2db4ba6d154c579e91dd8bfdff20a62300a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZDk0NWQ5NTA1NDE4YzM5ZjU5ZWY5MjJhM2Y2M2JhYjdlMjViNDRhYmFiN2JlZTJjNjE0OWMwNGIzZGUzMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmNkYjA5NDdkZWM4Yzk0NTk3NjRjMWI1MzBiYzA0MTEwZjg0YjJkMGNhMzg5ZjM0NjljMmU0NzIwOTI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5OGI4M2E1Y2FiMDlhYTVlNjM4OWI5YmNlMzZjMzI3MGNjNDRjMTU3NWNkYTZmM2VmZGJjODA0YjkxMDhhNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YjliY2JlMmQ0YWRiM2ZlMGM3MDQwYjhkMDc5MDQwNDViYmE5YjcwZDViODcwOWZlOGU3ZWE1MjIzZWM4ZmQifQ"
         },
         {
           "resource": "repo://scripts/octelium-cluster-bootstrap.sh#L212-L279",
@@ -344,25 +336,43 @@
     },
     {
       "id": "claim_19bc45b323174c03b580113848e1c8b8",
-      "statement": "The staged exact-current-main policy-generator publisher builds three patched Linux/amd64 images before credentials and requires authenticated Harbor pulls and signature verification before emitting Cordium Genesis, Octelium Genesis, and octops digests. It has not run, so its source is not a publication or deployment receipt; actual generated-policy renders and isolated-canary traffic remain independent gates.",
+      "statement": "The staged exact-current-main policy-generator publisher repeats the source-only full-spec candidate render check before credentials, then builds and verifies three patched Linux/amd64 images with authenticated Harbor pulls and signatures before emitting digests. It has not run, so no accepted digest, deployed consumer, installed-policy comparison, or live canary receipt exists.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/policy-generator-images.yml#L14-L104",
           "version": "repo-lines-v1:sha256:930f443bdc253ea3fb0087fa53dd92730ff004c75532d7b54c19534333b33388:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZDgwMTU0ZWQ0MmZjNWM3NzliMTMzMTU3OGI1OGI4OWM4MDFlYWNlNzRmMjRjZDQ4ZWI0YTIzNTc5NDBhOTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZGI2MmQ4OTNmNTM3Mzc2Nzk2MzdlN2EwY2YxN2Q2M2E1ODc1MGI0NjEwNDU3NTVkNzIzNWQ1MDU0Mjk3ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0MjdmNTI0MWI1ZGJmM2RjOGNlZjZkOTMwMDU1NTUyN2Q0OWIyMjRhNmY0ZjdkN2UzMzUxNjZlNDBlOGFkMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3Yzk0NjBjZTEwZWY3ZDVhOWVmMWIyYjI0Y2NjZTM3OTk3MzI3NWZkNjQ3MTYxMGU1YTQ3MWQyN2JkMTIyNDQifQ"
         },
         {
-          "resource": "repo://builds/network-policy-generators/README.md#L21-L53",
-          "version": "repo-lines-v1:sha256:1222460d96c3af235be2b5ef9a541643d10ae203ad82a26e6c092c87e965819a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYjU4NWIyZTQ3ZGQ5NTc2MDRlOWZlYWNjNzc3MmFhOTY5MzA4ZGEzOThhODM4MWFkMTcxMjYzNzc3MjM2MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmNkYjA5NDdkZWM4Yzk0NTk3NjRjMWI1MzBiYzA0MTEwZjg0YjJkMGNhMzg5ZjM0NjljMmU0NzIwOTI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhYzc3YTg1NDkxOGNiMGQxMDA5OGM3OWZlNWZiMjczM2I1NjRlYWI2YmQ5ZjQ0NmI5MjczMzE2MWM5MjZmMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YjliY2JlMmQ0YWRiM2ZlMGM3MDQwYjhkMDc5MDQwNDViYmE5YjcwZDViODcwOWZlOGU3ZWE1MjIzZWM4ZmQifQ"
+          "resource": "repo://builds/network-policy-generators/README.md#L28-L62",
+          "version": "repo-lines-v1:sha256:7f158458d95cdb745e655546154b8d007f8ef0846603229ade0065c1aeb274d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjY2NhY2Y5MzUzMmNlODIxNjRmNmE5MDQ4YmViYzYzMGMxZDk2NTA0NmE5MTk3YWE4Y2U3ZDFhZjVjOTEwMjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmODNhNDI1MDJlN2U3NWRjOTBkODI0Nzg0N2EwYjcyZWMyMjUyNzkyODhiMTA1OTZiYTBmZGYzOTM4YzA1OGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjYTBhYzVmODcyNDFlMWVlNTE2NGYzMmM1YmVkN2FiOWFiMzM3YmYzN2YwODZlZjI4ZWMxOGRjY2MyZWFhMzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1ZWQyODVhNmNjNWQ5YjA3YTIwZTI5OTBhYTM4ZTI1NjYxOTk0NDYzNDNkOTAzYzM2MDdiNDZkZWUxNDBiNWEifQ"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md#L182-L213",
-          "version": "repo-lines-v1:sha256:66dc61833c97536c3dca3aa192105acfdb7c275b9268c9a9ec0f1970280e211e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ZjQ3NDk0NzM4NjBiMzAwZjA4N2U3ZWY4OTVlZWNmYzIyMDEzN2QwNTM5NDc2M2I5M2Q4ZDE5OTA0NDExZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNzE3NDhiZmVmNzJjNzcwYmVmMTlhMmExOThkOTM1YTBkNTMxZTkzM2Q3MTNjNWZiZDM4ODNiM2E0ZGJhMWQifQ"
+          "resource": "repo://builds/network-policy-generators/build.sh#L1-L18",
+          "version": "repo-lines-v1:sha256:577afaa0f631f315a8aaff789025a59e4293567810d79ce14b06855479f2318f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmOTNlYTk0NTI2YjAyNWExNzkxOTJhYjkzN2UzMDkzY2EzYjE3ODFkYTVmOTlmMGMyMWFjNTY5ZWIzYWEwZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQxYjBmMzU3NjU1YWViOTcyYjI2ZDY4NmZjNWYxYjAwZDUzNTJmYTVhODAwOTZmNTRhNjhjMzk2MDU4M2I1OTIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c0e678d8d5e54d4282fda11f84b5fea2",
+      "statement": "The candidate-networkpolicies fixture records complete source constructor renders for Cordium ws-main and Octelium svc-upstream. The checker matches unpatched specs to current expected fixtures and requires each patched object to differ only by removal of its all-port public IPv4/IPv6 egress rule; this is not published-image or installed-policy evidence.",
+      "evidence": [
+        {
+          "resource": "repo://builds/network-policy-generators/README.md#L11-L18",
+          "version": "repo-lines-v1:sha256:7cfae6f35dc4b3f3a1e952c18f7e168dfc76185039d15b0f7c54accf1bcd3aee:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRiOTNiN2NmZjE0NWI3MjAwNTk5NzVhNWMyMmVkOWIyMDIzZjg5MTg0MDk4MmViMDI2M2UyMDQyMjQwYzE0ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVlMmRmZjg4MjBiNTc5MzBkMGNlMGZkZDFkNjkxZTU2NDU3YWMyZTNlZjM5MmYyYjQwZjUxNTRmNzY5YzcyZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjg1OGU0NjMyYjQxNzI3MzAxNmRiMGI4NmQ2MWQ5YTZlNzIwNmI3ZjYwNjY5MWUzNWJlNzFjNzA0NTI5ODJhMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTI0ODY1MGFlYjMxZDk3ZTAxZDRhYzgyZTMzMzE4M2Q2MTdmZmE4NWNmZDdhZjEyMjE1MzBmNTI4NDIzNzI4MCJ9"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/candidate-networkpolicies.json#L1-L219",
+          "version": "repo-lines-v1:sha256:0cc5d4dc779c00badd54bd2893caae7983a672d6a7414edcd940d522315310f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjE5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNmZiMDhmZGExYWNiOTU3YjYxMTZiZDM3ODExYTFmZTQxYTAxNjExYzA2MzFlZGJmNzg2ZDY4ODlhMjdhNTVjIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/render-policies.py#L68-L157",
+          "version": "repo-lines-v1:sha256:4c0edced24807af857716b6508d345be82373f25a50d89010e923a65e39dfed6:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlMTNjNjBjOTQyZDNiODJhY2YxNDJkOWZmM2I4MzFjYjkzM2E1YmY5N2Q0NWY1YjJlYzc2YjAyZjRmMDFjNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4MzYyODZlOWUwMTVjNTUzNzQ0YjdiODA4N2FiYmVlMTM2ODEyMDUwY2U3YTU1ZTc5NDUyM2M1YmU5MTY2MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUyNDVlOTkyMjNmODM4MThmY2U3OGVjOGVjNjkwZDRmODVhMzRiZDk5NzYwYWIzZjg1MWFlYzBhMGMxZGMxMjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T02:01:41.290Z"
+    "at": "2026-10-28T02:07:57.520Z"
   }
 }
