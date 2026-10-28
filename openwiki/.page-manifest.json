@@ -9,12 +9,12 @@
       "completedRunId": "1ab5622d-2e95-4978-aa7b-cdb9101432c0"
     },
     "/openwiki/architecture/ai-observability.md": {
+      "gitHead": "36587418b7b87539faf0958fc0d5f57679d551ed",
+      "sourceFingerprint": "sha256:80e63e65b728df00ec3370a9b660fb72467fba2b395acffcaa1d6e9257747370",
+      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8",
       "pageVersion": "sha256:a2b32974459337f4dc06a06ec499e3f77036b9905daf02c66dd4160942d1be5f",
       "completedBy": "codex",
-      "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7",
-      "gitHead": "10275ce5e3b2d0425b8b80974b43597ae078112d",
-      "sourceFingerprint": "sha256:0af6b10fd1c3f5c3168b12697ce09525a6c84e089231af6d310e7e954c21abb2",
-      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8"
+      "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7"
     },
     "/openwiki/architecture/cluster-topology.md": {
       "gitHead": "791cbb64d9d4860beb6c1e101da5391da44c8b55",
@@ -39,12 +39,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/architecture/storage-and-state.md": {
-      "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
-      "sourceFingerprint": "sha256:276386d422b979ab9978ba819a9a9b89701515064582d1696e67e1888bc48768",
-      "visibleSourceFingerprint": "sha256:423649a18758dea3f6016e5469a9c2e96fe5a55a753af213b886d37a1bab9406",
-      "pageVersion": "sha256:938da516b6156110615d1c1bee5af4ee905faef1a2fad86dbef4b923697831d0",
+      "pageVersion": "sha256:55086678a075e657b89617e77264983391da580547a7b6fb574b70662042d933",
       "completedBy": "codex",
-      "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
+      "completedRunId": "27fe5d14-c256-4154-b3e7-7baef1edf580",
+      "gitHead": "36587418b7b87539faf0958fc0d5f57679d551ed",
+      "sourceFingerprint": "sha256:80e63e65b728df00ec3370a9b660fb72467fba2b395acffcaa1d6e9257747370",
+      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8"
     },
     "/openwiki/operations/agent-workflows.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -235,12 +235,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/operations/validation-gates.md": {
+      "gitHead": "36587418b7b87539faf0958fc0d5f57679d551ed",
+      "sourceFingerprint": "sha256:80e63e65b728df00ec3370a9b660fb72467fba2b395acffcaa1d6e9257747370",
+      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8",
       "pageVersion": "sha256:f57b740ba357712cdf211d34907c6028737610301c27587b7fa2d325fe8b0f67",
       "completedBy": "codex",
-      "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7",
-      "gitHead": "10275ce5e3b2d0425b8b80974b43597ae078112d",
-      "sourceFingerprint": "sha256:0af6b10fd1c3f5c3168b12697ce09525a6c84e089231af6d310e7e954c21abb2",
-      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8"
+      "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -402,12 +402,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/workloads/application-notes.md": {
+      "gitHead": "36587418b7b87539faf0958fc0d5f57679d551ed",
+      "sourceFingerprint": "sha256:80e63e65b728df00ec3370a9b660fb72467fba2b395acffcaa1d6e9257747370",
+      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8",
       "pageVersion": "sha256:b8d12ee2b64a1a3127441199c0d85e9693c1410755acb0c1b4ad574652e3a4ad",
       "completedBy": "codex",
-      "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7",
-      "gitHead": "10275ce5e3b2d0425b8b80974b43597ae078112d",
-      "sourceFingerprint": "sha256:0af6b10fd1c3f5c3168b12697ce09525a6c84e089231af6d310e7e954c21abb2",
-      "visibleSourceFingerprint": "sha256:4bd4a1abbd94bc227db0f1bb15c46daf1a45fdaf81458baf910e706263bebea8"
+      "completedRunId": "1cf939fe-3631-4e13-9fc5-2c41ea397be7"
     },
     "/openwiki/workloads/inventory.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
