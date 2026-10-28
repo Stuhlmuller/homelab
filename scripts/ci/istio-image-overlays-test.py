@@ -17,7 +17,7 @@ def image(repository, version):
     matches = [entry["source"] for entry in CATALOG if entry["source"].startswith(prefix)]
     if len(matches) != 1 or not re.fullmatch(r"[0-9a-f]{64}", matches[0][len(prefix):]):
         raise AssertionError(f"missing or ambiguous reviewed Istio image: {repository}:{version}")
-    return f"{repository}@sha256:{matches[0][len(prefix):]}"
+    return f"harbor.stinkyboi.com/mirror/{matches[0]}"
 
 
 class IstioImageOverlays(unittest.TestCase):
