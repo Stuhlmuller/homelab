@@ -38,6 +38,8 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
@@ -54,6 +56,8 @@ sources:
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
+  - id: openwiki-source-d7226bf67678f656c372644e
+    resource: repo://scripts/platform-recovery-candidate.py
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
@@ -62,10 +66,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T03:12:16.257Z
 ---
 
 # Storage And State
@@ -161,6 +165,14 @@ now has a reviewed-code installation path, private resumable attempts and
 source-age status, but no installed schedule or real recurring execution has
 been verified. It uses existing expiring AWS SSO sessions; remote alerting and
 indefinite unattended identity remain unresolved.
+
+The staged [operator-LAN recovery candidate](../../docs/talos-control-plane-maintenance.md#operator-lan-recovery-candidates)
+helper checks authenticated Talos access from the Mac's direct LAN, retrieves
+one snapshot and manifest by exact S3 version, and restores the downloaded
+snapshot offline. Its private JSON candidates bind those checks to the current
+main SHA but remain `verified: false`; no protected publication, isolated
+control-plane boot, PVC recovery, or fresh live proof follows from this source
+alone.
 
 ## Durable Storage
 

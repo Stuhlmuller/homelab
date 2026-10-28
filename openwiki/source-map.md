@@ -100,6 +100,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
+  - id: openwiki-source-607bce162eb299934e9b55cd
+    resource: repo://scripts/ci/platform-recovery-candidate-test.py
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -118,6 +120,8 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-d7226bf67678f656c372644e
+    resource: repo://scripts/platform-recovery-candidate.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -126,10 +130,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T03:12:16.257Z
 ---
 
 # Source Map
@@ -180,6 +184,7 @@ desired state.
 | `scripts/langfuse-valkey-recovery.py` | [Valkey offline capture](architecture/storage-and-state.md) |
 | `clusters/homelab/apps/litellm/native_keys.py` | [Native service-key migration](architecture/ai-observability.md) |
 | `docs/talos-control-plane-maintenance.md` | [Talos Control-Plane Maintenance](runbooks/talos-control-plane-maintenance.md) |
+| `scripts/platform-recovery-candidate.py` and `scripts/ci/platform-recovery-candidate-test.py` | [Private operator-LAN candidates](runbooks/talos-control-plane-maintenance.md#staged-enterprise-platform-maintenance), [off-node state boundary](architecture/storage-and-state.md#control-plane-recovery-state), and [source-only gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `docs/validation-runbook.md` | [Validation](runbooks/validation.md) |
 
 ## App And Platform Notes
