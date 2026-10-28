@@ -12,7 +12,7 @@ encryption-key settings, and file-backed runtime data.
 
 The Terragrunt-generated encryption key comes from AWS SSM Parameter Store
 through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. Both the app and
-the workflow-migration init container export it as `N8N_ENCRYPTION_KEY` only
+the staged one-time workflow-migration Job export it as `N8N_ENCRYPTION_KEY` only
 when `/home/node/.n8n/config` does not exist yet, so a restored or
 already-initialized PVC keeps using the key in its persisted settings file
 instead of crashlooping on an accidental mismatch.
@@ -36,25 +36,50 @@ instance key; do not rotate the SSM value without following an n8n-supported
 - `/homelab/n8n/postgres-app-password`: n8n database user password mounted from
   `n8n-postgres-client` and read through `DB_POSTGRESDB_PASSWORD_FILE`.
 - `/homelab/n8n/litellm-token`: dedicated inference-only gateway key. External
-  Secrets renders it into `CREDENTIALS_OVERWRITE_DATA`, so an intentionally
-  blank `openAiApi` credential resolves to
-  `http://litellm.ai.svc.cluster.local:4000/v1` without serializing the key in
-  a workflow. The `migrate-ai-workflow` init container idempotently replaces
-  the three inventoried model nodes (one active and two inactive workflows)
-  with that credential and `openrouter/free` through n8n's supported CLI.
-  Exact workflow/node IDs and previous model settings are checked before edits;
-  absent workflows or changed settings are logged and skipped so the app can
-  start on a fresh database or after an intentional workflow edit. A matching
-  workflow is migrated before n8n starts, so its published version is active
-  when the app loads. Only previously active
-  workflows are republished; inactive workflows stay inactive. Its credential is
-  still serialized as a one-element JSON array because `import:credentials`
-  requires an array input. The exported target workflow remains in n8n's
-  one-element array through reimport. It refuses an unexpected node shape rather
-  than changing another workflow. Run `nix develop --command python3 -I
-  scripts/ci/n8n-ai-migration-check.py` for the synthetic preservation check.
-  Verify a resulting Langfuse generation before
-  retiring the AWS credential.
+  Secrets renders it into `CREDENTIALS_OVERWRITE_DATA`, so a blank `openAiApi`
+  credential resolves to `http://litellm.ai.svc.cluster.local:4000/v1` without
+  serializing the key in a workflow.
+
+The n8n Deployment no longer runs the AI migration as an init container.
+`migration-v1.values.yaml` contains the guarded, versioned Job but is
+**not** listed in `IaC/homelab/us-west-2/apps/n8n/stack.hcl` Helm valueFiles.
+The current GitOps render contains no migration Job and this availability fix
+makes no workflow database edits. A read-only PostgreSQL query on 2026-10-24
+found all three inventoried model nodes already set to `openrouter/free` and
+`litellm-managed`; one workflow is active and two are inactive.
+
+A separate activation PR may add the staged file to Helm valueFiles if a
+restored or stale database needs migration. Before that PR merges, verify a
+paired off-NAS PostgreSQL logical dump and n8n PVC backup plus a restore path.
+The [database notes](../n8n-postgres/README.md#backup-and-restore) show a
+`pg_dump` command but do not yet establish this paired backup receipt. The
+staged Job uses exact workflow/node IDs and previous settings as guards; it
+skips missing or edited workflows, fails on list/export/parse/import errors,
+and republishes only previously active workflows. It inspects the LiteLLM
+credential only when a workflow needs migration. A matching existing credential
+with blank stored data is preserved; an absent one is created with blank data.
+The decrypted inspection uses container memory (`/dev/shm`) and removes its
+temporary file without logging credential values. Inspection failures,
+unexpected metadata or nonblank stored data stop the Job before workflow
+import. This avoids n8n's same-ID credential import overwrite on retries or
+restored DBs; type-wide credential overwrites fill only blank fields.
+Credentials and workflow exports retain n8n's required one-element JSON arrays.
+The key never enters workflow JSON. Run `nix develop --command python3 -I
+scripts/ci/n8n-ai-migration-check.py` to exercise these cases.
+
+When activated, Argo CD applies the Job at sync wave 1 after n8n is healthy and
+its PostgreSQL schema exists. Required affinity places the Job on n8n's node
+for the existing `ReadWriteOnce` NFS PVC. The Job uses the n8n service account,
+file-backed PostgreSQL client secret, and persisted config key; the bootstrap
+key applies only when `/home/node/.n8n/config` is absent. Its stable versioned
+name means ordinary n8n restarts and Argo resyncs do not rerun a completed Job.
+Failures remain visible in Job status and logs while the Deployment serves.
+`N8N_AI_MIGRATION_APPLIED` logs only workflow ID, prior active state, and
+`restart_required`. If an active workflow changes, a separately reviewed
+GitOps Deployment revision must restart n8n before the published change is
+live. Verify a real workflow/Langfuse generation before retiring the AWS key.
+Rollback needs the paired database dump and n8n PVC restore; editing the Job
+cannot undo database changes.
 
 ## Access Contract
 
@@ -136,6 +161,14 @@ kubectl -n automation exec deploy/n8n -c app -- \
 curl -I https://n8n.stinkyboi.com/
 curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
 grep -i webhook /tmp/n8n-webhook-body.txt
+```
+
+After a separately approved migration activation, inspect the Job without
+changing it:
+
+```sh
+kubectl -n automation get job/n8n-migrate-ai-workflow-v1
+kubectl -n automation logs job/n8n-migrate-ai-workflow-v1 -c migrate
 ```
 
 Expected route behavior: the editor is reachable on the mesh, and the Funnel
