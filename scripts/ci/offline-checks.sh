@@ -98,6 +98,7 @@ python3 scripts/ci/terragrunt-plan-stage-test.py
 python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
+python3 -I scripts/ci/istio-egress-test.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py

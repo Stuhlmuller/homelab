@@ -16,6 +16,7 @@ service:
   port: 4000
 podAnnotations:
   homelab.stuhlmuller.dev/app-identity-revision: "10"
+  ambient.istio.io/dns-capture: "true"
 volumes:
   - name: app-identity
     configMap:

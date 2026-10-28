@@ -523,7 +523,7 @@ trap 'rm -f "$private_log"' EXIT
 if ! {
   sha256sum --check --status <<<'73fb944f151cb4f5e20e2a7c92125e03592f46564c93afe786bc0fe923020cd2  scripts/ci/openclaw-enterprise-stage.sh' &&
   sha256sum --check --status <<<'a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73  scripts/ci/openclaw-enterprise-journal-operator.py' &&
-  sha256sum --check --status <<<'23c559b68da241fd6658ed46b7af5021368d2990b60d11bb41eb0efd1c21124c  scripts/ci/openclaw-enterprise-full-sync.sh' &&
+  sha256sum --check --status <<<'61a3dd43e7a14a452daa1e4e9f65c68fd6af6d80304fbf80f245f65a0cd90370  scripts/ci/openclaw-enterprise-full-sync.sh' &&
   timeout 140m nix develop --command bash scripts/ci/openclaw-enterprise-stage.sh "$RUN_STAGE"
 } >"$private_log" 2>&1; then
   echo '::error::Enterprise stage blocked; private diagnostics withheld.'
