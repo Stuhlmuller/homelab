@@ -8,6 +8,14 @@ on:
         description: Exact current main commit to checkpoint
         required: true
         type: string
+      expected_pvc_uid:
+        description: Langfuse PostgreSQL PVC UID from the pre-move source inventory
+        required: true
+        type: string
+      expected_pv_uid:
+        description: Bound PV UID from the same pre-move source inventory
+        required: true
+        type: string
 
 permissions: {}
 
@@ -73,12 +81,16 @@ jobs:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_PVC_UID: ${{ inputs.expected_pvc_uid }}
+          EXPECTED_PV_UID: ${{ inputs.expected_pv_uid }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$ACTUAL_REF" = refs/heads/main
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          [[ "$EXPECTED_PVC_UID" =~ ^[0-9a-f-]{36}$ ]]
+          [[ "$EXPECTED_PV_UID" =~ ^[0-9a-f-]{36}$ ]]
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
       - name: Check Out Repository
@@ -113,6 +125,8 @@ jobs:
       - name: Capture And Verify Offline Restore
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_PVC_UID: ${{ inputs.expected_pvc_uid }}
+          EXPECTED_PV_UID: ${{ inputs.expected_pv_uid }}
           GH_TOKEN: ${{ github.token }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
@@ -136,5 +150,5 @@ jobs:
           receipt="${RUNNER_TEMP}/langfuse-checkpoint-receipt"
           trap 'rm -f "$receipt"' EXIT
           test "$(wc -l <"$receipt")" -eq 1
-          LC_ALL=C grep -Eqx 'Verified Langfuse PostgreSQL checkpoint: key=langfuse/postgresql/[0-9a-f]{40}/[1-9][0-9]*/[1-9][0-9]*/langfuse\.dump version=[A-Za-z0-9._~+/=-]+ sha256=[0-9a-f]{64} bytes=[1-9][0-9]* tables=[1-9][0-9]*' "$receipt"
+          LC_ALL=C grep -Eqx 'Verified Langfuse PostgreSQL checkpoint: key=langfuse/postgresql/[0-9a-f]{40}/[1-9][0-9]*/[1-9][0-9]*/langfuse\.dump version=[A-Za-z0-9._~+/=-]+ sha256=[0-9a-f]{64} bytes=[1-9][0-9]* tables=[1-9][0-9]* pvc_uid=[0-9a-f-]{36} pv=[a-z0-9-]+ pv_uid=[0-9a-f-]{36}' "$receipt"
           cat "$receipt"

@@ -43,3 +43,26 @@ spec:
         number: 8080
   tls:
     - hosts: [policy-bot-hook]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bulldozer-hook
+  namespace: traefik
+  annotations:
+    tailscale.com/funnel: "true"
+    tailscale.com/tags: tag:homelab-funnel
+    homelab.rst.io/access-plane: tailscale
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "Only the signed Bulldozer GitHub webhook."
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: traefik-funnel
+      port:
+        number: 8080
+  tls:
+    - hosts: [bulldozer-hook]

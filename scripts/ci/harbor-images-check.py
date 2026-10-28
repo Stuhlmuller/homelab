@@ -99,6 +99,8 @@ def declared_images(value):
                 image += ":" + str(value["tag"])
             if value.get("digest"):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
+            elif value.get("sha"):
+                image = image.split("@", 1)[0] + "@sha256:" + str(value["sha"]).removeprefix("sha256:")
             images.add(image)
         for key, child in value.items():
             if key in {"name", "newName", "repository", "destination"} and isinstance(child, str):

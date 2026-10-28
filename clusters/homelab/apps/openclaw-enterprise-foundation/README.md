@@ -55,14 +55,58 @@ not a live quiescence proof. The packager requires ordinary single-link files
 and discards a partial set when pre-copy, post-copy, and captured path/content
 manifests differ.
 T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup`
-mount. `restore-drill.yaml` is deliberately outside the Kustomization; T045
-must run it in isolation against a complete set and verify the result. Its
+mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
+archive directory before creating anything; the future Job must still prove
+that the volume is the reviewed off-node destination.
+The current [packager](backup.sh) writes the database dump, bootstrap SQL and
+copied recovery material in plaintext under
+`/backup/openclaw-enterprise/.*.partial` before renaming the directory.
+The QNAP [NFS export](../../../../docs/storage-nfs.md) uses NFSv3 `sec=sys`
+and maps clients to one guest identity; an NFS claim alone does not prove an
+encrypted backup. Encrypt before the first off-node write, then independently
+decrypt and restore the completed set before using NFS for T051.
+No declared producer assembles the identity-checked recovery tree or exposes an
+encrypted off-node POSIX mount. A suspended CronJob with placeholder PVCs would
+have no runnable recovery path; keep T051 open until both inputs and an
+independent scheduled restore are verified. Stock Agent stop clears its
+active revision; the [pinned API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/agents.md#L328-L334)
+requires a new deployment to resume. A scheduled backup must prove either
+a consistent online capture or a journaled stop, capture and new-deployment
+resume with failure recovery. The normal no-change reconcile must not
+redeploy just to compensate for an incomplete backup path.
+The current reconciler validates only the first one or two revisions; it
+cannot safely create a fresh revision after each scheduled backup stop.
+The [pinned upstream recovery guide](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/production-handoff.md#L108-L130)
+provides no general OCC backup/restore command and rejects live SQLite copies
+or PVC persistence as verified backups. A complete online capture needs a
+separately reviewed, coordinated database/storage snapshot and restore proof.
+The retained operator [journal claim](../openclaw-enterprise-operator/journal.yaml)
+belongs to `openclaw-system`, while the pinned Compute Driver would create the
+Agent's [gateway-state claim](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L31-L54)
+in `openclaw-agents`. [PVC mounts stay in the Pod's namespace](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#claims-as-volumes);
+one ordinary backup Pod cannot mount both claims. Coordinate the two sources and verify
+their UIDs before publishing one completed set.
+
+The pinned [Kubernetes Secret Driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-secret.md#L136-L143)
+never returns value bytes through the OCC API; capture the tenant's exact
+Kubernetes Secret objects through reviewed namespace-scoped access, including
+the Compute Driver's [generated transport and gateway credentials](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md#L220-L246).
+
+Draft [publisher PR #1684](https://github.com/Stuhlmuller/homelab/pull/1684)
+binds its S3 role to GitHub Actions OIDC, so it cannot authenticate a CronJob;
+T051 still needs declared in-cluster credential delivery or a protected
+publication stage after coordinated capture.
+
+`restore-drill.yaml` is
+deliberately outside the Kustomization; T045 must run it in isolation against
+a complete set and verify the result. Its
 fixed-name Job is a one-shot candidate; a declared repeat/recreate workflow is
 still required before T045/T049 can accept recurring restore evidence. Its Pod
 logs report only the fixed success/failure stage; raw restore details remain
 inside scratch and are not emitted to cluster logs. The Job reads the completed
 recovery set from a read-only mount, checks its hashes before and after restore,
-and keeps only the restored database and private diagnostics in scratch. T051
+rejects a marker without a stopped writer and claim UID, and keeps only the
+restored database and private diagnostics in scratch. T051
 must publish completed directories without further writes; any change detected
 during a drill fails its final hash check. Storage
 placement and 24Gi restore scratch headroom need measured admission;

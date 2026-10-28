@@ -11,7 +11,7 @@ The separate `occ-operator-journal` claim needs a fourth node-local static PV
 with `persistentVolumeReclaimPolicy: Retain`, `hostPath.type: Directory`, and
 exact node affinity. T022 must establish headroom before T035 commits its
 actual node and path. The backing directory must already be owned by UID
-10001 and mode `0700`; `DirectoryOrCreate` would create a root-owned directory
+1000 and mode `0700`; `DirectoryOrCreate` would create a root-owned directory
 that the reconciler rejects. Do not mount a file or subPath: journal writes
 replace a file and fsync the containing directory. Retain and back up the
 journal separately from the chart's bootstrap claim.
@@ -32,8 +32,12 @@ dispatcher requires its embedded reconciler, Installation, and values bytes to
 match current `main`, then projects current config with a SHA receipt through an immutable
 ConfigMap. This lets a later commit pin the verified image digest. The chart's
 bootstrap key must be readable as a
-UID-10001-owned `0600` regular file; no root init container or CI artifact
-should copy it. The current upstream bootstrap UID/mode is not yet proved.
+UID-1000-owned `0600` regular file; no root init container or CI artifact
+should copy it. The generated Job overrides the image's `USER 10001:10001`
+with `runAsUser` and `runAsGroup` 1000. The committed operator declaration
+still has UID 10001 as an intentional disabled-state guard; T035 must set it
+to 1000 only after the journal directory and upstream bootstrap owner are
+proved.
 
 The dispatcher checks current `main` before each write, source file parity,
 the retained journal PVC/PV UID, path, and node, and the bootstrap PVC's bound

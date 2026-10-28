@@ -78,7 +78,8 @@ def unexpected():
 
 def plan(path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    actions = ["delete", "create"] if config.get("replacement") else ["create"]
+    actions = (["no-op"] if config.get("existing_only_noop") else
+               ["delete", "create"] if config.get("replacement") else ["create"])
     path.write_text(json.dumps({"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
     ] if unit == "apps" else []}))
@@ -132,6 +133,9 @@ elif tool == "kubectl":
     if args == ["-n", "argocd", "get", "appproject", "homelab", "-o", "json"]:
         event("preflight.project")
         print(json.dumps(config["project"]))
+    elif args == ["-n", "argocd", "get", "applications", "-o", "json"]:
+        event("apps.live")
+        print(json.dumps({"items": [{"metadata": {"name": name}} for name in config["live_apps"]]}))
     elif args == ["-n", "argocd", "get", "applications", *config["app_names"], "-o", "json"]:
         event("preflight.apps")
         print(json.dumps({"items": config["apps"]}))
@@ -211,11 +215,12 @@ elif tool == "terragrunt":
         target = command[command.index("--filter") + 1]
         if target.startswith("*/azuread"):
             unit = "azure"
-        assert target == ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else "*/argocd" if unit == "apps" else "*"))
+        expected = ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else config.get("argocd_filter", "*/argocd") if unit == "apps" else "*"))
+        assert target == expected
         assert "--non-interactive" in command and "--parallelism" in command
         tail = command[command.index("--") + 1:]
         if unit == "apps":
-            path = Path(command[command.index("--out-dir") + 1]) / target / "tfplan"
+            path = Path(command[command.index("--out-dir") + 1]) / ("apps/argocd" if config.get("existing_argocd_only") == "true" else target) / "tfplan"
             if tail == ["plan", "-no-color"]:
                 assert command[command.index("--json-out-dir") + 1] == str(path.parents[2])
                 event("apps.plan")
@@ -295,6 +300,7 @@ class TerragruntApplyTest(unittest.TestCase):
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
                            "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
                            "TERRAGRUNT_ARGOCD_APP": target,
+                           "TERRAGRUNT_EXISTING_ARGOCD_ONLY": config.get("existing_argocd_only", "false"),
                            "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
                            "TERRAGRUNT_APPLICATION_BACKUP_STORAGE": scope}
             if not config.get("without_azuread"):
@@ -656,6 +662,30 @@ else:
             "archive-bucket.apply", "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
+
+    def test_existing_only_skips_absent_apps_and_reuses_plan_filter(self):
+        result, events = self.run_apply(
+            target="", existing_argocd_only="true", existing_only_noop=True,
+            live_apps=["fleet", "langfuse", "mastodon"],
+            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events.count("apps.live"), 1)
+        self.assertIn("apps.apply", events)
+        self.assertIn("Skipping absent Argo CD Application nofx", result.stdout)
+
+    def test_existing_only_rejects_create_plan(self):
+        result, events = self.run_apply(
+            target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
+            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("would create an Application", result.stderr)
+        self.assertNotIn("apps.apply", events)
+
+    def test_existing_only_rejects_backup_scope(self):
+        result, events = self.run_apply(target="", scope="true", existing_argocd_only="true")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot be combined", result.stderr)
+        self.assertEqual(events, [])
 
     def test_backup_storage_scope_is_isolated_and_checks_saved_plan(self):
         result, events = self.run_apply(target="", scope="true", without_azuread=True)

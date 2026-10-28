@@ -46,15 +46,19 @@ exact current `main`; `homelab-production` admits only that branch:
 ```sh
 main_sha="$(gh api repos/Stuhlmuller/homelab/commits/main --jq .sha)"
 gh workflow run langfuse-postgres-checkpoint.yml -R Stuhlmuller/homelab \
-  --ref main -f expected_sha="$main_sha"
+  --ref main -f expected_sha="$main_sha" \
+  -f expected_pvc_uid='<pre-move-pvc-uid>' -f expected_pv_uid='<pre-move-pv-uid>'
 ```
 
-The successful job prints only an object key, version ID, SHA-256 digest, byte
-count, and restored table count. Keep that receipt with the migration record;
-the object version remains in the private backup bucket. A failed job may leave
-an unverified S3 object at its run-specific key; inspect it privately and do
-not count it as a usable checkpoint. Preflight rejects stale main, missing CI
-Pod read/exec rights, multiple or unready PostgreSQL Pods, an image mismatch,
+The successful job prints the object key, version ID, SHA-256 digest, byte
+count, restored table count, and source PVC/PV identities. Keep that receipt
+with the migration record. Supply the expected UIDs from the independently
+checked pre-move source inventory, and compare them with the bound claim before
+the move; the object version remains in the private backup bucket. A failed job
+may leave an unverified S3 object at its run-specific key; inspect it
+privately and do not count it as a usable checkpoint. Preflight rejects stale main, missing CI
+Pod/PVC/PV read and exec rights, an incomplete Pod list, a replaced claim,
+multiple or unready PostgreSQL Pods, an image mismatch,
 wrong AWS account, unversioned or unencrypted storage, and a database over
 1 GiB. The hosted runner needs sufficient scratch disk for dump, retrieval,
 and restored data. Verify the protected CI role still has S3/KMS read/write
