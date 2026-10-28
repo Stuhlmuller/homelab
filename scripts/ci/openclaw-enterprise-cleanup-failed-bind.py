@@ -167,7 +167,7 @@ def matching_pods(items, name, job_uid):
     return matches
 
 
-def prove_pod(pod, intended, job_uid, pod_uid, operator):
+def prove_pod(pod, intended, job_uid, pod_uid, operator, *, succeeded=False):
     metadata = pod.get("metadata", {}) if isinstance(pod, dict) else {}
     actual = pod.get("spec", {}) if isinstance(pod, dict) else {}
     status = pod.get("status", {}) if isinstance(pod, dict) else {}
@@ -225,14 +225,17 @@ def prove_pod(pod, intended, job_uid, pod_uid, operator):
             not containers[0].get("lifecycle") and
             not containers[0].get("ports") and
             not containers[0].get("volumeDevices") and
-            isinstance(status, dict) and status.get("phase") == "Failed" and
+            isinstance(status, dict) and
+            status.get("phase") == ("Succeeded" if succeeded else "Failed") and
             isinstance(states, list) and len(states) == 1 and
             states[0].get("name") == "operator" and
             isinstance(state, dict) and set(state) == {"terminated"} and
             isinstance(terminated, dict) and
             type(terminated.get("exitCode")) is int and
-            terminated["exitCode"] != 0,
-            "failed binding Pod identity or termination is unproven")
+            ((terminated["exitCode"] == 0) if succeeded else
+             (terminated["exitCode"] != 0)) and
+            states[0].get("restartCount") in (None, 0),
+            "binding Pod identity or termination is unproven")
 
 
 def prove_failed_job(job, intended, job_uid):

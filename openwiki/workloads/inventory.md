@@ -196,6 +196,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-0f5131d44d4433656e1f24db
     resource: repo://scripts/ci/openclaw-enterprise-operator-image-test.py
+  - id: openwiki-source-378cb9d6f2d77188440a8b55
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -222,10 +224,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
+generated: { by: "codex", at: "2026-10-28T02:54:35.847Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:48:51.051Z
+    at: 2026-10-28T02:54:35.847Z
 ---
 
 # Workload Inventory
@@ -505,8 +507,9 @@ applied or synced. The candidate's
 placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. The
 [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-offers fixed `bind-installation`, `cleanup-failed-bind`, `full-sync`,
-`reconcile`, `stop`, `verification`, `restore` and `acceptance` stages.
+offers fixed `bind-installation`, `cleanup-failed-bind`,
+`recover-bound-bind`, `full-sync`, `reconcile`, `stop`, `verification`,
+`restore` and `acceptance` stages.
 Its pinned stage helper
 calls the full-sync helper, but the
 committed `unselected` installation phase blocks sync before Kubernetes access.
@@ -554,8 +557,16 @@ The staged
 accepts only an exact terminal Failed pre-patch Job and Pod, unchanged unbound
 startup Secret and current immutable ConfigMap, and retained PVC/PV identities.
 It uses one UID/resourceVersion-guarded foreground Job DELETE with readback
-rather than a blind retry. Running or post-patch failures remain blocked.
-This cleanup has not run; no live recovery or activation is accepted.
+rather than a blind retry. Running or post-patch failures remain blocked
+from this pre-patch cleanup. The separate staged
+[bound recovery](../../scripts/ci/openclaw-enterprise-recover-bound-bind.py)
+requires an exact bound Secret, original failed Job/Pod proof, unchanged
+source and retained storage. A new source-bound verifier Job proves the
+existing Installation and Ready Pods without another Secret patch. An
+immutable private receipt precedes one guarded deletion of the old Job;
+if that Job is absent, completion only reads back matching evidence and
+retained state. Drift blocks. Neither lane has run; no live recovery,
+cleanup or activation is accepted.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:93b93c541705f88602d8d3dd6a385d991135f026005f0290e00ad0d9c4e0f5ab",
+  "pageVersion": "sha256:55d0fb20e98ea4ac5a20ee12b060a87f2b2d3ebaa965b359fb3c002aabc27479",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -414,7 +414,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
+          "version": "repo-file-v1:sha256:89393f6a3c0d978e2874cb837aa8f452c7253da8985b512f52fab88e97202096"
         }
       ]
     },
@@ -440,7 +440,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
+          "version": "repo-file-v1:sha256:89393f6a3c0d978e2874cb837aa8f452c7253da8985b512f52fab88e97202096"
         }
       ]
     },
@@ -476,7 +476,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d356b126aae4393bef81b88552bb2e8dcbcb60756e8beea4ef4f755d54260028"
+          "version": "repo-file-v1:sha256:14fc2b1163e319a0a34cfd56e40f7ae2097cc37acfd076805561296ccf26bf53"
         }
       ]
     },
@@ -586,11 +586,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:ee78770de3f7a2a3d3adc49c99b20b2e9c16b0cea2a8a971f09c049136953ddb"
+          "version": "repo-file-v1:sha256:232c840d0dfffc85b589c594aa64a9d03c38663a9f3464ba45bde00628127df6"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
+          "version": "repo-file-v1:sha256:89393f6a3c0d978e2874cb837aa8f452c7253da8985b512f52fab88e97202096"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator-test.py",
@@ -612,7 +612,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:ee78770de3f7a2a3d3adc49c99b20b2e9c16b0cea2a8a971f09c049136953ddb"
+          "version": "repo-file-v1:sha256:232c840d0dfffc85b589c594aa64a9d03c38663a9f3464ba45bde00628127df6"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
@@ -654,7 +654,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
+          "version": "repo-file-v1:sha256:89393f6a3c0d978e2874cb837aa8f452c7253da8985b512f52fab88e97202096"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -842,7 +842,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:ee78770de3f7a2a3d3adc49c99b20b2e9c16b0cea2a8a971f09c049136953ddb"
+          "version": "repo-file-v1:sha256:232c840d0dfffc85b589c594aa64a9d03c38663a9f3464ba45bde00628127df6"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
@@ -854,13 +854,39 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py",
-          "version": "repo-file-v1:sha256:7caf825466d1b819c4748678f5cbee911fd2fca413cf0abcc35c61bccd18d6be"
+          "version": "repo-file-v1:sha256:755730549cb91063b838a1d0239db6a3289933f8f94c6f476842475b290ff86e"
+        }
+      ]
+    },
+    {
+      "id": "claim_d715d5ed458f4dfd993fef79c2f42fa7",
+      "statement": "The dormant Enterprise workflow now stages a distinct post-CAS bound-recovery lane for one exact terminal Failed binding Job. It proves the already-bound Secret and original Job/Pod evidence, runs a source-bound no-CAS verifier, stores an immutable private receipt before one guarded old-Job deletion, and only reads matching evidence if that Job is absent. The operator remains disabled, no binder-bearing image is published from this source, and no live recovery or activation is accepted.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L20-L23",
+          "version": "repo-lines-v1:sha256:67d6e8f29b69dd04e73ab433242d9c7d2821fd35ed6989a9c1b964878bab150b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2Y3MTllMmYzMDFiNjUwYzdlYjJkMzc4ZDQ5NzJjMjI5MGZmZDAzMDQzZGFmYzVhN2RjODNmMDMyMmFkYTU1ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWNlNWRjNWQ2ZDcwMThjMjJkNWVkNWY5YWU3ZThlZDMyMmQyNjJiMzA1N2E0MmU1ZGM1M2NlNzZlMmE2MTdmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzNkZDg4MDNiN2E0MjIzNWRlMTNmYzRhYWNhMTQ3NTJiOWMxMzI0MTY4OGViZjZiMjFmZDQyMTNjOTU0MmIxZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjU3YmI5M2JiMDY4ODNhYTRlMDk4NTFmMmRhMjlkN2QxNjczMGJlYjg2MzdiNDdiZDVhYzczM2VkMDJiNzliOSJ9"
+        },
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml#L547-L628",
+          "version": "repo-lines-v1:sha256:ba014798c7ea11ede54f2008576cd05f71b9750fa6957b32a16c83937ebc154a:eyJzZWxlY3RlZExpbmVDb3VudCI6ODIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5NTk2Njg4YWQ0NmU5MjBiYTkzZmVhZTc0MmUwYzVhODA5OWExYTU0YTIxZjM5NzBiNmZiODg2NDk5NDFiYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkYmMzNmE4ZTc0NGI4MjA1NTlmYzhmOTVlMzU5ZWIwZmE0OTU0YTc4NWRjYmE2NzBlMTA5NDc2YzBlOGU0M2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxMmJjMTliYTVmY2RjYmE4NmI4ZTM1Mzg0NzkyMmQwN2U4M2MzZTA2ZDMzMjg4ZjIyMzYzMGI4ZmM1YWNlNDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhOWM5YWRjMTRlMjZiNGI4ZGIyODc5ZmQzZGZmZDZkZDUwYjA5ZWY2OGY1NmQ2NjhjZDhjMjJjN2NiODJjZWYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md#L83-L109",
+          "version": "repo-lines-v1:sha256:bfb8673c0ffded21bc1190e915e76b6b2606f403407e8a8ddea59cab75cc82b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyMmI5MjIxOTNiNmY3MWM4ZDZkZWM0MDNjMDk3N2Y5OGI4MWZkYmI1NDQxMzRlM2RkM2E2NTc5MDM0ZDZlZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhNjEwN2MzYzhiOTcwMmZiYWYxYjc3Njc4MTg0OWQ3NTVlZDViNzBmNjg1MDVjNzc0MWM0Zjg0MjYwNDYwZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMmU3ZGIxMzkyZDRmNmFmZDU5YWViMjMxOTg1NzhhZWY0NTkyNTk4MTExODk1YTRmMjIxZGYyMDk1NzIwMzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2NTVhOTIzN2MwOWQ2ZGMyNWRlOWJhZTM1NGI3MzU3NTIyMTYwMGIzY2Y0MTg0Y2UwMWY2YzQ0ZWM1ZGI2ZjUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py#L48-L604",
+          "version": "repo-lines-v1:sha256:276e2320369cff1f1330874774c2e05928b281d87f68042a5a9bf2f909eac1d3:eyJzZWxlY3RlZExpbmVDb3VudCI6NTU3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4NzVhOWY0MmJmNzAxZjJmNTk4ZGFjYTVlMzA5NGNkYmEwNzFlNDEyMGRmMzNlMDcyYjkyZjg2ZmY0ZjdjMGVmIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhZTUzN2M2OGEwMjAxMDk2NjVlM2VkNzUyMTBiNTVlNWFiMmM5NTIzODI1ZTVhNTFiODI1N2U5MDI0YTMwNGFmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T02:48:51.051Z"
+    "at": "2026-10-28T02:54:35.847Z"
   }
 }

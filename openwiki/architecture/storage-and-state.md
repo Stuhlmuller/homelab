@@ -48,6 +48,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
+  - id: openwiki-source-378cb9d6f2d77188440a8b55
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -66,10 +68,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
+generated: { by: "codex", at: "2026-10-28T02:54:35.847Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:48:51.051Z
+    at: 2026-10-28T02:54:35.847Z
 ---
 
 # Storage And State
@@ -471,8 +473,18 @@ rechecks the same storage fingerprint and unchanged unbound startup Secret
 until both Job and Pod are gone. The lane does not delete either retained
 claim or volume. A changed claim, missing failed Pod, or post-patch Secret
 state blocks cleanup. This source path has not run, so no live recovery or
-storage-retention receipt exists. Live reconciliation still needs admitted
-local volumes and the in-cluster Job.
+storage-retention receipt exists. A separate staged
+[bound recovery](../../scripts/ci/openclaw-enterprise-recover-bound-bind.py)
+handles a failed Job after its Secret patch. It proves the bound Secret and
+unchanged retained bootstrap and journal PVC/PV identities, specs, and
+placement, then runs a source-bound verifier without another patch. Before
+one guarded deletion of the old Job, it saves an immutable private receipt
+of identities and hashes. If the old Job is already absent, completion only
+reads that receipt, the bound Secret, retained storage, source projections,
+and completed verifier; drift blocks it. Neither path deletes the retained
+claims or volumes. This source has no live recovery or storage receipt.
+Live reconciliation still needs admitted local volumes and the in-cluster
+Job.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

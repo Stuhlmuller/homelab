@@ -106,6 +106,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
+  - id: openwiki-source-378cb9d6f2d77188440a8b55
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
     resource: repo://scripts/ci/platform-maintenance-credentials-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -142,10 +144,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:44:57.760Z" }
+generated: { by: "codex", at: "2026-10-28T02:54:35.847Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:44:57.760Z
+    at: 2026-10-28T02:54:35.847Z
 ---
 
 # Secrets And Identity
@@ -364,7 +366,19 @@ bootstrap and journal claims retain their identities. It checks current
 `main` beside one Job UID/resourceVersion-guarded foreground DELETE, then
 requires the Job and Pod gone with Secret and storage unchanged. A lost DELETE
 response is read back, never retried. A running Job, changed Secret, or
-post-patch failure is outside this cleanup path. The binder-bearing image has
+post-patch failure is outside this cleanup path. The separate staged
+[bound recovery](../../scripts/ci/openclaw-enterprise-recover-bound-bind.py)
+requires the failed Job and Pod UIDs, their original in-Pod readiness proof,
+the unchanged reviewed source and candidate, and the exact bound startup
+Secret UID, resource version, and Installation ID. A new source-bound Job
+checks the existing binding and Ready API/worker Pods with
+`alreadyBound: true`; it cannot patch an unbound Secret. The runner stores an
+immutable private receipt of identities and hashes before one guarded DELETE
+of the old failed Job. If the old Job is already gone, the same stage only
+reads back the receipt, bound Secret, retained storage, source projections,
+and completed verifier. Missing evidence or drift blocks recovery. A lost
+DELETE response cannot identify which actor accepted it. This is source-only:
+no live recovery or binding receipt exists. The binder-bearing image has
 not been published from this source; the operator and network enforcement
 remain disabled. No live cleanup, binding, readback, or activation is proven.
 SSM-backed model, database, auth, and gateway credentials remain separate from

@@ -260,6 +260,12 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-postgres-test.py
   - id: openwiki-source-7d23244901f610ddb0d3ae2a
     resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-2b395e1ed8ae0a3d04cf5140
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind-test.py
+  - id: openwiki-source-378cb9d6f2d77188440a8b55
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py
+  - id: openwiki-source-faec2b4cb1727ce18fb36d15
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.sh
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
     resource: repo://scripts/ci/openclaw-enterprise-recovery-test.py
   - id: openwiki-source-951ba7ecb3cb1ee7f5c4cb26
@@ -372,10 +378,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
+generated: { by: "codex", at: "2026-10-28T02:59:07.278Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:48:51.051Z
+    at: 2026-10-28T02:59:07.278Z
 ---
 
 # Validation Gates
@@ -2090,9 +2096,9 @@ startup Secret bytes, UID/resourceVersion baseline pinned in the Job template,
 Pod owner, source, image, mounts, tolerations and placement, bounded private
 readiness, one exact-main guarded annotation patch, and post-patch readback.
 The [workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-offers fixed `bind-installation`, `cleanup-failed-bind`, `full-sync`,
-`reconcile`, `stop`, `verification`, `restore` and `acceptance`
-selections. It rechecks current
+offers fixed `bind-installation`, `cleanup-failed-bind`,
+`recover-bound-bind`, `full-sync`, `reconcile`, `stop`, `verification`,
+`restore` and `acceptance` selections. It rechecks current
 `main`, pins the stage and dispatcher, serializes protected jobs, and withholds
 private output. The staged UID-1000 Job reads the expected `0600` service key
 from a read-only bootstrap PVC mount; the runner never reads it. The committed
@@ -2107,10 +2113,19 @@ protected cleanup stage rechecks current `main` beside one Job UID and
 resourceVersion-preconditioned foreground DELETE, then requires the exact
 Job and Pod gone with Secret and storage unchanged. Lost responses get
 readback, not a second write. A running Job or post-patch failure is ineligible
-and needs a separate review. No live cleanup, binding or activation receipt
-exists. Binding and six runtime selections use the
+and is outside pre-patch cleanup. The separate source-only
+[test](../../scripts/ci/openclaw-enterprise-recover-bound-bind-test.py)
+checks the original in-Pod proof, exact bound Secret UID/resource version and
+Installation ID, unchanged source and retained storage, and a new verifier
+Job that proves `alreadyBound: true` without a Secret patch. The staged
+recovery stores an immutable private receipt before one guarded old-Job
+DELETE. If that Job is already gone, completion is read-only and checks the
+matching receipt, bound Secret, storage, projections, and completed verifier.
+Drift blocks; an uncertain DELETE response cannot identify its accepting
+actor. No live cleanup, bound recovery, binding or activation receipt exists.
+Binding and six runtime selections use the
 [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh);
-cleanup uses its own pinned wrapper.
+cleanup and bound recovery use separate pinned wrappers.
 Its `full-sync`
 branch calls the pinned [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh),
 which checks source, approved installation phase, and Application state before

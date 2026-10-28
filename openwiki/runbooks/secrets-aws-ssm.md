@@ -42,6 +42,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
+  - id: openwiki-source-378cb9d6f2d77188440a8b55
+    resource: repo://scripts/ci/openclaw-enterprise-recover-bound-bind.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
@@ -50,10 +52,10 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-28T02:44:57.760Z" }
+generated: { by: "codex", at: "2026-10-28T02:58:24.237Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:44:57.760Z
+    at: 2026-10-28T02:58:24.237Z
 ---
 
 # AWS SSM Secret References
@@ -148,9 +150,19 @@ can remove one exact terminal Failed pre-patch Job only while the immutable
 startup Secret remains unbound at its Pod-template UID and resource version.
 It verifies the current mounted ConfigMap, retained claims, and exact Job/Pod
 identities before one guarded foreground DELETE; it never reads or delivers
-the bootstrap key. A running Job, changed Secret, or post-patch failure needs
-separate review. No live cleanup or binding has run, and activation stays
-blocked.
+the bootstrap key. A running Job or unexpected Secret drift blocks both
+recovery lanes. A terminal post-patch failure uses the separate staged
+`recover-bound-bind` path. Its
+[recovery helper](../../scripts/ci/openclaw-enterprise-recover-bound-bind.py)
+requires the exact already-bound startup Secret UID, resource version and
+Installation ID, plus the original failed Job/Pod identities and proof. Its
+new source-bound verifier Job reads the retained bootstrap key only inside
+the cluster and proves the existing binding with `alreadyBound: true`;
+it cannot patch an unbound Secret or create a new SSM handoff. An immutable
+private receipt precedes one guarded deletion of the old Job. If that Job
+is absent, completion only reads matching evidence and unchanged Secret,
+storage and source projections. This is source-only; no live recovery,
+cleanup or binding has run, and activation stays blocked.
 
 ## Protected Talos upgrade inputs
 

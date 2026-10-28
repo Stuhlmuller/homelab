@@ -203,16 +203,17 @@ sys.stdout.buffer.write(chunk)
         self.assertIn(f"{operator_digest}  scripts/ci/openclaw-enterprise-journal-operator.py", workflow)
         sync_digest = hashlib.sha256((ROOT / 'scripts/ci/openclaw-enterprise-full-sync.sh').read_bytes()).hexdigest()
         self.assertIn(f"{sync_digest}  scripts/ci/openclaw-enterprise-full-sync.sh", workflow)
-        self.assertIn('options: [none, bind-installation, cleanup-failed-bind, full-sync, '
+        self.assertIn('options: [none, bind-installation, cleanup-failed-bind, recover-bound-bind, full-sync, '
                       'reconcile, stop, verification, restore, acceptance]', workflow)
         self.assertIn('Choose exactly one fixed operation stage.', workflow)
-        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 4)
-        self.assertEqual(workflow.count('queue: max'), 4)
+        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 5)
+        self.assertEqual(workflow.count('queue: max'), 5)
         self.assertIn("inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
                       workflow)
         self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && "
                       "inputs.enterprise_stage != 'bind-installation' && "
-                      "inputs.enterprise_stage != 'cleanup-failed-bind'",
+                      "inputs.enterprise_stage != 'cleanup-failed-bind' && "
+                      "inputs.enterprise_stage != 'recover-bound-bind'",
                       workflow)
         self.assertIn('private diagnostics withheld', workflow)
         enterprise_checkout = workflow.split('\n  enterprise:\n', 1)[1].split('\n  binding:\n', 1)[0]
@@ -282,7 +283,8 @@ sys.stdout.buffer.write(chunk)
                 'PRIOR_RUN_ID': '',
                 'FAILED_BIND_SOURCE_SHA': '', 'FAILED_BIND_RUN_ID': '',
                 'FAILED_BIND_ATTEMPT': '', 'FAILED_BIND_JOB_UID': '',
-                'FAILED_BIND_POD_UID': ''}
+                'FAILED_BIND_POD_UID': '', 'BOUND_SECRET_UID': '',
+                'BOUND_SECRET_RV': '', 'BOUND_INSTALLATION_ID': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
             ('none', 'bind-installation', '', True),
@@ -310,6 +312,20 @@ sys.stdout.buffer.write(chunk)
             with self.subTest(change=change):
                 result = subprocess.run(['bash', '-c', guard], cwd=ROOT,
                                         env={**failed_bind, **change},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode == 0, expected,
+                                 (change, result.stderr))
+        bound = {**failed_bind, 'ENTERPRISE_STAGE': 'recover-bound-bind',
+                 'BOUND_SECRET_UID': '11111111-2222-3333-4444-555555555555',
+                 'BOUND_SECRET_RV': '101', 'BOUND_INSTALLATION_ID': 'ins_owned'}
+        for change, expected in (({}, True),
+                                 ({'BOUND_SECRET_RV': '100x'}, False),
+                                 ({'BOUND_INSTALLATION_ID': ''}, False),
+                                 ({'FAILED_BIND_POD_UID': ''}, False),
+                                 ({'ENTERPRISE_STAGE': 'cleanup-failed-bind'}, False)):
+            with self.subTest(change=change):
+                result = subprocess.run(['bash', '-c', guard], cwd=ROOT,
+                                        env={**bound, **change},
                                         capture_output=True, text=True, timeout=5)
                 self.assertEqual(result.returncode == 0, expected,
                                  (change, result.stderr))
