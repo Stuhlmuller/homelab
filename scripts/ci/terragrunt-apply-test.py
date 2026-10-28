@@ -51,19 +51,18 @@ tool = Path(sys.argv[0]).name
 assert "GH_TOKEN" not in os.environ
 cwd = str(Path.cwd().relative_to(root))
 units = {
-    "IaC/bootstrap/argocd": "bootstrap",
-    "IaC/live/aws-ssm-parameters": "ssm",
-    "IaC/live/langfuse-blob-storage": "s3",
-    "IaC/operator/application-backup-storage": "archive-bucket",
-    "IaC/live/kubernetes-node-labels": "nodes",
-    "IaC/live/azuread-applications": "azure",
-    "IaC/live/kubernetes-secrets": "secrets",
-    "IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth": "secret",
-    "IaC/live/argocd-apps": "apps",
-    "IaC/live/argocd-apps/langfuse": "repair",
-    "IaC/live/argocd-apps/fleet": "repair",
-    "IaC/live/argocd-apps/mastodon": "repair",
-    "IaC/live/argocd-apps/traefik": "repair",
+    "IaC/homelab/us-west-2/bootstrap/argocd": "bootstrap",
+    "IaC/homelab/us-west-2/shared/aws-ssm-parameters": "ssm",
+    "IaC/homelab/us-west-2/apps/langfuse/blob-storage": "s3",
+    "IaC/homelab/us-west-2/operator/application-backup-storage": "archive-bucket",
+    "IaC/homelab/us-west-2/shared/kubernetes-node-labels": "nodes",
+    "IaC/homelab/us-west-2/shared/kubernetes-secrets": "secrets",
+    "IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth": "secret",
+    "IaC/homelab/us-west-2/apps": "apps",
+    "IaC/homelab/us-west-2/apps/langfuse/argocd": "repair",
+    "IaC/homelab/us-west-2/apps/fleet/argocd": "repair",
+    "IaC/homelab/us-west-2/apps/mastodon/argocd": "repair",
+    "IaC/homelab/us-west-2/apps/traefik/argocd": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -79,7 +78,8 @@ def unexpected():
 
 def plan(path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    actions = ["delete", "create"] if config.get("replacement") else ["create"]
+    actions = (["no-op"] if config.get("existing_only_noop") else
+               ["delete", "create"] if config.get("replacement") else ["create"])
     path.write_text(json.dumps({"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
     ] if unit == "apps" else []}))
@@ -133,6 +133,9 @@ elif tool == "kubectl":
     if args == ["-n", "argocd", "get", "appproject", "homelab", "-o", "json"]:
         event("preflight.project")
         print(json.dumps(config["project"]))
+    elif args == ["-n", "argocd", "get", "applications", "-o", "json"]:
+        event("apps.live")
+        print(json.dumps({"items": [{"metadata": {"name": name}} for name in config["live_apps"]]}))
     elif args == ["-n", "argocd", "get", "applications", *config["app_names"], "-o", "json"]:
         event("preflight.apps")
         print(json.dumps({"items": config["apps"]}))
@@ -174,7 +177,7 @@ elif tool == "terragrunt":
         event("generate")
         for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
             if name != config.get("missing_target"):
-                path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
+                path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
     elif command == ["init", "-no-color"]:
@@ -210,14 +213,16 @@ elif tool == "terragrunt":
             checked(Path(command[2]))
     elif command[:2] == ["run", "--all"]:
         target = command[command.index("--filter") + 1]
-        assert target == (config["target"] or "*")
-        assert command[4:8] == ["--non-interactive", "--parallelism", "1", "--source-update"] or (
-            unit == "apps" and command[4:7] == ["--non-interactive", "--parallelism", "1"])
+        if target.startswith("*/azuread"):
+            unit = "azure"
+        expected = ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else config.get("argocd_filter", "*/argocd") if unit == "apps" else "*"))
+        assert target == expected
+        assert "--non-interactive" in command and "--parallelism" in command
         tail = command[command.index("--") + 1:]
         if unit == "apps":
-            path = Path(command[command.index("--out-dir") + 1]) / target / "tfplan"
+            path = Path(command[command.index("--out-dir") + 1]) / ("apps/argocd" if config.get("existing_argocd_only") == "true" else target) / "tfplan"
             if tail == ["plan", "-no-color"]:
-                assert command[command.index("--json-out-dir") + 1] == str(path.parent.parent)
+                assert command[command.index("--json-out-dir") + 1] == str(path.parents[2])
                 event("apps.plan")
                 plan(path)
                 path.with_suffix(".json").write_bytes(path.read_bytes())
@@ -282,16 +287,20 @@ class TerragruntApplyTest(unittest.TestCase):
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
                          "terragrunt-current-main.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
-            for unit in ("bootstrap/argocd", "live/aws-ssm-parameters", "live/langfuse-blob-storage",
-                         "operator/application-backup-storage",
-                         "live/kubernetes-node-labels", "live/azuread-applications",
-                         "live/kubernetes-secrets/external-secrets-aws-ssm-auth", "live/argocd-apps"):
+            for unit in ("homelab/us-west-2/bootstrap/argocd",
+                         "homelab/us-west-2/shared/aws-ssm-parameters",
+                         "homelab/us-west-2/apps/langfuse/blob-storage",
+                         "homelab/us-west-2/operator/application-backup-storage",
+                         "homelab/us-west-2/shared/kubernetes-node-labels",
+                         "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth",
+                         "homelab/us-west-2/apps"):
                 (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
             (root / "fixture.json").write_text(json.dumps(config))
             environment = {"PATH": str(binaries), "FIXTURE_ROOT": str(root),
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
                            "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
                            "TERRAGRUNT_ARGOCD_APP": target,
+                           "TERRAGRUNT_EXISTING_ARGOCD_ONLY": config.get("existing_argocd_only", "false"),
                            "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
                            "TERRAGRUNT_APPLICATION_BACKUP_STORAGE": scope}
             if not config.get("without_azuread"):
@@ -379,8 +388,8 @@ class TerragruntApplyTest(unittest.TestCase):
     def test_root_hook_reaches_each_bulk_apply_family(self):
         repo = SOURCE.parent.parent
         guard = (repo / "scripts/ci/terragrunt-current-main.sh").resolve()
-        for unit in ("live/azuread-applications/grafana", "live/argocd-apps/n8n",
-                     "live/kubernetes-secrets/external-secrets-aws-ssm-auth"):
+        for unit in ("homelab/us-west-2/apps/grafana/azuread", "homelab/us-west-2/apps/n8n/argocd",
+                     "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth"):
             with self.subTest(unit=unit):
                 result = subprocess.run(
                     ["terragrunt", "--log-disable", "--working-dir", str(repo / "IaC" / unit),
@@ -394,7 +403,7 @@ class TerragruntApplyTest(unittest.TestCase):
     def test_bootstrap_after_hook_rechecks_main_before_each_manifest(self):
         repo = SOURCE.parent.parent
         catalog = repo / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
-        generated = repo / "IaC/bootstrap/argocd/terragrunt.hcl"
+        generated = repo / "IaC/homelab/us-west-2/bootstrap/argocd/terragrunt.hcl"
         self.assertEqual(generated.read_text(), catalog.read_text())
         rendered = subprocess.run(
             ["terragrunt", "--log-disable", "--working-dir", str(generated.parent),
@@ -653,6 +662,30 @@ else:
             "archive-bucket.apply", "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
+
+    def test_existing_only_skips_absent_apps_and_reuses_plan_filter(self):
+        result, events = self.run_apply(
+            target="", existing_argocd_only="true", existing_only_noop=True,
+            live_apps=["fleet", "langfuse", "mastodon"],
+            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events.count("apps.live"), 1)
+        self.assertIn("apps.apply", events)
+        self.assertIn("Skipping absent Argo CD Application nofx", result.stdout)
+
+    def test_existing_only_rejects_create_plan(self):
+        result, events = self.run_apply(
+            target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
+            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("would create an Application", result.stderr)
+        self.assertNotIn("apps.apply", events)
+
+    def test_existing_only_rejects_backup_scope(self):
+        result, events = self.run_apply(target="", scope="true", existing_argocd_only="true")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot be combined", result.stderr)
+        self.assertEqual(events, [])
 
     def test_backup_storage_scope_is_isolated_and_checks_saved_plan(self):
         result, events = self.run_apply(target="", scope="true", without_azuread=True)

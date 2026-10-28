@@ -57,6 +57,9 @@ class DurableReceipts:
         if service == "s3api":
             command += ["--bucket", self.target["bucket"],
                         "--expected-bucket-owner", self.target["account_id"]]
+            # AWS CLI auto-pagination hides IsTruncated from the receipt gate.
+            if operation == "list-object-versions" and "--no-paginate" not in arguments:
+                command.append("--no-paginate")
         result = subprocess.run(command + list(arguments), capture_output=True,
                                 text=True, timeout=180, check=False)
         if result.returncode:
@@ -91,7 +94,7 @@ class DurableReceipts:
     def versions(self, stage):
         prefix = f"{RECEIPT_PREFIX}/{stage}/"
         result = self.call("s3api", "list-object-versions", ["--prefix", prefix])
-        if result.get("IsTruncated") is True or result.get("DeleteMarkers"):
+        if result.get("IsTruncated") is not False or result.get("DeleteMarkers"):
             raise ValueError("platform receipt history is incomplete or deleted")
         expected = {self.key(stage, node, status)
                     for node in (None, *NODES) for status in ("started", "verified")}
@@ -207,7 +210,7 @@ class DurableReceipts:
     def load_one(self, key, path):
         result = self.call("s3api", "list-object-versions", ["--prefix", key])
         versions = result.get("Versions", [])
-        if (result.get("IsTruncated") is True or result.get("DeleteMarkers") or
+        if (result.get("IsTruncated") is not False or result.get("DeleteMarkers") or
                 not isinstance(versions, list) or len(versions) != 1 or
                 versions[0].get("Key") != key or
                 versions[0].get("IsLatest") is not True or

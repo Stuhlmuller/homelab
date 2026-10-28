@@ -17,17 +17,17 @@ echo "::endgroup::"
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
-expected_units="$(rg -c '^unit "' IaC/terragrunt.stack.hcl)"
-parsed_units="$(terragrunt_stack_unit_paths < IaC/terragrunt.stack.hcl | wc -l | tr -d ' ')"
+expected_units="$(rg '^unit "' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
+parsed_units="$(rg '^  path[[:space:]]*=' IaC/homelab/us-west-2 --glob terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
-if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/; then
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/homelab/us-west-2 IaC/; then
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
-terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
   render --json --write=false --no-color \
   | jq -e '
       .inputs.manifest.spec as $spec |
@@ -79,7 +79,7 @@ if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[
   exit 1
 fi
 if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
-  echo "The public PR plan job must not render live plan or state details." >&2
+  echo "The PR plan job must not render saved plan or state details." >&2
   exit 1
 fi
 if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
@@ -129,11 +129,11 @@ echo "::group::Terragrunt Azure credential gate"
       *) return 1 ;;
     esac
   }
-  terragrunt_stack_units_at_ref() {
+  terragrunt_stack_unit_paths_at_ref() {
     if [[ "$stack_change" == true && "$1" == head ]]; then
-      printf 'changed\n'
+      printf 'IaC/live/azuread-applications/changed\n'
     else
-      printf 'unchanged\n'
+      printf 'IaC/live/azuread-applications/unchanged\n'
     fi
   }
 
@@ -149,7 +149,7 @@ echo "::group::Terragrunt Azure credential gate"
   root_change=false
 
   for changed_path in \
-    IaC/live/azuread-applications/fleet/.terraform.lock.hcl \
+    IaC/homelab/us-west-2/apps/fleet/azuread/.terraform.lock.hcl \
     IaC/terragrunt-catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
     IaC/terragrunt-catalog/modules/azuread-saml-application/main.tf \
     IaC/terragrunt-catalog/modules/azuread-family-user/main.tf; do
@@ -158,18 +158,18 @@ echo "::group::Terragrunt Azure credential gate"
       exit 1
     fi
   done
-  [[ "$(terragrunt_azuread_changed_filter)" == "*" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread" ]]
   changed_path="IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"
   if terragrunt_azuread_stack_changed; then
     echo "An unrelated module change must not require Azure credentials." >&2
     exit 1
   fi
-  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
   changed_path="IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf"
-  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
   changed_path="scripts/ci/terragrunt-plan.sh"
-  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
-  [[ "$(terragrunt_azuread_changed_filter true)" == "*" ]]
+  [[ "$(terragrunt_azuread_changed_filter)" == "*/azuread | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter true)" == "*/azuread" ]]
   changed_path=""
 
   stack_change=true
@@ -229,13 +229,13 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
 (
-  cd IaC/live/argocd-apps
+  cd IaC/homelab/us-west-2/apps
   terragrunt_stack_changed() { return 0; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
   terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
-  [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine" ]]
+  [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine/argocd" ]]
   if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
     echo "Unsafe Argo CD Application unit filter was accepted" >&2
     exit 1
@@ -261,7 +261,7 @@ echo "::group::Terragrunt generated-unit filters"
     exit 1
   fi
   [[ "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
-    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine" ]]
+    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine/argocd" ]]
 )
 echo "::endgroup::"
 
@@ -337,22 +337,23 @@ echo "::endgroup::"
 
 echo "::group::n8n persisted encryption key"
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
-if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
+n8n_migration_values="clusters/homelab/apps/n8n/migration-v1.values.yaml"
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values" "$n8n_migration_values"; then
   echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
   exit 1
 fi
-rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_values"
+rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_migration_values"
 yq -e '
   (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
+    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
   ) and (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
+    .controllers."migrate-ai-workflow-v1".containers.migrate.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
   )
-' "$n8n_values" >/dev/null
+' "$n8n_migration_values" >/dev/null
 # The literal shell assignment is intentionally matched inside a yq expression.
 # shellcheck disable=SC2016
 yq -e '
-  .controllers.n8n.initContainers."migrate-ai-workflow".command |
+  .controllers."migrate-ai-workflow-v1".containers.migrate.command |
   join("\n") |
   (
     contains("if [ ! -s /home/node/.n8n/config ]; then") and
@@ -362,11 +363,21 @@ yq -e '
     contains("Array.isArray(workflows)") and
     contains("JSON.stringify(workflows)")
   )
-' "$n8n_values" >/dev/null
+' "$n8n_migration_values" >/dev/null
 echo "::endgroup::"
 
-echo "::group::Kiali shell-free Prometheus readiness"
+echo "::group::Kiali server digest and Prometheus readiness"
 kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e --slurpfile catalog scripts/config/harbor-images.json '
+    .cr.spec.deployment as $deployment |
+    $deployment.image_name == "harbor.stinkyboi.com/mirror/quay.io/kiali/kiali" and
+    $deployment.image_digest == "sha256" and
+    ($deployment.image_version | test("^[0-9a-f]{64}$")) and
+    ([$catalog[0].images[] |
+      select(.source == ("quay.io/kiali/kiali:v2.26.0@sha256:" + $deployment.image_version))
+    ] | length == 1)
+  ' >/dev/null
 yq -o=json '.' "$kiali_values" |
   jq -e '
     [
@@ -374,7 +385,7 @@ yq -o=json '.' "$kiali_values" |
       | select(.name == "wait-for-prometheus")
     ] | (
       length == 1 and
-      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      (.[0].image | test("^harbor[.]stinkyboi[.]com/mirror/docker[.]io/curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
       .[0].imagePullPolicy == "IfNotPresent" and
       .[0].command == ["curl"] and
       .[0].args == [
@@ -974,6 +985,8 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
+    '.github/workflows/bulldozer-credential.yml:credential' \
+    '.github/workflows/bulldozer-credential.yml:static-policy' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
@@ -986,6 +999,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
+    '.github/workflows/harbor-helm-charts.yml:publish' \
+    '.github/workflows/harbor-helm-charts.yml:validate' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \
@@ -997,6 +1012,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/image-automation.yml:observe' \
     '.github/workflows/image-automation.yml:promote' \
     '.github/workflows/image-automation.yml:verify' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:checkpoint' \
+    '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
@@ -1066,23 +1083,25 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/bulldozer-credential.yml 1787f54c991165c5fcc60f7ba1f025e5f3685b814e21c1fe0d171c90b2dd1e21
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
+.github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
 .github/workflows/harbor-mirror.yml 6997115e75b9ed25943f9878cb8402fa6840a06de5783e8d7c47c362acb8f6e9
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
+.github/workflows/langfuse-postgres-checkpoint.yml 7b028ccb8580e20b1ea2e23e25d1ae1a149cc2c00a79c1e4c1726165f525213d
+.github/workflows/lint.yml 8408798ea388d2ee3b806d2f33f42382689448aa6aa1d5f8f616abfbef4bc321
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml 04eca036b6e8960f7a1c96e95d61f3804fdcc0ebaf997d752fd62d5210743e2b
+.github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -1090,15 +1109,16 @@ done <<'EOF'
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
-.github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
+.github/workflows/release.yml 3c5eab39c1cc573a42bbcfa1568bb4c7c7f84571b67a74927b91a5fc582c9025
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
-.github/workflows/terragrunt-plan.yml ce0c81a87d5e905b2363e50086e0c155d77f466b0c05683a045764738c3d36c4
+.github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
+.github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
 EOF
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/bulldozer-credential.yml:static-policy' \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
@@ -1108,6 +1128,7 @@ for workflow_job in \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
+  '.github/workflows/langfuse-postgres-checkpoint.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
@@ -1274,6 +1295,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "default": false,
       "type": "boolean"
     } and
+    .on.workflow_dispatch.inputs.existing_argocd_only == {
+      "description": "Reconcile only Argo CD Applications already registered live",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
     .on.workflow_dispatch.inputs.application_backup_storage == {
       "description": "Apply only the versioned OpenClaw legacy archive bucket",
       "required": false,
@@ -1298,10 +1325,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
+      "TERRAGRUNT_EXISTING_ARGOCD_ONLY",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_EXISTING_ARGOCD_ONLY == "${{ inputs.existing_argocd_only }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
@@ -1611,7 +1640,7 @@ echo "::endgroup::"
 
 echo "::group::Image digest pins"
 cert_manager_values="clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"
-terragrunt --log-disable --working-dir IaC/live/argocd-apps/cert-manager \
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/cert-manager/argocd \
   render --json --write=false --no-color \
   | jq -e '
       any(.inputs.manifest.spec.sources[];
@@ -1630,20 +1659,7 @@ yq -o=json '.' "$cert_manager_values" \
       .startupapicheck.image.digest
     ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
     >/dev/null
-tag_only_images="$(
-  {
-    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
-    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } \
-    | rg -v '@sha256:' \
-    || true
-)"
-
-if [[ -n "$tag_only_images" ]]; then
-  echo "Container images must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
-  exit 1
-fi
+python3 -I scripts/ci/harbor-images-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

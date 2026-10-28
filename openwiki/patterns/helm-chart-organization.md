@@ -1,7 +1,7 @@
 ---
 type: pattern
 title: "Helm Chart Organization"
-description: "Harbor hosted Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
+description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
 generated: { by: "codex", at: "2026-10-20T19:18:26.448Z" }
 sources:
@@ -12,11 +12,11 @@ sources:
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c4a1630a18962f8a58f367ec
-    resource: repo://IaC/openclaw-enterprise/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-9828d67d6c8e28f372b28e0d
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
-    resource: repo://IaC/traefik/stack.hcl
+    resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
     at: 2026-10-24T03:50:35.181Z
@@ -24,22 +24,16 @@ verified:
 
 # Helm Chart Organization
 
-Decision researched 2026-10-04: keep pinned charts, app-local values,
+Decision researched 2026-10-04: keep pinned upstream charts, app-local values,
 and Kustomize extras. Generate Application boilerplate in the shared Terragrunt
 stack/template. This minimizes the files and configuration languages an agent
 must read for an ordinary deployment.
 
-Argo CD chart sources now use `harbor.stinkyboi.com/mirror/helm`. The protected
-publisher checks the reviewed upstream package SHA-256, then pulls each Harbor
-copy with a separate reader robot before a source revision can be changed.
-The Terraform Argo CD bootstrap chart remains upstream so a restored cluster
-can install Argo CD before Harbor exists.
-
 ## Source Layout
 
 ```text
-IaC/terragrunt.stack.hcl                    # unit identity and output-path index
-IaC/<app>/stack.hcl                  # app registration inputs and chart pins
+IaC/homelab/us-west-2/apps/<app>/terragrunt.stack.hcl                    # unit identity and output-path index
+IaC/homelab/us-west-2/apps/<app>/stack.hcl                  # app registration inputs and chart pins
 IaC/stack-defaults.hcl                      # shared Application defaults
 IaC/terragrunt-catalog/units/live/argocd-app/          # shared Application construction
 clusters/homelab/apps/<app>/
@@ -52,7 +46,7 @@ clusters/homelab/apps/<app>/
 Platform resources keep their existing `clusters/homelab/platform/<service>`
 ownership. The inspected repository has no committed `Chart.yaml` or
 `Chart.lock`; it already references remote charts directly. Its
-[application stack](../../IaC/traefik/stack.hcl),
+[application stack](../../IaC/homelab/us-west-2/apps/traefik/stack.hcl),
 [OpenClaw values and extras](../../clusters/homelab/apps/openclaw/README.md), and
 [Harbor values and extras](../../clusters/homelab/apps/harbor/README.md) demonstrate
 this layout.
@@ -66,7 +60,7 @@ Argo explicitly discourages using multiple sources to combine unrelated apps.
 ## Reuse Boundaries
 
 - Keep chart name, repository, exact revision, release name, and exceptional
-  Helm parameters explicit in `IaC/<app>/stack.hcl`. Generate common Application metadata,
+  Helm parameters explicit in `IaC/homelab/us-west-2/apps/<app>/stack.hcl`. Generate common Application metadata,
   destination, sync policy, and repository defaults. Inspect the evaluated
   manifest rather than copying a previous generated unit.
 - Use the existing `app-template` chart for suitable generic container apps.
@@ -93,8 +87,7 @@ deployment. It preserves the existing chart behavior while concentrating
 repetition in the Application registration layer.
 
 The dormant [OpenClaw Enterprise candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
-uses a Harbor copy of the chart packaged from its pinned upstream Git revision.
-App-local `values.yaml` and reviewed
+keeps the pinned upstream chart intact. App-local `values.yaml` and reviewed
 `installation.yaml` supply site inputs; Kustomize holds lifecycle hook resources
 and a single EnvoyProxy image override. The focused renderer test compares
 profile output and rendered chart identities against the pinned upstream tree.
@@ -149,12 +142,12 @@ extraction for dependencies outside built-in managers.
 ## Small Context for the Next Deployment
 
 Read [New Application Pattern](new-application.md), the target app directory, and its
-`IaC/<app>/stack.hcl` inputs.
+`IaC/homelab/us-west-2/apps/<app>/stack.hcl` inputs.
 Generate once, then inspect only that app's effective sources and policy:
 
 ```sh
 terragrunt --working-dir IaC stack generate
-terragrunt --log-disable --working-dir IaC/live/argocd-apps/descheduler \
+terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/descheduler/argocd \
   render --json --write=false --no-color \
   | jq '{manifest: .inputs.manifest, dependencies: .dependencies.paths}'
 ```

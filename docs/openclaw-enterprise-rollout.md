@@ -97,6 +97,23 @@ pending stack changes. Verify the bucket and an upload/download restore before s
 writer. The separate application-backup service remains inactive. The archive
 worker runs detached because the prior long Kubernetes exec stream disconnected;
 a distinct `publish-archive` stage is required after its private result appears.
+
+The bucket also has a source-only, separate Enterprise publisher declaration.
+Its optional IAM role has an exact protected GitHub environment subject,
+repository ID, reserved workflow name and `main` ref. An identity permissions
+boundary and matching inline policy allow reads and writes only below
+`openclaw-enterprise/new/`, with S3-mediated use of the bucket's KMS key. The
+write grant rejects a caller-supplied SSE-S3 override; an absent header uses
+the bucket's SSE-KMS default, including for multipart parts. The
+legacy archive stays under `openclaw-enterprise/legacy/`; neither the new role
+nor its boundary grants deletion, lifecycle changes or legacy reads. The bucket
+still retains all completed versions. No workflow assumes the new role, and
+the declaration has not been applied. A future publisher must use versioned,
+checksummed writes and read back exact versions. This S3 role is an offsite
+publication prerequisite; it does not mount `/backup`, collect recovery
+material, schedule a capture or prove a restore. Keep T051 blocked until those
+paths and the Agent stop/resume protocol are reviewed and tested.
+
 Publication streams bounded multipart parts and checks the complete byte count
 and SHA256 before S3 completion. Its run SHA/ID is the offsite archive reference
 for `verify`; the original archive worker SHA/ID remains the source reference.

@@ -12,4 +12,55 @@ data:
   10-mastodon.sql: |
     CREATE EXTENSION IF NOT EXISTS pg_trgm;
     CREATE EXTENSION IF NOT EXISTS unaccent;
-    ALTER ROLE mastodon NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+  20-mastodon-app-role.sql: |
+    \if :{?app_password_file}
+    \else
+    \set app_password_file /run/secrets/mastodon/POSTGRES_APP_PASSWORD
+    \endif
+    SELECT set_config('mastodon.app_password_file', :'app_password_file', false);
+    BEGIN;
+    SELECT pg_advisory_xact_lock(1596746884);
+    DO $role$
+    DECLARE
+      app_password text;
+      bootstrap_oid oid;
+    BEGIN
+      IF current_database() <> 'mastodon' OR current_user <> 'mastodon' THEN
+        RAISE EXCEPTION 'Mastodon role provisioning requires its dedicated bootstrap connection';
+      END IF;
+      SELECT oid INTO bootstrap_oid FROM pg_roles WHERE rolname = current_user AND rolsuper;
+      IF bootstrap_oid IS NULL THEN
+        RAISE EXCEPTION 'Mastodon bootstrap role must remain the PostgreSQL administrator';
+      END IF;
+      IF EXISTS (
+        SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'public' AND c.relowner = bootstrap_oid
+          AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+          AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e')
+      ) OR EXISTS (
+        SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public' AND p.proowner = bootstrap_oid
+          AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
+      ) THEN
+        RAISE EXCEPTION 'Existing bootstrap-owned application objects require a reviewed ownership migration';
+      END IF;
+      IF EXISTS (SELECT 1 FROM pg_auth_members WHERE member = (SELECT oid FROM pg_roles WHERE rolname = 'mastodon_app')) THEN
+        RAISE EXCEPTION 'Mastodon application role has unexpected role memberships';
+      END IF;
+      app_password := btrim(pg_read_file(current_setting('mastodon.app_password_file')), chr(10) || chr(13));
+      IF app_password !~ '^[A-Za-z0-9]{40}$' THEN
+        RAISE EXCEPTION 'Mastodon application database credential is missing or invalid';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'mastodon_app') THEN
+        CREATE ROLE mastodon_app;
+      END IF;
+      BEGIN
+        EXECUTE format('ALTER ROLE mastodon_app WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L', app_password);
+      EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION 'Mastodon application database credential update failed';
+      END;
+      ALTER DATABASE mastodon OWNER TO mastodon_app;
+      ALTER SCHEMA public OWNER TO mastodon_app;
+    END
+    $role$;
+    COMMIT;

@@ -11,7 +11,7 @@ Runtime SSM SecureStrings use AWS-managed `alias/aws/ssm` in `us-west-2`.
 OpenTofu retains `alias/homelab-opentofu` in `us-east-1` for client-side state
 and plan encryption. These keys have separate ownership and purposes.
 
-`IaC/operator/state-bucket-encryption` manages the existing S3 backend bucket's
+`IaC/homelab/us-west-2/operator/state-bucket-encryption` manages the existing S3 backend bucket's
 encryption settings through `IaC/terragrunt-catalog/modules/aws-s3-bucket-encryption`. S3 Bucket
 Keys are enabled; SSE-KMS, version history and OpenTofu client encryption remain
 required. Bucket keys reduce S3-originated KMS requests, not OpenTofu's direct

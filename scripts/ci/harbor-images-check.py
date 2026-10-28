@@ -99,6 +99,8 @@ def declared_images(value):
                 image += ":" + str(value["tag"])
             if value.get("digest"):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
+            elif value.get("sha"):
+                image = image.split("@", 1)[0] + "@sha256:" + str(value["sha"]).removeprefix("sha256:")
             images.add(image)
         for key, child in value.items():
             if key in {"name", "newName", "repository", "destination"} and isinstance(child, str):
@@ -172,7 +174,7 @@ def declared_mastodon_images():
 
 def chart_sources():
     charts = []
-    stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC").glob("*/stack.hcl"))]
+    stacks = sorted((ROOT / "IaC/homelab/us-west-2/apps").glob("*/stack.hcl"))
     for stack in stacks:
         for match in re.finditer(r"\{([^{}]*\bchart\s*=[^{}]*)", stack.read_text()):
             fields = dict(re.findall(r'(repoURL|chart|targetRevision)\s*=\s*"([^\"]+)"', match[1]))
@@ -180,6 +182,15 @@ def chart_sources():
                 raise SystemExit(f"{stack.relative_to(ROOT)}: Stack chart sources must keep literal "
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
+    enterprise = ROOT / "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl"
+    if enterprise.exists() and not re.search(r'\bchart\s*=', enterprise.read_text()):
+        match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'
+                          r'targetRevision\s*=\s*"([^"]+)"\s*helm\s*=', enterprise.read_text())
+        if not match:
+            raise SystemExit(f"{enterprise.relative_to(ROOT)}: Git Helm chart source must keep literal fields")
+        repository, path, revision = match.groups()
+        charts.append({"source": str(enterprise.relative_to(ROOT)), "repoURL": repository,
+                       "chart": "git:" + path, "targetRevision": revision})
     bootstrap = ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],

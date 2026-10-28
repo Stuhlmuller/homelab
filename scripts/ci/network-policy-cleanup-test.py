@@ -46,9 +46,9 @@ def state():
 class FirewallCleanupTests(unittest.TestCase):
     def test_pre_removal_evidence_requires_exact_fixture_then_firewall_prune(self):
         manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
-        application = "IaC/platform-network-policy/stack.hcl"
+        application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
         canary_manifest = "clusters/homelab/platform/network-policy/canary/kustomization.yaml"
-        canary_application = "IaC/platform-network-policy-canary/stack.hcl"
+        canary_application = "IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in (manifest, application, canary_manifest, canary_application,
@@ -512,6 +512,29 @@ class FirewallCleanupTests(unittest.TestCase):
                         with self.assertRaisesRegex(ValueError, "canary node"):
                             SUT["require_reviewed_node_pods"](
                                 "zimaboard-1", placement, cleanup, "cleanup-ds-uid")
+
+        for owner in ("ztunnel", "istio-cni-node", "foreign"):
+            with self.subTest(istio_owner=owner):
+                pod = {"metadata": {"namespace": "istio-system",
+                                    "name": f"{owner}-pod", "uid": f"{owner}-uid",
+                                    "ownerReferences": [{"kind": "DaemonSet",
+                                                         "name": owner,
+                                                         "controller": True}]},
+                       "spec": {"nodeName": "zimaboard-1"}}
+                reviewed = {"systemDaemonSetPods": [
+                    *placement["systemDaemonSetPods"],
+                    {"namespace": "istio-system", "name": f"{owner}-pod",
+                     "uid": f"{owner}-uid"}]}
+                with patch.dict(SUT["require_reviewed_node_pods"].__globals__, {
+                        "kubernetes_json": lambda *args: {"metadata": {},
+                                                           "items": [system, pod, cleanup]}}):
+                    if owner == "foreign":
+                        with self.assertRaisesRegex(ValueError, "unreviewed Pod"):
+                            SUT["require_reviewed_node_pods"](
+                                "zimaboard-1", reviewed, cleanup, "cleanup-ds-uid")
+                    else:
+                        SUT["require_reviewed_node_pods"](
+                            "zimaboard-1", reviewed, cleanup, "cleanup-ds-uid")
 
     def test_unknown_prefix_other_backend_and_nonfilter_reference_block(self):
         for field, value in (("nft", ":KUBE-POD-FW-UNKNOWN - [0:0]\n"),

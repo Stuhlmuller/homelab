@@ -1,0 +1,4 @@
+interface:
+  display_name: "Terragrunt Find and Filter"
+  short_description: "Use Terragrunt find and --filter commands to discover and target infrastructure units and stacks"
+  default_prompt: "Use $terragrunt-find-filter to find terragrunt units or apply filters to target specific infrastructure"

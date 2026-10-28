@@ -26,7 +26,7 @@ rejects the operator-managed proxy Pod before it can start.
 
 ## Version
 
-`IaC/tailscale/stack.hcl` pins the upstream `tailscale-operator` Helm chart at
+`IaC/homelab/us-west-2/apps/tailscale/stack.hcl` pins the upstream `tailscale-operator` Helm chart at
 `1.102.3`. The chart updates both the operator and its managed proxy image and
 includes Tailscale security fix TS-2026-011. The two singleton proxies roll
 separately, briefly interrupting the exit-node and Istio tailnet paths. If the

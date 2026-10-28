@@ -66,6 +66,8 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
@@ -98,6 +100,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
+    resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
@@ -136,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
+generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Secrets And Identity
@@ -153,7 +157,7 @@ raw certificates, tokens, private SSH keys, or private keys.
 
 Runtime app secrets are pulled from AWS SSM Parameter Store by External
 Secrets. External Secrets itself uses a Kubernetes Secret created through the
-`IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` Terragrunt stack
+`IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth` Terragrunt stack
 after placeholder SSM parameters exist and real credential values are injected
 outside git.
 
@@ -172,12 +176,16 @@ fragment would overwrite unrelated access. The committed policy preserves legacy
 users, tags, SSH and route approvals while giving new CI tags only explicit grants.
 Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
 
-The local provider reads a private administrator token file. The temporary
-bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
-S3 state and private encrypted saved plans retain the existing KMS boundary.
+The local provider reads a dedicated administrator OAuth client from private
+`0600` ID and secret files. The Kubernetes operator's SSM-backed OAuth client
+stays separate and has no tailnet administration scopes. Encrypted S3 state and
+private encrypted saved plans retain the existing KMS boundary. The same unit
+adopts existing DNS, tailnet settings, and contact addresses; it does not own
+personal devices or controller-generated Kubernetes device IDs.
 Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
 and Cordium tags and expire after 90 days. The committed generation drives
-rotation every 60 days; an invalid key is not silently recreated. Tailnet Lock
+rotation every 60 days; generation 2 matches the encrypted state. An invalid key
+is not silently recreated. Tailnet Lock
 requires signatures in addition to enrollment. The unused federated identities
 remain protected until final migration retirement after signed-key acceptance.
 
@@ -295,7 +303,7 @@ deny does not grant any new action or resource. Exact reader policy ARNs and
 the existing boundary Allow statements still apply. On 2026-08-30, the broader
 deny caused `cordium-agent-auth` refreshes to fail at `kms:Decrypt`. The
 administrator applied the reviewed single-update plan from
-`IaC/operator/github-actions-role-policy`; Cordium's scheduled refresh succeeded
+`IaC/homelab/us-west-2/operator/github-actions-role-policy`; Cordium's scheduled refresh succeeded
 at `2026-08-30T16:56:48Z`. The native policy regression checks all four direct
 and forwarded request contexts, retaining direct temporary-credential denial.
 Only Cordium refreshes periodically (every five minutes); the other 23 live
@@ -385,7 +393,7 @@ gate remains disabled; these permissions are source intent, not live access.
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
   literal Microsoft Entra issuer committed in
-  `IaC/bootstrap/argocd/terragrunt.hcl` so a placeholder SSM value cannot stop
+  `IaC/homelab/us-west-2/bootstrap/argocd/terragrunt.hcl` so a placeholder SSM value cannot stop
   provider discovery. Microsoft Entra group authorization is a token-claim
   behavior, not a requested OAuth scope: keep Dex scopes to `openid`,
   `profile`, and `email`, configure Entra to emit the `groups` claim for Argo
@@ -404,13 +412,13 @@ gate remains disabled; these permissions are source intent, not live access.
   [Image Automation](../runbooks/image-automation.md) and
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md).
 - Grafana Microsoft Entra SSO is managed through
-  `IaC/live/azuread-applications/grafana`. Grafana and Octelium passwords expire
+  `IaC/homelab/us-west-2/apps/grafana/azuread`. Grafana and Octelium passwords expire
   one year after creation, but their current resources have no rotation trigger;
   an unchanged apply does not rotate them. Coordinate a reviewed
   `rotate_when_changed` revision with the Grafana `OnChange` ExternalSecret and
   the Octelium native-secret sync before either expiry.
 - Entra provider identities are operator-owned Terraform resources under
-  `IaC/operator/azuread-ci-identities`. Separate plan/apply applications trust
+  `IaC/homelab/us-west-2/operator/azuread-ci-identities`. Separate plan/apply applications trust
   only their exact protected GitHub environments; no client secret, paid license
   or CI self-grant permission is configured. Stable application ownership
   preserves the human administrator when switching provider identities. GitHub
@@ -479,7 +487,7 @@ gate remains disabled; these permissions are source intent, not live access.
   prevents starting before the fixed code is present; PostgreSQL retains its
   original Secret. Rotate generated JWT and PostgreSQL values through
   the committed `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
-  catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack;
+  catalog source and regenerated `IaC/homelab/us-west-2/shared/aws-ssm-parameters` OpenTofu stack;
   do not hand-edit
   `/homelab/multica/postgres-password`, because future applies restore the
   repository-owned generated value. PostgreSQL password rotation also requires
@@ -499,14 +507,16 @@ gate remains disabled; these permissions are source intent, not live access.
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The pinned daemon asks the backend to renew that token in place
   when seven days or less remain; revoked or expired tokens fail startup rather
-  than silently creating a replacement. The main container exposes only
-  its own profile, including native ChatGPT OAuth state retained on the runtime
-  PVC; it does not mount the backend JWT, database password, fixed code, or a
-  model API key. This remains a trusted operator runtime because tasks can read
-  that profile. Its dedicated ServiceAccount has no Kubernetes token and
-  receives explicit Istio access only to the Multica backend. OAuth is created
-  through an interactive Codex device login and must not be copied into SSM or
-  a Kubernetes Secret.
+  than silently creating a replacement. A Ready daemon starts the renewal loop
+  but does not prove a successful renewal; verify expiry metadata during the
+  eligible window without exposing token material. The main container retains
+  its own profile and mounts the dedicated `multica-litellm` token as a read-only
+  file for model access. The committed OpenCode configuration routes through
+  LiteLLM; no ChatGPT/Codex OAuth runtime is configured. It does not mount the
+  backend JWT, database password, fixed code, or upstream OpenRouter key.
+  This remains a trusted operator runtime because tasks can read that profile.
+  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
+  Istio access only to the Multica backend.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
@@ -542,7 +552,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   delivery receipts. Native carrier and CI secrets remain until separate
   acceptance. Token values never enter git or workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
-  managed by `IaC/live/azuread-applications/octelium` and writes generated
+  managed by `IaC/homelab/us-west-2/apps/octelium/azuread` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
   the Octelium native Secret `entra-oidc-client-secret` and IdentityProvider
   `entra` by `scripts/octelium-entra-oidc.sh`. HUMAN user Entra identifiers are
@@ -551,12 +561,12 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`. Only `homelab-plan` requires reviewer approval.
-  The production environment
+  `homelab-production`. PR plans use `homelab-plan` without a required
+  environment reviewer. The production environment
   permits only `main` and releases credentials without another approval;
-  main-only diagnostics also use production. Approve a pull request plan only
-  after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
-  identity. Repository Actions policy rejects mutable action tags, and the
+  main-only diagnostics also use production. Review the pull request plan and
+  exact code before merge because that job assumes the environment-bound AWS
+  OIDC identity. Repository Actions policy rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
   always-on checks and no force pushes. The CI connector does not pass Octelium
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
@@ -564,9 +574,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every
   21 days with
-  `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
-  Sessions first so Octelium cannot retain an older Session expiry, then retries
-  GitHub environment writes until both store the replacement token.
+  `scripts/octelium-ci-credential.sh`; routine rotation first verifies the
+  existing User, Policy, Service, and credential binding without applying the
+  full catalog. It rejects unknown or duplicate Service policy attachments;
+  only the primary CI policy and optional staged plan policy are accepted, and
+  it checks all three staged plan rules when that policy is attached.
+  The helper deletes the dedicated User's Sessions so Octelium
+  cannot retain an older Session expiry, then retries each GitHub environment
+  write up to five times. Bootstrap catalog application is explicit with
+  `--apply-catalog`.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
@@ -624,13 +640,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   production use, also stays outside git; add only a safe SSM or
   ExternalSecret contract in a future change if the package needs one.
 - The GitHub Actions AWS OIDC apply role is an operator-owned bootstrap
-  identity. `IaC/operator/github-actions-role-policy` owns the existing
+  identity. `IaC/homelab/us-west-2/operator/github-actions-role-policy` owns the existing
   `Github-TF-State` role's trust policy and additive SSM reader-policy lifecycle
   grant. Trust is limited to `homelab-plan`, `homelab-production`,
   `github-iac-plan`, and `github-iac-production`. Apply trust changes only with
   a reviewed administrator session and the single-role saved-plan gate in
   `docs/operator-infrastructure.md`; the first rollout must import the existing role
-  before planning. CI must not traverse `IaC/operator` or gain permission to
+  before planning. CI must not traverse `IaC/homelab/us-west-2/operator` or gain permission to
   replace its own attachment. The
   grant is bounded to policy slots `00` through `09` and the exact
   `homelab-ssm-parameter-readers` group, plus metadata-only `kms:DescribeKey`
@@ -661,7 +677,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   uses it for token signing and application-data encryption.
 - Langfuse keeps application, datastore, project and headless-init credentials
   under `/homelab/langfuse/`; its namespace consumes `langfuse-secrets`.
-  `IaC/live/langfuse-blob-storage` owns the distinct S3 runtime credential pair.
+  `IaC/homelab/us-west-2/apps/langfuse/blob-storage` owns the distinct S3 runtime credential pair.
   On September 30, 2026 PDT (October 1 UTC), an administrator applied its
   reviewed 12-resource bootstrap through the normal remote state; a fresh plan
   was a no-op and live checks confirmed public-access blocks, versioning, and
@@ -756,8 +772,8 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`
-- `IaC/live/aws-ssm-parameters`
-- `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`
+- `IaC/homelab/us-west-2/shared/aws-ssm-parameters`
+- `IaC/homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth`
 - `clusters/homelab/apps/external-secrets`
 
 ## Dedicated Cordium CI assertion
@@ -1012,12 +1028,17 @@ on enforced containment.
 ## Mastodon credential boundary
 
 The [Mastodon declaration](../../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
-adds nine exact `/homelab/mastodon/` parameters and namespace-scoped External
+adds ten exact `/homelab/mastodon/` parameters and namespace-scoped External
 Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
 owner password are generated in encrypted state. The external SMTP slot starts
 with a rejected placeholder; the protected
 [SMTP workflow](../../.github/workflows/mastodon-smtp-credential.yml) injects
 only that fixed SecureString from `MASTODON_SMTP_PASSWORD`.
+
+PostgreSQL's protected bootstrap administrator stays separate from the limited
+`mastodon_app` role. A local-socket hook provisions that role from the generated
+`postgres-app-password`; the application template never receives the bootstrap
+password. Redis projects only its own datastore Secret key.
 
 The [runtime template](../../clusters/homelab/apps/mastodon/runtime-externalsecret.yaml)
 mounts configuration, VAPID and SMTP as files. Only the owner-bootstrap Job

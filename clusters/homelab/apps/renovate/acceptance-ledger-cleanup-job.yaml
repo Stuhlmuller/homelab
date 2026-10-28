@@ -1,0 +1,122 @@
+# Stage outside Kustomize; activate only after the aggregate report is reviewed and all ledger writers drain.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: renovate-acceptance-ledger-cleanup
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app.kubernetes.io/name: renovate
+    app.kubernetes.io/component: acceptance-ledger-cleanup
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  suspend: true
+  activeDeadlineSeconds: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: renovate
+        app.kubernetes.io/component: acceptance-ledger-cleanup
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: renovate
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 12021
+        runAsGroup: 12021
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cleanup
+          image: docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          imagePullPolicy: IfNotPresent
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              umask 077
+              root=/ledger
+              private="$root/private"
+              expected=REPLACE_WITH_REVIEWED_LEDGER_SHA256
+              marker="$root/.renovate-acceptance-cleanup-$expected"
+              mountinfo=/proc/self/mountinfo
+              refuse() { echo 'acceptance-ledger-cleanup: refused' >&2; exit 1; }
+
+              case "$expected" in *[!0-9a-f]*|'') refuse;; esac
+              test "${#expected}" -eq 64 || refuse
+              test -d "$root" && test ! -L "$root" || refuse
+              test "$(stat -c '%u:%g:%a' "$root")" = '12021:12021:700' || refuse
+              test "$(stat -c %m "$root")" = "$root" || refuse
+              test -r "$mountinfo" || refuse
+
+              for existing in "$root"/.renovate-acceptance-cleanup-*; do
+                test -e "$existing" || test -L "$existing" || continue
+                test "$existing" = "$marker" || refuse
+              done
+              if test -e "$private" || test -L "$private"; then
+                test -d "$private" && test ! -L "$private" || refuse
+                test "$(stat -c '%u:%a' "$private")" = '12021:700' || refuse
+                test "$(stat -c %m "$private")" = "$root" || refuse
+                awk -v p="$private" '$5 == p || index($5, p "/") == 1 { found = 1 } END { exit found }' "$mountinfo" || refuse
+              elif test ! -e "$marker"; then
+                refuse
+              fi
+
+              if test -e "$marker" || test -L "$marker"; then
+                test -f "$marker" && test ! -L "$marker" || refuse
+                test "$(stat -c '%u:%a' "$marker")" = '12021:600' || refuse
+                test "$(cat "$marker")" = "$expected" || refuse
+              else
+                ledger="$private/ledger.json"
+                test -f "$ledger" && test ! -L "$ledger" || refuse
+                test "$(stat -c '%u:%a' "$ledger")" = '12021:600' || refuse
+                actual="$(sha256sum "$ledger")"
+                test "${actual%% *}" = "$expected" || refuse
+                (set -C; printf '%s\n' "$expected" >"$marker") || refuse
+                test "$(stat -c '%u:%a' "$marker")" = '12021:600' || refuse
+              fi
+
+              rm -rf --one-file-system -- "$private" || refuse
+              mkdir -m 700 "$private" || refuse
+              test "$(stat -c '%u:%a' "$private")" = '12021:700' || refuse
+              remaining="$(find "$private" -mindepth 1 -maxdepth 1 -print -quit)" || refuse
+              test -z "$remaining" || refuse
+              echo 'acceptance-ledger-cleanup: private-ledger-empty'
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 32Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: ledger
+              mountPath: /ledger
+      volumes:
+        - name: ledger
+          persistentVolumeClaim:
+            claimName: renovate-acceptance-ledger
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: renovate-acceptance-ledger-cleanup
+  namespace: automation
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: renovate
+      app.kubernetes.io/component: acceptance-ledger-cleanup
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []

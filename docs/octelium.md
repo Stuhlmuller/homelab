@@ -21,7 +21,7 @@ cutover. The [network guide](networking-tailnet-ingress.md) owns the target
 routing model; old clientless app routes stop receiving application DNS traffic
 after the private records converge.
 
-The Argo CD Application at `IaC/live/argocd-apps/octelium` installs the
+The Argo CD Application at `IaC/homelab/us-west-2/apps/octelium/argocd` installs the
 repo-owned Kubernetes manifests from `clusters/homelab/apps/octelium`.
 
 The Kubernetes namespace is `octelium-client`. It contains:
@@ -288,7 +288,7 @@ The Octelium portal login provider is Microsoft Entra OIDC. The Entra
 application registration is managed by:
 
 ```text
-IaC/live/azuread-applications/octelium
+IaC/homelab/us-west-2/apps/octelium/azuread
 ```
 
 The application uses `https://stinkyboi.com/callback` as the primary OAuth
@@ -637,7 +637,7 @@ before removing or reinstalling the Enterprise package.
 
 The Kubernetes steady state for those Enterprise resources is now committed in
 `clusters/homelab/apps/octelium-enterprise` and registered by
-`IaC/live/argocd-apps/octelium-enterprise`. The Argo CD Application adopts the
+`IaC/homelab/us-west-2/apps/octelium-enterprise/argocd`. The Argo CD Application adopts the
 package Deployments, Services, ConfigMaps, ServiceAccounts, and PVC
 declarations after the initial `octops` package install. Generated Secrets such
 as `sys-init-kek`, database credentials, license material, and kubeconfigs stay

@@ -1,0 +1,74 @@
+---
+# Staged only: add after the private ledger claim is Bound.
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/command
+  value: [node, /usr/src/app/acceptance-report-runner.js]
+- op: replace
+  path: >-
+    /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/0/mountPath
+  value: /usr/src/app/runner-config.js
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: observer
+    mountPath: /usr/src/app/config.js
+    subPath: acceptance-report-config.js
+    readOnly: true
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: observer
+    mountPath: /usr/src/app/acceptance-report-runner.js
+    subPath: acceptance-report-runner.js
+    readOnly: true
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: observer
+    mountPath: /usr/src/app/acceptance-observer.js
+    subPath: acceptance-observer.js
+    readOnly: true
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: podinfo
+    mountPath: /var/run/podinfo
+    readOnly: true
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: ledger
+    mountPath: /ledger
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/containers/0/volumeMounts/-
+  value:
+    name: report-output
+    mountPath: /report-output
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/volumes/-
+  value:
+    name: observer
+    configMap:
+      name: renovate-acceptance-observer
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/volumes/-
+  value:
+    name: podinfo
+    downwardAPI:
+      items:
+        - path: uid
+          fieldRef:
+            fieldPath: metadata.uid
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/volumes/-
+  value:
+    name: ledger
+    persistentVolumeClaim:
+      claimName: renovate-acceptance-ledger
+- op: add
+  path: /spec/jobTemplate/spec/template/spec/volumes/-
+  value:
+    name: report-output
+    emptyDir:
+      medium: Memory
+      sizeLimit: 128Mi
