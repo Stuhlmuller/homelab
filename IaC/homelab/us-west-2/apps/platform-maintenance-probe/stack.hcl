@@ -18,7 +18,7 @@ inputs = {
     ]
     syncPolicy = {
       automated = {
-        enabled = false
+        enabled = true
         prune   = false
       }
       syncOptions = ["CreateNamespace=false", "ServerSideApply=true"]
@@ -26,7 +26,7 @@ inputs = {
     info = [
       {
         name  = "activation"
-        value = "disabled and empty until T023 verifies worker placement"
+        value = "T023 DaemonSet declared; live placement and path checks pending"
       }
     ]
   }
