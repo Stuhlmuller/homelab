@@ -12,6 +12,10 @@ on:
         description: Optional exact Argo CD Application unit to reconcile
         required: false
         type: string
+      istio_phase:
+        description: Protected Istio 1.28.10 component phase, only with argocd_app=istio
+        required: false
+        type: string
       existing_argocd_only:
         description: Reconcile only Argo CD Applications already registered live
         required: false
@@ -28,7 +32,7 @@ on:
         default: false
         type: boolean
 
-run-name: ${{ inputs.application_backup_storage && format('Backup storage @ {0}', github.sha) || inputs.argocd_app == '' && format('Full @ {0}', github.sha) || format('Targeted {0} @ {1}', inputs.argocd_app, github.sha) }}
+run-name: ${{ inputs.application_backup_storage && format('Backup storage @ {0}', github.sha) || inputs.istio_phase != '' && format('Istio phase {0} @ {1}', inputs.istio_phase, github.sha) || inputs.argocd_app == '' && format('Full @ {0}', github.sha) || format('Targeted {0} @ {1}', inputs.argocd_app, github.sha) }}
 
 permissions: {}
 
@@ -94,6 +98,7 @@ jobs:
     timeout-minutes: 90
     env:
       TERRAGRUNT_ARGOCD_APP: ${{ inputs.argocd_app }}
+      ISTIO_PHASE: ${{ inputs.istio_phase }}
       TERRAGRUNT_EXISTING_ARGOCD_ONLY: ${{ inputs.existing_argocd_only }}
       TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
       TERRAGRUNT_APPLICATION_BACKUP_STORAGE: ${{ inputs.application_backup_storage }}
@@ -194,6 +199,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT

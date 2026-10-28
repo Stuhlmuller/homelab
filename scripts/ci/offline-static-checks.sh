@@ -28,52 +28,7 @@ if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/
   exit 1
 fi
 terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
-  render --json --write=false --no-color \
-  | jq -e '
-      .inputs.manifest.spec as $spec |
-      $spec.syncPolicy.automated.enabled == true and
-      $spec.syncPolicy.automated.prune == true and
-      $spec.syncPolicy.automated.selfHeal == true and
-      ([ $spec.sources[] | select(has("chart")) |
-        [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
-        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
-      ]) and
-      any($spec.sources[];
-        .chart == "ztunnel" and
-        any(.helm.parameters[]?;
-          .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
-          .value == "10-1-0-199-v1") and
-        any(.helm.parameters[]?;
-          .name == "updateStrategy.rollingUpdate.maxSurge" and
-          .value == "0") and
-        any(.helm.parameters[]?;
-          .name == "updateStrategy.rollingUpdate.maxUnavailable" and
-          .value == "1")
-      )
-    ' >/dev/null
-jq -e '
-  .schemaVersion == 1 and .activationEnabled == false and
-  .from == "1.27.3" and .to == "1.28.10" and
-  .chartRepository == "https://blob.istio.io/istio-release/charts" and
-  ([.components[] | [.chart, .releaseName]] == [
-    ["base", "istio-base"], ["istiod", "istiod"], ["cni", "istio-cni"],
-    ["ztunnel", "ztunnel"], ["gateway", "istio-ingressgateway"],
-    ["gateway", "octelium-api-ingressgateway"]
-  ]) and
-  ([.components[].archiveSha256] == [
-    "32b3d9833cf6473e8e567407855c029012b1080416ae4f9ee7bd4ce93617e132",
-    "125367e6eec08c8e7fc6e165c35ecf306dc23ea069b7953aed57fe83098004f1",
-    "7fd3133f6232c590493bb94974b2647dc287cd9a3a6acde621f6d4c7c1939295",
-    "02dc5cee6532b0ed7ebf289e4dff003518a9bda5f09ab1ff7eff8c2530d6fc49",
-    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df",
-    "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df"
-  ])
-' clusters/homelab/apps/istio/upgrade-1.28.10.json >/dev/null
+  render --json --write=false --no-color | python3 scripts/ci/istio-upgrade-gate.py check-source
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
@@ -1047,7 +1002,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/terragrunt-plan.yml:static-policy' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
     '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
-    '.github/workflows/terragrunt-plan.yml:terragrunt-plan'
+    '.github/workflows/terragrunt-plan.yml:terragrunt-plan' \
+    '.github/workflows/validate.yml:repo'
 } | LC_ALL=C sort)"
 [[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
   echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
@@ -1092,6 +1048,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
+.github/workflows/harbor-helm-charts.yml a4d3ec44e396c8c19a9894ffd34c75147f6f340ebd1b1440f6ab24f83591c421
 .github/workflows/harbor-mirror.yml 6997115e75b9ed25943f9878cb8402fa6840a06de5783e8d7c47c362acb8f6e9
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml a1ca395d29b709a277295b61c73270b3e93361b51992c67644f2b12d079dfd1c
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
@@ -1103,7 +1060,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
-.github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
+.github/workflows/platform-maintenance.yml 4248d1a351483ff5e29e4d0f0761d3805ae8b33436d4b3cab8c7644a67ed1b84
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -1111,8 +1068,9 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 3c5eab39c1cc573a42bbcfa1568bb4c7c7f84571b67a74927b91a5fc582c9025
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 4f57a60d3c379ecd9371924da45130694aa705eb48b1384846084a6e154789e9
+.github/workflows/terragrunt-apply.yml 786a30827e97e93177b7d6c57c3a8e8409c48e11a3e1bb54fb4ae94a310e433a
 .github/workflows/terragrunt-plan.yml e3bc51d82088fd3b11aab6d60cd3ca5babe906b65d0153a18c96df886840980b
+.github/workflows/validate.yml 8cb282020097a1b302c6759bb8fc3437d5782c8febe8b0cb0007d26fae852b93
 EOF
 echo "::endgroup::"
 
@@ -1288,7 +1246,12 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}") and contains("Istio phase {0} @ {1}")) and
+    .on.workflow_dispatch.inputs.istio_phase == {
+      "description": "Protected Istio 1.28.10 component phase, only with argocd_app=istio",
+      "required": false,
+      "type": "string"
+    } and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
@@ -1317,12 +1280,14 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
       "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "GH_TOKEN": "${{ github.token }}",
       "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
       "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
     } and
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
+      "ISTIO_PHASE",
       "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_EXISTING_ARGOCD_ONLY",
@@ -1330,6 +1295,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.ISTIO_PHASE == "${{ inputs.istio_phase }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_EXISTING_ARGOCD_ONLY == "${{ inputs.existing_argocd_only }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and

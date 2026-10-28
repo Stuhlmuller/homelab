@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import os
+import socket
 import subprocess
 import tempfile
 import unittest
@@ -15,16 +16,25 @@ from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "scripts/config/platform-maintenance.json"
 SCRIPT = ROOT / "scripts/platform-maintenance.py"
+POD_SCRIPT = ROOT / "scripts/ci/platform-maintenance-pod-probe.py"
 
 
 def load_module():
     spec = importlib.util.spec_from_file_location("platform_maintenance", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_pod_module():
+    spec = importlib.util.spec_from_file_location("platform_maintenance_pod_probe", POD_SCRIPT)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -40,6 +50,7 @@ class PlatformMaintenance(unittest.TestCase):
         self.machine_state_function = self.module.active_machine_state
         self.mirror_tag_function = self.module.verify_kubernetes_mirror_tags
         self.istio_target_function = self.module.verify_live_istio_target
+        self.path_probe_function = self.module.inter_node_path_probe
         mirrors = {registry: {"endpoints": [
             f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
             "overridePath": True, "skipFallback": True}
@@ -50,10 +61,31 @@ class PlatformMaintenance(unittest.TestCase):
             ("verify_kubernetes_mirror_routes", {}),
             ("verify_kubernetes_mirror_tags", {}),
             ("verify_live_istio_target", {}),
+            ("inter_node_path_probe", {"side_effect": lambda _config, _talos, stage, node, sha:
+                                        self.probe_record(stage, node, sha)}),
         ):
             replacement = patch.object(self.module, name, **kwargs)
             replacement.start()
             self.addCleanup(replacement.stop)
+
+    def probe_record(self, stage, node, sha):
+        return {"format": 1, "sourceSha": sha, "stage": stage, "node": node,
+                "capturedAt": "2026-10-25T00:00:00Z",
+                "fixture": {"namespace": "monitoring", "pod": "platform-maintenance-probe",
+                            "claim": "platform-maintenance-probe", "storageClass": "nfs-default",
+                            "podUid": "pod-uid", "claimUid": "claim-uid", "volumeUid": "pv-uid",
+                            "node": "zimaboard-1"},
+                "dns": {"kubernetes.default.svc.cluster.local": "10.96.0.1",
+                        "grafana.monitoring.svc.cluster.local": "10.96.0.2"},
+                "storage": {"bytes": 4096, "sha256": "a" * 64,
+                            "readBack": True, "deleted": True},
+                "access": {"octeliumKubernetesApi": True, "octeliumTalosMtls": True},
+                "webhooks": {"policyBotStatus": 404, "policyBotRequestId": True,
+                             "n8nStatus": 404,
+                             "n8nApplicationBody": True},
+                "application": {"grafanaHttpStatus": 200, "grafanaDatabase": "ok",
+                                "service": "monitoring/grafana", "serviceUid": "svc-uid",
+                                "pod": "grafana-abc", "podUid": "grafana-pod-uid"}}
 
     def prerequisites(self, sha, config=None):
         config = config or self.config
@@ -94,6 +126,198 @@ class PlatformMaintenance(unittest.TestCase):
                               for line in patch_file.read_text().splitlines()
                               if line.strip().startswith("image: ")],
                              [stage["installerImage"]])
+
+    def test_probe_evidence_rejects_missing_functional_path(self):
+        stage, node, sha = "talos-1.11.6", "zimaboard-0", "a" * 40
+        good = self.probe_record(stage, node, sha)
+        self.module.verify_path_probe(good, stage, node, sha)
+        for key, value in (
+            ("storage", {**good["storage"], "readBack": False}),
+            ("dns", {**good["dns"], "grafana.monitoring.svc.cluster.local": "bad"}),
+            ("access", {**good["access"], "octeliumTalosMtls": False}),
+            ("webhooks", {**good["webhooks"], "policyBotRequestId": False}),
+            ("application", {**good["application"], "grafanaDatabase": "failed"}),
+        ):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                self.module.verify_path_probe({**good, key: value}, stage, node, sha)
+        with self.assertRaises(ValueError):
+            self.module.verify_path_probe(good, stage, node, "b" * 40)
+
+    def test_inter_node_probe_requires_fixture_io_access_and_webhooks(self):
+        sha, stage, node = "a" * 40, "talos-1.11.6", "zimaboard-1"
+        pod = {"metadata": {"uid": "pod-uid"}, "spec": {
+            "nodeName": node, "containers": [{"image": self.module.PROBE_IMAGE,
+                                               "volumeMounts": [{"name": "storage",
+                                                                 "mountPath": "/probe"}]}],
+            "automountServiceAccountToken": False,
+            "volumes": [{"name": "storage", "persistentVolumeClaim": {
+                "claimName": self.module.PROBE_NAME}}]},
+            "status": {"phase": "Running", "conditions": [{"type": "Ready", "status": "True"}]}}
+        claim = {"metadata": {"uid": "claim-uid"}, "spec": {
+            "volumeName": "probe-pv", "storageClassName": "nfs-default"},
+            "status": {"phase": "Bound"}}
+        volume = {"metadata": {"uid": "volume-uid"}, "spec": {
+            "claimRef": {"uid": "claim-uid"}, "storageClassName": "nfs-default",
+            "nfs": {"server": "10.1.0.2", "path": "/homelab/probe"}},
+            "status": {"phase": "Bound"}}
+        grafana_service = {"metadata": {"uid": "svc-uid"}, "spec": {
+            "clusterIP": "10.96.0.2", "selector": {
+                "app.kubernetes.io/name": "grafana", "app.kubernetes.io/instance": "grafana"},
+            "ports": [{"port": 80, "targetPort": "grafana"}]}}
+        grafana_pod = {"metadata": {"name": "grafana-abc", "uid": "grafana-pod-uid",
+                                    "labels": grafana_service["spec"]["selector"]},
+                       "spec": {"containers": [{"name": "grafana", "ports": [
+                           {"name": "grafana", "containerPort": 3000}]}]},
+                       "status": {"phase": "Running", "conditions": [
+                           {"type": "Ready", "status": "True"}]}}
+        objects = [pod, claim, {"spec": {"clusterIP": "10.96.0.1"}},
+                   grafana_service, {"items": [grafana_pod]}, volume]
+        output = {"dns": self.probe_record(stage, node, sha)["dns"],
+                  "storage": self.probe_record(stage, node, sha)["storage"]}
+        webhooks = [(404, b"", [("X-Request-ID", "a" * 20)]),
+                    (404, b"Webhook not registered", [])]
+
+        def run(command, **kwargs):
+            if "exec" in command:
+                self.assertIn("-i", command)
+                self.assertIn("os.fsync", kwargs["input"])
+                return subprocess.CompletedProcess(command, 0, json.dumps(output), "")
+            if command[:2] == ["kubectl", "--request-timeout=15s"]:
+                return subprocess.CompletedProcess(command, 0, "ok\n", "")
+            return subprocess.CompletedProcess(command, 0, "Client:\nTalos v1.11.3\nServer:\nTalos v1.11.3\n", "")
+
+        candidate = copy.deepcopy(self.config)
+        with patch.object(self.module, "_kubectl_json", side_effect=objects), \
+                patch.object(self.module, "_webhook_response", side_effect=webhooks), \
+                patch.object(self.module, "_grafana_health_via_port_forward",
+                             return_value={"grafanaHttpStatus": 200,
+                                           "grafanaDatabase": "ok"}), \
+                patch.object(self.module.subprocess, "run", side_effect=run):
+            proof = self.path_probe_function(candidate, Path("/private/talosconfig"),
+                                             stage, node, sha)
+        self.assertEqual(proof["storage"]["bytes"], 4096)
+        self.assertEqual(proof["fixture"]["claimUid"], "claim-uid")
+        for changed, responses in (
+            ([{**pod, "spec": {**pod["spec"], "nodeName": "acer"}}, *objects[1:]], webhooks),
+            ([{**pod, "spec": {**pod["spec"], "containers": [{"image": self.module.PROBE_IMAGE,
+                    "volumeMounts": [{"name": "other", "mountPath": "/probe"}]}]}},
+              *objects[1:]], webhooks),
+            ([*objects[:4], {"items": [{**grafana_pod, "metadata": {
+                **grafana_pod["metadata"], "name": "wrong-endpoint"}}]}, volume], webhooks),
+            (objects, [(404, b"", []), *webhooks[1:]]),
+            (objects, [webhooks[0], (404, b"edge not found", [])]),
+        ):
+            with self.subTest(responses=responses), \
+                    patch.object(self.module, "_kubectl_json", side_effect=changed), \
+                    patch.object(self.module, "_webhook_response", side_effect=responses), \
+                    patch.object(self.module, "_grafana_health_via_port_forward",
+                                 return_value={"grafanaHttpStatus": 200,
+                                               "grafanaDatabase": "ok"}), \
+                    patch.object(self.module.subprocess, "run", side_effect=run), \
+                    self.assertRaises(ValueError):
+                self.path_probe_function(candidate, Path("/private/talosconfig"),
+                                         stage, node, sha)
+        with patch.object(self.module, "_kubectl_json", side_effect=objects), \
+                patch.object(self.module, "_grafana_health_via_port_forward",
+                             side_effect=ValueError("tunnel failed")), \
+                patch.object(self.module.subprocess, "run", side_effect=run), \
+                self.assertRaisesRegex(ValueError, "tunnel failed"):
+            self.path_probe_function(candidate, Path("/private/talosconfig"), stage,
+                                     node, sha)
+
+    def test_pod_probe_performs_claim_io_and_rejects_dns_and_fsync_failure(self):
+        pod = load_pod_module()
+        def answer(name, *_args):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "",
+                     ("10.96.0.1" if name.startswith("kubernetes") else "10.96.0.2", 0))]
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(pod.socket, "getaddrinfo", side_effect=answer):
+            result = pod.run(directory, "10.96.0.1", "10.96.0.2")
+            self.assertEqual(result["storage"]["bytes"], 4096)
+            self.assertEqual(list(Path(directory).iterdir()), [])
+            with self.assertRaisesRegex(ValueError, "DNS"):
+                pod.run(directory, "10.96.0.9", "10.96.0.2")
+            with patch.object(pod.os, "fsync", side_effect=OSError("unavailable")), \
+                    self.assertRaises(OSError):
+                pod.run(directory, "10.96.0.1", "10.96.0.2")
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_grafana_port_forward_checks_database_and_always_closes(self):
+        class Process:
+            def __init__(self, line):
+                self.stdout = io.StringIO(line)
+                self.terminated = False
+            def poll(self):
+                return -15 if self.terminated else None
+            def terminate(self):
+                self.terminated = True
+            def wait(self, **_kwargs):
+                return -15
+        class Connection:
+            status = 200
+            database = "ok"
+            def __init__(self, host, port, **_kwargs):
+                self_host, self_port = host, port
+                self.assert_host = (self_host, self_port)
+            def request(self, method, path):
+                if (method, path) != ("GET", "/api/health"):
+                    raise AssertionError("wrong Grafana path")
+            def getresponse(self):
+                return SimpleNamespace(status=self.status,
+                    read=lambda _size: json.dumps({"database": self.database}).encode())
+            def close(self):
+                pass
+        process = Process("Forwarding from 127.0.0.1:18181 -> 3000\n")
+        with patch.object(self.module.subprocess, "Popen", return_value=process) as launch, \
+                patch.object(self.module.select, "select", side_effect=lambda streams, *_: (streams, [], [])), \
+                patch.object(self.module.http.client, "HTTPConnection", Connection):
+            self.assertEqual(self.module._grafana_health_via_port_forward("grafana-abc"),
+                             {"grafanaHttpStatus": 200, "grafanaDatabase": "ok"})
+        self.assertIn("pod/grafana-abc", launch.call_args.args[0])
+        self.assertTrue(process.terminated)
+        process = Process("Forwarding from 127.0.0.1:18181 -> 3000\n")
+        Connection.status = 503
+        Connection.database = "ok"
+        with patch.object(self.module.subprocess, "Popen", return_value=process), \
+                patch.object(self.module.select, "select", side_effect=lambda streams, *_: (streams, [], [])), \
+                patch.object(self.module.http.client, "HTTPConnection", Connection), \
+                self.assertRaisesRegex(ValueError, "database"):
+            self.module._grafana_health_via_port_forward("grafana-abc")
+        self.assertTrue(process.terminated)
+        Connection.status = 200
+        process = Process("Forwarding from 127.0.0.1:18181 -> 3000\n")
+        Connection.database = "failed"
+        with patch.object(self.module.subprocess, "Popen", return_value=process), \
+                patch.object(self.module.select, "select", side_effect=lambda streams, *_: (streams, [], [])), \
+                patch.object(self.module.http.client, "HTTPConnection", Connection), \
+                self.assertRaisesRegex(ValueError, "database"):
+            self.module._grafana_health_via_port_forward("grafana-abc")
+        self.assertTrue(process.terminated)
+        process = Process("")
+        with patch.object(self.module.subprocess, "Popen", return_value=process), \
+                patch.object(self.module.time, "monotonic", side_effect=(0, 21)), \
+                self.assertRaisesRegex(ValueError, "did not become ready"):
+            self.module._grafana_health_via_port_forward("grafana-abc")
+        self.assertTrue(process.terminated)
+
+    def test_webhook_proof_retries_transient_unavailability_but_rejects_wrong_app(self):
+        expected = [(503, b"", []), (404, b"", [("X-Request-ID", "a" * 20)]),
+                    (404, b"Webhook not registered", [])]
+        with patch.object(self.module, "_webhook_response", side_effect=expected) as call, \
+                patch.object(self.module.time, "sleep") as sleep:
+            self.assertEqual(self.module._webhook_path_proof(30),
+                             self.probe_record("talos-1.11.6", "zimaboard-1", "a" * 40)["webhooks"])
+        self.assertEqual(call.call_count, 3)
+        sleep.assert_called_once()
+        for response in ((404, b"", [("X-Request-ID", "Z" * 20)]),
+                         (403, b"", [])):
+            with self.subTest(response=response), \
+                    patch.object(self.module, "_webhook_response", return_value=response), \
+                    self.assertRaises(ValueError):
+                self.module._webhook_path_proof(0)
+        with patch.object(self.module, "_webhook_response", return_value=(503, b"", [])), \
+                self.assertRaisesRegex(ValueError, "deadline"):
+            self.module._webhook_path_proof(0)
 
     def test_rejects_unsupported_hops_order_and_image_substitution(self):
         for change in (
@@ -179,11 +403,16 @@ class PlatformMaintenance(unittest.TestCase):
                     "pinSha256": self.module.PIN_SHA256,
                     "verified": True, "status": "verified", "evidence": {
                         "observedVersion": "1.11.6", "ready": True,
-                        "clusterHealth": True, "bootID": "boot"}}
+                        "clusterHealth": True, "bootID": "boot",
+                        "pathProbe": self.probe_record(stage, "zimaboard-0", sha)}}
         self.assertEqual(decide("zimaboard-0", "1.11.3", "1.11.6", "1.11.6", "boot", complete,
                                 sha, stage), "skip")
         self.assertEqual(decide("zimaboard-0", "1.11.3", "1.11.6", "1.11.6", "boot",
-                                {**complete, "sourceSha": "b" * 40}, sha, stage), "skip")
+                                {**complete, "sourceSha": "b" * 40,
+                                 "evidence": {**complete["evidence"],
+                                              "pathProbe": self.probe_record(
+                                                  stage, "zimaboard-0", "b" * 40)}},
+                                sha, stage), "skip")
         for observed, receipt in (
             ("1.11.6", None),
             ("1.11.3", {**complete, "verified": False}),
@@ -468,7 +697,8 @@ class PlatformMaintenance(unittest.TestCase):
                 self.module.complete_node_receipt(path, stage, node, sha, {})
             complete = self.module.complete_node_receipt(
                 path, stage, node, sha, {"observedVersion": "1.11.6", "ready": True,
-                                        "clusterHealth": True, "bootID": "new-boot"})
+                                        "clusterHealth": True, "bootID": "new-boot",
+                                        "pathProbe": self.probe_record(stage, node, sha)})
             self.assertEqual(self.module.node_action(node, "1.11.3", "1.11.6", "1.11.6",
                                                      "new-boot", complete, sha, stage), "skip")
             with self.assertRaises(ValueError):
@@ -526,7 +756,8 @@ class PlatformMaintenance(unittest.TestCase):
                                         sha, stage)
             self.module.complete_node_receipt(path, stage, node, sha, {
                 "observedVersion": "1.11.6", "ready": True,
-                "clusterHealth": True, "bootID": "new-boot"}, store)
+                "clusterHealth": True, "bootID": "new-boot",
+                "pathProbe": self.probe_record(stage, node, sha)}, store)
             with tempfile.TemporaryDirectory() as complete_directory:
                 store.restore(stage, Path(complete_directory))
                 complete = self.module.read_node_receipt(Path(complete_directory), stage, node)
@@ -644,7 +875,8 @@ class PlatformMaintenance(unittest.TestCase):
                                                "1.11.3", "1.11.6", sha)
                 self.module.complete_node_receipt(path, stage, completed_node, sha, {
                     "observedVersion": "1.11.6", "ready": True,
-                    "clusterHealth": True, "bootID": "boot"})
+                    "clusterHealth": True, "bootID": "boot",
+                    "pathProbe": self.probe_record(stage, completed_node, sha)})
                 if mismatch in ("from", "later-node", "pinSha256"):
                     receipt = self.module.node_receipt_path(path, stage, completed_node)
                     record = json.loads(receipt.read_text())
@@ -752,6 +984,7 @@ class PlatformMaintenance(unittest.TestCase):
                              [self.config["expectedStart"]["nodes"][node]["address"]
                               for node in self.config["nodeOrder"]])
             self.assertEqual(len(receipt["nodes"]), 4)
+            self.assertEqual(self.module.inter_node_path_probe.call_count, 9)
             self.assertEqual(events, [event for node in self.config["nodeOrder"]
                                       for event in ((node, "started"), (node, "upgrade"),
                                                     (node, "verified"))] + [(None, "verified")])
@@ -763,6 +996,27 @@ class PlatformMaintenance(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.module.verify_stage_receipt(self.config, stage, receipt,
                                                  Path(directory))
+
+    def test_talos_probe_failure_blocks_first_node_receipt_and_upgrade(self):
+        sha, stage = "a" * 40, "talos-1.11.6"
+        state = {node: {"talos": "1.11.3", "kubelet": "v1.34.11", "ready": True,
+                        "bootID": f"boot-{node}"} for node in self.config["nodeOrder"]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            self.write_publication(path, sha)
+            with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main",
+                                         "GITHUB_SHA": sha}), \
+                    patch.object(self.module, "read_only_inspection", return_value={"nodes": state}), \
+                    patch.object(self.module, "cluster_health"), \
+                    patch.object(self.module, "inter_node_path_probe",
+                                 side_effect=ValueError("functional path failed")), \
+                    patch.object(self.module.subprocess, "run",
+                                 side_effect=AssertionError("upgrade must not run")):
+                with self.assertRaisesRegex(ValueError, "functional path failed"):
+                    self.module.execute_talos_stage(
+                        self.config, stage, sha, Path("/private/talosconfig"), path)
+            self.assertFalse((path / f"{stage}--zimaboard-0.json").exists())
+            self.assertFalse((path / f"{stage}.json").exists())
 
     def test_talos_stage_resumes_verified_nodes_after_main_advances(self):
         old_sha, new_sha, stage = "a" * 40, "b" * 40, "talos-1.11.6"
@@ -787,7 +1041,8 @@ class PlatformMaintenance(unittest.TestCase):
             self.module.start_node_receipt(path, stage, first, "1.11.3", "1.11.6", old_sha)
             self.module.complete_node_receipt(path, stage, first, old_sha, {
                 "observedVersion": "1.11.6", "ready": True,
-                "clusterHealth": True, "bootID": "upgraded-first"})
+                "clusterHealth": True, "bootID": "upgraded-first",
+                "pathProbe": self.probe_record(stage, first, old_sha)})
             with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main",
                                          "GITHUB_SHA": new_sha}), \
                     patch.object(self.module, "read_only_inspection",
@@ -868,6 +1123,28 @@ class PlatformMaintenance(unittest.TestCase):
             self.assertTrue(receipt["verified"])
             self.module.verify_stage_receipt(self.config, stage, receipt, path)
             self.assertEqual(len(receipt["nodes"]), 4)
+            self.assertEqual(self.module.inter_node_path_probe.call_count, 6)
+
+    def test_kubernetes_probe_failure_blocks_upgrade_start(self):
+        sha, stage = "a" * 40, "kubernetes-1.35.9"
+        state = {node: {"talos": "1.14.4", "kubelet": "v1.34.11", "ready": True,
+                        "bootID": "boot"} for node in self.config["nodeOrder"]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            self.write_publication(path, sha)
+            with patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main",
+                                         "GITHUB_SHA": sha}), \
+                    patch.object(self.module, "read_only_inspection", return_value={"nodes": state}), \
+                    patch.object(self.module, "kubernetes_server_version", return_value="1.34.11"), \
+                    patch.object(self.module, "cluster_health"), \
+                    patch.object(self.module, "inter_node_path_probe",
+                                 side_effect=ValueError("functional path failed")), \
+                    patch.object(self.module.subprocess, "run",
+                                 side_effect=AssertionError("upgrade must not run")):
+                with self.assertRaisesRegex(ValueError, "functional path failed"):
+                    self.module.execute_kubernetes_stage(
+                        self.config, stage, sha, Path("/private/talosconfig"), path)
+            self.assertFalse((path / f"{stage}.json").exists())
 
     def test_kubernetes_interruption_cannot_reinvoke_upgrade(self):
         sha, stage = "a" * 40, "kubernetes-1.35.9"
