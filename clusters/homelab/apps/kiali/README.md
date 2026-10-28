@@ -96,6 +96,13 @@ Kubernetes restarts it. Inspect `wait-for-prometheus` logs if initialization
 stalls. A failure between the readiness check and server startup is still
 possible; the live check below detects that case.
 
+The Kiali CR pins the server image by digest. The operator expects a bare hash
+in `deployment.image_version` and `sha256` in `deployment.image_digest`; it
+builds the image reference and uses the version value in Kubernetes labels.
+Including `@sha256:` in `image_version` makes the ServiceAccount label invalid
+and stops reconciliation before a server Deployment exists. The static gate
+checks the CR fields against the existing Harbor mirror catalog entry.
+
 ## Validation
 
 After Argo CD syncs the application:
@@ -125,7 +132,9 @@ that path has its own authentication policy.
 For telemetry rollback, revert the Kiali values and Prometheus monitor changes
 in git and let Argo CD reconcile both apps. Historical metrics remain until
 normal retention expires. A green Argo CD status alone does not prove traffic
-visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.
+visibility: `scripts/kiali-check.py` requires Kiali metrics enabled and graph
+edges from recent real mesh traffic. The direct Kubernetes API server proxy
+to Prometheus currently resets, while Kiali's allowed in-mesh query works.
 
 ## Controller capacity
 

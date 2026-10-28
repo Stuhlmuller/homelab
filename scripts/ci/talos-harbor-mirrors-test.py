@@ -687,6 +687,27 @@ class RolloutTest(unittest.TestCase):
 
 
 class RegistryPrepullTest(unittest.TestCase):
+    def test_active_harbor_pre_pull_requires_nine_verified_targets(self):
+        aliases = set()
+        pulls = []
+
+        def run(*command, binary=False):
+            if command[-2:] == ("image", "list"):
+                return "NODE IMAGE DIGEST SIZE CREATED\n" + "\n".join(
+                    f"acer {alias} sha256:abc 1MB now" for alias in aliases)
+            if command[-2] == "pull":
+                pulls.append(command[-1])
+                aliases.add(command[-1])
+                return ""
+            raise AssertionError(command)
+
+        with patch.object(rollout, "run", run), patch.object(rollout, "verify_main") as verify:
+            rollout.prepull_active_harbor_runtime("10.1.0.199", True, SHA, Path("/private/talosconfig"))
+            verify.assert_called_once_with(SHA)
+        self.assertEqual(len(pulls), 9)
+        self.assertTrue(all(image.startswith("harbor.stinkyboi.com/mirror/") and
+                            "@sha256:" in image for image in pulls))
+
     def test_pre_pull_rejects_changed_image_scope_before_talos_access(self):
         with tempfile.TemporaryDirectory() as temporary:
             catalog = Path(temporary) / "scripts/config/harbor-runtime-images.json"

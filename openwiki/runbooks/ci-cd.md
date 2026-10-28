@@ -38,8 +38,6 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
-  - id: openwiki-source-d2d8ff2161af78b658d004f0
-    resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -72,12 +70,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
-  - id: openwiki-source-97ce7e27aba2d6e5fa8a5c6f
-    resource: repo://scripts/ci/openclaw-enterprise-full-sync-test.py
   - id: openwiki-source-8483d28614308625b1073872
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
-  - id: openwiki-source-856035e595a8b9b128dcb0a8
-    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
@@ -92,8 +86,6 @@ sources:
     resource: repo://scripts/ci/terragrunt-plan-stage-test.py
   - id: openwiki-source-60b00db0363e7f9e27d7fa7f
     resource: repo://scripts/ci/terragrunt-plan.sh
-  - id: openwiki-source-d2206c7f78c1ec59c3551c13
-    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-79ade26d1f528d349dc08fed
@@ -107,7 +99,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # CI/CD

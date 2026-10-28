@@ -363,7 +363,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Validation Gates
@@ -1009,12 +1009,14 @@ live replacement; fixture success alone is not production recovery.
 
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
-`scripts/ci/n8n-ai-migration-check.py` runs the rendered n8n init shell with
-synthetic exports. It checks the three exact target nodes, unchanged inactive
-state, idempotence, continued startup for absent workflows, validated removal
-of a target node or changed model settings, and startup failure for a failed ID
-listing, failed export of a present workflow, malformed JSON or node shape,
-duplicate target node, or write error.
+`scripts/ci/n8n-ai-migration-check.py` runs the staged n8n migration Job shell
+with synthetic exports and checks that the active Deployment has no migration
+init container or Job. It checks the three exact target nodes, unchanged
+inactive state, idempotence, no credential write for absent or already migrated
+workflows, preservation of a blank existing credential, and refusal on credential
+inspection errors, mismatched metadata or nonblank stored data. Failed ID
+listing, workflow export, malformed JSON or node shape, duplicate target node,
+or write error fails the Job without blocking app startup.
 It does not prove deployment or live workflow execution.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
@@ -1549,9 +1551,10 @@ terragrunt stack run plan
 
 The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
-then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
-details and live command output are withheld from the public PR and Actions
-logs. Run the same order locally when reproducing a failure.
+then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. The
+human-readable plan streams to the Actions log. Saved plan files and
+JSON policy inputs remain temporary and are removed on exit. Run the same
+order locally when reproducing a failure.
 
 The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
 stack or shared root sources, or plan inputs, change. Missing client and tenant
@@ -1799,6 +1802,17 @@ passed exact-main and prior-job provenance, verified the cached archive and
 receipt, and prepared a separate private NAS scratch recovery tree and link
 report. This source-bound copy does not prove an isolated old-image boot or
 complete T014.
+
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+pins the legacy image and npm package integrity, then checks a fresh pinned-CLI
+install and runtime inspection from a restored npm cache under Docker
+`--network none`. The
+[fixture](../../scripts/ci/openclaw-discord-offline-cache-test.py)
+checks integrity and dependency-lock comparison; the
+[PR workflow](../../.github/workflows/openclaw-discord-offline-cache.yml)
+runs the proof and discards the artifacts. This validates public-package
+installation feasibility only. It does not publish a private cache, verify a
+transfer to the recovery host, or boot the retained state, so T014 stays open.
 
 T014 compatible legacy recovery remains open: nine NAS symlinks leave the
 archived roots. Six `/app` links resolve to five nonempty directories in the
