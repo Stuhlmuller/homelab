@@ -47,10 +47,21 @@ sources:
 generated: { by: "codex", at: "2026-10-23T18:25:34.713Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # AWS SSM Secret References
+
+## Bulldozer GitHub App
+
+The [Bulldozer contract](../../clusters/homelab/apps/bulldozer/README.md)
+declares the `/homelab/bulldozer/github-app/` SSM SecureStrings for
+`integration-id`, `webhook-secret`, and `private-key`. Terragrunt generates the webhook secret;
+the protected `bulldozer-credential.yml` workflow writes the App ID and private
+key from homelab Actions environment secrets after the placeholders exist.
+`bulldozer-config` projects them into files with `refreshPolicy: OnChange`.
+Keep the Deployment at zero replicas until credentials, Funnel routing, and
+the GitHub App webhook are ready; then activate it through reviewed GitOps.
 
 Canonical runbook: [`docs/secrets-aws-ssm.md`](../../docs/secrets-aws-ssm.md)
 

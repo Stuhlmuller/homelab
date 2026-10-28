@@ -63,7 +63,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Runtime Isolation
@@ -108,20 +108,6 @@ EndpointSlices, and Pod labels, then prove allowed paths, Service translation,
 ambient HBONE, kubelet probes, and denied peers before activation.
 
 ## Egress enforcement prerequisite
-
-The staged `platform-istio-egress` Application defines a waypoint and the
-first caller-specific external destination, LiteLLM to OpenRouter on TLS 443.
-Its auto-sync stays disabled. The live cluster lacks Gateway API CRDs. Global
-ambient DNS capture is disabled; LiteLLM has a per-Pod opt-in that requires
-rollout and acceptance. After the CRDs and DNS capture are verified, a
-separate GitOps change can enable waypoint sync; then its traffic canary must
-pass before adding callers. The waypoint's
-service-account policy handles meshed TCP; kube-router remains the hard
-network boundary for direct bypass, UDP, and non-ambient workloads. See
-[`istio-egress/README.md`](../../clusters/homelab/platform/istio-egress/README.md).
-The live Flannel DaemonSet uses `--ip-masq`; external Pod traffic normally
-shares each node's source address at the router. Router source-address rules
-alone therefore cannot prove traffic used the waypoint.
 
 The 2026-10-12 read-only audit found all Flannel and ztunnel instances Ready,
 but readiness does not add egress enforcement. Gateway API CRDs and a

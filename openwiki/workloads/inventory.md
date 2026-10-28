@@ -221,7 +221,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Workload Inventory
@@ -255,10 +255,17 @@ later passed protected `all` publication and authenticated Harbor pulls in
 The staged migration foundation adds private Traefik ingress and the Tailscale
 operator API proxy while retaining existing Octelium/Cloudflare routes until
 live cutover passes. The new route inventory keeps Fleet mesh-only, exposes only
-n8n and Policy Bot callbacks through Funnel, and retains Octelium for Cordium
-and control services. Existing per-app access notes below describe the retained
+n8n, Policy Bot, and staged Bulldozer callbacks through Funnel, and retains
+Octelium for Cordium and control services. Existing per-app access notes below describe the retained
 source path; they are not proof that cutover has happened. See
 [the staged ingress runbook](../runbooks/tailnet-ingress.md).
+
+Bulldozer is registered from `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl`
+into `automation` using `clusters/homelab/apps/bulldozer`. Its Deployment starts
+at zero replicas while the dedicated GitHub App credentials and generated
+webhook secret are delivered. It has no persistent volume. See the
+[workload runbook](../../clusters/homelab/apps/bulldozer/README.md) for activation
+and all-repository merge behavior.
 
 ## Platform And Support Applications
 
@@ -568,12 +575,10 @@ policy canary would disrupt service and still lacks peak proof. No existing
 node has an admitted Enterprise placement or isolated tainted canary.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
-`platform-gateway-api-crds`, `platform-envoy-gateway`, and
-`platform-istio-egress` Argo Applications. Automatic sync is disabled;
+`platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
 kube-router selects no node and the canary fixtures deploy nothing until
-placement, publication, policy review, and live qualification pass. The
-shared CRD Application precedes the Envoy controller and Istio waypoint;
-no private route is
+placement, publication, policy review, and live qualification pass. Envoy's
+shared CRD source is ordered before the controller but no private route is
 accepted yet. The network-policy cleanup Application stays unsynced until the
 reviewed fixture and enforcer removal commits reach current `main`. A live
 fixture namespace or lingering fixture workload blocks ownership capture,
@@ -614,11 +619,6 @@ Argo pruned it in a separate revision before this writer restart. The separate 1
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
-
-The draft protected [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
-is a manual, one-shot safety copy for a later database move. It verifies an
-exact versioned dump through an isolated restore, but no live receipt exists;
-ClickHouse, Valkey, raw objects, and secrets still need separate recovery.
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening

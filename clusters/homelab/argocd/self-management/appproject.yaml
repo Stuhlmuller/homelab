@@ -17,6 +17,7 @@ spec:
     - https://charts.crossplane.io/stable
     - https://grafana-community.github.io/helm-charts
     - https://helm.goharbor.io
+    - https://blob.istio.io/istio-release/charts
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler

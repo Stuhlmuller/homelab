@@ -1242,6 +1242,7 @@ def _assert_active_revision(item, config, state):
              item.get("namespaceId") == state["namespaceId"] and
              item.get("agentId") == state["agentId"] and
              item.get("configurationId") == state["configurationId"] and
+             type(item.get("configurationGeneration")) is int and
              item.get("configurationGeneration") == state["configurationGeneration"] and
              item.get("configurationKind") == "agent" and
              item.get("backendId") is None and
@@ -1344,6 +1345,8 @@ def _read_registered(config, api, kube, state):
              state.get("configurationGeneration") is not None,
              "Enterprise inactive tenant must be reconciled first")
     kube.tenant_prepared(namespace_id, require_claimed=True)
+    discover_exact(api.get("/namespaces"), config["namespace"]["logicalName"], namespace_id,
+                   {"existingNamespace": config["namespace"]["existingNamespace"]})
     namespace = api.get("/namespaces/" + namespace_id)
     _require(isinstance(namespace, dict) and namespace.get("id") == namespace_id and
              namespace.get("name") == config["namespace"]["logicalName"] and
@@ -2072,7 +2075,7 @@ def recover_revision(revisions, baseline_ids, agent_id, configuration_id, genera
 def should_deploy(agent, revision, deployment, configuration_id, generation):
     """Decide from one completed active revision; unknown outcomes never retry."""
     if (not isinstance(agent, dict) or not isinstance(revision, dict) or
-            not isinstance(deployment, dict) or not isinstance(generation, int) or
+            not isinstance(deployment, dict) or type(generation) is not int or
             generation < 1):
         raise Blocked("deployment evidence is incomplete")
     if (agent.get("status") != "active" or agent.get("desiredRuntimeState") != "running" or
@@ -2091,7 +2094,8 @@ def should_deploy(agent, revision, deployment, configuration_id, generation):
     if deployment.get("status") != "succeeded":
         raise Blocked("deployment state is unknown")
     active_generation = revision.get("configurationGeneration")
-    if not isinstance(active_generation, int) or active_generation < 1 or generation < active_generation:
+    if (type(active_generation) is not int or active_generation < 1 or
+            generation < active_generation):
         raise Blocked("active Configuration generation is invalid")
     return generation > active_generation
 

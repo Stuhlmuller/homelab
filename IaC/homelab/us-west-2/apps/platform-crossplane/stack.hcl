@@ -22,6 +22,12 @@ inputs = {
             { name = "replicas", value = "0" },
             { name = "rbacManager.replicas", value = "0" },
           ]
+          valuesObject = {
+            image = {
+              repository = "harbor.stinkyboi.com/mirror/xpkg.crossplane.io/crossplane/crossplane"
+              tag        = "v2.3.3@sha256:f1c88a98f113a5cb78d75c7e94e2a7fefdf86ffb3353c63f01697dc5ad855b19"
+            }
+          }
         }
       }
     ]

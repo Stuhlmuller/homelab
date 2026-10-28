@@ -1,6 +1,6 @@
 image:
-  repository: ghcr.io/berriai/litellm-database
-  tag: main-v1.80.8-stable@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8
+  repository: harbor.stinkyboi.com/mirror/ghcr.io/berriai/litellm-database
+  tag: 2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8
 environmentSecrets:
   - litellm-provider-keys
 command:

@@ -22,7 +22,7 @@
     {
       "chart": "base",
       "version": "1.27.3",
-      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "repository": "https://blob.istio.io/istio-release/charts",
       "sha256": "4b3069a8f68224a385725fb9c64b47282ff62eefdd306229258000f6f04fceb6"
     },
     {
@@ -34,7 +34,7 @@
     {
       "chart": "cni",
       "version": "1.27.3",
-      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "repository": "https://blob.istio.io/istio-release/charts",
       "sha256": "fa60f8b5e80ee72c48ea72f2a0b63f9ed1b82fdffc57d1c59241bbbcba2b9f0a"
     },
     {
@@ -64,7 +64,7 @@
     {
       "chart": "gateway",
       "version": "1.27.3",
-      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "repository": "https://blob.istio.io/istio-release/charts",
       "sha256": "3f015a461362227ad8e70955129a0f4389d6dc545977b9088b15aa44d2bad78b"
     },
     {
@@ -94,7 +94,7 @@
     {
       "chart": "istiod",
       "version": "1.27.3",
-      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "repository": "https://blob.istio.io/istio-release/charts",
       "sha256": "560adf601edaf0682a8126a6c54eafc2636878bf452a113d83f50b78230a1174"
     },
     {
@@ -170,7 +170,7 @@
     {
       "chart": "ztunnel",
       "version": "1.27.3",
-      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "repository": "https://blob.istio.io/istio-release/charts",
       "sha256": "6573f2645e87d5161ea5bc143c3ff9782dd392fd74b5f5e39326a05d81f174d1"
     }
   ]

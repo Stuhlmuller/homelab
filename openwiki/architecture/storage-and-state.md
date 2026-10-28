@@ -65,7 +65,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Storage And State
@@ -341,6 +341,14 @@ success marker, cached archive and receipt hashes, restored database report,
 source identity and zero production writers, and prepared a separate private
 NAS scratch recovery tree. This is a partial T014 copy receipt, not an old-image
 boot or compatible recovery proof.
+The [cache builder](../../scripts/openclaw-discord-offline-cache.py)
+produces a public npm content-cache tar, dependency lock, and digest manifest
+without legacy state or credentials. Its
+[CI proof](../../.github/workflows/openclaw-discord-offline-cache.yml)
+deletes those artifacts after a fresh `--network none` install and runtime
+inspection. A later recovery operation still needs reviewed private publication,
+digest-checked transfer, and a compatible boot from separate writable copies
+behind an enforced offline boundary; this cache proof does not accept T014.
 The legacy archive retains NAS symlink targets but not data outside its roots.
 Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
@@ -433,13 +441,6 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
-The draft protected, manual [PostgreSQL checkpoint workflow](
-../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
-would capture the single Ready database, retain a versioned KMS-encrypted dump,
-download that exact version, verify its digest, and restore it offline in a
-network-isolated PostgreSQL container. No live checkpoint receipt exists yet.
-It covers PostgreSQL only; ClickHouse, Valkey, raw objects, application secrets,
-and a coordinated full restore remain outside this check.
 The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
 and permanently detaches them without deleting their files. Repeated merge
 failures caused shared-NAS metadata pressure; application tables remain attached.

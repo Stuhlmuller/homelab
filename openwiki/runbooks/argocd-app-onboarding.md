@@ -62,11 +62,10 @@ The OpenClaw Enterprise prerequisites use dormant platform registrations.
 `platform-network-policy` has no selected node; its canary and cleanup
 Applications also have automatic sync and prune disabled. Their workflow must
 first admit a measured tainted node, publish fixture images, qualify policy
-traffic and prove ownership-limited cleanup. `platform-gateway-api-crds` is
-the sole shared CRD owner; it stays unsynced until its safe-upgrade admission
-policy and CRDs are reviewed. `platform-envoy-gateway` stays unsynced until
-those CRDs, mirrored images and private route are qualified. The CRD
-Application must become ready before the controller Application. Registration alone neither
+traffic and prove ownership-limited cleanup. `platform-envoy-gateway` likewise
+stays unsynced until the shared Gateway/Envoy CRDs, mirrored images and private
+route are qualified. The CRD Helm source is the single shared CRD owner and
+must become ready before its controller source. Registration alone neither
 enforces policies nor serves an Enterprise route.
 
 The Enterprise AppProject is included in Argo CD self-management and can

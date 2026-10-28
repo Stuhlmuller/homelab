@@ -99,6 +99,8 @@ def declared_images(value):
                 image += ":" + str(value["tag"])
             if value.get("digest"):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
+            elif value.get("sha"):
+                image = image.split("@", 1)[0] + "@sha256:" + str(value["sha"]).removeprefix("sha256:")
             images.add(image)
         for key, child in value.items():
             if key in {"name", "newName", "repository", "destination"} and isinstance(child, str):
@@ -185,7 +187,7 @@ def chart_sources():
         match = re.search(r'\{\s*repoURL\s*=\s*"([^"]+)"\s*path\s*=\s*"([^"]+)"\s*'
                           r'targetRevision\s*=\s*"([^"]+)"\s*helm\s*=', enterprise.read_text())
         if not match:
-            raise SystemExit("IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl: Git Helm chart source must keep literal fields")
+            raise SystemExit(f"{enterprise.relative_to(ROOT)}: Git Helm chart source must keep literal fields")
         repository, path, revision = match.groups()
         charts.append({"source": str(enterprise.relative_to(ROOT)), "repoURL": repository,
                        "chart": "git:" + path, "targetRevision": revision})
