@@ -140,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
+generated: { by: "codex", at: "2026-10-28T02:28:18.554Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-28T02:28:18.554Z
 ---
 
 # Secrets And Identity
@@ -234,10 +234,10 @@ Apply retains cluster administration for existing bootstrap and RBAC ownership;
 Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
 until authenticated plan/apply and denial checks succeed over the new proxy.
 
-Phase 2a removes the old public DNS writer and restoration workflow while
+Phase 2a removed the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
 recovery. The separate tailnet resolver watches approved Kubernetes Services
-and needs no DNS write token. Only the later guarded retirement helper reads
+and needs no DNS write token. The separate guarded retirement helper reads
 the existing scoped cert-manager Cloudflare token. Feature 005 limits its
 public A/AAAA/CNAME deletion to the 26 non-apex names from the fixed migration
 set after owner tailnet DNS handoff and client acceptance. The private resolver
@@ -342,20 +342,27 @@ Secret has no installation ID. The source-only
 attests both Ready controller Pods and the returned `GET /installation` ID,
 then patches only the Secret annotation with UID/resource-version guards and
 readback. A fixed [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
-rechecks exact current `main` and pins the reviewed binder, but the hosted runner
-has no declared delivery for the owner-controlled 0600 bootstrap service-key file.
-No binding run or live readback has occurred; activation remains blocked.
-SSM-backed model, database, auth, and gateway credentials remain separate from
-these startup bytes.
+rechecks exact current `main` and pins the reviewed binder. The bootstrap
+service key is expected on the retained claim as a UID-1000-owned `0600`
+file; live presence and ownership are unproved. No declared path delivers
+it to the hosted runner. Binding has not run. A reviewed in-cluster reader
+must use UID 1000 and the exact bootstrap PVC/PV, withhold private output,
+and recheck protected current `main` immediately before the final Secret
+annotation patch. The committed disabled operator and unenforced policy
+block that reader now. No live binding or readback exists; activation remains
+blocked. SSM-backed model, database, auth, and gateway credentials remain
+separate from these startup bytes.
 
 The staged [journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 has a dedicated ServiceAccount with automatic token mounting disabled. Its
 one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
 read-only RBAC can GET only the exact reviewed Installation Secret and selected
 workload proofs. Reconcile and stop require the chart's bootstrap service key
-as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
-is not registered in Argo CD, that file ownership is unproved, and the operator
-gate remains disabled; these permissions are source intent, not live access.
+as a UID-1000-owned `0600` file on the retained bootstrap claim. The image's
+UID 10001 is overridden to 1000 by a future Job; the committed declaration
+keeps UID 10001 as a disabled-state guard. The bundle is not registered in
+Argo CD, file ownership is unproved, and the operator gate remains disabled.
+These permissions are source intent, not live access.
 
 ## Identity Notes
 
@@ -752,7 +759,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
 - Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
-  contract. OpenTofu generates five internal values; the model key stays a
+  contract. OpenTofu generates six internal values; the model key stays a
   placeholder until the owner supplies a distinct OpenRouter inference key to
   the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
   It verifies the key and writes only the new SSM path. The selected

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:09a916bb357bab02f48e0b876c3c29e4a8aabe27e8e94b9c76dae3e896ad32ad",
+  "pageVersion": "sha256:05e8de0acbbee251a480df15375788dc009403c2e68271d9c9c522897a1b2780",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -48,15 +48,15 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
+          "version": "repo-file-v1:sha256:9affbbac52377b534379b2f401c49905ae49a863770dda10c0e5b3181035b476"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:0a277a4679653e6bf472506e7da1991fb51b9d15db6d9c7f9f6adabc73d774ea"
+          "version": "repo-file-v1:sha256:6aae075c9340be705e461a40cc5d55e426eb76b00f3e8ef6963e906faba80f2d"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
-          "version": "repo-file-v1:sha256:25326218281f5062e0e29eb65f1426a24684a7c5d56e040d8434746d96a8b17a"
+          "version": "repo-file-v1:sha256:12093cf7b4128b288f0c64610d36e1e556ad6a3ace9e3277df7805e3b3b18ff1"
         }
       ]
     },
@@ -73,12 +73,16 @@
           "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
         },
         {
-          "resource": "repo://IaC/mastodon/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl",
           "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
         },
         {
+          "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:5bd4b24e7c2a1dc947c9b4b82356c63db0cf091b570f9dce8f55cc94ea1bc7e0"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:bb743191af5d81a378430caea6d4c72cf0cc248acc55ae1806afbf48f87c3be2"
+          "version": "repo-file-v1:sha256:3f06bb80d49c772e159ce17033555ebef98aa0fbf26ff3011719ef200ecf72f5"
         }
       ]
     },
@@ -119,7 +123,7 @@
       "statement": "The source map links the separate tailnet DNS resolver, its Terragrunt stack, direct DNS checker, and guarded public address retirement helper to their operational wiki pages.",
       "evidence": [
         {
-          "resource": "repo://IaC/tailnet-dns/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl",
           "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
         },
         {
@@ -142,15 +146,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:90d39e15b03bc8f5b7c3bdc3f2706305d8ff033f9b4cd044aac74b2d0ee661c4"
+          "version": "repo-file-v1:sha256:6b32bd552c6f6a71ce649fc7ca56ec2f68a66e1a9de62ae3cd72947eba872aa1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
-          "version": "repo-file-v1:sha256:3301427456e8b89e110f93f62ed440b3f848de64624c6d0d764de9d95c2a96c1"
+          "version": "repo-file-v1:sha256:2030cd2c47c73019487dd65a826bc18f7a25c014372e6d22f93f87f9e595ebaa"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-recovery-test.py",
-          "version": "repo-file-v1:sha256:95baa44ed471d8efc23d3d652cc8c78d320cf6874fc3982514ce8acbc201ced9"
+          "version": "repo-file-v1:sha256:629395257abca59c372e435d7bac3fd122a14efcecb1a7b92a17c98107809800"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -162,7 +166,7 @@
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py",
-          "version": "repo-file-v1:sha256:9424e8212a161d0c5649fdb1e6b39f54cad3d8848b2d4d652beeee2afbc98ec7"
+          "version": "repo-file-v1:sha256:e80390a0f6dc5330cc67a406994af4f50e83b3df5597dca46f8fc002c65f58e8"
         }
       ]
     },
@@ -172,11 +176,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+          "version": "repo-file-v1:sha256:5c08f09a8498a34621a6abaff6e4da3066f91d4e149a20d1f4715fd43882e7bf"
         },
         {
           "resource": "repo://docs/examples/octelium/homelab-services.yaml",
-          "version": "repo-file-v1:sha256:8f3be49a0fdd06715a8c37b65b3b06f534580f403cbde305a65b9c97ef0e8d05"
+          "version": "repo-file-v1:sha256:ae866f2bb5498937d5732111d647a1e6ad3967e8a4bd5120522baa32f7cc1ed3"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-access-test.py",
@@ -198,7 +202,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
-          "version": "repo-file-v1:sha256:e8bc3a7ce13355d37351296f7830bdbf8e4b689978df9630cfc1c8823599c65e"
+          "version": "repo-file-v1:sha256:6ab7376353fad6debdb7c743e5f8206bcd4bc3abeb33b3f7d319418baef76940"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
@@ -212,7 +216,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-full-sync-test.py",
@@ -224,11 +228,11 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py",
-          "version": "repo-file-v1:sha256:6bdd356907a800d9ee5c0a4b9de040aca8b513931be7acbd9f8dfe397c5560b4"
+          "version": "repo-file-v1:sha256:a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations-test.py",
-          "version": "repo-file-v1:sha256:d31eedff5fe90b4438c87396ac22bdb59a224dba6160afdc56bccf567986f022"
+          "version": "repo-file-v1:sha256:e9974dffe2bb7408a416f26c80d39bb442a72091b5bc2a1222c18ac9672009c4"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh",
@@ -246,11 +250,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:f639d3a65c1061bba1684ea9997a9526afcea244458d8e50289294214ec0ec07"
+          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -272,11 +276,11 @@
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
-          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+          "version": "repo-file-v1:sha256:cf444c3fba8f1c4a64e598cb16f68d62eb3da36b8847d2e57ba03558d9a6fc40"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -289,16 +293,16 @@
       "statement": "The root Terragrunt stack declares separate auto-sync-disabled Enterprise foundation and chart Applications, and a focused registration fixture checks their rendered source and project boundaries.",
       "evidence": [
         {
-          "resource": "repo://IaC/openclaw-enterprise-foundation/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl",
           "version": "repo-file-v1:sha256:4458cb40b7b966a9ef35fd93ee525a2f03136025ca5119c26edf65813969fb46"
         },
         {
-          "resource": "repo://IaC/openclaw-enterprise/stack.hcl",
+          "resource": "repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
           "version": "repo-file-v1:sha256:a053314d7cea4f01f86316b97d3e01703992b2adf0e82d0a8c3aaaa5687b7de1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-registration-test.py",
-          "version": "repo-file-v1:sha256:9bbb0c6b8ccb48a27ded3657d09bb64fe546694e815df0e3d689d2440b2355d7"
+          "version": "repo-file-v1:sha256:7a6e901b38a4cf2a82e305a8fceac6b76ccf2f3b446967deee77351f7c0720bc"
         }
       ]
     },
@@ -307,20 +311,20 @@
       "statement": "The unregistered Enterprise operator directory owns the retained journal claim and local class, scoped proof RBAC and private Job network intent, while the dispatcher owns exact source and claim identity checks; actual PV placement and activation remain pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L1-L53",
-          "version": "repo-lines-v1:sha256:df48c9814c36d7d48a552aab7ea26b9a5fa487ae5cabef2364eba07a5b5f8eab:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyZjg3Mzk4YTA4MjNkMmVhNzEwZDZlZmQ1Yjk4NDVjYjAwYjQ2NmVlMjc1ZDgzMzM2MzE5MzkxMzcwYTQ3MWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmZjgwNTBhMDY0OTdhYTRhYWI0YzcyY2ExODk1YzAzOTlhODQyMTVjNGI5YzJiNTA1Y2MzMjMxYjg2OTNjY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjM2QxOTQxOTNiODUwZDU0MjM4OTUyNzM1NjJmM2UwOWIwODA5ZmJiOGZlNjJkOTlkNjg2N2MxM2ExMDA5NDAifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:a3e3bf71df5df27bf59ff7ef84c42923641d99a0e454340f603fc7f28eaa7f62"
         },
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
-          "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml",
+          "version": "repo-file-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/rbac.yaml",
           "version": "repo-file-v1:sha256:689536c34469f4160f3513dad5445ffa65c57113a03501f03aa4e9ab48cf3303"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L55-L200",
-          "version": "repo-lines-v1:sha256:db2262f8e869c112acfb09cf22a0369ace21c28cfb68a4445b0ca936fd3014c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NjY3ZTMwM2Q1OWFiYmQ0ZTYxNDJlMDkwNzYzZTNjOTEzMGIxMDk4NzllMGFmNGMzOGY1Yjg2M2ZlNzI3ZWQ0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmZWVmOTliYjg5NTU0NTE0ZTMyMTU3MTk0NzY3YzMyYTM1YWMxNjRhODQwMDY4OGU2MmRlMDI4NzFhNDA3Y2JiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI3OGMzYTQxYjM0NWQxNGZkOTljNzJiNzA5YThmODg0NjA2ODhmMjBiMjQ2NGM1MjUyNWFkOWQ4M2JkYTI5NDg5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlNTNkODI4MmNjM2M5N2E5YzQyZjBlZGM3OTVmMDFlNjlmNjIzYjQwYjMxZDQzN2RlYWUzMDZiNjU5ZjUxMDAyIn0"
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py",
+          "version": "repo-file-v1:sha256:a88d78253ddde75057b0aa915e5d29f956fe35330384eee9888bf900eea52b73"
         }
       ]
     },
@@ -338,7 +342,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
@@ -356,15 +360,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:1a9b7beaa11f2e3248ab895d14b724a5ad67316679b2f707208c37e873a02a85"
+          "version": "repo-file-v1:sha256:2190d56afdd2fa0c962626d796c8302cfd4721f5959e4a5e9750602dfd673036"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:55e117d22808091fcd8a99f8a0554706aa5f68289cf680c60507279dc290ac08"
+          "version": "repo-file-v1:sha256:18bb8ebe8e391f9bff3c3b9c79f8f6543e4e6e6b5ffde3a027c73048602717f9"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:8df8b5957867e5a39f883025028764fd7897caab5341fe9cfe8d0e9fdc404571"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -375,6 +379,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T01:38:00.583Z"
+    "at": "2026-10-27T21:30:24.345Z"
   }
 }

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9a104361ab7f3535e2fb652f61e988c6e33db1d16e7c97f071eaa9534fc9befd",
+  "claims": [
+    {
+      "id": "claim_2ec5b03dfbbb4de8baab26b715939ec1",
+      "statement": "The canonical CI/CD runbook defines automatic required pull-request checks for Policy Bot, Lint, repository validation, CodeQL, release dry run and Terragrunt Gate.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md#L7-L10",
+          "version": "repo-lines-v1:sha256:fcd9dc4d8fea1f5fa46a081c7a4fd7dd8f87637e66fabfdc1f8881e0e820b654:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTg4NGQ5MDg1NTNlYjFiMGQzNTUwY2I3YzY0YTkxZjI2YWMwYmFmOWQ5NTk5OWZhNjAwNzRlNjY1NmY3NWNmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjdlZmZmZjA1MzIxMDgzM2EyYWRiN2VhMjIxOWY0MjEwMTI2OTJmODZmNGFhZGRjYmU2ODNjYTNkMmViNzBkMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGM3MzBhZWRhNGMxMGFkODAyYjU5NDA0NWUzNjJmYjU1MGM0NDA1NDUwOTBmNjQ2NDM3NDk3MDkyNGZiM2Y5NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTkyMmM3MzMyYzBjNjQ5NjIyMTQ1ZmE4YjkyZjJlYzk0MmI1MTgxMmNhMWE2ZGEzNTQyNjdhZDZlZTIyZTA5MSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

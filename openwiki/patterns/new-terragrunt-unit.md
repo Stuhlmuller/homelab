@@ -3,6 +3,12 @@ type: pattern
 title: "New Terragrunt Unit Pattern"
 description: "Explicit Terragrunt stack registration, shared templates, historical state paths, committed inputs, and unit validation."
 tags: ["pattern", "terragrunt", "opentofu"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-36a166a9ffdd52ec56a10478
+    resource: repo://IaC/homelab/us-west-2/apps/platform-storage/terragrunt.stack.hcl
 ---
 
 # New Terragrunt Unit Pattern

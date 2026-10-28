@@ -3,6 +3,12 @@ type: operation
 title: "QNAP Block Storage Candidate For Monitoring"
 description: "Unapplied QNAP iSCSI and CSI candidate for monitoring storage, capacity unknowns, provisioning gaps, and restore acceptance."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-170b12d7a5bf4ad3e405ed5a
+    resource: repo://clusters/homelab/apps/prometheus/values.yaml
 ---
 
 # QNAP Block Storage Candidate For Monitoring

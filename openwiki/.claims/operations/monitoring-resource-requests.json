@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:913425717e073ff1a4a80a65dfbd8db2bfb0ed5b4809312dc7b2d12c2ddec683",
+  "claims": [
+    {
+      "id": "claim_692039c9fd4f471395e100775ac14585",
+      "statement": "The repository disables the chart's KubeMemoryOvercommit rule and declares a replacement warning only when total requested memory exceeds total allocatable memory for ten minutes, accepting the separate largest-node-loss deficit.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/memory-prometheusrules.yaml#L11-L23",
+          "version": "repo-lines-v1:sha256:e116c7d81b1bdf13c60a9e49defc31a72db08fdba4b22757407ca6a3b9612f6a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjY2E5NTNjOWRjY2ViZDAzZDYwNmU1YWY5ZDcyMWY2NTU5YzhjNzZlZDlmN2EwOTk4NjhjOGM1ZjJlZmM2ZjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0YjVjZGNhMTJiZDgzNTBlNTk0MGI0ZTgxYWM0MzZjM2RiN2U4ZGE2YmJmYTA0ZTU1MzVlZTdmNmZiMTc3ZDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5ZTBmOGY0MGNlYTk2ZWQ2MDNiMWExMDJhZmY4NmM5YzgzOWU2YWYwOWMwMGM1MTAyOGI3YmQzNTliODI4ZjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjOWE4MzIzNzc2OGQ5NDNhODhhNmJjYTQ5YTcxOTc4M2ZjNGM3NzI1ZDA3YmQ3MjgyNWRjM2YzYmJhOWM1Y2EifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/values.yaml#L38-L50",
+          "version": "repo-lines-v1:sha256:d895d75aec3b7cae2920809778562154fe48407cfda7cf54b2cc23bc0fd5d3ba:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzNmZjN2M3YTVhNzJkNTIyNmRhNDQ3NTM3YTU2Mzg2ZjdiNzc5NmI2YmMxNWYyMDU5YWY5ZWU3NzYxNmE1ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1NDQ4Mjg2ZGVhMWJkMDMzYWIwMTQ2NjI5YTY1OTBlZWI3ODI2NzA2MTQ1ZGM2ZjgyODliMmEwYzkxMWY2ZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjZDE4NWIzYTlmMzE4NTA3NWZmNjU3NTJmNjE2ODE4Y2ZiMTZjNDE1MTYzOTJlNWQwNDEzYmI5OTYzMDFjYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmMTkyOGJmZWI5ZjUyY2UyMGNmNjA5Y2YyNzI4ZDc4YmI2Njg1NWZiNTg4MzE0ZWNmNWFiNjc1OTcxOTlhNmEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

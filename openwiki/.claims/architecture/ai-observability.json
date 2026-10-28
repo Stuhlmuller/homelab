@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:db193fd60bec24f41c1bec67709a3d7cbe0c5c8213b31671a5b8e0567b407311",
+  "pageVersion": "sha256:a2b32974459337f4dc06a06ec499e3f77036b9905daf02c66dd4160942d1be5f",
   "claims": [
     {
       "id": "claim_387c6dac73fc4932ade43a20ef912aef",
-      "statement": "Current OpenClaw bootstrap replaces provider/model maps, limits configured agents to the gateway model, disables OpenAI/Codex plugins and removes their active auth-profile references while preserving private credentials and original backups; the older additive retirement gap is historical.",
+      "statement": "The retained legacy OpenClaw bootstrap replaces provider/model maps, limits configured agents to the gateway model, disables OpenAI/Codex plugins and removes active subscription auth-profile references while preserving private credentials and original backups; its gateway is currently stopped by GitOps.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L3-L11",
+          "version": "repo-lines-v1:sha256:1ee315c903aeb08aa93a9330a0005d9a11f2b73f4749cfe420833829cc99ac4b:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGY1OGJlZWQ0NmNiZWI5NjgyYWNkNTZlYmJmZWZiYmMwNTViMzZkZTQ5YzdmMmFkOTEzMThkZGNmOTM4NDNmOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGM2NGUxZDY4MDBkNWI4NWU5MDljMmFkNjUzMWU5ZmVmNjQwMjI1NThmYzIxYjI1NzQwMjljMDNmYWI4NGViMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjIsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGU2MTc3ZjExOWRkM2E4ZmJhZWU4MDY5Y2JmNzQ1YjA1YWFlMjRkYzI4MzY2MDg3NTA1MzI2MGU4NmM0YmNmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2U4NWM2YmUxMmYyY2IxYzdiZDZlZTI4YjcyNmM4NDhkNzY3MTk5MDRhOTc5NmNjZDhkM2VkN2QyNzdmZGQyYSJ9"
+        },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py#L63-L83",
           "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
@@ -14,25 +18,29 @@
     },
     {
       "id": "claim_c82596890e4140afa7852ea739251ea2",
-      "statement": "The n8n init migration lists workflow IDs and skips only absent workflows, validated workflows with a removed target node, or targets with changed inventoried model/settings; only previously active matches are republished. ID listing or present-workflow export failures, invalid JSON or node shape, duplicate target nodes, and write errors stop startup.",
+      "statement": "The n8n Deployment no longer runs the AI workflow migration during startup. A guarded one-time Job is staged outside active Helm values; when activated, it skips absent or changed inventoried targets, fails on invalid export or import conditions, and republishes only workflows that were previously active.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L93-L178",
-          "version": "repo-lines-v1:sha256:4051a2794c7d25a8d7130cd4036f43ecc397289aede3b8a6499aaab2b692ee1d:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlN2U0YTg5NzY0ZDU0YjlhYWIzZDUwYTMwZTljZDNjZjI5ZTE2NmNkYjFmZWJmZTg4Y2RiODdjZjE5YzZjMDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2YzI2ZTdjNDEyMmFlZjA0OTA0ODVkZGM3Y2Q5ZWU1ZTA4OTU4MTRiNmU5NjcxNzA5NDk2ZjczMDUwZjFjN2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQyZWE2Mjc1NDZjYjczM2NmYWZkYTliMmVkZmE1ZGQyMDc3MDljZTIzMjdhZWVjZWM5MWI0MDQ0YWY1MjlkODcifQ"
+          "resource": "repo://clusters/homelab/apps/n8n/README.md#L43-L76",
+          "version": "repo-lines-v1:sha256:7b6356eb9dbae809111b8cb6c70209ac46d6a5e79bb1dd63e6ca1d2f3a23d32f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyNjM4ZjhkZDUwMDI2MGI2NDFmMzI3ZTQ0MmQ5Y2VlNzNlMmU5YTRlMGZhMWY3ZDAxMTM2Y2FlYWRiYjUzNWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZGRlODRmMzg0Nzg1NjEyNjE5MjM3MDM1YTExZGM3MzBmOTEwOTkxYmUzZDczZTM4ZThiMmM5YmZiNzQ1YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4NGZlZDEwYmI0NGJmMGM5YjQyYjUyODExNTQxNjI2YTg0ZmRkODdmNWY5ZjJlNTc0YzhlYjZiMzg5NzUxZDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiYTI5MDVhMmIwZmFjNmQyMWQ2OTc4MDdiNDA3ZDI1MWZiZjI4MjM2MmUyMWYzNzI3NDBkYjNmYmI3ODU0YWYifQ"
         },
         {
-          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L146-L192",
-          "version": "repo-lines-v1:sha256:0489ed59320a1e920f795c2de8e84b7970028d7c66ceb7368432220aee208bbb:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllODEzNDBiY2U4NjYyYTZhOTc2OTlkNmRmMmExY2Q1MzY0ZGIwMTRiNTZhYTZjODc2ZjY4NTZmODViZDliMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwNTEzY2JkOGE2Zjk4NjA2MjczOWIwMjVkM2YyOTRjNWJmYmViYTA1N2YyNjFjMDBmNDg2NTU3NjJkN2E0MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNWQ5OGFkOTA3NTRkZjI5ODk3MjM2M2Q5NzIzMjMwMzVkMzY4NDJmODZlNjdlNWQ2MTEyOWU2NzVlMWI0ZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNjBiMGFjYzA5YWRjYjU0NmFmZmQ4MmE2NGJkNTc4ZTQ4OThjOWI2YmNkZjI0MmUzZTZmMTRjMWY5MzlmMWMifQ"
+          "resource": "repo://clusters/homelab/apps/n8n/migration-v1.values.yaml#L1-L169",
+          "version": "repo-lines-v1:sha256:988a4f96f6f3ef7ea2e113fd38777147803e4a52aa2e43069195359c3ca69306:eyJzZWxlY3RlZExpbmVDb3VudCI6MTY5LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkZDQwZjMzZjI0NzI5MzNkYzM2NWZiY2RlY2Q3OTNkODVlM2MwZTRhZWUwMDc5MjA2YmE2MjAxM2UzZWNjOTkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwYmJmYTE0MDU2NjZlZWFmNzFiNTdiN2U4ZTdhNjU2MjBjZmY4YzI4ZmI2Njg1YmE4ZTA4YzJlNmVkMzRlNWI3IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0OWQ4NWZkZTU1MDZkMWE5ZmIyMzQ5MTViMmRmYTMyZWE3M2M5NjViOTFhODdkN2QyNTE0YzM0MDdmOTJmMzY1In0"
         },
         {
-          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L52-L94",
-          "version": "repo-lines-v1:sha256:de14422df70dac097c9e3244b845e03c1a521371014e87c6288923a9ff0858e5:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkZjAyOGU2MzAxNjVjYzViNmYxY2ViYzhlYTVhOGZhZThkN2M5NWVkMmNhOTkyMmY0M2IzOTlhMGY0YzFhZmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NDE3NTQ5ZmQxZDA3NDliZTEwZTg0NDI0ZWMxZjcxYjYyYThhN2Y4MzhmMDc4M2MyMjdmNTQ4OGU1NDQ0YzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM1OGU5YmM3MDU0MThhM2FlOGM1NTUzOGUxZWQwYjhhOTM0NDViM2FmZTQ2NGNhZjgzZTU5OGNlYjJiMGU4MjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkZDk2ODM1OTM5ODJkOGZhMjkwZjFkZDhhZjdiN2ZmMzMwODViNmFhY2Q4MjIzMGRiYzE0MmU1N2Y5OTBlMTYifQ"
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L1-L47",
+          "version": "repo-lines-v1:sha256:8960c910789e8b8c6efa889ac790450c6d7901835b2082e5a234eab213900116:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5MjVmMTczZWQ3NjVjOGE2MGJlNWRmOTllZjEyYWJmYzBjMGU4MjRhYmE4ZGQzYmQ5MGY4MjQ4MzA2NWE3OGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3Zjg5Y2MwNDBhNTA5NzkwMDNhZGFlN2YzOWI2OTliMTBlZGJjYjRjYjk5NDc1ZTE0YTZkY2Y5MmNjMGRjYjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5NzdhMDQzMmRkYmRlOTY2ZjIwNjIyYTUyNzg1Njk4YWMwMmU4M2E0NjNlNmEwZjM0ZWI4Nzg3NTRhYTU0YmEifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L190-L216",
+          "version": "repo-lines-v1:sha256:fca5de413a72242511cdce5b9059ca5c02947d98d876507076829c364bcff798:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxYzUxM2FiM2QzM2MyOTI5M2MxMmZjZDdhNWYyNzRjNTBjM2JlNzliZTRmOTExOTRkOTkzMmE3NzE2ZDg4MzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlMjMyOTFlOTBkNjMxYjgyMDEwZWYzNTMxM2Y1ZDA2YjZkM2UyZTg3NDMwZjJiOTZlMDk5Y2U5NGRlMzYwMGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3Mjc5MzliMDNjYmYzOTIyMDlmNWYwODZjNmU5ODExZTlhYTEyM2U2MmJmMjdhOTc1NjJiMjZmNDEzMmY3MDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhYmEyMGMyNmY0YTJiMWJhMjQ3OGMxMDk3MGU3NTg4ZDJkYWNjYzQyZDMyY2MwMjlmYzEzZmJiMDdhOTM5YTYifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-28T01:30:28.100Z"
   }
 }

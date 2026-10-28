@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:56710625050c6027ab1e77587d0f7ef84ba0f14ec79659e840b030c8fbe3b5b0",
+  "claims": [
+    {
+      "id": "claim_b453b693c47e4e9cba2a531d3761a769",
+      "statement": "The canonical validation runbook requires pre-mutation checks and PR evidence, including nix validation, focused Terragrunt plans, and GitOps manifest rendering.",
+      "evidence": [
+        {
+          "resource": "repo://docs/validation-runbook.md#L1-L32",
+          "version": "repo-lines-v1:sha256:ebbd4ad9d8cde9b4e4f4b0dae53237bec4213fc9d0e8a4e4a7070e0a858aaf8d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk5ZTVhMzM1MzRmNjk3MDg1OTk0YTc2MmNiNGRkNzkzZTMyMmJkMWI4YTcwOWE4ODg2OGU0MDU3MmM2NDkxYmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxY2M5NTJiNzdlY2RhOWVjMDJhODQxMDRjMDZhOWI3YjBlM2YyM2UzMjczMmQ0ZjIwNmU0NTYxYWI4Nzk0OTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjOGEzZjEwNzI2NTRlZWFjNDVlZDZjZmU0YzVlNmY5YzliMmZmMDk1N2YxMzhkNTEzY2ZiYWJlNTNmZjM4MGYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

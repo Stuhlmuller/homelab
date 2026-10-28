@@ -3,6 +3,12 @@ type: runbook
 title: "NFS Storage"
 description: "QNAP NFS exports, default StorageClass and media volumes, with provisioning, persistence, backup, and restore validation."
 tags: ["runbook", "storage", "nfs"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
+    resource: repo://docs/storage-nfs.md
 ---
 
 # NFS Storage

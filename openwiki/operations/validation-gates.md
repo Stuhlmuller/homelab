@@ -10,8 +10,6 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
-  - id: openwiki-source-bb8a89652a59628537fcc9b2
-    resource: repo://.github/workflows/harbor-mirror.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
@@ -50,6 +48,8 @@ sources:
     resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-d97499dd4d9b20eab22451de
+    resource: repo://builds/openwiki/README.md
   - id: openwiki-source-d9e93037542f56be8db8a431
     resource: repo://clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -64,6 +64,8 @@ sources:
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-2d8396976c82220440798f1a
+    resource: repo://clusters/homelab/apps/n8n/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
@@ -140,11 +142,11 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
@@ -240,6 +242,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-67b7023614bb46ffd2f06e85
     resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
@@ -260,6 +264,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-643ef77ebcc1eff9c86a5ba3
+    resource: repo://scripts/ci/openwiki-baseline-recovery-test.mjs
   - id: openwiki-source-b5946e8eb5b294e910c57270
     resource: repo://scripts/ci/platform-maintenance-stage-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -360,10 +366,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-28T02:24:48.541Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-28T02:24:48.541Z
 ---
 
 # Validation Gates
@@ -998,6 +1004,15 @@ rg -n \
   openwiki .agents/skills
 ```
 
+For a missing or mismatched OpenWiki page baseline, the reviewed
+[native recovery path](../../builds/openwiki/README.md) requires an exact page
+and manifest `gitHead`, queues a full-review page job, and requires Claim
+inspection and explicit decisions before completion. It rejects skipped jobs,
+source drift, deletion and an unreachable target commit. The
+[packaged fixture](../../scripts/ci/openwiki-baseline-recovery-test.mjs)
+exercises these failures and cross-host resume. A local page or generated
+provenance edit cannot substitute for a completed native run.
+
 ## Kubernetes Source Checks
 
 `scripts/ci/langfuse-valkey-recovery-test.py` checks stopped-writer guards,
@@ -1219,13 +1234,14 @@ Rendered Kubernetes policy also enforces the access contract:
 `policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the three
 reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
 `homelab.rst.io/public-callback-*` annotations for unauthenticated callback
-hosts such as `n8n-webhook.stinkyboi.com` and
-`policy-bot-hook.stinkyboi.com`. Run `scripts/ci/conftest-policies.sh` after
+hosts such as `n8n-webhook.stinkyboi.com`,
+`policy-bot-hook.stinkyboi.com`, and `bulldozer-hook.stinkyboi.com`. Run
+`scripts/ci/conftest-policies.sh` after
 changing route manifests or the Octelium public tunnel/DNS host list.
 
 The script must report failed probes as `FAIL:` lines and finish with a nonzero
@@ -1240,12 +1256,13 @@ rollout. All must pass before closing the readiness finding; connector access
 alone is insufficient. Keep raw logs outside git.
 
 The [held 1.28.10 candidate](../../clusters/homelab/apps/istio/README.md)
-is disabled and outside Argo. The offline static gate pins all six active
-1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
-replacement chart URL and archive hashes. The active GCS chart source is due
-for retirement in December 2026. A later reviewed PR must migrate the Argo
-AppProject allowlist, active source, and chart mirror inventory even if the
-version hop remains held; this source gate is not a live upgrade receipt.
+is disabled and outside Argo. The six declared 1.27.3 chart sources and the
+candidate now use the replacement `blob.istio.io` repository; the offline
+static gate checks those URLs, revisions, automated self-heal, and candidate
+archive hashes. Live chart-source acceptance still requires a reviewed scoped
+Terragrunt plan and a Synced/Healthy `istio` Application with unchanged images
+and no unexpected resource diff. Retain the GCS AppProject entry for rollback
+until that check passes. This source gate is not a live upgrade receipt.
 
 Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:
@@ -1751,9 +1768,13 @@ The Enterprise model-credential workflow is protected by exact current-`main`
 source checks and validates an owner-supplied OpenRouter key before writing only
 `/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
 The stopped legacy inventory, off-NAS archive publication and separate
-multi-root restore verification are complete. The 214-image catalog passed
-protected `all` publication and authenticated pulls in
-[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+multi-root restore verification are complete. Protected `all`
+[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+passed the historical 214-image catalog. Later
+[run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
+passed the expanded 215-source catalog and authenticated pulls, with its
+six-file publication bundle matching then-current `main`. T004 remains open
+for the changed Enterprise operator source and requires current-source proof.
 The isolated canary, platform upgrades, compatible legacy boot and new-state
 restore remain acceptance gates. Source-only static
 checks do not activate the agent.
@@ -1819,13 +1840,23 @@ archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
 writable root, so its original overlay contents remain unclassified; compare
 them with retained evidence before claiming compatible recovery. Three
-dangling external targets also need an explicit disposition. A rehearsal needs
+dangling external targets also need an explicit disposition. The private link
+report counts 37 links: 27 contained, nine external, and one missing target.
+The three external workspace targets lie under `/home` without a former Pod
+volume; the NAS-contained skill link was already dangling in the retained
+source. A rehearsal needs
 writable UID 1000 local-state and isolated NAS copies, and an enforced offline
 network boundary that blocks
 Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
 NetworkPolicies, so a deny policy alone cannot isolate the old image. Keep
 production writers stopped and original claims read-only; no isolated
 old-image boot has run.
+
+T049/T051 new-state recovery remains open. The current packager does not
+capture the chart bootstrap PVC's two credential files, the tenant Agent PVC,
+tenant Secrets and metadata, the operator journal, or gateway TLS material.
+There is no declared writer fence, encrypted off-node publication, or isolated
+whole-service restore receipt; the database-only restore fixture is insufficient.
 The 2026-10-20 13:07–13:15 UTC post-shutdown read-only recheck still rejects
 T022: the best worker, `zimaboard-1`, has about 3,398 MiB unreserved against
 Enterprise's initial 4,096 MiB steady reservation, 6,308 MiB in use, and
@@ -1877,8 +1908,8 @@ ownership-limited cleanup. The protected workflow wires fixed upgrade stages
 to that executor with a pinned helper hash and bounded private results. Its
 execute path also binds canonical platform inputs to the exact dispatched
 commit, rejecting a runner-local override before an upgrade. The activation
-flag and canary node remain unset. The full-catalog publication receipt
-passed; current-SHA recovery receipts, five-tag Harbor lock and an isolated
+flag and canary node remain unset. Dated full-catalog publication passed, but
+current-source T004, current-SHA recovery receipts, five-tag Harbor lock and an isolated
 canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 The static registration fixture accepts only five exact policy/canary GitOps
@@ -2000,8 +2031,15 @@ exact-source build context, embedded SHA, non-root read-only startup, and fixed
 signed and fully pulled all four images from source `fda0d68`; the selected
 operator is pinned at
 `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
-Static PV placement, an admitted node and proved bootstrap-key ownership
-remain absent, so `journalOperator.enabled: false` blocks live dispatch.
+The dispatcher now also requires a reviewed bootstrap PV UID, matching
+bound PVC UID, Retain policy, local class and placement on the journal node.
+The offline
+[fixture](../../scripts/ci/openclaw-enterprise-journal-operator-test.py)
+rejects missing or changed bootstrap PV identity before Job creation. The
+protected operations workflow pins the revised dispatcher checksum. These are
+source checks, not a live storage or operator receipt. Static PV placement,
+an admitted node and proved bootstrap-key ownership remain absent, so
+`journalOperator.enabled: false` blocks live dispatch.
 The source-only active path is exercised by
 [`openclaw-enterprise-active-test.py`](../../scripts/ci/openclaw-enterprise-active-test.py)
 in static and offline checks. Its fixtures cover the model-key file boundary,
@@ -2045,8 +2083,12 @@ now offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
 `verification`, `restore` and `acceptance` selections. It rechecks exact
 current `main`, pins the binder and stage helper, serializes the production
 jobs, and withholds private output. Binding requires the configured
-owner-controlled 0600 service-key file; no declared hosted-runner delivery or
-live binding exists. The six runtime selections invoke the
+owner-controlled 0600 service-key file held on the bootstrap PVC; no
+declared hosted-runner delivery or live binding exists. A future in-cluster
+reader must use UID 1000 on the exact PVC/PV and preserve a protected
+current-main check immediately before the Secret annotation patch. The
+committed disabled operator and unenforced policy block that path now. The
+six runtime selections invoke the
 [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh). Its `full-sync`
 branch calls the pinned [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh),
 which checks source, approved installation phase, and Application state before
@@ -2056,8 +2098,9 @@ requires a blocked result if `main` advances during sync. The committed
 `unselected` phase blocks sync before cluster access.
 `reconcile`, `stop`, and `verification` now enter the pinned dispatcher only if
 its reviewed gate is enabled; the committed disabled gate stops before a Job
-write. The dispatcher checks current `main`, source parity, retained claim and
-PV identity, and prior Job state before creating a fresh one-shot Job per
+write. The dispatcher checks current `main`, source parity, both journal and
+bootstrap PVC/PV UIDs, local placement, and prior Job state before creating a
+fresh one-shot Job per
 workflow attempt. It keeps the journal and lock inside the future in-cluster
 Job, never on the hosted runner. `restore` and `acceptance` still exit before
 mutation pending separate recovery and human-session contracts.
@@ -2436,11 +2479,14 @@ extra or caller-supplied images before credentials; workflow policy pins the
 same fixed dispatch and reviewed publisher hash. Destination-copy fixtures
 allow only fixed public blob/manifest write-stage categories when the private
 diagnostic matches, retain `server-error` for HTTP 5xx, and leave unknown
-copy errors terminal as `command-failed`. These source checks do not pass T004:
-full run [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
-failed at this Prometheus image, and no complete catalog receipt exists.
+copy errors terminal as `command-failed`. These source checks and the one-image
+receipt do not pass T004. Full run
+[39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
+failed at this Prometheus image. The later protected 214-image and 215-source
+`all` runs passed at their dated revisions; changed Enterprise operator source
+still needs current-source publication and a pinned digest.
 
-The fixed Renovate scope contains seven cataloged update digests. Publisher
+The fixed Renovate scope contains eight pinned source references. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash
 locks the reviewed fixed-scope choices; a passing fixture does not publish the images or

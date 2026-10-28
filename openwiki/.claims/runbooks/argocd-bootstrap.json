@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3bbf5b22f20f0755710798385f2fd53e1f3d43c344b9164def33b1cd48f3b18b",
+  "claims": [
+    {
+      "id": "claim_80cc41572cc34a18896fa58c1fbcc73b",
+      "statement": "The repository Argo CD bootstrap runbook installs Argo CD from the bootstrap Terragrunt unit, then hands ongoing ownership to the argocd self-management Application.",
+      "evidence": [
+        {
+          "resource": "repo://docs/argocd-bootstrap.md#L1-L24",
+          "version": "repo-lines-v1:sha256:82acc0bf6131a525a5a6405ec7be1fb62779e2fbcad4f10f2378cd7a7939eb0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4MzI4YzU3MjUwYzU0ZDcxZTliY2U5NzQ2NzM1OTdiOGI4ZDJmNzkwODc2OGMyMTBkOGViNzFhMzFlMWY5MzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczMTVjNGQ4MjRmMTM3ZWNkMDViMWNmMDAxNTQ2MGIxZjI4ZWU4NGQ1NmE0MGE5NmQ4ZWMwYzE3MjJiMzE1MjAifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

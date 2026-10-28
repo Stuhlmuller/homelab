@@ -84,6 +84,7 @@
     "journalPath": null,
     "bootstrapClaim": "occ-bootstrap-admin-password",
     "bootstrapClaimUid": null,
+    "bootstrapVolumeUid": null,
     "node": null,
     "runAsUser": 10001,
     "image": "harbor.stinkyboi.com/homelab/homelab-oce-operator@sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08",

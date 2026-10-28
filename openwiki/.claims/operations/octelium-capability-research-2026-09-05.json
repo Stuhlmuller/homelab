@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:b0ba75db0b81501956f50655171e00b4d0df586c2c3650c146bd335d60b98f1e",
+  "claims": [
+    {
+      "id": "claim_52e8f1d44e544afcb90aea437bd8d9f9",
+      "statement": "The repository declares one octelium-collector Service on port 8080 plus separate Enterprise logstore and metricstore workloads, so an empty console does not by itself justify adding another collector.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/resources.yaml#L1485-L1494",
+          "version": "repo-lines-v1:sha256:5fdb7b37f6a62136b6b9a21bc6b888228d0dd619e26509b27eab9cb8663d18bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxNWZkNDg0Yjk3MTQ0MzJlNGNlYjExZmM1ZjQ3YjE4YzY4NWIzMWMzMTk5YjRiMTMwZGM1OGJlYzFlZTAwMzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyZThlNzBlMTUxMzdiNmIzZmUyMWZlYjA2ZDE1YTMzODY3MTY4NDRhZTZhNTU2ZmE1NzdjN2I4M2IyZmIwYjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdjMTAxOGQzMzM3NmM3Y2EwNDMyZDgzYmQ2MWJlNDFmZjY3ZTU4M2EzMGRjYjMxMGU3NjMzOWY0NmI2ZDYzNWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjOGU4NGU0ZjkxZmViZTI2ZTk2ZWJmMjI1MWU4MTQwMzZhOGQ3OGM2YmU4MTg0M2FkZjEwYmYzOWFjNDk2NGEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-enterprise/resources.yaml#L245-L391",
+          "version": "repo-lines-v1:sha256:5b605379378da6b09a4e93adcb42bbad95e24b30f744e3dcf2a75e7e5b1c0534:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJjMjhhM2UwMjg3ZTFjYTE3MTVjMzA3YzcwOTI4MjdhMTEwYzZjYTc4ZTgzOTUyY2IzOTMzMDNjZjA3ZTdkNTA3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkODJkNjAwYzRhZWMxMGQxZDBkMzM3Zjc3Zjc4MTY1MTgyOTYzY2U1NmMwMmU2MmIyYjViZjllYWJmMWZmYzE2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOGNlZDNjM2EwYTlhNzM0OTA5MjhmYjg2Zjk2M2U4ZjAzNzA2NDExNmUzODJiYmUwNTgzNDRhOTRmNjI5ZGRjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMjE2ZTRiODliZDFiNDlhMzMxYTM5NmY1MmJkY2MyNmI1MjY0YzVlY2E5NDBhODU0MDJlOTIxOTM2YzI5M2ZiIn0"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

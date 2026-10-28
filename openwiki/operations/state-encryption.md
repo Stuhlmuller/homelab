@@ -3,6 +3,14 @@ type: operation
 title: "State Encryption"
 description: "Separate runtime SSM and OpenTofu encryption keys, S3 Bucket Keys ownership, and preservation of confidential recovery archives."
 tags: ["operations", "security", "storage"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-1651119dbc2c1d725d952fc7
+    resource: repo://IaC/terragrunt-catalog/modules/aws-s3-bucket-encryption/main.tf
+  - id: openwiki-source-372035330cb8084231079826
+    resource: repo://IaC/terragrunt-catalog/units/operator/state-bucket-encryption/terragrunt.hcl
 ---
 
 # State Encryption

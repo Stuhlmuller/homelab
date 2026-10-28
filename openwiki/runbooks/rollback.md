@@ -3,6 +3,12 @@ type: runbook
 title: "Argo CD App Rollback"
 description: "Repository-owned Argo CD rollback and the separate backup and restore decision required for persistent application data."
 tags: ["runbook", "rollback", "argocd"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-8a1a5b8d575c44deffc46d40
+    resource: repo://docs/rollback-argocd-apps.md
 ---
 
 # Argo CD App Rollback

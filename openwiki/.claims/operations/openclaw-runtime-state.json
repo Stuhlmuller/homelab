@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c69e3d87a7e9e2fc662ea8bff869898bd272f5ec8fabe990c3f88356421300c6",
+  "claims": [
+    {
+      "id": "claim_e3f3282fee6d48b18b163e72f73bec4e",
+      "statement": "The legacy OpenClaw source declares zero gateway replicas and a suspended runtime-backup CronJob while retaining its local PVCs and a single reader whose source-volume mounts are read-only.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/retirement-reader.yaml#L1-L12",
+          "version": "repo-lines-v1:sha256:236b3f0908c11d550d441c2603558cb0f8fb91df70e4efc0bb6d9b2f8e203464:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZGQ4MGQzMjFmNTQwN2NmNTYxNWYzOGY4ZjU4MjJhMDVmOWY3MDI3M2JlYjQ4NGUxYmUyMDg0NWZlMTAzMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiYzMzY2I3NzM4YjVlZmI5OGZjZTU2NmYyMGRkODJmNzY1MDQzNjJmZmJhMTE5NDRiYTJlZjgyYmIwOTQxM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzYWIyYmQxMzkzZTQ5YjhlNGRkZWYxYzE2ZGZhZTU2YjM2NjkwY2JmMmJlNWNhYjE0ZDU3OTIxNjM3OGUxNjgifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/retirement-reader.yaml#L85-L128",
+          "version": "repo-lines-v1:sha256:634777f14ec7c8ad97d8bef57fd38f173700b9353b0b22076257190d57f46b3c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjODMxODc1ODFhYjU2NWZkNDhmYTU5M2I3ZWRlYzJkYzczY2FjNTdmZjA4YzY1Yzc1ODZmYzhlOTgxYzRmN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3N2RhYWNhNTBkOTVjOTg4ZjA4ODVhNmFmM2ZmZGYzMzVlZjQ2NTExZDA4OGFmNTQzOTA0NGI4YzYwYzJkOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFjOTA2ODVmNDlkNTE3Mjg2ZjcxOTE4MWMwNzc0MzVlMWQxN2I1NWQ5NTAyZTcyNzI1OTliMDhjMmNiMGViMTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3YjA0YmQ1NDg0NDk1MWRiNmU2NDE5YjYzZDg2MDA5NGI3OThlNTE0MTM5YTcyNjg1OGMxMzhiYmFkNDRjMWMifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/runtime-backup.yaml#L1-L14",
+          "version": "repo-lines-v1:sha256:785e3774d36d978ed71ea5d66a72dbab45e9bc5a71a53ed7a8ce9c90c593b5e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NTVkOTQ2YTEyMjM4YTY3NzU4MWM3Yzc3OTcwYWI4NTMzYWI1YjRlMWM2ZGU3MjJiN2I0MzMxYzc3Y2ZmMmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0NjgzZmE0MzE4MTU5ZDc2Y2M3MGE4ZTdmMmJhMDU5ZjIyZDJjYTdlZjdlY2I3MzFjZWJhZjg3NWE1OWIwYjEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/runtime-storage.yaml#L1-L65",
+          "version": "repo-lines-v1:sha256:ecc4640f2a2283647499d6828b8a30625b789afdd2e160625f2ad0f79cc97564:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiMWIzNDExMGZkNDAzZjU1Y2M4NDc2YTcxMmMyOTJhNDc0MjU3YmY3MmRhMjNiNGE3MzcyZjczNzYzMDU2NzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L1-L8",
+          "version": "repo-lines-v1:sha256:803864282bf6d511008564d713cd58eb6deabd9845116ad8c8ec84df54529229:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTkwODVlNTAxMzU4ZDRlZDg2YmViOGE1ZTAwNGQ2NmZlMmFmMGVkZDJhYjcxMzNmODQyZDk1N2VlNjA0M2Q0OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjM2ZGUxODU3M2EyMzA1NmVhOTI5YjlhOGE1ODQzNWFkYzFiOTQxYTlhNDJiODkxMmYzOGYxODliMmI0MjFiOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmM5OTM5OTJiMzY2YzY0MzA4MTgwYzczMmJhNzYzZTMyODlkYjQ4MDBhYjRjM2I1ZTBlMzg0YTBkYTNlMmFmMiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

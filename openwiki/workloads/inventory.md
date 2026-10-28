@@ -42,8 +42,6 @@ sources:
     resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
   - id: openwiki-source-448cbe27130e9e3c4e8b10b3
     resource: repo://clusters/homelab/apps/kiali/values.yaml
-  - id: openwiki-source-3ee445a5390585cab7a1edab
-    resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-99b01b3b79f53a385f98fdf8
@@ -134,10 +132,10 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
     resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
-  - id: openwiki-source-cb44bee82f523806d88ae83a
-    resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-d04edc1f961af1e5e8d6ef79
@@ -152,29 +150,33 @@ sources:
     resource: repo://docs/rollback-argocd-apps.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-  - id: openwiki-source-59f51b5800f473496977b52a
+  - id: openwiki-source-e28ba5ce754d150bdc5cef65
     resource: repo://IaC/homelab/us-west-2/apps/argocd-image-updater/stack.hcl
-  - id: openwiki-source-1ee0d946130d3ad97636dfdc
+  - id: openwiki-source-b43e765897483cf6058c4a30
     resource: repo://IaC/homelab/us-west-2/apps/cert-manager/stack.hcl
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-b6af8459ba491c30ebdfcbb9
+  - id: openwiki-source-81eb22463f7e995fa8bd3b58
     resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-00c8a32293c8aaa55d3daba4
+  - id: openwiki-source-9c3fe2e8035c7eb9d09bfd26
     resource: repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
-  - id: openwiki-source-73d9c28ed7b9740028ceb5c2
+  - id: openwiki-source-ac7dd9ed8e0f490e7d421265
     resource: repo://IaC/homelab/us-west-2/apps/platform-image-policy/stack.hcl
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-02770c9a37752e2674097606
+    resource: repo://IaC/homelab/us-west-2/apps/platform-image-policy/terragrunt.stack.hcl
+  - id: openwiki-source-e6bd097f07292b202c6eecb6
+    resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl
+  - id: openwiki-source-cdb8b3d1d628f08778ab8115
+    resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy-cleanup/stack.hcl
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
-  - id: openwiki-source-39e11b90e7410131b2dc0a6e
+  - id: openwiki-source-7caf2808e7e765d8ee6ecc56
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
-  - id: openwiki-source-25f75cdd2a576d57bb951a93
-    resource: repo://IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl
-  - id: openwiki-source-f5339d55c401403e74eef9ec
+  - id: openwiki-source-6e612a8a6f7d729d059f3093
     resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
@@ -210,18 +212,16 @@ sources:
     resource: repo://scripts/openclaw-enterprise-bind-installation.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
-  - id: openwiki-source-aa83e90c74e65ee6187dbbb5
-    resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Workload Inventory
@@ -248,7 +248,9 @@ child passed the [protected scoped mirror receipt](../operations/harbor-oci.md#o
 before the consumer source changed. All four observed nodes were amd64 on
 October 19; re-evaluate this pin before adding arm64 nodes. The revised catalog
 later passed protected `all` publication and authenticated Harbor pulls in
-[run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
+[214-image run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180)
+and [215-image run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517).
+Both are dated receipts; T004 still needs current-source publication proof.
 
 ## Import Note
 
@@ -391,14 +393,15 @@ CI transport remain until replacement client, callback and CI paths pass
 
 ## Requested Applications
 
-The `istio` entry still uses 1.27.3 chart sources and automated self-heal.
+The `istio` entry declares 1.27.3 chart sources from the replacement
+`blob.istio.io` repository and retains automated self-heal.
 Its [1.28.10 candidate](../../clusters/homelab/apps/istio/README.md) is
 disabled and outside Argo. It pins the replacement chart repository and
-archive hashes without changing the running mesh. The active GCS chart
-source is due for retirement in December 2026; a later reviewed PR must
-migrate the AppProject allowlist, active sources, and chart mirror inventory
-even if the version hop stays held. The [offline gate](../operations/validation-gates.md#istio-ambient-recovery)
-checks that the active source remains unchanged until that review.
+archive hashes without changing the running mesh. The declared 1.27.3 source
+move still needs a reviewed scoped apply and live Synced/Healthy parity with
+unchanged workload images and no unexpected resource diff. Keep the old GCS
+AppProject entry for rollback until that check passes. The held version hop
+needs its separate ordered upgrade lane and receipts.
 
 | App                    | Namespace          | GitOps path                                     | Terragrunt path                             | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Depends on                                                                                                          |
 | ---------------------- | ------------------ | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -431,7 +434,7 @@ checks that the active source remains unchanged until that review.
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/homelab/us-west-2/apps/n8n/argocd`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/homelab/us-west-2/apps/nofx/argocd`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
 | `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/homelab/us-west-2/apps/renovate/stack.hcl` | Hourly UTC full-dry-run CronJob; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action sole writer; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache), dedicated no-token ServiceAccount, and Pod-local Harbor alias to the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 scheduled scan after the 17:00 mutex timeout; [T022](../../specs/004-run-renovate-in-cluster/tasks.md) records 19:00/20:00 same-key hits and the 21:00 `v0.0.2` refresh; [T045](../../specs/004-run-renovate-in-cluster/tasks.md) records the 17:00 failure, 03:00 missed-slot alert, and successful 04:00 recovery; [Harbor transport/version discovery](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc), T024/T042 cache-fault/NAS-capacity recovery, full parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
-| `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/homelab/us-west-2/apps/policy-bot/argocd`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
+| `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/homelab/us-west-2/apps/policy-bot/argocd`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper guards callback registration changes after preflight, and legacy-route retirement requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
 Merged [PR #1436](https://github.com/Stuhlmuller/homelab/pull/1436) declares a
 protected `prepare-restore` stage for stopped legacy OpenClaw. Its first
@@ -539,40 +542,16 @@ through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
-The [2026-10-20 13:07–13:15 UTC post-shutdown capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
-still blocks placement: the best worker has about 3,398 MiB unreserved versus
-the initial 4,096 MiB Enterprise planning reservation if co-located, before
-transient and host headroom, and 9.74 GB root-filesystem space free. Every worker's `/var` uses
-eMMC and has less than 10.74 GB for a new 10 GiB local claim under the existing
-`/var/lib` pattern; `acer` lacks the 2,304 MiB database-plus-gateway minimum.
-Unrelated Pods remain on each worker, so an added `NoSchedule` taint would not
-provide isolation.
-The 2026-10-23 read-only recheck still finds only `acer` with disk for a new
-10 GiB local claim, but it is 503 MiB below the 2,304 MiB minimum request.
-The best worker has 9.00 GiB filesystem free, and clearing its 38
-non-DaemonSet Pods would need about 3,342 MiB against 2,036 MiB unreserved
-elsewhere. Crossplane's two live 256 MiB controllers conflict with the
-source-declared zero replicas; reconciling them cannot create an isolated
-canary or transient margin. T022 and T035 remain blocked.
-The 08:18 UTC recheck on `main` `bcc08cb` found `acer` with 383.07 GiB
-filesystem free but only about 1,802 MiB unreserved RAM. The 503 MiB gap is
-only the declared database-plus-gateway floor. Co-locating the [initial
-4,096 MiB planning reservation](../../specs/003-replace-openclaw-enterprise/research.md)
-for API, worker, database, Envoy and gateway on `acer` would exceed its
-unreserved requests by about 2,295 MiB before startup, backup or peak margin.
-The [pinned Embedded driver](../../docs/evidence/openclaw-enterprise-acceptance.md)
-instead schedules one 1,792 MiB Gateway Pod through `oce-role: agents` with
-its own 10 GiB local state claim. The 768 MiB Harness request is for Dedicated
-mode only. At 09:32 UTC on `main` `111b58f`, every worker still had less than
-10 GiB filesystem free. Both the Gateway and database local claims therefore
-need `acer` under the proposed storage pattern, but their 2,304 MiB request
-exceeds its 1,802 MiB unreserved RAM by 502 MiB. Splitting API, worker and
-the full Envoy planning allowance to `zimaboard-1` would leave only 122 MiB
-against its observed memory margin before peaks. `zimaboard-2` has four
-unrelated Pods,
-including single-replica `Recreate` Langfuse PostgreSQL; moving them to clear a
-policy canary would disrupt service and still lacks peak proof. No existing
-node has an admitted Enterprise placement or isolated tainted canary.
+The [2026-10-27 post-recovery capacity recheck](../../docs/evidence/openclaw-enterprise-acceptance.md)
+found 2,895 MiB unreserved on `acer`, 1,201 MiB short of the initial 4,096 MiB
+Enterprise request budget. Other workers lacked a safe memory and local-storage
+split, and `zimaboard-2` still hosted unrelated Pods. The Embedded driver uses
+one 1,792 MiB Gateway with a separate 10 GiB local claim; the 768 MiB Harness
+request applies only to Dedicated mode. Pausing Langfuse and Dispatcharr would
+fit request arithmetic, but both lack complete independent whole-service
+restores and measured peak/restart margin. No service was paused and no node has
+an accepted Enterprise placement or isolated policy canary. T022, T027 and
+T035 remain open.
 The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;

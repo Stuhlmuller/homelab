@@ -3,6 +3,14 @@ type: operation
 title: "Kubernetes Patch Maintenance, September 2026"
 description: "Kubernetes 1.34.11 maintenance evidence, missing PVC metrics, Talos dry-run side effects, and CoreDNS ownership prerequisites."
 tags: ["operations", "kubernetes", "talos", "monitoring"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-930cdcf47f3f3f5b412ba1e1
+    resource: repo://.talos/patches/kubernetes-1.34.11.yaml
+  - id: openwiki-source-69eceaf2a57868367b82e9ff
+    resource: repo://.talos/patches/worker-kubernetes-1.34.11.yaml
 ---
 
 # Kubernetes Patch Maintenance, September 2026

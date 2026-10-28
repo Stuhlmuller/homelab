@@ -3,6 +3,12 @@ type: operation
 title: "October 2026 synthetic recovery exercise"
 description: "October synthetic backup and restore checks, independent publication proposals, and unproven operational Octelium recovery."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-eb16f82e7747ab9ffb968811
+    resource: repo://clusters/homelab/apps/octelium-storage/backup-cronjob.yaml
 ---
 
 # October 2026 synthetic recovery exercise

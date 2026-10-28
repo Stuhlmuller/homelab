@@ -3,6 +3,12 @@ type: operation
 title: "PVC Metrics Recovery"
 description: "Missing kubelet volume metrics, Kubernetes collector regression, Grafana alert guards, and unresolved notification verification."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-10e1a087a4804756f418a5ae
+    resource: repo://clusters/homelab/apps/grafana/values.yaml
 ---
 
 # PVC Metrics Recovery

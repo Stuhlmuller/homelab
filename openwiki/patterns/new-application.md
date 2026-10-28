@@ -3,6 +3,12 @@ type: pattern
 title: "New Application Pattern"
 description: "New workload registration, shared Application defaults, secret and storage contracts, explicit ingress, and readiness requirements."
 tags: ["pattern", "argocd", "workload"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-cb44bee82f523806d88ae83a
+    resource: repo://docs/argocd-app-onboarding.md
 ---
 
 # New Application Pattern

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:76e2573dc3d304e56da6705b44bc7bab1960286327c0c8f75bf85f5d1761e9ba",
+  "claims": [
+    {
+      "id": "claim_cf755d1498fa4cc398138fd7092e8280",
+      "statement": "The manual etcd offsite publisher rejects destinations outside the committed account, us-east-1 region, and derived bucket, checks versioning, uploads the snapshot before the manifest, and verifies immutable version IDs and SHA-256 checksums.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/etcd-offsite-backup.py#L136-L150",
+          "version": "repo-lines-v1:sha256:37f12bdf6539f797a3216797540fa8c3de7bf251c0ade72cb8bb69d45da7d0c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhYjk3YjNmMmViZDY5ZWMyZTE4YmQ0YjBhNzdjNTBiMGM3MWI0NzFiYmU4NmJlOTdlNjg2YzFhMTMxNmVkOGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxMTZjYmZhODI1NmQ1ZjI1Y2Q0ZDc2YzMwMWY1N2M4N2E0Yjc4ZDY0ZmU5NzU3ZDc0Nzk0MDY0NDcxMzNmNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4OGFjYmY0MDYzMTI0ZTg4Yzk4OTUzOTdiZGY5NWRiM2Y0YzQ4OGU3NTEwYWVmMDI1NGMyMDE1YzZmYjk1NzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5YzJmZmE5ZjY4MzQzMTJhOTc0YTQ5YzRjZWEzZTEwNmVjMWQ0ZTI3NDFiNTM5ZGU0NGUwZmZlNmE5OGFjNWMifQ"
+        },
+        {
+          "resource": "repo://scripts/etcd-offsite-backup.py#L254-L290",
+          "version": "repo-lines-v1:sha256:54456c081157e1c6165ab93d67eaf9c63155be4298da655afa3f1a572cc45934:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNWNhZTJhMTk3Njg1YWYxY2JlM2E3YmIxYmUyZTA3NWQ0MDI5Y2Q4MDA4NmNjZWIxODgyNDEwNTBkY2MxY2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1OWMzYjU4MjBiNTc5ZmY2YmYzYzVlZWEyYzlhOTkwNGY5MWFjYjViMTFhNWY2NjljMDNjZmI2YjY2MmU0MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE2NTEyMzMzZGM3ZmFjNjUyYzlmOWIxMmY0Mzk2YWJlZjJkMjZiOTRkYWQ2OGNjMTJmNzg5MGJlZjZkNDQwMDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZkNmRmMDZiMzA4NDExYjJlMjAxYTYxZWM0OGY2NjVmMTlmNTk4ODA0Mzg5MjAxMTMwMGNhZjQwZTlkNzgyY2QifQ"
+        },
+        {
+          "resource": "repo://scripts/etcd-offsite-backup.py#L44-L50",
+          "version": "repo-lines-v1:sha256:efca0251680169ebfcec41214b49d2dac4edf1380c570c3ea747389aace243d2:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTM2MGQ5MjA4NWU5ZmRhYTgwZmRhYWQyNjMxOTRmODM4NWZlZThmNjMzYTYzYTk3NjJhNGE5OTQ2NjcxNDdhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTk3MTY3YmMwMGVhNmFiMGM4NTgxYjllZDk1NjQyODY2NjkwZGNiYmUzYzZiNjFiMDdhMWY0Y2RmZDBhOTZkOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjllZTE5MzI4NGU4MmZiNzZhZjRmNGY1ODNlNDNmMDUwN2I1ZjEzMmIxNjRlNmQzNTIzYmFmYjk0YzBjN2IxZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjllZTE5MzI4NGU4MmZiNzZhZjRmNGY1ODNlNDNmMDUwN2I1ZjEzMmIxNjRlNmQzNTIzYmFmYjk0YzBjN2IxZSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

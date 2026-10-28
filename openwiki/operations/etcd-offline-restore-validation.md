@@ -3,6 +3,12 @@ type: operation
 title: "Offline Etcd Restore Validation"
 description: "Pinned etcdutl snapshot parsing and offline restoration, checksum preservation, and limits of database-only recovery proof."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-dc7204259e22f15bad7dfe92
+    resource: repo://scripts/etcd-offline-restore-check.py
 ---
 
 # Offline Etcd Restore Validation

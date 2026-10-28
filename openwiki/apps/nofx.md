@@ -7,7 +7,7 @@ workload_status: active
 updated: 2026-10-17
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-20T22:27:13.661Z
+    at: 2026-10-27T09:54:29.479Z
 sources:
   - id: openwiki-source-b7385f58821387de7a16f687
     resource: repo://clusters/homelab/apps/nofx/deployment.yaml
@@ -15,14 +15,8 @@ sources:
     resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-0c82b9435bacd6517f58e533
     resource: repo://clusters/homelab/apps/nofx/README.md
-  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
-    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
-  - id: openwiki-source-e26a7307e86732ce7e6a34b6
-    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
 generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }

@@ -38,10 +38,12 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
@@ -62,10 +64,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-28T02:22:00.727Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-28T02:22:00.727Z
 ---
 
 # Storage And State
@@ -79,7 +81,7 @@ and four fresh attributed generations reached Langfuse. Keep the original
 archive and all PVCs; an independent restore drill remains unverified. See the
 [Langfuse recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
-LiteLLM's prepared UI-key migration adds `ai/data-litellm-postgres-0`, a 20 GiB
+LiteLLM's native UI-key migration added `ai/data-litellm-postgres-0`, a 20 GiB
 NFS claim for its dedicated PostgreSQL database. Preserve logical dumps, volume
 snapshots and SSM role passwords together. The native cutover transaction stores
 four caller key hashes plus the `homelab-native-key-import-v1` marker. Preserve
@@ -359,6 +361,10 @@ needs their disposition, a separate writable UID 1000 local-state copy, an
 isolated NAS copy and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
 declared NetworkPolicies, so a deny policy alone cannot qualify the rehearsal.
+The latest protected network preflight on 2026-10-27 passed fixed-operation
+validation and the exact-current-main guard, then failed the legacy retention
+stage in the sanitized `network-access` category. It produced no T014
+capability receipt; isolated old-image boot remains unproved.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
 declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
@@ -383,7 +389,7 @@ claim if T035 uses the existing `/var/lib` pattern. New node paths are not yet
 committed. `acer` has only 1,802 MiB unreserved, below the 2,304 MiB database
 and gateway minimum. This does not admit local storage or an isolated canary; see the
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
-The 2026-10-23 read-only recheck still finds only `acer` with room for a new
+The 2026-10-23 read-only recheck found only `acer` with room for a new
 10 GiB local claim; it has about 1,801 MiB unreserved, 503 MiB below the
 database-plus-gateway request. The best worker has 9.00 GiB filesystem free.
 Its 38 non-DaemonSet Pods request about 3,342 MiB, exceeding the other nodes'
@@ -410,6 +416,18 @@ Splitting API, worker and the full Envoy planning allowance to `zimaboard-1`
 would leave only 122 MiB against its observed memory margin before peaks.
 No existing node has an admitted Enterprise storage and isolated-canary
 placement.
+The later October 25 [capacity ledger](../../docs/evidence/openclaw-enterprise-acceptance.md)
+screened reversible Langfuse and Dispatcharr suspension. Their combined
+request release could fit a 4 GiB Acer planning budget on paper, but the
+Gateway burst and replacement margin remain too small, complete recovery for
+both services is unproved, and no isolated canary is admitted. Neither service
+has been paused for Enterprise.
+At the 2026-10-27 18:47 UTC read-only capacity recheck, `acer` had 2,895 MiB
+request headroom, 1,201 MiB short of the 4,096 MiB initial Enterprise budget.
+Splitting across the other workers still lacked safe memory and local-claim
+disk margin, and `zimaboard-2` was not an isolated canary. A Langfuse and
+Dispatcharr pause fit only request arithmetic; complete recovery, measured
+peaks and restart overlap remain unproved. No service was paused or moved.
 The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 names local agent storage and a private bootstrap password claim. Its preflight
 requires `occ-bootstrap-admin-password` to be Bound to
@@ -427,11 +445,16 @@ node placement or active GitOps registration; the claim is not live or admitted.
 The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
 wires `full-sync` to the guarded helper, but the committed `unselected`
 installation phase blocks it before cluster access. Its `reconcile`, `stop`
-and `verification` stages have a one-shot Job dispatcher with exact-main and
-PVC/PV identity checks; `journalOperator.enabled: false` blocks all three
-before Job creation. `restore` and `acceptance` remain separately blocked.
-The hosted runner never mounts the private journal; live reconciliation needs
-the admitted local volume and in-cluster Job.
+and `verification` stages use a one-shot Job dispatcher. Before any Job write,
+it checks exact current `main`, the journal PVC/PV UIDs, path and node, and
+both bootstrap PVC/PV UIDs. It also checks the bootstrap PV claim reference,
+Retain policy, local class, and placement on the journal node. The committed
+`bootstrapVolumeUid: null` and `journalOperator.enabled: false` keep the
+operator blocked; these checks are source-only, not live volume proof.
+`restore` and `acceptance` remain separately blocked. The hosted runner never
+mounts the private journal. Live reconciliation needs admitted local volumes
+and the in-cluster Job; binding also lacks a declared key reader on the
+bootstrap claim.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`
@@ -709,6 +732,9 @@ writer cutover remain blocked on a declared capacity path and direct recovery
 evidence. For corruption, suspend the CronJob, clear only cache contents with
 a reviewed temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
+An independently sized 20 GiB `/renovate-cache` QTS volume, static PV and
+claim are staged as a candidate. They are outside active Kustomizations;
+verify the separate export before a reviewed claim switch.
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. Restricted logs from the

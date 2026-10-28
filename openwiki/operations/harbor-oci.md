@@ -92,6 +92,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
+    resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
@@ -126,7 +128,7 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
@@ -172,10 +174,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-27T21:30:24.345Z
 ---
 
 # Harbor Private OCI Registry
@@ -273,6 +275,11 @@ bridges `10.244.1.1` through
 through `.202`, respectively.
 Trusted node-local traffic still has Istio's bypass behavior. The listener's
 path boundary and Harbor's artifact authorization remain required.
+
+During the 2026-10-27 ztunnel image-pull outage on `zimaboard-0`, Traefik's
+source temporarily pins all four listeners to `zimaboard-1`. The rolling
+strategy retains the old Pod until the replacement is Ready; removal of the
+pin requires a reviewed source change after all-node ztunnel recovery.
 
 The first host-only mapping on `zimaboard-1` (`10.1.0.201`) was applied with
 `NoReboot` and read back on October 10. Its uncached pull failed before Traefik:
@@ -499,6 +506,14 @@ or the other Prometheus stack images. Destination-copy failures with private
 Skopeo `writing blob` or `writing manifest` diagnostics now emit fixed `blob-upload-failed` or
 `manifest-upload-failed` categories; unknown failures remain `command-failed`
 and do not trigger another copy client or an automatic write retry.
+
+The later protected [`all` run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
+passed the expanded 215-source catalog on 2026-10-25 with matching digests and
+complete authenticated Harbor pulls. Its six-file publication bundle matched
+the then-current `main` at acceptance. Recheck that bundle against current
+`main` before using this receipt for a new rollout; T004 remains open for the
+changed Enterprise operator source. Neither catalog receipt proves an uncached
+pull on every Talos node or Harbor-only application consumption.
 
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):

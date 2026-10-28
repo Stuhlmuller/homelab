@@ -40,9 +40,9 @@ to 1000 only after the journal directory and upstream bootstrap owner are
 proved.
 
 The dispatcher checks current `main` before each write, source file parity,
-the retained journal PVC/PV UID, path, and node, and the bootstrap PVC's bound
-PV claim UID, Retain policy, local class, and placement on that same node. It
-lists every namespace Job and refuses an uncertain `oce-journal-` Job even if
+the retained journal PVC/PV UID, path, and node, and both bootstrap PVC/PV
+UIDs, the PV claim UID, Retain policy, local class, and placement on that same
+node. It lists every namespace Job and refuses an uncertain `oce-journal-` Job even if
 its identifying label was removed. It creates a fixed single-container Job
 with no restart, automatic service-account token, subPath, or TTL cleanup, and
 with a bounded deadline. The operation script uses the durable journal's
@@ -57,3 +57,12 @@ source/image publication path, backing directory ownership, bootstrap file
 mode, exact startup Secret hash, and live network proof before wiring the
 bundle into GitOps or setting `enabled: true`. Stop and restore/acceptance
 stages still require their own live recovery and owner-session receipts.
+
+The protected `bind-installation` workflow currently looks for the bootstrap
+service key on its hosted runner. The key is written on the bootstrap PVC, and
+no declared handoff mounts or delivers it to that runner. Binding therefore
+remains blocked. A reviewed in-cluster reader must read the key only as UID
+1000 from the exact PVC/PV and withhold private output; the final Secret patch
+must retain the protected current-main check immediately before its write.
+The committed disabled operator and unenforced network policy prevent a live
+reader now.

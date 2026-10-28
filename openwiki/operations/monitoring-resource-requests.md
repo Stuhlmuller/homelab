@@ -3,6 +3,14 @@ type: operation
 title: "Monitoring Resource Requests"
 description: "Prometheus and Grafana memory reservations, observed scheduling headroom, and the September memory-overcommit alert incident."
 tags: ["operations", "monitoring", "capacity"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-a50a1014fc5e62b8cf13da17
+    resource: repo://clusters/homelab/apps/prometheus/memory-prometheusrules.yaml
+  - id: openwiki-source-170b12d7a5bf4ad3e405ed5a
+    resource: repo://clusters/homelab/apps/prometheus/values.yaml
 ---
 
 # Monitoring Resource Requests

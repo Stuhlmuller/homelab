@@ -3,6 +3,12 @@ type: operation
 title: "Manual Etcd Offsite Publication"
 description: "Verified etcd snapshot publication to S3, exact-version retrieval, resumable receipts, and offsite freshness boundaries."
 tags: ["operations", "backup", "storage"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-f22c38d02efdd01ce55f2244
+    resource: repo://scripts/etcd-offsite-backup.py
 ---
 
 # Manual Etcd Offsite Publication

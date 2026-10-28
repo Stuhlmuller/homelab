@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4da34b8370c20a47b273f5e0bdfc1163d4f0eed2c82c67fe43f8e04e324b1fc0",
+  "claims": [
+    {
+      "id": "claim_770003088f5d44888820e0e11aa471f8",
+      "statement": "The operator state-bucket encryption unit enables S3 Bucket Keys through its catalog input, and the module protects the encryption configuration with prevent_destroy; this does not replace OpenTofu's separate client-side state encryption.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-s3-bucket-encryption/main.tf#L22-L49",
+          "version": "repo-lines-v1:sha256:6f89f5ba1fab13ccb274675c002e35e9c334d627d46aed4e66f6b089038ea789:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NTY3Y2JjOGNjYTQyMThkYTU5NmEzYmM1ZTRkZDRmYjkyZTAxZDE2NTk4YTkwYTgxODYyZDQ3Y2UwNDFkMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0NDUxOTBmMzdkOTcxZmZkY2E1ZTdlYTU4YWU2MDRmYzZmMjhhZjg0MmZiOTgwM2UyYTA2NjE5OWU5NTNmOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/units/operator/state-bucket-encryption/terragrunt.hcl#L1-L23",
+          "version": "repo-lines-v1:sha256:78edafb754ed211b1ca25afc26c8c0eb3bbf929779fd2d08f46716405e34fe89:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMGNmNTRmMmQxYmE1OTRmYjliOWU3Y2UyNDFiYjgyNmE0ZDY3MmU4YzBjMDJhZDI0MzY4ZGU2MjQ3NTk3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

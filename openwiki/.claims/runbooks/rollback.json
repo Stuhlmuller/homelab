@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:fa42b50e720c8d823852a033487841a5e812a51b6ea1412cc0d98a11f37be408",
+  "claims": [
+    {
+      "id": "claim_db190eb023d2458799b45ed40c5f8874",
+      "statement": "The Argo CD rollback runbook removes or disables a downstream Application before shared foundations, requires a Terragrunt plan, and preserves persistent data until backup handling is clear.",
+      "evidence": [
+        {
+          "resource": "repo://docs/rollback-argocd-apps.md#L1-L8",
+          "version": "repo-lines-v1:sha256:722b34a0c5e12bc0b7cac56cbf3ceccb55a1c6ce53434f690c6a8a800faa2155:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDk0MWRiZDc0ZTJjMTM1MGM1MWUzNWI4YWQ3NzYzMDA2NTFjYTdlZDNiM2Q0YWNmY2U5MTc1Y2YxMTNiMjVkNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjFmZWNjYzBkMTdhMmNhNTY2MjQ5MDA3NzVkZTY5NGFhZDg5NjE0ZTIzMTNiOGNhNDU4N2YzY2FmZmU0ZmMzNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTIzMjUzMDMyYzAzN2NhMWEyYTQ0YjkxMTIzNjhiMTMwYzY4Y2QwYjFkMGNlZmZlODNjMDVkNzVmODJiMzUzNSJ9"
+        },
+        {
+          "resource": "repo://docs/rollback-argocd-apps.md#L46-L49",
+          "version": "repo-lines-v1:sha256:18e77f82cb4de7f2f9b01bd85f0a8c32393410e0bf842077089d2b07a363439b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDlhYWIxZGY0YmE2OGRiZmE0ZWVhMmM5MmVmNzRkN2I0ODgwNDRhY2Y2Y2E1ZDI2YWJkMDUwNDQ0NjJkMGJlNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTZkNDRlMDY4ZTY2YjgyMThjNjA1MzRjYmU2NGE4OTU4MTA3ZDUyNTljZmU1NzExZjc3ZmQyMzMzNzA1YWJjOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzFhNWI4YWVlNzFmNDU0MmUwYmI3NDdlYzJlNTI0YzFjYjIxMjRjZmJlNjBjZjg2YTgzN2IzNDQ5N2MwMjc5NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

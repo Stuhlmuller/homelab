@@ -2,8 +2,10 @@
 """Offline failure and restart checks for the dormant Enterprise Job runner."""
 
 import copy
+from contextlib import redirect_stderr, redirect_stdout
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -31,7 +33,8 @@ def ready_operator():
     config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
     operator = config["journalOperator"]
     operator.update(enabled=True, journalClaimUid=UUID, journalVolumeUid=UUID,
-                    bootstrapClaimUid=UUID, journalPath="/var/lib/openclaw-enterprise/journal",
+                    bootstrapClaimUid=UUID, bootstrapVolumeUid=UUID,
+                    journalPath="/var/lib/openclaw-enterprise/journal",
                     node="zimaboard-2", runAsUser=1000,
                     image="harbor.stinkyboi.com/homelab/"
                     "homelab-oce-operator@sha256:" + "b" * 64, imageSourceSha=IMAGE_SHA)
@@ -76,6 +79,15 @@ class JournalOperator(unittest.TestCase):
         config["journalOperator"]["runAsUser"] = 1000
         self.assertEqual(runner.contract(config, "stop", SHA),
                          config["journalOperator"])
+
+    def test_bootstrap_claim_and_volume_uids_must_be_pinned(self):
+        for field in ("bootstrapClaimUid", "bootstrapVolumeUid"):
+            for value in (None, "", "wrong"):
+                config = ready_operator()
+                config["journalOperator"][field] = value
+                with self.subTest(field=field, value=value), self.assertRaisesRegex(
+                        runner.Blocked, "placement or pinned source"):
+                    runner.contract(config, "stop", SHA)
 
     def test_prior_image_source_must_match_current_reconciler_inputs(self):
         operator = ready_operator()["journalOperator"]
@@ -176,7 +188,8 @@ class JournalOperator(unittest.TestCase):
             "hostPath": {"path": operator["journalPath"], "type": "Directory"},
             "nodeAffinity": {"required": {"nodeSelectorTerms": [{"matchExpressions": [{
                 "key": "kubernetes.io/hostname", "operator": "In", "values": ["zimaboard-2"]}]}]}}}}
-        bootstrap_volume = {"metadata": {"name": "occ-bootstrap-admin-password"},
+        bootstrap_volume = {"metadata": {"name": "occ-bootstrap-admin-password",
+                                         "uid": UUID},
                             "spec": {"claimRef": {"uid": UUID, "namespace": "openclaw-system",
                                                   "name": "occ-bootstrap-admin-password"},
                                      "persistentVolumeReclaimPolicy": "Retain",
@@ -187,6 +200,22 @@ class JournalOperator(unittest.TestCase):
         with mock.patch.object(runner, "kubectl_json", side_effect=[
                 pvc, bootstrap, volume, bootstrap_volume]):
             runner.prove_claims(operator)
+        for metadata in ({"name": "occ-bootstrap-admin-password"},
+                         {"name": "occ-bootstrap-admin-password", "uid": "other"}):
+            candidate = copy.deepcopy(bootstrap_volume)
+            candidate["metadata"] = metadata
+            with self.subTest(metadata=metadata), mock.patch.object(
+                    runner, "kubectl_json", side_effect=[pvc, bootstrap, volume, candidate]):
+                with self.assertRaisesRegex(runner.Blocked, "bootstrap volume"):
+                    runner.prove_claims(operator)
+        for metadata in ({}, {"uid": "other"}):
+            candidate = copy.deepcopy(bootstrap)
+            candidate["metadata"] = metadata
+            with self.subTest(metadata=metadata), mock.patch.object(
+                    runner, "kubectl_json", side_effect=[pvc, candidate, volume,
+                                                             bootstrap_volume]):
+                with self.assertRaisesRegex(runner.Blocked, "claim identity"):
+                    runner.prove_claims(operator)
         volume["spec"]["persistentVolumeReclaimPolicy"] = "Delete"
         with mock.patch.object(runner, "kubectl_json", side_effect=[
                 pvc, bootstrap, volume, bootstrap_volume]):
@@ -321,6 +350,17 @@ class JournalOperator(unittest.TestCase):
         with mock.patch.object(runner, "command", side_effect=[SHA, "b" * 40 + "\trefs/heads/main"]):
             with self.assertRaisesRegex(runner.Blocked, "no longer current"):
                 runner.exact_main(SHA, env)
+
+    def test_hosted_failure_never_reports_private_key_material(self):
+        key = "private-bootstrap-key-fixture"
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with mock.patch.object(runner, "exact_main", side_effect=runner.Blocked(key)), \
+                redirect_stdout(stdout), redirect_stderr(stderr):
+            self.assertEqual(runner.main(["stop"], {"EXPECTED_SHA": SHA}), 1)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(stderr.getvalue(),
+                         "Enterprise operator blocked; private diagnostics withheld\n")
+        self.assertNotIn(key, stderr.getvalue())
 
     def test_staged_resources_are_not_in_active_gitops_tree(self):
         operator = ROOT / "clusters/homelab/apps/openclaw-enterprise-operator"

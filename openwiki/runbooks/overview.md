@@ -3,6 +3,12 @@ type: runbook
 title: "Runbooks Index"
 description: "Task routes through Talos onboarding, Argo CD, storage, secrets, Octelium access, validation, rollback, and recovery runbooks."
 tags: ["runbooks", "onboarding", "operations"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-27T21:30:24.345Z
+sources:
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
 ---
 
 # Runbooks Index

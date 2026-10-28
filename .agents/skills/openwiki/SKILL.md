@@ -53,6 +53,11 @@ for the single page OpenWiki assigns you.
 2. Call `openwiki_begin` with that absolute root and mode `init` or `update`.
    An active run may have been started by native OpenWiki or another supported
    host; always continue the durable run and queue returned by `openwiki_begin`.
+   For an explicitly reviewed missing-baseline recovery, pass
+   `recoverPageBaselines: [{page, gitHead}]` with each selected page's exact
+   current manifest baseline. Fetch available historical Git objects first.
+   Omit this option for ordinary updates; a missing baseline otherwise fails
+   closed. Recovery pages must complete native full-review jobs.
 3. If `openwiki_begin` returns `status: "noop"`, report that no update is needed
    and stop.
 4. If it returns `phase: "planning"`:
@@ -75,6 +80,10 @@ for the single page OpenWiki assigns you.
      deletes, moves, or materially regroups wiki pages, include quickstart so its
      task-routing map is refreshed;
    - an update with no required page edits or deletions may submit `pages: []`;
+   - for a focused update, set `deferUnplannedClaimIssues: true` only when
+     unrelated stale Claim pages must stay untouched for a later full update;
+     planned pages and mandatory baseline recovery jobs still require complete
+     Claim decisions. The finished run remains `interrupted` while debt remains;
    - call `openwiki_submit_plan` with final canonical page paths, concise page
      purposes, useful seed source paths, meaningful `relatedPages`, page-relevant
      global `instructions`, and any page deletions required by an update.
@@ -92,6 +101,8 @@ for the single page OpenWiki assigns you.
    - call `openwiki_inspect_page_claims` only before intentionally revising or
      removing otherwise-current content whose Claim ids are not included in the
      pending job;
+   - for a baseline recovery job, always call `openwiki_inspect_page_claims`
+     and explicitly confirm, update, or retract every existing Claim ID;
    - call `openwiki_submit_page` with only sparse decisions: put rechecked issue
      Claims retained unchanged in `confirmedClaimIds`, put revised existing and
      genuinely new Claims in `claims`, and put removed Claims in

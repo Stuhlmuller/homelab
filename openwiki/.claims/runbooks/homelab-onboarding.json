@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3b4f8771b1cc8cc953358582dd346f577f57698051a907ae94bf2f2e7cb0e7d8",
+  "claims": [
+    {
+      "id": "claim_a99a18d3aeea485eb0ada55badf38943",
+      "statement": "The onboarding guide identifies Acer at 10.1.0.199 as the canonical Talos control plane and Kubernetes API endpoint, and QNAP at 10.1.0.2 as the persistent storage NAS.",
+      "evidence": [
+        {
+          "resource": "repo://ONBOARDING.md#L12-L40",
+          "version": "repo-lines-v1:sha256:f17fa113c046175fe83359ae9b400c39efa7f22486f2fed17c842a08a4ae2c41:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2YmVlNGEwNWYzMmE0OGVmYWU4MjZlOTRlZTk5OWU1YmFjMjg2NzRkOGQ4NTg5MDRkYzVjODRlYTNjYmUzNTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZDY4NDBlOTUxMGMwMTY4ZDE0Yzg4MWE0OTY1ZmQ3YWNlOGQzNGQ0ODllYTk4ZDA4OGIxMjA3MThkMmM1ZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0ZDkwYjkyZjA3NjljNTE2ZGYxNGFmZjIwNzMzYzgwMWQ4NmYyMGYyMDlmN2Y1YzUxYjI2OTk1YWYwZjhiYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE2MTVmOTRmZmNlZDZkNTA1NmNlMTkyYzJkOGVjZDdhMjI4OWI4MzQ0NWMxZmQ0NzZhNzJmZGY2MTJmNjgwYWIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}

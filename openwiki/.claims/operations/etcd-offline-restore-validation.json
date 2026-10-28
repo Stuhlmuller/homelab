@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:dbecb9bf8558dd2ef9f6dff850047055c7c9c0fd2624cdd3fd54aad53551c9fc",
+  "claims": [
+    {
+      "id": "claim_e55e8f19b4894d6fb851f965a99c8a7f",
+      "statement": "The offline etcd restore helper pins etcdutl 3.6.5 by archive checksum, restores a copy in a private output directory, and rejects a result whose revision or key count differs from the source snapshot.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/etcd-offline-restore-check.py#L113-L143",
+          "version": "repo-lines-v1:sha256:dc6c55728fc79c0d07080e16de5da65d3fccc7f18339680913d13da27fca9b1a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjOTkxZDVlMmQ4NjczODZjNmE4MThmMmI2NmI3ZThkZjQ5YzEyNGUxNzc3ZmU5NjIxNGExMTRiOTQ5ZmU0YmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyMTNlZjNlYWQ1MmE2ZTliZTIyNTdiYTQ1Y2I1NTFkNzQxMTA3YzYwOGFiODRlMTA3MTRmMzAyZTVkM2I1ZWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2YmQwZDJlMDBlZDEyZTJhYjUwOWM1YTg4Yjk3YTc2NzUzNzFkNjg2ZGVkYjU0OGY1YTkzMTY0OGY3NTkzZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzOGU0NGUzOTUwODM5MWMxYzhmZWNhMjQ1Njg5ZDJhZDIxZDYzYzVhMDgzNGY3ZjMyOWM1MDkyODMyOTZkNjMifQ"
+        },
+        {
+          "resource": "repo://scripts/etcd-offline-restore-check.py#L22-L69",
+          "version": "repo-lines-v1:sha256:db0238fedaa952e62c3e6bd86d1093feafcf3f167031315f7fe7f6b01d68f77a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNjE4MjIyNzAzZWZiMjNjZGU2YmFiZTkwMTZhZWNjMjE5NmRhZDYzZTAyNDk0Njc1ZDAwNzIzZGNlNWVhZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjZjliOTkwMTQzYjllOWJiZDNjOTRiN2RlNGZiNTEyMDk4YmI1NjMyN2VjZDExNTU5MzBkMGJlMWM1MjZiODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5MWJmM2Q5NmYxYjExOTY4OGRlZWE5YTAwNGIyYjNmZWJiMTgwYmI4ZmIyMzQ0NjI1NjE0YWRjODU5NTYzYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkNzY0ZDU0NTVjODhmN2UzZWU2OTIyMDI5N2Y4ZDRhOTg5YmViMDQzNmY0NjNkYjgxYzM2MjMzYjMwMGUwMGEifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-27T21:30:24.345Z"
+  }
+}
