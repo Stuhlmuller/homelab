@@ -10,8 +10,6 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
-  - id: openwiki-source-bb8a89652a59628537fcc9b2
-    resource: repo://.github/workflows/harbor-mirror.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
@@ -66,6 +64,8 @@ sources:
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-2d8396976c82220440798f1a
+    resource: repo://clusters/homelab/apps/n8n/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
@@ -364,10 +364,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T01:30:28.100Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T01:30:28.100Z
 ---
 
 # Validation Gates
@@ -1838,13 +1838,23 @@ archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
 writable root, so its original overlay contents remain unclassified; compare
 them with retained evidence before claiming compatible recovery. Three
-dangling external targets also need an explicit disposition. A rehearsal needs
+dangling external targets also need an explicit disposition. The private link
+report counts 37 links: 27 contained, nine external, and one missing target.
+The three external workspace targets lie under `/home` without a former Pod
+volume; the NAS-contained skill link was already dangling in the retained
+source. A rehearsal needs
 writable UID 1000 local-state and isolated NAS copies, and an enforced offline
 network boundary that blocks
 Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
 NetworkPolicies, so a deny policy alone cannot isolate the old image. Keep
 production writers stopped and original claims read-only; no isolated
 old-image boot has run.
+
+T049/T051 new-state recovery remains open. The current packager does not
+capture the chart bootstrap PVC's two credential files, the tenant Agent PVC,
+tenant Secrets and metadata, the operator journal, or gateway TLS material.
+There is no declared writer fence, encrypted off-node publication, or isolated
+whole-service restore receipt; the database-only restore fixture is insufficient.
 The 2026-10-20 13:07–13:15 UTC post-shutdown read-only recheck still rejects
 T022: the best worker, `zimaboard-1`, has about 3,398 MiB unreserved against
 Enterprise's initial 4,096 MiB steady reservation, 6,308 MiB in use, and
@@ -2462,7 +2472,7 @@ failed at this Prometheus image. The later protected 214-image and 215-source
 `all` runs passed at their dated revisions; changed Enterprise operator source
 still needs current-source publication and a pinned digest.
 
-The fixed Renovate scope contains seven cataloged update digests. Publisher
+The fixed Renovate scope contains eight pinned source references. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash
 locks the reviewed fixed-scope choices; a passing fixture does not publish the images or

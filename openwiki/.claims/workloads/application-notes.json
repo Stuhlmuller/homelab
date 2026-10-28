@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5d2beef178f1643f4312f31b07217f10548684d50ac2f8837acde919ebbc093e",
+  "pageVersion": "sha256:b8d12ee2b64a1a3127441199c0d85e9693c1410755acb0c1b4ad574652e3a4ad",
   "claims": [
     {
       "id": "claim_81d091bfd2d74d578b85cb519e8ce854",
       "statement": "Current OpenClaw 2026.9.5 installs the version-matched external Discord plugin, routes through LiteLLM with a file-backed caller key, disables OpenAI/Codex subscription routes and preserves historical state for rollback.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L30-L53",
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L327-L350",
           "version": "repo-lines-v1:sha256:63bef918152aa4e6a3afc330640d378ba7bd03e4b814365668e45d4e370273f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyOGI2OGY3ZWFmODg4ZWI4NmY5ZTdjMjIzOThmZjdiYTEwN2IxMDU1ODZmZThkODA2YzRmNjhkOWY3NjEyZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMDkwMTBlMjFkYmM4NzVlMWRiNmNkNDAwNDBjZDk4NGNjMWY2OTg5YWI4MjdlM2ZmMmM3YzEyNTEzMjhiZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0NDVkNWQzOGQ5ZDBlYjczZGM3NDJmODExNmNlMmVmMWU0ZjgzZDQ0NDk5ZjE2NzZhMGMxOTA2NDk3NzU5OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5ZjUxM2Q0ZGY4YTA1YTAyNGM5YzFlMzI2YzQ3ZGVjM2YxMjE3NzIzN2RiMmQ1YWZjMjI5ODgxNGI1ZTk4ODYifQ"
         }
       ]
@@ -29,6 +29,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:10:58.872Z"
+    "at": "2026-10-28T01:30:28.100Z"
   }
 }
