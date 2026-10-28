@@ -18,6 +18,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-db6cf97d787f19eab7b1a68b
     resource: repo://.github/workflows/openclaw-enterprise-images.yml
+  - id: openwiki-source-225c4d98c899575724fbc37b
+    resource: repo://.github/workflows/policy-generator-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -48,6 +50,8 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-c73e1fecbb517a520b6d8a37
+    resource: repo://builds/network-policy-generators/README.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -116,8 +120,6 @@ sources:
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
-  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
-    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -174,10 +176,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T02:01:41.290Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:01:41.290Z
 ---
 
 # Harbor Private OCI Registry
@@ -997,9 +999,18 @@ reboot checks. Preserve DNS, API, HBONE, webhook, storage, and recovery paths an
 prove direct-IP, alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
-The pinned Cordium `ws-main` and Octelium `svc-upstream` generators still allow
-public IPv4/IPv6 traffic on every port; another NetworkPolicy cannot narrow
-those rules. Generator corrections and isolated-canary traffic remain open.
+The current Cordium `ws-main` and Octelium `svc-upstream` generators still
+allow public IPv4/IPv6 traffic on every port; another NetworkPolicy cannot
+narrow those rules. Reviewed source patches remove both rules. The staged
+[publisher](../../.github/workflows/policy-generator-images.yml)
+requires exact current `main`, checks pinned sources and targeted tests, builds
+three Linux/amd64 images before registry credentials, then publishes fixed
+Harbor names. It requires complete authenticated pulls and signature checks
+before reporting Cordium Genesis, Octelium Genesis, and octops digests. No
+publisher run or accepted digests exist for this change. Digest pinning,
+patched octops installation, actual policy renders, and isolated-canary
+traffic qualification remain separate prerequisites to enforcement. See the
+[generator build contract](../../builds/network-policy-generators/README.md).
 
 The staged `harbor-only-images` ValidatingAdmissionPolicy audits Pod create and
 update, including init and ephemeral containers, across namespaces. Its binding

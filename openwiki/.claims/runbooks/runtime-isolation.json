@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ea75094d15de67743fb9f0689bd0fa2611614c044d9cf76d93dd4c601c368c00",
+  "pageVersion": "sha256:f0a4f7cec499fa3a16955cd29a874532e5830526eb5f7e3332e6af79c76968cb",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -70,11 +70,11 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
+          "version": "repo-file-v1:sha256:df294557d726a47df2605558a7798afc05e31d0c87bb12cb8e905e8d4d053f42"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
+          "version": "repo-file-v1:sha256:df347910d583855970cca31de74fb7361d0477767ffa73495beae91d185931f0"
         }
       ]
     },
@@ -136,7 +136,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
+          "version": "repo-file-v1:sha256:df294557d726a47df2605558a7798afc05e31d0c87bb12cb8e905e8d4d053f42"
         }
       ]
     },
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
+          "version": "repo-file-v1:sha256:df294557d726a47df2605558a7798afc05e31d0c87bb12cb8e905e8d4d053f42"
         }
       ]
     },
@@ -240,7 +240,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:fe6731343dda39ff7c608b6be11dfde06ee00d328beaa4260f94bb8706251380"
+          "version": "repo-file-v1:sha256:df294557d726a47df2605558a7798afc05e31d0c87bb12cb8e905e8d4d053f42"
         }
       ]
     },
@@ -326,25 +326,43 @@
     },
     {
       "id": "claim_57f2c7184dff4c078d2ba4109ae8075b",
-      "statement": "The staged Octelium source patch requires a digest-pinned Harbor Genesis image for init and upgrade before Kubernetes writes, while the current bootstrap wrapper has no argument for that image; the patched path has not been deployed.",
+      "statement": "The Octelium bootstrap wrapper now consumes the reviewed Genesis image pin, currently null. With no pin it fails closed if the network-policy enforcer is installed or unreadable; with a fixed tagless Harbor digest it checks installed init and upgrade --genesis-image support and passes the pin before writes. It does not install or prove provenance of the patched octops binary, and no patched path has been deployed.",
       "evidence": [
         {
-          "resource": "repo://builds/network-policy-generators/README.md",
-          "version": "repo-file-v1:sha256:ab530e5e0953b01bde7f8d3a834ef5d5384ec9338d1641b3c9fb66c07acff223"
+          "resource": "repo://builds/network-policy-generators/README.md#L37-L53",
+          "version": "repo-lines-v1:sha256:3cd8e216c7571afb293bb510bc738792cce091fc0601176ab9abac2a3fcb228d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZDk0NWQ5NTA1NDE4YzM5ZjU5ZWY5MjJhM2Y2M2JhYjdlMjViNDRhYmFiN2JlZTJjNjE0OWMwNGIzZGUzMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmNkYjA5NDdkZWM4Yzk0NTk3NjRjMWI1MzBiYzA0MTEwZjg0YjJkMGNhMzg5ZjM0NjljMmU0NzIwOTI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5OGI4M2E1Y2FiMDlhYTVlNjM4OWI5YmNlMzZjMzI3MGNjNDRjMTU3NWNkYTZmM2VmZGJjODA0YjkxMDhhNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YjliY2JlMmQ0YWRiM2ZlMGM3MDQwYjhkMDc5MDQwNDViYmE5YjcwZDViODcwOWZlOGU3ZWE1MjIzZWM4ZmQifQ"
         },
         {
-          "resource": "repo://builds/network-policy-generators/octelium-v0.35.0.patch",
-          "version": "repo-file-v1:sha256:7b2adf913b5f14f225d5913adbc5c3420dab74da6f91d9c2434d8139b4866da5"
+          "resource": "repo://scripts/octelium-cluster-bootstrap.sh#L212-L279",
+          "version": "repo-lines-v1:sha256:858750181a11a974529b853526cbdcca0654c0d054e3f280c0ca0a17a733eb4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNjdjNmQwNjc0NGI1MDI5MDQ2Y2UyMzBmNzM4MzgxZDk4ZjI5NTk1NzIwZGFmMjMxZmQ3YzcyZDhiNzZkNGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1ZGI0ZDUzMjRjMTM3ZjJjNjZjODU5MGI5Y2QxOGViZmEwMjhhMDk2Mjc4MjFjMDUyOGY0MTcyMjgwN2E5N2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkYThkZmU1MWVmNmMxM2FlMjhhZTZlYmM3NzkxZDhhNWI5MTJmNjIyY2Y0Zjg4MTVjYzcwMGNmYmUyMzBiMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MWE5MTUyNWU0MGExOGZmMDM5NWQ5NmRiOTM2ZTA5MWI2YzA1YzI0M2E2Y2M2YjhmZjk1N2EzMGNkNjEwN2QifQ"
         },
         {
-          "resource": "repo://scripts/octelium-cluster-bootstrap.sh",
-          "version": "repo-file-v1:sha256:ba7b34bb7a89f1c753d1313b6a58a74f0e55a5e4f54a1952626764f024e0c615"
+          "resource": "repo://scripts/octelium-cluster-bootstrap.sh#L340-L365",
+          "version": "repo-lines-v1:sha256:81150c2627b53492d1cd4a4c3d6e4b0a24dd9e488eb84c9e2b005ef0004d0903:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4ZjJmZDM5MzE2ZGI1MWM1NWZmN2QyNzRlZjhjMzQ0NjQ5YjgxYmI2MDExYzFjOGRiN2VlZjdmMDc1ZTBiZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzNWRmM2Y3MjlkZmE3ZWVlNmY5MTc2N2QwNDViOTZiNmQzYWEzYzI4M2ExODRjYzM4OWRiYTQ2OTZkZTE0ZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4ZDI1YjI5N2VjZjY0ZDM5Y2E2NTMyY2QxMGFmYzdlMjI2MTE0OGRkYWU2NWQ1MTMxMTIyMTg3NDY5ZDc2ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3NTE4N2Q1M2NhZDZjOThjMTNiZDE0MDZkNTBhZWFlOThmODcyNTIxYjJmYWEyOGJkNjcxMmE2YmEyZGE1YmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_19bc45b323174c03b580113848e1c8b8",
+      "statement": "The staged exact-current-main policy-generator publisher builds three patched Linux/amd64 images before credentials and requires authenticated Harbor pulls and signature verification before emitting Cordium Genesis, Octelium Genesis, and octops digests. It has not run, so its source is not a publication or deployment receipt; actual generated-policy renders and isolated-canary traffic remain independent gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/policy-generator-images.yml#L14-L104",
+          "version": "repo-lines-v1:sha256:930f443bdc253ea3fb0087fa53dd92730ff004c75532d7b54c19534333b33388:eyJzZWxlY3RlZExpbmVDb3VudCI6OTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZDgwMTU0ZWQ0MmZjNWM3NzliMTMzMTU3OGI1OGI4OWM4MDFlYWNlNzRmMjRjZDQ4ZWI0YTIzNTc5NDBhOTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhZGI2MmQ4OTNmNTM3Mzc2Nzk2MzdlN2EwY2YxN2Q2M2E1ODc1MGI0NjEwNDU3NTVkNzIzNWQ1MDU0Mjk3ZTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0MjdmNTI0MWI1ZGJmM2RjOGNlZjZkOTMwMDU1NTUyN2Q0OWIyMjRhNmY0ZjdkN2UzMzUxNjZlNDBlOGFkMjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3Yzk0NjBjZTEwZWY3ZDVhOWVmMWIyYjI0Y2NjZTM3OTk3MzI3NWZkNjQ3MTYxMGU1YTQ3MWQyN2JkMTIyNDQifQ"
+        },
+        {
+          "resource": "repo://builds/network-policy-generators/README.md#L21-L53",
+          "version": "repo-lines-v1:sha256:1222460d96c3af235be2b5ef9a541643d10ae203ad82a26e6c092c87e965819a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhYjU4NWIyZTQ3ZGQ5NTc2MDRlOWZlYWNjNzc3MmFhOTY5MzA4ZGEzOThhODM4MWFkMTcxMjYzNzc3MjM2MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmNkYjA5NDdkZWM4Yzk0NTk3NjRjMWI1MzBiYzA0MTEwZjg0YjJkMGNhMzg5ZjM0NjljMmU0NzIwOTI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhYzc3YTg1NDkxOGNiMGQxMDA5OGM3OWZlNWZiMjczM2I1NjRlYWI2YmQ5ZjQ0NmI5MjczMzE2MWM5MjZmMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YjliY2JlMmQ0YWRiM2ZlMGM3MDQwYjhkMDc5MDQwNDViYmE5YjcwZDViODcwOWZlOGU3ZWE1MjIzZWM4ZmQifQ"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md#L182-L213",
+          "version": "repo-lines-v1:sha256:66dc61833c97536c3dca3aa192105acfdb7c275b9268c9a9ec0f1970280e211e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwYzQ5OTg2N2I2MDk0ZDM5YmZkZmRmMDBhYWRjMjU2ZDBkNDliNjc4N2UwMjE1OGFjYTY2M2QwZmRkNGUwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ZjQ3NDk0NzM4NjBiMzAwZjA4N2U3ZWY4OTVlZWNmYzIyMDEzN2QwNTM5NDc2M2I5M2Q4ZDE5OTA0NDExZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5OGRlNWMyNTQ3ZGY4NTUyOTEzYzNlNGRlMjk0MTMwYzU5NmRjN2I3YWM3MzcyN2E1MDRmMzZkMWUzOGEyNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNzE3NDhiZmVmNzJjNzcwYmVmMTlhMmExOThkOTM1YTBkNTMxZTkzM2Q3MTNjNWZiZDM4ODNiM2E0ZGJhMWQifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T01:52:54.872Z"
+    "at": "2026-10-28T02:01:41.290Z"
   }
 }

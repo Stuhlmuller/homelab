@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:79b29ff265e37149df3306bf34c4b25929e1d5ea7345781f984e68d42ed411d3",
+  "pageVersion": "sha256:b6808826b884a7f34bced9811c1676c85f0167d259f983269cbeecb3eee65f5a",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://docs/octelium.md",
-          "version": "repo-file-v1:sha256:b58cb995175515ecdbdba040dcf3b67d12973ed3efb681f3cd3b138c4549ac2b"
+          "version": "repo-file-v1:sha256:4cd5e193622a80d847422c21a2c6aaca220f89745e1377b43d86da3a8a64b79c"
         }
       ]
     },
@@ -83,10 +83,42 @@
           "version": "repo-file-v1:sha256:803bfdbd69b7407d4b93efb5524c38372b5b6e9fbaa0780d2d9f63dc85a636b4"
         }
       ]
+    },
+    {
+      "id": "claim_c085332c180f45f59b78c283cdedd3d2",
+      "statement": "The Octelium bootstrap wrapper reads a currently null reviewed Genesis image pin. Without a pin it checks that the network-policy enforcer DaemonSet is absent before waits and at octops invocation, failing closed on unreadable state. With a committed fixed Harbor digest for Octelium 0.35.0 it checks init and upgrade flag support and passes --genesis-image before a live write.",
+      "evidence": [
+        {
+          "resource": "repo://builds/network-policy-generators/source.json",
+          "version": "repo-file-v1:sha256:40faa9f044f657ffdde383c4ed09c8620f46df1dc64ee7d3c06e80d216305028"
+        },
+        {
+          "resource": "repo://scripts/octelium-cluster-bootstrap.sh#L212-L279",
+          "version": "repo-lines-v1:sha256:858750181a11a974529b853526cbdcca0654c0d054e3f280c0ca0a17a733eb4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNjdjNmQwNjc0NGI1MDI5MDQ2Y2UyMzBmNzM4MzgxZDk4ZjI5NTk1NzIwZGFmMjMxZmQ3YzcyZDhiNzZkNGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1ZGI0ZDUzMjRjMTM3ZjJjNjZjODU5MGI5Y2QxOGViZmEwMjhhMDk2Mjc4MjFjMDUyOGY0MTcyMjgwN2E5N2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNkYThkZmU1MWVmNmMxM2FlMjhhZTZlYmM3NzkxZDhhNWI5MTJmNjIyY2Y0Zjg4MTVjYzcwMGNmYmUyMzBiMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3MWE5MTUyNWU0MGExOGZmMDM5NWQ5NmRiOTM2ZTA5MWI2YzA1YzI0M2E2Y2M2YjhmZjk1N2EzMGNkNjEwN2QifQ"
+        },
+        {
+          "resource": "repo://scripts/octelium-cluster-bootstrap.sh#L340-L365",
+          "version": "repo-lines-v1:sha256:81150c2627b53492d1cd4a4c3d6e4b0a24dd9e488eb84c9e2b005ef0004d0903:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4ZjJmZDM5MzE2ZGI1MWM1NWZmN2QyNzRlZjhjMzQ0NjQ5YjgxYmI2MDExYzFjOGRiN2VlZjdmMDc1ZTBiZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzNWRmM2Y3MjlkZmE3ZWVlNmY5MTc2N2QwNDViOTZiNmQzYWEzYzI4M2ExODRjYzM4OWRiYTQ2OTZkZTE0ZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4ZDI1YjI5N2VjZjY0ZDM5Y2E2NTMyY2QxMGFmYzdlMjI2MTE0OGRkYWU2NWQ1MTMxMTIyMTg3NDY5ZDc2ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3NTE4N2Q1M2NhZDZjOThjMTNiZDE0MDZkNTBhZWFlOThmODcyNTIxYjJmYWEyOGJkNjcxMmE2YmEyZGE1YmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_40af800ec23445d193748fa14e354aba",
+      "statement": "The staged policy-generator publisher has no accepted digest, and the bootstrap wrapper does not install the patched octops binary. Its help check proves flag support only; a reviewed binary installation from the authenticated signed octops image, actual policy renders, and isolated-canary traffic qualification remain prerequisites to enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://builds/network-policy-generators/README.md#L37-L53",
+          "version": "repo-lines-v1:sha256:3cd8e216c7571afb293bb510bc738792cce091fc0601176ab9abac2a3fcb228d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZDk0NWQ5NTA1NDE4YzM5ZjU5ZWY5MjJhM2Y2M2JhYjdlMjViNDRhYmFiN2JlZTJjNjE0OWMwNGIzZGUzMjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4YmNkYjA5NDdkZWM4Yzk0NTk3NjRjMWI1MzBiYzA0MTEwZjg0YjJkMGNhMzg5ZjM0NjljMmU0NzIwOTI3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5OGI4M2E1Y2FiMDlhYTVlNjM4OWI5YmNlMzZjMzI3MGNjNDRjMTU3NWNkYTZmM2VmZGJjODA0YjkxMDhhNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU3YjliY2JlMmQ0YWRiM2ZlMGM3MDQwYjhkMDc5MDQwNDViYmE5YjcwZDViODcwOWZlOGU3ZWE1MjIzZWM4ZmQifQ"
+        },
+        {
+          "resource": "repo://docs/octelium.md#L753-L780",
+          "version": "repo-lines-v1:sha256:4f981935f155055b323b5018f49e8d90f0fe6c1f2770a879a1cb4c1d11efec43:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhN2IzY2RhMGJmM2ZiZDE0YzUwZjY5MzBjMWFkNTJlMDVkYTY1N2JmMDc2MzBlY2MyYTY1N2FlNjE2ZThlZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExZGZiNzczNGNlOTEzNWZkMmI3ODJkMTk3ZjI2Y2U0ZDBkNGEwYmExYjI4ZWVkNDI0OGI1NmI0OGZlMzk5NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzY2RmODg4NWVkMDY5YTgxZDI0OTk2NzM4NmIxNTlhNzNjODlkY2QzMWVmMjRiNzMwZGVkMGJiNDZlYjk3OGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyOWM4ZTBhMGE5ZTRiNGQwYjgyY2RlZjY3MWU5MGNhMmUxMzllYjEyYzUzZTg3N2RmMjU1YTg5YmY2NjQ1YzIifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-27T09:54:29.479Z"
+    "at": "2026-10-28T01:57:21.571Z"
   }
 }

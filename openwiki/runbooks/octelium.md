@@ -4,6 +4,10 @@ title: "Octelium"
 description: "Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence."
 tags: ["runbook", "octelium", "access"]
 sources:
+  - id: openwiki-source-c73e1fecbb517a520b6d8a37
+    resource: repo://builds/network-policy-generators/README.md
+  - id: openwiki-source-8e65ec3aafc46cd553b9e49d
+    resource: repo://builds/network-policy-generators/source.json
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -20,14 +24,16 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-94b1fdad9ed1c1d7d6286c4a
     resource: repo://scripts/ci/octelium-plan-policy-test.py
+  - id: openwiki-source-d8dda331a329c9404cfb41cb
+    resource: repo://scripts/octelium-cluster-bootstrap.sh
   - id: openwiki-source-e293d5daa2ad090397b8923e
     resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-20T04:22:56.208Z" }
+generated: { by: "codex", at: "2026-10-28T01:57:21.571Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T09:54:29.479Z
+    at: 2026-10-28T01:57:21.571Z
 ---
 
 # Octelium
@@ -54,6 +60,25 @@ Bootstrap and upgrade require the dataplane label on `zimaboard-0`, the
 control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.
 The bootstrap script refuses to mutate the cluster if these selectors fail,
 including a missing node or failed API lookup.
+
+## Staged Genesis image gate
+
+The [bootstrap wrapper](../../scripts/octelium-cluster-bootstrap.sh) reads the
+reviewed Octelium Genesis image pin from
+[`source.json`](../../builds/network-policy-generators/source.json). It is
+currently `null`. With no pin, the wrapper checks before prerequisite waits
+and again at octops invocation that the network-policy enforcer is absent;
+an unreadable DaemonSet list fails closed. With a committed pin, it accepts
+only the fixed, tagless Harbor digest for Octelium 0.35.0, checks that the
+installed `octops init` and `upgrade` commands advertise `--genesis-image`,
+and forwards that digest before any live write. All runs require `jq`.
+
+The [protected publisher](../../.github/workflows/policy-generator-images.yml)
+is staged, with no accepted image digest. The wrapper does not install patched
+`octops`; its help check proves flag support only. Publication, a reviewed
+binary installation from the authenticated and signed octops image, actual
+Genesis policy renders, and isolated-canary traffic proof remain open before
+enforcement. See [Runtime Isolation](runtime-isolation.md).
 
 The retained Cloudflare Tunnel provides old browser and native carrier routes
 until mesh acceptance. Its DNS-restoration workflow and old DNS writer are

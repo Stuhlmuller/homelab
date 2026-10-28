@@ -24,6 +24,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-225c4d98c899575724fbc37b
+    resource: repo://.github/workflows/policy-generator-images.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -150,6 +152,8 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
+  - id: openwiki-source-3e9842ef0fb82f94aa54b1a9
+    resource: repo://docs/validation-runbook.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-448b545e6f61d70638ce3d37
@@ -374,10 +378,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T01:52:54.872Z" }
+generated: { by: "codex", at: "2026-10-28T02:01:41.290Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:52:54.872Z
+    at: 2026-10-28T02:01:41.290Z
 ---
 
 # Validation Gates
@@ -721,7 +725,14 @@ Octelium gives `svc-upstream` an explicit empty Egress list. Run
 `python3 builds/network-policy-generators/verify-source.py` to check the exact
 upstream revisions, patch hashes, licenses, patch application, and targeted Go
 tests. This does not publish a patched image or qualify its actual
-policy render.
+policy render. The staged
+[publisher](../../.github/workflows/policy-generator-images.yml)
+requires a reviewed exact current `main` SHA. It runs publisher fixtures and
+builds the three patched images before credentials, then requires complete
+authenticated Harbor pulls and verified signatures before returning digests.
+It has not been dispatched; no protected publication receipt or image pin is
+recorded. Pinned digests and actual generated-policy renders are separate
+from source checks and live canary traffic qualification.
 The current live policies and expected-spec fixtures still contain the broad
 rules. Before enforcement, publish and pin reviewed generator images, use the
 patched Octelium bootstrap path, compare complete generated renders, and qualify

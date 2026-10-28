@@ -4,6 +4,8 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-225c4d98c899575724fbc37b
+    resource: repo://.github/workflows/policy-generator-images.yml
   - id: openwiki-source-77506acd031f0c0e800c4c2a
     resource: repo://builds/network-policy-generators/cordium-v0.12.7.patch
   - id: openwiki-source-1b8e7ecff7f3e3abcd292cd7
@@ -68,10 +70,10 @@ sources:
     resource: repo://scripts/octelium-cluster-bootstrap.sh
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-28T01:52:54.872Z" }
+generated: { by: "codex", at: "2026-10-28T02:01:41.290Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:52:54.872Z
+    at: 2026-10-28T02:01:41.290Z
 ---
 
 # Runtime Isolation
@@ -173,12 +175,22 @@ narrow those allows.
 remove those two rules. Run
 `python3 builds/network-policy-generators/verify-source.py` to check exact
 upstream revisions, patch hashes, licenses, application, and targeted Go tests.
-This is source-only: no corrected image is published or deployed, and the
-current Octelium bootstrap wrapper cannot pass the patched, digest-pinned
-Genesis image. Current live policies and expected-spec fixtures still contain
-the broad rules. Publish and pin reviewed images, use the patched bootstrap
-path, compare complete actual generator renders, and qualify owner destinations
-plus private-range denial on an isolated canary before enforcement.
+This is source-only: no corrected image is published or deployed. The staged
+[publisher](../../.github/workflows/policy-generator-images.yml)
+can build and publish three patched images from exact current `main`, then
+require authenticated Harbor pulls and signature verification before emitting
+digests. It has not run, so no accepted digests or deployed consumers exist.
+The [Octelium wrapper](../../scripts/octelium-cluster-bootstrap.sh) now reads
+its reviewed Genesis image pin, currently `null`. Without a pin it refuses an
+installed or unreadable network-policy enforcer before prerequisite waits and
+at octops invocation. With a reviewed tagless Harbor digest, it checks both
+installed octops commands for `--genesis-image` and forwards the pin before
+writes. It still has no reviewed path to install a patched octops binary from
+its authenticated and signed image. Its help check is not binary provenance.
+Current live policies and expected-spec fixtures retain the broad rules.
+Publish and pin reviewed images, install the patched binary, compare complete
+actual generator renders, and qualify owner destinations plus private-range
+denial on an isolated canary before enforcement.
 
 Qualify allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
