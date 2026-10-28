@@ -68,10 +68,10 @@ sources:
     resource: repo://scripts/octelium-cluster-bootstrap.sh
   - id: openwiki-source-aa83e90c74e65ee6187dbbb5
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
-generated: { by: "codex", at: "2026-10-28T01:48:05.682Z" }
+generated: { by: "codex", at: "2026-10-28T01:52:54.872Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:48:05.682Z
+    at: 2026-10-28T01:52:54.872Z
 ---
 
 # Runtime Isolation
@@ -168,7 +168,8 @@ binds the remaining ten. All 17 complete expected specs are now source-bound;
 pinned generator-binary renders remain unverified. The pinned upstream
 `ws-main` and `svc-upstream` constructors hardcode all-port public IPv4 and
 IPv6 egress without a public-egress input; additive NetworkPolicies cannot
-narrow those allows. [Staged source patches](../../builds/network-policy-generators/README.md)
+narrow those allows.
+[Staged source patches](../../builds/network-policy-generators/README.md)
 remove those two rules. Run
 `python3 builds/network-policy-generators/verify-source.py` to check exact
 upstream revisions, patch hashes, licenses, application, and targeted Go tests.

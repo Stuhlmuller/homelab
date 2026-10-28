@@ -374,10 +374,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T01:48:05.682Z" }
+generated: { by: "codex", at: "2026-10-28T01:52:54.872Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:48:05.682Z
+    at: 2026-10-28T01:52:54.872Z
 ---
 
 # Validation Gates
@@ -720,7 +720,8 @@ Cordium removes its public egress rule while preserving internal and DNS rules;
 Octelium gives `svc-upstream` an explicit empty Egress list. Run
 `python3 builds/network-policy-generators/verify-source.py` to check the exact
 upstream revisions, patch hashes, licenses, patch application, and targeted Go
-tests. This does not publish a patched image or qualify its actual policy render.
+tests. This does not publish a patched image or qualify its actual
+policy render.
 The current live policies and expected-spec fixtures still contain the broad
 rules. Before enforcement, publish and pin reviewed generator images, use the
 patched Octelium bootstrap path, compare complete generated renders, and qualify
