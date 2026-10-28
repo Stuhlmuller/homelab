@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091 # shared helper path is resolved from this script
 set -euo pipefail
 umask 077
 
@@ -127,7 +128,7 @@ plan_deleted_terragrunt_units() {
         exit 1
       fi
       if [[ -s "$state_list_file" ]]; then
-        terragrunt plan -destroy -refresh=false -lock=false -out plan.out -no-color >/dev/null
+        terragrunt plan -destroy -refresh=false -lock=false -out plan.out -no-color
       else
         echo "Deleted Terragrunt unit ${unit_dir} has no resources in remote state."
       fi

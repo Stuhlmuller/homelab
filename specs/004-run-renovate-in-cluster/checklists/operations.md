@@ -28,7 +28,7 @@
 - [x] CHK013 Are proposal creation and allowed auto-merge described consistently across User Story 1, FR-003, and SC-005? [Consistency, Spec §User Story 1, Spec §FR-003, Spec §SC-005]
 - [x] CHK014 Is the all-owned-repositories scope reconciled with the plan's archived and inaccessible exclusions? [Conflict, Spec §FR-001, Plan §Technical Context]
 - [x] CHK015 Are repository policy precedence and the preserved global auto-merge policy consistent across spec, plan, and runner contract? [Consistency, Spec §FR-002, Spec §FR-003]
-- [x] CHK016 Is the one-writer cutover order specified, including legacy workflow deletion and run drainage, guarded Actions-key retirement before cluster writes, guarded key restore before legacy rollback, and the allowed no-writer gap? [Consistency, Spec §FR-009, Plan §Design]
+- [x] CHK016 Is the one-writer cutover order specified, including legacy workflow deletion and run drainage, guarded Actions-key retirement before cluster writes, cluster-first rollback, conditional GitHub-hosted Harbor proof before guarded legacy restore, and the allowed no-writer gap? [Consistency, Spec §FR-009, Plan §Design]
 - [x] CHK017 Are cache recovery and rollback requirements consistent with the prohibition on ad hoc live mutation? [Consistency, Spec §FR-006, Spec §FR-011, Constitution §I]
 
 ## Acceptance Criteria Quality

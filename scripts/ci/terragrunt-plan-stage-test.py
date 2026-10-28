@@ -169,60 +169,16 @@ class PrivatePlanStageTest(unittest.TestCase):
             self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
             self.assertFalse(output.exists())
 
-    def test_workflow_tail_executes_only_the_verified_helper(self):
-        # Execute the actual failure tail; no Nix, credentials, or live commands.
+    def test_workflow_streams_plan_output_and_keeps_artifacts_private(self):
         workflow = WORKFLOW.read_text()
-        tail = textwrap.dedent(workflow.split("\n          EOF\n", 1)[1]
-                               .split("\n  terragrunt-plan-skipped:", 1)[0])
-        withheld_error = ("::error::Live plan failed; detailed output was withheld "
-                          "because this is a public repository. Reproduce it locally.\n")
-        secret = "SYNTHETIC_PRIVATE_VALUE_DO_NOT_EMIT"
-        original = HELPER.read_text()
-        variants = (
-            original,
-            ': > executed\ncat\n',
-            ': > executed\ncat >&2\n',
-            ': > executed\nif [[ ${GITHUB_ACTIONS:-} == true ]]; then cat; fi\n',
-            None,
-        )
-        for helper_source in variants:
-            with self.subTest(helper_source=helper_source), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                sha256sum = root / "sha256sum"
-                sha256sum.write_text("""#!/usr/bin/env python3
-import hashlib
-import sys
-
-if sys.argv[1:] != ["--check", "--status"]:
-    raise SystemExit(2)
-try:
-    expected, path = sys.stdin.read().strip().split(None, 1)
-    actual = hashlib.sha256(open(path, "rb").read()).hexdigest()
-except (OSError, ValueError):
-    raise SystemExit(1)
-raise SystemExit(0 if actual == expected else 1)
-""")
-                sha256sum.chmod(0o700)
-                helper = root / "scripts/ci/terragrunt-plan-stage.sh"
-                helper.parent.mkdir(parents=True)
-                if helper_source is not None:
-                    helper.write_text(helper_source)
-                private_log = root / "private.log"
-                private_log.write_text(f"{secret}\n::group::Kubernetes API check\n{secret}\n")
-                result = subprocess.run(
-                    ["bash", "-euo", "pipefail", "-c", 'private_log="$1"\nif true\n' + tail,
-                     "failure-tail-test", str(private_log)],
-                    cwd=root, env=dict(os.environ, CI="true", GITHUB_ACTIONS="true",
-                                       PATH=str(root) + os.pathsep + os.environ["PATH"]),
-                    text=True, capture_output=True, timeout=5, check=False)
-                expected = withheld_error
-                if helper_source == original:
-                    expected = ("Live plan last recognized stage: api; details withheld.\n"
-                                "Live plan failure hint: unknown; details withheld.\n" + expected)
-                self.assertEqual(result.returncode, 1)
-                self.assertEqual(result.stdout, expected)
-                self.assertEqual(result.stderr, "")
-                self.assertFalse((root / "executed").exists())
+        run = workflow.split("      - name: Run Live Terragrunt Plan\n", 1)[1]
+        run = run.split("\n  terragrunt-plan-skipped:", 1)[0]
+        self.assertIn("HOMELAB_AZUREAD_PLAN_REPORT_FILE=\"$azuread_report\" nix develop --command bash <<'EOF'", run)
+        self.assertNotIn('private_log', run)
+        self.assertNotIn('details withheld', run)
+        self.assertIn("trap 'rm -rf -- \"$private_dir\"' EXIT", run)
+        self.assertIn('bash scripts/ci/terragrunt-plan.sh', run)
+        self.assertNotIn('>/dev/null', PLAN_RUNNER.read_text().split('terragrunt plan -destroy', 1)[1].split('\n', 1)[0])
 
 
 if __name__ == "__main__":

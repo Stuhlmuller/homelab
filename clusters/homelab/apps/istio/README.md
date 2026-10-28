@@ -12,15 +12,21 @@ The target's four digest-pinned images already live in the reviewed
 and [`harbor-images.json`](../../../../scripts/config/harbor-images.json).
 Those pins are source inventory, not successful Harbor publication. The
 candidate records the SHA-256 of each official 1.28.10 chart archive and the
-intended base/CRDs, istiod, CNI, ztunnel, two-gateway sequence. The protected
-`harbor-helm-charts.yml` workflow publishes five chart archives to private
-Harbor, pulls each as the robot reader, and records its OCI manifest digest.
-The active-phase candidate must bind that protected run and all five digests;
-Argo sources use `oci://harbor.stinkyboi.com/mirror/helm/<chart>` with
-`targetRevision: sha256:<manifest>`. The AppProject allows only those five
-paths, and an ExternalSecret supplies Argo's OCI reader credential. All six
-active chart sources remain on 1.27.3 until a reviewed phase PR. The current
-chart source faces [Istio's GCS retirement](https://istio.io/latest/blog/2026/retirement-of-gcp/).
+intended base/CRDs, istiod, CNI, ztunnel, two-gateway sequence. Offline Helm
+renders with the existing release names, values, and parameters found every
+resource labeled with its release name and no resource-identity changes except
+that the 1.28.10 istiod chart omits the old `istiod` PodDisruptionBudget.
+The active 1.27.3 sources use Istio's replacement chart repository at
+`https://blob.istio.io/istio-release/charts`; the downloaded archives match
+these pins. A future active 1.28 phase uses private Harbor OCI charts. The
+protected `harbor-helm-charts.yml` workflow publishes five chart archives,
+pulls each as the robot reader, and records its OCI manifest digest. That
+phase must bind the protected run and all five digests; Argo sources use
+`oci://harbor.stinkyboi.com/mirror/helm/<chart>` with
+`targetRevision: sha256:<manifest>`. The AppProject allows only those paths,
+and an ExternalSecret supplies Argo's OCI reader credential. All six active
+chart sources remain on 1.27.3 until a reviewed phase PR. A failed chart
+fetch blocks the hop; restore the prior source through a reviewed plan.
 
 The five unreferenced image overlays in [`upgrade-1.28.10/`](upgrade-1.28.10/)
 pin pilot, CNI, ztunnel, and injected gateway images by digest. Istiod phases

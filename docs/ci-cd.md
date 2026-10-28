@@ -26,8 +26,8 @@ This repository uses GitHub Actions for the review and rollout path:
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
-  Octelium, and run the live plan with details withheld. Other same-repository
-  changes use a no-permission skip-check job;
+  Octelium, and stream the live Terragrunt plan to the Actions log. Other
+  same-repository changes use a no-permission skip-check job;
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
@@ -161,14 +161,15 @@ checks remain fresh.
   the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
   briefly affects CI, operator, and Cordium access, so validate both Services
   after rotation.
-- Plans are not uploaded, printed, or copied into pull requests because
-  Terraform/OpenTofu plans can include sensitive state context. Trusted
-  same-repository jobs evaluate private plans with Conftest and delete them on
-  exit. The required check is the only public plan result. Live plan, apply,
-  diagnostic, and Cloudflare reconciliation output is also withheld from public
-  Actions logs; reproduce failures from an approved local operator session.
-  Workflow policy
-  rejects direct live CLI output or reading the private log after the wrapper.
+- Saved plans and JSON exports are not uploaded or copied into pull requests.
+  Trusted same-repository jobs evaluate them with Conftest and delete them on
+  exit. The PR plan streams Terraform's human-readable output, including
+  failures, to the Actions log. Secret values in Terraform are marked sensitive
+  so the human-readable plan redacts them. Terraform's sensitivity markers do
+  not redact provider error messages; review new providers and resources before
+  adding them to this public-log plan scope. Apply, diagnostic, and Cloudflare
+  reconciliation output remains withheld from public Actions logs. Workflow
+  policy permits only the reviewed PR plan command to stream live CLI output.
   On a protected apply failure, a reviewed classifier may print one fixed
   phase label after verifying its SHA-256; raw output remains withheld.
   Live credentials exist only on the exact step that consumes them. Static
@@ -211,6 +212,10 @@ checks remain fresh.
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
+- For a layout-only reconciliation, `existing_argocd_only=true` selects only
+  Argo CD Applications already registered live. The saved-plan gate rejects
+  any creation in that selection; new registrations still require their
+  separately reviewed targeted dispatch and prerequisites.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted units under the historical `IaC/bootstrap`
@@ -379,26 +384,31 @@ create or rotate the GitHub environment secret in both CI environments:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
-scripts/octelium-ci-credential.sh
+scripts/octelium-ci-credential.sh --apply-catalog
 ```
 
 The helper requires an authenticated Octelium admin session for `octeliumctl`
-and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
-or rotates the `homelab-ci` credential, pipes the generated token directly into
-the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
+and GitHub CLI access to `Stuhlmuller/homelab`. The bootstrap command applies
+the full catalog before creating the credential. Routine rotations omit
+`--apply-catalog` and verify the existing dedicated User, Policy, Service, and
+credential binding without changing the catalog. The helper pipes the token
+directly into the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 `homelab-production`, and removes the temporary token file before exit.
 For existing credentials, the helper verifies GitHub environment secret write
-access by writing and deleting a temporary preflight secret, reconciles the
-credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
-User so Octelium cannot reuse its old expiry, then rotates the token. It
-refuses to rotate an existing credential when GitHub secret updates are
+access by writing and deleting a temporary preflight secret. Routine rotation
+fails if the credential binding differs from User `homelab-ci` and Policy
+`homelab-ci-kubernetes-api-access`; explicit catalog application may reconcile
+that binding. The helper deletes every Session for the dedicated User so
+Octelium cannot reuse its old expiry, then rotates the token. It reads every
+listing page first and stops before deletion if that inventory is incomplete.
+It refuses to rotate an existing credential when GitHub secret updates are
 disabled, because that would invalidate the old CI token without storing the
 replacement.
 Run rotation in a quiet window: deleting the old Session invalidates the
 current bearer before the two GitHub environment secrets are updated. After
-token generation, the helper retries each secret write until both environments
-hold the replacement; if interrupted, rerun the helper.
+token generation, the helper retries each secret write five times. If either
+environment still fails, or rotation is interrupted, rerun the helper to put a
+fresh replacement in both environments.
 When recovering through a temporary Octelium CLI session, pass the unique home
 created by the recovery block below. If the public Octelium API path is not
 carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
@@ -414,10 +424,11 @@ Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
 policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
 CI receives Octelium `401` from authenticated `kubectl` against
-`kubernetes-api-ci`, reapply the catalog and rotate the credential with
-`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
-failure before rotating. Reconcile the upstream kubeconfig Secret when its
-Kubernetes credential changes.
+`kubernetes-api-ci`, first try routine rotation with
+`scripts/octelium-ci-credential.sh`. Apply the full catalog with
+`--apply-catalog` only after reviewing a relevant catalog change or drift.
+Treat `403` as a policy or User-state failure before rotating. Reconcile the
+upstream kubeconfig Secret when its Kubernetes credential changes.
 Recover the primary credential directly with the checked helper. Run this block
 from the repository root; it uses a private, unique admin home and removes it
 only after Octelium confirms logout:
@@ -454,9 +465,9 @@ only after Octelium confirms logout:
 )
 ```
 
-The helper applies the primary catalog with checked resource verification,
-invalidates its stale Sessions, and writes the replacement token to both GitHub
-environments. Dispatch and bind verification to the exact `main` commit:
+The helper verifies the primary CI access resources, invalidates stale Sessions,
+and writes the replacement token to both GitHub environments. Dispatch and bind
+verification to the exact `main` commit:
 
 ```sh
 set -euo pipefail

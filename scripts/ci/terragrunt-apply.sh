@@ -189,13 +189,28 @@ plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
   local plan_json_files=()
+  local live_apps
+  local app_unit
+  local app
 
   plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-argocd-apps.XXXXXX")"
   cleanup_dirs+=("$plan_dir")
+  filter="$(cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter)"
+  if [[ "$existing_argocd_only" == true ]]; then
+    live_apps="$(kubectl -n argocd get applications -o json | jq -r '.items[].metadata.name')"
+    [[ -n "$live_apps" ]] || { echo "No live Argo CD Applications found; refusing existing-only apply." >&2; return 1; }
+    for app_unit in IaC/homelab/us-west-2/apps/*/argocd/terragrunt.hcl; do
+      app="${app_unit%/argocd/terragrunt.hcl}"
+      app="${app##*/}"
+      if ! grep -Fxq "$app" <<<"$live_apps"; then
+        filter+=" | !${app}/argocd"
+        echo "::notice::Skipping absent Argo CD Application ${app}; use a targeted apply after its gates."
+      fi
+    done
+  fi
 
   (
     cd IaC/homelab/us-west-2/apps
-    filter="$(terragrunt_argocd_app_filter)"
     terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 --source-update \
       --out-dir "$plan_dir" --json-out-dir "$plan_dir" -- plan -no-color
   )
@@ -214,7 +229,8 @@ plan_and_apply_argocd_apps() {
       echo "Selected Istio Application has no saved plan to review." >&2
       return 1
     fi
-    if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+    if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]] &&
+      { [[ "$existing_argocd_only" != true ]] || grep -Fxq istio <<<"$live_apps"; }; then
       filter="$(cd IaC/homelab/us-west-2/apps && terragrunt_argocd_app_filter)"
       case "$filter" in
         '*/argocd')
@@ -247,6 +263,12 @@ plan_and_apply_argocd_apps() {
   fi
 
   conftest test --policy policy --output github "${plan_json_files[@]}"
+  if [[ "$existing_argocd_only" == true ]] &&
+    jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("create"))))' \
+      "${plan_json_files[@]}" >/dev/null; then
+    echo "Existing-only Argo CD apply would create an Application; use a targeted apply after its gates." >&2
+    return 1
+  fi
   if jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("delete"))))' \
     "${plan_json_files[@]}" >/dev/null; then
     echo "Argo CD Application replacement or deletion requires explicit state repair or deleted-unit handling." >&2
@@ -272,7 +294,6 @@ plan_and_apply_argocd_apps() {
 
   (
     cd IaC/homelab/us-west-2/apps
-    filter="$(terragrunt_argocd_app_filter)"
     verify_current_main_commit
     terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
       --out-dir "$plan_dir" -- apply -no-color
@@ -280,11 +301,19 @@ plan_and_apply_argocd_apps() {
 }
 
 prepare_terragrunt_filter_base
+existing_argocd_only="${TERRAGRUNT_EXISTING_ARGOCD_ONLY:-false}"
+case "$existing_argocd_only" in
+  true)
+    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]] || { echo "Existing-only mode cannot target one Argo CD Application." >&2; exit 2; }
+    ;;
+  false) ;;
+  *) echo "TERRAGRUNT_EXISTING_ARGOCD_ONLY must be true or false." >&2; exit 2 ;;
+esac
 istio_phase="${ISTIO_PHASE:-}"
 case "$istio_phase" in
   '') ;;
   [1-6])
-    [[ "${TERRAGRUNT_ARGOCD_APP:-}" == istio &&
+    [[ "${TERRAGRUNT_ARGOCD_APP:-}" == istio && "$existing_argocd_only" == false &&
        "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false &&
        "${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}" == false ]] || {
       echo "Istio phase requires an unrepaired targeted Istio Application apply." >&2
@@ -296,8 +325,8 @@ esac
 backup_storage_scope="${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}"
 case "$backup_storage_scope" in
   true)
-    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false ]] || {
-      echo "The backup-storage scope cannot be combined with an Argo CD target or state repair." >&2
+    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false && "$existing_argocd_only" == false ]] || {
+      echo "The backup-storage scope cannot be combined with an Argo CD target, existing-only mode or state repair." >&2
       exit 2
     }
     ;;

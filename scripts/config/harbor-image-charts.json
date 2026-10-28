@@ -67,7 +67,7 @@
   },
   {
     "chart": "base",
-    "repoURL": "https://istio-release.storage.googleapis.com/charts",
+    "repoURL": "https://blob.istio.io/istio-release/charts",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
@@ -79,7 +79,7 @@
   },
   {
     "chart": "cni",
-    "repoURL": "https://istio-release.storage.googleapis.com/charts",
+    "repoURL": "https://blob.istio.io/istio-release/charts",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
@@ -109,7 +109,7 @@
   },
   {
     "chart": "gateway",
-    "repoURL": "https://istio-release.storage.googleapis.com/charts",
+    "repoURL": "https://blob.istio.io/istio-release/charts",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
@@ -151,7 +151,7 @@
   },
   {
     "chart": "istiod",
-    "repoURL": "https://istio-release.storage.googleapis.com/charts",
+    "repoURL": "https://blob.istio.io/istio-release/charts",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
@@ -211,7 +211,7 @@
   },
   {
     "chart": "ztunnel",
-    "repoURL": "https://istio-release.storage.googleapis.com/charts",
+    "repoURL": "https://blob.istio.io/istio-release/charts",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   }

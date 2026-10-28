@@ -123,12 +123,18 @@ The affected DNS checks above passed independently.
 `2f94bec3f4d42b4759bfe5cab566633eaa7cb6d3`; no public DNS records were
 deleted. Revalidate current `main` before the live cutover because later changes
 affect the private-name inventory and readiness checks.
-- [ ] T026 Before T018's public-callback signoff, merge the guarded
+- [X] T026 Before T018's public-callback signoff, merge the guarded
   repository-owned retirement of unused Codex Review Helper hook `589400612`,
   run its exact-ID deletion from clean reviewed `main`, then verify the ID and
   callback path are absent while fresh Github Emergency Bot and Policy Bot
   deliveries still succeed; leave the inactive n8n workflow unpublished.
-- [ ] T018 From clean reviewed `main`, capture read-only Argo, signed resolver,
+
+**T026 delivery (2026-10-25):** PR #1586 merged at `9380278e`; the guarded
+helper removed only the unused hook. Its ID and callback path are absent.
+Fresh Emergency Bot and Policy Bot deliveries returned HTTP 200; the inactive
+workflow remains unpublished.
+
+- [X] T018 From clean reviewed `main`, capture read-only Argo, signed resolver,
   all 29 ordinary tailnet DNS answers, the original 27 migration HTTPS routes and declared/live
   zero-replica suspensions, Fleet, Harbor node pulls, native API, Cordium
   reconnect, public callbacks, apex, and unrelated-name observations outside
@@ -141,14 +147,42 @@ affect the private-name inventory and readiness checks.
   `clusters/homelab/apps/istio/certificate.yaml` using
   `specs/005-retire-public-app-dns/quickstart.md` and
   `clusters/homelab/apps/traefik/CUTOVER.md`.
-- [ ] T019 Run the reviewed dry-run from `scripts/tailscale-private-dns.sh` into `~/.local/state/homelab/app-subdomain-retirement.json`; review all 26 exact owner IDs/types, preserved public records, broader wildcard/CNAME/child-delegation conflicts, effective authoritative answers, and old maximum TTL before editing confirmation fields.
 
-**T019 status:** An earlier read-only preview is stale after `main` advanced and
-AWS SSO expired. Capture a fresh preview from current reviewed `main` before
-completing evidence or deleting records.
-- [ ] T020 Record current `migrated` or `accepted_loss` decisions for every one of the 26 names and confirm the owner DNS setting, all normal-client and critical-path checks, and exact baseline in `~/.local/state/homelab/app-subdomain-retirement.json`; stop if any evidence or caller decision is missing.
-- [ ] T021 Execute `scripts/tailscale-private-dns.sh --retire-private --execute` from clean reviewed `main` with its exact `--expected-sha` and `~/.local/state/homelab/app-subdomain-retirement.json`; if a partial run occurs, investigate and retry only through the same guard after rechecking live state.
-- [ ] T022 After the saved previous TTL from the last deletion, follow any
+**T018 acceptance (2026-10-25):** On clean `main` `e10199f2`, Argo reported
+tailnet DNS, Traefik, and Fleet Synced/Healthy. The signed resolver passed all
+29 approved names over UDP/TCP; normal macOS DNS and the original 27 HTTPS
+routes passed. Fleet setup aliases returned 404 and its enrolled iPhone checked
+in after one guarded APNs ping. All four Talos nodes passed Harbor hostname
+validation and previously pulled the reviewed image. Authenticated native
+Octelium and Cordium calls and both surviving callbacks passed. A private
+baseline preserved 51 public DNS comparisons, Cloudflare delegation, four
+Ready DNS-01/certificate resources, and their source references.
+
+- [X] T019 Run the reviewed dry-run from `scripts/tailscale-private-dns.sh` into `~/.local/state/homelab/app-subdomain-retirement.json`; review all 26 exact owner IDs/types, preserved public records, broader wildcard/CNAME/child-delegation conflicts, effective authoritative answers, and old maximum TTL before editing confirmation fields.
+
+**T019 preview (2026-10-25):** The current-main preview selected exactly 26
+unique non-apex A records, all pointing at the reviewed private Traefik IP,
+with a measured 60-second maximum TTL. The full-zone conflict and effective
+authoritative-answer checks passed; the public apex and unrelated records were
+outside the deletion set. The private baseline is
+`~/.local/state/homelab/app-subdomain-retirement-e10199f2.json`.
+
+- [X] T020 Record current `migrated` or `accepted_loss` decisions for every one of the 26 names and confirm the owner DNS setting, all normal-client and critical-path checks, and exact baseline in `~/.local/state/homelab/app-subdomain-retirement.json`; stop if any evidence or caller decision is missing.
+
+**T020 evidence (2026-10-25):** The private `0600` evidence matched reviewed
+`main`, recorded `accepted_loss` for every approved off-tailnet name, and
+included the owner DNS setting, normal-client checks, and five critical paths.
+The exact-main read-only execution preflight passed before deletion. The
+completed evidence is
+`~/.local/state/homelab/app-subdomain-retirement-e10199f2-completed.json`.
+
+- [X] T021 Execute `scripts/tailscale-private-dns.sh --retire-private --execute` from clean reviewed `main` with its exact `--expected-sha` and `~/.local/state/homelab/app-subdomain-retirement.json`; if a partial run occurs, investigate and retry only through the same guard after rechecking live state.
+
+**T021 execution (2026-10-25 06:34 UTC):** The guarded helper completed from
+clean `main` `e10199f2` and read back all 26 approved owners without public
+A/AAAA/CNAME records. Subsequent TTL and client receipts are in T022–T023.
+
+- [X] T022 After the saved previous TTL from the last deletion, follow any
   child delegation and verify no effective authoritative or recursive public
   A/AAAA/CNAME answer for all 26 names and
   `dns-preflight.cordium.stinkyboi.com`; compare apex A/MX/TXT/CAA, NS/SOA,
@@ -162,7 +196,32 @@ completing evidence or deleting records.
   `clusters/homelab/apps/cert-manager/issuer.yaml`,
   `clusters/homelab/apps/traefik/certificate.yaml`, and
   `clusters/homelab/apps/istio/certificate.yaml`.
-- [ ] T023 Recheck ordinary tailnet DNS for all 29 names, the original 27 migration HTTPS/access restrictions, critical callers, and isolated-client fail-closed behavior for sampled retired names; record results and restore private DNS only through the declared path if needed, following `clusters/homelab/apps/traefik/CUTOVER.md` and `specs/005-retire-public-app-dns/contracts/cutover.md`.
+
+**T022 verification (2026-10-25):** After the 60-second TTL, 324/324 public
+A/AAAA/CNAME queries were empty for the 26 owners and a concrete Cordium child
+at both authoritative servers and two public recursive resolvers. All 51
+preserved public DNS comparisons matched the pre-cutover baseline. Cloudflare
+delegation and DNS-01 references were unchanged; the ExternalSecret,
+ClusterIssuer, and both Certificates remained Ready.
+
+- [X] T023 Recheck ordinary tailnet DNS for all 29 names, the original 27 migration HTTPS/access restrictions, critical callers, and isolated-client fail-closed behavior for sampled retired names; record results and restore private DNS only through the declared path if needed, following `clusters/homelab/apps/traefik/CUTOVER.md` and `specs/005-retire-public-app-dns/contracts/cutover.md`.
+
+**T023 acceptance (2026-10-25):** All 29 approved direct and normal-client DNS
+answers and the original 27 HTTPS routes passed after retirement. Fleet health
+was HTTP 200, setup aliases remained HTTP 404, and the enrolled iPhone MDM
+timestamp advanced after one guarded APNs ping. A guarded Harbor pull passed on
+`zimaboard-0` without reboot; authenticated native Octelium and Cordium calls
+passed. Fresh Emergency Bot and Policy Bot callback deliveries returned HTTP
+200. A controlled nonmutating outage probe at about 06:43 UTC blackholed an
+isolated UDP resolver on `127.0.0.1` at an ephemeral port:
+`nofx.stinkyboi.com`, `harbor.stinkyboi.com`, and
+`dns-preflight.cordium.stinkyboi.com` timed out. All 18 A/AAAA/CNAME public fallback
+queries through `1.1.1.1` and `8.8.8.8` had no answer; the direct private
+resolver again returned `100.99.16.74` for all three. This proves the sampled
+resolver-failure and public-DNS boundary, not OS automatic failover or a
+physical off-tailnet client's behavior.
+Emergency deliveries also intermittently returned HTTP 500 at GitHub's client
+deadline before and after deletion; monitor callback latency separately.
 
 **Checkpoint**: The source is merged, the public 26-name retirement is observed after cache expiry, preserved public DNS still works, and private app access passes.
 
@@ -218,4 +277,17 @@ Task C: T015 OpenWiki context in openwiki/runbooks/tailnet-ingress.md and openwi
 
 ## Phase 8: Convergence
 
-- [ ] T025 After T022–T023 verify the live cutover, update `clusters/homelab/apps/nofx/README.md` and `openwiki/apps/nofx.md` through a reviewed follow-up PR and the native OpenWiki workflow to state the verified public-record status with dated evidence; if retirement is deferred or incomplete, retain accurate pending/partial wording, per FR-010 (partial).
+- [X] T025 After T022–T023 verify the live cutover, update
+  `clusters/homelab/apps/nofx/README.md` and `openwiki/apps/nofx.md` through a
+  reviewed follow-up PR. Use the native OpenWiki workflow when it scopes the
+  update safely; if it selects unrelated paths, document that finding and
+  update only the affected authored page in the same PR. State the verified
+  public-record status with dated evidence; if retirement is deferred or
+  incomplete, retain accurate pending/partial wording, per FR-010 (partial).
+
+**T025 documentation (2026-10-25):** The NOFX README and authored wiki page
+now state the verified public-record retirement and private route. The native
+OpenWiki updater selected 907 unrelated changed paths since its prior snapshot
+and modified `AGENTS.md` during planning; those unintended edits were reverted.
+The reviewed follow-up uses authored-page-only wiki updates until that updater
+can scope this repository change safely.

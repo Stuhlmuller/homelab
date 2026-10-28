@@ -6,8 +6,12 @@ debug:
 
 onlyViewOnlyMode: true
 allowAdHocKialiNamespace: false
-allowAdHocKialiImage: false
+allowAdHocKialiImage: true
 allowAdHocOSSMConsoleImage: false
+image:
+  repo: harbor.stinkyboi.com/mirror/quay.io/kiali/kiali-operator
+  tag: ca2e4c356e946849883f42e9c9fe41080145cb442f93200cfca4e55a89a62039
+  digest: sha256
 # Required for the reviewed readiness init container and its numeric non-root UID.
 # The operator otherwise replaces its securityContext, dropping runAsUser.
 allowAdHocContainers: true
@@ -23,6 +27,10 @@ cr:
     auth:
       strategy: anonymous
     deployment:
+      image_name: harbor.stinkyboi.com/mirror/quay.io/kiali/kiali
+      # The operator composes the image digest and uses image_version in resource labels.
+      image_version: 59cce98a9811ce53ff3da771225d1df00f0ca4ae0819311291ae7316349a13e9
+      image_digest: sha256
       namespace: monitoring
       cluster_wide_access: true
       network_policy:
@@ -31,7 +39,7 @@ cr:
       view_only_mode: true
       additional_pod_init_containers_yaml:
         - name: wait-for-prometheus
-          image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+          image: harbor.stinkyboi.com/mirror/docker.io/curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
           imagePullPolicy: IfNotPresent
           command: ["curl"]
           args:

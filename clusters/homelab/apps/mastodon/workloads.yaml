@@ -55,7 +55,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web
-          image: ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
+          image: harbor.stinkyboi.com/mirror/ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
           imagePullPolicy: IfNotPresent
           command:
             - ruby
@@ -178,7 +178,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: sidekiq
-          image: ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
+          image: harbor.stinkyboi.com/mirror/ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
           imagePullPolicy: IfNotPresent
           command:
             - ruby
@@ -318,7 +318,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: streaming
-          image: ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b
+          image: harbor.stinkyboi.com/mirror/ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b
           imagePullPolicy: IfNotPresent
           command:
             - node

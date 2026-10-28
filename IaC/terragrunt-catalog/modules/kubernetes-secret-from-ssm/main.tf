@@ -17,7 +17,7 @@ ephemeral "aws_ssm_parameter" "secret_data" {
 locals {
   secret_data = {
     for key, parameter in ephemeral.aws_ssm_parameter.secret_data :
-    key => parameter.value
+    key => sensitive(parameter.value)
   }
 }
 

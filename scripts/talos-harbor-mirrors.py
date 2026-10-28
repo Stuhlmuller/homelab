@@ -72,6 +72,34 @@ def prepull_registry_runtime(node, execute, expected, talosconfig):
         print(f"{NODES[node]}: cached {alias}")
 
 
+def prepull_active_harbor_runtime(node, execute, expected, talosconfig):
+    images = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+    selected = [item["source"] for item in images if re.fullmatch(
+        r"docker\.io/goharbor/[a-z-]+:v2\.15\.2@sha256:[0-9a-f]{64}", item["source"])]
+    expected_names = {"harbor-core", "harbor-exporter", "harbor-jobservice", "harbor-portal",
+                      "harbor-registryctl", "nginx-photon", "registry-photon",
+                      "trivy-adapter-photon", "valkey-photon"}
+    if {source.split("/")[-1].split(":")[0] for source in selected} != expected_names or len(selected) != 9:
+        raise RuntimeError("The reviewed active Harbor runtime image scope changed")
+    client = ("talosctl", "--talosconfig", str(talosconfig), "--endpoints", "10.1.0.199", "--nodes", node)
+    if execute:
+        verify_main(expected)
+    for source in selected:
+        target = "harbor.stinkyboi.com/mirror/" + source
+        repository, digest = target.split(":v2.15.2@", 1)
+        alias = repository + "@" + digest
+        listed = {line.split()[1] for line in run(*client, "image", "list").splitlines()[1:] if len(line.split()) > 1}
+        if target not in listed and alias not in listed:
+            if not execute:
+                print(f"{NODES[node]}: missing {target}")
+                continue
+            run(*client, "image", "pull", target)
+            listed = {line.split()[1] for line in run(*client, "image", "list").splitlines()[1:] if len(line.split()) > 1}
+            if target not in listed and alias not in listed:
+                raise RuntimeError("Harbor runtime pull did not populate the node cache")
+        print(f"{NODES[node]}: cached {target}")
+
+
 def private_directory(path):
     """Require a canonical owner-only directory outside a Git checkout."""
     path = Path(path)
@@ -588,16 +616,23 @@ def main():
                         help="Change only Harbor's private node hostname mapping; preserve all registry mirrors")
     parser.add_argument("--prepull-registry-runtime", action="store_true",
                         help="Verify or pull both reviewed Harbor registry images into this node's CRI cache")
+    parser.add_argument("--prepull-active-harbor-runtime", action="store_true",
+                        help="Verify or pull all nine active Harbor 2.15.2 images through Harbor")
     parser.add_argument("--registry-auth-file", type=Path,
                         help="Absolute 0600 robot credential file in a private directory")
     args = parser.parse_args()
     TALOSCTL = args.talosctl
     os.umask(0o077)
     signal.signal(signal.SIGTERM, lambda signum, _: sys.exit(128 + signum))
-    if args.prepull_registry_runtime:
+    if args.prepull_registry_runtime or args.prepull_active_harbor_runtime:
         if args.audit or args.rollback or args.registry_host_only or args.registry_auth_file:
             raise RuntimeError("Registry pre-pull cannot be combined with mirror operations")
-        prepull_registry_runtime(args.node, args.execute, args.expected_sha, args.talosconfig)
+        if args.prepull_registry_runtime and args.prepull_active_harbor_runtime:
+            raise RuntimeError("Choose one pre-pull scope")
+        if args.prepull_registry_runtime:
+            prepull_registry_runtime(args.node, args.execute, args.expected_sha, args.talosconfig)
+        else:
+            prepull_active_harbor_runtime(args.node, args.execute, args.expected_sha, args.talosconfig)
     else:
         reconcile(args.node, args.execute, args.expected_sha, args.rollback, args.talosconfig,
                   args.registry_host_only, args.registry_auth_file, args.audit)

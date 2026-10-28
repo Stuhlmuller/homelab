@@ -32,7 +32,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: apply
-          image: ghcr.io/octelium/cordium:0.12.7@sha256:4d6728bd8d20d4b0ef2092221721c345f4739b88b1f2b263458f02283ee46eea
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/cordium:0.12.7@sha256:4d6728bd8d20d4b0ef2092221721c345f4739b88b1f2b263458f02283ee46eea
           imagePullPolicy: IfNotPresent
           args:
             - --homedir=/tmp/octelium
