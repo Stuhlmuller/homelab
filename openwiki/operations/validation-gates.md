@@ -18,8 +18,6 @@ sources:
     resource: repo://.github/workflows/octelium-private-kubernetes-apply.yml
   - id: openwiki-source-db6cf97d787f19eab7b1a68b
     resource: repo://.github/workflows/openclaw-enterprise-images.yml
-  - id: openwiki-source-664c834cf8c51093d63fbef4
-    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-02c6601e3ee1ac6a7a26e042
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
@@ -48,6 +46,10 @@ sources:
     resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
+  - id: openwiki-source-e09cefb018101171817db22b
+    resource: repo://builds/openclaw-enterprise/build.sh
+  - id: openwiki-source-f2d13cd7fa1f5fefef8c2a4a
+    resource: repo://builds/openclaw-enterprise/source.json
   - id: openwiki-source-d97499dd4d9b20eab22451de
     resource: repo://builds/openwiki/README.md
   - id: openwiki-source-d9e93037542f56be8db8a431
@@ -320,8 +322,6 @@ sources:
     resource: repo://scripts/config/harbor-prometheus-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
     resource: repo://scripts/config/harbor-renovate-images.json
-  - id: openwiki-source-8a05c67bc78632e51f4366db
-    resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
@@ -364,10 +364,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T01:30:28.100Z" }
+generated: { by: "codex", at: "2026-10-28T03:14:23.362Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:30:28.100Z
+    at: 2026-10-28T03:14:23.362Z
 ---
 
 # Validation Gates
@@ -1771,8 +1771,15 @@ multi-root restore verification are complete. Protected `all`
 passed the historical 214-image catalog. Later
 [run `40172274517`](https://github.com/Stuhlmuller/homelab/actions/runs/40172274517)
 passed the expanded 215-source catalog and authenticated pulls, with its
-six-file publication bundle matching then-current `main`. T004 remains open
-for the changed Enterprise operator source and requires current-source proof.
+six-file publication bundle matching then-current `main`. The proposed full
+[catalog](../../scripts/config/harbor-images.json) now lists 222 pinned public
+sources, including both pinned stock Node build bases and the CLI's current
+Chainguard static base. The [coverage gate](../../scripts/ci/harbor-images-check.py)
+also checks local Enterprise build inputs; the [build script](../../builds/openclaw-enterprise/build.sh)
+checks both archived runtime Dockerfiles against the pinned slim Node base
+before building. These source checks do not publish images. T004 still needs a
+new exact-main full-catalog mirror receipt and a newly signed, fully pulled
+CLI image with its digest pinned in source.
 The isolated canary, platform upgrades, compatible legacy boot and new-state
 restore remain acceptance gates. Source-only static
 checks do not activate the agent.
@@ -2469,8 +2476,10 @@ copy errors terminal as `command-failed`. These source checks and the one-image
 receipt do not pass T004. Full run
 [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
 failed at this Prometheus image. The later protected 214-image and 215-source
-`all` runs passed at their dated revisions; changed Enterprise operator source
-still needs current-source publication and a pinned digest.
+`all` runs passed at their dated revisions. The later operator has a signed,
+fully pulled receipt and a pinned digest in the disabled declaration; the
+new 222-source catalog and changed CLI base need fresh exact-main publication
+before T004 can pass.
 
 The fixed Renovate scope contains eight pinned source references. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
