@@ -31,20 +31,20 @@
       "completedRunId": "1ab5622d-2e95-4978-aa7b-cdb9101432c0"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
-      "sourceFingerprint": "sha256:276386d422b979ab9978ba819a9a9b89701515064582d1696e67e1888bc48768",
-      "visibleSourceFingerprint": "sha256:423649a18758dea3f6016e5469a9c2e96fe5a55a753af213b886d37a1bab9406",
-      "pageVersion": "sha256:85205699934601fae8ea4ed36479b823b37a47fc95ab672f55a7cd67da782a54",
+      "pageVersion": "sha256:4a7952a0ea39a6ceb2e395691e6bd36ec7db9591c016c0c3a78a397d1a0ac170",
       "completedBy": "codex",
-      "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/architecture/storage-and-state.md": {
-      "pageVersion": "sha256:85ccd45489f5d8b9839105f677e4a26f6993f7544ec602b0df2d2d06e9980b60",
+      "pageVersion": "sha256:9a7a831847e9faa743a111e552e9347faa89ea07bad6ab320227167ed17d76d5",
       "completedBy": "codex",
-      "completedRunId": "74ae757e-e477-4d9e-bf40-1c94a354ae20",
-      "gitHead": "18809cc8d5b70ea3b43509efd9aaec2bff7ef6d3",
-      "sourceFingerprint": "sha256:fdd2ad33b325303dff2cf3319f41eb1f882d43d8f118f72167499f5f4703f04d",
-      "visibleSourceFingerprint": "sha256:3e0c7f934e2b26881cb69552d8763516d07935530c388ae9cbb00676a86ad433"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/operations/agent-workflows.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -108,12 +108,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/operations/etcd-offsite-publication.md": {
-      "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
-      "sourceFingerprint": "sha256:276386d422b979ab9978ba819a9a9b89701515064582d1696e67e1888bc48768",
-      "visibleSourceFingerprint": "sha256:423649a18758dea3f6016e5469a9c2e96fe5a55a753af213b886d37a1bab9406",
-      "pageVersion": "sha256:76e2573dc3d304e56da6705b44bc7bab1960286327c0c8f75bf85f5d1761e9ba",
+      "pageVersion": "sha256:f175eecb28632949d497bf90b11fd4ec91d706a2910de94658f2d23f10fb9396",
       "completedBy": "codex",
-      "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/operations/etcd-offsite-storage.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -235,12 +235,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:ebe2315c287465fcc51a832b82f9078ecd4e8da570bc8f1a33deebfbdf44b491",
+      "pageVersion": "sha256:75b7bf43f49205dbd3d0b7145fa880f323f1f68b793a4574fc4d55259ac83ce8",
       "completedBy": "codex",
-      "completedRunId": "74ae757e-e477-4d9e-bf40-1c94a354ae20",
-      "gitHead": "18809cc8d5b70ea3b43509efd9aaec2bff7ef6d3",
-      "sourceFingerprint": "sha256:fdd2ad33b325303dff2cf3319f41eb1f882d43d8f118f72167499f5f4703f04d",
-      "visibleSourceFingerprint": "sha256:3e0c7f934e2b26881cb69552d8763516d07935530c388ae9cbb00676a86ad433"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -304,12 +304,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/runbooks/ci-cd.md": {
-      "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
-      "sourceFingerprint": "sha256:276386d422b979ab9978ba819a9a9b89701515064582d1696e67e1888bc48768",
-      "visibleSourceFingerprint": "sha256:423649a18758dea3f6016e5469a9c2e96fe5a55a753af213b886d37a1bab9406",
-      "pageVersion": "sha256:a8ab04ddde5eb4e3be5377cfee765016b82e9a74f5e9bbb56ff339973852928d",
+      "pageVersion": "sha256:f026c42993f134c95cd1aea643a2931bfa8b83c1930c93b658ffa991893edc3e",
       "completedBy": "codex",
-      "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/runbooks/homelab-onboarding.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -379,12 +379,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/runbooks/talos-control-plane-maintenance.md": {
-      "pageVersion": "sha256:1a4a244690aadecd66d6fb0c9abcbca4a122a9f63b01aa112e544de7c9b97ff1",
+      "pageVersion": "sha256:2cb4e57f85dfca6c6f80bb4fffbe84a7a80b5c1ce77f9d464dbfcd9aa4d8e843",
       "completedBy": "codex",
-      "completedRunId": "74ae757e-e477-4d9e-bf40-1c94a354ae20",
-      "gitHead": "18809cc8d5b70ea3b43509efd9aaec2bff7ef6d3",
-      "sourceFingerprint": "sha256:fdd2ad33b325303dff2cf3319f41eb1f882d43d8f118f72167499f5f4703f04d",
-      "visibleSourceFingerprint": "sha256:3e0c7f934e2b26881cb69552d8763516d07935530c388ae9cbb00676a86ad433"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/runbooks/validation.md": {
       "gitHead": "c49e341bcef555594496159264f2f4c57915cfef",
@@ -395,12 +395,12 @@
       "completedRunId": "3d7e7fc1-f41d-42d3-b138-0e01b68a2313"
     },
     "/openwiki/source-map.md": {
-      "pageVersion": "sha256:aa6c65430947b142bf87047735ae405a721aab0151d07a92fec46952d01d07eb",
+      "pageVersion": "sha256:f95852d9ddc2701f295d36e339cab0800b7d03ea707e2658e9ee3646ea7c7d1b",
       "completedBy": "codex",
-      "completedRunId": "74ae757e-e477-4d9e-bf40-1c94a354ae20",
-      "gitHead": "18809cc8d5b70ea3b43509efd9aaec2bff7ef6d3",
-      "sourceFingerprint": "sha256:fdd2ad33b325303dff2cf3319f41eb1f882d43d8f118f72167499f5f4703f04d",
-      "visibleSourceFingerprint": "sha256:3e0c7f934e2b26881cb69552d8763516d07935530c388ae9cbb00676a86ad433"
+      "completedRunId": "5b348741-6200-49c1-b003-c306e38f4a93",
+      "gitHead": "a77dfd8176be87e75ace61c1b84ccd59caec4515",
+      "sourceFingerprint": "sha256:f779b73e5d5a7bdcc40a7f32eea73c4bfba698da6daaa481d3e99635c69db84e",
+      "visibleSourceFingerprint": "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb"
     },
     "/openwiki/workloads/application-notes.md": {
       "gitHead": "10275ce5e3b2d0425b8b80974b43597ae078112d",
@@ -420,7 +420,7 @@
     }
   },
   "visibleSources": {
-    "sha256:3e0c7f934e2b26881cb69552d8763516d07935530c388ae9cbb00676a86ad433": {
+    "sha256:26b50be23b9409be35fd7264a96c88ece399b8be3d5124699d0e3fbd6d90f5fb": {
       ".agents/skills/aws-sso-login/SKILL.md": "sha256:82da5da14edd71c50b0f8c9775f946576a59902be3f3f8424120c53cc6d6d04c",
       ".agents/skills/homelab-app-onboarding/SKILL.md": "sha256:ab1c33b97c9ff215c16a18526b7c849ae991f23bc29b77508c796215eab0ddf7",
       ".agents/skills/homelab-harbor-images/SKILL.md": "sha256:b3c4ff80d49ee03794476575c99d73d2f4131b758663d5e9411faacb05f23afc",
@@ -504,6 +504,7 @@
       ".github/workflows/openclaw-enterprise-operator-smoke.yml": "sha256:466e43f307af671146568f6ff37f8283cd67ca648da89ef72ff3c3c9c0e04d2c",
       ".github/workflows/openclaw-enterprise-startup.yml": "sha256:c5a21e187ac0b2cb848d5d7fe6b7bc4f847656bf91815b0940cf5a59c4605a04",
       ".github/workflows/platform-maintenance.yml": "sha256:f07d25eab0478f755bfd6d8ab7727f380bf3b2c0d229560f89e4a7cde29502e9",
+      ".github/workflows/platform-recovery-receipt-publication.yml": "sha256:8b3aeff24e120eba8a55904919b16151dc9b150294fc5f9b222588a2d29e0bee",
       ".github/workflows/release.yml": "sha256:f8eccc476941d59754d7c3c2d22d732b281934cbaf3d0f17d53dd72d0d0e475a",
       ".github/workflows/terragrunt-apply-request.yml": "sha256:6980df3cc47bf0bc71bac471e03e2c7aa73d5e6229f1cf58edc7cff912dfb474",
       ".github/workflows/terragrunt-apply.yml": "sha256:eece03a9e6e6e7254cd13a07a00cbb0c21ae267011910365cda7a6411ba5c288",
@@ -696,8 +697,8 @@
       "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/README.md": "sha256:dacd5091f89c48ab1dc5e6a0e0ab005d2dd2d649b027aa926c6d5ee654adc173",
       "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf": "sha256:9213e5c70f06d428be76bb8355c1369c30688c5763913f9f8a61fe9cca38842e",
       "IaC/terragrunt-catalog/modules/argocd-application-kubernetes/variables.tf": "sha256:e34e1167b38e3d78040348e23903450fa722d8d1a2d5a841d65ce55d9d93eb36",
-      "IaC/terragrunt-catalog/modules/aws-backup-bucket/backup.tftest.hcl": "sha256:4fd4fa4f372fd4305ab30acc313490929625608c26a0a3a1a88b09124e9f3261",
-      "IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf": "sha256:0cadbc464ad473cc7ef85689d6ada24cade85cf595c40fbea469227d412ee43c",
+      "IaC/terragrunt-catalog/modules/aws-backup-bucket/backup.tftest.hcl": "sha256:2e6ad35d77ed5446ecd535079519e7d84e31068de172171bdad4841c0d7496eb",
+      "IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf": "sha256:439f283c173c8256494742d77a02d2e7a3e7432a2b225143b89d70d77886e3f7",
       "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/boundary.tftest.hcl": "sha256:89b030cfddb7ad9105a0e4832681d6a5c2cb83f704f208ea8e4d27f0f522a669",
       "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf": "sha256:126712b2d1e48284419d5653ab15d25e553016e278695b53c973d7208681fbfd",
       "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/outputs.tf": "sha256:fc4aa03d8ae1de9f185fc46e76fe1854d9ded4f545df7c5bcfcf2f0a5ab85b96",
@@ -762,7 +763,7 @@
       "IaC/terragrunt-catalog/units/live/kubernetes-node-labels/terragrunt.hcl": "sha256:1a4c993dc8837d331e6d80c73acd4692c459b6a951bc409a17ec6e335035d11c",
       "IaC/terragrunt-catalog/units/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terragrunt.hcl": "sha256:6191872fc07c83d179f324cfcd14612e0db4a230b66874a16c575941c5226b23",
       "IaC/terragrunt-catalog/units/live/langfuse-blob-storage/terragrunt.hcl": "sha256:e1465dfaadf3b4c13e33162caf9950885060024826ba72c1a293ed7a86d8b226",
-      "IaC/terragrunt-catalog/units/operator/application-backup-storage/terragrunt.hcl": "sha256:b0e60d6b7a7accbeb0a9e22170665eb825005d57f795770d001aacab66919ba5",
+      "IaC/terragrunt-catalog/units/operator/application-backup-storage/terragrunt.hcl": "sha256:4786be2d95978fdc4dee9ea379a6addcfffe8d44f7e901efa1e42f940197e952",
       "IaC/terragrunt-catalog/units/operator/azuread-ci-identities/terragrunt.hcl": "sha256:08de500304dec4d9ff7ba6af804f6ee16144bbde00d2dc1ead35dc6c1822e368",
       "IaC/terragrunt-catalog/units/operator/entra-emergency-global-admin/terragrunt.hcl": "sha256:771a4d6b4669ac0ead9ab925eb119246e05a0b7089981b85bec82c63f736bb68",
       "IaC/terragrunt-catalog/units/operator/entra-google-workspace-federation/terragrunt.hcl": "sha256:5f704bcb479ddfbaa3169cad9694ccc9e64bf534080859016f2e002ab58982cf",
@@ -1400,11 +1401,12 @@
       "docs/openclaw-enterprise-rollout.md": "sha256:bd229f453e7a1cd3a633c4548cf076b39d629f4304bf1d385bfcad895e1edbe4",
       "docs/operator-infrastructure.md": "sha256:de265bc1d87b2a34c21b133d60a3b813d64e220524e2d6cd27eec01dec339439",
       "docs/pgvector-pg17-update.md": "sha256:15be6426df89a7d33ad19e341c09b6c23a2fd29b96289db8ae117c01cfc987a2",
+      "docs/platform-recovery-receipt-publication.md": "sha256:3c08f4dcee3b3550c34e83f960b2b978ad82890e20d1cef684fb1549c01027f7",
       "docs/rollback-argocd-apps.md": "sha256:a2dd4fa7aea5d499e6c389eeeb5e19d3f60bd8381d3b5a20f81609946b8636e3",
       "docs/runtime-isolation.md": "sha256:e07226229dc664cb6cdbfaa816fa86a053bef3010a6a46d7e5e811a04268e03b",
       "docs/secrets-aws-ssm.md": "sha256:45bb7f6fba01d3268cdf0108706706ab1af51c4d38ab888c8c31985627439c27",
       "docs/storage-nfs.md": "sha256:9605cfa2efa49d37dd3a62ce7a84b36505d7c80bd2fdbc1880d16cfd997e029e",
-      "docs/talos-control-plane-maintenance.md": "sha256:ca6e61d9bb6dc9c06b15e6a57c8c7469dbef6c1b6307d4944ae77cf64c3a7be7",
+      "docs/talos-control-plane-maintenance.md": "sha256:c3ae9f2b131ac9f3635574cab58cf15649699cbcf5175afb7460448d5676fb5a",
       "docs/talos-etcd-backup.md": "sha256:2a623f51bfcfc70adc7872d0b8723339ef55735413e515b204dc8f4857ff35f8",
       "docs/talos-etcd-schedule.md": "sha256:5c052eb6527ea9262e144e7ae8ccce56f104e1634f183db2d189c7bc68ad8867",
       "docs/validation-runbook.md": "sha256:d023ed1df8bdeeffaa1f43f9ae4eb383d4461b39a610e8a4345eec799565fcca",
@@ -1417,8 +1419,8 @@
       "policy/kubernetes_test.rego": "sha256:385d3d59db599cebb846d49d323b81f07cafdd4767ca344ddd44d9a5dac43fc3",
       "policy/terraform.rego": "sha256:ab6275b9e8eeb2603a73ef1c0c8d42d85e3794c5dd05c7ad4d78b083e870f073",
       "policy/terraform_test.rego": "sha256:896b46840b7a8aead225ba206a7665ccdd45aadbade863d1e0ebf898777b6cc6",
-      "policy/workflows.rego": "sha256:e1f76f7a8d4941b0981641ce3fd5c4015c6ce8654d3eb80a5ef03ea20cfc8be7",
-      "policy/workflows_test.rego": "sha256:ee109454fb263a1a0c1bfb218ee889ea3398862925b78e18b6f0ee17871bd4c4",
+      "policy/workflows.rego": "sha256:29399c871c11be89e0b3a9101e72bf17f338d4112b96d1526494d36263b82a35",
+      "policy/workflows_test.rego": "sha256:a878c5c96fed02220b271d0c562b982c8f5649b0694b0257fa126175989bf733",
       "recovery/application-backups/application-backup.service": "sha256:8197cc8865469fe2c8d7b088e95ba316de7791b1e8250f9a244907b720297838",
       "recovery/application-backups/application-backup.timer": "sha256:97b4f3ccc155827bc5ffa5352cbc3dd9b9da203abd74701189b728208673542b",
       "recovery/application-backups/prometheusrule.yaml": "sha256:f6932992c58b7b4c883a81cc7d641fe20e7194406a0b56c1be2beff8879d4cf7",
@@ -1569,8 +1571,8 @@
       "scripts/ci/octelium-restore-drill-test.py": "sha256:c88bc2d5d854b078b4da505369f13a2bb45bc24d535c204b431a3de4a3b20590",
       "scripts/ci/octelium-service-retire-test.py": "sha256:df9a0ee3c11b6acfba87beb3bbd6180cfd8065eaea1279b425aaf0208e4a4266",
       "scripts/ci/octelium-tunnel-check-test.py": "sha256:2f11f205cccab9cc9379122841c73e69dae0ff0e7e4ea3f114472949f7907b5b",
-      "scripts/ci/offline-checks.sh": "sha256:bbede674d9701e7489478b24c929297b2938f8787b6233f661e37d4cd63dc456",
-      "scripts/ci/offline-static-checks.sh": "sha256:ce5933c5d681b752b756ec6fde1f59e54653de9ee1636652ada856a8e9237db6",
+      "scripts/ci/offline-checks.sh": "sha256:e43c75e8bae0bddb72bb237a4ba04d654f7330260926326d3775836efa0b8c64",
+      "scripts/ci/offline-static-checks.sh": "sha256:695da9334aff046380821e404c1597f409600cf0abbbbe4ad8f1f8989277e8ab",
       "scripts/ci/openclaw-assistant-check.py": "sha256:c4b44341cf294664a9bac548f70bd03d153b6993bae377a9ee07928595c06eb5",
       "scripts/ci/openclaw-batch-native-check.py": "sha256:744c681df4c3cd93b70a93df03cf890ff95e23cd481a9b135aa13b1017b925af",
       "scripts/ci/openclaw-config-check.py": "sha256:9ddc56f11c23d82df6f0f6d69c202db7ac2f5d0db5498f4ea2595bb47074202f",
@@ -1619,6 +1621,7 @@
       "scripts/ci/platform-maintenance-stage.sh": "sha256:613bfb031a0651ffb2ab78a94bacb9c94382fb79219378d2dbf2ae0755af6db9",
       "scripts/ci/platform-maintenance-test.py": "sha256:aab4af90dc201712448224961d9d5dd5394376a9db564be5e8d8ae3886d5a587",
       "scripts/ci/platform-recovery-candidate-test.py": "sha256:e6fcc66bb87a0529345f06c96f8b28ae231a5e218e61eb992c0135d320a43b84",
+      "scripts/ci/platform-recovery-receipt-publish-test.py": "sha256:382fa0d1e76eb2011c53ef8f81557287572be0c267bcde2e9798898b2844ea2e",
       "scripts/ci/policy-bot-webhook-test.py": "sha256:33c56d00b4cb68f708e3c28452611e91d7dedfbc2d9db800993b8c7a1e3d77c1",
       "scripts/ci/prowlarr-config-check.sh": "sha256:6370bb7317d982300a41d8f69cea4625b8358143a885525e66ce7f0f41fc20f3",
       "scripts/ci/renovate-acceptance-app-test.py": "sha256:f42a5c255b6e9718caa847df0e659b898f37b64008ee8f634dbfd29b4d380259",
@@ -1644,8 +1647,8 @@
       "scripts/ci/renovate-discovery-path-test.mjs": "sha256:93b49c20c2dc9e17199e2b67056e86e6b34112de7dca5387113b89eeb79c42a8",
       "scripts/ci/secret-scan.sh": "sha256:4ed9237e321f450e2c495fd44b32a1782e3917d7ca55eab5fb19b6a36e84f3cf",
       "scripts/ci/speckit-check.py": "sha256:0988ec2819f364d10e34c2382abc4c2fa21531a175a502c631b90aaabebedb35",
-      "scripts/ci/static-checks-timeout-test.py": "sha256:b1ea31903b80f5c5753340f231f19d503610030f2ff8d2bdcb15a965efeb702f",
-      "scripts/ci/static-checks.sh": "sha256:d03bad648128f3dc348304406b7bbf8df6bb744b1d8032154c6230d78f589c9e",
+      "scripts/ci/static-checks-timeout-test.py": "sha256:c6522028a278ed6bac2f2d660bd75d238f19e91abdf0e088e1a9d7daa217ef2e",
+      "scripts/ci/static-checks.sh": "sha256:1e73f586c9b06c71d9da36336cf7d51b67cd9670aa3b7189d6531241b2b325c9",
       "scripts/ci/tailnet-dns-check-test.py": "sha256:47d5d6fba22279a3751fe811a17303da156f158e9069df1d0f7ce3ec066e89d7",
       "scripts/ci/tailnet-dns-test.py": "sha256:494fb3a7ca87799aa078ec3bdad3958a0aca7a78c81e3cfd446114724584958c",
       "scripts/ci/tailscale-access-check-test.py": "sha256:ccfc0ea956c8cbf5c3b546ef7d7cfa22422e7594f81c64afc55522999751e6ff",
@@ -1772,6 +1775,7 @@
       "scripts/platform-maintenance-credentials.sh": "sha256:07df35f92f8c583f3d313fe39d090f9dec09debcb46307da9c8c56c8c2949489",
       "scripts/platform-maintenance.py": "sha256:12bf198b52303b0d485acf875d2eea576171707feb406890b2822460ec448cec",
       "scripts/platform-recovery-candidate.py": "sha256:97977ce35e696d2269748499469da48f50992411f901071e4ac92480f1bccca7",
+      "scripts/platform-recovery-receipt-publish.py": "sha256:aa09f805d33df96b8084556eb5373dfa0faecbab32f33c42f032fa16b3b6b2c5",
       "scripts/policy-bot-webhook.py": "sha256:454e390dbccd12562fde84a0b9a7966f8216082736ff992397e0bd303334f974",
       "scripts/qnap-plex-recover.sh": "sha256:b596b3803190f1be5425fe6028e99af06d404617d1b4eea4bec37c5b29239ea0",
       "scripts/renovate-acceptance-app.py": "sha256:a9c05e7074921785d7bebe34a69640e474544ec7e0a7423038fe78789db432d5",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:aa6c65430947b142bf87047735ae405a721aab0151d07a92fec46952d01d07eb",
+  "pageVersion": "sha256:f95852d9ddc2701f295d36e339cab0800b7d03ea707e2658e9ee3646ea7c7d1b",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -389,10 +389,28 @@
           "version": "repo-lines-v1:sha256:48a3109c58f07c79a1fc1428c32fa1267dd8a41f0b7b4299cd4c708845cdfc34:eyJzZWxlY3RlZExpbmVDb3VudCI6ODMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZWFjNWE0ZjY0Mjc1OTdkZDFlZGQyOGZkZTNmYTUxZjIzY2M0OTNmZmNkZWJjYWVkZGY2NmU2ZWQyMmZmYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhODhhMmZiNWRjNDlhZWZlNTdiOTlmMTdkNDdlMzAxZmZlYjUyMDIxZmZmYWM3MWVmZmNiYjUxZTFiM2I3MmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhOWM5NmM1MjhjYjRhZTkzYjNmZjI2MTM5NjA5OGIyYzVlMzIwMTE3Y2RmOWFjN2M0NTY2NzFjN2E3Y2RjMjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ZjY4MDcwODZkNGI4Y2QyZDI1YTE1NDZhOTVjNzJjYTBkZDFhM2ExZTViNDE5OTY5NWQxYTFiM2RhZGIzMmMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_dffb6a38a5fa439e8624d3234d1035d2",
+      "statement": "The source map routes the staged protected platform publisher workflow, script and tests to CI/CD and recovery gates, and the dedicated OIDC role and fixed-key bucket policy to identity ownership; these are unapplied source declarations.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-recovery-receipt-publication.yml",
+          "version": "repo-file-v1:sha256:4467a03b0b3dcb89ada6d4b79771ccb4c9c9e8122a2fc1e576439113e423f478"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf#L332-L453",
+          "version": "repo-lines-v1:sha256:2bdf1ec81dfea6afdb9f57bb73e6ef61d8da4db8f1a96dab79b8706a7348a828:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxNmU5MWZlODU4MzAyNTQ5Y2VhMWQ2YjVlMjcxODRiY2FjMGRiN2Q1MWU5YTk4NTYxNGJjOTgwY2Y1NzU3OGZkIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0Yzc0YjgxOGEyYjZkOWRhZDMwMGM3YzE5MTZjNDljOTNiMWQ2Y2UyZTNiMGNmNGJiOTUzY2I5NmMyMzBmMjZjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMTQ0OWVhODczM2MxNjlhYjUwZmQxZjNiNDg4MmI4MTI1ODMwYmJkODliODZlMTM1MzZlZGQ5MWNiZDJiOWMxIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIn0"
+        },
+        {
+          "resource": "repo://scripts/platform-recovery-receipt-publish.py",
+          "version": "repo-file-v1:sha256:7cd768db506713d2a0301917ea1587b78d224f92be2b0285d17eb3f300a2334c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:12:16.257Z"
+    "at": "2026-10-28T03:17:59.106Z"
   }
 }

@@ -32,6 +32,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-9648c132218cc0e1e3d653f9
+    resource: repo://.github/workflows/platform-recovery-receipt-publication.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
@@ -48,6 +50,8 @@ sources:
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-becefa8af5bf5cfe71144bc0
+    resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
@@ -96,10 +100,10 @@ sources:
     resource: repo://scripts/network-policy-ownership.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T03:17:59.106Z
 ---
 
 # CI/CD
@@ -282,6 +286,16 @@ jobs' commands, actions, settings and private credential mapping. Regression
 tests reject an added reusable `workflow_call` trigger, run defaults, environment
 overrides, and custom shells that could bypass the reviewed commands. This is a
 source guard, not live readiness.
+
+The staged [Platform Recovery Receipt Publication workflow](../../.github/workflows/platform-recovery-receipt-publication.yml)
+is a separate protected, manual `main` lane. It checks the exact current SHA,
+owner actor, first attempt and pinned publisher script before assuming its
+dedicated production OIDC role. Dispatch carries only an opaque candidate
+stage ID and three reviewed digests; private JSON, S3 versions, Talos output
+and credentials stay out of inputs and logs. After production approval the
+script would validate exact candidate and source-object versions, then publish
+and read back two fixed KMS receipts. The IAM role, candidate stage and
+workflow have not been applied or dispatched, so this lane has no live receipt.
 
 The protected canary and firewall stages require a configured canary node and
 exact-current-main dispatch. Admission verifies private placement and

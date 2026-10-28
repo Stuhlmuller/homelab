@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ebe2315c287465fcc51a832b82f9078ecd4e8da570bc8f1a33deebfbdf44b491",
+  "pageVersion": "sha256:75b7bf43f49205dbd3d0b7145fa880f323f1f68b793a4574fc4d55259ac83ce8",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
+          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -682,7 +682,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a84a9db52699377e2f60cbef5266d3e8320ab12577dc1a60b75e414340231dc5"
+          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py#L964-L990",
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
+          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
         }
       ]
     },
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         }
       ]
     },
@@ -914,7 +914,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         }
       ]
     },
@@ -936,7 +936,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operator-image-test.py",
@@ -944,7 +944,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -1046,7 +1046,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         }
       ]
     },
@@ -1138,7 +1138,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
+          "version": "repo-file-v1:sha256:d701baaeb911708e290f2195d390bd4573f28afcd0348b3760cd51eec2791f1f"
         }
       ]
     },
@@ -1182,7 +1182,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         }
       ]
     },
@@ -1236,7 +1236,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c65c97151746901c45da2a369b9f7ff6752d1999b72eb7ad38cf94e20377d6b"
+          "version": "repo-file-v1:sha256:4249ded35be595ce2fcc5abe50fd40607a27e93ff6fb43fb06bdcb9e69c5a4a1"
         }
       ]
     },
@@ -1316,7 +1316,7 @@
       "evidence": [
         {
           "resource": "repo://docs/talos-control-plane-maintenance.md",
-          "version": "repo-file-v1:sha256:06068af50ce78a8fec9be12b52aeae32b85fe5022c1f6c921fdbf1cab2bfaa8e"
+          "version": "repo-file-v1:sha256:fd742ef2faeb8c3120a599e4c907e3b9def6e70eaaef598c384418ba87adc4b0"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage-test.py",
@@ -1458,7 +1458,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         }
       ]
     },
@@ -1547,8 +1547,8 @@
       "statement": "The source-only Kubernetes maintenance stage checks live Istiod, CNI, ztunnel, and both injected gateways before upgrade and after verification. It requires reviewed digest-bearing Istio 1.30.6 images and fully observed, ready controllers that are not marked for deletion, including Deployment total replicas equal to desired so old terminating replicas block the stage. Matching mutable tags are rejected. T025 must align chart image hubs and digest-bearing injection with the reviewed catalog; no live upgrade has run.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L575-L585",
-          "version": "repo-lines-v1:sha256:b8101924793cea89cc1302490a2d5a565cd23068ab38424e574becac573cb225:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L579-L590",
+          "version": "repo-lines-v1:sha256:5524801df2b9518ffb02c5bf53c72b7ee183cd1863a9e8fe84a673cb2de0db65:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNWU0MDk0YzI1ZTg5NGNjZjQxZjhkNmFlZWFiYjU2ODc0NjJmOGZmNDdhNzk2OGRmN2FmYmNlN2YzZTQ4NGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNmVkNWJlMjIyYTNhYWU2MzAzNWMwZTA5ZTc4NDVmZmVmNzIzNDgwOGVkNjBhM2IwNGU4ZTlkYjVmZDg0OTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMGFhZjM5OGYzNjA3MmMwZDY3YjI2N2Q2NWQ4NzFmNzQzMDBkMWYyN2M3ZWI5YzViOGI2MWIwMGU4MjNlMDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjMDFiMzU5YmI5NWU4ODliYzEyNWYxYmI5MzVjYWM0ZGU1ZDdjODE3Nzk1ZmI3ZTZiNjM4NzJiZWRkZTFmZDgifQ"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-test.py#L1006-L1086",
@@ -1569,15 +1569,15 @@
           "version": "repo-lines-v1:sha256:aaeb48c6c4815f846b0627a971dfd814e19cd33725e5606c0f5873254db0a2b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiZjgzNzA0M2UxZGI4YjYzZGVjZDdjNDdlZmYyODI3MjU4MmJkNjJiZGVhYTEwNjgwYzk0OWI2OWIzOWUwZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0YTBjMTlkY2I5ODViNzg1NGYzYTkwNDg5NWM0NDM0YzRlNWRlZGQxZGRmNDU5MGJjNWUwNDVmNzFjZGFmZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1M2U4NTg3OTE3YjNjOTE5YzRmZDg1ODdmM2M1ZjMwODc3MTU4N2RkMTI4MThmY2VmYjgxYWYwMGRkODM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5ZmYxNjliZDJlOWQyODVlNjQzYWIwN2ZmMjAwODM1ODgxZTU3MjcyMmUwY2I3YThmNzJlNDc4OGMxZmVlMWIifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L239-L250",
+          "resource": "repo://policy/workflows.rego#L307-L318",
           "version": "repo-lines-v1:sha256:8262c5e3f51c69b969d5d15b29da28dd2bb9a0a4f013485dd0a2dd09bfa47f7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZWFlNDk2Yjc4ZmQ0OTU1ZGFiNThmNmFjMTJiNDcxMDg3ZWZmY2FkYjhjNGE1ZDc1OWE5YjczZDdjMWVhN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMzIwMjgwODNjNDdhNmQ5ZmE0YTY0NzFjZGFmMjY1OGJjNzA1ZTlkNTg2ZTY1MTZjNTdhNThmNjFhYmU2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlODA3MGYyNThkMzFhMjUxNmZjZDQzYWZlZjVmZjUyZDhlZDI3ZmJiMTY1MjBmZDc4ZjJlYmRmYjg3MGY1MWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjYmI2YjFiNzJkNzNmMDdkYzlmMTNlMTU0Y2JmMzk2MDI3ZWM4ZTA5NzhhZTRmZjgwMmZmYmQwOGRhNWM1NDMifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L613-L627",
+          "resource": "repo://policy/workflows.rego#L681-L695",
           "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
         },
         {
-          "resource": "repo://policy/workflows_test.rego#L17-L32",
+          "resource": "repo://policy/workflows_test.rego#L73-L88",
           "version": "repo-lines-v1:sha256:e7044319f484fe20e80a54a629e06be1ac84767a9d4fc2eed645b9d2f50d25c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhOThkNzZkNjAyNDJhNGY3ZTZiZWRmYTI0ZjdjYjM2MjhkM2RlYjAxNjRhMDc4ZTBhMjU0ZWZjN2E2YzhjMjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzNGM5ZDY3YmVmMGY5MThhYWVlNTRkYjI4YzkyMjA1YzI3MTg3N2RjMWMxZmZlZDcxNTQ2OWUxYWY2NjE5YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmMDdhY2M4YjI3ZTZjNWU4NGMyZjlhMDZkYWEyMTRiZjk2ZTYyM2EzNzJmZjUwNDM5OWUyMDg2YWU2ZjczZmEifQ"
         }
       ]
@@ -1592,11 +1592,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a84a9db52699377e2f60cbef5266d3e8320ab12577dc1a60b75e414340231dc5"
+          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:4d9311cdfb35a53d5cedbedec02dd4f677d02e64e5c6be6bf5d7b6e61f34a08a"
+          "version": "repo-file-v1:sha256:f5bd86053e28019b39b4a2605fa53eca82cee411241306f9dcb337dcbafbed57"
         }
       ]
     },
@@ -1618,7 +1618,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:21774fef76adb265d226af59e72c91f22346616806ad660f2bb417f55610ae14"
+          "version": "repo-file-v1:sha256:037ddb32ab1feb39cf77fdfb9354b1aba49e31ff6e910e3eace9e93959d751b7"
         }
       ]
     },
@@ -1953,22 +1953,44 @@
       "statement": "Offline fixtures exercise the staged operator-LAN candidate producer's exact-main, direct-route, named-node, exact-version snapshot, offline-restore, private-output and fail-closed staging checks; neither those fixtures nor verified-false candidates authorize maintenance or prove an isolated control-plane boot.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L504-L560",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L508-L564",
           "version": "repo-lines-v1:sha256:20ab7a90cbb72d59c286c514160516e924cc2ad3befa8a1cf0cdbc1b5395ed16:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMWY5ZDRhMjI0YTU5ZDk3Y2MzZGZmNzRkZDZmZThjMmU0MjA4NjhkMmMwZTNjNzk0ODA0N2YwNjU2ZDg4MGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0MDA0MDU5YWMxOGU1NTIzNTM3YWRlYWU0NTI2MjMxMzQ4NjUxMjAwZWQ4YzY3ZTFlM2JjNWI4M2NkNGQ2OTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZkMjRjYmMwNTUwY2Q0M2Y2ZGMwMGU1YTgwYzE0ZGM1NDljNzFmOTdhYjcyNmQ1ZTY5MWU3NWYyMmY5MDQ0MzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4OWNhYmM3N2Q0YzIwM2YxNTkwYTFmOWIwODdjMjFkNWYxY2RkYjNkNmZiNmQ5NGVmNmIyMzQzNWFlOThjMWUifQ"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L105-L120",
-          "version": "repo-lines-v1:sha256:a7a253ec3f81938c303f2bcccbad90d2e61ee06c5e3feff2e44a6b94e0e4e5a8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzODNmM2YzZGQ3Y2VkMTVhZWUyYjljN2UwZmMxYmZiZGQ2NDM5YzE1MzliNzIyYjY5ZDkwNWI0Zjc2MzAzMzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3OWRiYzI3YTNiODZhZjQ0YmJjZDE2N2JlNWVmMmYwMWM5OGJlMWVkOTMyMzU4ZTE5ZTFkZjZiZjA3MjM5ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMDZkNDk3ODAwMmE2ODVlNTkxZmEzNGM3MTRkZTk5ZDA4ZjM2ZjdiM2YyMmRhYjY1MWMzNTQyMzdkMWY0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMGQzYjUzMGUwYTBjYTVlY2RjMGI0NTE3YzgxZTUxZDE5NDA4ZWNjNzQyZmVmNTg5NDRlMjY1MmYwMWNmN2YifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh#L105-L121",
+          "version": "repo-lines-v1:sha256:332284293499b5a3852c1c21a2f9c5e4334f78636e954b027845b56ca93e6a15:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzODNmM2YzZGQ3Y2VkMTVhZWUyYjljN2UwZmMxYmZiZGQ2NDM5YzE1MzliNzIyYjY5ZDkwNWI0Zjc2MzAzMzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3OWRiYzI3YTNiODZhZjQ0YmJjZDE2N2JlNWVmMmYwMWM5OGJlMWVkOTMyMzU4ZTE5ZTFkZjZiZjA3MjM5ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiMDZkNDk3ODAwMmE2ODVlNTkxZmEzNGM3MTRkZTk5ZDA4ZjM2ZjdiM2YyMmRhYjY1MWMzNTQyMzdkMWY0YjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMGQzYjUzMGUwYTBjYTVlY2RjMGI0NTE3YzgxZTUxZDE5NDA4ZWNjNzQyZmVmNTg5NDRlMjY1MmYwMWNmN2YifQ"
         },
         {
           "resource": "repo://scripts/ci/platform-recovery-candidate-test.py#L112-L334",
           "version": "repo-lines-v1:sha256:4db5eb52e1837a873e46f5d4b78adb68cf5a27d2da0e187ce375432bd84a5b83:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiZDdhMjdiODg5OTI4Mjg1MDI0Yzk2YWQ4MmU4Y2I0Y2RhN2FjODAxZTljNzU2OWRhOWZjOGU5MzUxODJjZWYzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDg2ZmY1Y2Y5MzYzYjQ0MjkzMzY4MDNiMmM5NjBlNzNkYThjNDdmYTBjNmY2NzY1OGQxNGIzMjNjZDIyZDM0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhNTYwM2M5OTBlY2M1OTc0NWMxMmU5NDhhNmM2MGUyMjliMzEzMTgwYThjOTBlYzAxM2I5N2Q5NzVhNTg0N2JmIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkZTkzZDg5MzkwNmVlYWYyY2FkY2M2NTU4NTk3YmQ5MzMwZTJlYjY5ZGZiNjBhOWM4MTc1MjE4NTI3ZTcyNjgxIn0"
         }
       ]
+    },
+    {
+      "id": "claim_fab52302c88c45da9d961cead0c7ac4d",
+      "statement": "The declared protected platform publisher has offline fixtures and workflow policy checks for exact-main, owner-only dispatch, immutable staged object versions, candidate digest and restore linkage, restrictive bucket policy, and fixed KMS receipt writes; these source checks have not applied the role or produced live recovery receipts.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-recovery-receipt-publication.yml",
+          "version": "repo-file-v1:sha256:4467a03b0b3dcb89ada6d4b79771ccb4c9c9e8122a2fc1e576439113e423f478"
+        },
+        {
+          "resource": "repo://docs/platform-recovery-receipt-publication.md",
+          "version": "repo-file-v1:sha256:04bc917c6aa567091bb2ca294729c2766808e359041989a3f02eba875315eef4"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:be8080971c6ec42cf1e8ca4db4213a31d851e1d555c0462f84b348b2fd88b996"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-recovery-receipt-publish-test.py#L135-L245",
+          "version": "repo-lines-v1:sha256:12c4155384c71fab417f21b391441b62883e2eae2e50817591e34988818fbd70:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiOGEwMTk5NDZiMTFjYjQ4ODhmNjFhMWVmYTc1ZmVlNTk2ZmNkMDAyNTExNDBlNDg1MTAxNmRjNDkzYzdkYzAyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNDg2ZmY1Y2Y5MzYzYjQ0MjkzMzY4MDNiMmM5NjBlNzNkYThjNDdmYTBjNmY2NzY1OGQxNGIzMjNjZDIyZDM0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIzOWY2YTg5ZTUwNDk4Y2Q0YTViMjczNjMyYzZhYmZkY2MxNGM2MmYxZDcyNDlkNjI5Y2IzNTQyMDc1ZmVhMWRlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MSwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJkZTkzZDg5MzkwNmVlYWYyY2FkY2M2NTU4NTk3YmQ5MzMwZTJlYjY5ZGZiNjBhOWM4MTc1MjE4NTI3ZTcyNjgxIn0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T03:12:16.257Z"
+    "at": "2026-10-28T03:17:59.106Z"
   }
 }

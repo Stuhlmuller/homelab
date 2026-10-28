@@ -24,6 +24,8 @@ sources:
     resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
+  - id: openwiki-source-9648c132218cc0e1e3d653f9
+    resource: repo://.github/workflows/platform-recovery-receipt-publication.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -136,6 +138,8 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-becefa8af5bf5cfe71144bc0
+    resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
@@ -272,6 +276,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-test.py
   - id: openwiki-source-607bce162eb299934e9b55cd
     resource: repo://scripts/ci/platform-recovery-candidate-test.py
+  - id: openwiki-source-d7a8b0ed586c0f74f0d55bc4
+    resource: repo://scripts/ci/platform-recovery-receipt-publish-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
@@ -366,10 +372,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T03:12:16.257Z" }
+generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T03:12:16.257Z
+    at: 2026-10-28T03:17:59.106Z
 ---
 
 # Validation Gates
@@ -1919,6 +1925,15 @@ candidate shape, and fail-closed staging. Its two candidates remain
 `verified: false`; passing fixtures or staging private JSON does not create
 the protected direct-recovery or off-node-etcd receipt, prove an isolated
 control-plane boot, or authorize maintenance.
+The declared protected publisher adds offline failure fixtures and policy
+checks for owner-only `workflow_dispatch`, exact current `main`, reviewed
+opaque stage ID and three digests, a pinned script, and a dedicated production
+OIDC role. At runtime it would require single undeleted staged versions,
+matching snapshot/manifest and restore linkage, a current restrictive bucket
+policy, and conditional KMS writes with exact-version readback for only the
+direct-recovery and off-node-etcd-backup keys. The role has not been applied,
+the candidate has not been staged, and no protected receipt has been issued;
+placement, artifact publication, isolated recovery, and canary gates remain.
 The static registration fixture accepts only five exact policy/canary GitOps
 source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
 canary retired. It rejects mismatched sync settings and manifests. Protected

@@ -5,10 +5,17 @@ description: "Verified etcd snapshot publication to S3, exact-version retrieval,
 tags: ["operations", "backup", "storage"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T03:17:59.106Z
 sources:
+  - id: openwiki-source-becefa8af5bf5cfe71144bc0
+    resource: repo://docs/platform-recovery-receipt-publication.md
   - id: openwiki-source-f22c38d02efdd01ce55f2244
     resource: repo://scripts/etcd-offsite-backup.py
+  - id: openwiki-source-d7226bf67678f656c372644e
+    resource: repo://scripts/platform-recovery-candidate.py
+  - id: openwiki-source-e3d34fdb2d932e5c649a644e
+    resource: repo://scripts/platform-recovery-receipt-publish.py
+generated: { by: "codex", at: "2026-10-28T03:17:59.106Z" }
 ---
 
 # Manual Etcd Offsite Publication
@@ -57,3 +64,14 @@ unverified. The downloaded snapshot has not been restored; the earlier offline
 restore used a different manual post-upgrade snapshot.
 Database restoration uses [Offline Etcd Restore Validation](etcd-offline-restore-validation.md);
 neither helper proves control-plane startup or PVC recovery.
+
+For staged platform maintenance, the separate
+[operator candidate](../../scripts/platform-recovery-candidate.py) retrieves
+one exact-version snapshot and manifest from this bucket and checks an offline
+restore on the downloaded copy. It can stage three private, non-authoritative
+JSON files under `platform-candidates/<sha>/<id>/`. The new
+[protected publisher](../../docs/platform-recovery-receipt-publication.md)
+would verify those exact versions and write only the direct-recovery and
+off-node-etcd-backup prerequisite receipts to the **application backup**
+bucket. Its role, stage, and dispatch are not yet applied or observed. A
+candidate does not change the manual publication or prove control-plane boot.
