@@ -54,10 +54,12 @@ class BoundRecovery(unittest.TestCase):
     def test_failed_source_proof_is_source_bound_and_stale_or_unbound_blocks(self):
         operator, job, actual, pod, _, proof = fixtures.binding_objects()
         now = int(time.time())
-        pod["metadata"]["creationTimestamp"] = "2026-10-26T00:00:00Z"
+        pod["metadata"]["creationTimestamp"] = time.strftime(
+            "%Y-%m-%dT%H:%M:%SZ", time.gmtime(now - 10))
         pod["status"] = {"phase": "Failed", "containerStatuses": [{
             "name": "operator", "state": {"terminated": {
-                "exitCode": 1, "finishedAt": "2026-10-28T00:00:00Z"}}}]}
+                "exitCode": 1, "finishedAt": time.strftime(
+                    "%Y-%m-%dT%H:%M:%SZ", time.gmtime(now))}}}]}
         proof["issuedAt"] = now
         log = "OCE_BIND_READY:" + json.dumps(proof, separators=(",", ":")) + "\n"
         with mock.patch.object(recovery.journal, "command", return_value=log):
