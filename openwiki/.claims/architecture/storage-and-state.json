@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:727c68e508016d7be4fb446d9a3423a4e4fdb4c4fb4f8faa1b0880e2d9041f4b",
+  "pageVersion": "sha256:28fd40769c51aeb1aea900ce567f1214c667ed1c674686aba149955f511504f5",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         }
       ]
     },
@@ -180,15 +180,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:cd12a22cc99f1a2e2a96ed1f83c14c5bdcdffc0ec47f5d8bb057f739e26c20f5"
+          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml#L1-L24",
           "version": "repo-lines-v1:sha256:49d2cf4bb55085c72ed748fdb5fffcacc4845392e0927e0d21c8a1031f953103:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NWJhNmY0M2IxY2U1MDc0MWY0ZjE5NTYxMWQyMDY2MmNmZGU1OTY5YTRlNWI2ZDljMzhhMjYxNTJjYjc5ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExOTE5ZTFhYzVlN2FkOGJjYWQ5MDg4MzE3OGJmMDJjNjI4ZDIyNjZlMjc0NjhiNTUyYjIwNDNlZjAyZjUzZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L27-L50",
-          "version": "repo-lines-v1:sha256:2bb2a90e863f614bdd8d2d0bdee1d2ec3fa93f44fe07c525755362e84fcf53f5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhNmYzNzVmZGY4OWNkYTU2ZDAyNTg3N2RhMmY2Mzg3ODY3MDk2MjVlZmI3OGYwNGQyY2ExNjQ4YjIyNzZjMTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/ci/openclaw-enterprise-stage.sh#L27-L51",
+          "version": "repo-lines-v1:sha256:c13b9b7c9b2d590f5a7282adb46ba6284157667b17c933219b79d3d2d0f9d720:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNjg2OGMyYzQ0ZjA1MzYxOWNlZjFjYzM4M2UxZDUzMDc0M2I1NzRjYTE5MmFjZTkxNjhhOWNjZjQ2YTg2ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhhNmYzNzVmZGY4OWNkYTU2ZDAyNTg3N2RhMmY2Mzg3ODY3MDk2MjVlZmI3OGYwNGQyY2ExNjQ4YjIyNzZjMTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -206,7 +206,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         }
       ]
     },
@@ -216,7 +216,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-operations.sh",
@@ -270,11 +270,11 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:caf8729863b117af7d049b18852bc412f287fe34e013c05c9d4e6e38f7e6dd5a"
+          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:02b9361e381174ad15a53d8757409511e0e49ef1a86ff54450e738e4b224166d"
+          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -315,15 +315,15 @@
       "statement": "The staged Enterprise journal dispatcher validates both bootstrap PVC and PV UIDs, the PV claim reference, Retain policy, local class, and placement on the same node as the retained journal volume before a one-shot Job write. The committed bootstrap volume UID is null and operator enabled is false, so these source checks have no live volume or Job receipt.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L42-L59",
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md#L44-L61",
           "version": "repo-lines-v1:sha256:539adc3db6569b67384592e8912051fe50a73d5b34eebf5e71e748477f57976a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY1MGNmN2RlZjI1ODY1NGRiY2VmNDdiZjY3NzY2ODkxOWYzMGRlMDY5MGEyY2IzZDA2YjRiNjlkOGE1NWY0MDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4NjkwZWVkM2Y1ZTMyMTU4NGJiMmZiMWE1OGMwMThmNDdhZDI0MDQyYjRmMTExMGZmMWViMDNkYWI4YmI5ZjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBiNWIwZjQ0ODg5MTEwNzM4OTljZWEyM2UwNmE3MjBmNWFjM2VkNjBkNjhmM2ZkZWRiNDBhNjY3NjVkYTZkYmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2MzNiMzcxZTYwMGNmZDAxMDkwOWEwZDUxMzE1YTQ2N2RlYzZlMDY3MGEwNmM0YjUxNDI4NzFjN2E1MTNmNGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L164-L210",
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L188-L234",
           "version": "repo-lines-v1:sha256:16d5d1e6418f09092a2e3ec5f7f7ea2322cf677abe5aef90185dacad6ea97729:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MWZmNjViZWQyMDE1NWMxMWQ4NDQxZjBhMzQ4YjhkODVmNmM2YzU1NDA5OWZiYWY3MDMxZDBiZmNkY2JlMmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5ZDZkYzRkNmIzNjkxODNiODYzMjUwMzg2MjM3ZjgyZDc0NDY2N2RhMTczYmNmMzkyYzg4OTNkMmIyMWFlYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJmODk1MDYzZjRjNzU1NDRjMGFhZTk3ZjA3OGMwNmI0ZWNkZWI3Yjk0NGQzZTdiYTk0YmIxMDdmMjMxMjM2MjcifQ"
         },
         {
-          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L83-L111",
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py#L101-L129",
           "version": "repo-lines-v1:sha256:63082072221ef0bc71553108171d5624ac5333a880652c990b9e19e168bde353:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlYjk0ZDFlNGZkMDI2ODMwZmE3OGEwOTRkNDBlZTE1OTZjNzJhOTVjYTdkZjA2MDZhMjcwODJiN2I0ZmRiMTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1Y2EwMTc0YTI4MTRmNzViOTZmZmU2ZWE0MzQ3YTA1MTJjNzBhMDBjZTQ1ZjMxOTZjMmQzM2EwOWY2ZDY3ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjNDkxMTJjZDJjN2ExY2EyNDVhNTBhNGY5MDdlNjNmYjFjZTYyZmRiNzE1MWQ0ZTViMjc2NmNhNDlmMmY4ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiOWQ2MTJjNWVjOTVlYWEwY2RkMzJmNTRlYzM3ZmYxYzdlNjY2ZTI0NGY4MTVlYWI3N2IxZjNhNzM1Y2M2ZTgifQ"
         },
         {
@@ -331,10 +331,28 @@
           "version": "repo-lines-v1:sha256:de762f435b2b4909e33e1981fdaf23de61cf72b3550796c3e3f36d27926de3ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmMjQ5ZTA3OTQ0YmUxY2FkOGU1NTAwZWI2ZGIyM2I0OTQ5MGMyYTA4ZDdhNTVlNjA0Mjk1ZWNjNGIzZmFkMDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ZjFhYjZlNDhjNDY1YTk2ZWQ2Yzg3NGZhZWJkYjA0ZmZiZDg4Y2QxNzJhMmE2OTllODA2ZjY0NGY2OTA3MTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0YTUxOTU1NTEzYzQyOTcyZjlkZmNlMTZiY2U1ZjExYTU0NWQ2NTMzYWQ2MDY5YmZhMWE4MTg3YWM5MTU5ZWQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_529a71e9057b432da76b3cfae6da3f36",
+      "statement": "The staged Enterprise binding Job reads the expected UID-1000-owned 0600 bootstrap key from the exact PVC through a read-only mount, after PVC/PV identity and placement checks. The dispatcher pins the reviewed immutable startup Secret UID, resource version and candidate digest in the Job template, then verifies the bounded private proof before a guarded annotation patch. The binder-bearing image and live volume, key, network, Job and recovery receipts remain pending; the operator is disabled.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator.py",
+          "version": "repo-file-v1:sha256:c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T02:22:00.727Z"
+    "at": "2026-10-28T02:34:01.303Z"
   }
 }

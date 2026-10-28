@@ -126,10 +126,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-28T02:34:01.303Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:34:01.303Z
 ---
 
 # Source Map
@@ -193,11 +193,11 @@ desired state.
 | `clusters/homelab/apps/openclaw-enterprise-operator/` | [Unregistered journal claim, scoped proof RBAC, and private Job network intent](workloads/inventory.md); static PV, placement, and activation remain pending |
 | `IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl`, `IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl`, and `scripts/ci/openclaw-enterprise-registration-test.py` | [Disabled Enterprise Argo registrations and scoped project](runbooks/argocd-app-onboarding.md), [source validation](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
-| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Installation ID binder, offline checks, and protected invocation](operations/validation-gates.md#openclaw-enterprise-replacement-gates); private service-key delivery and live binding remain unproven |
+| `scripts/openclaw-enterprise-bind-installation.py` and `scripts/ci/openclaw-enterprise-bind-installation-test.py` | [Staged in-cluster Installation binder and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); key ownership, image publication, recovery and live binding remain unproven |
 | `.github/workflows/openclaw-enterprise-operations.yml`, `scripts/ci/openclaw-enterprise-stage.sh`, and `scripts/ci/openclaw-enterprise-operations-test.py` | [Protected binding, guarded legacy restore-copy dispatch, phase-gated full-sync, and disabled-by-default operator dispatch](runbooks/ci-cd.md), [source and live gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/ci/openclaw-enterprise-operations.sh`, `scripts/ci/openclaw-enterprise-download.py`, `clusters/homelab/apps/openclaw/retirement/retirement.py`, and `scripts/ci/openclaw-retirement-test.py` | [Versioned legacy archive verification and bounded ranged restore-copy transfer](architecture/storage-and-state.md), [three failed attempts, source-bound prepared scratch copy in run `40050057926`, and pending T014 compatible boot](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
-| `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound one-shot Job dispatcher and failure/restart fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
-| `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe, offline checks and signed exact-source digest from run `40056484158`](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled pending placement and bootstrap-key proof |
+| `scripts/ci/openclaw-enterprise-journal-operator.py` and `scripts/ci/openclaw-enterprise-journal-operator-test.py` | [Source-bound Job dispatcher, binding proof and failure fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); no Job runs while the gate is disabled |
+| `builds/openclaw-enterprise/build-operator.sh`, `builds/openclaw-enterprise/operator.Dockerfile`, and `scripts/ci/openclaw-enterprise-operator-image-test.py` | [Clean-source non-root operator image recipe and offline checks](operations/validation-gates.md#openclaw-enterprise-replacement-gates); prior signed digest predates the binder, and a new image and live placement remain pending |
 | `scripts/ci/openclaw-enterprise-full-sync.sh` and `scripts/ci/openclaw-enterprise-full-sync-test.py` | [Protected full-sync helper with a final current-main guard and forced-race fixture](operations/validation-gates.md#openclaw-enterprise-replacement-gates); the committed `unselected` installation phase blocks sync before Kubernetes access |
 | `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, `scripts/ci/openclaw-enterprise-postgres-test.py`, `scripts/ci/openclaw-enterprise-test.py`, `scripts/ci/openclaw-enterprise-active-test.py`, and `scripts/ci/openclaw-enterprise-recovery-test.py` | [Dormant PostgreSQL, guarded inactive reconciliation, and source-only native-origin generation-2, stop and recovery fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates); activation remains disabled |
