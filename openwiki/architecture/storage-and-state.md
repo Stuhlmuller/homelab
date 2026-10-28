@@ -4,6 +4,8 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-d0a876340b6d177d1c0cb62c
+    resource: repo://clusters/homelab/apps/dispatcharr/README.md
   - id: openwiki-source-3cae87753a0e502a1e05c1f3
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/backup.sh
   - id: openwiki-source-489371bb6baef577dc131a87
@@ -32,6 +34,8 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-b8e8b7405b7234a1ce62dc56
     resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
+  - id: openwiki-source-099a5c2faf41ef097f464f8f
+    resource: repo://docs/application-recovery.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
@@ -40,6 +44,12 @@ sources:
     resource: repo://docs/storage-nfs.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
+  - id: openwiki-source-25e229e4993c2beb18f69899
+    resource: repo://scripts/application-backup.py
+  - id: openwiki-source-d226d6ba730f6ed9e4d2cd16
+    resource: repo://scripts/ci/application-backup-restore-test.py
+  - id: openwiki-source-c7af713684c52f08648d2381
+    resource: repo://scripts/ci/application-backup-test.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
@@ -62,10 +72,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T03:28:41.846Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T03:28:41.846Z
 ---
 
 # Storage And State
@@ -748,7 +758,15 @@ paired capture contract, synthetic fixtures, retention and rollout/rollback.
 Octelium/media source dumps remain on QNAP; the new dedicated application bucket,
 IAM profiles, operator schedule and freshness rules are candidates only. The
 publisher never expires retained data. AFFiNE/Multica adapters require a reviewed
-writer fence; they do not automate capture. Other workload gaps remain explicit.
+writer fence; they do not automate capture. The merged, dormant Dispatcharr
+publisher likewise accepts only a checksummed `globals.sql`,
+`dispatcharr.dump`, `data.tar`, and `capture.json` set of at most 5 GiB. The
+capture record must match the source time and name a reviewed writer fence;
+the publisher does not produce it. Synthetic publish/retrieve and PostgreSQL
+plus file-restore fixtures use mocked S3, not production data. No live capture,
+offsite publication, or independent restore receipt is recorded. Both
+Dispatcharr claims remain retained, and private provider credentials need an
+independent recovery path before any pause. Other workload gaps remain explicit.
 Operator-managed independent backups are unverified. Real-data drills require
 HOME-3 containment and separate approval; HOME-4 owns independent alert delivery.
 No operational RPO/RTO or application recovery is proven by synthetic tests.
