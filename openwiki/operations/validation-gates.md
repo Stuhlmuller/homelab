@@ -48,14 +48,16 @@ sources:
     resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-68e58ca71bd59a525533048f
+    resource: repo://builds/network-policy-generators/build.sh
   - id: openwiki-source-77506acd031f0c0e800c4c2a
     resource: repo://builds/network-policy-generators/cordium-v0.12.7.patch
   - id: openwiki-source-1b8e7ecff7f3e3abcd292cd7
     resource: repo://builds/network-policy-generators/octelium-v0.35.0.patch
   - id: openwiki-source-c73e1fecbb517a520b6d8a37
     resource: repo://builds/network-policy-generators/README.md
-  - id: openwiki-source-8e65ec3aafc46cd553b9e49d
-    resource: repo://builds/network-policy-generators/source.json
+  - id: openwiki-source-af73a31811c2a4b1b9b88dd9
+    resource: repo://builds/network-policy-generators/render-policies.py
   - id: openwiki-source-9ea1e2cebef3372a83e226d9
     resource: repo://builds/network-policy-generators/verify-source.py
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
@@ -152,8 +154,6 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
-  - id: openwiki-source-3e9842ef0fb82f94aa54b1a9
-    resource: repo://docs/validation-runbook.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-448b545e6f61d70638ce3d37
@@ -378,10 +378,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:01:41.290Z" }
+generated: { by: "codex", at: "2026-10-28T02:07:57.520Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:01:41.290Z
+    at: 2026-10-28T02:07:57.520Z
 ---
 
 # Validation Gates
@@ -722,20 +722,26 @@ NetworkPolicies cannot narrow those rules. A source-only correction is staged
 in [pinned generator patches](../../builds/network-policy-generators/README.md):
 Cordium removes its public egress rule while preserving internal and DNS rules;
 Octelium gives `svc-upstream` an explicit empty Egress list. Run
-`python3 builds/network-policy-generators/verify-source.py` to check the exact
-upstream revisions, patch hashes, licenses, patch application, and targeted Go
-tests. This does not publish a patched image or qualify its actual
-policy render. The staged
+`python3 builds/network-policy-generators/verify-source.py --check-render`
+to verify the pinned sources, patches, licenses, and targeted Go tests. The
+[fixture](../../builds/network-policy-generators/candidate-networkpolicies.json)
+records source constructor renders for `cordium/ws-main` and
+`octelium/svc-upstream`. The checker matches each unpatched render to the
+current expected-spec fixture, then requires the patched object to differ
+only by removal of its all-port public IPv4/IPv6 egress rule. The protected
+image build repeats this check before registry credentials. This is a source
+render proof, not a published-image binary or installed-policy receipt.
+The staged
 [publisher](../../.github/workflows/policy-generator-images.yml)
 requires a reviewed exact current `main` SHA. It runs publisher fixtures and
 builds the three patched images before credentials, then requires complete
 authenticated Harbor pulls and verified signatures before returning digests.
 It has not been dispatched; no protected publication receipt or image pin is
-recorded. Pinned digests and actual generated-policy renders are separate
-from source checks and live canary traffic qualification.
+recorded. Compare the published generators' installed policies to the
+candidate renders before refreshing installed expected-spec fixtures.
 The current live policies and expected-spec fixtures still contain the broad
 rules. Before enforcement, publish and pin reviewed generator images, use the
-patched Octelium bootstrap path, compare complete generated renders, and qualify
+patched Octelium bootstrap path, compare installed policies, and qualify
 owner destinations plus private-range denial on an isolated canary. See the
 [policy review](../../docs/evidence/openclaw-enterprise-policy-review.json).
 
