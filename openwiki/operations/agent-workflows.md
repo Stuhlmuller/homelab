@@ -51,7 +51,7 @@ records its manifest hash and five commands. Run `specify extension list` to
 verify registration.
 
 `.specify/init-options.json` records the Codex integration, Python helpers,
-and sequential feature numbering;
+and timestamp-prefixed feature directories (`YYYYMMDD-HHMMSS`);
 `.specify/templates/` and `.specify/workflows/speckit/workflow.yml` own the
 artifact templates and review gates. Feature selection is stored in
 `.specify/feature.json`; helpers ignore `SPECIFY_INIT_DIR`, `SPECIFY_FEATURE`,

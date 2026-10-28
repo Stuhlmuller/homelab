@@ -119,11 +119,12 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    The old public DNS publication preview is superseded by the current tailnet
    DNS cutover above.
 
-   AFFiNE may return 500, 502, or 503, and legacy OpenClaw may return 502,
+   AFFiNE may return 500, 502, or 503, and legacy OpenClaw may return 500 or 502,
    while suspended behind their static ClusterIP backends. The check accepts
    these statuses only when the repository and live Deployment both explicitly
-   declare zero replicas and no live replicas remain. Other application 5xx
-   responses still fail readiness.
+   declare zero replicas and no live replicas remain; OpenClaw also requires
+   no EndpointSlice endpoints. Other application 5xx responses still fail
+   readiness.
 
 4. The previous public application A/AAAA publication step is retired. Do not
    run it as part of the new resolver rollout.
@@ -242,7 +243,9 @@ bypass readiness or issue an ad hoc reboot.
 
 ## Final retirement
 
-Require all private app checks, Fleet device check-in, Harbor pulls, migrated CI,
+Require all private app checks, an off-LAN Fleet device check-in (use the
+[one-shot iPhone verifier](../fleet/README.md#rollout-and-validation)), Harbor
+pulls, migrated CI,
 fresh signed callback deliveries, and Cordium execution/reconnection before a
 separate retirement change. That change removes old application/native catalog
 routes, obsolete credentials, the Cloudflare Tunnel, and finally legacy DNS.

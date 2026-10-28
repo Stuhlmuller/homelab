@@ -120,7 +120,7 @@ flowchart LR
     TLS --> Cordium[Octelium Cordium and control]
     Public[Public callback] --> Funnel[Tailscale Funnel]
     Funnel --> HTTP[Traefik callback listener]
-    HTTP --> Hooks[n8n and Policy Bot webhooks]
+    HTTP --> Hooks[n8n, Policy Bot, and Bulldozer webhooks]
     Nodes[Talos nodes] --> Registry[Traefik registry listener]
     Renovate[Renovate Pod] --> Registry
     Registry --> Harbor[Harbor OCI and token endpoints]
@@ -134,6 +134,17 @@ Separate listeners prevent public callbacks from selecting private routers.
 cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
+
+During the 2026-10-27 ztunnel bootstrap outage on `zimaboard-0`, the
+[Traefik values](../../clusters/homelab/apps/traefik/values.yaml) temporarily
+pin its only replica to `zimaboard-1`, whose ztunnel is Ready. Once merged and
+reconciled, this placement moves the private, callback, and registry listeners
+together; a failure of `zimaboard-1` then removes all three paths. Verify the
+replacement Pod, normal tailnet HTTPS, and Harbor `/v2/` before declaring
+recovery. Remove the pin through a reviewed PR after the upstream-image ztunnel
+fix restores all four nodes. Revert the placement through GitOps if the new Pod
+fails; do not patch the live Deployment.
+
 The staged OpenClaw Enterprise console uses `console.oce.stinkyboi.com` through
 an authenticated Octelium Service. Only exact
 `agent-<32 hex>.agents.oce.stinkyboi.com` hosts go directly to the OCE API on
@@ -149,9 +160,10 @@ authoritative NODATA for approved AAAA; it does not use the peer's other
 addresses. See the
 [IP-family contract and pinned upstream sources](../../docs/networking-tailnet-ingress.md#dns-model).
 
-Only `n8n-webhook.tail67beb.ts.net` and `policy-bot-hook.tail67beb.ts.net` use
-Funnel. The former accepts the three declared webhook path families; the latter
-accepts exactly `/api/github/hook`. Application webhook authentication remains
+`n8n-webhook.tail67beb.ts.net`, `policy-bot-hook.tail67beb.ts.net`, and the
+staged `bulldozer-hook.tail67beb.ts.net` use Funnel. n8n accepts the three
+declared webhook path families; each GitHub App callback accepts exactly
+`/api/github/hook`. Application webhook authentication remains
 required. Root/admin paths and spoofed private Host headers fail at the callback
 listener. Encoded reserved path characters are rejected on these sensitive routes.
 
@@ -204,11 +216,11 @@ python3 -I scripts/tailscale-ingress-sign.py
 python3 -I scripts/tailscale-ingress-sign.py --execute
 ```
 
-The fixed signer checks the private Service, two Funnel Ingresses, and the
+The fixed signer checks the private Service, three Funnel Ingresses, and the
 separate `tailnet-dns` Service against
 controller-owned Ready Pods, exact parent UID, hostname, tag, addresses and
 local lock-peer identity. It reads public node/rotation keys from those Pods and
-signs only those four targets. For the DNS handoff, `--dns-only` previews or
+signs only those five targets. For the DNS handoff, `--dns-only` previews or
 signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.
@@ -263,6 +275,13 @@ unit, then register and verify the GitOps resources. Require Ready certificates,
 healthy proxies and actual application access from a mesh client before changing
 DNS. Preserve current app state and enrollment URLs; confirm Fleet check-in,
 native Cordium execution/reconnection, and uncached node registry pulls.
+
+For the Fleet iPhone gate, use the [guarded one-shot check-in helper](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+It verifies the selected enrollment, reads Fleet's pending command and profile
+state, then sends one blank APNs ping only when that preflight is clear. A newer
+MDM check-in timestamp is required; a successful ping or an online Tailscale
+peer alone does not satisfy the gate. The pending-work check is a snapshot, so
+coordinate against concurrent Fleet changes during the test.
 
 Switch webhook registrations after public reachability and negative-path checks;
 require fresh signed delivery before retiring the former callbacks. Migrate CI to pre-signed ephemeral mesh keys only after its API proxy,
@@ -327,10 +346,11 @@ Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-legacy OpenClaw HTTP 502 only when each reviewed declaration and live
-Deployment specifies zero replicas and no live replicas remain. Other
-application 5xx responses fail. These exceptions check routing, not runtime
-health. Deployed Traefik routes and TLS must match the reviewed checkout.
+legacy OpenClaw HTTP 500 or 502 only when each reviewed declaration and live
+Deployment specifies zero replicas and no live replicas remain. OpenClaw also
+requires no EndpointSlice endpoints. Other application 5xx responses fail.
+These exceptions check routing, not runtime health. Deployed Traefik routes and
+TLS must match the reviewed checkout.
 `--retire-private --check` probes the original 27 migration HTTPS routes;
 bare `--check` also probes both staged Enterprise routes. The Agent probe uses
 a concrete `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's
@@ -398,6 +418,30 @@ Repeat the trusted CLI and normal-client checks, Fleet setup, n8n and Policy Bot
 callback checks, and every remaining [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 gate from reviewed `main` before any public deletion. This dated observation is
 not a cutover receipt.
+
+### Public app DNS retirement (2026-10-25)
+
+The guarded [retirement helper](../../scripts/tailscale-private-dns.sh) ran from
+clean reviewed `main` `e10199f2` and read back all 26 approved non-apex owners
+without public A/AAAA/CNAME records. After the previous 60-second TTL,
+324/324 address queries for those owners and a concrete Cordium wildcard child
+were empty at both Cloudflare authorities and two public recursive resolvers.
+The public apex, callback/CI/carrier names, and unrelated records matched all
+51 saved pre-cutover DNS comparisons. Cloudflare delegation and DNS-01
+references remained intact; the ExternalSecret, ClusterIssuer, and two
+Certificates remained Ready.
+
+The signed resolver still answered all 29 approved names, and normal macOS DNS
+and the original 27 HTTPS migration routes passed. Fleet's enrolled iPhone
+checked in after a guarded APNs ping; a Harbor node pulled its reviewed image
+without reboot, and native Octelium and Cordium calls passed. Fresh Emergency
+Bot and Policy Bot deliveries returned HTTP 200. Emergency deliveries also
+intermittently returned HTTP 500 at GitHub's client deadline before and after
+retirement. On another timeout, correlate its GitHub delivery timestamp and
+status with `ts-n8n-webhook` proxy context-canceled logs and n8n
+request-body-aborted logs, then fix latency through reviewed source. The
+[cutover tasks](../../specs/005-retire-public-app-dns/tasks.md) record the
+receipts and callback follow-up.
 
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and

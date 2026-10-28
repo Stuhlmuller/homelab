@@ -175,10 +175,22 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T04:28:23.381Z
 ---
 
 # Harbor Private OCI Registry
+
+## Helm chart publication
+
+The reviewed chart inventory in `scripts/config/harbor-helm-charts.json` pins
+the package SHA-256 for every Argo CD chart source, including the dormant
+OpenClaw Enterprise Git Helm chart. The protected
+`harbor-helm-charts.yml` dispatch publishes the exact packages to
+`harbor.stinkyboi.com/mirror/helm` and verifies each with the separate reader
+robot. Run it on current `main` before moving any Argo CD chart source to
+Harbor. The repository credential is owned by Argo CD self-management and
+reads only the mirror pull robot password. Terraform's Argo CD bootstrap chart
+remains upstream for a cold-cluster restore.
 
 ## Ownership And Access
 

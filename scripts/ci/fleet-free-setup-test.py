@@ -14,6 +14,7 @@ import stat
 import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
@@ -57,6 +58,7 @@ class FakeAPI:
 
     def __init__(self):
         self.calls = []
+        self.timeouts = []
         self.errors = {}
         self.config = {"license": {"tier": "free"}, "sso_settings": {"enable_sso": False}}
         self.users = [{"id": 1, "email": self.ADMIN_EMAIL, "sso_enabled": False, "global_role": "admin"}]
@@ -64,7 +66,12 @@ class FakeAPI:
         self.sessions = {}
         self.login_failures = set()
         self.host = {"id": 2, "platform": "ios", "uuid": IOS_UUID,
-                     "mdm": {"connected_to_fleet": True}}
+                     "mdm": {"connected_to_fleet": True},
+                     "last_mdm_checked_in_at": "2026-10-06T02:42:02Z"}
+        self.apns_ack = True
+        self.apns_drift = False
+        self.apns_sent = False
+        self.timeout_after_ping = False
         self.policies = []
         self.catalog = [copy.deepcopy(CATALOG_UNRELATED)]
         self.catalog_has_next = False
@@ -104,8 +111,10 @@ class FakeAPI:
     def user(self, email):
         return next((user for user in self.users if user.get("email") == email), None)
 
-    def request(self, method, path, body=None, token=None, content_type="application/json", accepted_status=200):
+    def request(self, method, path, body=None, token=None, content_type="application/json", accepted_status=200,
+                timeout=60):
         self.calls.append((method, path, copy.deepcopy(body), token))
+        self.timeouts.append((method, path, timeout))
         if (method, path) in self.errors:
             raise self.errors[method, path]
         if path == "/api/v1/fleet/login":
@@ -169,7 +178,18 @@ class FakeAPI:
                 return {}
             raise AssertionError("Unexpected user update")
         if path == "/api/v1/fleet/hosts/2" and method == "GET":
+            if self.apns_sent and self.timeout_after_ping:
+                raise TimeoutError(PRIVATE)
             return {"host": copy.deepcopy(self.host)}
+        if path == "/api/v1/fleet/hosts/2/apns_ping" and method == "POST":
+            if accepted_status != 204 or body is not None:
+                raise AssertionError("APNs ping must require an empty 204")
+            if self.apns_ack:
+                self.host["last_mdm_checked_in_at"] = datetime.now(timezone.utc).isoformat()
+            if self.apns_drift:
+                self.host["uuid"] = LOCAL_UUID
+            self.apns_sent = True
+            return {}
         if path == "/api/v1/fleet/global/policies?per_page=100" and method == "GET":
             return {"policies": copy.deepcopy(self.policies)}
         if path == "/api/v1/fleet/global/policies" and method == "POST":
@@ -243,6 +263,7 @@ class FleetFreeTest(unittest.TestCase):
         for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.RETIRED_MAC_FILES + helper.IOS_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
+        self.pending_work = Mock()
         self.private_input = Mock()
         self.private_input.read_password.return_value = PASSWORD
 
@@ -260,6 +281,7 @@ class FleetFreeTest(unittest.TestCase):
 
         with patch.object(helper, "PROFILES", self.profiles), \
                 patch.object(helper, "module", side_effect=load) as loader, \
+                patch.object(helper, "ios_pending_work_clear", side_effect=self.pending_work), \
                 patch.object(helper, "saml_outputs", return_value=(METADATA, TENANT, THUMBPRINT)), \
                 patch.object(helper, "validate_metadata"), \
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
@@ -310,10 +332,11 @@ class FleetFreeTest(unittest.TestCase):
         ])
 
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
-        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
+        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline", "ios-checkin",
+                       "mac-baseline-catalog", "console-sso", "reporting"):
             with self.subTest(action=action):
                 args = [action]
-                if action in ("mac-baseline", "ios-baseline"):
+                if action in ("mac-baseline", "ios-baseline", "ios-checkin"):
                     args += ["--host-id", "2"]
                 if action == "mac-baseline-catalog":
                     args += ["--remove"]
@@ -504,6 +527,101 @@ class FleetFreeTest(unittest.TestCase):
         self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
         self.assertEqual(self.mdm.installed, [UNRELATED])
 
+    def test_ios_checkin_sends_one_blank_ping_and_requires_new_mdm_timestamp(self):
+        status, output, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 0)
+        self.assertIn("MDM check-in advanced after one APNs ping", output)
+        self.assertEqual([call[:3] for call in self.api.calls if call[1].endswith("/apns_ping")], [
+            ("POST", "/api/v1/fleet/hosts/2/apns_ping", None),
+        ])
+        self.assertEqual(self.mdm.calls, [])
+        self.pending_work.assert_called_once_with(2)
+        self.assert_logged_out()
+
+    def test_ios_checkin_refuses_wrong_identity_or_missing_timestamp_before_ping(self):
+        for field, value in (("platform", "ipados"), ("id", 3), ("uuid", "not-a-uuid"),
+                             ("mdm", {"connected_to_fleet": False}),
+                             ("last_mdm_checked_in_at", None),
+                             ("last_mdm_checked_in_at", "not-a-timestamp")):
+            with self.subTest(field=field):
+                self.api, self.mdm = FakeAPI(), FakeMDM()
+                self.api.host[field] = value
+                self.assertEqual(self.run_command(["ios-checkin", "--host-id", "2", "--execute"])[0], 1)
+                self.assertFalse(any(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls))
+                self.assertEqual(self.mdm.calls, [])
+                self.pending_work.assert_not_called()
+                self.assert_logged_out()
+
+    def test_ios_checkin_withholds_ping_when_pending_work_is_not_clear(self):
+        self.pending_work.side_effect = helper.SetupError("iPhone pending MDM work is present or unverified; APNs ping withheld")
+        status, output, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        self.assertIn("APNs ping withheld", output)
+        self.assertFalse(any(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls))
+        self.assert_logged_out()
+
+    def test_ios_checkin_pending_work_query_requires_empty_exact_enrollment(self):
+        for invalid in (0, -1, "2", True):
+            with self.subTest(invalid=invalid), patch.object(helper.subprocess, "run") as runner:
+                with self.assertRaises(helper.SetupError):
+                    helper.ios_pending_work_clear(invalid)
+                runner.assert_not_called()
+        result = subprocess.CompletedProcess([], 0, b"1\t0\t0\t0\t0\t0\n", b"")
+        with patch.object(helper.subprocess, "run", return_value=result) as runner:
+            helper.ios_pending_work_clear(2)
+        args = runner.call_args.args[0]
+        self.assertEqual(args[:6], ["kubectl", "-n", "fleet", "exec", "statefulset/fleet-mysql", "-c"])
+        self.assertIn("nano_enrollment_queue", args[-1])
+        self.assertIn("host_mdm_apple_profiles", args[-1])
+        self.assertIn("host_mdm_apple_declarations", args[-1])
+        self.assertIn("upcoming_activities", args[-1])
+        self.assertIn("host_mdm_commands", args[-1])
+        self.assertIn("h.id = 2", args[-1])
+        for values in (b"1\t1\t0\t0\t0\t0\n", b"1\t0\t1\t0\t0\t0\n",
+                       b"1\t0\t0\t1\t0\t0\n", b"1\t0\t0\t0\t1\t0\n",
+                       b"1\t0\t0\t0\t0\t1\n", b"0\t0\t0\t0\t0\t0\n", b""):
+            with self.subTest(values=values), patch.object(
+                    helper.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, values, b"")):
+                with self.assertRaises(helper.SetupError):
+                    helper.ios_pending_work_clear(2)
+
+    def test_ios_checkin_times_out_without_a_fresh_acknowledgement_and_does_not_retry_ping(self):
+        self.api.apns_ack = False
+        with patch.object(helper.time, "monotonic", side_effect=(0, 0, 91)), \
+                patch.object(helper.time, "sleep"):
+            status, output, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        self.assertIn("did not complete a fresh Fleet MDM check-in", output)
+        self.assertEqual(sum(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls), 1)
+        self.assertEqual(self.mdm.calls, [])
+        self.assert_logged_out()
+
+    def test_ios_checkin_limits_each_poll_to_remaining_deadline(self):
+        self.api.apns_ack = False
+        with patch.object(helper.time, "monotonic", side_effect=(0, 89.5, 90.1)):
+            status, _, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        poll_timeouts = [timeout for method, path, timeout in self.api.timeouts
+                         if method == "GET" and path == "/api/v1/fleet/hosts/2"]
+        self.assertEqual(poll_timeouts, [60, 60, 60, 0.5])
+        self.assert_logged_out()
+
+    def test_ios_checkin_revokes_session_when_a_poll_times_out(self):
+        self.api.timeout_after_ping = True
+        status, output, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        self.assertIn("Private details withheld", output)
+        self.assertEqual(sum(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls), 1)
+        self.assert_logged_out()
+
+    def test_ios_checkin_rejects_identity_drift_after_ping(self):
+        self.api.apns_drift = True
+        status, output, _ = self.run_command(["ios-checkin", "--host-id", "2", "--execute"])
+        self.assertEqual(status, 1)
+        self.assertIn("Selected iPhone identity or enrollment changed", output)
+        self.assertEqual(sum(path.endswith("/apns_ping") for _, path, _, _ in self.api.calls), 1)
+        self.assert_logged_out()
+
     def test_ios_security_info_types_fail_closed_without_leaking_values(self):
         for key, value, message in ((None, PRIVATE, "Passcode security response is invalid"),
                                     ("PasscodePresent", PRIVATE,
@@ -525,12 +643,13 @@ class FleetFreeTest(unittest.TestCase):
                 self.mdm = FakeMDM()
 
     def test_selected_device_actions_require_positive_host_ids_before_loading_credentials(self):
-        for action in ("mac-baseline", "ios-baseline"):
+        for action in ("mac-baseline", "ios-baseline", "ios-checkin"):
             for host_args in ([], ["--host-id", "0"], ["--host-id", "-1"]):
                 with self.subTest(action=action, host_args=host_args), \
                         patch.object(helper, "module") as loader, \
                         contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
-                    helper.main([action, "--remove", "--execute"] + host_args)
+                    remove = ["--remove"] if action != "ios-checkin" else []
+                    helper.main([action] + remove + ["--execute"] + host_args)
                 self.assertEqual(error.exception.code, 2)
                 loader.assert_not_called()
                 self.api.initial_password.assert_not_called()

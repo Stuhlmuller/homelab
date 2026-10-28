@@ -104,9 +104,10 @@ parameters in the matrix remain unchanged.
 
 `scripts/tailscale-ci-configure.py` signs the provider keys on the trusted Mac,
 then publishes only `TAILSCALE_AUTH_KEY` in each of `homelab-plan` and
-`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. The first two
-retain owner-review environment protection; Cordium's separate tag has no
-Kubernetes RBAC. No private kubeconfig or Tailscale administrator token is copied
+`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. Same-repository
+PR plans use `homelab-plan` without a required reviewer; production remains
+restricted to `main`. Cordium's separate tag has no Kubernetes RBAC. No private
+kubeconfig or Tailscale administrator token is copied
 to GitHub. The three old client-ID variables are retired only after all secret
 writes and metadata checks succeed. Dormant provider OIDC identities remain
 protected pending separate retirement.
@@ -122,9 +123,13 @@ acceptance, rotation, and recovery commands.
 
 ## Mastodon secret contract
 
-The undeployed Mastodon draft declares generated PostgreSQL, Redis, Rails,
+Mastodon declares separate generated PostgreSQL bootstrap/application credentials, Redis, Rails,
 Active Record encryption, and P-256 VAPID keys under `/homelab/mastodon/`.
-`mastodon-datastores` mounts database/Redis passwords; `mastodon-runtime`
+`mastodon-datastores` contains bootstrap, application and Redis passwords with
+per-container key projections. PostgreSQL retains its protected bootstrap role;
+a local-socket hook creates limited `mastodon_app`. The bootstrap password is
+excluded from application configuration and Redis mounts only its own key.
+`mastodon-runtime`
 templates mounted application configuration, the stable VAPID PEM, and the
 initial owner password. `/homelab/mastodon/admin-password` is generated for
 first bootstrap only; its file mounts only into the owner Job, not the web or
@@ -387,8 +392,8 @@ cluster CA is intentionally rotated.
 | litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
-| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password` |
-| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
+| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/postgres-app-password`, `/homelab/mastodon/redis-password` |
+| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-app-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
 | mastodon owner | `mastodon-runtime` | `mastodon-runtime` (Job-only file mount) | `/homelab/mastodon/admin-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
@@ -398,7 +403,15 @@ cluster CA is intentionally rotated.
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
+| bulldozer | `bulldozer-config` | `bulldozer-config` | `/homelab/bulldozer/github-app/integration-id`, `/homelab/bulldozer/github-app/webhook-secret`, `/homelab/bulldozer/github-app/private-key` |
+
+Bulldozer's dedicated App ID and private key enter the two fixed SSM paths only
+through the protected `bulldozer-credential.yml` workflow after its placeholders
+exist. The webhook secret is generated by OpenTofu and must match GitHub App
+webhook settings. Its `OnChange` ExternalSecret needs a reviewed metadata change
+after credential injection; the Deployment remains at zero replicas until then.
 | renovate | `renovate` | `renovate` | `/homelab/renovate/github-app/issuer-id`, `/homelab/renovate/github-app/private-key` |
+| renovate acceptance (staged) | `renovate-acceptance` | `renovate-acceptance` | `/homelab/renovate/acceptance/github-app/issuer-id`, `/homelab/renovate/acceptance/github-app/private-key` |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
 not an active secret contract and has no ExternalSecret consumer. It remains in
@@ -692,6 +705,110 @@ reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
 See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
+The temporary acceptance observer uses a separate, read-only GitHub App. Its
+two Standard SecureString placeholders must first be created by a reviewed
+apply of `IaC/homelab/us-west-2/shared/aws-ssm-parameters`. From the exact
+reviewed, clean remote
+`main`, use an existing operator SSO profile and the repo-owned manifest flow:
+
+```sh
+aws sso login --profile <operator-sso-profile>
+reviewed_main_sha=$(git rev-parse HEAD)
+python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
+  --expected-sha "$reviewed_main_sha" create
+```
+
+Open the printed loopback URL on the same machine, create the App under the
+`Stuhlmuller` organization, then use the printed installation URL to install
+it on **all repositories**. The manifest requests repository read access for
+Administration, Checks, Contents, Issues, Metadata, Pull requests, Commit
+statuses, and Dependabot alerts, plus organization Members read access.
+It subscribes to no events and disables webhook delivery. The script checks
+the org ownership, exact read grants, no events, AWS account, SSO identity,
+and both version-one placeholders. It exchanges GitHub's one-hour code in
+memory and sends the PEM to SSM through AWS CLI stdin. It prints no key,
+token, or SSM value. Verify
+the completed installation from that same reviewed main:
+
+```sh
+python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
+  --expected-sha "$reviewed_main_sha" verify
+```
+
+If intake stops after GitHub creates the App, keep the public App ID printed
+before either SSM write. If the private-key slot reached version 2 but the
+issuer slot remains the version-one placeholder, resume that exact App from
+the current reviewed main:
+
+```sh
+reviewed_main_sha=$(git rev-parse HEAD)
+python3 -I scripts/renovate-acceptance-app.py --profile <operator-sso-profile> \
+  --expected-sha "$reviewed_main_sha" --app-id <printed-public-app-id> resume
+```
+
+`resume` checks the stored key against that App's exact name, organization,
+read grants, and event policy before writing only the acceptance issuer slot.
+It rechecks both SSM slots immediately before that write. If the issuer write
+succeeded but its CLI receipt was lost, the same command verifies the complete
+version-two pair without another write. It refuses any other slot state; in
+particular, a failed first key write leaves both placeholders and requires a
+separately reviewed owner cleanup of the newly created App before starting a
+fresh registration. Never paste the PEM or SSM values into a recovery command.
+
+Only after verification should a reviewed GitOps change include
+`clusters/homelab/apps/renovate/acceptance-externalsecret.yaml`, check its
+`Ready=True` condition and target Secret metadata without reading values, and
+later unsuspend the acceptance Jobs. All acceptance Pods mount the read-only
+App Secret `renovate-acceptance` at `/var/run/secrets/renovate-acceptance`;
+they cannot read the writer's `renovate` Secret. The inventory Job alone also
+mounts the one-shot review Secret described below. The intake accepts initial
+placeholders only. Rotation needs a separately reviewed path.
+
+The private acceptance review is a separate one-shot input that can exceed one
+SSM SecureString. After private owner, policy, and source review, use the
+guarded [operator command](../scripts/renovate-acceptance-review.py) from
+current signed `main` to create the fixed, immutable
+`automation/renovate-acceptance-review` Secret. Only the staged inventory Job
+mounts it. The Job copies the input to the dedicated acer-local ledger before
+freezing its sample; the read-only App and review input remain separate.
+Retire the transient Secret after a successful inventory Job, or retract it
+before activation or after a terminal failure. Neither operation changes the
+private ledger. No additional SSM reader grant is needed for review delivery.
+
+### Retire the temporary acceptance identity
+
+After the seven-day report is reviewed, complete the T047 ledger cleanup and
+remove all acceptance Jobs, CronJobs, the ledger claim, and the acceptance
+ExternalSecret from Kustomize through reviewed GitOps. Confirm Argo CD is
+synced, no acceptance Pod or Job remains, and both the
+`renovate-acceptance` ExternalSecret and target Secret are absent in
+`automation`. The target uses `creationPolicy: Owner`, so pruning the
+ExternalSecret garbage-collects the Secret; `deletionPolicy: Delete` also
+removes it if both SSM sources disappear first. Do not remove SSM values while
+either Kubernetes object remains.
+
+Before deleting the App, refresh `reviewed_main_sha` to the then-current clean
+remote `main`, run the `verify` command above, and record its numeric App ID
+and slug. An organization owner or App manager can delete the App registration
+through [GitHub's Developer settings](https://docs.github.com/en/apps/maintaining-github-apps/deleting-a-github-app).
+Its deletion also uninstalls every installation. **Obtain explicit owner
+authorization for this exact provider UI deletion when T047 is ready.**
+Confirm the recorded App ID is absent from the organization installation list
+at `GET /orgs/Stuhlmuller/installations`; an unauthorized or failed query is
+not an absence receipt. Do not delete or alter the production Renovate writer
+App.
+
+In a separate reviewed IaC change, remove only the two
+`/homelab/renovate/acceptance/github-app/` parameter blocks from
+`IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`.
+Generate the stack, inspect a saved plan for those two SecureString destroys
+and the corresponding reader-policy contraction, then apply that exact plan
+through the declared operator workflow. Verify both names are absent from
+SSM metadata in account `716182248480`, region `us-west-2`, without reading
+any value. Stop if the plan touches `/homelab/renovate/github-app/` or any
+unrelated resource. Remove the staged ExternalSecret and one-time intake code
+in the reviewed cleanup change once no longer needed.
+
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret
 still exists. After the old workflow and all unfinished runs are gone, use the
@@ -700,10 +817,17 @@ reviewed fixed-target script in `Stuhlmuller/renovate` to retire only
 SecureStrings are past placeholder versions, the ExternalSecret refreshed
 after transfer, the Actions key is absent, and no old run remains. Only then
 enable cluster writes through GitOps. For rollback, first suspend the cluster
-CronJob through reviewed GitOps and verify all Renovate Jobs and Pods drained.
-The reviewed companion restore script can then read the fixed SSM private-key
-path and restore only the repository Actions secret, even if External Secrets
-is unavailable; restore the old workflow through a reviewed PR afterward.
+CronJob through reviewed GitOps, verify exact Argo CD sync and all Renovate
+Jobs and Pods drained, then repair or revert the same cluster runner through
+reviewed desired state. Before its first proven write-enabled run, return to
+full dry-run or suspension and record the no-writer gap. Keep the old Actions
+key absent. Legacy restoration requires a fresh credential-free GitHub-hosted
+probe of the Harbor Docker datasource route before key restore. If that route
+is unavailable, repair the cluster path instead. Once the probe passes, the
+guarded companion restore script can read the fixed SSM private-key path and
+restore only the repository Actions secret, even if External Secrets is
+unavailable; restore the old workflow through a separate reviewed PR while
+the cluster remains stopped. Retire that key again before cluster writes resume.
 
 ## Harbor private registry
 

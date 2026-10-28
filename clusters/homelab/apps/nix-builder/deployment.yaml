@@ -44,7 +44,7 @@ spec:
                     values: [zimaboard-0, zimaboard-1]
       containers:
         - name: nix
-          image: docker.io/nixos/nix:2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c
+          image: harbor.stinkyboi.com/mirror/docker.io/nixos/nix:2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c
           command: [/bin/sh, -ec]
           args:
             - exec tail -f /dev/null

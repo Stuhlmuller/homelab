@@ -221,7 +221,7 @@ sources:
 generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-24T03:50:35.181Z
+    at: 2026-10-25T01:38:00.583Z
 ---
 
 # Workload Inventory
@@ -255,10 +255,17 @@ later passed protected `all` publication and authenticated Harbor pulls in
 The staged migration foundation adds private Traefik ingress and the Tailscale
 operator API proxy while retaining existing Octelium/Cloudflare routes until
 live cutover passes. The new route inventory keeps Fleet mesh-only, exposes only
-n8n and Policy Bot callbacks through Funnel, and retains Octelium for Cordium
-and control services. Existing per-app access notes below describe the retained
+n8n, Policy Bot, and staged Bulldozer callbacks through Funnel, and retains
+Octelium for Cordium and control services. Existing per-app access notes below describe the retained
 source path; they are not proof that cutover has happened. See
 [the staged ingress runbook](../runbooks/tailnet-ingress.md).
+
+Bulldozer is registered from `IaC/homelab/us-west-2/apps/bulldozer/stack.hcl`
+into `automation` using `clusters/homelab/apps/bulldozer`. Its Deployment starts
+at zero replicas while the dedicated GitHub App credentials and generated
+webhook secret are delivered. It has no persistent volume. See the
+[workload runbook](../../clusters/homelab/apps/bulldozer/README.md) for activation
+and all-repository merge behavior.
 
 ## Platform And Support Applications
 
@@ -613,11 +620,6 @@ Argo pruned it in a separate revision before this writer restart. The separate 1
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
 
-The draft protected [Langfuse PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
-is a manual, one-shot safety copy for a later database move. It verifies an
-exact versioned dump through an isolated restore, but no live receipt exists;
-ClickHouse, Valkey, raw objects, and secrets still need separate recovery.
-
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
@@ -844,7 +846,10 @@ SSM generates internal credentials and the bootstrap-only owner password.
 Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
 files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
 and runtime revisions after rotation. The launcher refuses SMTP placeholders.
-Schema preparation precedes owner bootstrap and application Deployments.
+A wave-0 local-socket hook provisions limited `mastodon_app`; PostgreSQL's
+protected bootstrap administrator remains separate. Schema preparation precedes
+owner bootstrap and application Deployments. Application containers use native
+image UID/GID 991 with filesystem group 65534; datastores use UID/GID 65534.
 
 The targeted Terragrunt saved-plan path checks upstream health, storage and
 secret-store permissions before SSM declarations and registration. The separate
@@ -859,3 +864,6 @@ and [activation gates](../operations/validation-gates.md#mastodon-activation-gat
 Merge, actual rollout, loaded-library checks, owner login, SMTP receipt,
 public website/media/streaming/federation and backup/isolated-restore acceptance
 remain distinct milestones.
+
+Web, Sidekiq, streaming and migration/owner Jobs select Acer for memory
+headroom. Datastores and the local-socket backup Job remain on `zimaboard-1`.
