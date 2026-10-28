@@ -38,9 +38,12 @@ class CandidateTests(unittest.TestCase):
         self.talosctl = self.root / "talosctl"
         self.talosctl.write_text("#!/bin/sh\nexit 0\n")
         self.talosctl.chmod(0o700)
+        self.aws_cli = self.root / "aws"
+        self.aws_cli.write_text("#!/bin/sh\nexit 0\n")
+        self.aws_cli.chmod(0o700)
         self.args = SimpleNamespace(
             expected_sha=SHA, talosconfig=self.config, talosctl=self.talosctl,
-            aws_cli=Path("/usr/bin/true"), profile="default",
+            aws_cli=self.aws_cli, profile="default",
             publication_directory=self.paths["publication"],
             retrieval_directory=self.paths["retrieval"],
             restore_directory=self.paths["restore"],
@@ -186,7 +189,9 @@ class CandidateTests(unittest.TestCase):
                            "version", "--short"], calls)
 
     def test_read_only_aws_blocks_broad_profile_writes(self):
-        aws = candidate.ReadOnlyAWS(Path("/usr/bin/true"), "default",
+        self.assertTrue(self.aws_cli.is_file())
+        self.assertTrue(os.access(self.aws_cli, os.X_OK))
+        aws = candidate.ReadOnlyAWS(self.aws_cli, "default",
                                     candidate.OFFSITE.destination())
         with self.assertRaises(ValueError):
             aws.call("s3api", "put-object", ["--key", "anything"])
@@ -257,7 +262,8 @@ class CandidateTests(unittest.TestCase):
                     staged_bytes[key] = Path(arguments[arguments.index("--body") + 1]).read_bytes()
                     return {"VersionId": "version-1", "ChecksumSHA256":
                             arguments[arguments.index("--checksum-sha256") + 1]}
-                import base64, hashlib
+                import base64
+                import hashlib
                 payload = staged_bytes[key]
                 checksum = base64.b64encode(hashlib.sha256(payload).digest()).decode()
                 if operation == "list-object-versions":
@@ -272,7 +278,7 @@ class CandidateTests(unittest.TestCase):
                             f"arn:aws:kms:us-east-1:{bucket['account_id']}:key/fixture-key"}
 
         args = SimpleNamespace(expected_sha=SHA, candidate_directory=directory,
-                               aws_cli=Path("/usr/bin/true"), profile="default")
+                               aws_cli=self.aws_cli, profile="default")
         with patch.object(candidate, "require_main") as main, \
              patch.object(candidate, "StagingAWS", return_value=FakeAWS()):
             receipt = candidate.stage(args)
@@ -304,7 +310,7 @@ class CandidateTests(unittest.TestCase):
              patch.object(candidate, "StagingAWS") as aws:
             with self.assertRaises(ValueError):
                 candidate.stage(SimpleNamespace(expected_sha=SHA,
-                    candidate_directory=directory, aws_cli=Path("/usr/bin/true"),
+                    candidate_directory=directory, aws_cli=self.aws_cli,
                     profile="default"))
         aws.assert_not_called()
 
