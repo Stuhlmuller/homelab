@@ -3,10 +3,10 @@ include "root" {
 }
 
 locals {
-  root_config          = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  aws_region           = local.root_config.locals.aws_region
-  kms_key_id           = local.root_config.locals.runtime_kms_key_id
-  langfuse_bucket_name = read_terragrunt_config("${get_repo_root()}/IaC/langfuse-blob-storage.hcl").inputs.bucket
+  root_config                    = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region                     = local.root_config.locals.aws_region
+  kms_key_id                     = local.root_config.locals.runtime_kms_key_id
+  langfuse_bucket_name           = read_terragrunt_config("${get_repo_root()}/IaC/langfuse-blob-storage.hcl").inputs.bucket
   application_backup_bucket_name = read_terragrunt_config("${get_repo_root()}/IaC/application-backup-storage.hcl").inputs.bucket
 }
 

@@ -79,8 +79,10 @@ The manual [`Langfuse Raw Version Backup`](../../../../.github/workflows/langfus
 workflow is a separate source-only candidate. Once its dedicated bounded IAM
 role has passed a protected plan and apply, an exact-current-main dispatch can
 copy every extant raw S3 object version into the versioned application-backup
-bucket in `us-east-1`. It reads back each exact destination version and writes
-private `complete.json` last. A changed source inventory blocks completion;
+bucket in `us-east-1`. It preserves HTTP headers, user metadata and per-version
+tags with each object's bytes. It reads back each exact destination version and
+rechecks mutable source tags before writing private `complete.json` last. A
+changed source inventory or tag set blocks completion;
 failed runs can leave partial objects in their run-specific prefix. The public
 job output contains only counts, bytes and the private manifest's SHA-256.
 

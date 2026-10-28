@@ -107,7 +107,7 @@ jobs:
           set -euo pipefail
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
-          sha256sum --check --status <<<'6749bedf31e970fdcd4ea2cca5fc9fb02199f59817060dec5f404010c2985add  scripts/ci/langfuse-raw-version-backup.py'
+          sha256sum --check --status <<<'18d9eff0f942681d8c360abcddf08167dd462e221f80a57fe92f1fdd7a1517e5  scripts/ci/langfuse-raw-version-backup.py'
           if ! nix develop --command python3 -I scripts/ci/langfuse-raw-version-backup.py \
               --expected-sha "$ACTUAL_SHA" --run-id "$RUN_ID" \
               --run-attempt "$RUN_ATTEMPT" --scratch "$RUNNER_TEMP" >"$private_log" 2>&1; then

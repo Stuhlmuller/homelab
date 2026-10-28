@@ -4,12 +4,12 @@
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 import tempfile
+from urllib.parse import urlencode
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,6 +19,15 @@ VALUES = ROOT / "clusters/homelab/apps/langfuse/values.yaml"
 MAX_PAGES = 100
 MAX_OBJECTS = 10000
 MAX_BYTES = 5 * 1024**3
+HTTP_PROPERTIES = {
+    "CacheControl": "--cache-control",
+    "ContentDisposition": "--content-disposition",
+    "ContentEncoding": "--content-encoding",
+    "ContentLanguage": "--content-language",
+    "ContentType": "--content-type",
+    "Expires": "--expires",
+    "WebsiteRedirectLocation": "--website-redirect-location",
+}
 
 
 class BackupBlocked(Exception):
@@ -149,6 +158,42 @@ def object_key(prefix, item):
     return prefix + "/objects/" + hashlib.sha256(identity).hexdigest()
 
 
+def object_properties(response):
+    if response.get("StorageClass", "STANDARD") != "STANDARD" or any(
+            field in response for field in (
+                "ObjectLockMode", "ObjectLockRetainUntilDate", "ObjectLockLegalHoldStatus")):
+        raise BackupBlocked("raw version has unsupported retention properties")
+    properties = {}
+    for name in HTTP_PROPERTIES:
+        if name in response:
+            if not isinstance(response[name], str):
+                raise BackupBlocked("raw version HTTP property is malformed")
+            properties[name] = response[name]
+    metadata = response.get("Metadata", {})
+    if (not isinstance(metadata, dict) or
+            any(not isinstance(key, str) or not isinstance(value, str)
+                for key, value in metadata.items())):
+        raise BackupBlocked("raw version user metadata is malformed")
+    properties["Metadata"] = metadata
+    return properties
+
+
+def get_version_tags(call, region, bucket, account, key, version):
+    result = call(region, "get-object-tagging", "--bucket", bucket,
+                  "--key", key, "--version-id", version,
+                  "--expected-bucket-owner", account)
+    if result.get("VersionId") != version or not isinstance(result.get("TagSet"), list):
+        raise BackupBlocked("raw version tag response is incomplete")
+    tags = result["TagSet"]
+    if (len(tags) > 10 or any(not isinstance(tag, dict) or
+                             not isinstance(tag.get("Key"), str) or not tag["Key"] or
+                             not isinstance(tag.get("Value"), str) for tag in tags)):
+        raise BackupBlocked("raw version tag response is malformed")
+    if len({tag["Key"] for tag in tags}) != len(tags):
+        raise BackupBlocked("raw version tags repeat")
+    return sorted(tags, key=lambda tag: tag["Key"])
+
+
 def copy_version(call, source, destination, account, prefix, item, scratch):
     source_file = scratch / "source.bin"
     dest_file = scratch / "readback.bin"
@@ -163,24 +208,41 @@ def copy_version(call, source, destination, account, prefix, item, scratch):
                 received.get("ServerSideEncryption") != "aws:kms" or
                 actual_size != item["bytes"]):
             raise BackupBlocked("raw version bytes differ from inventory")
+        properties = object_properties(received)
+        tags = get_version_tags(call, "us-west-2", source, account,
+                                item["key"], item["version"])
+        headers = []
+        for field, option in HTTP_PROPERTIES.items():
+            if field in properties:
+                headers.extend((option, properties[field]))
+        if properties["Metadata"]:
+            headers.extend(("--metadata", json.dumps(properties["Metadata"],
+                                                    sort_keys=True, separators=(",", ":"))))
+        if tags:
+            headers.extend(("--tagging", urlencode([(tag["Key"], tag["Value"])
+                                                     for tag in tags])))
         key = object_key(prefix, item)
         published = call("us-east-1", "put-object", "--bucket", destination,
                          "--key", key, "--body", str(source_file),
                          "--server-side-encryption", "aws:kms", "--if-none-match", "*",
-                         "--metadata", f"sha256={source_hash}", *owner)
+                         *headers, *owner)
         version = published.get("VersionId")
         if not isinstance(version, str) or not version or version == "null":
             raise BackupBlocked("offsite object has no immutable version")
+        source_file.unlink()
         readback = call("us-east-1", "get-object", "--bucket", destination,
                         "--key", key, "--version-id", version, *owner, file=dest_file)
         verified_hash, verified_size = digest_file(dest_file)
         if (readback.get("VersionId") != version or
                 readback.get("ServerSideEncryption") != "aws:kms" or
                 readback.get("ContentLength") != item["bytes"] or
-                readback.get("Metadata", {}).get("sha256") != source_hash or
+                object_properties(readback) != properties or
+                get_version_tags(call, "us-east-1", destination, account,
+                                 key, version) != tags or
                 verified_hash != source_hash or verified_size != item["bytes"]):
             raise BackupBlocked("offsite object readback differs from source")
-        return {**item, "sha256": source_hash, "offsite_key": key, "offsite_version": version}
+        return {**item, "sha256": source_hash, "properties": properties, "tags": tags,
+                "offsite_key": key, "offsite_version": version}
     finally:
         source_file.unlink(missing_ok=True)
         dest_file.unlink(missing_ok=True)
@@ -229,6 +291,10 @@ def backup(call, account, source, destination, prefix, scratch):
     after, after_bytes = list_versions(call, source, account)
     if after != before or after_bytes != total_bytes:
         raise BackupBlocked("raw version set changed during copy")
+    for item in copied:
+        if item["kind"] == "object" and get_version_tags(
+                call, "us-west-2", source, account, item["key"], item["version"]) != item["tags"]:
+            raise BackupBlocked("raw version tags changed during copy")
     manifest = {"format": 1, "source_bucket": source, "offsite_bucket": destination,
                 "prefix": prefix, "items": copied}
     digest = publish_complete(call, destination, account, prefix, manifest, scratch)

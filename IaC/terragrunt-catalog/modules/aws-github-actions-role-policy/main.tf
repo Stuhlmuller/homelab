@@ -85,14 +85,19 @@ data "aws_iam_policy_document" "langfuse_raw_backup" {
   statement {
     sid       = "ReadLangfuseRawVersions"
     effect    = "Allow"
-    actions   = ["s3:GetObjectVersion"]
+    actions   = ["s3:GetObjectVersion", "s3:GetObjectVersionTagging"]
     resources = ["${local.langfuse_bucket_arn}/*"]
   }
 
   statement {
-    sid       = "WriteAndReadLangfuseBackupVersions"
-    effect    = "Allow"
-    actions   = ["s3:PutObject", "s3:GetObjectVersion"]
+    sid    = "WriteAndReadLangfuseBackupVersions"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+      "s3:GetObjectVersion",
+      "s3:GetObjectVersionTagging",
+    ]
     resources = ["${local.application_backup_bucket_arn}/langfuse/raw-versions/*"]
 
     condition {

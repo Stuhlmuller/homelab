@@ -96,7 +96,8 @@ run "dedicated_raw_backup_role_has_only_two_bucket_scopes" {
       ]) &&
       toset(flatten([for statement in jsondecode(data.aws_iam_policy_document.langfuse_raw_backup.json).Statement : flatten([statement.Action])])) == toset([
         "s3:GetBucketVersioning", "s3:GetEncryptionConfiguration", "s3:ListBucketVersions",
-        "s3:GetObjectVersion", "s3:PutObject", "kms:Decrypt", "kms:GenerateDataKey",
+        "s3:GetObjectVersion", "s3:GetObjectVersionTagging", "s3:PutObject",
+        "s3:PutObjectTagging", "kms:Decrypt", "kms:GenerateDataKey",
       ]) &&
       [for statement in jsondecode(data.aws_iam_policy_document.langfuse_raw_backup.json).Statement : statement.Resource if statement.Sid == "WriteAndReadLangfuseBackupVersions"][0] ==
       "arn:aws:s3:::homelab-application-backups-123456789012-us-east-1/langfuse/raw-versions/*"
