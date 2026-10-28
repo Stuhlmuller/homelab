@@ -102,6 +102,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-a4ff1ea3fe1e8ea4c41d8c7e
     resource: repo://IaC/terragrunt-catalog/units/operator/tailscale-access/terragrunt.hcl
+  - id: openwiki-source-6e81262b111476d6a48c778a
+    resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
   - id: openwiki-source-856035e595a8b9b128dcb0a8
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-cfb569f646f8b7c98a134fdf
@@ -140,10 +142,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T02:38:59.035Z" }
+generated: { by: "codex", at: "2026-10-28T02:44:57.760Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:38:59.035Z
+    at: 2026-10-28T02:44:57.760Z
 ---
 
 # Secrets And Identity
@@ -352,14 +354,21 @@ current `main`, then patches only the Secret installation-ID annotation with
 UID/resource-version guards. The Job verifies binding and unchanged workloads.
 An uncertain patch is read back once without repeating the write.
 
-The binder-bearing operator image has not been published or deployed from
-this source. The operator remains disabled, and network-policy enforcement,
-key ownership, placement, Installation identity, and recovery are unproved.
-A failed unbound Job needs a separately reviewed identity-checked cleanup;
-a post-patch failure may leave the Secret bound and needs a separate recovery
-path. No live binding, readback, or activation is established. SSM-backed
-model, database, auth, and gateway credentials remain separate from startup
-bytes.
+The staged
+[cleanup helper](../../scripts/ci/openclaw-enterprise-cleanup-failed-bind.py)
+can remove only one terminal Failed pre-patch Job with its exact source, run,
+attempt, Job UID and Pod UID. It proves the startup Secret is still unbound at
+the Pod-template UID and resource version, the mounted ConfigMap has exact
+immutable bytes and stable current identity, activation is disabled, and the
+bootstrap and journal claims retain their identities. It checks current
+`main` beside one Job UID/resourceVersion-guarded foreground DELETE, then
+requires the Job and Pod gone with Secret and storage unchanged. A lost DELETE
+response is read back, never retried. A running Job, changed Secret, or
+post-patch failure is outside this cleanup path. The binder-bearing image has
+not been published from this source; the operator and network enforcement
+remain disabled. No live cleanup, binding, readback, or activation is proven.
+SSM-backed model, database, auth, and gateway credentials remain separate from
+startup bytes.
 
 The staged [journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 has a dedicated ServiceAccount with automatic token mounting disabled. Its

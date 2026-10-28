@@ -81,13 +81,30 @@ policy still prevent a live bind until placement, image, and network receipts
 are reviewed.
 
 If `main` advances after Job creation but before the Secret patch, the Job
-times out without binding. The dispatcher then refuses any fresh attempt while
-that failed Job remains. Inspect its private log, Pod and Job UIDs, and the
-startup Secret against the pinned Pod-template baseline read-only. A separate
-reviewed cleanup workflow must prove those identities and remove only that
-failed Job before a fresh exact-main dispatch. No automatic deletion or patch
-retry is authorized by this source slice. T041 stays open until this recovery
-path and the live prerequisites are proven.
+times out without binding. The dispatcher then refuses a fresh attempt while
+the failed Job remains. Inspect its private log, exact Job and Pod UIDs, and
+the startup Secret read-only first. The protected `cleanup-failed-bind` lane
+accepts the original source SHA, run ID, attempt, Job UID, and Pod UID. It
+requires a terminal Failed Job with one failed Pod, unchanged ancestor source
+and candidate bytes, the exact immutable mounted ConfigMap and stable current
+UID/resource version, the Pod-template Secret witness still at the same UID
+and resource version without an Installation ID, retained PVC/PV identities, and
+disabled activation. A still-running Job with an expired readiness receipt is
+not eligible. It rechecks exact current `main` beside one foreground REST
+DELETE guarded by Job UID and resource version. If the response is lost it
+reads the Job and Pod back; it never repeats the DELETE. Completion requires
+both gone with the Secret and retained storage unchanged. The production
+workflow serializes cleanup with binding and exposes no private logs.
+The Job pins the ConfigMap name and content receipt, not its historical UID;
+cleanup verifies exact immutable bytes and current identity before and after
+deletion. It does not claim the ConfigMap UID was unchanged since Job creation.
+
+Use the reviewed [operations workflow](../../../../.github/workflows/openclaw-enterprise-operations.yml)
+with `enterprise_stage=cleanup-failed-bind`, the current `expected_sha`, and
+all five `failed_bind_*` inputs from read-only inspection. A missing Pod,
+changed Secret, uncertain deletion, or failed storage proof needs a new review
+before another run. The cleanup path is source-only until it passes protected
+checks and is merged; T041 remains open pending live prerequisites and proof.
 
 If the Secret patch commits but the Job or its post-patch proof fails, the
 startup Secret may already name the Installation. The pre-patch cleanup path

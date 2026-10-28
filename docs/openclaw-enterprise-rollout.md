@@ -67,10 +67,21 @@ does not enforce the declared deny-all NetworkPolicy. Do not dispatch binding
 until its signed image is rebuilt and pinned from this source, the admitted
 canary proves enforcement, and placement, claims, key ownership and dormant
 Installation are reviewed. If `main` advances after Job creation, the unbound
-Job fails and blocks later dispatches. Its exact failed Job requires read-only
-inspection against its Pod-template Secret baseline and a separate reviewed,
-identity-checked cleanup workflow before
-a new exact-main attempt; no automatic Job deletion is included here.
+Job fails and blocks later dispatches. Review its private failure evidence
+read-only. The fixed `cleanup-failed-bind` lane takes the failed source SHA,
+run ID, attempt, Job UID and Pod UID. It requires identical historical
+binding code/config and candidate bytes, a terminal Failed Job with one
+failed Pod, the exact immutable mounted ConfigMap with stable current
+UID/resource version, an unchanged unbound startup Secret at its pre-Job
+UID/resource version, disabled activation, and retained bootstrap/journal
+PVC/PV identities. The Job records the ConfigMap name and content receipt,
+not a historical ConfigMap UID; cleanup does not claim historical UID continuity.
+It rechecks current `main` beside one UID/resourceVersion-preconditioned
+foreground Job DELETE. On a lost response it reads back; it never retries
+the write blindly. It passes only after the Job and Pod are gone and the
+Secret and storage remain unchanged. A running Job, absent Pod, changed Secret,
+or uncertain cleanup remains blocked. The lane is source-only until its
+protected checks pass and it is merged; T041 remains open.
 If the Secret patch commits but the Job or post-patch proof fails, the Secret
 may already be bound. The pre-patch cleanup path cannot handle that state.
 Do not retry binding, automatically delete the Job, activate the agent or

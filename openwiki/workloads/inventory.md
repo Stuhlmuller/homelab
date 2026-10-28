@@ -186,6 +186,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-active-test.py
   - id: openwiki-source-8047752c8d0bc59d19d7605b
     resource: repo://scripts/ci/openclaw-enterprise-bind-installation-test.py
+  - id: openwiki-source-6e81262b111476d6a48c778a
+    resource: repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
   - id: openwiki-source-fc079e0e542f990a412aa90f
@@ -220,10 +222,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-28T02:38:59.035Z" }
+generated: { by: "codex", at: "2026-10-28T02:48:51.051Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T02:38:59.035Z
+    at: 2026-10-28T02:48:51.051Z
 ---
 
 # Workload Inventory
@@ -503,8 +505,9 @@ applied or synced. The candidate's
 placeholder administrator email, missing placement labels, and unfinished
 database/storage gates prevent activation. The
 [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
-offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
-`verification`, `restore` and `acceptance` stages. Its pinned stage helper
+offers fixed `bind-installation`, `cleanup-failed-bind`, `full-sync`,
+`reconcile`, `stop`, `verification`, `restore` and `acceptance` stages.
+Its pinned stage helper
 calls the full-sync helper, but the
 committed `unselected` installation phase blocks sync before Kubernetes access.
 The staged [journal operator bundle](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
@@ -545,8 +548,14 @@ never reads it. The runner pins the reviewed immutable startup Secret UID,
 resource version and candidate digest before Job creation, checks the Job and
 Pod plus a bounded private proof, then rechecks current `main` before one
 guarded annotation patch. The Job checks the result. Key ownership, admitted
-placement, network enforcement, failed-Job recovery and live Secret binding
-remain unproved; automatic retry and activation are blocked.
+placement, network enforcement and live Secret binding remain unproved.
+The staged
+[cleanup](../../scripts/ci/openclaw-enterprise-cleanup-failed-bind.py)
+accepts only an exact terminal Failed pre-patch Job and Pod, unchanged unbound
+startup Secret and current immutable ConfigMap, and retained PVC/PV identities.
+It uses one UID/resourceVersion-guarded foreground Job DELETE with readback
+rather than a blind retry. Running or post-patch failures remain blocked.
+This cleanup has not run; no live recovery or activation is accepted.
 Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy

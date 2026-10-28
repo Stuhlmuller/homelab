@@ -203,15 +203,16 @@ sys.stdout.buffer.write(chunk)
         self.assertIn(f"{operator_digest}  scripts/ci/openclaw-enterprise-journal-operator.py", workflow)
         sync_digest = hashlib.sha256((ROOT / 'scripts/ci/openclaw-enterprise-full-sync.sh').read_bytes()).hexdigest()
         self.assertIn(f"{sync_digest}  scripts/ci/openclaw-enterprise-full-sync.sh", workflow)
-        self.assertIn('options: [none, bind-installation, full-sync, reconcile, stop, verification, '
-                      'restore, acceptance]', workflow)
+        self.assertIn('options: [none, bind-installation, cleanup-failed-bind, full-sync, '
+                      'reconcile, stop, verification, restore, acceptance]', workflow)
         self.assertIn('Choose exactly one fixed operation stage.', workflow)
-        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 3)
-        self.assertEqual(workflow.count('queue: max'), 3)
+        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 4)
+        self.assertEqual(workflow.count('queue: max'), 4)
         self.assertIn("inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
                       workflow)
         self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && "
-                      "inputs.enterprise_stage != 'bind-installation'",
+                      "inputs.enterprise_stage != 'bind-installation' && "
+                      "inputs.enterprise_stage != 'cleanup-failed-bind'",
                       workflow)
         self.assertIn('private diagnostics withheld', workflow)
         enterprise_checkout = workflow.split('\n  enterprise:\n', 1)[1].split('\n  binding:\n', 1)[0]
@@ -277,7 +278,11 @@ sys.stdout.buffer.write(chunk)
         guard = textwrap.dedent(dispatch.group(1))
         base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
                 'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
-                'BASELINE_REF': '', 'ARCHIVE_REF': '', 'CACHE_REF': '', 'PRIOR_RUN_ID': ''}
+                'BASELINE_REF': '', 'ARCHIVE_REF': '', 'CACHE_REF': '',
+                'PRIOR_RUN_ID': '',
+                'FAILED_BIND_SOURCE_SHA': '', 'FAILED_BIND_RUN_ID': '',
+                'FAILED_BIND_ATTEMPT': '', 'FAILED_BIND_JOB_UID': '',
+                'FAILED_BIND_POD_UID': ''}
         for legacy, enterprise, baseline, expected in (
             ('inventory', 'none', '', True), ('none', 'verification', '', True),
             ('none', 'bind-installation', '', True),
@@ -291,6 +296,23 @@ sys.stdout.buffer.write(chunk)
                                     capture_output=True, text=True, timeout=5)
             self.assertEqual(result.returncode == 0, expected,
                              (legacy, enterprise, result.stderr))
+        failed_bind = {**base, 'LEGACY_STAGE': 'none',
+                       'ENTERPRISE_STAGE': 'cleanup-failed-bind',
+                       'FAILED_BIND_SOURCE_SHA': 'a' * 40,
+                       'FAILED_BIND_RUN_ID': '12345', 'FAILED_BIND_ATTEMPT': '1',
+                       'FAILED_BIND_JOB_UID': '12345678-1234-1234-1234-123456789abc',
+                       'FAILED_BIND_POD_UID': '87654321-4321-4321-4321-cba987654321'}
+        for change, expected in (({}, True),
+                                 ({'FAILED_BIND_JOB_UID': ''}, False),
+                                 ({'FAILED_BIND_SOURCE_SHA': 'b' * 39}, False),
+                                 ({'ENTERPRISE_STAGE': 'bind-installation'}, False),
+                                 ({'LEGACY_STAGE': 'archive'}, False)):
+            with self.subTest(change=change):
+                result = subprocess.run(['bash', '-c', guard], cwd=ROOT,
+                                        env={**failed_bind, **change},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode == 0, expected,
+                                 (change, result.stderr))
 
         sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                       text=True).strip()
@@ -368,7 +390,8 @@ sys.stdout.buffer.write(chunk)
 
     def test_installation_binding_uses_protected_operator_without_runner_key(self):
         workflow = WORKFLOW.read_text()
-        binding = workflow.split('\n  binding:\n', 1)[1]
+        binding = workflow.split('\n  binding:\n', 1)[1].split(
+            '\n  cleanup-failed-bind:\n', 1)[0]
         self.assertIn("inputs.enterprise_stage == 'bind-installation'", binding)
         self.assertIn('name: homelab-production', binding)
         self.assertIn('group: openclaw-enterprise-operations-production', binding)

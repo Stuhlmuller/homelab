@@ -19,7 +19,7 @@ on:
         required: false
         default: none
         type: choice
-        options: [none, bind-installation, full-sync, reconcile, stop, verification, restore, acceptance]
+        options: [none, bind-installation, cleanup-failed-bind, full-sync, reconcile, stop, verification, restore, acceptance]
       baseline_ref:
         description: Inventory source SHA and run ID for publish or archive (SHA/run-id)
         required: false
@@ -30,6 +30,26 @@ on:
         type: string
       cache_ref:
         description: Published Discord cache source SHA and run ID for transfer (SHA/run-id)
+        required: false
+        type: string
+      failed_bind_source_sha:
+        description: Failed binding source commit
+        required: false
+        type: string
+      failed_bind_run_id:
+        description: Failed binding GitHub run ID
+        required: false
+        type: string
+      failed_bind_attempt:
+        description: Failed binding run attempt
+        required: false
+        type: string
+      failed_bind_job_uid:
+        description: Exact failed binding Job UID
+        required: false
+        type: string
+      failed_bind_pod_uid:
+        description: Exact failed binding Pod UID
         required: false
         type: string
 
@@ -55,12 +75,17 @@ jobs:
           BASELINE_REF: ${{ inputs.baseline_ref }}
           ARCHIVE_REF: ${{ inputs.archive_ref }}
           CACHE_REF: ${{ inputs.cache_ref }}
+          FAILED_BIND_SOURCE_SHA: ${{ inputs.failed_bind_source_sha }}
+          FAILED_BIND_RUN_ID: ${{ inputs.failed_bind_run_id }}
+          FAILED_BIND_ATTEMPT: ${{ inputs.failed_bind_attempt }}
+          FAILED_BIND_JOB_UID: ${{ inputs.failed_bind_job_uid }}
+          FAILED_BIND_POD_UID: ${{ inputs.failed_bind_pod_uid }}
         run: |
           set -euo pipefail
           test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|resume-restore:none|network-preflight:none|publish-discord-cache:none|transfer-discord-cache:none|none:bind-installation|none:cleanup-failed-bind|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
             *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
           esac
           if [[ "$ENTERPRISE_STAGE" != none ]]; then
@@ -88,6 +113,19 @@ jobs:
             [[ "$CACHE_REF" =~ ^[0-9a-f]{40}/[1-9][0-9]*$ ]]
             test -z "$BASELINE_REF"
             test -z "$ARCHIVE_REF"
+          fi
+          if [[ "$ENTERPRISE_STAGE" == cleanup-failed-bind ]]; then
+            [[ "$FAILED_BIND_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+            [[ "$FAILED_BIND_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+            [[ "$FAILED_BIND_ATTEMPT" =~ ^[1-9][0-9]{0,4}$ ]]
+            [[ "$FAILED_BIND_JOB_UID" =~ ^[0-9a-f-]{36}$ ]]
+            [[ "$FAILED_BIND_POD_UID" =~ ^[0-9a-f-]{36}$ ]]
+          else
+            test -z "$FAILED_BIND_SOURCE_SHA"
+            test -z "$FAILED_BIND_RUN_ID"
+            test -z "$FAILED_BIND_ATTEMPT"
+            test -z "$FAILED_BIND_JOB_UID"
+            test -z "$FAILED_BIND_POD_UID"
           fi
 
       - name: Check Out Repository
@@ -251,7 +289,7 @@ jobs:
   enterprise:
     name: Protected Enterprise Stage
     needs: [static-policy]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation'
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none' && inputs.enterprise_stage != 'bind-installation' && inputs.enterprise_stage != 'cleanup-failed-bind'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
@@ -399,3 +437,85 @@ jobs:
             exit 1
           fi
           echo 'Enterprise Installation binding verified; private receipts withheld.'
+
+  cleanup-failed-bind:
+    name: Protected Failed Binding Cleanup
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage == 'cleanup-failed-bind'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    concurrency:
+      group: openclaw-enterprise-operations-production
+      cancel-in-progress: false
+      queue: max
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recheck Current Main Commit Before Cleanup
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Remove Exact Failed Binding Job
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          FAILED_BIND_SOURCE_SHA: ${{ inputs.failed_bind_source_sha }}
+          FAILED_BIND_RUN_ID: ${{ inputs.failed_bind_run_id }}
+          FAILED_BIND_ATTEMPT: ${{ inputs.failed_bind_attempt }}
+          FAILED_BIND_JOB_UID: ${{ inputs.failed_bind_job_uid }}
+          FAILED_BIND_POD_UID: ${{ inputs.failed_bind_pod_uid }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          chmod 600 "$private_log"
+          trap 'rm -f "$private_log"' EXIT
+          if ! {
+            ulimit -f 1024 &&
+            sha256sum --check --status <<<'bf5bed5a0b810ff7d50a6869b071287b7d38594254e3f0775cc6acc4041d2e65  scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh' &&
+            sha256sum --check --status <<<'7caf825466d1b819c4748678f5cbee911fd2fca413cf0abcc35c61bccd18d6be  scripts/ci/openclaw-enterprise-cleanup-failed-bind.py' &&
+            sha256sum --check --status <<<'c4f7ad4385eb9de6a447fd569b751faff383cc7a464464f6fb932686eaf2d8ee  scripts/ci/openclaw-enterprise-journal-operator.py' &&
+            timeout 15m nix develop --command bash scripts/ci/openclaw-enterprise-cleanup-failed-bind.sh
+          } >"$private_log" 2>&1; then
+            echo '::error::Failed binding cleanup blocked; private diagnostics withheld.'
+            exit 1
+          fi
+          echo 'Failed binding cleanup completed; private diagnostics withheld.'

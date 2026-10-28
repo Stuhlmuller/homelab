@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d20272795c9b07ab4af286046c2bc2d05b3372f0c87c0c2944a57d8186ca6bb1",
+  "pageVersion": "sha256:93b93c541705f88602d8d3dd6a385d991135f026005f0290e00ad0d9c4e0f5ab",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -322,7 +322,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -352,7 +352,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         }
       ]
     },
@@ -370,7 +370,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -414,7 +414,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
         }
       ]
     },
@@ -440,7 +440,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
         }
       ]
     },
@@ -468,7 +468,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
@@ -476,7 +476,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5954814c1db5f6896e1596de098504fd1f09640f4226149641aa5ca173410368"
+          "version": "repo-file-v1:sha256:d356b126aae4393bef81b88552bb2e8dcbcb60756e8beea4ef4f755d54260028"
         }
       ]
     },
@@ -586,11 +586,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:978ecc76c1c6df6af94bbd5a7cc5576150698fce03e17fd6971a5e904ab23fa6"
+          "version": "repo-file-v1:sha256:ee78770de3f7a2a3d3adc49c99b20b2e9c16b0cea2a8a971f09c049136953ddb"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-journal-operator-test.py",
@@ -612,11 +612,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:978ecc76c1c6df6af94bbd5a7cc5576150698fce03e17fd6971a5e904ab23fa6"
+          "version": "repo-file-v1:sha256:ee78770de3f7a2a3d3adc49c99b20b2e9c16b0cea2a8a971f09c049136953ddb"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-bind-installation-test.py",
@@ -646,15 +646,15 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:804cc1478624de4afdfc6b0d1d6f8d9064cd8d52428ca37c1d08bc46a445ea38"
+          "version": "repo-file-v1:sha256:d10b0b9c6fa45170716fab147fdc52c5f4a613645d9ad1b37372f3c69dcd5e1d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-active-test.py",
@@ -712,7 +712,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
-          "version": "repo-file-v1:sha256:bd6549c89b301d1f23dabbfcce6edc5c50e64db49b1a80a5b3b432bcefeae7ec"
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/journal.yaml",
@@ -824,7 +824,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:b4dbf941bebfb41a49fb1ead445bd1650418500cedacac021f48e0acd561a02b"
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-download.py",
@@ -835,10 +835,32 @@
           "version": "repo-file-v1:sha256:1eb05dd5facaeda3619e28a1de9d2aee528ca8cc10745c74edf43f35723847ae"
         }
       ]
+    },
+    {
+      "id": "claim_3d929648a71f4375b15551e3ef0a6a64",
+      "statement": "The Enterprise operations workflow stages protected cleanup of one exact terminal Failed pre-patch binding Job and Pod after historical source parity, unchanged unbound startup Secret witness, current immutable ConfigMap and retained PVC/PV identity proof. It performs one UID/resourceVersion-guarded foreground Job DELETE and verifies the Job/Pod removal without a blind retry. Running or post-patch failures are ineligible. The operator remains disabled and no live cleanup, binding, recovery or activation has been accepted.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:ee78770de3f7a2a3d3adc49c99b20b2e9c16b0cea2a8a971f09c049136953ddb"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md",
+          "version": "repo-file-v1:sha256:3ae9582f753d2865fc9ccee79b52d55d5a61432cfcefa1a59b3fc0840d589970"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:d449fa21c55590731323feb92f9c5451da10395fcc2295e87012c8c7d2652aab"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-cleanup-failed-bind.py",
+          "version": "repo-file-v1:sha256:7caf825466d1b819c4748678f5cbee911fd2fca413cf0abcc35c61bccd18d6be"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-28T02:38:59.035Z"
+    "at": "2026-10-28T02:48:51.051Z"
   }
 }
