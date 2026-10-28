@@ -58,6 +58,10 @@ cache and sandbox policy. The client refuses to publish when Nix ignores
 those settings. Alternatively, run on another trusted **x86_64 Linux** Nix machine. The platform must match;
 macOS or ARM Linux results cannot satisfy x86_64 Linux checks. If copying a key to another builder, protect that machine as carefully as CI. A Linux cache miss builds the checks normally.
 
+While the builder Deployment declares zero replicas for media backup capacity,
+skip `publish --linux`; its preflight requires one Ready builder and refuses
+the attempt. Existing signed cache entries remain available to CI.
+
 Stopping the local publisher does not guarantee that Kubernetes exec stops the
 remote build. To cancel an interrupted attempt, run:
 

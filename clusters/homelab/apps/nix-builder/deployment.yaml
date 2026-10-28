@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/name: nix-builder
     app.kubernetes.io/part-of: homelab
 spec:
-  replicas: 1
+  replicas: 0
   strategy:
     type: Recreate
   selector:
