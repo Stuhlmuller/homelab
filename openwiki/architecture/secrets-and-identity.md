@@ -140,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-27T09:54:29.479Z" }
+generated: { by: "codex", at: "2026-10-28T02:22:00.727Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:22:00.727Z
 ---
 
 # Secrets And Identity
@@ -342,20 +342,26 @@ Secret has no installation ID. The source-only
 attests both Ready controller Pods and the returned `GET /installation` ID,
 then patches only the Secret annotation with UID/resource-version guards and
 readback. A fixed [protected binding lane](../../.github/workflows/openclaw-enterprise-operations.yml)
-rechecks exact current `main` and pins the reviewed binder, but the hosted runner
-has no declared delivery for the owner-controlled 0600 bootstrap service-key file.
-No binding run or live readback has occurred; activation remains blocked.
-SSM-backed model, database, auth, and gateway credentials remain separate from
-these startup bytes.
+rechecks exact current `main` and pins the reviewed binder. The bootstrap
+service key lives on the retained bootstrap claim; no declared path delivers
+it to the hosted runner. Binding has not run. A reviewed in-cluster reader
+must use UID 1000 and the exact bootstrap PVC/PV, withhold private output,
+and recheck protected current `main` immediately before the final Secret
+annotation patch. The committed disabled operator and unenforced policy
+block that reader now. No live binding or readback exists; activation remains
+blocked. SSM-backed model, database, auth, and gateway credentials remain
+separate from these startup bytes.
 
 The staged [journal operator](../../clusters/homelab/apps/openclaw-enterprise-operator/README.md)
 has a dedicated ServiceAccount with automatic token mounting disabled. Its
 one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
 read-only RBAC can GET only the exact reviewed Installation Secret and selected
 workload proofs. Reconcile and stop require the chart's bootstrap service key
-as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
-is not registered in Argo CD, that file ownership is unproved, and the operator
-gate remains disabled; these permissions are source intent, not live access.
+as a UID-1000-owned `0600` file on the retained bootstrap claim. The image's
+UID 10001 is overridden to 1000 by a future Job; the committed declaration
+keeps UID 10001 as a disabled-state guard. The bundle is not registered in
+Argo CD, file ownership is unproved, and the operator gate remains disabled.
+These permissions are source intent, not live access.
 
 ## Identity Notes
 

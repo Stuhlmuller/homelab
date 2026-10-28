@@ -42,6 +42,8 @@ sources:
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
     resource: repo://scripts/ci/openclaw-enterprise-operations.sh
   - id: openwiki-source-91161c3887f6aa107b3c0d6b
@@ -62,10 +64,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-27T21:30:24.345Z" }
+generated: { by: "codex", at: "2026-10-28T02:22:00.727Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-27T21:30:24.345Z
+    at: 2026-10-28T02:22:00.727Z
 ---
 
 # Storage And State
@@ -443,11 +445,16 @@ node placement or active GitOps registration; the claim is not live or admitted.
 The [protected operations workflow](../../.github/workflows/openclaw-enterprise-operations.yml)
 wires `full-sync` to the guarded helper, but the committed `unselected`
 installation phase blocks it before cluster access. Its `reconcile`, `stop`
-and `verification` stages have a one-shot Job dispatcher with exact-main and
-PVC/PV identity checks; `journalOperator.enabled: false` blocks all three
-before Job creation. `restore` and `acceptance` remain separately blocked.
-The hosted runner never mounts the private journal; live reconciliation needs
-the admitted local volume and in-cluster Job.
+and `verification` stages use a one-shot Job dispatcher. Before any Job write,
+it checks exact current `main`, the journal PVC/PV UIDs, path and node, and
+both bootstrap PVC/PV UIDs. It also checks the bootstrap PV claim reference,
+Retain policy, local class, and placement on the journal node. The committed
+`bootstrapVolumeUid: null` and `journalOperator.enabled: false` keep the
+operator blocked; these checks are source-only, not live volume proof.
+`restore` and `acceptance` remain separately blocked. The hosted runner never
+mounts the private journal. Live reconciliation needs admitted local volumes
+and the in-cluster Job; binding also lacks a declared key reader on the
+bootstrap claim.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

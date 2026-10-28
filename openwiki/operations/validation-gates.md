@@ -242,6 +242,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-full-sync.sh
   - id: openwiki-source-fc079e0e542f990a412aa90f
     resource: repo://scripts/ci/openclaw-enterprise-journal-operator-test.py
+  - id: openwiki-source-856035e595a8b9b128dcb0a8
+    resource: repo://scripts/ci/openclaw-enterprise-journal-operator.py
   - id: openwiki-source-67b7023614bb46ffd2f06e85
     resource: repo://scripts/ci/openclaw-enterprise-operations-test.py
   - id: openwiki-source-b3bdcadf54edf75020440bdd
@@ -364,10 +366,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T01:30:28.100Z" }
+generated: { by: "codex", at: "2026-10-28T02:24:48.541Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:30:28.100Z
+    at: 2026-10-28T02:24:48.541Z
 ---
 
 # Validation Gates
@@ -2029,8 +2031,15 @@ exact-source build context, embedded SHA, non-root read-only startup, and fixed
 signed and fully pulled all four images from source `fda0d68`; the selected
 operator is pinned at
 `sha256:f0a2f2757218ebd1e09323cb360f787794bcbbd204d0179ebc1ed553ce8e1e08`.
-Static PV placement, an admitted node and proved bootstrap-key ownership
-remain absent, so `journalOperator.enabled: false` blocks live dispatch.
+The dispatcher now also requires a reviewed bootstrap PV UID, matching
+bound PVC UID, Retain policy, local class and placement on the journal node.
+The offline
+[fixture](../../scripts/ci/openclaw-enterprise-journal-operator-test.py)
+rejects missing or changed bootstrap PV identity before Job creation. The
+protected operations workflow pins the revised dispatcher checksum. These are
+source checks, not a live storage or operator receipt. Static PV placement,
+an admitted node and proved bootstrap-key ownership remain absent, so
+`journalOperator.enabled: false` blocks live dispatch.
 The source-only active path is exercised by
 [`openclaw-enterprise-active-test.py`](../../scripts/ci/openclaw-enterprise-active-test.py)
 in static and offline checks. Its fixtures cover the model-key file boundary,
@@ -2074,8 +2083,12 @@ now offers fixed `bind-installation`, `full-sync`, `reconcile`, `stop`,
 `verification`, `restore` and `acceptance` selections. It rechecks exact
 current `main`, pins the binder and stage helper, serializes the production
 jobs, and withholds private output. Binding requires the configured
-owner-controlled 0600 service-key file; no declared hosted-runner delivery or
-live binding exists. The six runtime selections invoke the
+owner-controlled 0600 service-key file held on the bootstrap PVC; no
+declared hosted-runner delivery or live binding exists. A future in-cluster
+reader must use UID 1000 on the exact PVC/PV and preserve a protected
+current-main check immediately before the Secret annotation patch. The
+committed disabled operator and unenforced policy block that path now. The
+six runtime selections invoke the
 [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh). Its `full-sync`
 branch calls the pinned [helper](../../scripts/ci/openclaw-enterprise-full-sync.sh),
 which checks source, approved installation phase, and Application state before
@@ -2085,8 +2098,9 @@ requires a blocked result if `main` advances during sync. The committed
 `unselected` phase blocks sync before cluster access.
 `reconcile`, `stop`, and `verification` now enter the pinned dispatcher only if
 its reviewed gate is enabled; the committed disabled gate stops before a Job
-write. The dispatcher checks current `main`, source parity, retained claim and
-PV identity, and prior Job state before creating a fresh one-shot Job per
+write. The dispatcher checks current `main`, source parity, both journal and
+bootstrap PVC/PV UIDs, local placement, and prior Job state before creating a
+fresh one-shot Job per
 workflow attempt. It keeps the journal and lock inside the future in-cluster
 Job, never on the hosted runner. `restore` and `acceptance` still exit before
 mutation pending separate recovery and human-session contracts.
