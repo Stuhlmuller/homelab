@@ -995,6 +995,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-runner-publish.yml:publish' \
     '.github/workflows/cordium-runner-publish.yml:published-digests' \
     '.github/workflows/cordium-runner-publish.yml:test-build' \
+    '.github/workflows/dispatcharr-protected-capture.yml:capture' \
+    '.github/workflows/dispatcharr-protected-capture.yml:static-policy' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
@@ -1088,6 +1090,7 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
+.github/workflows/dispatcharr-protected-capture.yml 92384826739e988126070347868ad683898c1757107acdca0f64173c1a3dbefb
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml eebc2ba45d01a296ecd1990100b8cc3ef26ebb39a72356e700677ce78cfc89c9
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
@@ -1123,6 +1126,7 @@ for workflow_job in \
   '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/cordium-runner-credentials.yml:static-policy' \
   '.github/workflows/cordium-runner-publish.yml:test-build' \
+  '.github/workflows/dispatcharr-protected-capture.yml:static-policy' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
