@@ -46,6 +46,16 @@ sources:
     resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-77506acd031f0c0e800c4c2a
+    resource: repo://builds/network-policy-generators/cordium-v0.12.7.patch
+  - id: openwiki-source-1b8e7ecff7f3e3abcd292cd7
+    resource: repo://builds/network-policy-generators/octelium-v0.35.0.patch
+  - id: openwiki-source-c73e1fecbb517a520b6d8a37
+    resource: repo://builds/network-policy-generators/README.md
+  - id: openwiki-source-8e65ec3aafc46cd553b9e49d
+    resource: repo://builds/network-policy-generators/source.json
+  - id: openwiki-source-9ea1e2cebef3372a83e226d9
+    resource: repo://builds/network-policy-generators/verify-source.py
   - id: openwiki-source-cd4f78e3208dc4d64a31699a
     resource: repo://builds/openclaw-enterprise/build-operator.sh
   - id: openwiki-source-d97499dd4d9b20eab22451de
@@ -364,10 +374,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-28T01:30:28.100Z" }
+generated: { by: "codex", at: "2026-10-28T01:48:05.682Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-28T01:30:28.100Z
+    at: 2026-10-28T01:48:05.682Z
 ---
 
 # Validation Gates
@@ -702,12 +712,19 @@ adds four Genesis policies from pinned `v0.35.0` constructors. The
 binds the remaining ten policies. Inventory tests compare all 17 complete
 expected specs. This is source review, not a pinned generator-binary render
 or live traffic result.
-The pinned `ws-main` and `svc-upstream` constructors admit public IPv4 and
-IPv6 on all ports without a public-egress input. Additive NetworkPolicies
-cannot narrow those rules. Patch the owning generators upstream or build
-reviewed forks, publish and pin corrected images, refresh fixtures from actual
-generator renders, then qualify required destinations and private-range denial
-on an isolated canary before enforcement. See the
+The pinned upstream `ws-main` and `svc-upstream` constructors admit public
+IPv4 and IPv6 on all ports without a public-egress input. Additive
+NetworkPolicies cannot narrow those rules. A source-only correction is staged
+in [pinned generator patches](../../builds/network-policy-generators/README.md):
+Cordium removes its public egress rule while preserving internal and DNS rules;
+Octelium gives `svc-upstream` an explicit empty Egress list. Run
+`python3 builds/network-policy-generators/verify-source.py` to check the exact
+upstream revisions, patch hashes, licenses, patch application, and targeted Go
+tests. This does not publish a patched image or qualify its actual policy render.
+The current live policies and expected-spec fixtures still contain the broad
+rules. Before enforcement, publish and pin reviewed generator images, use the
+patched Octelium bootstrap path, compare complete generated renders, and qualify
+owner destinations plus private-range denial on an isolated canary. See the
 [policy review](../../docs/evidence/openclaw-enterprise-policy-review.json).
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
