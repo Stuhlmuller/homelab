@@ -26,6 +26,9 @@ SHA = re.compile(r"[0-9a-f]{40}\Z")
 RECEIPT_PREFIX = "openclaw-enterprise/platform/upgrade"
 PREREQUISITE_PREFIX = "openclaw-enterprise/platform/receipts"
 MAX_RECOVERY_AGE_SECONDS = 6 * 60 * 60
+ETCD_READER_PROFILE = "oce-platform-etcd-reader"
+ETCD_READER_ROLE = "homelab-platform-etcd-reader"
+ETCD_BUCKET = "homelab-etcd-backups-716182248480-us-east-1"
 
 
 def receipt_target():
@@ -322,6 +325,107 @@ def verify_prerequisites(config, source_sha, receipts):
             not isinstance(backup.get("objectVersionId"), str) or
             backup["objectVersionId"] in ("", "null")):
         raise ValueError("fresh off-node etcd recovery proof is incomplete")
+
+
+def verify_offsite_versions(receipt, source_sha):
+    """Recheck the exact restorable S3 versions before each platform mutation."""
+    protected_context(source_sha)
+    if (os.environ.get("GITHUB_WORKFLOW") != "Platform Maintenance" or
+            os.environ.get("GITHUB_ACTOR_ID") != "57728706" or
+            os.environ.get("GITHUB_RUN_ATTEMPT") != "1"):
+        raise ValueError("protected etcd recovery reader context is missing")
+    snapshot_sha = receipt.get("snapshotSha256") if isinstance(receipt, dict) else None
+    snapshot_key = receipt.get("snapshotKey") if isinstance(receipt, dict) else None
+    manifest_key = receipt.get("manifestKey") if isinstance(receipt, dict) else None
+    if (not isinstance(snapshot_sha, str) or
+            not re.fullmatch(r"[0-9a-f]{64}", snapshot_sha) or
+            not isinstance(snapshot_key, str) or
+            not re.fullmatch(rf"etcd/{snapshot_sha}/[0-9a-f]{{32}}/etcd\.snapshot", snapshot_key) or
+            manifest_key != snapshot_key.removesuffix("etcd.snapshot") + "manifest.json" or
+            receipt.get("sourceSha") != source_sha or
+            receipt.get("verified") is not True or
+            receipt.get("offNode") is not True or
+            receipt.get("offlineRestoreVerified") is not True or
+            receipt.get("offsiteBucket") != ETCD_BUCKET or
+            any(not isinstance(receipt.get(name), str) or
+                not 0 < len(receipt[name]) <= 1024 or receipt[name] == "null" or
+                any(ord(char) < 33 or ord(char) > 126 for char in receipt[name])
+                for name in ("objectVersionId", "manifestVersionId")) or
+            not isinstance(receipt.get("manifestSha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", receipt["manifestSha256"]) or
+            any(type(receipt.get(name)) is not int or not 0 < receipt[name] <= limit
+                for name, limit in (("snapshotBytes", 5 * 1024 ** 3),
+                                    ("manifestBytes", 1024 * 1024)))):
+        raise ValueError("off-node etcd receipt lacks exact source versions")
+    fresh_recovery_time(receipt.get("capturedAt"))
+
+    # Explicit profile selection is intentionally separate from the shared
+    # Github-TF-State credentials used by the rest of platform maintenance.
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith("AWS_") and key.lower() not in
+                   {"http_proxy", "https_proxy", "all_proxy", "no_proxy"}}
+    endpoint = "https://s3.us-east-1.amazonaws.com"
+
+    def call(service, operation, arguments=()):
+        address = ("https://sts.us-east-1.amazonaws.com" if service == "sts"
+                   else endpoint)
+        command = ["aws", "--profile", ETCD_READER_PROFILE, "--region", "us-east-1",
+                   "--endpoint-url", address, "--output", "json", "--no-cli-pager",
+                   "--no-cli-auto-prompt", "--cli-connect-timeout", "15",
+                   "--cli-read-timeout", "120", service, operation]
+        if service == "s3api":
+            command += ["--bucket", ETCD_BUCKET, "--expected-bucket-owner", "716182248480"]
+        result = subprocess.run(command + list(arguments), env=environment,
+                                stdin=subprocess.DEVNULL, capture_output=True,
+                                text=True, timeout=180, check=False)
+        if result.returncode or len(result.stdout) > 128 * 1024:
+            raise ValueError("scoped off-node etcd version check failed")
+        value = json.loads(result.stdout)
+        if not isinstance(value, dict):
+            raise ValueError("scoped off-node etcd metadata is invalid")
+        return value
+
+    caller = call("sts", "get-caller-identity")
+    expected_arn = (rf"arn:aws:sts::716182248480:assumed-role/{ETCD_READER_ROLE}/"
+                    rf"homelab-etcd-read-{re.escape(os.environ.get('GITHUB_RUN_ID', ''))}")
+    if (not re.fullmatch(r"[1-9][0-9]*", os.environ.get("GITHUB_RUN_ID", "")) or
+            caller.get("Account") != "716182248480" or
+            not re.fullmatch(expected_arn, str(caller.get("Arn")))):
+        raise ValueError("scoped off-node etcd reader identity differs")
+    if call("s3api", "get-bucket-versioning").get("Status") != "Enabled":
+        raise ValueError("off-node etcd bucket versioning is disabled")
+    rules = call("s3api", "get-bucket-encryption").get(
+        "ServerSideEncryptionConfiguration", {}).get("Rules", [])
+    if (not isinstance(rules, list) or len(rules) != 1 or
+            not isinstance(rules[0], dict) or
+            rules[0].get("ApplyServerSideEncryptionByDefault") != {
+                "SSEAlgorithm": "aws:kms",
+                "KMSMasterKeyID": "arn:aws:kms:us-east-1:716182248480:alias/aws/s3"} or
+            rules[0].get("BucketKeyEnabled") is not True):
+        raise ValueError("off-node etcd bucket encryption differs")
+
+    for key, version, digest, size in (
+            (snapshot_key, receipt["objectVersionId"], snapshot_sha, receipt["snapshotBytes"]),
+            (manifest_key, receipt["manifestVersionId"], receipt["manifestSha256"],
+             receipt["manifestBytes"])):
+        history = call("s3api", "list-object-versions", ["--prefix", key, "--no-paginate"])
+        versions = history.get("Versions")
+        if (history.get("IsTruncated") is not False or history.get("DeleteMarkers") or
+                not isinstance(versions, list) or len(versions) != 1 or
+                {name: versions[0].get(name) for name in ("Key", "VersionId", "IsLatest")} !=
+                {"Key": key, "VersionId": version, "IsLatest": True}):
+            raise ValueError("off-node etcd source version history differs")
+        metadata = call("s3api", "head-object", ["--key", key,
+                            f"--version-id={version}", "--checksum-mode", "ENABLED"])
+        checksum = base64.b64encode(bytes.fromhex(digest)).decode("ascii")
+        if (metadata.get("VersionId") != version or
+                metadata.get("ContentLength") != size or
+                metadata.get("ChecksumSHA256") != checksum or
+                metadata.get("ServerSideEncryption") != "aws:kms" or
+                metadata.get("BucketKeyEnabled") is not True or
+                not re.fullmatch(r"arn:aws:kms:us-east-1:716182248480:key/[A-Za-z0-9-]+",
+                                 str(metadata.get("SSEKMSKeyId")))):
+            raise ValueError("off-node etcd source checksum or KMS state differs")
 
 
 def authorize_stage(config, stage, expected_sha, current_sha, receipts):
@@ -855,9 +959,11 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
             continue
         if current_main_sha() != source_sha:
             raise ValueError("main advanced before Talos node upgrade")
-        verify_prerequisites(config, source_sha, read_receipts(receipt_dir))
+        current_receipts = read_receipts(receipt_dir)
+        verify_prerequisites(config, source_sha, current_receipts)
         machine_before = active_machine_state(config, talosconfig, node)
         verify_installer_mirror_route(machine_before, target["installerImage"])
+        verify_offsite_versions(current_receipts["off-node-etcd-backup"], source_sha)
         start_node_receipt(receipt_dir, stage, node, target["from"], target["to"], source_sha,
                            store)
         if current_main_sha() != source_sha:
@@ -928,6 +1034,7 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
     verify_kubernetes_mirror_tags(config)
     if current_main_sha() != source_sha:
         raise ValueError("main advanced before Kubernetes upgrade")
+    verify_offsite_versions(receipts["off-node-etcd-backup"], source_sha)
     save_inspection(stage_file, {"format": 1, "stage": stage, "sourceSha": source_sha,
                                  "from": target["from"], "to": target["to"],
                                  "verified": False, "status": "started"})

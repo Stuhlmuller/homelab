@@ -139,6 +139,19 @@ jobs:
           test "$ACTUAL_SHA" = "$EXPECTED_SHA"
           test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
+      - name: Configure Scoped Etcd Recovery Reader
+        if: startsWith(inputs.stage, 'talos-') || startsWith(inputs.stage, 'kubernetes-')
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-session-name: homelab-etcd-read-${{ github.run_id }}
+          role-to-assume: arn:aws:iam::716182248480:role/homelab-platform-etcd-reader
+          role-duration-seconds: 9000
+          aws-profile: oce-platform-etcd-reader
+          output-env-credentials: false
+          unset-current-credentials: true
+
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:
@@ -172,6 +185,7 @@ jobs:
           umask 077
           talosctl version --client >/dev/null
           sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'bd1456a5dbae54a9d5a920231374731b38e1136f6b05e25279f6b5f535ce7b21  scripts/platform-maintenance.py'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then
