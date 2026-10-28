@@ -28,6 +28,51 @@ resource "tailscale_acl" "homelab" {
   }
 }
 
+resource "tailscale_dns_configuration" "homelab" {
+  magic_dns          = true
+  override_local_dns = false
+  search_paths       = []
+
+  nameservers {
+    address = "1.1.1.2"
+  }
+  nameservers {
+    address = "1.0.0.2"
+  }
+
+  split_dns {
+    domain = "stinkyboi.com"
+    nameservers {
+      address = "100.71.150.27"
+    }
+  }
+}
+
+resource "tailscale_tailnet_settings" "homelab" {
+  acls_externally_managed_on                  = false
+  devices_approval_on                         = false
+  devices_auto_updates_on                     = true
+  devices_key_duration_days                   = 180
+  https_enabled                               = true
+  network_flow_logging_on                     = false
+  posture_identity_collection_on              = false
+  regional_routing_on                         = false
+  users_approval_on                           = true
+  users_role_allowed_to_join_external_tailnet = "none"
+}
+
+resource "tailscale_contacts" "homelab" {
+  account {
+    email = "rodman@stuhlmuller.net"
+  }
+  security {
+    email = "rodman@stuhlmuller.net"
+  }
+  support {
+    email = "rodman@stuhlmuller.net"
+  }
+}
+
 # Retained unused during the Tailnet Lock transition. Remove in a separately
 # reviewed retirement after signed-key CI acceptance; do not bypass prevent_destroy.
 resource "tailscale_federated_identity" "github" {

@@ -17,6 +17,10 @@ the private apex portal and independent federation discovery. Owner bootstrap
 creates `rodman` with `rodman@stuhlmuller.net`. Google Workspace SMTP uses
 `smtp.gmail.com:587`, the same login and sender address. Inject the protected
 SMTP credential before registration; the Rails launcher rejects placeholders.
+The public egress policy allows TCP 80/443 for federation and the configured
+SMTP port 587 for web and Sidekiq. It does not open implicit TLS port 465; the
+mounted runtime config uses STARTTLS on 587. Qualify remote federation and
+email delivery under the canary policy before enforcing this boundary.
 
 ## Storage and credentials
 
@@ -76,6 +80,10 @@ socket and write dumps to NFS. Migration Secret
 projection requires the `runtime-v2` key, rendered atomically with the app-role
 credentials; an old Ready status cannot let the hook mount v1 credentials. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
+
+The Ruby launcher creates a private `0700` directory under the writable `/tmp`
+volume for upload processing. The volume root is group-managed by Kubernetes
+and lacks the sticky bit Ruby requires for a shared temporary directory.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
 small homelab. Sidekiq startup/readiness checks use the upstream job-processing
 marker, cleared by the launcher before each restart to prevent stale readiness.
@@ -132,6 +140,16 @@ stable application keys through rollback; rerunning the hook is not a password
 reset mechanism. Tests verify first creation, repeat preservation, conflict
 refusal, and error containment. Actual Rails persistence is verified after rollout.
 
+## Browser acceptance
+
+Public acceptance on 2026-10-25 verified HTTPS/API and ActivityPub metadata,
+browser owner sign-in and Home navigation, private-post/media read-back,
+authenticated public WebSocket delivery, and native remote-account resolution.
+Anonymous API requests cannot read the private test posts. The pinned 4.7.3 admin dashboard loads, but emits
+a React Router `Invariant failed` error from `react-router-dom-C1dtKQUg.js`.
+Client-side dashboard widgets remain an open validation finding; inspect that
+bundle and its router context before treating those widgets as verified.
+
 ## Backup and restore
 
 The nightly `mastodon-backup` CronJob connects over the database's local Unix
@@ -140,6 +158,19 @@ and atomically publishes it to the retained NFS backup claim. It retains
 14 days. Failed dumps stay unpublished. This is a database backup only; media
 and stable application keys still need their final backup contract. NFS media
 and backups share a NAS and do not protect against NAS loss.
+
+The one-shot `mastodon-initial-backup-v1` Job runs the same template as the
+nightly CronJob after owner bootstrap, so a fresh installation need not wait
+until 03:00. The subsequent `mastodon-restore-verification-v1` Job restores the newest
+checksum-verified NAS dump into disposable PostgreSQL 18 storage after the
+application rollout. It mounts the backup read-only, has no production database
+volume or credentials, and listens only on its private Unix socket. Success
+requires the restored schema, approved owner, and readable media catalog.
+Its completed Job records this rehearsal; it does not continuously verify later
+backups or recover media files and application keys.
+Version the initial-backup Job name when changing the nightly Job template,
+and version the verification Job name when changing its template; completed
+Kubernetes Job templates are immutable.
 
 Before acceptance, prove a successful scheduled backup and restore the newest
 dump into an isolated PostgreSQL instance. Verify tables, accounts, and media
@@ -272,10 +303,19 @@ this execution-path evidence does not clear the SQLite or libxml2 findings.
 Exact ELF dynamic dependencies show no direct SQLite linkage from the database
 binary or declared pg_trgm/unaccent extensions. The database does link libxml2.
 Database ingress is limited to Mastodon pods with the declared Istio principal
-and NetworkPolicy; the application role loses superuser privileges after the
-required extensions are installed. Do not expose a public SQL endpoint or
+and NetworkPolicy; the application uses the separate limited `mastodon_app`
+role. The bootstrap administrator remains private to datastore-local Jobs.
+Do not expose a public SQL endpoint or
 interpret isolation as a package fix. Verify loaded libraries and app behavior
 on the actual workload before public acceptance.
+
+Read-only live checks on 2026-10-25 confirmed PostgreSQL 18.6 runs directly as
+`postgres`, the bootstrap administrator retains OID 10, and `mastodon_app` has
+none of the five elevated role flags. The server maps libxml2 and zlib, with no
+SQLite mapping; the application schema has no XML columns. These checks retain
+the installed-package findings, including the loaded libxml2 finding.
+Puma maps the JSON 2.21.2 parser/generator, and streaming uses
+`TRUSTED_PROXY_IP=loopback,uniquelocal` on the actual workload.
 
 Debian's [zlib advisory](https://security-tracker.debian.org/tracker/CVE-2023-45853)
 records that Bookworm does not build the affected contrib/minizip code from
@@ -359,3 +399,60 @@ Rollback before registration is removal of this preparation. After registration,
 revert the Application/workload change through protected `main`. The namespace,
 local StorageClasses, PVs, and PVCs carry `Prune=false,Delete=false` so deleting
 the Application retains claims for recovery. Preserve SSM keys and backups too.
+
+## Private client access
+
+The catalog declares a non-anonymous `mastodon.default` Octelium WEB Service.
+It requires `homelab-human-web-access`, preserves Mastodon's bearer token,
+and forwards the original HTTPS host to Istio. `isPublic: true` enables the
+clientless HTTPS listener; it does not grant anonymous access.
+
+Establish this Service before restricting the tunnel paths. From reviewed
+`main`, using an authenticated Octelium operator session:
+
+```sh
+yq ea 'select(.kind == "Service" and .metadata.name == "mastodon") | .metadata.name = "mastodon.default"' \
+  docs/examples/octelium/homelab-services.yaml > /tmp/mastodon-service.yaml
+octeliumctl apply --domain stinkyboi.com --include Service /tmp/mastodon-service.yaml
+octeliumctl get service mastodon.default --domain stinkyboi.com -o json
+```
+
+Verify anonymous access is disabled and the human policy is attached; repeat
+apply must report no changes. Do not apply/prune the complete shared catalog
+for this single-Service change. The tunnel bypasses human access only for the federation allowlist below.
+
+### Public federation boundary
+
+The tunnel matches an anchored allowlist before its authenticated Octelium
+fallback. Only WebFinger/host-meta, instance actor/inboxes, canonical `/ap/`
+ActivityPub resources, legacy `/users/` resources, contexts, collections,
+emojis and local attachment/thumbnail/avatar/header/emoji files remain anonymous.
+The path grammar excludes dot segments, encoded escapes and arbitrary media
+suffixes; tests exercise cloudflared's actual matcher, including encoded bypasses.
+
+All other paths require Octelium human access: root/web UI, login/recovery,
+settings, admin/Sidekiq/PgHero, OAuth, all REST APIs, streaming, NodeInfo,
+static application assets, media proxy and backup downloads. Mastodon's own
+login/permissions remain required after Octelium. Native clients need private
+Octelium access; anonymous Internet API/OAuth access is intentionally removed.
+Browser profile/post links (`/@...`) also require human access; remote servers
+can still discover accounts with WebFinger and fetch canonical ActivityPub IDs.
+
+Acceptance: anonymous `/admin`, `/auth/sign_in`, `/api/v1/streaming` and `/`
+must reach Octelium authentication, never Mastodon; actor/WebFinger and a real
+media URL must remain accessible. Verify a signed federation fetch, owner login,
+REST posting and streaming through the authenticated/private path. No public
+allowlist expansion without checking Mastodon route ownership again.
+
+Rollback through a reviewed PR reverting the tunnel config and its Deployment
+revision; preserve the authenticated Service and all retained data.
+
+The allowlist follows [Mastodon 4.7.3 route ownership](https://github.com/mastodon/mastodon/blob/v4.7.3/config/routes.rb)
+and [attachment serialization](https://github.com/mastodon/mastodon/blob/v4.7.3/app/serializers/activitypub/note_serializer.rb).
+[Cloudflared matches rules in order](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/configuration-file/);
+the first Mastodon rule is the narrow exception, the second requires Octelium.
+
+On 2026-10-25 the initial-backup and isolated restore-verification Jobs completed
+successfully at revision `ce28791046ced6805c0a0df1397c382f227e67dc`; Argo reported
+Synced/Healthy/Succeeded. Schema, approved owner and media catalog were restored;
+production database storage and credentials were not mounted into the verifier.

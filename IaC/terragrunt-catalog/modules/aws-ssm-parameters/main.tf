@@ -101,7 +101,7 @@ resource "aws_ssm_parameter" "this" {
   name        = each.key
   description = each.value.description
   type        = "SecureString"
-  value       = each.value.initial_value
+  value       = sensitive(each.value.initial_value)
   key_id      = var.kms_key_id
   tier        = each.value.tier
   tags        = var.tags
@@ -123,7 +123,7 @@ resource "aws_ssm_parameter" "generated" {
   name        = each.key
   description = each.value.description
   type        = "SecureString"
-  value       = local.generated_values[each.key]
+  value       = sensitive(local.generated_values[each.key])
   key_id      = var.kms_key_id
   tier        = each.value.tier
   tags        = var.tags
