@@ -2,10 +2,17 @@ serviceAccount:
   traefik: {}
 controllers:
   traefik:
+    strategy: RollingUpdate
+    rollingUpdate:
+      surge: 1
+      unavailable: "0%"
     serviceAccount:
       identifier: traefik
     pod:
       automountServiceAccountToken: false
+      # shortcut: keep ingress on a node with healthy ztunnel, remove after four-node recovery.
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       securityContext:
         runAsUser: 65532
         runAsGroup: 65532
