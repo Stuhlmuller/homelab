@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "ghcr.io/multica-ai/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "multica"
         path           = "."
         targetRevision = "0.4.29"

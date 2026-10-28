@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://kiali.org/helm-charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "kiali-operator"
         path           = "."
         targetRevision = "2.26.0"

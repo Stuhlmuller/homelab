@@ -9,7 +9,7 @@ spec:
   description: Scoped Enterprise installation; no Argo ownership of tenant workloads.
   sourceRepos:
     - https://github.com/Stuhlmuller/homelab.git
-    - https://github.com/openclaw/openclaw-enterprise.git
+    - harbor.stinkyboi.com/mirror/helm
   destinations:
     - server: https://kubernetes.default.svc
       namespace: openclaw-system

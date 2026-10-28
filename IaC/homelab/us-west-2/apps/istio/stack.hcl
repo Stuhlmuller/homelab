@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://blob.istio.io/istio-release/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "base"
         path           = "."
         targetRevision = "1.27.3"
@@ -22,7 +22,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://blob.istio.io/istio-release/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "istiod"
         path           = "."
         targetRevision = "1.27.3"
@@ -51,7 +51,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://blob.istio.io/istio-release/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "cni"
         path           = "."
         targetRevision = "1.27.3"
@@ -68,7 +68,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://blob.istio.io/istio-release/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "ztunnel"
         path           = "."
         targetRevision = "1.27.3"
@@ -105,7 +105,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://blob.istio.io/istio-release/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "gateway"
         path           = "."
         targetRevision = "1.27.3"
@@ -116,7 +116,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "https://blob.istio.io/istio-release/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "gateway"
         path           = "."
         targetRevision = "1.27.3"

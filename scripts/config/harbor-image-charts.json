@@ -1,55 +1,55 @@
 [
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/bazarr/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/deluge/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/dispatcharr/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/n8n/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/openclaw/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/prowlarr/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/radarr/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/sonarr/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
     "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/traefik/stack.hcl",
     "targetRevision": "4.4.0"
   },
@@ -61,157 +61,157 @@
   },
   {
     "chart": "argocd-image-updater",
-    "repoURL": "https://argoproj.github.io/argo-helm",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/argocd-image-updater/stack.hcl",
     "targetRevision": "1.3.1"
   },
   {
     "chart": "base",
-    "repoURL": "https://blob.istio.io/istio-release/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "cert-manager",
-    "repoURL": "https://charts.jetstack.io",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/cert-manager/stack.hcl",
     "targetRevision": "v1.20.3"
   },
   {
     "chart": "cni",
-    "repoURL": "https://blob.istio.io/istio-release/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "compass",
-    "repoURL": "ghcr.io/adinhodovic/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/compass/stack.hcl",
     "targetRevision": "0.6.0"
   },
   {
     "chart": "crossplane",
-    "repoURL": "https://charts.crossplane.io/stable",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/platform-crossplane/stack.hcl",
     "targetRevision": "2.3.3"
   },
   {
     "chart": "descheduler",
-    "repoURL": "https://kubernetes-sigs.github.io/descheduler",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/descheduler/stack.hcl",
     "targetRevision": "0.33.0"
   },
   {
     "chart": "external-secrets",
-    "repoURL": "https://charts.external-secrets.io",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/external-secrets/stack.hcl",
     "targetRevision": "2.0.1"
   },
   {
     "chart": "gateway",
-    "repoURL": "https://blob.istio.io/istio-release/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "gateway-crds-helm",
-    "repoURL": "docker.io/envoyproxy",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl",
     "targetRevision": "v1.9.2"
   },
   {
     "chart": "gateway-helm",
-    "repoURL": "docker.io/envoyproxy",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl",
     "targetRevision": "v1.9.2"
   },
   {
-    "chart": "git:deploy/chart/local-path-provisioner",
-    "repoURL": "https://github.com/rancher/local-path-provisioner.git",
-    "source": "clusters/homelab/platform/storage/cordium-local-path-provisioner-application.yaml",
-    "targetRevision": "5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0"
-  },
-  {
-    "chart": "git:deploy/helm/openclaw-enterprise",
-    "repoURL": "https://github.com/openclaw/openclaw-enterprise.git",
-    "source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
-    "targetRevision": "33bb74590a749f37934da4502fca6035cd234a55"
-  },
-  {
     "chart": "grafana",
-    "repoURL": "https://grafana-community.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/grafana/stack.hcl",
     "targetRevision": "12.11.2"
   },
   {
     "chart": "harbor",
-    "repoURL": "https://helm.goharbor.io",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/harbor/stack.hcl",
     "targetRevision": "1.19.2"
   },
   {
     "chart": "istiod",
-    "repoURL": "https://blob.istio.io/istio-release/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "k8s-gateway",
-    "repoURL": "codeberg.org/k8s-gateway/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl",
     "targetRevision": "4.0.0"
   },
   {
     "chart": "kiali-operator",
-    "repoURL": "https://kiali.org/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/kiali/stack.hcl",
     "targetRevision": "2.26.0"
   },
   {
     "chart": "kube-prometheus-stack",
-    "repoURL": "https://prometheus-community.github.io/helm-charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/prometheus/stack.hcl",
     "targetRevision": "85.2.0"
   },
   {
     "chart": "langfuse",
-    "repoURL": "ghcr.io/langfuse/langfuse-k8s/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/langfuse/stack.hcl",
     "targetRevision": "2.1.1"
   },
   {
     "chart": "litellm-helm",
-    "repoURL": "ghcr.io/berriai",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/litellm/stack.hcl",
     "targetRevision": "0.1.832"
   },
   {
+    "chart": "local-path-provisioner",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
+    "source": "clusters/homelab/platform/storage/cordium-local-path-provisioner-application.yaml",
+    "targetRevision": "0.0.36"
+  },
+  {
     "chart": "metrics-server",
-    "repoURL": "https://kubernetes-sigs.github.io/metrics-server/",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/metrics-server/stack.hcl",
     "targetRevision": "3.13.1"
   },
   {
     "chart": "multica",
-    "repoURL": "ghcr.io/multica-ai/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/multica/stack.hcl",
     "targetRevision": "0.4.29"
   },
   {
     "chart": "nfs-subdir-external-provisioner",
-    "repoURL": "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml",
     "targetRevision": "4.0.18"
   },
   {
+    "chart": "openclaw-enterprise",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
+    "source": "IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl",
+    "targetRevision": "0.1.0"
+  },
+  {
     "chart": "tailscale-operator",
-    "repoURL": "https://pkgs.tailscale.com/helmcharts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/tailscale/stack.hcl",
     "targetRevision": "1.102.3"
   },
   {
     "chart": "ztunnel",
-    "repoURL": "https://blob.istio.io/istio-release/charts",
+    "repoURL": "harbor.stinkyboi.com/mirror/helm",
     "source": "IaC/homelab/us-west-2/apps/istio/stack.hcl",
     "targetRevision": "1.27.3"
   }

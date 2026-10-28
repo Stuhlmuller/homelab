@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "ghcr.io/adinhodovic/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "compass"
         path           = "."
         targetRevision = "0.6.0"

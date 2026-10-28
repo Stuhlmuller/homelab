@@ -75,7 +75,7 @@ class Registration(unittest.TestCase):
         self.assertEqual(self.project["metadata"]["name"], "openclaw-enterprise")
         self.assertEqual(set(spec["sourceRepos"]), {
             "https://github.com/Stuhlmuller/homelab.git",
-            "https://github.com/openclaw/openclaw-enterprise.git"})
+            "harbor.stinkyboi.com/mirror/helm"})
         self.assertEqual({item["namespace"] for item in spec["destinations"]},
                          {SYSTEM, AGENTS, ENVOY})
         self.assertTrue(all(item["server"] == "https://kubernetes.default.svc"
@@ -97,10 +97,10 @@ class Registration(unittest.TestCase):
         crds_source, controller_source, *_ = platform["spec"]["sources"]
         self.assertEqual((crds_source["repoURL"], crds_source["chart"],
                           crds_source["targetRevision"]),
-                         ("docker.io/envoyproxy", "gateway-crds-helm", "v1.9.2"))
+                         ("harbor.stinkyboi.com/mirror/helm", "gateway-crds-helm", "v1.9.2"))
         self.assertEqual((controller_source["repoURL"], controller_source["chart"],
                           controller_source["targetRevision"]),
-                         ("docker.io/envoyproxy", "gateway-helm", "v1.9.2"))
+                         ("harbor.stinkyboi.com/mirror/helm", "gateway-helm", "v1.9.2"))
         self.assertEqual(crds_source["helm"]["valueFiles"],
                          ["$values/clusters/homelab/platform/envoy-gateway/crds-values.yaml"])
         crds_values, = docs((ROOT / "clusters/homelab/platform/envoy-gateway/"
@@ -139,7 +139,6 @@ class Registration(unittest.TestCase):
                                     crds[name]["spec"]["versions"] if entry["served"]})
 
     def test_generated_apps_are_disabled_and_require_full_manual_sync(self):
-        config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         for name, rendered in self.apps.items():
             app = rendered["inputs"]["manifest"]
             spec = app["spec"]
@@ -162,10 +161,9 @@ class Registration(unittest.TestCase):
             "targetRevision": "main"}])
         enterprise = self.apps["openclaw-enterprise"]["inputs"]["manifest"]
         chart, values, local = enterprise["spec"]["sources"]
-        self.assertEqual(chart["repoURL"].removesuffix(".git"),
-                         config["source"]["repository"])
-        self.assertEqual(chart["path"], config["source"]["chartPath"])
-        self.assertEqual(chart["targetRevision"], config["source"]["revision"])
+        self.assertEqual(chart["repoURL"], "harbor.stinkyboi.com/mirror/helm")
+        self.assertEqual(chart["chart"], "openclaw-enterprise")
+        self.assertEqual(chart["targetRevision"], "0.1.0")
         self.assertEqual(chart["helm"], {"releaseName": "oce", "valueFiles": [
             "$values/clusters/homelab/apps/openclaw-enterprise/values.yaml"]})
         self.assertEqual(values, {

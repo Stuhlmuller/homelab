@@ -19,7 +19,7 @@ class EnvoyGatewayRegistrationTests(unittest.TestCase):
             capture_output=True, text=True, check=True, timeout=15,
         )
         project, = [json.loads(line) for line in result.stdout.splitlines()]
-        self.assertIn("docker.io/envoyproxy", project["spec"]["sourceRepos"])
+        self.assertIn("harbor.stinkyboi.com/mirror/helm", project["spec"]["sourceRepos"])
         self.assertIn({"server": "https://kubernetes.default.svc",
                        "namespace": "envoy-gateway-system"}, project["spec"]["destinations"])
         for resource in ({"group": "apiextensions.k8s.io", "kind": "CustomResourceDefinition"},
@@ -48,8 +48,8 @@ class EnvoyGatewayRegistrationTests(unittest.TestCase):
         self.assertEqual(len(sources), 4)
         self.assertEqual([(source["repoURL"], source["chart"], source["targetRevision"])
                           for source in sources if "chart" in source], [
-            ("docker.io/envoyproxy", "gateway-crds-helm", "v1.9.2"),
-            ("docker.io/envoyproxy", "gateway-helm", "v1.9.2"),
+            ("harbor.stinkyboi.com/mirror/helm", "gateway-crds-helm", "v1.9.2"),
+            ("harbor.stinkyboi.com/mirror/helm", "gateway-helm", "v1.9.2"),
         ])
         self.assertEqual([(source["path"], source["targetRevision"])
                           for source in sources if "chart" not in source], [

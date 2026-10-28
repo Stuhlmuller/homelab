@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://kubernetes-sigs.github.io/descheduler"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "descheduler"
         path           = "."
         targetRevision = "0.33.0"
