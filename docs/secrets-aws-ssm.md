@@ -412,6 +412,7 @@ webhook settings. Its `OnChange` ExternalSecret needs a reviewed metadata change
 after credential injection; the Deployment remains at zero replicas until then.
 | renovate | `renovate` | `renovate` | `/homelab/renovate/github-app/issuer-id`, `/homelab/renovate/github-app/private-key` |
 | renovate acceptance (staged) | `renovate-acceptance` | `renovate-acceptance` | `/homelab/renovate/acceptance/github-app/issuer-id`, `/homelab/renovate/acceptance/github-app/private-key` |
+| renovate Harbor read | `renovate-harbor-pull` | `renovate-harbor-pull` | `/homelab/renovate/harbor-pull-password` (generated copy of `/homelab/harbor/robot-pull-password`) |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
 not an active secret contract and has no ExternalSecret consumer. It remains in
@@ -808,6 +809,19 @@ SSM metadata in account `716182248480`, region `us-west-2`, without reading
 any value. Stop if the plan touches `/homelab/renovate/github-app/` or any
 unrelated resource. Remove the staged ExternalSecret and one-time intake code
 in the reviewed cleanup change once no longer needed.
+
+The separate `automation/renovate-harbor-pull` ExternalSecret reads only
+`/homelab/renovate/harbor-pull-password`, generated from the existing
+`/homelab/harbor/robot-pull-password` SecureString by the shared SSM unit. Once
+the staged contract is Ready, a following CronJob change mounts its target
+Secret as a read-only password file outside the package cache. The global
+Docker host rule then uses that value only for
+`https://harbor.stinkyboi.com` with the project-scoped pull robot. The
+ExternalSecret refreshes every five minutes; a later Job reads the refreshed
+file after coordinated Harbor robot and SSM rotation. The new exact SSM
+parameter and reader grant require a protected private saved plan before
+the CronJob can use them; no new Harbor robot is created. Verify the target
+metadata and a successful private lookup without printing either credential.
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret

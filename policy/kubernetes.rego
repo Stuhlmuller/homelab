@@ -375,7 +375,7 @@ external_secret_allowed_prefixes := {
 	"affine": {"/homelab/affine/"},
 	"mastodon": {"/homelab/mastodon/"},
 	"argocd": {"/homelab/argocd/"},
-	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/bulldozer/github-app/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key"},
+	"automation": {"/homelab/n8n/", "/homelab/policy-bot/", "/homelab/bulldozer/github-app/", "/homelab/renovate/github-app/issuer-id", "/homelab/renovate/github-app/private-key", "/homelab/renovate/harbor-pull-password"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"fleet": {"/homelab/fleet/"},
 	"harbor": {"/homelab/harbor/"},
