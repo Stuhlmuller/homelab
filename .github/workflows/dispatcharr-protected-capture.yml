@@ -1,0 +1,117 @@
+name: Dispatcharr Protected Capture Candidate
+
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed current main; every operation and target is fixed.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed current main commit
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: dispatcharr-protected-capture-production
+  cancel-in-progress: false
+
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Static Policy And Capture Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test Capture Fence
+        run: |
+          set -euo pipefail
+          nix develop --command python3 -I scripts/ci/dispatcharr-protected-capture-test.py
+
+  capture:
+    name: Protected Dispatcharr Pod Fence Capture
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Capture With Continuous Pod Watch
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          umask 077
+          ulimit -f 20480
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          receipt_dir="$(mktemp -d "${RUNNER_TEMP}/dispatcharr-fence.XXXXXX")"
+          trap 'rm -rf "$receipt_dir"' EXIT
+          test -n "$OCTELIUM_AUTH_TOKEN"
+          bash scripts/ci/install-kubeconfig.sh
+          python3 -I scripts/ci/dispatcharr-protected-capture.py \
+            --expected-sha "$EXPECTED_SHA" \
+            --kubeconfig "$HOME/.kube/config" \
+            --receipt "$receipt_dir/receipt.json"
+          EOF
+          then
+            echo "::error::Dispatcharr protected capture blocked; private diagnostics withheld."
+            exit 1
+          fi
+          echo "Dispatcharr Job and continuous Pod-watch checks passed; backup content and offsite restore remain unverified; private output withheld."
