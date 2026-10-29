@@ -4,16 +4,16 @@ title: "AI observability"
 description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attribution, and per-caller telemetry acceptance gates."
 tags: ["homelab", "navigation"]
 sources:
-  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
-    resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-869eecdfa0764960d85fe017
+    resource: repo://clusters/homelab/apps/n8n/migration-v1.values.yaml
   - id: openwiki-source-cce2f8f33e3b3639655d2b33
     resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
     resource: repo://scripts/ci/n8n-ai-migration-check.py
-generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # AI observability
@@ -264,10 +264,10 @@ database inventory of all ten workflows confirmed the active model node uses
 still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
 A newer read-only PostgreSQL inventory on 2026-10-24 found all three exact
 target nodes using `openrouter/free` and `litellm-managed`; the same one active
-and two inactive flags remain. The old init migration still runs at each app
-startup, so the availability change removes it. The guarded, versioned Job is
+and two inactive flags remain. The active values remove the old startup
+migration so workflow edits cannot block app startup. The guarded, versioned Job is
 staged in [migration-v1.values.yaml](../../clusters/homelab/apps/n8n/migration-v1.values.yaml)
-but is absent from the active Helm valueFiles: this PR generates no migration
+but is absent from the active Helm valueFiles: steady state generates no migration
 Job and makes no workflow DB edits. A separate activation PR is needed only for
 a restored or stale database. It must first establish a verified paired off-NAS
 PostgreSQL dump and n8n PVC backup/restore path; the current database notes

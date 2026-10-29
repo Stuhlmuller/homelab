@@ -126,7 +126,7 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
@@ -172,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Harbor Private OCI Registry
@@ -500,12 +500,12 @@ Skopeo `writing blob` or `writing manifest` diagnostics now emit fixed `blob-upl
 `manifest-upload-failed` categories; unknown failures remain `command-failed`
 and do not trigger another copy client or an automatic write retry.
 
-The fixed `renovate` scope selects seven cataloged update digests from
+The fixed `renovate` scope selects eight cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
-Fleet, Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the
-Renovate runner.
+Fleet, Harbor PostgreSQL, Multica Python and Redis, Dispatcharr, Bazarr, n8n,
+and the Renovate runner.
 It retains the normal digest, alias, and fresh authenticated pull checks while
-the unrelated full catalog is held. Its success proves only these seven images;
+the unrelated full catalog is held. Its success proves only these eight images;
 each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
@@ -889,8 +889,7 @@ those additions, so expanded publication requires protected approval and complet
 authenticated Harbor-pull acceptance before a consuming change. Public sources belong
 in the catalog; application runtime references must use Harbor.
 
-The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
-`3db21366…` digests while retaining prior digest-only references for rollback.
+The full catalog stages the reviewed Dispatcharr and n8n upgrade digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
 complete Harbor pulls. Their consuming Renovate PRs remain held until that
 publication and pull acceptance finish.
@@ -900,7 +899,9 @@ For a missing destination digest tag, the
 anonymously into a local directory image tree and checks the original manifest
 digest before authenticated Harbor upload. If Skopeo cannot preserve an OCI
 index digest during staging or upload, `regctl` copies the exact upstream digest;
-an upload fallback reads upstream a second time. Existing destination tags
+an upload fallback reads upstream a second time. The exact OCI-index
+root-artifact-missing upload error also permits this fallback; unrelated
+upload errors remain fatal. Existing destination tags
 resume only after exact hash verification. Aliases come from the verified
 Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
 `regctl` retries that alias from Harbor. These exact conversion fallbacks use

@@ -52,24 +52,28 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-4ca0ce872f200b18ae467a0e
+    resource: repo://docs/arr-playback-policy.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
-  - id: openwiki-source-b6af8459ba491c30ebdfcbb9
+  - id: openwiki-source-81eb22463f7e995fa8bd3b58
     resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-39e11b90e7410131b2dc0a6e
+  - id: openwiki-source-7caf2808e7e765d8ee6ecc56
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
   - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-f46a174a7f12aaf8ef457c59
+    resource: repo://scripts/arr-playback-policy.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-4091442a62f62f0adc73ce96
@@ -98,6 +102,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-registration-test.py
   - id: openwiki-source-38f54948f5bf90d0cb9bddb7
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
+  - id: openwiki-source-10d0925efe2a75750e1903c5
+    resource: repo://scripts/config/arr-playback-policy.json
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -124,10 +130,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-25T01:38:00.583Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Source Map
@@ -215,3 +221,12 @@ and [activation gates](operations/validation-gates.md#mastodon-activation-gates)
 Database role provisioning: [SQL and initial extensions](../clusters/homelab/apps/mastodon/initdb-configmap.yaml),
 [ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
 [PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).
+
+## Media playback compatibility
+
+[`scripts/config/arr-playback-policy.json`](../scripts/config/arr-playback-policy.json)
+owns the shared Sonarr/Radarr download limits. The preview-first
+[`arr-playback-policy.py`](../scripts/arr-playback-policy.py) applies them only
+from clean current `main`, retaining a private before-state snapshot and checking
+live convergence. See [the runbook](../docs/arr-playback-policy.md) for the QNAP
+diagnosis, size and codec limits, and playback acceptance.

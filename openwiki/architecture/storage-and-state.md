@@ -38,7 +38,7 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
     resource: repo://docs/storage-nfs.md
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
     resource: repo://scripts/ci/openclaw-enterprise-download.py
@@ -62,10 +62,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Storage And State
@@ -354,7 +354,10 @@ Nine links leave those roots. Six point into `/app` and resolve to five nonempty
 directories in the pinned image baseline without an `/app` volume. The former
 gateway had a writable root, so its overlay may have changed those targets;
 their original contents remain unclassified until compared with retained
-evidence. Three dangling external targets also remain unclassified. T014 still
+evidence. The October 25 report classifies 37 links: 27 contained, nine external and
+one missing within the archived roots. The three external `/home` cache
+targets are absent in the reader; the separate NAS skill target was already
+dangling in the original mount. Their former purpose remains unknown. T014 still
 needs their disposition, a separate writable UID 1000 local-state copy, an
 isolated NAS copy and an old-image boot
 behind an enforced offline network boundary. Flannel does not enforce the
@@ -702,7 +705,10 @@ write to the claim so a full or unwritable cache fails visibly. The `20Gi`
 request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
 PVCs or enforce their requested size. A full export needs restored NAS capacity
 through a declared path; increasing the PVC request cannot restore writes.
-No verified QNAP `/homelab` capacity-restoration operation is declared. An
+No verified QNAP `/homelab` capacity-restoration operation is declared. The
+staged static PV and separate PVC target a dedicated 20 GiB QTS thick volume
+exported as `/renovate-cache`; both remain outside active Kustomizations until
+the authorized NAS setup and exact volume/export verification pass. An
 isolated tmpfs `ENOSPC` drill can test failure visibility and later normal
 PVC use, but cannot prove recovery from a full NAS export. T024/T042 and
 writer cutover remain blocked on a declared capacity path and direct recovery

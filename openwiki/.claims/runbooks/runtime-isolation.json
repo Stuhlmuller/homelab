@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:58e24a9acb779aa6ec2fd022b4696ee65667090896b5a18f2864e10d2bdbecc9",
+  "pageVersion": "sha256:0da72f00efceec1f5298a1a7c514a1a138f71c196875d5bd71f9d42c39e072ad",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,11 +8,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:85f2d2ff1da4efdce66c1b23614f49b8ab7e0554827a84693108ec5c34d7bd51"
+          "version": "repo-file-v1:sha256:0a046ab21c441248e44560fa55b954220c6efb2d2a8bc984b236bf33a31eb214"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -52,11 +52,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
-          "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+          "version": "repo-file-v1:sha256:557a3962af051478d7953fd0b97868d01899a6b86cf2668cf12717a1417b69ab"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         }
       ]
     },
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c4b63d069880fed82d1d27d4504dd415300563d478e6ecf5bf312f21ff3ace82"
+          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
         }
       ]
     },
@@ -106,7 +106,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
-          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
+          "version": "repo-file-v1:sha256:9f7405f792e3bd2ecbc230427f52297cf45976becea26f0573701326c11b998f"
         },
         {
           "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
@@ -132,7 +132,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+          "version": "repo-file-v1:sha256:b70f40f23e4716a435e4b9fa84babfdd578fb6cb4b72357162c3ceab2041f028"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -146,7 +146,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
@@ -178,7 +178,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
@@ -191,7 +191,7 @@
       "statement": "The 2026-10-20 13:07–13:15 UTC post-shutdown recheck found the best worker with about 3,398 MiB unreserved versus a 4,096 MiB initial Enterprise reservation, 6,308 MiB actual use and 9.74 GB root-filesystem space free; all workers have less than 10.74 GB for a new 10 GiB local claim under the existing /var/lib pattern, acer lacks the 2,304 MiB database-plus-gateway minimum, and unrelated Pods prevent a NoSchedule taint from isolating a canary.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L309-L335",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L367-L393",
           "version": "repo-lines-v1:sha256:b544b50f0ce0c8aa2c97b77335a2fd89669e871bdd1b7f848d3f7d8530bc2a88:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0NDM0M2E2MDczNjZhNzE2N2JhZmQ0MTgxYjhiOGM4YmFlYzNiZjkzNDlkNzc1MDVhNTJkMDkwNDBlY2I1MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGUyYmYwNDlhMjViZGRiMWFlNDQxYzgxMjc0ZDU0MjQ4NjFiMDdmMTRmYTY4NzA3NGQ4MjBmZjRlMmFjNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwMjRhZGQ5M2I1NmNiMmM4MDJhMTYxM2QyNDMxMTI1YWY4MWFhZThiMTYxYzc0YjFjYzcyMzRhZjVhYzc0ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2ZDNlMTE0NzUwZDE3OTU5NjFjODkxMWMxZTZmY2M0MWIxMTFkZTg1ZGU1ZWRkNWZhMjRmZjdkZTU2NWFlNjcifQ"
         }
       ]
@@ -214,7 +214,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:ec1c270d7f91a0a5e09d7be7d78ce8a70527c98cc0e704762d8681446ac7e6c1"
+          "version": "repo-file-v1:sha256:ad8293f4ef9a4a0cfab546f12f29087f24adb656200b9ede12cee0fda6cf352c"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -227,8 +227,8 @@
       "statement": "Pinned Cordium ws-main and Octelium svc-upstream constructors hardcode all-port public IPv4 and IPv6 egress without a public-egress input; additive NetworkPolicies cannot narrow either allow. Reviewed upstream patches or forks, rebuilt pinned images, actual generator renders, and isolated canary qualification of required destinations and private-range denial are prerequisites for enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2010-L2013",
-          "version": "repo-lines-v1:sha256:92e2e991dac95b8cca90f32c464416e6a94658d4697aeedc3b83f01cf5fe8c7f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWNjNmU5NjA5MDBhMGE3OTgzNjc5MmNhNjY2NDUyYjVjNjVhY2VmMmZjODExODVkZjliOGNiODhkZjVmNmJmNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzg3YWYyYjAzNmIxNzNlOWYyMGY3ODU5M2M1NTVjNTE2OWQ2MmI1NmRmMGE0ZTRhZWE5ZmY3ZTU2ZDAyYjczOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTZkN2NjNjQxY2Y4ZjM3ZDM1YjhkZGNhNWYyOGYyYTZiYzljNWNkYWJlOWUwOWRmN2E3ZWY2ZDdjZGYwOWI0ZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWJkMmJkZDIyZjQ0OTU5Mjk3MjZjN2FkZDY4ODI4OTk3ZTYxNzNhZjI1OGNlY2E1MDRjNDk5Zjk1ZjNhNDFjYSJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2017-L2055",
+          "version": "repo-lines-v1:sha256:8c5952af52df7631e445c933760ecf042da1de267f06838df66036e603264bb1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlYWExNGIxYmQzN2JhOTYzYmU5YTExMjU1ZDViZmM2ZGNiZDdlYTc4MzhhY2Q0NjExNGYwMzVhNzdlZWRiMDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkMWVkYmE5YjcwYjI3MmEzZTZkM2NhMDEwNDVkYTQ5M2E2ZmY2MjAwMzQ1ZGFlMWRiOTdjOWI5YWM3NTMyY2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxZGZjMWIxOWZkMjIzNDIxZTA4YTYwNzgwNzU1YWMzZTY5N2M1YmIxOGM1NmNkNjA2YjY2ZWJmYTY1MjcxY2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhZGNjZTBiMjk3MjdlZDFlNjViMmUyMjVjYmFmOTY1NDZjYWMwMWE1MTFhZmU4N2I1YjAwZTJhYjNhYTRjYmUifQ"
         },
         {
           "resource": "repo://docs/runtime-isolation.md#L171-L196",
@@ -242,7 +242,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
@@ -250,11 +250,11 @@
         },
         {
           "resource": "repo://scripts/network-policy-canary-node.py",
-          "version": "repo-file-v1:sha256:d1f6274dcd73e97d5dbe80b7b6f264ce8f58af9827fb4c40657cb66d069431c9"
+          "version": "repo-file-v1:sha256:cf444c3fba8f1c4a64e598cb16f68d62eb3da36b8847d2e57ba03558d9a6fc40"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         },
         {
           "resource": "repo://scripts/network-policy-ownership.py",
@@ -268,11 +268,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:46d9138d4af6d4a4884455618959343aca85d1bede79187670d469f9092bae8f"
+          "version": "repo-file-v1:sha256:43820b4068f5f523d6ef924a5c156421f529702a8c16d915ddc025198fe6bf7d"
         },
         {
           "resource": "repo://scripts/network-policy-cleanup.py",
-          "version": "repo-file-v1:sha256:0d5a85d7bc4a70eb8510839ab1b5ac069121dfa2f868c7da7d7f26b244277f6a"
+          "version": "repo-file-v1:sha256:72c0ddc5dd815d5c75f1dad3fba3fb86422835a5436f31b76e4d1fe0388bb79f"
         }
       ]
     },
@@ -289,7 +289,7 @@
           "version": "repo-lines-v1:sha256:2876cfbcc88a641d47fa95d5c84bbc76edd416dab54756ef08f8cf9d74c40330:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlNGEwNWExMWUyNzIxZTlhNTViNDhlMjcwYzA1NjFiYTQzYzFkNmQyNTVhMzE4YzI3ZDQzZGVjNDQ0MzBjZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2YTRmMjQyNmEwZTUwMmNjNWQyYzQxYWI1YjExNjZkY2VhMjMzZTg4NjJlN2YyMmZjMGYxZDA3ZmNlMjk4YmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNjU2MTkzMGUzMmRhNDZiNzViMWMxZmY5MDVlYTdmMzgzZTcxNGNkZGFjODA1ZTc4YTgyN2UzNTNlYzVkN2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlYTFlNjNiNWJhN2ZmZTVhNjJlNzk3YmJhOGZlNDQzMzU4ZTc4ZDg4M2Y1ZjViYzMwOGY3MzQxZWFhMGY5MjQifQ"
         },
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L363-L398",
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L421-L456",
           "version": "repo-lines-v1:sha256:7bc16dde62ee864193f6b9ba6aee62caa15267682fa5e9e7c5877a6b6d249ebb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwOWJjNGVlOGE1NDMzMzQ0NDBiYzUyOGZiZTRmYjYzMTk1MjM1NTNhNDI4NThjNjI3N2VlNTQwODU5Zjc3NzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZjY1MzZhZGExNDZmNjBhMTQ0M2IyZmZjZmI0MDhjNDU5YmQ1ZDY2YzEzZjIwOTEwN2M2NmQzZTExMGU2NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhODljODc0OTUzNzg0OGU3YTVlMjkxZTU2Y2Y1NTZlNzFhNWI3MWU4Y2JiMmMxZmVmZDUzYjliZTMzM2I4ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM2OGExMzk1NGMyOGI3YzQ5YjZlOTI4OTEwMzYwNjNkNmRlNzA1YTlkYTY0NzE5MWI2NWQ4Nzg4MTFjOWVjODAifQ"
         },
         {
@@ -319,6 +319,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T01:38:00.583Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

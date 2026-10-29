@@ -10,10 +10,16 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-b26876230e53fd853d7bcbea
     resource: repo://clusters/homelab/apps/openclaw/values.yaml
-generated: { by: "codex", at: "2026-10-10T23:00:00.726Z" }
+  - id: openwiki-source-4ca0ce872f200b18ae467a0e
+    resource: repo://docs/arr-playback-policy.md
+  - id: openwiki-source-f46a174a7f12aaf8ef457c59
+    resource: repo://scripts/arr-playback-policy.py
+  - id: openwiki-source-10d0925efe2a75750e1903c5
+    resource: repo://scripts/config/arr-playback-policy.json
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:10:58.872Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Application Notes
@@ -320,6 +326,33 @@ linuxserver default config init script stays disabled. The validated one-time
 NFS migration resources are removed. Keep the legacy NFS claim as the nightly
 archive and rollback target; only the backup CronJob mounts it.
 
+
+## QNAP media playback policy
+
+The existing QNAP TS-451+ uses a Celeron J1900. October 28 Plex logs showed
+HEVC Main 10 being decoded in software and converted to H.264 for a local Roku
+at only 0.39–0.57 times real time, causing buffering. An earlier release also
+carried HEVC and Dolby Vision/HDR labels; its exact failure is absent from the
+retained logs. Sonarr/Radarr had no codec filters, so resolution alone admitted
+both downloads.
+
+The [shared policy](../../scripts/config/arr-playback-policy.json) requires
+explicit H.264/AVC labels, SDR and at most 1080p. It rejects HEVC, AV1, VP9,
+HDR, high bit depth and disc/remux labels, caps eligible quality definitions
+at 30 MiB/min through 720p and 60 MiB/min at 1080p, and preserves stricter
+limits and safe profile choices. Profiles with no safe choices receive an HD
+fallback while retaining their IDs. Every existing profile requires the managed
+custom format; new profiles need reconciliation.
+
+The [operator helper](../../scripts/arr-playback-policy.py) previews by default.
+Execution requires clean current `main`, a private before-state snapshot, and
+live API readback. It changes settings only. Release labels and indexer sizes
+can be wrong or absent, and client settings or subtitles can still force
+conversion; these limits do not guarantee playback. The completed H.264 archive
+in Sonarr's import queue has a separate extraction blocker. See the
+[runbook](../../docs/arr-playback-policy.md) for diagnosis, apply and rollback,
+credential-safe inspection, and the pending coordinated Prowlarr key rotation.
+Actual Roku playback remains an acceptance check after settings converge.
 
 ## Bazarr
 
