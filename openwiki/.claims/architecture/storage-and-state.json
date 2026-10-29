@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2f20ce767d66977700cc7b9c40793ca5986517dbd123f28f2c51ac5279929a52",
+  "pageVersion": "sha256:85127d94b822ff18f2f0aff20cddc1748c68e1afb0eb51ba2c5851fab839621e",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -47,7 +47,7 @@
           "version": "repo-lines-v1:sha256:6a912b1d179964491532b365d53bba3522615e0e65660d4642c30ec86dd46575:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiOTM0NTNlZGQ1NDE0Y2UzYzlkOTJkMzM0OWI1ZDA4MGYwZDgxODc0MzcwNDdlMDA0NzUxZjIxNzYxYTc3NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZmJhOWI4ODMyNTM2NzczZjY0MGVhYjVkZmRlNGQ5ZWE3Mzc2OTA0OWE1MzJiZjRhYjdhNzQyNDMzYTdlYTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhM2EyNjk5ZTI1Nzc1YjAyY2Q1YTlkOTcwZmYzZTkzODYzYTQxNGQwYTNlYjUxZWE2MzJmOWQ4ZmQ3MTliMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRkZjI4YWU5MWJmOTYzMzAzMTk2YmZlOWMyZjZkNDg3M2YwZjIzMGY2YmEwNmU3ZTBiYzEzMGI2NTkzZjJiY2IifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L110-L121",
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L123-L134",
           "version": "repo-lines-v1:sha256:47232aba0b01f02f004e441fedcc8aabc6b86457503e9d57df66f7f959000434:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkYzY3MmZmYTY4ZTQ3MzllNjIzMGE3YWE0MjFiNzY1M2ZiZmU5NDZhNTU0NzQzMzAwNWY1YWExMzNhODQ4YjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MGI4OTIyODNlNjJlZGE2Yzg5YmE2OWIwZWY0MjBiMGFkODA1MDNjNjUwMTVhYzE3NjQ2ZDhmYjJmMTYzZjAifQ"
         },
         {
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:d903f3f251151075bdae5c22da61d4a7dde7fbdef2c75c89578da8b4f7c5b778"
+          "version": "repo-file-v1:sha256:e3d18ea5034a2289786573837aaff7f338a62f06a4dd3549af4c28ea4307ffa1"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -74,7 +74,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:f0527f3f96861beaf460a297338e8d4af4b452c4ca234b73c4aaaa447a13f6c6"
+          "version": "repo-file-v1:sha256:27bfe1eb9ef7603b7f6259a5d813ece807c7fed6b20452aef3c2749888683c63"
         }
       ]
     },
@@ -291,10 +291,28 @@
           "version": "repo-lines-v1:sha256:6ddea2d451f671806968aaf2920db47fa594d4f96c1aa2b2b84d6a7c970e8e09:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3Y2FlYWY3NTkyMDViMTFjYWM1MWVkZTJjZWRlODI2NGJjYmU5MGEwZGYyMDQxZDY5ODNlNmI3M2ZmNTU2MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjZDk0NGI4MTVmMTIwMzllOWU5ZmUwNGRiMGZlYWEyNzQwMmEyZGI5MWFhOTIxMjYxNDEzMDhlNjYxMGJkZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkN2YzYjU0ZWY5NjUxZGU1NzZiNzk0OTg1YzVlODY4MTI2YTBiZTE4NzRhY2MwNzMxYjNiNjZkNmFhNmMyOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1NGQxNDlhOTk0MWUwNzM2NmY3ZjhiMzllNzM5NzY0ZjRiN2MyYTQ2OGE4ODlkNGIxYmUxNGU1OTA1ZWRmMjkifQ"
         }
       ]
+    },
+    {
+      "id": "claim_4a35817d5f334c83a0681f58bee89775",
+      "statement": "The full dry-run Renovate config temporarily promotes only pinned package-cache statistics and cleanup start/GC/end messages. They distinguish completed cache I/O timings from final cleanup but do not identify a mutex holder or time upstream requests; raw repository context remains restricted, only numeric aggregates are public, and the remaps must be removed after diagnosis before writes.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L228-L240",
+          "version": "repo-lines-v1:sha256:b3041317a401a45795ec58bc40b7fd5af3edc5b972f15808cf154d103aeeaec8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAyZmU0MWFjMTAyNTk1YTYzY2U4MmQwMzhmNTk1MTM1MTViODJkMmE5ODYzOWI3MGE2YTMzZDA2OGNkMWY1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxZWNjMjQ1YjI5OTQzY2NkOTUwYzBkYjhhM2E2MDBkZDFiMDMyMTQ4ZGZhZDAxOWI4NGQ0NzczZjBkOGJlNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjYjRmNTE0MjNiYjYzMTVlYTNlYmRhZjRkMjI4YzQ0M2VmYmUzOTZlZjMzOWI5YjNiMGQ2MjFkZDYxNWJmMDUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L107-L120",
+          "version": "repo-lines-v1:sha256:f516b1dea1a1bf6e8741b99ebf77640bed034a2ff9b58179826089fc175e28c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0ZWFiODVkNzZmM2Q2NjA3MDg4NDkxZmVlYzc2MTRjMjdmOTRlNWY4MmYyZWE4NDgzOWNjYjgwMzE1ZWRlODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3ZDE5ZjI2OGE2MjJhMzQ1YzNhMjA0OWRmMDFhMjI3M2Q1MzllODE2ZTRjYzFiMTRkNWYyNzUwN2QzY2I2OTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc4ZjQ3MTY3ZmE0NzA3NjFmMWJiZTJjOTE5MjkzMWVmYjUxMzRmMjk1YWJmNzExYzExOThhNmM4N2FiZTQyZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyMDQwZTA5NWE5NGUyYWRhNzRlNDIxZjM3MTg3NTFhOTFhODEwYmZkNjZmNDhmNGU5MzljN2I3NDgwZWI2NzAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-cache-stats-log-test.mjs",
+          "version": "repo-file-v1:sha256:e373db2010663ff1cdffdffdb9923c626a239bd312c481004da0c790e9ae3191"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T05:33:11.026Z"
+    "at": "2026-10-29T22:46:35.009Z"
   }
 }

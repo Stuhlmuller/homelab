@@ -104,6 +104,19 @@ function renovatePolicy(token) {
     cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
+    logLevelRemap: [
+      { matchMessage: '/^Package cache statistics$/', newLogLevel: 'info' },
+      { matchMessage: '/^Checking file package cache for expired items$/', newLogLevel: 'info' },
+      {
+        matchMessage: '/^Cache GC: kept [0-9]+ content entries [(][0-9]+ bytes[)], ' +
+          'removed [0-9]+ orphaned [(][0-9]+ bytes[)] in [0-9]+(?:[.][0-9]+)?ms$/',
+        newLogLevel: 'info',
+      },
+      {
+        matchMessage: '/^Deleted [0-9]+ of [0-9]+ file cached entries in [0-9]+ms$/',
+        newLogLevel: 'info',
+      },
+    ],
     dryRun: 'full',
   };
 }

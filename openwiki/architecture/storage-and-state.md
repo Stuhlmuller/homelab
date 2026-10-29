@@ -50,6 +50,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-stage.sh
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
+  - id: openwiki-source-039f74d4187431e0344dd883
+    resource: repo://scripts/ci/renovate-cache-stats-log-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
@@ -62,10 +64,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
+generated: { by: "codex", at: "2026-10-29T22:46:35.009Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T05:33:11.026Z
+    at: 2026-10-29T22:46:35.009Z
 ---
 
 # Storage And State
@@ -727,6 +729,16 @@ hit the same key, refreshed its record, and selected the new public canary
 branch proposal. T022 is complete. A live cache-failure cycle and next-slot
 recovery remain open.
 
+The full dry-run runner temporarily promotes four exact pinned cache messages:
+package get/set timing statistics, file-cache cleanup start, garbage-collection
+summary, and cleanup end. These separate completed cache I/O timings from the
+post-repository cleanup interval; they do not identify a mutex holder or time
+an upstream request. Raw records may carry repository context, so publish only
+numeric aggregates and keep Pod logs restricted. Remove the remaps after the
+diagnostic receipt and before enabling writes. The
+[pinned fixture](../../scripts/ci/renovate-cache-stats-log-test.mjs) checks the
+message allow-list and excludes cache keys, URLs, and package names from those
+promoted records. This diagnostic changes neither cache freshness nor storage.
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
