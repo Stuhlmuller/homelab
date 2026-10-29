@@ -51,7 +51,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: own-local-directory
-          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -80,7 +80,7 @@ spec:
             - name: local-data
               mountPath: /data
         - name: require-real-password
-          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
           imagePullPolicy: Always
           command:
             - /bin/sh
@@ -105,7 +105,7 @@ spec:
               readOnly: true
       containers:
         - name: postgres
-          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:18-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
           imagePullPolicy: Always
           args:
             - -c
