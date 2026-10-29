@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:16aa5e3efe0be0cac071d305de3dd2376ee0f7c6ef9922e540356cb1e160a0a6",
+  "pageVersion": "sha256:8c2c9e449dcf6e1bf92a6ff171b30e9c3c2194b2cf68bb25ba2ff0fc69980d40",
   "claims": [
     {
       "id": "claim_81d091bfd2d74d578b85cb519e8ce854",
       "statement": "Current OpenClaw 2026.9.5 installs the version-matched external Discord plugin, routes through LiteLLM with a file-backed caller key, disables OpenAI/Codex subscription routes and preserves historical state for rollback.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L30-L53",
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L327-L350",
           "version": "repo-lines-v1:sha256:63bef918152aa4e6a3afc330640d378ba7bd03e4b814365668e45d4e370273f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyOGI2OGY3ZWFmODg4ZWI4NmY5ZTdjMjIzOThmZjdiYTEwN2IxMDU1ODZmZThkODA2YzRmNjhkOWY3NjEyZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMDkwMTBlMjFkYmM4NzVlMWRiNmNkNDAwNDBjZDk4NGNjMWY2OTg5YWI4MjdlM2ZmMmM3YzEyNTEzMjhiZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0NDVkNWQzOGQ5ZDBlYjczZGM3NDJmODExNmNlMmVmMWU0ZjgzZDQ0NDk5ZjE2NzZhMGMxOTA2NDk3NzU5OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5ZjUxM2Q0ZGY4YTA1YTAyNGM5YzFlMzI2YzQ3ZGVjM2YxMjE3NzIzN2RiMmQ1YWZjMjI5ODgxNGI1ZTk4ODYifQ"
         }
       ]
@@ -25,10 +25,52 @@
           "version": "repo-lines-v1:sha256:ae903cdb153a325cfc43da3f30c31e8d15dc49b91494976563edbec16b03aefa:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGRlNzcyNjgyMzU5NDUxZjgyMDYwYjJmZTI1YjM5MmY2Y2RjOTNjMjQ3NTU5MzNmMDFkMzJlYTc5MDY3NGZhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2YzYmM5ZjcxNDlmNjVlYzE3Mzg0YTRkNzk4YWQ0NTg4MGUzYzhkZWU0NWZlYjVjODVkYjE2NDY3ZTZhMjA0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY0YzZjODc3ZDRlMjBkZGI0MzA4MmUyZDZjMGU5ZTU5ZWQ0YmRiNTJlMDYyN2JkNDFlODcwYmViZTYxYmIzZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzE1NDkzMjgzNjMzNGJiODhjMzI0NmYyMjRkYTU5Y2RlNDMwMGY3YWM1NzgxZjg5YjgzNjM4YWZmM2FkODI3MiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_8129e77dbbc844e59a46f7fe5a846f57",
+      "statement": "October 28 Plex logs on the Celeron J1900 QNAP showed HEVC Main 10 software decoding and H.264 encoding for a local Roku at 0.39–0.57 times real time, with buffering. The earlier HEVC Dolby Vision/HDR release lacks retained exact failure evidence; a completed H.264 archive has a separate Sonarr import blocker.",
+      "evidence": [
+        {
+          "resource": "repo://docs/arr-playback-policy.md#L1-L19",
+          "version": "repo-lines-v1:sha256:3ab107c30ca448f76c5ab66d507aeb0fd1b19e20f7d68e228773401bced8489a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5OGYwOWRkZjlmNTBiOTM0NTg5MGY3MjEyNTVkNDdmYTZkY2QzYTFhZDFkMmYxZWFhMWQ4YjQ2MDhjNjk1ZjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc1Yzc2YjlmNzA1N2ViYWQyY2QzOTMwZTU0NWIyNWQ2ODY1YmZmZTA0NTU4ZjA1ZjY3ZTU5Y2JhMzg1NjNiZGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkYTQ1NDg0MjkyNjFlZjhmZjE0ZGVkNmY0MTdhZDdiOWMzYmQyNzYwOGU1OGEzNjQ5ZWUyNWE2NDFmZGZmMjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3cd2835194fe4174ace0abc7de54a718",
+      "statement": "The shared Sonarr/Radarr policy requires explicit H.264/AVC and rejects unsupported codec, HDR, high-bit-depth and disc/remux labels, allows at most 1080p, and caps eligible sizes at 30 MiB/min through 720p and 60 at 1080p while preserving stricter limits and profile IDs. New profiles, manual overrides and unreliable metadata remain limits.",
+      "evidence": [
+        {
+          "resource": "repo://docs/arr-playback-policy.md#L27-L47",
+          "version": "repo-lines-v1:sha256:bf8cfbbb51647d98d1ac43a9ee96261f58b67535ccace7ea24442391a302d9c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhMDcxMjE4OTIxMmNkOTBhYTI1ZDAzYWQxYjExODY3NDdjMmM3MjQwNDM0YmI2ZjM1NjNkNjUwZmI5NzY1NzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlkZmY2OTRmMGUwZDc2MzQ0NzIyNmU5YTA3MjA4NGVlZWEwNWIyNGI5Njg4MDZiMTFmNDA1NzhmZWRlZGNmZjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlYjVkNWJhYjIyYjk0ODM3Y2FhM2FhNmIwMTVkN2Y4MDY4YTIxYmI3MDVjOWRjNDVjNjI1OTJkOWE5N2I1YzgifQ"
+        },
+        {
+          "resource": "repo://scripts/arr-playback-policy.py#L69-L126",
+          "version": "repo-lines-v1:sha256:dda589d613484b9fb727cf88e1f45011c43af6a8f7179436a0de381164fc8e4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkYmVjY2EwMzJiZDlkMGI5N2I5MmExNjg1MjZkMTc5ZjM4Yzk2MjQ0Y2E5OWVkOTM2ZGYyNjA5MGNhZWQ1MDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMTFjMDU2N2QwYTVmOWU5YjEzNWY2NWNkMjUzNzJkZmQ2Mjg3NzVmN2MxZWQyNTNmOGJhZDQyZGQyZDY2NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxNmIwMWMwOGRmY2FiZTkxYjA3ODhlODEwNWM2MjFkOGMzMTUyZjIzYjQ5Y2RhYWNjYjNhODlmMmVmOWExMTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI0Y2UxMzYxNDI0MjdkYWI0ZDRkYzY3MGNkMWIzZTBlYTc1ZDE0ZDJhZTJmZGQwNmQxODYyOTRkMWIwODE5YjEifQ"
+        },
+        {
+          "resource": "repo://scripts/config/arr-playback-policy.json",
+          "version": "repo-file-v1:sha256:24ae1fce7b992b3d4e32ee282563a8f096dd1eff1b0e6d818864bb2589eeab60"
+        }
+      ]
+    },
+    {
+      "id": "claim_cae5de93dad24a318e2a22cdad052d41",
+      "statement": "Arr policy execution requires clean exact current main, a private before-state snapshot and live convergence checks; it changes settings only and does not replace, search or download media. Actual client playback and coordinated Prowlarr key rotation remain separate acceptance and recovery work.",
+      "evidence": [
+        {
+          "resource": "repo://docs/arr-playback-policy.md",
+          "version": "repo-file-v1:sha256:b0e71ba4b9cc494686de42c09d426ebe0437bde3e854dfa1b7f3c305980d3ea4"
+        },
+        {
+          "resource": "repo://scripts/arr-playback-policy.py",
+          "version": "repo-file-v1:sha256:b6e86b4515a5ea78760aa0265a77014ef5607f1dd90accb1ab619575f794da12"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:10:58.872Z"
+    "at": "2026-10-29T05:33:11.026Z"
   }
 }

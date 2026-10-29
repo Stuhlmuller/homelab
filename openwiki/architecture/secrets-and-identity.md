@@ -134,16 +134,14 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
-    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-25T04:28:23.381Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Secrets And Identity
@@ -329,8 +327,8 @@ from generated app and migrator passwords. Both URLs name the private
 `occ-postgres` Service and require `sslmode=verify-full` with the retained
 `occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
 password is a separate target. cert-manager declares that CA and a server
-certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
-and live TLS verification remain pending.
+certificate for the Service DNS name. The dormant PostgreSQL StatefulSet and chart consumers are declared; storage
+prebinding, recovery acceptance, and live TLS verification remain pending.
 
 The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
 uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
@@ -353,7 +351,9 @@ has a dedicated ServiceAccount with automatic token mounting disabled. Its
 one-shot Job projects a short-lived token and CA for the fixed Kubernetes API;
 read-only RBAC can GET only the exact reviewed Installation Secret and selected
 workload proofs. Reconcile and stop require the chart's bootstrap service key
-as a UID-10001-owned `0600` file on the retained bootstrap claim. The bundle
+as a UID-1000-owned `0600` file on the retained bootstrap claim. The disabled
+operator configuration retains UID 10001 until ownership proof permits its
+reviewed switch to 1000. The bundle
 is not registered in Argo CD, that file ownership is unproved, and the operator
 gate remains disabled; these permissions are source intent, not live access.
 

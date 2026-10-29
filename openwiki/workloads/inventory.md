@@ -152,29 +152,29 @@ sources:
     resource: repo://docs/rollback-argocd-apps.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-  - id: openwiki-source-59f51b5800f473496977b52a
+  - id: openwiki-source-e28ba5ce754d150bdc5cef65
     resource: repo://IaC/homelab/us-west-2/apps/argocd-image-updater/stack.hcl
-  - id: openwiki-source-1ee0d946130d3ad97636dfdc
+  - id: openwiki-source-b43e765897483cf6058c4a30
     resource: repo://IaC/homelab/us-west-2/apps/cert-manager/stack.hcl
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-b6af8459ba491c30ebdfcbb9
+  - id: openwiki-source-81eb22463f7e995fa8bd3b58
     resource: repo://IaC/homelab/us-west-2/apps/mastodon/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
-  - id: openwiki-source-00c8a32293c8aaa55d3daba4
+  - id: openwiki-source-9c3fe2e8035c7eb9d09bfd26
     resource: repo://IaC/homelab/us-west-2/apps/platform-envoy-gateway/stack.hcl
-  - id: openwiki-source-73d9c28ed7b9740028ceb5c2
+  - id: openwiki-source-ac7dd9ed8e0f490e7d421265
     resource: repo://IaC/homelab/us-west-2/apps/platform-image-policy/stack.hcl
-  - id: openwiki-source-e3e84b128839afbc47f478f7
+  - id: openwiki-source-02770c9a37752e2674097606
+    resource: repo://IaC/homelab/us-west-2/apps/platform-image-policy/terragrunt.stack.hcl
+  - id: openwiki-source-03cba9ca7ae035a0dcbbccef
     resource: repo://IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl
-  - id: openwiki-source-39e11b90e7410131b2dc0a6e
+  - id: openwiki-source-7caf2808e7e765d8ee6ecc56
     resource: repo://IaC/homelab/us-west-2/apps/tailnet-dns/stack.hcl
-  - id: openwiki-source-25f75cdd2a576d57bb951a93
-    resource: repo://IaC/homelab/us-west-2/apps/fleet/terragrunt.stack.hcl
-  - id: openwiki-source-f5339d55c401403e74eef9ec
+  - id: openwiki-source-6e612a8a6f7d729d059f3093
     resource: repo://IaC/homelab/us-west-2/apps/traefik/stack.hcl
   - id: openwiki-source-54e352b5d1969695ce29dabe
     resource: repo://scripts/ci/network-policy-peers-test.py
@@ -214,14 +214,12 @@ sources:
     resource: repo://specs/003-replace-openclaw-enterprise/research.md
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
-  - id: openwiki-source-2031a4cf1c03de6b7fcceacb
-    resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T01:38:00.583Z
+    at: 2026-10-29T05:33:11.026Z
 ---
 
 # Workload Inventory
@@ -394,11 +392,12 @@ CI transport remain until replacement client, callback and CI paths pass
 The `istio` entry still uses 1.27.3 chart sources and automated self-heal.
 Its [1.28.10 candidate](../../clusters/homelab/apps/istio/README.md) is
 disabled and outside Argo. It pins the replacement chart repository and
-archive hashes without changing the running mesh. The active GCS chart
-source is due for retirement in December 2026; a later reviewed PR must
-migrate the AppProject allowlist, active sources, and chart mirror inventory
-even if the version hop stays held. The [offline gate](../operations/validation-gates.md#istio-ambient-recovery)
-checks that the active source remains unchanged until that review.
+archive hashes without changing the running mesh. The declared active 1.27.3
+sources and chart inventories now use `https://blob.istio.io/istio-release/charts`
+with unchanged versions and package hashes. Keep the old GCS AppProject entry
+for rollback until the scoped Terragrunt apply and live Argo source checks
+pass. The [offline gate](../operations/validation-gates.md#istio-ambient-recovery)
+checks those source declarations; it does not prove rollout.
 
 | App                    | Namespace          | GitOps path                                     | Terragrunt path                             | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Depends on                                                                                                          |
 | ---------------------- | ------------------ | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |

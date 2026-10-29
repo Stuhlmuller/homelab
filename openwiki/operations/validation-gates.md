@@ -140,11 +140,11 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-d9c278a8e804b0d4053d6a6b
+  - id: openwiki-source-448b545e6f61d70638ce3d37
     resource: repo://IaC/homelab/us-west-2/apps/istio/stack.hcl
-  - id: openwiki-source-5e8e516a25e2448b5e0205a4
+  - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
-  - id: openwiki-source-c4a1630a18962f8a58f367ec
+  - id: openwiki-source-1ce4e7c935caaec6b4eb2529
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise/stack.hcl
   - id: openwiki-source-bdda46b717c2e2415e19e8f3
     resource: repo://IaC/root.hcl
@@ -360,10 +360,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-24T03:50:35.181Z" }
+generated: { by: "codex", at: "2026-10-29T05:57:43.668Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-25T04:28:23.381Z
+    at: 2026-10-29T05:57:43.668Z
 ---
 
 # Validation Gates
@@ -634,7 +634,7 @@ and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-legacy OpenClaw HTTP 502 only when each reviewed declaration and live
+legacy OpenClaw HTTP 500 or 502 only when each reviewed declaration and live
 Deployment specify zero replicas and no live replicas remain. Other application
 5xx responses fail. These stopped-app exceptions check routing, not runtime
 health. Deployed Traefik routes and TLS must match the reviewed checkout.
@@ -909,7 +909,7 @@ The Enterprise Startup Candidate and Enterprise Operations Conftest rules also
 require `workflow_dispatch` as their sole event and use the same run-setting
 guard. Regression fixtures reject a reusable `workflow_call` trigger, shell or
 working-directory overrides, and shell-prelude environment variables. The
-credentialed legacy operation has an exact four-variable environment map. These
+credentialed legacy operation has an exact eight-variable environment map. These
 are source checks, not evidence that either workflow has run.
 
 The live-plan and protected-apply diagnostic exceptions check a classifier's
@@ -1219,7 +1219,7 @@ Rendered Kubernetes policy also enforces the access contract:
 `policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the three
 reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
@@ -1242,10 +1242,11 @@ alone is insufficient. Keep raw logs outside git.
 The [held 1.28.10 candidate](../../clusters/homelab/apps/istio/README.md)
 is disabled and outside Argo. The offline static gate pins all six active
 1.27.3 chart source URLs and revisions, automated self-heal, and the candidate's
-replacement chart URL and archive hashes. The active GCS chart source is due
-for retirement in December 2026. A later reviewed PR must migrate the Argo
-AppProject allowlist, active source, and chart mirror inventory even if the
-version hop remains held; this source gate is not a live upgrade receipt.
+replacement chart URL and archive hashes. All six declared active sources and
+the chart inventories now use `https://blob.istio.io/istio-release/charts` with
+unchanged 1.27.3 versions and package hashes. The old GCS AppProject entry stays
+for rollback until a scoped Terragrunt apply and live Argo source verification
+pass; this source gate is not a live upgrade receipt.
 
 Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:
@@ -1819,7 +1820,9 @@ archived roots. Six `/app` links resolve to five nonempty directories in the
 pinned image baseline without an `/app` volume. The former gateway had a
 writable root, so its original overlay contents remain unclassified; compare
 them with retained evidence before claiming compatible recovery. Three
-dangling external targets also need an explicit disposition. A rehearsal needs
+external `/home` targets are absent in the fresh reader; the October 25
+report also identifies an already-dangling NAS skill link. Their former
+purpose still needs disposition. A rehearsal needs
 writable UID 1000 local-state and isolated NAS copies, and an enforced offline
 network boundary that blocks
 Discord, heartbeat, and job deliveries. Flannel does not enforce the declared
@@ -2438,9 +2441,10 @@ allow only fixed public blob/manifest write-stage categories when the private
 diagnostic matches, retain `server-error` for HTTP 5xx, and leave unknown
 copy errors terminal as `command-failed`. These source checks do not pass T004:
 full run [39906968373](https://github.com/Stuhlmuller/homelab/actions/runs/39906968373)
-failed at this Prometheus image, and no complete catalog receipt exists.
+failed at this Prometheus image without a complete receipt; the later
+protected `all` run `40011909180` passed the revised catalog.
 
-The fixed Renovate scope contains seven cataloged update digests. Publisher
+The fixed Renovate scope contains eight cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash
 locks the reviewed fixed-scope choices; a passing fixture does not publish the images or

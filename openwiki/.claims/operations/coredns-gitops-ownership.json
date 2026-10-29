@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50e034ddc707b4c89c636de79328a11f30d25bffc2d07b00a9df9a5d22b2c9ed",
+  "pageVersion": "sha256:ab083d69879a74cda59d34e8a6bdc960304c3598dac1884dbd1c32e9b7984445",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -15,8 +15,8 @@
           "version": "repo-lines-v1:sha256:fceb9056813152b9e3e97050d044327ab1ebfaa6fff3c2a6f28c469747b0adb3:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTdiYTA0ZWNjMDE3NzA4YTZiZmFhY2E1YmVkNTRiYzQxMWYyZDA2NWVlMzQxNDg3NjUzNDMwZGRjNzQ4MGFmMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWE0MTMxMDQ1ZWM3NGIxZjcyOTkyNGE3Y2NhYzQzNzNjNjQwMGMwNGI5MTc5NWUyNzQ1MWJkNDdmOGJhNDAxMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2M4ZDYxMWM4MDVkZWQzNDQ4MjMzYjUyNzlhM2EwNmQzMTczNWQ4M2IwYzQ1NzdhMTFjZGZlYjNhODM0OTU1OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGJkYzg5ZTdlN2UwM2IxOTM1OTZkNmIzOGEyNzAzMTFkMTI4OTA5YjM4MTM1OTRhZDgwOWJmZDFkZDEzMDUwNSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
-          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L25-L28",
+          "version": "repo-lines-v1:sha256:969e172d39403048da901010c99c4f58aae84f729e289496260abfa7f989fb5d:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmM4NzY2M2I0OWNiNmM1Y2ZjYWUyYjk4ODllN2YwNTM5MTRkMzEwN2M1YTM0NTFjNTQwZGQwODIxYmRmNjdjYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTM0Y2NkMDBlNjQ3Y2JmMjYyOWEzMzlkMTU3ZjJmODg2NWQxZDYzYzhmYmEyNWNjNjBiYTI4NThiZGQ1NjQ5NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWQyYTAyMzg4Yzg0YTZkMzhiMzM3MTk4YTk5MjYwMzQzOTUxYzgwNmJlNjVlMTk1Y2E1MThiMGY1Yzg1MWM1YyJ9"
         }
       ]
     },
@@ -33,7 +33,7 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L183-L219",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L187-L223",
           "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
         }
       ]
@@ -43,18 +43,18 @@
       "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns. A read-only October 20 inventory matched the six narrowed policy specs to current live resources, but isolated-canary DNS traffic remains unverified before enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2016-L2048",
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json#L2056-L2088",
           "version": "repo-lines-v1:sha256:099c8280cb98f1e881eace66910fec07219a57789d1fe26697e7d335868387e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzOTdhM2E0YzM5YTczM2NmNTY2YTg2OWVlZmFhNDhjNTY0OTNlYzc5MGUxM2NlNjEwMGE0NTI0ZTg5NWMwZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyOGY2YzlhYWIwNjlkZDE2NWFkZWNkZDI3ZDljYzY3ZjM4MDQyYjY3MDc2YmE1MGNlYjhlMTU0OGU5NTQ0NWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4ZmQzOTYwOGE2MjJmOTg5YmIyYjE5Nzk5MDg1NjczYTg5OThmYjMxZTRjYTA3ZmEyMGI0MzI0ZGQzYWU1ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5MGVlNmNjMjBlMzVhN2RlOTA2MjNhNWFmZDE3OTg2YmJiYjE5ZTg1YTIyNmI2YmQyZDg0OTA1NmU3M2E2OTcifQ"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c4b63d069880fed82d1d27d4504dd415300563d478e6ecf5bf312f21ff3ace82"
+          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-25T01:38:00.583Z"
+    "at": "2026-10-29T05:57:43.668Z"
   }
 }
