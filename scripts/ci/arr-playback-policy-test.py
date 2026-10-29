@@ -132,6 +132,7 @@ class PolicyTests(unittest.TestCase):
                     profile["formatItems"].append({"format": 10, "name": new["name"], "score": 0})
             else:
                 current[kind] = [copy.deepcopy(body) if item["id"] == body["id"] else item for item in current[kind]]
+            return None
         with patch.object(MODULE, "api", side_effect=api):
             MODULE.apply("sonarr", copy.deepcopy(current), POLICY)
             first_writes = len(writes)
