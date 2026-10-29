@@ -2,6 +2,12 @@
 
 # Sonarr
 
+The [QNAP playback policy](../../../../docs/arr-playback-policy.md) owns
+codec, resolution, and size limits for all existing quality profiles. Apply
+its reviewed operator helper after policy changes; the app chart does not
+reconcile those database settings. Existing media and queued downloads are
+retained.
+
 Sonarr uses the shared `media-postgres` PostgreSQL 14 instance for its
 application and log databases. This app follows the Servarr PostgreSQL runbook:
 `sonarr-main` and `sonarr-log` must exist before Sonarr starts, and Sonarr is
