@@ -67,7 +67,7 @@ class HarborPublicationGates(unittest.TestCase):
         script.write_text("#!/bin/sh\n" + body)
         script.chmod(0o700)
 
-    def run_helper(self, mode="publish"):
+    def run_helper(self, mode="publish", *, tailnet=False):
         (self.root / "scripts/config/harbor-images.json").write_text(json.dumps(self.mirror_manifest))
         fleet_manifest_path = self.root / "scripts/config/harbor-fleet-images.json"
         if self.fleet_mirror_manifest is None:
@@ -120,7 +120,7 @@ class HarborPublicationGates(unittest.TestCase):
         else:
             prometheus_path.write_text(json.dumps(self.prometheus_mirror_manifest))
         result = subprocess.run(
-            ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
+            ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode] + (["--tailscale"] if tailnet else []),
             cwd=self.root,
             env=self.env,
             capture_output=True,
@@ -1929,6 +1929,60 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assert_cleaned()
                 (self.root / "published-images.json").unlink(missing_ok=True)
 
+    def tailnet_mocks(self, status="401", failure=None):
+        self.transport_mocks(mirror=True, failure=failure)
+        self.env.pop("OCTELIUM_AUTH_TOKEN", None)
+        self.env.pop("KUBE_API_SERVER_URL", None)
+        self.calls.touch(exist_ok=True)
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main"
+        self.executable("curl", f"""exec python3 - "$@" <<'PYMOCK'
+import json,sys
+from pathlib import Path
+args=sys.argv[1:]
+assert "--insecure" not in args and "--resolve" not in args
+assert args[-1] == "https://harbor.stinkyboi.com/v2/"
+with Path({str(self.calls)!r}).open("a") as f:
+    f.write(json.dumps({{"command":"curl","args":args}})+"\\n")
+print({status!r},end="")
+PYMOCK
+""")
+
+    def test_tailnet_mirror_needs_no_kubernetes_or_host_mutation(self):
+        self.tailnet_mocks()
+        config = self.root / "home/.kube/config"
+        config.parent.mkdir(parents=True)
+        config.write_text("existing inert kubeconfig")
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls_for("kubectl"), [])
+        self.assertEqual(self.calls_for("sudo"), [])
+        self.assertFalse((self.root / "host-route").exists())
+        self.assertEqual(config.read_text(), "existing inert kubeconfig")
+        self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr)
+        self.assertTrue(self.calls_for("skopeo"))
+
+    def test_tailnet_challenge_failure_stops_before_credentials(self):
+        for status in ("200", "403"):
+            with self.subTest(status=status):
+                self.tailnet_mocks(status=status)
+                result = self.run_helper("mirror", tailnet=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.calls_for("aws"), [])
+                self.assertEqual(self.calls_for("kubectl"), [])
+
+    def test_tailnet_authenticated_retry_rechecks_https_without_forward(self):
+        self.tailnet_mocks(failure="mirror-pull-once")
+        result = self.run_helper("mirror", tailnet=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertGreaterEqual(len(self.calls_for("curl")), 2)
+        self.assertEqual(self.calls_for("kubectl"), [])
+
+    def test_tailnet_mode_rejects_another_workflow(self):
+        self.tailnet_mocks()
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/unrelated.yml@refs/heads/main"
+        self.assertNotEqual(self.run_helper("mirror", tailnet=True).returncode, 0)
+        self.assertEqual(self.calls_for("aws"), [])
+
     def test_kubeconfig_failure_cleans_partial_credentials(self):
         self.transport_mocks(failure="kubeconfig")
         result = self.run_helper()
@@ -2102,6 +2156,27 @@ class MirrorProjectQueue(unittest.TestCase):
             private = [job["concurrency"]["group"] for job in jobs.values() if "concurrency" in job]
             self.assertIn("harbor-packages-production", private)
             self.assertNotIn(mirror["concurrency"]["group"], private)
+
+
+class TailnetMirrorWorkflow(unittest.TestCase):
+    def test_production_only_tailnet_wiring(self):
+        path = ROOT / ".github/workflows/harbor-mirror.yml"
+        workflow = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(path)], text=True))
+        self.assertEqual(set(workflow["on"]), {"workflow_dispatch"})
+        job = workflow["jobs"]["mirror"]
+        self.assertEqual(job["environment"]["name"], "homelab-production")
+        steps = {step["name"]: step for step in job["steps"]}
+        join = steps["Join Production Tailnet"]
+        self.assertEqual(join["uses"], "tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c")
+        self.assertEqual(join["with"]["authkey"], "${{ secrets.TAILSCALE_AUTH_KEY }}")
+        self.assertEqual(join["with"]["tags"], "tag:homelab-ci-apply")
+        self.assertEqual(join["with"]["statedir"], "${{ runner.temp }}/tailscale-state")
+        self.assertEqual(join["with"]["args"], "--accept-routes=false --accept-dns=true")
+        self.assertNotIn("OCTELIUM", path.read_text())
+        copy = steps["Copy And Verify Fixed Public Digests"]
+        for line in copy["run"].splitlines():
+            if "bash scripts/ci/harbor-publish.sh mirror" in line:
+                self.assertTrue(line.endswith(" --tailscale"))
 
 
 class MirrorWorkflowStatusPin(unittest.TestCase):

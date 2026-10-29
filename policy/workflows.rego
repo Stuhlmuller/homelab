@@ -106,6 +106,7 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
+	not approved_tailnet_harbor_mirror
 	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q touches live homelab access but does not provide an Octelium clientless access token", [name])
@@ -113,6 +114,7 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
+	not approved_tailnet_harbor_mirror
 	value := workflow_env_value("KUBE_API_SERVER_URL")
 	value != "https://kubernetes-api-ci.stinkyboi.com"
 	name := object.get(input, "name", "<unnamed workflow>")
@@ -1001,43 +1003,43 @@ set -euo pipefail
 umask 077
 case "$IMAGE_SCOPE" in
   all)
-    bash scripts/ci/harbor-publish.sh mirror
+    bash scripts/ci/harbor-publish.sh mirror --tailscale
     ;;
   fleet)
-    bash scripts/ci/harbor-publish.sh mirror-fleet
+    bash scripts/ci/harbor-publish.sh mirror-fleet --tailscale
     ;;
   mastodon)
-    bash scripts/ci/harbor-publish.sh mirror-mastodon
+    bash scripts/ci/harbor-publish.sh mirror-mastodon --tailscale
     ;;
   bazarr)
-    bash scripts/ci/harbor-publish.sh mirror-bazarr
+    bash scripts/ci/harbor-publish.sh mirror-bazarr --tailscale
     ;;
   chainguard)
-    bash scripts/ci/harbor-publish.sh mirror-chainguard
+    bash scripts/ci/harbor-publish.sh mirror-chainguard --tailscale
     ;;
   traefik)
-    bash scripts/ci/harbor-publish.sh mirror-traefik
+    bash scripts/ci/harbor-publish.sh mirror-traefik --tailscale
     ;;
   harbor)
-    bash scripts/ci/harbor-publish.sh mirror-harbor
+    bash scripts/ci/harbor-publish.sh mirror-harbor --tailscale
     ;;
   renovate)
-    bash scripts/ci/harbor-publish.sh mirror-renovate
+    bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
     ;;
   dns)
-    bash scripts/ci/harbor-publish.sh mirror-dns
+    bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
     ;;
   litellm)
-    bash scripts/ci/harbor-publish.sh mirror-litellm
+    bash scripts/ci/harbor-publish.sh mirror-litellm --tailscale
     ;;
   prometheus)
-    bash scripts/ci/harbor-publish.sh mirror-prometheus
+    bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
     ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'cdc426b31d9c58fde8cff05d7a632fa1bdabc18be84f819ca3944581960a7a31  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -1144,4 +1146,34 @@ workflow_step_env_has(key) if {
 workflow_env_value(key) := value if {
 	env := object.get(input, "env", {})
 	value := sprintf("%v", [object.get(env, key, "")])
+}
+
+# This exception admits only the exact dispatch-only, production-only mirror.
+# Any changed workflow must be reviewed with its policy contract again.
+approved_tailnet_harbor_mirror if {
+	input.name == "Mirror Kubernetes Images To Harbor"
+
+	# Normalize YAML 1.1 event-key spelling without accepting mixed aliases.
+	count({"on", "true", true} & object.keys(input)) == 1
+	canonical := object.union(object.remove(input, {"on", "true", true}), {"on": workflow_events})
+	crypto.sha256(json.marshal(canonical)) == "04151b8a1f51dfb08cd22beceee39e93178c878550472ce49649e585e1d3a757"
+}
+
+tailnet_workflow_requested if {
+	some _, job in input.jobs
+	some step in job.steps
+	startswith(object.get(step, "uses", ""), "tailscale/github-action@")
+}
+
+tailnet_workflow_requested if {
+	some _, job in input.jobs
+	some step in job.steps
+	run := object.get(step, "run", "")
+	contains(run, "harbor-publish.sh")
+	contains(run, "--tailscale")
+}
+
+deny contains "Tailnet workflow access requires the exact reviewed production Harbor mirror contract" if {
+	tailnet_workflow_requested
+	not approved_tailnet_harbor_mirror
 }

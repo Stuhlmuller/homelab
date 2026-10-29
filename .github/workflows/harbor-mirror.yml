@@ -113,6 +113,21 @@ jobs:
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
 
+      - name: Require Approved Production Tailnet Enrollment
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        run: test -n "$TAILSCALE_AUTH_KEY"
+
+      - name: Join Production Tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          version: 1.102.3
+          statedir: ${{ runner.temp }}/tailscale-state
+          hostname: harbor-mirror-${{ github.run_id }}-${{ github.run_attempt }}
+          tags: tag:homelab-ci-apply
+          args: --accept-routes=false --accept-dns=true
+
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:
@@ -126,8 +141,6 @@ jobs:
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
           set -euo pipefail
           umask 077
@@ -140,43 +153,43 @@ jobs:
           umask 077
           case "$IMAGE_SCOPE" in
             all)
-              bash scripts/ci/harbor-publish.sh mirror
+              bash scripts/ci/harbor-publish.sh mirror --tailscale
               ;;
             fleet)
-              bash scripts/ci/harbor-publish.sh mirror-fleet
+              bash scripts/ci/harbor-publish.sh mirror-fleet --tailscale
               ;;
             mastodon)
-              bash scripts/ci/harbor-publish.sh mirror-mastodon
+              bash scripts/ci/harbor-publish.sh mirror-mastodon --tailscale
               ;;
             bazarr)
-              bash scripts/ci/harbor-publish.sh mirror-bazarr
+              bash scripts/ci/harbor-publish.sh mirror-bazarr --tailscale
               ;;
             chainguard)
-              bash scripts/ci/harbor-publish.sh mirror-chainguard
+              bash scripts/ci/harbor-publish.sh mirror-chainguard --tailscale
               ;;
             traefik)
-              bash scripts/ci/harbor-publish.sh mirror-traefik
+              bash scripts/ci/harbor-publish.sh mirror-traefik --tailscale
               ;;
             harbor)
-              bash scripts/ci/harbor-publish.sh mirror-harbor
+              bash scripts/ci/harbor-publish.sh mirror-harbor --tailscale
               ;;
             renovate)
-              bash scripts/ci/harbor-publish.sh mirror-renovate
+              bash scripts/ci/harbor-publish.sh mirror-renovate --tailscale
               ;;
             dns)
-              bash scripts/ci/harbor-publish.sh mirror-dns
+              bash scripts/ci/harbor-publish.sh mirror-dns --tailscale
               ;;
             litellm)
-              bash scripts/ci/harbor-publish.sh mirror-litellm
+              bash scripts/ci/harbor-publish.sh mirror-litellm --tailscale
               ;;
             prometheus)
-              bash scripts/ci/harbor-publish.sh mirror-prometheus
+              bash scripts/ci/harbor-publish.sh mirror-prometheus --tailscale
               ;;
             *) exit 2 ;;
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'cdc426b31d9c58fde8cff05d7a632fa1bdabc18be84f819ca3944581960a7a31  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
