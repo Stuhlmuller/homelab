@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:719c45bda1e6c459aad3c7a3b6858992356a22b58039cd4bb708829fe83656ab",
+  "pageVersion": "sha256:5f835333e78c7725a9a311f6edbdcc0ebc36c92318a648f78fa14bbbe472f462",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -789,12 +789,12 @@
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L82",
-          "version": "repo-lines-v1:sha256:5e746b9aa571e76c1673238d511ee226ca37a8f68a076a98d7525e5d3d9a6b4b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjExNjA1YWZiZmE0N2ViMjAxNjY0OWM4MmQ4M2Q1OWQ3ZmQ1NDNiNGFiYjQ5YTJlODg1ZGM5YzIzZjQyMmJjYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODYxYWZhOTZlODNiNzM0ZDc4ZjBiMmZlYWVkNmY4NGU3MThhNGI4MjYzNzAxZjVhZmI4MDkyMzk3YmMwNmU1NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjM4ZTdkOTQyYmM2MWExY2I0NjUzNDYzZWFkOWYyYWFlOWEzZDUyZjcwYjc2YTZlN2RlMWVhNmZjYzEzNzlhNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGRlZmM1YTc3NWFkMzU3ODYzNjc0ZWY3MzNjNTM4NTg3MzY1Nzc5MDVjODEzZjYzZTlhNTcyZTcyNjlkNzFhYyJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L124-L133",
+          "version": "repo-lines-v1:sha256:6acbcfbf2efec5cf71cd66dc098953a72cbcd3f767a1b43805b14b8563561720:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliYjE3NTI3YTViYjYyZjQwNTA3NGQ3ZTkyNDEzZmJiZjg5MDZiYmNlMGM4NDM4MDllMDQxMmE3YWYyZWRiZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MjhlNGUyMTIxMjRhNmE5ZmEyZmIxZjRhYjNhOThjNGNlMDdiZWViNmEzMDBiNDgxYjJlYjE3ODFmNWY0OGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyMDQwZTA5NWE5NGUyYWRhNzRlNDIxZjM3MTg3NTFhOTFhODEwYmZkNjZmNDhmNGU5MzljN2I3NDgwZWI2NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyYzMxNWFiYzg1MjdjNGM5ZDQ1MzMzZGE4ZGY1ODQ4Y2YyY2Q4NWZjZTEzMDMzZGRmN2E0OWNmZGFkZDQxMTMifQ"
         },
         {
-          "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:f0527f3f96861beaf460a297338e8d4af4b452c4ca234b73c4aaaa447a13f6c6"
+          "resource": "repo://scripts/ci/renovate-config-test.js#L116-L129",
+          "version": "repo-lines-v1:sha256:da5ebbb8b98d8e7b8884e7f290a0d0fa15e2f3122552622687e02fd2298653d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNGQ2ZThmZjAyYjA3ZjY1MmFjNzMyMzVkZWJkZmQ5MDc0NjcwYjg5NmJlNTE1MjIzYWU4ZWY1OTM1ZmZhODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYjI3NWU3YzkxMzNiZGNhZWMzMzBjMzljZDUwOGRkYzZkZmVjYjM2MTZlZDkzOWRjNjEyMDUyMDM0YTM2NDcifQ"
         }
       ]
     },
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:d903f3f251151075bdae5c22da61d4a7dde7fbdef2c75c89578da8b4f7c5b778"
+          "version": "repo-file-v1:sha256:e3d18ea5034a2289786573837aaff7f338a62f06a4dd3549af4c28ea4307ffa1"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -1863,10 +1863,28 @@
           "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         }
       ]
+    },
+    {
+      "id": "claim_c6ef7907024d440ebc9a46890f4b2795",
+      "statement": "Renovate's pinned cache-timing fixture verifies the real logger, numeric package statistics and cleanup messages with cleared and stale repository context while excluding cache keys, URLs and package fields from promoted records. The config fixture binds four remaps to the pinned image and full dry-run mode; these local checks do not prove live cache latency or a mutex root cause.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/renovate-cache-stats-log-test.mjs",
+          "version": "repo-file-v1:sha256:e373db2010663ff1cdffdffdb9923c626a239bd312c481004da0c790e9ae3191"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-config-test.js#L158-L184",
+          "version": "repo-lines-v1:sha256:c00b972fff45c1263a5ca1beed744a1a18a709d394c12199875b38f243b4aea5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2M2UzYmYzMDJkOGFjN2MwYmM4NjQ5NDIyMDcyNTljMTBiMmFmZGI1ZWU0ZTBmMzk4OWI5MzM0MmUwMTZkODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNTkzNTUyYjFhMzY3N2YyZTU1N2Q3NTU5ZTlhMjNmYTAzYjJmMTExMjRmOGExOTZhZDYzYTkxZDQxYzI2NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyN2U1ZThmZWJiMTI5NjI3MjQ1NmQ5M2U0MWE0YmQ5NmNkNzUyY2NmNDU4MTY4NDQ2NmJlNjI3Mjc5MjU2ZTAifQ"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/quickstart.md#L29-L42",
+          "version": "repo-lines-v1:sha256:c8081f52898947be8416246ea179333a75786f92445b13176f211d8a925961be:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlYmU0YTVkNmM0Yjc1Yjc0NmE5Y2ViMGM1OTU5YzIxN2MxNDI1ZTk2ZjdjOWM0M2I4MzlmYzZiOTRlY2U3OTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYWY4NmYwNTRjZGY2MzJjZTZmNGRmMjlkMDU2YTk2NTlkZjhkZDg5Njk3Yzc3NmRjNmUyZDYwZGZkZGU1OTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmNDA5YWM0MjVlMTIxMzA0MDhhYTUwMWMxOWVlNGZkYjU2YjM5ZDk3ZDBiZWMzYjA4NGE5MDJjMDlkZTMxYzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVmNTQ2MTdhODFjNGQ5OTBkZWUwOTRiZDVjMWVlYjJmNTBmZGQxMTFjZTZlNDgyZWZlZDk5MDk2MzNjMGE2OTkifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T22:24:46.227Z"
+    "at": "2026-10-29T22:46:35.009Z"
   }
 }

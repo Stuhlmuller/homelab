@@ -272,6 +272,8 @@ sources:
     resource: repo://scripts/ci/renovate-alert-check.py
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
+  - id: openwiki-source-039f74d4187431e0344dd883
+    resource: repo://scripts/ci/renovate-cache-stats-log-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -356,14 +358,16 @@ sources:
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-7bc39840de078c7eb3baf2e5
+    resource: repo://specs/004-run-renovate-in-cluster/quickstart.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-29T05:57:43.668Z" }
+generated: { by: "codex", at: "2026-10-29T22:46:35.009Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T22:24:46.227Z
+    at: 2026-10-29T22:46:35.009Z
 ---
 
 # Validation Gates
@@ -2471,6 +2475,18 @@ prove general cache freshness, eligible Harbor discovery, full owner/App
 policy parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
+The temporary cache-timing diagnostic has a separate pinned
+[`renovate-cache-stats-log-test.mjs`](../../scripts/ci/renovate-cache-stats-log-test.mjs)
+fixture. Run it with the installed Renovate 44.167.4 package path using the
+[quickstart command](../../specs/004-run-renovate-in-cluster/quickstart.md).
+It verifies the actual logger, package statistics, and cleanup messages with
+cleared and stale repository context, while rejecting cache-key, URL, and
+package fields in promoted records. The config fixture binds the four remaps
+to the pinned image and full dry-run mode. Local success proves diagnostic
+behavior, not live cache latency or the mutex failure's cause. Publish only
+numeric aggregates from restricted logs; remove the remaps after diagnosis
+before enabling writes.
+
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
