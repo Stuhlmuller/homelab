@@ -128,8 +128,8 @@ with tempfile.TemporaryDirectory() as directory:
     check.ROOT = Path(directory)
     check.CATALOG = check.ROOT / "mastodon-full.json"
     sources = [prefix + digest for prefix in (
-        "ghcr.io/mastodon/mastodon:v4.7.3@",
-        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "ghcr.io/mastodon/mastodon:v4.7.4@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.4@",
         "docker.io/library/postgres:18-bookworm@",
         "docker.io/library/redis:7.4.11-alpine@",
     )]
