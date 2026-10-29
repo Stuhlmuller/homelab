@@ -23,6 +23,13 @@ bundle all three identities; only the production record is selected or used.
 No private values are printed. Do not run the three-identity publisher for this
 bounded recovery.
 
+The production helper canonicalizes public authority names in memory: Tailscale
+JSON uses `nlpub:<hex>`, while its CLI uses `tlpub:<hex>` for the same key bytes
+([pinned implementation](https://github.com/tailscale/tailscale/blob/v1.102.3/types/key/nl.go)).
+Duplicate aliases and malformed keys fail closed. This never changes cache files
+or relaxes the provider fingerprint, wrapped key, generation or authority metadata
+checks. Equal generation alone does not make a stale signed cache usable.
+
 After source review/merge and approval to read the existing private production
 key/cache, run from clean signed current `main`:
 

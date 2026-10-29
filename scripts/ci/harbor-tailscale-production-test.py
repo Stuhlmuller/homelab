@@ -169,6 +169,89 @@ class ProductionOnly(unittest.TestCase):
         self.assertEqual(self.commands, [])
 
 
+    def nlpub_read(self, args, operation):
+        result = self.read(args, operation)
+        if args[:3] == ['tailscale', 'lock', 'status']:
+            result['PublicKey'] = result['PublicKey'].replace('tlpub:', 'nlpub:')
+            for item in result['TrustedKeys']:
+                item['Key'] = item['Key'].replace('tlpub:', 'nlpub:')
+        return result
+
+    def test_nlpub_status_matches_cli_cache_without_writes(self):
+        before = self.cache.read_bytes()
+        with patch.object(M.G, 'read_json', self.nlpub_read):
+            status, out, _ = self.run_main()
+        self.assertEqual(status, 0)
+        self.assertEqual(json.loads(out)['authority'], self.authority)
+        self.assertEqual(self.commands, [])
+        self.assertEqual(self.cache.read_bytes(), before)
+
+    def test_nlpub_cache_uses_canonical_approval_without_cache_changes(self):
+        self.record['authority'] = self.authority.replace('tlpub:', 'nlpub:')
+        self.save_cache([self.record])
+        before = self.cache.read_bytes()
+        with patch.object(M.G, 'read_json', self.nlpub_read):
+            self.assertEqual(self.run_main(True)[0], 0)
+        self.assertEqual(len(self.commands), 1)
+        self.assertEqual(self.cache.read_bytes(), before)
+
+    def test_legacy_public_meta_status_remains_supported(self):
+        def read(args, operation):
+            result = self.read(args, operation)
+            if args[:3] == ['tailscale', 'lock', 'status']:
+                result['TrustedKeys'] = [{'Public': x['Key'], 'Meta': x['Metadata']}
+                                         for x in result['TrustedKeys']]
+            return result
+        with patch.object(M.G, 'read_json', read):
+            self.assertEqual(self.run_main()[0], 0)
+        self.assertEqual(self.commands, [])
+
+    def test_duplicate_key_aliases_are_rejected(self):
+        def read(args, operation):
+            result = self.nlpub_read(args, operation)
+            if args[:3] == ['tailscale', 'lock', 'status']:
+                duplicate = dict(result['TrustedKeys'][-1])
+                duplicate['Key'] = self.authority
+                result['TrustedKeys'].append(duplicate)
+            return result
+        with patch.object(M.G, 'read_json', read):
+            self.assertEqual(self.run_main(True)[0], 1)
+        self.assertEqual(self.commands, [])
+
+    def test_invalid_authority_types_prefixes_lengths_and_hex_stop(self):
+        for authority in [None, 42, 'nodekey:' + 'b' * 64, 'nlpub:' + 'b' * 63,
+                          'nlpub:' + 'g' * 64, 'nlpub:' + 'b' * 64 + 'suffix']:
+            with self.subTest(authority=authority):
+                self.record['authority'] = authority
+                self.save_cache([self.record])
+                with patch.object(M.G, 'read_json', self.nlpub_read):
+                    self.assertEqual(self.run_main(True)[0], 1)
+        self.assertEqual(self.commands, [])
+
+    def test_matching_generation_with_different_provider_key_stops(self):
+        self.entry['key'] = M.SHARED.AUTH_PREFIX + 'newid-inertDifferentPrivateSentinel'
+        with patch.object(M.G, 'read_json', self.nlpub_read):
+            self.assertEqual(self.run_main(True)[0], 1)
+        self.assertEqual(self.commands, [])
+
+    def test_same_fingerprint_with_wrong_wrapped_key_stops(self):
+        self.record['wrapped'] = self.wrapped.replace('testid-', 'differentid-', 1)
+        self.save_cache([self.record])
+        with patch.object(M.G, 'read_json', self.nlpub_read):
+            self.assertEqual(self.run_main(True)[0], 1)
+        self.assertEqual(self.commands, [])
+
+    def test_normalized_authority_still_requires_authkey_metadata(self):
+        def read(args, operation):
+            result = self.nlpub_read(args, operation)
+            if args[:3] == ['tailscale', 'lock', 'status']:
+                result['TrustedKeys'][-1]['Metadata']['authkey_stableid'] = 'differentid'
+            return result
+        with patch.object(M.G, 'read_json', read):
+            self.assertEqual(self.run_main(True)[0], 1)
+        self.assertEqual(self.commands, [])
+
+
 class WorkflowPolicy(unittest.TestCase):
     def test_only_reviewed_production_workflow_passes(self):
         root = Path(__file__).resolve().parents[2]

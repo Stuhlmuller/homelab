@@ -44,17 +44,27 @@ def production_key():
     return entry
 
 
+def canonical_authority(value):
+    # Pinned Tailscale NLPublic.UnmarshalText accepts both JSON and CLI prefixes.
+    if not isinstance(value, str) or not re.fullmatch(r"(?:nlpub|tlpub):[0-9a-f]{64}", value):
+        raise G.Failure("Tailnet Lock public key has an invalid format")
+    return "tlpub:" + value.split(":", 1)[1]
+
+
 def trusted_authorities():
     status = G.read_json(["tailscale", "status", "--json"], "existing local tailnet")
     lock = G.read_json(["tailscale", "lock", "status", "--json"], "existing Tailnet Lock")
     try:
-        trusted = {item.get("Public", item.get("Key")): item.get("Meta", item.get("Metadata"))
-                   for item in lock["TrustedKeys"]}
+        trusted = {}
+        for item in lock["TrustedKeys"]:
+            public = canonical_authority(item.get("Public", item.get("Key")))
+            if public in trusted:
+                raise ValueError
+            trusted[public] = item.get("Meta", item.get("Metadata"))
         if (status["BackendState"] != "Running" or status["Self"]["Online"] is not True
                 or status["CurrentTailnet"]["MagicDNSSuffix"] != "tail67beb.ts.net"
                 or lock["Enabled"] is not True or lock["NodeKeySigned"] is not True
-                or lock["PublicKey"] not in trusted
-                or not all(isinstance(k, str) and re.fullmatch(r"tlpub:[0-9a-f]{64}", k) for k in trusted)):
+                or canonical_authority(lock["PublicKey"]) not in trusted):
             raise ValueError
     except (KeyError, TypeError, ValueError):
         raise G.Failure("Existing online homelab profile must be signed with Tailnet Lock enabled") from None
@@ -77,11 +87,12 @@ def cached_production(entry, trusted):
         raise G.Failure("Exactly one previously signed production key is required; signing is not supported")
     saved = matches[0]
     SHARED.validate_wrapped_key(saved.get("wrapped"))
+    authority = canonical_authority(saved.get("authority"))
     if (saved.get("generation") != entry["generation"]
             or not saved["wrapped"].startswith(entry["key"] + "--TL")
-            or not SHARED.authority_matches(saved["wrapped"], saved.get("authority"), trusted)):
+            or not SHARED.authority_matches(saved["wrapped"], authority, trusted)):
         raise G.Failure("Cached production key does not match current provider/trust metadata")
-    return saved
+    return dict(saved, authority=authority)
 
 
 def destination_absent():
