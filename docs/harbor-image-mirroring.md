@@ -706,6 +706,18 @@ against the full reviewed catalog. Runtime version changes must update the
 publication scope in the prerequisite change before the consumer reaches main.
 Existing shared platform dependencies keep their own publication ownership.
 
+### Mastodon 4.7.4 security prerequisite
+
+The full catalog additionally retains official 4.7.4 web and streaming index
+pins before any runtime change. The owner authorized a one-time seven-day
+image-age exception for this security release on October 29, 2026.
+The fixed Mastodon scope remains bound to the running 4.7.3 overlay, so publish
+these staged pins through the existing `image_scope=all` lane at exact reviewed
+`main`. Require complete destination pulls and fresh child scan review before
+merging the consuming patch. Catalog entries alone do not prove availability
+or authorize deployment; require fresh database backup and recovery evidence.
+Other image-age policy, routes and persistent data remain unchanged.
+
 ## Publication queue boundaries
 
 The public mirror workflow uses `harbor-mirror-production` with cancellation
