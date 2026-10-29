@@ -97,6 +97,7 @@ jobs:
       TERRAGRUNT_EXISTING_ARGOCD_ONLY: ${{ inputs.existing_argocd_only }}
       TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
       TERRAGRUNT_APPLICATION_BACKUP_STORAGE: ${{ inputs.application_backup_storage }}
+      TS_OIDC_CLIENT_ID: ${{ vars.TS_OIDC_CLIENT_ID || '' }}
     steps:
       - name: Verify Current Main Commit
         env:
@@ -185,6 +186,14 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
+      - name: Get Tailscale OIDC Token
+        if: env.TS_OIDC_CLIENT_ID != ''
+        id: tailscale_oidc
+        run: |
+          TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_RUNTIME_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api.tailscale.com/${TS_OIDC_CLIENT_ID}")
+          echo "TS_IDENTITY_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          echo "::mask::${TOKEN}"
+
       - name: Run Live Terragrunt Apply
         env:
           ARM_CLIENT_ID: ${{ secrets.AZUREAD_CLIENT_ID }}
@@ -194,6 +203,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          TS_IDENTITY_TOKEN: ${{ env.TS_IDENTITY_TOKEN }}
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT

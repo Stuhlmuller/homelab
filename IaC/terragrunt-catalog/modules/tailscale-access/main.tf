@@ -48,18 +48,21 @@ resource "tailscale_dns_configuration" "homelab" {
   }
 }
 
-resource "tailscale_tailnet_settings" "homelab" {
-  acls_externally_managed_on                  = false
-  devices_approval_on                         = false
-  devices_auto_updates_on                     = true
-  devices_key_duration_days                   = 180
-  https_enabled                               = true
-  network_flow_logging_on                     = false
-  posture_identity_collection_on              = false
-  regional_routing_on                         = false
-  users_approval_on                           = true
-  users_role_allowed_to_join_external_tailnet = "none"
-}
+# Temporarily disabled: networkFlowLoggingOn feature not available
+# on this Tailscale billing plan (400). Keep this resource commented out.
+#
+# resource "tailscale_tailnet_settings" "homelab" {
+#   acls_externally_managed_on                  = false
+#   devices_approval_on                         = false
+#   devices_auto_updates_on                     = true
+#   devices_key_duration_days                   = 180
+#   https_enabled                               = true
+#   network_flow_logging_on                     = false
+#   posture_identity_collection_on              = false
+#   regional_routing_on                         = false
+#   users_approval_on                           = true
+#   users_role_allowed_to_join_external_tailnet = "none"
+# }
 
 resource "tailscale_contacts" "homelab" {
   account {
@@ -73,8 +76,6 @@ resource "tailscale_contacts" "homelab" {
   }
 }
 
-# Retained unused during the Tailnet Lock transition. Remove in a separately
-# reviewed retirement after signed-key CI acceptance; do not bypass prevent_destroy.
 resource "tailscale_federated_identity" "github" {
   for_each = local.identities
 
@@ -110,4 +111,38 @@ resource "tailscale_tailnet_key" "github" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+# Import existing federated identities and tailnet keys created manually in
+# the Tailscale admin console. Resource IDs confirmed via Tailscale API.
+#
+# Federated identity IDs = OAuth client IDs you provided:
+#   plan:    TaabK11tQP11CNTRL-kGw1dv6Gx421CNTRL
+#   apply:   TaabK11tQP11CNTRL-k4sXJLhf2611CNTRL
+#   cordium: TaabK11tQP11CNTRL-kY8su7GxL721CNTRL
+#
+# Tailnet key IDs confirmed via /api/v2/tailnet/-/keys:
+#   cordium: kFsMJTbc6p11CNTRL
+#
+# Plan and apply tailnet keys were not found in the Tailscale API — they do
+# not exist yet and will be created by Terraform rather than imported.
+# Remove those import blocks before applying.
+import {
+  to = tailscale_federated_identity.github["plan"]
+  id = "TaabK11tQP11CNTRL-kGw1dv6Gx421CNTRL"
+}
+
+import {
+  to = tailscale_federated_identity.github["apply"]
+  id = "TaabK11tQP11CNTRL-k4sXJLhf2611CNTRL"
+}
+
+import {
+  to = tailscale_federated_identity.github["cordium"]
+  id = "TaabK11tQP11CNTRL-kY8su7GxL721CNTRL"
+}
+
+import {
+  to = tailscale_tailnet_key.github["cordium"]
+  id = "kFsMJTbc6p11CNTRL"
 }
