@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:44f13f2114af95840b1ce7ade175f2a2301e96c1c7f2286d5e0801ded9ee773e",
+  "pageVersion": "sha256:719c45bda1e6c459aad3c7a3b6858992356a22b58039cd4bb708829fe83656ab",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -596,7 +596,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -852,7 +852,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -1860,13 +1860,13 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T05:57:43.668Z"
+    "at": "2026-10-29T22:24:46.227Z"
   }
 }

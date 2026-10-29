@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8c2c9e449dcf6e1bf92a6ff171b30e9c3c2194b2cf68bb25ba2ff0fc69980d40",
+  "pageVersion": "sha256:f79290611bac3ffb8330341ded063dd5511506b46f0c69209204fc127f84b1c9",
   "claims": [
     {
       "id": "claim_81d091bfd2d74d578b85cb519e8ce854",
@@ -67,10 +67,24 @@
           "version": "repo-file-v1:sha256:b6e86b4515a5ea78760aa0265a77014ef5607f1dd90accb1ab619575f794da12"
         }
       ]
+    },
+    {
+      "id": "claim_55ad8e9a574d4d6d86861056c1b36e92",
+      "statement": "Sonarr requests 192Mi and limits the app container to 512Mi; its import memory runbook requires one validated copy import after GitOps rollout, 30-second memory/restart/node-pressure checks through completion plus two minutes within a ten-minute bound, library/source/Plex verification before resuming repairs, and stopping on another OOM, restart or node pressure event.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/sonarr/README.md#L32-L66",
+          "version": "repo-lines-v1:sha256:b8ecb86dd5e0feb8307dd0edd3401ba7f18a670c69ecd90e3b9291648129b81c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlN2FmNmQyMzUxODA0ZGI3MWU0NWY5ODJjNzc3ZTMwMDQ3NDQxNmRiMmE1ZjBlZGI0YzBhYzg0Yzk4YzI5NDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlNTAxMThiZjI5NThkN2NhZjM0MTAxYzBlNjVmMDVlMTc3MTBlYjY0ZmQ2MjhmMTAzMjkyN2UwM2VlZGRiN2MiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4YzZlMzFjZjMyZmVkYjJmMGVjMmNlYzBkODNlYWQwYjU1NzhhMDQ2ZjBjZmVmMjY3MmMxZmNjOTBkY2I4NDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5YjlhMjJkNTE4N2MzZjk2MDBhNjVmMWQ4MDE0NGJkZjc0YzRjMjY1MjY2OWI5Y2E0MTY0NmE4ZGUyOWViMzcifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/sonarr/values.yaml#L219-L225",
+          "version": "repo-lines-v1:sha256:0bcb8d114827608969b6f52dfa9cacee058d0f05342760c91cd3f33cbccac20d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTMwZWU2ZjA0MWFkOGI2YjgzYTI0ZjVlZGJhYjEwZDFkOTNlNTBjMWFiYjlkZTc3NmIwMmQzOTgzYTIwM2RkYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc5ZjQ5MzA1YzVkMTcyZjc1MzMyMjMwOTZkMWJkMjQwZTFmYWEzZTMzMjI5M2ZiYTVhZjY0NTE5ZTI2Y2FmOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWE3NTU1MTgwMWVmMWU3MjRmNTYxMzQ4NjY2Mzk4MTIzZGI1OGExZWYzNDVmOTgxY2IyY2ZiMTNiZjRmMTY0NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzA1NjE4OGEzYTBiZWZkNGFiZThmNTc5NjlhMTVmNjg4MjE3YmUxMzkxMWMzNzE5OTM3NDU2YzdmOTQwYzIzNSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T05:33:11.026Z"
+    "at": "2026-10-29T22:24:46.227Z"
   }
 }
