@@ -376,13 +376,7 @@
       "source": "ghcr.io/linuxserver/bazarr@sha256:946dc8c5bb5331418eac60050cf40a63cb8f66ac039841dda493870e3559799c"
     },
     {
-      "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b"
-    },
-    {
       "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.4@sha256:b896be8bc93db513695c3ebac8442c09453065ab1be06dfc49fe3c16a91c825c"
-    },
-    {
-      "source": "ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca"
     },
     {
       "source": "ghcr.io/mastodon/mastodon:v4.7.4@sha256:8cbc9c9ffa595c4ced3854b63b8f173251be710f9bbf2d369926023c19666311"
