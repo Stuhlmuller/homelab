@@ -45,6 +45,28 @@ local `config.xml`, and writes 14-day tarball archives back to
 `sonarr-config/local-backups` on NFS. Keep this claim as the archive and
 rollback target; the backup CronJob is its only steady-state Sonarr consumer.
 
+## Import Memory
+
+The app requests `192Mi` and has a `512Mi` memory limit. On October 29, 2026,
+the former `256Mi` limit caused two OOM kills during media replacement work.
+One restart interrupted an import and left a partial destination; the complete
+download survived and Sonarr recovered the import. The larger limit uses the
+existing node's measured headroom while preserving the current request.
+
+After the reviewed GitOps rollout, confirm the live app limit and record the
+new Pod's restart count. Import one completed, stream-validated episode in copy
+mode after checking the [playback policy](../../../../docs/arr-playback-policy.md).
+Observe container memory usage, peak, OOM events, restart count, and node
+MemoryPressure every 30 seconds through completion plus two minutes, bounded
+to ten minutes. Verify the complete library file, preserved download, and Plex
+catalog before resuming replacements. Stop new imports if an OOM, restart, or
+node memory-pressure condition recurs; a successful single import does not
+establish capacity for every workload.
+
+Revert the limit through a reviewed GitOps change if needed. Keep replacement
+imports stopped while diagnosing a recurrence, and retain complete downloads
+for recovery rather than deleting source data or retrying a partial copy blindly.
+
 ## Authentication
 
 Sonarr runs behind Octelium and keeps local-address access unauthenticated for
