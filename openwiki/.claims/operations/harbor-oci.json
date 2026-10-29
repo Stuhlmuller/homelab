@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a2e49241f0edd390e6608800ef78df1c606426c899212ea409bc6f2dafa6a195",
+  "pageVersion": "sha256:bbffe60a69977d041e115647a96bb7226390c6aa8e389c132558c4541c26b324",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -138,11 +138,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         }
       ]
     },
@@ -370,7 +370,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         }
       ]
     },
@@ -454,7 +454,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -500,11 +500,11 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         }
       ]
     },
@@ -518,11 +518,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -554,7 +554,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -652,7 +652,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/harbor-dns-images.json",
@@ -714,11 +714,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:2c5849a0690228ac16726f0b5d5442a0452fd183bcd52c4efabca0415e93bf7e"
+          "version": "repo-file-v1:sha256:f7053c0794ca093abcf046395a88de2b654177b92dd841fbadf73f9711e610fa"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -740,7 +740,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -832,7 +832,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1c35d61b676d033b351d817c6fd2f784dda34970720e774b3eae010287b50ff5"
+          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -985,6 +985,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T05:33:11.026Z"
+    "at": "2026-10-29T22:24:46.227Z"
   }
 }

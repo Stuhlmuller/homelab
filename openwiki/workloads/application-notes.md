@@ -10,16 +10,20 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-b26876230e53fd853d7bcbea
     resource: repo://clusters/homelab/apps/openclaw/values.yaml
+  - id: openwiki-source-292630744884d406c86589ac
+    resource: repo://clusters/homelab/apps/sonarr/README.md
+  - id: openwiki-source-8412fea3ae511bb478ea11c7
+    resource: repo://clusters/homelab/apps/sonarr/values.yaml
   - id: openwiki-source-4ca0ce872f200b18ae467a0e
     resource: repo://docs/arr-playback-policy.md
   - id: openwiki-source-f46a174a7f12aaf8ef457c59
     resource: repo://scripts/arr-playback-policy.py
   - id: openwiki-source-10d0925efe2a75750e1903c5
     resource: repo://scripts/config/arr-playback-policy.json
-generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
+generated: { by: "codex", at: "2026-10-29T22:24:46.227Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T05:33:11.026Z
+    at: 2026-10-29T22:24:46.227Z
 ---
 
 # Application Notes
@@ -326,6 +330,15 @@ linuxserver default config init script stays disabled. The validated one-time
 NFS migration resources are removed. Keep the legacy NFS claim as the nightly
 archive and rollback target; only the backup CronJob mounts it.
 
+Sonarr requests `192Mi` and permits `512Mi` of memory. Two October 29 OOM
+restarts at the former `256Mi` limit interrupted compatibility repairs; one
+left a partial copy that native recovery completed from the preserved download.
+The [import memory runbook](../../clusters/homelab/apps/sonarr/README.md#import-memory)
+requires a single validated copy import after GitOps rollout, with memory,
+restart and node-pressure checks every 30 seconds through completion plus two
+minutes, bounded at ten minutes. Verify the replacement, retained source and
+Plex catalog before resuming serialized repairs. Stop on another OOM, restart
+or node memory-pressure event; keep source downloads for recovery.
 
 ## QNAP media playback policy
 
