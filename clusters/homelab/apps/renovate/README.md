@@ -277,18 +277,16 @@ aggregate cache-hit results and distinct Pod UIDs. Future cache checks need
 scoped TRACE or a mock upstream counter. Keep the hourly schedule and
 Renovate's normal cache freshness rules.
 
-For the cache timing investigation, `config.js` temporarily raises four exact
-Renovate 44.167.4 DEBUG messages to INFO: per-repository package-cache get/set
-statistics, then global file-cache cleanup start, GC summary, and end. The
-cleanup messages contain only fixed text and numeric counts, bytes, or durations.
-Raw INFO records can include repository context, including a stale repository
-tag if a scan throws. Keep raw Pod logs restricted; publish only numeric
-aggregates. If the cleanup start is absent after the last repository, the delay
-is before file-cache cleanup. If it appears without the GC summary, the sweep
-or verification has not finished; the GC summary reports verification runtime.
-These markers do not identify a mutex holder or time the upstream Docker
-request. Remove all four remaps through a reviewed PR after the diagnostic
-receipt, before enabling writes.
+The runtime config uses Renovate's default log levels. The
+[reliability receipt](../../../../specs/004-run-renovate-in-cluster/reliability-receipt.md)
+records the cache timing investigation, which temporarily promoted four exact
+Renovate 44.167.4 DEBUG messages: package-cache get/set statistics, cleanup
+start, GC summary, and cleanup end. The standalone
+`renovate-cache-stats-log-test.mjs` fixture retains its own remaps to reproduce
+that diagnostic behavior. These markers do not identify a mutex holder or
+time the upstream Docker request. Raw records can retain private repository
+context, even on cleanup messages; keep Pod logs restricted and publish only
+numeric aggregates.
 
 On 2026-10-19, the 19:00 and 20:00 scheduled Pods had distinct UIDs and each
 hit that exact cached key. After the protected v0.0.2 release at 20:20 UTC, the
