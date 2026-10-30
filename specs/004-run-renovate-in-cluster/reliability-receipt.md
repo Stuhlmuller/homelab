@@ -1,6 +1,6 @@
 # Renovate runtime reliability investigation
 
-Status: local-cache candidate prepared; deployment and acceptance pending.
+Status: two scheduled local-cache runs passed; this change retires timing remaps.
 This record covers the hourly full dry runs. It does not close writer cutover,
 cache-capacity recovery, policy parity, or seven-day migration acceptance.
 
@@ -87,7 +87,7 @@ Renovate-only measurements. An [upstream comparison through 44.198.0](https://gi
 file backend, mutex wrapper, mutex implementation, and backend selection
 unchanged; no targeted version fix was identified.
 
-## October 30 instrumented run
+## October 30 instrumented NFS baseline
 
 The 00:00 scheduled Pod (`68d86a7a-caac-4c30-87f2-12de48187468`) used the
 reviewed diagnostic config and unchanged image on `zimaboard-0`. All nine
@@ -121,12 +121,21 @@ The Pod reached `Succeeded`, with nine zero repository exits, 122 dry-run
 markers, no `ERROR`/`FATAL` or mutex markers, and the same two warning blocks
 described above. This remains an NFS baseline, not local-cache acceptance.
 
-## Selected candidate and acceptance
+The 01:00 Pod (`51312b53-82fd-4126-9cac-d3dcfb6ee859`) also retained the
+NFS configuration. It completed all nine repositories and exited zero, with
+122 dry-run markers, no error or mutex markers, and the same two warning
+blocks. Its first repository took 834.818 seconds. Cleanup took 415.454
+seconds, including 406.081 seconds of content verification (97.7%). The
+expiry sweep deleted 47 of 1,136 entries; verification retained 1,070 contents
+totaling 6,173,986 bytes and removed 562 totaling 3,980,026 bytes. This is a
+second instrumented baseline, not evidence of the deployed local-cache change.
 
-Move the complete rebuildable cache to `renovate-cache-local`, a retained
-static claim on `acer`, keeping the existing NFS claim declared. This removes
-the shared NFS path from the measured backend operations and cleanup without
-changing Renovate's file-cache semantics or introducing Redis persistence.
+## Delivered change and acceptance
+
+The complete rebuildable cache now targets `renovate-cache-local`, a retained
+static claim on `acer`, keeping the existing NFS claim declared. New Pods
+use local storage for backend operations and cleanup, preserving Renovate's
+file-cache semantics without introducing Redis persistence.
 The image, resource limits, schedule, full dry-run mode, 2,400-second deadline,
 repository/private caching, and default TTLs remain unchanged. The initializer
 changes only mount-root ownership/mode and accepts populated caches.
@@ -136,11 +145,110 @@ not satisfy dedicated capacity or recovery acceptance. Preserve the staged NAS
 resources and all migration gates. The runtime evidence supports testing this
 storage change, not a claim that NFS alone caused the earlier mutex failures.
 
-Before acceptance, verify both Argo Applications, exact PV/PVC binding, the
+Acceptance checks covered both Argo Applications, exact PV/PVC binding, the
 initializer/main security contexts, and repeated distinct scheduled Pods
 completing all nine repositories and cleanup without errors or mutex markers
-within the unchanged deadline. Compare the numeric cache/cleanup timings.
+within the unchanged deadline. Numeric cache/cleanup timings are compared below.
 Faster completion and persistent binding do not prove same-key datasource
 reuse or normal refresh; those migration acceptance claims remain separate.
 Keep raw logs restricted. Remove temporary timing remaps through reviewed
 GitOps after the comparison receipt and before enabling writes.
+
+[PR #1755](https://github.com/Stuhlmuller/homelab/pull/1755) merged at
+2026-10-30 01:11:30 UTC as signed commit
+`31f679bbde838cf8fc669bd690f35f8177d0811f`. All seven required checks passed
+on reviewed head `ceb88c5a4c4e4c8889d33594ed0a27837245d85c`; GitHub verified
+both introduced commits and the squash signature. The merge has sole parent
+`039ec31c8912169a591054f60bb2f7de337834f7`, matches the reviewed tree exactly,
+and is reachable from `main`. The optional Harbor runtime audit still failed
+its unchanged remediation gate; this was not treated as a passing check.
+
+Platform storage's sync operation finished at 01:14:52 and Renovate's at
+01:17:09. Both Applications reported Synced/Healthy with successful operations
+at that exact merge. A read-only snapshot passed 25 delivery checks: pinned
+images and both ConfigMap hashes, CronJob identity/schedule/deadline/resources,
+initializer and main security/mounts, registry alias, explicit retained storage
+binding, and ExternalSecret readiness. No Secret values were read.
+
+| Resource | Verified UID |
+| --- | --- |
+| Existing CronJob | `35493897-3245-458f-b690-bc58fbfaab9c` |
+| New local PV | `a2ab06ec-6912-48df-94fb-0eebc56cd89f` |
+| New local PVC | `b9394d61-dfed-4c29-a56c-345b99c786cc` |
+| Retained NFS PVC | `6e21cd25-89e9-4d1e-aee8-ef1f2519df8a` |
+
+The old claim's UID matched a pre-rollout snapshot and remained Bound. The
+already-running 01:00 Job retained its NFS claim; it cannot count as local-cache
+acceptance.
+
+## Scheduled local-cache verification
+
+The 02:00 Pod (`a49bb062-e5cc-445a-abec-cf600d051a2f`) ran on `acer`, using
+the local PV/PVC identities above and both reviewed ConfigMap hashes. Its
+initializer exited zero at 02:00:01; the main container remained UID 12021 and
+ran from 02:00:02 to 02:05:06 with no restart. All nine repositories finished
+with zero repository exits; the process exited zero and the Pod succeeded.
+The Job reported `Complete=True` at 02:05:08, well within its deadline.
+It recorded 122 dry-run markers, no error or mutex markers, and the same two
+warning blocks.
+
+The distinct 03:00 Pod (`a875b996-4a81-4510-948a-4d8ec16c96ae`) used the
+same local PV/PVC, node, image, and ConfigMap hashes. Its initializer exited
+zero at 03:00:02 against the populated cache. The main container ran from
+03:00:03 to 03:04:30, with zero exit code and no restart; its Job reported
+`Complete=True` at 03:04:32. All nine repositories again exited zero, with
+122 dry-run markers, no error or mutex markers, and the same warning blocks.
+The two scheduled runs did not overlap.
+
+Independent numeric audits matched all nine repositories in each run's logged
+post-filter discovery list to exactly one ordered start and zero-exit finish,
+with no missing, unexpected, duplicate, or untagged events. This validates
+each run's discovered list, not the broader GitHub inventory.
+
+| October 30 run | Cache | Container lifetime | First repository | Cleanup |
+| --- | --- | ---: | ---: | ---: |
+| 00:00 | NFS | 1,679 s | 866.667 s | 518.455 s |
+| 01:00 | NFS | 1,566 s | 834.818 s | 415.454 s |
+| 02:00 | Local | 304 s | 172.641 s | 13.299 s |
+| 03:00 | Local | 267 s | 166.208 s | 13.720 s |
+
+The first local repository recorded 810 cache gets with a 3 ms median and
+3,893 ms maximum, and 709 sets with a 4 ms median and 4,672 ms maximum.
+Cleanup checked 906 index entries without expiring any; content verification
+took 13.200 seconds and retained 882 contents totaling 6,637,354 bytes, with
+none removed. Cleanup finished before the successful process exit.
+
+The repeat's first repository recorded 741 cache gets with a 20 ms median
+and 5,936 ms maximum, and 507 sets with a 30 ms median and 6,873 ms maximum.
+Cleanup checked 906 index entries without expiring any. Verification took
+13.628 seconds, retained 878 contents totaling 6,638,955 bytes, and removed
+607 totaling 5,214,606 bytes. The shorter cleanup therefore also held when
+the populated cache required removal of orphaned contents.
+
+The 02:00 full-run metrics covered 296.465 seconds with 21 samples and no resets:
+mean CPU 0.752 cores, throttled periods 4.12%, I/O PSI full 0.116%, and peak
+sampled working set 1,645 MiB. Node status snapshots and ten retained condition
+samples showed `acer` Ready without memory, disk, or PID pressure. Finalization
+contained only one metric sample, so phase CPU/throttling/PSI rates are
+unavailable; they must not be reported as zero.
+
+The 03:00 full-run metrics covered 258.898 seconds with 18 samples and no
+counter resets: mean CPU 0.819 cores, throttled periods 4.28%, I/O PSI full
+0.161%, and peak sampled working set 1,641 MiB. Node snapshots and nine
+retained condition samples again showed Ready without pressure. Its short
+finalization also contained only one sample, leaving phase rates unavailable.
+
+Storage and node placement changed together, and cache contents and operation
+counts differ across runs. This is an operational comparison, not an isolated
+NFS benchmark. Both local runs substantially reduced the measured cache
+delays and finished with more than 34 minutes of deadline headroom. These
+distinct scheduled successes establish the scoped runtime improvement; the
+historical mutex holder is still unidentified.
+
+## Diagnostic cleanup
+
+This follow-up removes the four temporary INFO remaps from `config.js` after
+the comparison. It changes no image, cache semantics, resource settings,
+schedule, deadline, credentials, or full dry-run policy. The config fixture
+requires the remap property to be absent; the standalone pinned timing fixture
+retains its own remaps for historical reproduction. Raw logs remain restricted.

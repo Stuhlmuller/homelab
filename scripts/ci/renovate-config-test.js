@@ -159,23 +159,11 @@ test('refuses invalid or nearly expired installation tokens', async () => {
   }
 });
 
-test('promotes only pinned cache timing messages during full dry run', async () => {
+test('keeps default log levels and pinned full-dry-run runtime settings', async () => {
   const { config } = load();
   const resolved = await config();
   assert.equal(resolved.dryRun, 'full');
-  assert.deepEqual(JSON.parse(JSON.stringify(resolved.logLevelRemap)), [
-    { matchMessage: '/^Package cache statistics$/', newLogLevel: 'info' },
-    { matchMessage: '/^Checking file package cache for expired items$/', newLogLevel: 'info' },
-    {
-      matchMessage: '/^Cache GC: kept [0-9]+ content entries [(][0-9]+ bytes[)], ' +
-        'removed [0-9]+ orphaned [(][0-9]+ bytes[)] in [0-9]+(?:[.][0-9]+)?ms$/',
-      newLogLevel: 'info',
-    },
-    {
-      matchMessage: '/^Deleted [0-9]+ of [0-9]+ file cached entries in [0-9]+ms$/',
-      newLogLevel: 'info',
-    },
-  ]);
+  assert.equal(Object.hasOwn(resolved, 'logLevelRemap'), false);
   const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
   assert.deepEqual([...cronjob.matchAll(/^\s+image: (\S+)$/gm)].map((match) => match[1]), [
     'harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d',

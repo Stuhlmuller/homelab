@@ -70,10 +70,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/reliability-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-30T00:29:31.345Z" }
+generated: { by: "codex", at: "2026-10-30T03:10:21.033Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-30T00:29:31.345Z
+    at: 2026-10-30T03:10:21.033Z
 ---
 
 # Storage And State
@@ -751,26 +751,33 @@ hit the same key, refreshed its record, and selected the new public canary
 branch proposal. T022 is complete. A live cache-failure cycle and next-slot
 recovery remain open.
 
-The full dry-run runner temporarily promotes four exact pinned cache messages:
-package get/set timing statistics, file-cache cleanup start, garbage-collection
-summary, and cleanup end. These separate completed cache-backend timings from the
-post-repository cleanup interval; they do not identify a mutex holder or time
-an upstream request. Raw records may carry repository context, so publish only
-numeric aggregates and keep Pod logs restricted. Remove the remaps after the
-diagnostic receipt and before enabling writes. The
-[pinned fixture](../../scripts/ci/renovate-cache-stats-log-test.mjs) checks the
-message allow-list and excludes cache keys, URLs, and package names from those
-promoted records. The remaps change neither cache freshness nor storage.
+The full dry-run config now uses default log levels. The completed timing
+investigation temporarily promoted package get/set statistics and file-cache
+cleanup start/GC/end messages. They separate completed backend timings from
+cleanup but do not identify a mutex holder or time an upstream request. Raw
+records may carry repository context, so publish only numeric aggregates and
+keep Pod logs restricted. The
+[pinned fixture](../../scripts/ci/renovate-cache-stats-log-test.mjs) retains its
+own remaps for historical reproduction; runtime config contains none. Their
+removal changes neither cache freshness nor storage.
 
 The [reliability receipt](../../specs/004-run-renovate-in-cluster/reliability-receipt.md)
-records the October 30 00:00 UTC NFS baseline: all nine repositories completed,
-then cleanup took 518.455 seconds, including 496.795 seconds in content
-verification. The first repository's median completed reads/writes were
-954/1,684 ms. These overlapping backend durations include scheduling and codecs;
-they do not isolate NFS or identify the earlier mutex holder. The local-cache
-candidate preserves the image, resources, default TTLs, schedule, deadline, and
-full dry-run mode. Deployment and repeated scheduled-run acceptance are pending.
-Speed or retained binding alone cannot prove same-key cache reuse.
+records signed local-cache delivery and distinct October 30 02:00/03:00 UTC
+scheduled Pods using the same retained PV/PVC. Both initializers and main
+containers exited zero; each discovered repository started and finished once,
+covering all nine with no error or mutex markers. Runtime fell from the
+00:00/01:00 NFS baselines' 1,679/1,566 seconds to 304/267 seconds, and cleanup
+from 518.455/415.454 seconds to 13.299/13.720 seconds. The repeat removed
+607 orphaned contents, so the improvement also held on the populated cache.
+Observed node conditions stayed Ready without pressure; sampled working-set
+peaks were about 1.61 GiB under the unchanged 4 GiB limit.
+
+Storage and node placement changed together, and contents and operation counts
+differed. These results establish scoped runtime improvement, not isolated NFS
+causality or the historical mutex holder. The image, resources, default TTLs,
+schedule, deadline, and full dry-run mode stayed unchanged. Speed or retained
+binding alone cannot prove same-key reuse; capacity recovery, writer cutover,
+and seven-day migration acceptance remain separate.
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,

@@ -36,6 +36,7 @@ nix develop --command npm --cache "$renovate_fixture_dir/npm-cache" --prefix "$r
 nix develop --command node scripts/ci/renovate-discovery-path-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 nix develop --command node scripts/ci/renovate-cache-recovery-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 nix develop --command node scripts/ci/renovate-cache-corruption-drill-test.mjs "$renovate_fixture_dir/node_modules/renovate"
+# Historical timing diagnostic; the fixture supplies its own temporary remaps.
 nix develop --command node scripts/ci/renovate-cache-stats-log-test.mjs "$renovate_fixture_dir/node_modules/renovate"
 ```
 
