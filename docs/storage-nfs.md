@@ -131,13 +131,18 @@ The default `nfs-default` StorageClass remains the path for application config,
 most PostgreSQL data, dashboards, metrics, and other app-owned state. The
 exceptions are:
 
+- Renovate's active `renovate-cache-local` static claim on `acer` at
+  `/var/lib/renovate-cache`. This retained, rebuildable cache uses Talos
+  `EPHEMERAL`; its advertised 20 GiB is not a quota or reservation. Keep the
+  original NFS claim for rollback and never run a capacity-fill drill on the
+  local filesystem. See `clusters/homelab/apps/renovate/README.md`.
 - Renovate's proposed `renovate-cache-dedicated` static claim on a separate
   20 GiB QTS thick volume and `/renovate-cache` NFS export. The PV, PVC, and
   read-only claim probe remain outside their live Kustomizations. The owner
   authorized one QTS setup after the staging PR merges; verify the separate
   volume and exact export before activating the PV, then the PVC and probe,
-  through separate reviewed GitOps changes. The current `renovate-cache`
-  continues to use `nfs-default` until a later reviewed claim switch. See
+  through separate reviewed GitOps changes. The retained `renovate-cache`
+  continues to use `nfs-default` but is no longer the active runner cache. See
   `clusters/homelab/apps/renovate/README.md`.
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.

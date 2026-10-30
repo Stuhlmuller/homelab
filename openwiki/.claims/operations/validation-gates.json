@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5f835333e78c7725a9a311f6edbdcc0ebc36c92318a648f78fa14bbbe472f462",
+  "pageVersion": "sha256:556e39a011b058e92902232354498211ddfbced3cde875e083740c25c2d32250",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:52ee0ae7104bd60986e5b75c07ffbbf66c6fd0892cbff141b84f3de2310134a5"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -793,7 +793,7 @@
           "version": "repo-lines-v1:sha256:6acbcfbf2efec5cf71cd66dc098953a72cbcd3f767a1b43805b14b8563561720:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliYjE3NTI3YTViYjYyZjQwNTA3NGQ3ZTkyNDEzZmJiZjg5MDZiYmNlMGM4NDM4MDllMDQxMmE3YWYyZWRiZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2MjhlNGUyMTIxMjRhNmE5ZmEyZmIxZjRhYjNhOThjNGNlMDdiZWViNmEzMDBiNDgxYjJlYjE3ODFmNWY0OGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkyMDQwZTA5NWE5NGUyYWRhNzRlNDIxZjM3MTg3NTFhOTFhODEwYmZkNjZmNDhmNGU5MzljN2I3NDgwZWI2NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyYzMxNWFiYzg1MjdjNGM5ZDQ1MzMzZGE4ZGY1ODQ4Y2YyY2Q4NWZjZTEzMDMzZGRmN2E0OWNmZGFkZDQxMTMifQ"
         },
         {
-          "resource": "repo://scripts/ci/renovate-config-test.js#L116-L129",
+          "resource": "repo://scripts/ci/renovate-config-test.js#L120-L133",
           "version": "repo-lines-v1:sha256:da5ebbb8b98d8e7b8884e7f290a0d0fa15e2f3122552622687e02fd2298653d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNGQ2ZThmZjAyYjA3ZjY1MmFjNzMyMzVkZWJkZmQ5MDc0NjcwYjg5NmJlNTE1MjIzYWU4ZWY1OTM1ZmZhODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRlYjI3NWU3YzkxMzNiZGNhZWMzMzBjMzljZDUwOGRkYzZkZmVjYjM2MTZlZDkzOWRjNjEyMDUyMDM0YTM2NDcifQ"
         }
       ]
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e3d18ea5034a2289786573837aaff7f338a62f06a4dd3549af4c28ea4307ffa1"
+          "version": "repo-file-v1:sha256:837afdfa52df39e37d61845d5eaacc5f3a6ae7a2109f244d680622594b605fa3"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -1873,18 +1873,32 @@
           "version": "repo-file-v1:sha256:e373db2010663ff1cdffdffdb9923c626a239bd312c481004da0c790e9ae3191"
         },
         {
-          "resource": "repo://scripts/ci/renovate-config-test.js#L158-L184",
-          "version": "repo-lines-v1:sha256:c00b972fff45c1263a5ca1beed744a1a18a709d394c12199875b38f243b4aea5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2M2UzYmYzMDJkOGFjN2MwYmM4NjQ5NDIyMDcyNTljMTBiMmFmZGI1ZWU0ZTBmMzk4OWI5MzM0MmUwMTZkODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNTkzNTUyYjFhMzY3N2YyZTU1N2Q3NTU5ZTlhMjNmYTAzYjJmMTExMjRmOGExOTZhZDYzYTkxZDQxYzI2NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyN2U1ZThmZWJiMTI5NjI3MjQ1NmQ5M2U0MWE0YmQ5NmNkNzUyY2NmNDU4MTY4NDQ2NmJlNjI3Mjc5MjU2ZTAifQ"
+          "resource": "repo://scripts/ci/renovate-config-test.js#L162-L190",
+          "version": "repo-lines-v1:sha256:d8b2c64658dce83d85d3d38a422403969d1046d4dbf06d5ff2529d271913bb31:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2M2UzYmYzMDJkOGFjN2MwYmM4NjQ5NDIyMDcyNTljMTBiMmFmZGI1ZWU0ZTBmMzk4OWI5MzM0MmUwMTZkODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0MWZlOWJhM2U3Y2YxNTgxMDgyNGYxNWFkOWJlOWMwYjRmN2EyOTg0ZmM0YjEzZjQ5MjNiNTU1ZGVmOGFlMWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViMWVhMTVhMGY3YjFkNzc0MWMwOTJkZTgwMmQzOWZkYTQ0MzRlY2YwNWY5NDM1OGM2ZjM2OWNhOTExNmUyMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRmYTI4ZGE5NWZjZjI3NmNiMDg5MDg1OTFiYjMyYmU5YmU0Y2JhNTk3MTFhYzYyNmYyYmQ2NGM5MTgzYmY5M2EifQ"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/quickstart.md#L29-L42",
           "version": "repo-lines-v1:sha256:c8081f52898947be8416246ea179333a75786f92445b13176f211d8a925961be:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlYmU0YTVkNmM0Yjc1Yjc0NmE5Y2ViMGM1OTU5YzIxN2MxNDI1ZTk2ZjdjOWM0M2I4MzlmYzZiOTRlY2U3OTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYWY4NmYwNTRjZGY2MzJjZTZmNGRmMjlkMDU2YTk2NTlkZjhkZDg5Njk3Yzc3NmRjNmUyZDYwZGZkZGU1OTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmNDA5YWM0MjVlMTIxMzA0MDhhYTUwMWMxOWVlNGZkYjU2YjM5ZDk3ZDBiZWMzYjA4NGE5MDJjMDlkZTMxYzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVmNTQ2MTdhODFjNGQ5OTBkZWUwOTRiZDVjMWVlYjJmNTBmZGQxMTFjZTZlNDgyZWZlZDk5MDk2MzNjMGE2OTkifQ"
         }
       ]
+    },
+    {
+      "id": "claim_f052e8c682a54fbf82e059e80b04633e",
+      "statement": "Renovate config tests guard retained local binding, placement, fixed runtime settings, initializer privilege and credential isolation, preserved NFS/staged resources, warm content preservation and idempotent metadata-only initialization; root ownership is simulated, so actual permissions, deployment and repeated scheduled-run acceptance require live verification.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/renovate-config-test.js#L192-L354",
+          "version": "repo-lines-v1:sha256:d6505b852a704fadf7c3f80f80d3b52008b1d6f5fb10c5a63d3a1af5de5647c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiNDhlMjBjNGI3ZTQyOGIzNzc2ZmE5MzEwYzQyZTJkZjJlYjUwNDhjMTdhMDRkMjhhYThiZmU0ZDJmZDFhNjI0IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJmNmY1YjQwYjE1ODQ1N2QxNzg2NGYyMTc5MDc4NmRkNWEyZWNkYjY0YjY2YTY1MWY3ODhkNGUyNWNkMzMwM2QyIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxOWIzYTdiNWQ3ZTc2N2E2ZmJkNjgwZjE1MTYxMTM5YTE4Zjg0YjEwZjc5NWVmMmRkZDgwYzE1NzNiNmY1OTE0IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/quickstart.md#L74-L76",
+          "version": "repo-lines-v1:sha256:167697a6022151299a16c5f1901c2cf16f6f8c4c487f7ac753cabeea25011fe4:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGQ1NTM1YTVkYTBkNDYwNjVhZmEwZmYzZWFhYzNlNThlYTVmNGQ4NjY5MmY2ODcyNDg2YjUzYzEwMWYwZDI1OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRlMzAzMGYwMTA3YjBmZWY2YTU4ODg0YjgxYjczMzcyZTg4ZDRlODc3NDliNmExY2NjNWZiZjQzNTBlNGNiZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmUxNTIwNGVlZTI4YjY0YTYyNWVkZWRhMzY3NWE2MzIxNTc1MTVjYzIzMDQ2MjdjNDNhZjE3Yjk0YWIzMjBkOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzdiNDFhOGRhNjEwNmYwYzcyNTFhNDdhYzdmOTFkOTIyYjg4NDZhMDVhYzBkYmZlMDVhNmQzZTU4Mjk3NGIwNCJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T22:46:35.009Z"
+    "at": "2026-10-30T00:29:31.345Z"
   }
 }

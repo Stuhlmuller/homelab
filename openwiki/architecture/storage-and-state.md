@@ -24,20 +24,24 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-c0340a70f42e716d4daed12a
+    resource: repo://clusters/homelab/apps/renovate/cache-init.cjs
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-69fb134c80ee4cb4ba2ed124
+    resource: repo://clusters/homelab/apps/renovate/local-cache-pvc.yaml
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
-  - id: openwiki-source-b8e8b7405b7234a1ce62dc56
-    resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
+  - id: openwiki-source-aa130e9d46ea963100bed0b3
+    resource: repo://clusters/homelab/platform/storage/renovate-cache-local.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
-  - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
-    resource: repo://docs/storage-nfs.md
   - id: openwiki-source-249f8996a9ec8263ee227cf0
     resource: repo://IaC/homelab/us-west-2/apps/openclaw-enterprise-foundation/stack.hcl
   - id: openwiki-source-d0de55404aabd71445d94e5a
@@ -62,12 +66,14 @@ sources:
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
   - id: openwiki-source-2031a4cf1c03de6b7fcceacb
     resource: repo://specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md
+  - id: openwiki-source-ec40e0ee801281b6064f8319
+    resource: repo://specs/004-run-renovate-in-cluster/reliability-receipt.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-29T22:46:35.009Z" }
+generated: { by: "codex", at: "2026-10-30T00:29:31.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T22:46:35.009Z
+    at: 2026-10-30T00:29:31.345Z
 ---
 
 # Storage And State
@@ -698,15 +704,31 @@ the public key independently for historical signature verification. See
 
 ## Renovate cache
 
-Renovate retains a 20 GiB `nfs-default` PVC in `automation` for datasource,
-private-package, and repository caches; its working files stay on ephemeral
-storage. The cache includes private package metadata, so restrict access to the
-volume and logs. It is replaceable and has no backup requirement. Argo CD does
-not prune the PVC. Before requesting a GitHub token, each run flushes a small
-write to the claim so a full or unwritable cache fails visibly. The `20Gi`
-request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
-PVCs or enforce their requested size. A full export needs restored NAS capacity
-through a declared path; increasing the PVC request cannot restore writes.
+Renovate's declared active cache is the retained `renovate-cache-local` claim
+in `automation`, explicitly bound to the platform-owned static PV on `acer` at
+`/var/lib/renovate-cache`. Datasource, private-package, repository, and tool caches
+persist; working files stay ephemeral. The old `renovate-cache` NFS claim remains
+declared for rollback. Cache contents include private metadata, so restrict
+access to the volume and logs. Both claims and the local PV resist Argo pruning.
+The cache is rebuildable and unbacked, with no local node failover. Its advertised
+20 GiB neither reserves space nor enforces a quota on Talos `EPHEMERAL`; never
+run a capacity-fill drill there. Before GitHub token exchange, the existing
+write probe fails a full or unwritable claim. Increasing either PVC's request
+does not restore backing capacity; the NFS provisioner also cannot resize claims.
+If the active filesystem fills, suspend and drain through reviewed GitOps,
+restore capacity through a declared path, then resume.
+
+The bounded initializer changes only mount-root ownership/mode to UID 12021 and
+`0700`, accepting populated caches without traversal or deletion. Only it runs
+as root with `CHOWN`/`FOWNER`; it mounts no App Secret or API token. The main
+process remains non-root. Both containers share Pod networking. Platform storage
+and Renovate reconcile independently, so verify both Applications and exact
+binding before accepting scheduled runs. `Forbid` remains on the same CronJob;
+existing Jobs retain their original claim. Rollback suspends/drains, restores
+the old claim/placement, and removes the local-only initializer before NFS use.
+Memory requests fitting on `acer` do not reserve the unchanged 4 GiB limit;
+observe node pressure during the first local runs.
+
 No verified QNAP `/homelab` capacity-restoration operation is declared. The
 staged static PV and separate PVC target a dedicated 20 GiB QTS thick volume
 exported as `/renovate-cache`; both remain outside active Kustomizations until
@@ -731,14 +753,24 @@ recovery remain open.
 
 The full dry-run runner temporarily promotes four exact pinned cache messages:
 package get/set timing statistics, file-cache cleanup start, garbage-collection
-summary, and cleanup end. These separate completed cache I/O timings from the
+summary, and cleanup end. These separate completed cache-backend timings from the
 post-repository cleanup interval; they do not identify a mutex holder or time
 an upstream request. Raw records may carry repository context, so publish only
 numeric aggregates and keep Pod logs restricted. Remove the remaps after the
 diagnostic receipt and before enabling writes. The
 [pinned fixture](../../scripts/ci/renovate-cache-stats-log-test.mjs) checks the
 message allow-list and excludes cache keys, URLs, and package names from those
-promoted records. This diagnostic changes neither cache freshness nor storage.
+promoted records. The remaps change neither cache freshness nor storage.
+
+The [reliability receipt](../../specs/004-run-renovate-in-cluster/reliability-receipt.md)
+records the October 30 00:00 UTC NFS baseline: all nine repositories completed,
+then cleanup took 518.455 seconds, including 496.795 seconds in content
+verification. The first repository's median completed reads/writes were
+954/1,684 ms. These overlapping backend durations include scheduling and codecs;
+they do not isolate NFS or identify the earlier mutex holder. The local-cache
+candidate preserves the image, resources, default TTLs, schedule, deadline, and
+full dry-run mode. Deployment and repeated scheduled-run acceptance are pending.
+Speed or retained binding alone cannot prove same-key cache reuse.
 ## Staged independent application recovery (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) owns the source inventory,
