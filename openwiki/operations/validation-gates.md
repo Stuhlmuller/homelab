@@ -364,10 +364,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-29T22:46:35.009Z" }
+generated: { by: "codex", at: "2026-10-30T00:29:31.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T22:46:35.009Z
+    at: 2026-10-30T00:29:31.345Z
 ---
 
 # Validation Gates
@@ -2486,6 +2486,18 @@ to the pinned image and full dry-run mode. Local success proves diagnostic
 behavior, not live cache latency or the mutex failure's cause. Publish only
 numeric aggregates from restricted logs; remove the remaps after diagnosis
 before enabling writes.
+
+The same config suite validates the retained local-cache SC/PV/PVC binding,
+`acer` placement, unchanged schedule/deadline/image, initializer privilege and
+credential boundaries, and preservation of the old NFS claim and staged NAS
+resources. Its initializer fixture checks real warm file bytes and metadata,
+symlink preservation, repeat execution, and failure on ownership/mode errors;
+the root ownership syscall is simulated locally. Render both Renovate and
+platform-storage and run policy checks. After protected merge, verify both
+Argo Applications, exact binding and successful real initialization, then
+observe distinct scheduled runs through all repositories and cleanup. See
+the [reliability receipt](../../specs/004-run-renovate-in-cluster/reliability-receipt.md).
+Local tests do not prove deployment, same-key reuse, or capacity recovery.
 
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves

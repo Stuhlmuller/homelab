@@ -69,6 +69,10 @@ access path.
 The mock discovery fixture above proves the add/remove rule; it does not claim
 that a real owner transfer occurred.
 
+## Reliability storage verification
+
+For the local-cache change, verify both `platform-storage` and `renovate` Applications at the reviewed revision before accepting a scheduled run. Confirm the `renovate-cache-local` PVC binds to the same-named retained PV, the Pod runs on `acer`, the credential-free initializer succeeds, and the main container remains UID 12021. Preserve the original NFS claim. Compare separate scheduled Pods completing all eligible repositories and final cleanup within the unchanged deadline; record errors, numeric cache timings, and Pod identities in [the reliability receipt](reliability-receipt.md). Faster completion alone is not proof of a same-key cache hit. The 20 GiB local PV is advisory, so never use the staged NFS capacity-fill drill on this filesystem. Capacity recovery, writer cutover, and seven-day acceptance remain open.
+
 ## Retire the old workflow and enable writes
 
 1. After full dry-run parity is proven and the last 00:00 UTC legacy run finishes, merge the reviewed companion Stuhlmuller/renovate change that deletes the entire legacy workflow, including schedule and workflow_dispatch. Verify no nonterminal legacy run remains across scheduled and manual events, including requested, pending, queued, waiting, or in-progress states. If deletion cannot merge or runs have not drained, keep the cluster runner in full dry-run mode.

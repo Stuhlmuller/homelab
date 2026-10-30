@@ -5,6 +5,7 @@ metadata:
   namespace: automation
   annotations:
     checkov.io/skip1: CKV_K8S_22=Renovate installs package-manager tools under image-managed paths at runtime; durable caches stay on the PVC.
+    checkov.io/skip2: CKV_K8S_25=Only the cache-root ownership init container adds CHOWN and FOWNER; it mounts no credentials and Renovate drops all capabilities.
   labels:
     app.kubernetes.io/name: renovate
     app.kubernetes.io/part-of: homelab-automation
@@ -30,6 +31,8 @@ spec:
         spec:
           automountServiceAccountToken: false
           serviceAccountName: renovate
+          nodeSelector:
+            kubernetes.io/hostname: acer
           # Use the Harbor-only listener; keep the canonical hostname for TLS.
           hostAliases:
             - ip: 10.96.0.50
@@ -42,6 +45,38 @@ spec:
             fsGroup: 12021
             seccompProfile:
               type: RuntimeDefault
+          initContainers:
+            - name: prepare-local-cache
+              image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
+              imagePullPolicy: IfNotPresent
+              command: [node, /etc/renovate-cache-init/cache-init.cjs]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                  ephemeral-storage: 1Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+                  ephemeral-storage: 16Mi
+              securityContext:
+                runAsUser: 0
+                runAsGroup: 0
+                runAsNonRoot: false
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+                  add:
+                    - CHOWN
+                    - FOWNER
+              volumeMounts:
+                - name: cache
+                  mountPath: /cache/renovate
+                - name: cache-init
+                  mountPath: /etc/renovate-cache-init
+                  readOnly: true
           containers:
             - name: renovate
               image: harbor.stinkyboi.com/mirror/ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d
@@ -88,7 +123,11 @@ spec:
                     path: private-key
             - name: cache
               persistentVolumeClaim:
-                claimName: renovate-cache
+                claimName: renovate-cache-local
+            - name: cache-init
+              configMap:
+                name: renovate-cache-init
+                defaultMode: 0444
             - name: tmp
               emptyDir:
                 sizeLimit: 8Gi

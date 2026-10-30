@@ -56,6 +56,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-operator/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-c0340a70f42e716d4daed12a
+    resource: repo://clusters/homelab/apps/renovate/cache-init.cjs
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -138,10 +140,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
+generated: { by: "codex", at: "2026-10-30T00:29:31.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T22:24:46.227Z
+    at: 2026-10-30T00:29:31.345Z
 ---
 
 # Secrets And Identity
@@ -284,6 +286,10 @@ durable aggregate receipt closes T022. Cache-fault recovery, full parity, and
 writer cutover remain open. The legacy GitHub Action remains the only writer. The App
 lacks repository Administration read, a recorded migration exception whose
 first write-enabled outcome still needs policy review.
+The local-cache initializer runs as root only to set mount-root ownership and
+mode. It mounts the cache and its non-secret script, never the App Secret or a
+Kubernetes token; the Renovate process remains UID 12021. Both containers share
+Pod networking. See the [cache contract](storage-and-state.md#renovate-cache).
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name

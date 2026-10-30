@@ -19,11 +19,13 @@
 
 ## Decision 3 — Persist lookup cache on one protected PVC
 
-**Decision**: Put Renovate's cache directory on a retained NFS-backed PVC; enable repository extraction cache and private-package caching. Leave datasource soft/hard TTLs at Renovate defaults. Let downloaded-tool cache use its default subdirectory under the cache directory. Keep repository clones and work files ephemeral initially.
+**Decision**: Put Renovate's cache directory on a retained PVC; enable repository extraction cache and private-package caching. The initial NFS claim remains retained, but the reliability change uses a static local claim on acer for the active full dry runs. Leave datasource soft/hard TTLs at Renovate defaults. Let downloaded-tool cache use its default subdirectory under the cache directory. Keep repository clones and work files ephemeral initially.
 
 **Rationale**: [Renovate's cache options](https://docs.renovatebot.com/self-hosted-configuration/) distinguish package lookups, repository extraction cache, and downloaded-tool cache. A persistent cache directory serves the request without a new Redis service. Default TTLs revalidate old data while permitting safe stale responses during upstream failures. Private package metadata on the PVC requires the existing workload namespace and storage access boundary. The cache is rebuildable, so backups are unnecessary.
 
 **Alternatives considered**: Ephemeral storage loses cache each run. Redis adds a service and credentials for one runner. Persisting all cloned repositories consumes more disk without directly improving version lookup reuse. Custom TTL overrides risk hiding releases and are experimental.
+
+**Reliability revision**: The [runtime receipt](reliability-receipt.md) records slow completed backend operations and finalization on the shared NFS claim. A retained local file backend removes that storage path without adding Redis lifecycle or changing cache freshness. The initializer changes only mount-root metadata and accepts populated caches. This tests the measured bottleneck; it does not identify the holder of earlier mutex timeouts. Local capacity is advisory, with no node failover or backup. Keep the dedicated NAS capacity/recovery gates open and preserve both claims for reviewed rollback.
 
 ## Decision 4 — Mint a short-lived App token from mounted files
 
