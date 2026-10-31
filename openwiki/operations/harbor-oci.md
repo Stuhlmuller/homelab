@@ -118,10 +118,10 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-5ae720cb09fc62f57248e942
+    resource: repo://docs/harbor-tailscale-production.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -172,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-29T05:33:11.026Z" }
+generated: { by: "codex", at: "2026-10-31T22:18:24.858Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-29T05:33:11.026Z
+    at: 2026-10-31T22:18:24.858Z
 ---
 
 # Harbor Private OCI Registry
@@ -216,10 +216,13 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
-with the existing Octelium CI credential. Only its disposable runner maps
-the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
-retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
+The public mirror workflow now declares direct private Tailscale HTTPS and a
+strict TLS/401 registry challenge, without Kubernetes forwarding or host-file
+changes. Legacy private-publication callers retain the bounded Octelium-backed
+Kubernetes port-forward and disposable loopback mapping. Both paths retain TLS
+verification; see [the production path](../../docs/harbor-tailscale-production.md)
+and `scripts/ci/harbor-publish.sh`. Source publication alone does not install a
+credential, enroll a runner, or prove live mirror acceptance.
 
 The shared Octelium-to-Istio hop currently skips upstream certificate validation
 for the Kubernetes Service hostname, as declared in
