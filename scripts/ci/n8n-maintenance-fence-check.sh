@@ -14,8 +14,15 @@ expected_revisions=$'targetRevision = "4.4.0"\ntargetRevision = local.shared.tar
 active_value_files="$(rg -N '^[[:space:]]*valueFiles[[:space:]]*=' "$stack" |
   sed -E 's/^[[:space:]]*//; s/[[:space:]]*=[[:space:]]*/ = /')"
 expected_value_files="valueFiles = [\"\$values/clusters/homelab/apps/n8n/values.yaml\"]"
-[[ "$active_value_files" == "$expected_value_files" ]]
+expected_fenced_value_files="valueFiles = [\"\$values/clusters/homelab/apps/n8n/values.yaml\", \"\$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml\"]"
+[[ "$active_value_files" == "$expected_value_files" || "$active_value_files" == "$expected_fenced_value_files" ]]
 [[ "${1:-}" != --source-only ]] || exit 0
+if rg -Fq 'migration-v1.values.yaml' "$stack" ||
+   rg -Fq 'migration-github-trigger-v1.values.yaml' "$stack" ||
+   rg -Fq 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml ||
+   rg -Fq 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml; then
+  exit 1
+fi
 [[ "$(yq -o=json -I=0 '.' "$fence")" == '{"controllers":{"n8n":{"replicas":0}}}' ]]
 
 chart_dir="$(mktemp -d)"

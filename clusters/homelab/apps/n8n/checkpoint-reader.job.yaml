@@ -1,0 +1,56 @@
+# Staged only. The protected checkpoint workflow creates and removes this exact Job.
+# Do not add it to kustomization.yaml or the Helm valueFiles.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: n8n-checkpoint-reader
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The reader uses n8n's UID 1000 to access the existing NFS files; it mounts the claim read-only.
+  labels:
+    app.kubernetes.io/name: n8n-checkpoint-reader
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: n8n-checkpoint-reader
+        app.kubernetes.io/part-of: homelab-automation
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: reader
+          image: harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+          imagePullPolicy: Always
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              test -s /source/config
+              exec sleep 3300
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: source
+              mountPath: /source
+              readOnly: true
+      volumes:
+        - name: source
+          persistentVolumeClaim:
+            claimName: n8n
+            readOnly: true

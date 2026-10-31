@@ -1041,6 +1041,14 @@ zero, with no migration Job in either render. Its
 [workload runbook](../../clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
 before a paired capture; source rendering alone is not a live backup.
+The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
+is manual, exact-main, protected, and pins the capture script, restore helper,
+excluded reader Job, and deny-all policy by SHA-256 before credential access. Its offline
+`n8n-paired-checkpoint-test.py` checks stale-main, UID, permission, and
+zero-writer failures before Job creation; `n8n-pvc-restore-check-test.py`
+checks safe extraction and persisted-key validation without logging a key.
+Only a live success receipt binding both exact S3 object versions and an
+isolated restore qualifies for migration activation.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
