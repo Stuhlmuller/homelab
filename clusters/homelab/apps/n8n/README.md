@@ -124,6 +124,61 @@ current callback helper still targets old hook `636944763` and cannot verify
 the new hook until that follow-up is added. Rollback requires the paired
 database and PVC restore; removing the Job does not undo the workflow edit.
 
+## Inactive Paired-Backup Maintenance Fence
+
+`maintenance-fence.values.yaml` sets the n8n Deployment to zero replicas. The
+active stack still lists only `values.yaml`, so this file changes no live
+workload. A separately reviewed fence revision may append it after `values.yaml`
+in the Helm `valueFiles`; keep both migration overlays excluded. This pauses
+the editor, webhooks, scheduled workflows, and other in-process writers while
+`n8n-postgres` remains available for a logical dump. Plan the outage and
+preserve the existing n8n and PostgreSQL PVCs.
+Run `nix develop --command bash scripts/ci/n8n-maintenance-fence-check.sh` to
+verify the pinned chart renders one active replica, zero fenced replicas, and
+no migration Job in either case.
+
+From a clean checkout of the exact merged fence revision, require all of these
+read-only gates before capturing either member of the paired backup:
+
+```sh
+fence_sha="$(git rev-parse HEAD)"
+kubectl -n argocd get application n8n -o json | jq -e --arg sha "$fence_sha" \
+  '.status.sync.status == "Synced" and .status.health.status == "Healthy" and
+   ([.status.sync.revisions[]? | select(. == $sha)] | length) == 2'
+kubectl -n automation get deployment n8n -o json | jq -e \
+  '.spec.replicas == 0 and (.status.replicas // 0) == 0 and
+   (.status.readyReplicas // 0) == 0'
+kubectl -n automation get pods -o json | jq -e \
+  '[.items[] | select(.spec.serviceAccountName == "n8n" or
+   any(.spec.volumes[]?; .persistentVolumeClaim.claimName == "n8n" or
+     .secret.secretName == "n8n-postgres-client"))] | length == 0'
+kubectl -n automation get jobs,cronjobs -o json | jq -e \
+  '[.items[] | select(
+    (.kind == "Job" and (.status.active // 0) > 0 and
+     .spec.template.spec.serviceAccountName == "n8n") or
+    (.kind == "CronJob" and .spec.suspend != true and
+     .spec.jobTemplate.spec.template.spec.serviceAccountName == "n8n"))] | length == 0'
+kubectl -n automation get statefulset n8n-postgres -o json | jq -e \
+  '.spec.replicas == 1 and (.status.readyReplicas // 0) == 1'
+kubectl -n automation exec statefulset/n8n-postgres -c postgres -- \
+  psql -XAt -w -U postgres -d n8n -c 'SELECT 1'
+```
+
+Also inspect the full workload inventory for any new database client. Record
+both PVC and PV UIDs, and require the capture to recheck those bindings and
+the zero-writer gates after the database dump and read-only n8n PVC archive.
+Keep the persisted `/home/node/.n8n/config` encryption key with that archive;
+never print it or rotate the SSM bootstrap value during capture. A successful
+off-NAS upload needs immutable object versions, byte-verified readback, and an
+isolated restore of the database and PVC before migration activation.
+
+After the verified checkpoint, a separate reviewed revision removes the fence
+value file from `valueFiles`. Require Argo CD Synced/Healthy, one Ready n8n
+replica, database-aware readiness, continued denial of the unsigned Emergency
+hook, and fresh deliveries for enabled signed GitHub callbacks before ending
+the maintenance window. If any fence gate fails, stop capture and restore the
+one-replica GitOps revision.
+
 ## Access Contract
 
 - Editor/UI: `https://n8n.stinkyboi.com` through private Tailscale and Traefik.
