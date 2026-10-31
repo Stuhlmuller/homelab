@@ -245,6 +245,7 @@ bash scripts/ci/langfuse-startup-check.sh
 echo "::endgroup::"
 
 echo "::group::n8n inactive maintenance fence"
+python3 -I scripts/ci/n8n-maintenance-fence-negative-test.py
 bash scripts/ci/n8n-maintenance-fence-check.sh
 echo "::endgroup::"
 

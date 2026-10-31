@@ -5,12 +5,17 @@ stack=IaC/homelab/us-west-2/apps/n8n/stack.hcl
 base=clusters/homelab/apps/n8n/values.yaml
 fence=clusters/homelab/apps/n8n/maintenance-fence.values.yaml
 version=4.4.0
+[[ $# -eq 0 || ( $# -eq 1 && $1 == --source-only ) ]]
 
-rg -Fq 'targetRevision = "4.4.0"' "$stack"
-rg -Fq 'valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml"]' "$stack"
-! rg -Fq 'maintenance-fence.values.yaml' "$stack"
-! rg -Fq 'migration-v1.values.yaml' "$stack"
-! rg -Fq 'migration-github-trigger-v1.values.yaml' "$stack"
+active_revisions="$(rg -N '^[[:space:]]*targetRevision[[:space:]]*=' "$stack" |
+  sed -E 's/^[[:space:]]*//; s/[[:space:]]*=[[:space:]]*/ = /')"
+expected_revisions=$'targetRevision = "4.4.0"\ntargetRevision = local.shared.target_revision\ntargetRevision = local.shared.target_revision'
+[[ "$active_revisions" == "$expected_revisions" ]]
+active_value_files="$(rg -N '^[[:space:]]*valueFiles[[:space:]]*=' "$stack" |
+  sed -E 's/^[[:space:]]*//; s/[[:space:]]*=[[:space:]]*/ = /')"
+expected_value_files="valueFiles = [\"\$values/clusters/homelab/apps/n8n/values.yaml\"]"
+[[ "$active_value_files" == "$expected_value_files" ]]
+[[ "${1:-}" != --source-only ]] || exit 0
 [[ "$(yq -o=json -I=0 '.' "$fence")" == '{"controllers":{"n8n":{"replicas":0}}}' ]]
 
 chart_dir="$(mktemp -d)"
