@@ -1,0 +1,275 @@
+controllers:
+  migrate-github-trigger-v1:
+    type: job
+    serviceAccount:
+      identifier: n8n
+    annotations:
+      argocd.argoproj.io/sync-wave: "1"
+    job:
+      backoffLimit: 1
+      activeDeadlineSeconds: 900
+    pod:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/controller: n8n
+                  app.kubernetes.io/instance: n8n
+                  app.kubernetes.io/name: n8n
+              topologyKey: kubernetes.io/hostname
+    containers:
+      migrate:
+        image:
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/n8n-io/n8n
+          tag: "stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
+        env:
+          DB_TYPE: postgresdb
+          DB_POSTGRESDB_HOST: n8n-postgres.automation.svc.cluster.local
+          DB_POSTGRESDB_PORT: "5432"
+          DB_POSTGRESDB_DATABASE: n8n
+          DB_POSTGRESDB_USER: n8n
+          DB_POSTGRESDB_SCHEMA: public
+          DB_POSTGRESDB_PASSWORD_FILE: /run/secrets/n8n-postgres/DB_POSTGRESDB_PASSWORD
+          N8N_BOOTSTRAP_ENCRYPTION_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: n8n-secrets
+                key: N8N_BOOTSTRAP_ENCRYPTION_KEY
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            : "${DB_POSTGRESDB_PASSWORD_FILE:?DB_POSTGRESDB_PASSWORD_FILE must point at the n8n Postgres client secret}"
+            test -s "$DB_POSTGRESDB_PASSWORD_FILE"
+            if [ ! -s /home/node/.n8n/config ]; then
+              : "${N8N_BOOTSTRAP_ENCRYPTION_KEY:?N8N bootstrap encryption key must be provided by n8n-secrets}"
+              export N8N_ENCRYPTION_KEY="$N8N_BOOTSTRAP_ENCRYPTION_KEY"
+            fi
+
+            umask 077
+            trap 'rm -f /tmp/github-trigger-workflow.json /tmp/github-trigger-readback.json /tmp/github-trigger-migration-state' 0
+            test "$(n8n --version)" = 2.43.7 || {
+              echo 'Pinned n8n GitHub Trigger version mismatch; refusing migration' >&2
+              exit 1
+            }
+            workflow_id=AARG1VWHRxowXlSU
+            workflow_ids="$(n8n list:workflow --onlyId)"
+            printf '%s\n' "$workflow_ids" | grep -Fxq "$workflow_id" || {
+              echo 'Expected Emergency workflow is absent; refusing migration' >&2
+              exit 1
+            }
+            n8n export:workflow --id="$workflow_id" --output=/tmp/github-trigger-workflow.json
+            test -s /tmp/github-trigger-workflow.json
+            node - <<'NODE'
+            const fs = require('node:fs');
+            const crypto = require('node:crypto');
+            const path = '/tmp/github-trigger-workflow.json';
+            const state = '/tmp/github-trigger-migration-state';
+            const workflowId = 'AARG1VWHRxowXlSU';
+            const oldWebhookId = '7d4342d3-103b-437a-a941-811a75dacb2f';
+            const newWebhookId = 'f3e12cbd-1d01-4ef0-b24e-d68741ea898b';
+            const fail = (message) => { throw new Error(message); };
+            const check = (ok, message) => { if (!ok) fail(message); };
+            const canonical = (value) => {
+              if (Array.isArray(value)) return value.map(canonical);
+              if (value && typeof value === 'object') {
+                return Object.fromEntries(Object.keys(value).sort().map(
+                  (key) => [key, canonical(value[key])],
+                ));
+              }
+              return value;
+            };
+            const equal = (left, right) => JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
+            const hash = (value) => crypto.createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
+            const triggerParameters = {
+              authentication: 'githubAppApi',
+              owner: { __rl: true, mode: 'name', value: 'Stuhlmuller' },
+              repository: { __rl: true, mode: 'name', value: 'homelab' },
+              events: ['pull_request'],
+              options: { insecureSSL: false },
+            };
+            const specs = [
+              ['f4769735-e1c5-4dbf-aa4a-1a0d3931c884', 'Webhook', 'n8n-nodes-base.webhook', 2.1,
+                '6a20518b854eb8f6f1a8efaec3ecb410a3fb03af9f2813159753c1d1fc5440e9'],
+              ['23bc932a-ca2a-4e7d-88b3-2748f60174d8', 'Edit Fields', 'n8n-nodes-base.set', 3.4,
+                '5723bb2d35d29d0bc5d569b624032e98225636d8adb3951784b63a287b69e907',
+                'd626e7baaf275fd17fbf006bbb34b95a14cd8be564d0ffe95047d4cc10bccbff'],
+              ['7f426a53-7340-4e92-a95e-f2e5f3fd83e6', 'Filter', 'n8n-nodes-base.filter', 2.3,
+                '225e4290f50df184c98dfdb06d3b68020a559c2ef6005e0f24a7ff3d7fd6a7d0',
+                'b9442e40750beb7a2bd88f43797736fa2b1739da03e027bc73c73f97d0db8723'],
+              ['e1b741ef-b01c-48d1-9129-2b910c495b89', 'Create an issue', 'n8n-nodes-base.github', 1.1,
+                '261b19f4a4a71cf70e8af5bb26c6037aa73d00c591439e936bae35ad055b559e',
+                'b465b8c1c5806120b43da7cb2acb7d173b9ce25b3b8dcb7545067efd5ee07345'],
+              ['f8bf4b63-e0ff-41f9-8f29-6c870a9f2ade', 'Merge a pull request', 'n8n-nodes-base.httpRequest', 4.4,
+                '4d6c5bf83700ae3f9c8dfaa92865d59a4a865312792c408acb9aa3dad02c8c10'],
+              ['83da1c4b-26dc-4e4a-ba1f-675f5e876d96', 'Create a comment on an issue', 'n8n-nodes-base.github', 1.1,
+                '1098b5ab2c4493de423d2ec441e7143b6a1b09e9ee6d5d8eaa0c9e7b4c9bbec9'],
+            ];
+            const expectedConnections = {
+              Webhook: { main: [[{ node: 'Edit Fields', type: 'main', index: 0 }]] },
+              'Edit Fields': { main: [[{ node: 'Filter', type: 'main', index: 0 }]] },
+              Filter: { main: [[{ node: 'Create an issue', type: 'main', index: 0 }]] },
+              'Create an issue': { main: [[{ node: 'Merge a pull request', type: 'main', index: 0 }]] },
+              'Merge a pull request': { main: [[{ node: 'Create a comment on an issue', type: 'main', index: 0 }]] },
+            };
+            const oldReferences = {
+              '23bc932a-ca2a-4e7d-88b3-2748f60174d8': { '/assignments/assignments/0/value': 1 },
+              '7f426a53-7340-4e92-a95e-f2e5f3fd83e6': {
+                '/conditions/conditions/0/leftValue': 1,
+                '/conditions/conditions/1/leftValue': 1,
+                '/conditions/conditions/2/leftValue': 1,
+              },
+              'e1b741ef-b01c-48d1-9129-2b910c495b89': {
+                '/owner/value': 1, '/repository/value': 1, '/body': 3,
+              },
+            };
+            const references = (value, pointer = '', found = {}) => {
+              if (Array.isArray(value)) value.forEach((item, index) => references(item, `${pointer}/${index}`, found));
+              else if (value && typeof value === 'object') {
+                Object.entries(value).forEach(([key, item]) => references(item, `${pointer}/${key}`, found));
+              } else if (typeof value === 'string') {
+                const count = value.split('$json.body.payload').length - 1;
+                if (count) found[pointer] = count;
+              }
+              return found;
+            };
+            const replaceAt = (parameters, pointer) => {
+              const parts = pointer.slice(1).split('/');
+              let current = parameters;
+              for (const part of parts.slice(0, -1)) current = current[part];
+              const last = parts.at(-1);
+              check(typeof current[last] === 'string', 'inventoried expression shape drifted');
+              current[last] = current[last].replaceAll('$json.body.payload', '$json.body');
+            };
+
+            const exported = JSON.parse(fs.readFileSync(path, 'utf8'));
+            check(Array.isArray(exported) && exported.length === 1 && exported[0]?.id === workflowId,
+              'expected one exact Emergency workflow export');
+            const workflow = exported[0];
+            check(workflow.active === true && Array.isArray(workflow.nodes) && workflow.nodes.length === specs.length,
+              'Emergency workflow state or node count drifted');
+            check(equal(workflow.connections, expectedConnections), 'Emergency workflow graph drifted');
+            const nodes = new Map(workflow.nodes.map((node) => [node?.id, node]));
+            check(nodes.size === specs.length, 'Emergency workflow node IDs drifted');
+            const trigger = nodes.get(specs[0][0]);
+            const migrated = trigger?.type === 'n8n-nodes-base.githubTrigger';
+            check(migrated || trigger?.type === 'n8n-nodes-base.webhook', 'Emergency trigger type drifted');
+            for (const [id, name, type, version, beforeHash, afterHash] of specs) {
+              const node = nodes.get(id);
+              check(node?.name === name && node?.type === (migrated && id === specs[0][0] ?
+                'n8n-nodes-base.githubTrigger' : type) &&
+                node?.typeVersion === (migrated && id === specs[0][0] ? 1 : version),
+              'Emergency workflow node identity drifted');
+              check(node.parameters && typeof node.parameters === 'object' && !Array.isArray(node.parameters),
+                'Emergency workflow parameter shape drifted');
+              const expectedHash = migrated && id === specs[0][0] ? hash(triggerParameters) :
+                (migrated ? afterHash || beforeHash : beforeHash);
+              check(hash(node.parameters) === expectedHash, 'Emergency workflow parameters drifted');
+              check(equal(references(node.parameters), migrated ? {} : oldReferences[id] || {}),
+                'Emergency workflow expression locations drifted');
+            }
+            const actionIds = [specs[3][0], specs[4][0], specs[5][0]];
+            const credential = nodes.get(actionIds[0]).credentials?.githubAppApi;
+            check(credential && typeof credential.id === 'string' && credential.id &&
+              typeof credential.name === 'string' && credential.name &&
+              equal(Object.keys(credential).sort(), ['id', 'name']),
+              'GitHub App credential reference shape drifted');
+            for (const id of actionIds) {
+              check(equal(nodes.get(id).credentials, { githubAppApi: credential }),
+                'GitHub App credential references differ');
+            }
+            if (migrated) {
+              check(trigger.webhookId === newWebhookId &&
+                equal(trigger.credentials, { githubAppApi: credential }),
+                'migrated trigger identity or credential drifted');
+              fs.writeFileSync(state, 'unchanged');
+              process.exit(0);
+            }
+            check(trigger.webhookId === oldWebhookId &&
+              !Object.hasOwn(trigger, 'credentials') &&
+              (workflow.staticData == null || equal(workflow.staticData, {})),
+              'legacy trigger identity or static data drifted');
+            for (const [id, expected] of Object.entries(oldReferences)) {
+              for (const pointer of Object.keys(expected)) replaceAt(nodes.get(id).parameters, pointer);
+            }
+            trigger.type = 'n8n-nodes-base.githubTrigger';
+            trigger.typeVersion = 1;
+            trigger.webhookId = newWebhookId;
+            trigger.parameters = triggerParameters;
+            trigger.credentials = { githubAppApi: { id: credential.id, name: credential.name } };
+            for (const [id, , , , beforeHash, afterHash] of specs) {
+              const expectedHash = id === specs[0][0] ? hash(triggerParameters) : afterHash || beforeHash;
+              check(hash(nodes.get(id).parameters) === expectedHash &&
+                equal(references(nodes.get(id).parameters), {}),
+                'rewritten Emergency workflow differs from reviewed shape');
+            }
+            fs.writeFileSync(path, JSON.stringify(exported));
+            fs.writeFileSync(state, 'changed');
+            NODE
+            verify_readback() {
+              node - "$1" <<'VERIFY'
+            const fs = require('node:fs');
+            const expected = JSON.parse(fs.readFileSync('/tmp/github-trigger-workflow.json', 'utf8'));
+            const actual = JSON.parse(fs.readFileSync('/tmp/github-trigger-readback.json', 'utf8'));
+            const canonical = (value) => Array.isArray(value) ? value.map(canonical) :
+              value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(
+                (key) => [key, canonical(value[key])])) : value;
+            const equal = (left, right) => JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
+            if (!['true', 'false'].includes(process.argv[2]) ||
+                !Array.isArray(expected) || expected.length !== 1 ||
+                !Array.isArray(actual) || actual.length !== 1 ||
+                actual[0]?.id !== 'AARG1VWHRxowXlSU' ||
+                actual[0]?.active !== (process.argv[2] === 'true') ||
+                !equal(actual[0].nodes, expected[0].nodes) ||
+                !equal(actual[0].connections, expected[0].connections)) {
+              throw new Error('Emergency workflow import/publish readback differs from reviewed migration');
+            }
+            VERIFY
+            }
+            case "$(cat /tmp/github-trigger-migration-state)" in
+              unchanged) echo 'N8N_GITHUB_TRIGGER_MIGRATION unchanged' >&2 ;;
+              changed)
+                n8n import:workflow --input=/tmp/github-trigger-workflow.json
+                n8n export:workflow --id="$workflow_id" --output=/tmp/github-trigger-readback.json
+                verify_readback false
+                n8n publish:workflow --id="$workflow_id"
+                rm -f /tmp/github-trigger-readback.json
+                n8n export:workflow --id="$workflow_id" --output=/tmp/github-trigger-readback.json
+                verify_readback true
+                echo 'N8N_GITHUB_TRIGGER_MIGRATION applied restart_required=true' >&2 ;;
+              *) echo 'Invalid Emergency migration result' >&2; exit 1 ;;
+            esac
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+persistence:
+  data:
+    advancedMounts:
+      migrate-github-trigger-v1:
+        migrate:
+          - path: /home/node/.n8n
+  postgres-client:
+    advancedMounts:
+      migrate-github-trigger-v1:
+        migrate:
+          - path: /run/secrets/n8n-postgres
+            readOnly: true
