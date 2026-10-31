@@ -8,6 +8,7 @@ import argparse
 import importlib.util
 import json
 from pathlib import Path
+import re
 import subprocess
 import urllib.error
 import urllib.parse
@@ -137,9 +138,20 @@ def reconcile(api=github, execute=False, require_delivery=False):
                     or any(current.get(key) != before.get(key) for key in ('id', 'name', 'active', 'events'))):
                 raise RuntimeError('n8n hook readback changed settings beyond the fixed callback URL')
             CALLBACKS.save_receipt(receipt, cutover)
-        accepted.append(CALLBACKS.delivery_status(api, url if execute else before['config']['url'],
-                                                 cutover, endpoint + '/deliveries'))
-    print('Emergency callback URL verified; existing secret/events preserved' if execute else 'Preview only; Emergency callback unchanged')
+        target = url if execute else before['config']['url']
+        def signed_delivery_api(method, path, body=None):
+            delivery = api(method, path, body)
+            if method == 'GET' and path.startswith(endpoint + '/deliveries/') and delivery.get('url') == target:
+                request = delivery.get('request')
+                headers = request.get('headers') if isinstance(request, dict) else None
+                signature = next((value for key, value in headers.items()
+                                  if key.lower() == 'x-hub-signature-256'), None) if isinstance(headers, dict) else None
+                if not isinstance(signature, str) or re.fullmatch(r'sha256=[0-9a-fA-F]{64}', signature) is None:
+                    raise RuntimeError('Latest matching Emergency delivery lacks a GitHub SHA-256 signature header')
+            return delivery
+        accepted.append(CALLBACKS.delivery_status(signed_delivery_api if require_delivery else api,
+                                                 target, cutover, endpoint + '/deliveries'))
+    print('Emergency callback URL verified; existing hook settings preserved' if execute else 'Preview only; Emergency callback unchanged')
     if require_delivery and not all(accepted):
         raise RuntimeError('Emergency hook requires a successful delivery newer than its cutover; no event or redelivery was triggered')
     return all(accepted)

@@ -81,6 +81,49 @@ live. Verify a real workflow/Langfuse generation before retiring the AWS key.
 Rollback needs the paired database dump and n8n PVC restore; editing the Job
 cannot undo database changes.
 
+## Staged signed Emergency callback
+
+The GitHub Emergency workflow (`AARG1VWHRxowXlSU`) currently starts with an
+unauthenticated generic Webhook node. Its existing GitHub hook `636944763`
+uses form encoding without a signing secret. Before Traefik containment on
+2026-10-31, a fresh HTTP 200 delivery had no `X-Hub-Signature-256` header;
+HTTP success did not authenticate the callback.
+`scripts/n8n-github-webhooks.py --require-delivery`
+now rejects such an unsigned delivery. Header presence proves GitHub signed a
+delivery, while the receiver's HMAC check comes from the n8n trigger.
+
+`migration-github-trigger-v1.values.yaml` stages a one-time Job. It is absent
+from the n8n Helm valueFiles and Kustomize resources, so this source change
+does not edit the workflow or register a hook. The Job requires the exact
+active six-node graph, original parameter fingerprints and seven inventoried
+expression locations. It replaces only the old Webhook node with n8n 2.43.7's
+native GitHub Trigger, copies the existing `githubAppApi` credential reference,
+and changes those expressions from `$json.body.payload` to `$json.body` for
+the trigger's JSON event body. Drift aborts before import; an already migrated
+graph is a no-op. The new node ID path is
+`/webhook/f3e12cbd-1d01-4ef0-b24e-d68741ea898b/webhook`, distinct from the
+old path. The pinned trigger creates a random signing secret, configures the
+new GitHub hook with JSON content, and rejects invalid signatures before the
+workflow runs. It cannot adopt or delete the existing generic hook.
+
+Before a separate activation PR includes this values file, verify a paired
+off-NAS PostgreSQL logical dump and n8n PVC backup with a restore path, and
+confirm that the existing GitHub App installation credential has repository
+`Webhooks: write` permission. Run
+`nix develop --command python3 -I scripts/ci/n8n-github-trigger-migration-check.py`
+and render the proposed Helm values. Activation imports and republishes the
+workflow. In n8n 2.43.7, CLI import first deactivates it; the Job compares the
+full imported node graph before publishing and checks active readback after.
+A failed import or publish can leave the workflow unavailable, so the paired
+restore is required. A separate reviewed GitOps Deployment revision restarts
+n8n to load the published version. Verify the new signed hook and a fresh
+delivery before retiring the old unsigned hook through a reviewed
+repository-owned helper change. Keep Traefik's old-path exclusion in place
+through that verification and retirement; the new path is not excluded. The
+current callback helper still targets old hook `636944763` and cannot verify
+the new hook until that follow-up is added. Rollback requires the paired
+database and PVC restore; removing the Job does not undo the workflow edit.
+
 ## Access Contract
 
 - Editor/UI: `https://n8n.stinkyboi.com` through private Tailscale and Traefik.
@@ -112,16 +155,17 @@ python3 -I scripts/n8n-github-webhooks.py --retire-helper
 ```
 
 Its guarded `--execute` changes only the Emergency hook URL, preserving its
-path, secret, events, and settings. It requires root 404 and a safe OPTIONS 204
+path, events, and settings. It requires root 404 and a safe OPTIONS 204
 response for that POST-only hook; it never POSTs or triggers redelivery.
 `--retire-helper --execute --expected-sha REVIEWED_MAIN_SHA` removes only the
 reviewed helper hook after a fresh successful Emergency delivery. Here
 `REVIEWED_MAIN_SHA` is the full reviewed current `main` commit. Repeating it
 after verified absence is a no-op. `--require-delivery` requires the retired
-ID and callback path to be absent and a newer successful Emergency delivery
-than its saved cutover receipt. Historical success does not establish current
-callback acceptance. Keep the legacy Tunnel route until the surviving Policy
-Bot and Emergency callbacks pass their fresh delivery checks.
+ID and callback path to be absent, plus a newer successful Emergency delivery
+with a SHA-256 signature header after its saved cutover receipt. It does not
+prove the receiver validated that signature. Historical success does not
+establish current callback acceptance. Keep the legacy Tunnel route until the
+surviving Policy Bot and Emergency callbacks pass their fresh delivery checks.
 
 ## Database Readiness
 

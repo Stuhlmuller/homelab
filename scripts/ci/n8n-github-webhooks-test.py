@@ -28,7 +28,7 @@ class WebhookTests(unittest.TestCase):
         self.addCleanup(clock.stop)
 
     def api(self, *, drift=False, retired_drift=False, duplicate_callback_host=None,
-            changed=False, delete_changed=False, fresh=True):
+            changed=False, delete_changed=False, fresh=True, signature='sha256=' + 'a' * 64):
         hooks = {identifier: {'id': identifier, 'name': 'web', 'active': True, 'events': ['pull_request'],
                              'config': {'url': HOOKS.PREVIOUS_HOST + '/webhook/' + path,
                                         'content_type': 'json', 'secret': 'redacted', 'insecure_ssl': '0'}}
@@ -71,7 +71,8 @@ class WebhookTests(unittest.TestCase):
                 return deepcopy(hooks[identifier])
             delivery = {'id': 12 if identifier in patched else 11, 'status_code': 200,
                         'delivered_at': '2026-10-10T00:01:00Z' if fresh else '2026-01-01T00:00:00Z',
-                        'url': hooks[identifier]['config']['url']}
+                        'url': hooks[identifier]['config']['url'],
+                        'request': {'headers': {'X-Hub-Signature-256': signature} if signature else {}}}
             return [delivery] if '?' in path else delivery
         return api, calls
 
@@ -109,6 +110,15 @@ class WebhookTests(unittest.TestCase):
             api, _ = self.api(**arguments)
             with contextlib.redirect_stdout(io.StringIO()), patch.object(HOOKS, 'preflight'), self.assertRaises(RuntimeError):
                 HOOKS.reconcile(api, execute=True, require_delivery=True)
+
+    def test_unsigned_or_malformed_success_cannot_pass_delivery_gate(self):
+        for signature in (None, 'sha256=invalid'):
+            api, _ = self.api(signature=signature)
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), patch.object(HOOKS, 'preflight'), \
+                 self.assertRaisesRegex(RuntimeError, 'lacks a GitHub SHA-256 signature header'):
+                HOOKS.reconcile(api, execute=True, require_delivery=True)
+            self.assertNotIn('redacted', output.getvalue())
 
     def test_preflight_uses_only_root_get_and_nonexecuting_options(self):
         with patch.object(HOOKS, 'safe_probe', side_effect=[(404, {}), (204, {'Access-Control-Allow-Methods': 'OPTIONS, POST'}),

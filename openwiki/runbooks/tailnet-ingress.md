@@ -371,8 +371,8 @@ The callback helpers keep the surviving Github Emergency Bot hook `636944763`
 and Policy Bot App webhook configured on Funnel. Temporary Traefik containment
 returns edge 404 for the Emergency Bot path
 `/webhook/7d4342d3-103b-437a-a941-811a75dacb2f`; other n8n webhook IDs
-remain routed. Defer fresh Emergency delivery and helper retirement while
-containment is active.
+remain routed. Defer legacy-hook delivery acceptance and helper retirement
+while containment is active.
 
 The unused Codex Review Helper hook `589400612` is retired through the reviewed
 [`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) command from
@@ -397,6 +397,29 @@ The pinned app registers POST only: GET proves routing, not HMAC validation.
 Fresh successful signed delivery remains the acceptance gate. The surviving
 Emergency Bot POST-only hook uses a non-executing OPTIONS probe before its URL
 change; the inactive helper workflow stays unpublished.
+
+### Pending n8n signed Emergency callback
+
+Before Traefik containment on 2026-10-31, read-only GitHub delivery detail
+showed a fresh HTTP 200 for Emergency hook `636944763` without
+`X-Hub-Signature-256`. Its form-encoded hook has no signing secret. The active
+n8n workflow uses an unauthenticated
+generic Webhook node, so HTTP success did not establish a trusted event.
+[`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) now rejects an
+unsigned delivery under `--require-delivery`. Header presence establishes that
+GitHub signed the request, while n8n must verify its HMAC before execution.
+
+The excluded [GitHub Trigger migration Job](../../clusters/homelab/apps/n8n/migration-github-trigger-v1.values.yaml)
+guards the exact workflow graph and parameter fingerprints, preserves its
+GitHub App credential reference, and prepares a separate signed JSON callback
+path. It changes no live workflow until a separate activation PR includes the
+values file. Activation needs a verified paired off-NAS n8n PostgreSQL dump
+and PVC backup with restore path, plus the GitHub App's repository
+`Webhooks: write` permission. After activation, verify a fresh signed delivery
+on the new hook, then retire the old unsigned hook through a reviewed
+repository-owned helper update. Keep the old-path Traefik exclusion until the
+old hook is confirmed absent. The new path remains routed by the existing
+callback rule. The current helper still targets the old ID.
 
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,

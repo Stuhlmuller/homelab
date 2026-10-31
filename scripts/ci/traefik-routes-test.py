@@ -127,7 +127,8 @@ class RouteTests(unittest.TestCase):
                      "/webhook//7d4342d3-103b-437a-a941-811a75dacb2f/",
                      "/webhook/7D4342D3-103B-437A-A941-811A75DACB2F"):
             self.assertIsNotNone(denied.search(path))
-        for path in ("/webhook/other-id", "/webhook-test/7d4342d3-103b-437a-a941-811a75dacb2f",
+        for path in ("/webhook/other-id", "/webhook/f3e12cbd-1d01-4ef0-b24e-d68741ea898b/webhook",
+                     "/webhook-test/7d4342d3-103b-437a-a941-811a75dacb2f",
                      "/webhook/7d4342d3-103b-437a-a941-811a75dacb2f-other"):
             self.assertIsNone(denied.search(path))
         for path in ("/", "/rest/settings", "/rest/login", "/healthz",

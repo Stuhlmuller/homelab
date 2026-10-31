@@ -1024,6 +1024,16 @@ inspection errors, mismatched metadata or nonblank stored data. Failed ID
 listing, workflow export, malformed JSON or node shape, duplicate target node,
 or write error fails the Job without blocking app startup.
 It does not prove deployment or live workflow execution.
+`scripts/ci/n8n-github-trigger-migration-check.py` exercises the excluded
+Emergency GitHub Trigger Job against synthetic old and migrated workflows. It
+checks the six-node graph and parameter guards, GitHub App credential
+reference preservation, expression rewrite, stale-state refusal, and retry
+idempotence. A zero-exit import that skips the workflow must fail the Job's
+readback before publishing the old graph. The fixture also verifies the Job
+remains outside the live n8n values and Kustomize inputs. A passing fixture
+does not establish the required paired
+database/PVC backup, GitHub App `Webhooks: write` permission, hook registration,
+or live signature verification.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
