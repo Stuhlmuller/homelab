@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: platform-maintenance-probe
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 32Mi
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: platform-maintenance-probe
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: platform-maintenance-probe
+  annotations:
+    checkov.io/skip1: CKV_K8S_8=The idle probe has no listening endpoint; the protected workflow checks its runtime paths.
+    checkov.io/skip2: CKV_K8S_9=The protected workflow checks Pod phase and functional probes before upgrade receipts.
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: platform-maintenance-probe
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: platform-maintenance-probe
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [zimaboard-0, zimaboard-1, zimaboard-2, acer]
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 65532
+        runAsNonRoot: true
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: probe
+          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+          command: [/usr/bin/python3, -c, "import time; time.sleep(10**9)"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: storage
+              mountPath: /probe
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: platform-maintenance-probe
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: platform-maintenance-probe
+  namespace: monitoring
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: platform-maintenance-probe
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
