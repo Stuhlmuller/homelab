@@ -705,6 +705,22 @@ records successful Linux audit CI at `279092e6`, with exact image/config identit
 `06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
 The available-fix gate passed; CVE clearance remains explicitly false.
 
+On 2026-10-29, [main validation](https://github.com/Stuhlmuller/homelab/actions/runs/40828576192)
+began failing `harbor-core-compatibility` with `validation:remediation`; the
+[2026-10-30 main run](https://github.com/Stuhlmuller/homelab/actions/runs/40999168427)
+failed the same check. The [last passing main run](https://github.com/Stuhlmuller/homelab/actions/runs/40616761747)
+on October 28 retained five unresolved matches. A
+[commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
+shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
+workflow between the passing and failing main revisions. A fresh advisory
+database may now report an available fix; public logs deliberately withhold the
+finding, so the exact cause remains unverified. Inspect the private report,
+update the pinned runtime base or affected dependency as needed, then rerun the
+[Linux build and registry fixture](../../builds/harbor-core/build.sh) and the
+[full-image scan](../../builds/harbor-core/scan.sh). Keep the
+[available-fix rejection](../../scripts/ci/harbor-core-scan-check.py) and fresh
+Grype database gate; do not suppress the match to clear unrelated PR checks.
+
 The active Harbor Kustomization renders a namespace-local Docker-config
 ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.
 The vulnerability exporter references it only for kubelet pulls. The
