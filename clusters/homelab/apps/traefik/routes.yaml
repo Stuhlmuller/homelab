@@ -141,7 +141,11 @@ http:
       tls: {}
     n8n-webhook:
       entryPoints: [funnel]
-      rule: Host(`n8n-webhook.tail67beb.ts.net`) && PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`)
+      # Contain the unsigned Emergency Bot hook without disabling other workflows.
+      rule: >-
+        Host(`n8n-webhook.tail67beb.ts.net`) &&
+        PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`) &&
+        !PathRegexp(`(?i)^/webhook/+7d4342d3-103b-437a-a941-811a75dacb2f/*$`)
       middlewares: [reject-ambiguous-paths]
       service: n8n
     policy-bot-hook:

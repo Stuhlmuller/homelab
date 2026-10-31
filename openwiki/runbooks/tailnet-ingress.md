@@ -368,8 +368,13 @@ owned-file rollback. After any later public retirement, wait the old TTL and
 verify normal DNS, canonical TLS and native gRPC.
 
 The callback helpers keep the surviving Github Emergency Bot hook `636944763`
-and Policy Bot App webhook on Funnel. The unused Codex Review Helper hook
-`589400612` is retired through the reviewed
+and Policy Bot App webhook configured on Funnel. Temporary Traefik containment
+returns edge 404 for the Emergency Bot path
+`/webhook/7d4342d3-103b-437a-a941-811a75dacb2f`; other n8n webhook IDs
+remain routed. Defer fresh Emergency delivery and helper retirement while
+containment is active.
+
+The unused Codex Review Helper hook `589400612` is retired through the reviewed
 [`n8n-github-webhooks.py`](../../scripts/n8n-github-webhooks.py) command from
 clean current `main`, after a fresh Emergency delivery. It verifies the exact
 helper identity and URL before deleting that ID, then requires its ID and

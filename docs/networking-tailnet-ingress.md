@@ -129,16 +129,21 @@ than HMAC; see [Policy Bot's pinned behavior](../clusters/homelab/apps/policy-bo
 ## n8n Webhook Callback
 
 The public Funnel route permits `/webhook`, `/webhook-test`, `/webhook-waiting`,
-and their slash-separated descendants on `n8n-webhook.tail67beb.ts.net`.
+and their slash-separated descendants on `n8n-webhook.tail67beb.ts.net`,
+except the temporarily contained Emergency Bot path
+`/webhook/7d4342d3-103b-437a-a941-811a75dacb2f`. That hook returns edge
+404; other webhook IDs remain routed.
 Authentication or signing remains workflow-specific. The editor, REST API,
 assets, and root stay at private `n8n.stinkyboi.com`.
 
 Phase 2a sets `WEBHOOK_URL` to `https://n8n-webhook.tail67beb.ts.net/` only after
 Funnel readiness; n8n can re-register hooks during startup. Keep the Emergency
-repository hook on Funnel and retire the unused Codex Review Helper hook through
-`scripts/n8n-github-webhooks.py`. Require the retired ID and path to be absent,
-plus fresh Emergency and Policy Bot deliveries; retain the old callback routes
-until acceptance.
+repository hook configuration on Funnel, but do not claim delivery while its
+path is contained. Defer the Emergency delivery and unused Codex Review Helper
+retirement gates until a reviewed replacement or rollback restores the path.
+Then retire the helper through `scripts/n8n-github-webhooks.py` and require the
+retired ID and path to be absent plus fresh Emergency and Policy Bot deliveries;
+retain the old callback routes until acceptance.
 
 ## Fleet And Future Public Routes
 

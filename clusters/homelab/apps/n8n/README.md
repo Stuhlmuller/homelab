@@ -98,6 +98,11 @@ to call itself without widening other workload access.
 
 Move the surviving external registration from `n8n-webhook.stinkyboi.com` to
 the Funnel host only after the [callback cutover gates](../traefik/CUTOVER.md).
+Temporary [Traefik containment](../traefik/README.md) denies the unsigned
+Emergency Bot webhook path at the Funnel edge. Hook `636944763` returns 404;
+other n8n webhook paths stay routed. Do not count Emergency deliveries as
+accepted or run the helper cutover while this exclusion is active.
+
 The helper previews the Github Emergency Bot hook `636944763` and the exact
 retirement of unused Codex Review Helper hook `589400612`:
 
