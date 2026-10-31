@@ -2,6 +2,7 @@
 """Fail-closed fixtures for read-only canary traffic probes."""
 
 import importlib.util
+import copy
 import json
 import shutil
 import socket
@@ -25,6 +26,46 @@ def load_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def firewall_spec(module, live_pod=False):
+    container = {"name": "kube-router", "image": module.FIREWALL_IMAGE,
+                 "args": sorted(module.FIREWALL_FLAGS),
+                 "env": [{"name": "NODE_NAME", "valueFrom": {"fieldRef": {
+                     "fieldPath": "spec.nodeName"}}},
+                         {"name": "POD_NAME", "valueFrom": {"fieldRef": {
+                             "fieldPath": "metadata.name"}}}],
+                 "livenessProbe": {"httpGet": {"host": "127.0.0.1",
+                                               "path": "/healthz", "port": "health"}},
+                 "readinessProbe": {"httpGet": {"host": "127.0.0.1",
+                                                "path": "/healthz", "port": "health"}},
+                 "volumeMounts": [{"name": "xtables-lock", "mountPath": "/run/xtables.lock"}],
+                 "securityContext": {"privileged": True}}
+    spec = {"serviceAccountName": "kube-router-network-policy", "hostNetwork": True,
+            "dnsPolicy": "ClusterFirstWithHostNet", "priorityClassName": "system-node-critical",
+            "nodeSelector": {module.CANARY_KEY: "true"},
+            "tolerations": [{"key": module.CANARY_KEY, "operator": "Equal",
+                             "value": "true", "effect": "NoSchedule"}],
+            "volumes": [{"name": "xtables-lock", "hostPath": {
+                "path": "/run/xtables.lock", "type": "FileOrCreate"}}],
+            "containers": [container]}
+    if live_pod:
+        token = "kube-api-access-abcde"
+        spec["volumes"].append({"name": token, "projected": {"defaultMode": 420,
+            "sources": [{"serviceAccountToken": {"expirationSeconds": 3607,
+                                                  "path": "token"}},
+                        {"configMap": {"items": [{"key": "ca.crt", "path": "ca.crt"}],
+                                       "name": "kube-root-ca.crt"}},
+                        {"downwardAPI": {"items": [{"fieldRef": {"apiVersion": "v1",
+                            "fieldPath": "metadata.namespace"}, "path": "namespace"}]}}]}})
+        container["volumeMounts"].append({"name": token,
+                                           "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+                                           "readOnly": True})
+        container["imagePullPolicy"] = "IfNotPresent"
+        container["terminationMessagePath"] = "/dev/termination-log"
+        container["livenessProbe"]["timeoutSeconds"] = 1
+        spec["restartPolicy"] = "Always"
+    return spec
 
 
 class CanaryQualificationTests(unittest.TestCase):
@@ -233,8 +274,8 @@ class CanaryQualificationTests(unittest.TestCase):
                             "apiVersion": "apps/v1", "kind": "DaemonSet",
                             "name": "kube-router-network-policy", "uid": "daemonset-uid",
                             "controller": True, "blockOwnerDeletion": True}]},
-                        "spec": {"nodeName": "zimaboard-0",
-                                 "containers": [{"image": self.module.FIREWALL_IMAGE}]},
+                        "spec": firewall_spec(self.module, live_pod=True) |
+                                {"nodeName": "zimaboard-0"},
                         "status": {"phase": "Running", "conditions": [
                             {"type": "Ready", "status": "True"}]}}
         policy = json.loads(json.dumps(self.module.EXPECTED_POLICY))
@@ -277,6 +318,35 @@ class CanaryQualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "firewall is not ready"):
                 self.module.inspect(config)
             firewall_pod["metadata"]["ownerReferences"][0]["uid"] = "daemonset-uid"
+            firewall_pod["spec"]["containers"][0]["envFrom"] = [
+                {"secretRef": {"name": "unreviewed"}}]
+            with self.assertRaisesRegex(ValueError, "firewall is not ready"):
+                self.module.inspect(config)
+            del firewall_pod["spec"]["containers"][0]["envFrom"]
+            mutations = (
+                ("spec", "hostPID", True),
+                ("spec", "initContainers", [{"name": "unreviewed-host-writer"}]),
+                ("spec", "volumes", firewall_spec(self.module, True)["volumes"] + [
+                    {"name": "host-root", "hostPath": {"path": "/", "type": "Directory"}}]),
+                ("container", "lifecycle", {"postStart": {"exec": {
+                    "command": ["/bin/sh", "-c", "true"]}}}),
+                ("container", "command", ["/bin/sh", "-c", "true"]),
+                ("container", "securityContext", {"privileged": True,
+                                                    "capabilities": {"add": ["SYS_ADMIN"]}}),
+                ("container", "livenessProbe", {"exec": {"command": ["/bin/sh"]}}),
+            )
+            for target, field, value in mutations:
+                with self.subTest(target=target, field=field):
+                    spec = firewall_pod["spec"]
+                    item = spec if target == "spec" else spec["containers"][0]
+                    original = copy.deepcopy(item.get(field))
+                    item[field] = value
+                    with self.assertRaisesRegex(ValueError, "firewall is not ready"):
+                        self.module.inspect(config)
+                    if original is None:
+                        del item[field]
+                    else:
+                        item[field] = original
             client = pods["npq-client"]["spec"]
             for field, value in (("automountServiceAccountToken", True),
                                  ("hostNetwork", True),
@@ -334,25 +404,7 @@ class CanaryQualificationTests(unittest.TestCase):
             {"apiGroups": ["coordination.k8s.io"], "resources": ["leases"],
              "verbs": ["get", "create", "update"]},
         ]}
-        template = {"serviceAccountName": name, "hostNetwork": True,
-                    "dnsPolicy": "ClusterFirstWithHostNet",
-                    "priorityClassName": "system-node-critical",
-                    "nodeSelector": {self.module.CANARY_KEY: "true"},
-                    "tolerations": [{"key": self.module.CANARY_KEY, "operator": "Equal",
-                                     "value": "true", "effect": "NoSchedule"}],
-                    "volumes": [{"name": "xtables-lock", "hostPath": {
-                        "path": "/run/xtables.lock", "type": "FileOrCreate"}}],
-                    "containers": [{"image": self.module.FIREWALL_IMAGE,
-                                    "args": sorted(self.module.FIREWALL_FLAGS),
-                                    "env": [{"name": "NODE_NAME", "valueFrom": {"fieldRef": {
-                                        "fieldPath": "spec.nodeName"}}},
-                                            {"name": "POD_NAME", "valueFrom": {"fieldRef": {
-                                                "fieldPath": "metadata.name"}}}],
-                                    "livenessProbe": {"httpGet": {"host": "127.0.0.1"}},
-                                    "readinessProbe": {"httpGet": {"host": "127.0.0.1"}},
-                                    "volumeMounts": [{"name": "xtables-lock",
-                                                      "mountPath": "/run/xtables.lock"}],
-                                    "securityContext": {"privileged": True}}]}
+        template = firewall_spec(self.module)
         daemonset = {"metadata": {"name": name, "namespace": "kube-system"},
                      "spec": {"selector": {"matchLabels": {"app.kubernetes.io/name": name}},
                               "template": {"spec": template}}}
@@ -370,6 +422,21 @@ class CanaryQualificationTests(unittest.TestCase):
         }
         with patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]):
             self.assertIs(self.module.inspect_firewall_source(), daemonset)
+            for field, value in (
+                    ("envFrom", [{"secretRef": {"name": "unreviewed"}}]),
+                    ("lifecycle", {"postStart": {"exec": {"command": ["/bin/sh"]}}}),
+                    ("securityContext", {"privileged": True,
+                                         "capabilities": {"add": ["SYS_ADMIN"]}})):
+                with self.subTest(field=field):
+                    container = template["containers"][0]
+                    original = container.get(field)
+                    container[field] = value
+                    with self.assertRaisesRegex(ValueError, "firewall-only"):
+                        self.module.inspect_firewall_source()
+                    if original is None:
+                        del container[field]
+                    else:
+                        container[field] = original
             template["containers"][0]["args"].remove("--run-router=false")
             template["containers"][0]["args"].append("--run-router=true")
             with self.assertRaisesRegex(ValueError, "firewall-only"):
