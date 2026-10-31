@@ -31,6 +31,27 @@ secret. Require a fresh successful signed delivery before retiring the previous
 `policy-bot-hook.stinkyboi.com` Tunnel route. Source changes alone do not move
 that external registration.
 
+If Traefik is unavailable and the required Policy Bot check blocks its own
+recovery PR, the retained `policy-bot-hook.stinkyboi.com` Istio route is the
+fixed emergency callback. After explicit owner authorization, run the signed
+recovery PR's clean checkout with:
+
+```sh
+python3 -I scripts/policy-bot-webhook.py --rollback-to-previous --execute \
+  --recovery-pr <PR-number> --expected-sha <signed-PR-head>
+```
+
+The helper requires that PR head to be signed and directly based on current
+`main`, probes the retained public route with public DoH, strict TLS, and the
+backend request ID, checks atomic receipt writes before changing the App URL,
+and keeps a separate recovery receipt.
+It never creates or replays a delivery. After a fresh PR event, use
+`--rollback-to-previous --require-delivery` to verify delivery and check the
+`policy-bot: main` status before merging. Restore the Funnel URL through the
+normal reviewed-main `--execute` path after Traefik is healthy.
+The bare `--require-delivery` option checks the Funnel cutover receipt, not the
+retained public callback or its recovery receipt.
+
 ## Secrets
 
 `IaC/live/aws-ssm-parameters` owns the expected SSM parameters:
