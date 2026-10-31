@@ -105,7 +105,8 @@ class RouteTests(unittest.TestCase):
                   if "funnel" in route["entryPoints"]}
         self.assertEqual(set(public), {"n8n-webhook", "policy-bot-hook", "bulldozer-hook"})
         expected = {
-            "n8n-webhook": ("n8n", "PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`)"),
+            "n8n-webhook": ("n8n", "PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`) && "
+                            "!PathRegexp(`(?i)^/webhook/+7d4342d3-103b-437a-a941-811a75dacb2f/*$`)"),
             "policy-bot-hook": ("policy-bot", "Path(`/api/github/hook`)"),
             "bulldozer-hook": ("bulldozer", "Path(`/api/github/hook`)"),
         }
@@ -116,11 +117,19 @@ class RouteTests(unittest.TestCase):
                 "middlewares": ["reject-ambiguous-paths"],
                 "service": service,
             })
-        allowed = re.compile(re.search(r"PathRegexp\(`(.*)`\)",
-                                       public["n8n-webhook"]["rule"])[1])
+        matchers = re.findall(r"PathRegexp\(`(.*?)`\)", public["n8n-webhook"]["rule"])
+        self.assertEqual(len(matchers), 2)
+        allowed, denied = map(re.compile, matchers)
         for base in ("/webhook", "/webhook-test", "/webhook-waiting"):
             for suffix in ("", "/", "/workflow-id"):
                 self.assertIsNotNone(allowed.search(base + suffix))
+        for path in ("/webhook/7d4342d3-103b-437a-a941-811a75dacb2f",
+                     "/webhook//7d4342d3-103b-437a-a941-811a75dacb2f/",
+                     "/webhook/7D4342D3-103B-437A-A941-811A75DACB2F"):
+            self.assertIsNotNone(denied.search(path))
+        for path in ("/webhook/other-id", "/webhook-test/7d4342d3-103b-437a-a941-811a75dacb2f",
+                     "/webhook/7d4342d3-103b-437a-a941-811a75dacb2f-other"):
+            self.assertIsNone(denied.search(path))
         for path in ("/", "/rest/settings", "/rest/login", "/healthz",
                      "/webhook-admin", "/webhook-test-admin", "/webhook-waiting-admin"):
             self.assertIsNone(allowed.search(path))
