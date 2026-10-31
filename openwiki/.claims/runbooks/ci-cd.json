@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:488330fdb60e1193b202d39e880f25cc6f5363b4067d96503b8584aaaa5937c6",
+  "pageVersion": "sha256:4c78fda6613bf4400924347cd604f7d9b8c534d07b4b386f7e2c524a723b3838",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -436,7 +436,7 @@
         },
         {
           "resource": "repo://specs/006-harbor-production-key-recovery/research.md",
-          "version": "repo-file-v1:sha256:3805ec0b1d57b09c3dd46105b1fe99c313d5eacec29769c4ec4d380a932491ed"
+          "version": "repo-file-v1:sha256:88322a1d43ee77afcfbb97377faa373e8cc9805b2671e82f63deb6f7f492bbed"
         },
         {
           "resource": "repo://specs/006-harbor-production-key-recovery/spec.md",
@@ -447,6 +447,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-31T22:18:24.858Z"
+    "at": "2026-10-31T22:40:48.699Z"
   }
 }

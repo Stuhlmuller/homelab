@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ec1dc75eac94f55caaac9f8dac3177a75ab85fe44b738fcc0d004678fde2a311",
+  "pageVersion": "sha256:2079ccccb9e4cdb22de7eaf35ca930f86d042d2949e6653a0688fcac7dc50e47",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -678,7 +678,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:52ee0ae7104bd60986e5b75c07ffbbf66c6fd0892cbff141b84f3de2310134a5"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
@@ -695,8 +695,8 @@
       "statement": "The first manual in-cluster Renovate dry run was rejected by destination ztunnel before Harbor traffic reached Traefik. A later scheduled full dry run completed repository coverage, but that does not establish Harbor transport or eligible version discovery; those responses and any needed credential contract remain gates before writer cutover.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L74-L90",
-          "version": "repo-lines-v1:sha256:0122046e0a2d48a5eee4eb815dcdb8542e954e6646f6ee46ad858b7fa33bc396:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2YTdmMGY5MmM0YjczNzQwMWM4MWViZWFjODU1YTRmMmZjMjA5Nzk0Mjc5YWQzOTNhYmQyMWJkZjMxYTJjMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3NWQzMDRmZTMwYmE1YzYxNWU4ZjliNjA0OTcxODYwODBkNWI0MzY1ZjdhZGY0NDRlMjQ4YWVmZThlNGJjNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5ZDAxYTZiYjM0MTA2Y2MwOTAzOTNlNmEwZTczZGFkZWNlY2RmOGRmM2FhNmQ2NDk2ZmQ5ZGJhNTk5ZDhmYWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4MDU4ZjFmY2JmNDYxOTQ1MTE4NmY2MDFmZWNmMTc2MzVjOGViMDRhNzMyZjYxODkwNDBjODJkNjlmNzkzNTQifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L104",
+          "version": "repo-lines-v1:sha256:81f50725155bdf5191586715846956a02d03af5d0705a5970a5d49e6bf445041:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwZWE3NWQxYmUxMWJlMzQyNGNmNmZlODExY2UxM2ZlMjAxNmM5NmQzZTAwYjEyNWY0ZGJkOTYwYzhhNWYwODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3NWQzMDRmZTMwYmE1YzYxNWU4ZjliNjA0OTcxODYwODBkNWI0MzY1ZjdhZGY0NDRlMjQ4YWVmZThlNGJjNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYyY2FhM2RjYWJkYmJmMTA5NjZjMzliZWJmYWMxOWRhMDk2YjExZTVkNjA3NTQzOTJkOTYyNDdlZDdjOTExNzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4MDU4ZjFmY2JmNDYxOTQ1MTE4NmY2MDFmZWNmMTc2MzVjOGViMDRhNzMyZjYxODkwNDBjODJkNjlmNzkzNTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -993,6 +993,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-31T22:18:24.858Z"
+    "at": "2026-10-31T22:40:48.699Z"
   }
 }

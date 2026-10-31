@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c97dae43a8cbd990b4a606d918266d19c7003868e7e8d802c1a27085299980c5",
+  "pageVersion": "sha256:4b46a7ba6f849990cc0692824ac21ce013db8f1e3ee159248ec5d421c738a9ff",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -288,27 +288,31 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor alias to a registry-only Traefik listener. Protected App-key transfer and temporary writer-grant retirement are complete; the legacy GitHub Action remains the writer while eligible Harbor discovery, T024/T042 cache-fault and NAS-capacity recovery, full dry-run parity, and reviewed cutover remain open.",
+      "statement": "Renovate declares an hourly UTC full-dry-run CronJob on acer with retained local cache of advisory 20 GiB capacity and the former NFS claim preserved, a tokenless ServiceAccount and Harbor registry alias. Signed delivery and the October 30 02:00/03:00 scheduled runs verified scoped reliability: each completed nine repositories with zero exits and no error or mutex markers. Credential transfer/grant retirement are complete; the legacy Action remains writer while Harbor discovery, T024/T042 recovery, full parity, cutover and seven-day migration acceptance stay open.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
           "version": "repo-lines-v1:sha256:35b66f1c4e3dde01914dfeb0e0d1d0001d0c496a44e6b8998520828c0948a587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUxMzZhZTZiYTZmZmE2ZDJmMTY5OTc1ZTFiNmVjMTI0ZmQ0NTBjZTZjYTkwZGI4NjgwMzAyMWZiMGE4NWVjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L42-L121",
-          "version": "repo-lines-v1:sha256:89c8d386ba310a83e447d262ff7390608f0c4a4b8fd1f53e156c56d1e4f6ef12:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTRkNTU3NTJjMDliMzQwMDAyN2EzZjQyNTEwMjAyNmI5MzJhYWMzNjk2ZjQwZWJjODkzZDM4YWVmYzNiYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzgwZDFhZTdlYTRjYzliNjA5OTQ3Zjg2ZGNhYTc4NzYyMzg2YzIwYmYxMWU5MDhlZDdiMzgzY2MwNTdjZTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMWNjMWUyYWE5ZjA3ZDlkMGIwYTllODg0OWI1ZTM3NTQwZTU5NGEwYTZkZDVhOTk2OGNhZjk2MTg5Y2E1YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L159-L186",
+          "version": "repo-lines-v1:sha256:2c2c72bf2566cbec956fe48e859ece5f8606e472455da90b81227fa440b98cae:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNlYmY4ODFiOWU2ZTVjZTk3NDM0MGQ0MTEzOTViYzkwMDk4YzA5NWY0OWE2ZjFmNzlkYWI3NzAyMjE1YzRlMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyY2JhODZkOGRmZWQwMjJlNzIzYmJhYjdkN2JkY2U3MTYyM2M0NTIxMTVlYmNjOWI0M2QxZjNlMTBhMmM1YzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1ZjNkMGM2ZThmYjNhYzY4ZTljMjJiM2JmYmEzZTIxYTlmZGRhOTlhNTFlNWQwYmI5OTU2MGMyNTBiZWY2YTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkN2YzYjU0ZWY5NjUxZGU1NzZiNzk0OTg1YzVlODY4MTI2YTBiZTE4NzRhY2MwNzMxYjNiNjZkNmFhNmMyOWEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L42-L104",
+          "version": "repo-lines-v1:sha256:035c5ad2274588b9097380a5a957546c625f1e1f205c7bfbaf16400da966fac4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMTRkNTU3NTJjMDliMzQwMDAyN2EzZjQyNTEwMjAyNmI5MzJhYWMzNjk2ZjQwZWJjODkzZDM4YWVmYzNiYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3NWQzMDRmZTMwYmE1YzYxNWU4ZjliNjA0OTcxODYwODBkNWI0MzY1ZjdhZGY0NDRlMjQ4YWVmZThlNGJjNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQwMWNjMWUyYWE5ZjA3ZDlkMGIwYTllODg0OWI1ZTM3NTQwZTU5NGEwYTZkZDVhOTk2OGNhZjk2MTg5Y2E1YTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4MDU4ZjFmY2JmNDYxOTQ1MTE4NmY2MDFmZWNmMTc2MzVjOGViMDRhNzMyZjYxODkwNDBjODJkNjlmNzkzNTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "version": "repo-file-v1:sha256:52ee0ae7104bd60986e5b75c07ffbbf66c6fd0892cbff141b84f3de2310134a5"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
-          "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+          "resource": "repo://clusters/homelab/apps/renovate/local-cache-pvc.yaml",
+          "version": "repo-file-v1:sha256:d45efb2d6937aaf3bd9daa7a1815a80e87171e4fd4795485878dffb1374fa1fb"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
-          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+          "resource": "repo://specs/004-run-renovate-in-cluster/reliability-receipt.md#L157-L246",
+          "version": "repo-lines-v1:sha256:1bcb009a33f74f0cb52230b01398f41198aac78ab32ead58443f740249680aae:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZlMDgwNmE4MTVmZjA0ODA0OTFhZjQ3MmMxNDhiNDk0ZjBhOTBlOTY3MWNmNTQwYjc5NTVhMWQzOWViZGFkMzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4NjUyYmY3M2MwMGVlOGRjMDJjNjU1YzNhMjhiNDg5ZTgwYTY5MDE4MGZkMjgzMmFmZWY5NzM4NTcwZWViNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkzNmE3YjUyZDQ5NWQ5NGUzNzk2ZDEwNDMxYmRiZDBjZTA0ZjBlMjc5NDFlMTU1YzJjOTI1ZWM5ZTU5NzY5YmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFlYjc4NmU5ZTkyODJlOWMwMzZiMTU5OWI3MmNjYTVlMjI1ZWNiMDA5ZDg5MDQzZGU2Mjg5NTViMWEzYmQzMTkifQ"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L74-L79",
@@ -827,6 +831,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-31T22:18:24.858Z"
+    "at": "2026-10-31T22:40:48.699Z"
   }
 }

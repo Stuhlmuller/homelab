@@ -66,14 +66,28 @@ role through a reviewed change, transfer new values, wait for a later
 ExternalSecret refresh, verify a later Job under the same App, and retire the
 grant again.
 
-The retained `renovate-cache` 20 GiB `nfs-default` PVC holds Renovate's
-datasource, private-package, and repository-extraction caches. It contains
-private package metadata, so restrict volume access and
-logs. Repository clones and work files use an ephemeral `/tmp` volume. The
-cache can be rebuilt; it has no backup. Argo CD does not prune the PVC. The
-non-root container has a writable ephemeral root because the Renovate image
+The retained `renovate-cache-local` PVC holds Renovate's datasource,
+private-package, repository-extraction, and downloaded-tool caches on `acer`
+at `/var/lib/renovate-cache`. Platform storage owns the explicitly bound static
+PV and non-provisioning StorageClass; Renovate owns the claim. The original
+`renovate-cache` NFS claim remains declared and retained for rollback. Cache
+contents include private package metadata, so restrict volume access and logs.
+Repository clones and work files use an ephemeral `/tmp` volume. The cache can
+be rebuilt; it has no backup, replication, or automatic node failover. Argo CD
+does not prune either claim or the local PV. The local `20Gi` capacity is
+advisory: it neither reserves space nor enforces a filesystem quota on Talos
+`EPHEMERAL`. Monitor node free space and never run a capacity-fill drill there.
+The non-root container has a writable ephemeral root because the Renovate image
 installs package-manager tools there for lockfile updates. No Service or ingress
 is exposed.
+
+The bounded `prepare-local-cache` init container uses the same pinned image and changes
+only the mount root's ownership and mode to UID 12021 and `0700`. It does not
+walk, clear, or require an empty cache, so populated caches survive later Jobs.
+Only this initializer runs as root, with `CHOWN` and `FOWNER`; it mounts no App
+Secret or Kubernetes token and has a read-only root filesystem. Pod networking
+is shared, so this is credential isolation, not separate network isolation.
+The Renovate process remains UID 12021.
 
 Harbor Docker lookups use the canonical `harbor.stinkyboi.com` TLS name through
 the registry-only `traefik-registry` Service at `10.96.0.50:443`. A Pod-local
@@ -98,15 +112,22 @@ the PVC, Pod events, Job condition, and restricted Job logs before changing
 state:
 
 ```sh
-kubectl -n automation get pvc renovate-cache
+kubectl -n automation get pvc renovate-cache-local renovate-cache
 kubectl -n automation get pods -l app.kubernetes.io/name=renovate
 kubectl -n automation describe pod <renovate-pod>
 kubectl -n automation describe job <renovate-job>
 ```
 
-The `20Gi` request in `pvc.yaml` neither reserves NAS space nor caps this
-cache: `nfs-default` does not enforce per-claim size, and its provisioner
-cannot resize PVCs. If the backing share is full, suspend `cronjob.yaml`
+If `acer` is unavailable, local-cache Jobs remain pending; do not redirect the
+same PV to another node. If its filesystem is full, suspend through reviewed
+GitOps, drain Jobs, and restore capacity through a declared path before
+resuming. Increasing the local PVC request does not create capacity. A node
+rebuild can lose this cache and requires a reviewed rebuild from upstream.
+
+The retained NFS claim's `20Gi` request in `pvc.yaml` neither reserves NAS space
+nor caps that cache: `nfs-default` does not enforce per-claim size, and its provisioner
+cannot resize PVCs. If NFS is the active cache and its backing share is full,
+suspend `cronjob.yaml`
 through a reviewed PR, restore share capacity through a declared path, and
 verify the next scheduled Job after resuming. If no declared NAS capacity path
 exists, add one before changing live state. Increasing the PVC request will
@@ -127,13 +148,42 @@ upstream. The pinned upstream recovery fixture in
 blocks App token minting until capacity is restored. If repeated runs still
 fail because the cache tree itself is corrupt, first suspend `cronjob.yaml`
 through a reviewed PR and confirm no active Renovate Job remains. Use a
-reviewed, temporary GitOps Job that mounts only `renovate-cache`, deletes only
+reviewed, temporary GitOps Job that mounts only the active cache claim, deletes only
 its contents, and has no App credential or cluster API token. Verify that Job
 completes, remove it through a second reviewed change, then unsuspend the
 CronJob. Open PRs and repository policy remain on GitHub. Do not delete the
-PVC or edit NFS files by hand. If the claim cannot mount or the backing share
+PVC or edit backing files by hand. If the claim cannot mount or the backing filesystem
 is full, restore the declared storage path before resuming scans. Record the
 failed cycle and verify the next scheduled run and freshness alerts recover.
+
+### Local-cache reliability change
+
+The [reliability receipt](../../../../specs/004-run-renovate-in-cluster/reliability-receipt.md)
+records slow completed package-cache operations and long finalization on the
+shared NFS cache. Moving the rebuildable cache to local storage tests that
+measured bottleneck while keeping the image, resource limits, default TTLs,
+hourly schedule, full dry-run mode, and 2,400-second deadline unchanged. It does
+not establish that NFS alone caused earlier mutex timeouts.
+
+Platform storage and Renovate reconcile independently. After merge, verify both
+Applications are Synced/Healthy at the reviewed revision, then verify
+`renovate-cache-local` binds to the same-named PV and a scheduled Pod runs on
+`acer`, completes `prepare-local-cache`, and mounts that claim. A missing PV or claim
+can consume the Job deadline while pending; there is no fallback to NFS.
+The existing CronJob keeps its identity and `Forbid` policy; already-created
+Jobs retain their old claim while future Jobs use the new one. The first run
+builds a fresh cache; compare subsequent distinct scheduled Pods and their
+numeric cache/cleanup timings. A faster run alone does not prove a cache hit.
+
+For rollback, suspend the CronJob through reviewed GitOps and verify no pending
+or active Job or Pod. Revert its claim and node placement and remove the
+local-only `prepare-local-cache` initializer and its ConfigMap volume/mount
+through reviewed code, then resume full dry runs. Guest all-squash NFS cannot
+perform that initializer's ownership change. Restore the initializer if later
+returning to local storage. Preserve both claims throughout. The dedicated NAS
+volume, T024/T042 capacity recovery, writer cutover, and seven-day acceptance
+remain separate open gates; the local filesystem is not a capacity-limited
+replacement for the staged NAS volume.
 
 ### Staged dedicated-cache cutover
 
@@ -171,17 +221,19 @@ In a second reviewed PR, add `dedicated-cache-pvc.yaml` and the staged
 or Kubernetes API token, mounts only the new claim read-only, and denies Pod
 network traffic. Verify the claim is Bound and the Job succeeds with its
 source, read-only mount, and 16–24 GiB capacity check against exactly
-`10.1.0.2:/renovate-cache`. Keep the live CronJob on `renovate-cache` if the
+`10.1.0.2:/renovate-cache`. Keep the live CronJob on its current cache claim if the
 probe fails. Remove the completed probe and its NetworkPolicy through a later
 reviewed change.
 Suspend the CronJob through a
 reviewed PR and confirm Argo CD synced to exact `main` with no active Renovate
-Job or Pod. Switch the CronJob claim to `renovate-cache-dedicated` and unsuspend
+Job or Pod. Switch the CronJob claim to `renovate-cache-dedicated`, remove the
+local-only initializer and its ConfigMap volume/mount if present, and unsuspend
 through a reviewed PR. The first scheduled Pod must mount the new volume,
 pass Renovate's write probe, and rebuild the cache from upstream; a later
 scheduled Pod must show a cache hit. Retain the old `renovate-cache` claim and
 its contents for rollback until the new cache has survived separate scheduled
-Pods. Roll back the claim reference through GitOps if the new mount or rebuild
+Pods. Retain the local claim as well if it is the active source of this cutover.
+Roll back the claim reference through GitOps if the new mount or rebuild
 fails.
 
 For a real full-volume drill, first verify the target is the dedicated QTS
@@ -225,6 +277,17 @@ aggregate cache-hit results and distinct Pod UIDs. Future cache checks need
 scoped TRACE or a mock upstream counter. Keep the hourly schedule and
 Renovate's normal cache freshness rules.
 
+The runtime config uses Renovate's default log levels. The
+[reliability receipt](../../../../specs/004-run-renovate-in-cluster/reliability-receipt.md)
+records the cache timing investigation, which temporarily promoted four exact
+Renovate 44.167.4 DEBUG messages: package-cache get/set statistics, cleanup
+start, GC summary, and cleanup end. The standalone
+`renovate-cache-stats-log-test.mjs` fixture retains its own remaps to reproduce
+that diagnostic behavior. These markers do not identify a mutex holder or
+time the upstream Docker request. Raw records can retain private repository
+context, even on cleanup messages; keep Pod logs restricted and publish only
+numeric aggregates.
+
 On 2026-10-19, the 19:00 and 20:00 scheduled Pods had distinct UIDs and each
 hit that exact cached key. After the protected v0.0.2 release at 20:20 UTC, the
 21:00 full dry run kept the cache hit and gained one branch-commit proposal for
@@ -244,7 +307,7 @@ kubectl -n argocd get application renovate
 kubectl -n automation get externalsecret renovate
 kubectl -n automation get cronjob renovate
 kubectl -n automation get jobs -l app.kubernetes.io/name=renovate
-kubectl -n automation get pvc renovate-cache
+kubectl -n automation get pvc renovate-cache-local renovate-cache
 ```
 
 A failed Job is covered by the existing Job alert. Renovate-specific alerts

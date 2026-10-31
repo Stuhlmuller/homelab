@@ -172,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-31T22:18:24.858Z" }
+generated: { by: "codex", at: "2026-10-31T22:40:48.699Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-31T22:18:24.858Z
+    at: 2026-10-31T22:40:48.699Z
 ---
 
 # Harbor Private OCI Registry
