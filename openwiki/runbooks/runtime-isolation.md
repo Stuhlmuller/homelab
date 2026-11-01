@@ -81,8 +81,18 @@ no kube-router objects in IPv4, IPv6, or ipset, saves the full snapshot
 privately, and confirms the Pod is absent before a placement can be admitted.
 An orphaned probe has a protected, UID-bound `firewall-baseline-recover` stage
 using the original private ownership marker.
-The capture does not create or authorize `placement.json`; rules can change
-after capture, so placement needs separate review and current live checks.
+The capture does not authorize admission. After private review, protected
+[`placement`](../../scripts/network-policy-placement.py) binds the capture
+version and checksum from current `main` to fresh Node/Pod identities, Pod
+requests, two-minute node metrics, and kubelet nodefs
+space, then writes one immutable, versioned receipt per run at
+`receipts/<source-sha>/placement/<placement-run-id>.json`. A fresh run can
+replace expired evidence on unchanged `main` without rewriting earlier receipts;
+an expired baseline needs a new reviewed capture first.
+Admission selects the run and exact S3 version, requires placement under
+30 minutes old and baseline capture under one hour old, and fails below the
+reviewed enforcer/fixture budget plus 128 MiB/100m reserve or 5 GiB filesystem free.
+Rules and usage can change after capture; recheck before admission.
 The [network-policy runbook](../../clusters/homelab/platform/network-policy/README.md)
 describes the Node identity and separate placement review gates.
 Most existing non-privileged namespaces declare baseline Pod Security. The
@@ -131,7 +141,7 @@ Do not enable default-deny egress, `REGISTRY_ONLY`, an egress waypoint, or the
 existing NetworkPolicies globally. Some policies are incomplete or deliberately
 broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
-limited capacity, system DaemonSets, and a live backup workload.
+limited capacity, system DaemonSets, and unrelated workloads.
 
 The reviewed 214-image catalog passed protected publication and authenticated
 Harbor pulls in [run `40011909180`](https://github.com/Stuhlmuller/homelab/actions/runs/40011909180).
@@ -173,6 +183,12 @@ requested and Harbor exporter plus system Pods still present. A later
 PostgreSQL move to `acer` remains backup-gated. After source merges, verify
 Argo, endpoints, client paths, and fresh node capacity before treating the
 evacuation as live or admitting a canary.
+
+The planned enforcer and fixtures have 704 MiB in memory limits plus a 128 MiB
+reserve, so pre-canary measured use must be at most 476 MiB of the observed
+1,308 MiB allocatable. The 2026-10-26 measurement exceeds that gate; re-measure
+after any declared evacuation, and do not lower the guard without hardware
+evidence.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
@@ -207,12 +223,46 @@ remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
 
 The protected `canary-admit` source path requires a fresh measured placement
-receipt and exact Node and system Pod identities. It checks that the enforcer,
-cleanup Pods, and fixture traffic are absent, then adds the dedicated
-`NoSchedule` taint before the selector label. A complete cluster-wide label
+receipt selected by run ID and exact S3 version, plus exact Node and system Pod
+identities. It re-reads the bound firewall
+capture and repeats Pod, metrics, node filesystem, and headroom checks before
+mutation. It checks that the enforcer, cleanup Pods, and fixture traffic are
+absent, then adds the dedicated
+`NoSchedule` taint and admission-run annotation atomically before the selector
+label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
-the taint. After a qualifying traffic probe, exact reviewed GitOps commits
+the taint. If admission changed the Node but
+its final receipt upload failed, owner-only protected `canary-admit-recover`
+runs on current `main` with the original admission SHA and run ID. That SHA
+must be an ancestor of current `main`. It uses the original immutable attempt
+and selected placement version. A same-run privileged probe
+confirms the host firewall remains empty and deletes its owned Pod before
+UID/resource-version guarded removal of only the canary label, then the
+annotation and taint atomically. A taint-only attempt must use this protected
+recovery before any new admission run. It
+works after placement expiry or a newer `main` commit while the reviewed
+canary node and taint remain unchanged.
+An orphaned recovery probe uses the protected `firewall-baseline-recover`
+token/UID deletion path with its recovery run and admission IDs.
+For a verified admission abandoned before enforcer activation, owner-only
+`canary-abort` loads that final admission and exact placement version. It
+requires disabled activation and unchanged runtime manifests on current
+`main`, proves the same node's kube-router firewall empty with a deleted
+UID-owned probe, and checks enforcer and fixtures absent before removing the
+matching label, then the admission annotation and taint atomically.
+Taint-only and already-clean retries are safe; a new admission marker or
+changed source blocks abort. Restore the reviewed source contract through a
+protected PR or add a reviewed recovery path; do not hand-remove the taint.
+An orphaned abort probe uses
+`firewall-baseline-recover` with the abort run and original admission IDs.
+[The canary Node stage](../../scripts/network-policy-canary-node.py) cannot
+retry `canary-release` after an
+interrupted unlabel leaves only the taint. Before activation, add protected
+release recovery bound to reviewed ownership/cleanup receipts and the exact
+admission marker; require fresh empty owned-firewall, absent-runtime, and
+Node/Pod identity proof before removing the taint. Manual untaint is barred.
+After a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
@@ -221,7 +271,10 @@ inputs. The static gate accepts only five exact policy/canary source
 phases; private receipts and live checks still gate protected operations.
 Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent
-before ownership capture. The owner reviews the private full firewall snapshot
+before ownership capture. Capture loads the successful admission receipt by
+run ID, checks its selected placement run/version, and carries that selection
+through ownership approval, cleanup, and release. The owner reviews the private
+full firewall snapshot
 and freshly approves its digest before `owned-cleanup` can delete those
 objects. Capture through release require a complete node Pod inventory
 matching the reviewed system DaemonSet UIDs plus the validated cleanup Pod
@@ -233,6 +286,10 @@ reviewed recovery. A partial deletion requires a new capture and approval.
 Inventory checks and firewall deletion are not atomic: a taint-tolerating Pod
 could arrive during deletion. Live activation remains blocked until isolated
 placement rules that out or a reviewed repository-owned isolation path exists.
+The later enforcer and fixture rollout also lacks its own protected fresh
+capacity gate; admission does not authorize that rollout. The earlier firewall
+snapshot may drift after capture because admission does not run another
+privileged probe.
 `canary-release` verifies the cleanup, ownership and original placement
 receipts, the exact two dedicated commits in current `main` history, absent fixture
 namespace and workloads, and an empty owned firewall. It removes the label
