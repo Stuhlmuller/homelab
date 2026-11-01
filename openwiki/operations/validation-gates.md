@@ -1175,6 +1175,12 @@ retrieval directory. Repeat the exact-main and zero-writer checks before
 publication or a recovery decision. These gates do not prove a DuckDB
 reopen or authorize WAL quarantine or writer restart.
 
+The source guard requires the future fenced Kustomization to retain the
+inspector's exact-label NetworkPolicy. The Argo guard reads the live
+Application's single `spec.sources` and `status.sync.revisions` entries;
+singular source/revision fields do not exist there. It rejects extra entries,
+source drift, and any revision other than the reviewed `main` SHA.
+
 ## Octelium Cutover Checks
 
 Before running `octops init`, validate the self-hosted Cluster prerequisites:

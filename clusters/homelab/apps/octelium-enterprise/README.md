@@ -50,9 +50,10 @@ change establishes they are no longer needed.
 ## Dormant resource-store capture stage
 
 `capture-stage/` is excluded from the active app. First, a separate reviewed
-GitOps stage adds `capture-stage/inspector.yaml` as a resource while the
-Deployment remains at one replica. Verify the pinned Harbor mirror image pulls,
-the Pod schedules and reaches Ready, and both read-only mount fields are live.
+GitOps stage adds the inspector Pod and its exact-label NetworkPolicy while
+the Deployment remains at one replica. Verify the pinned Harbor mirror image
+pulls, the Pod schedules and reaches Ready, and both read-only mount fields are
+live.
 The liveness probe checks the mounted directory; readiness checks that
 `store.db` exists and is readable. The proposed UID/GID 0 matches the upstream
 store's root behavior, but source PVC ownership and modes must be checked before
@@ -71,6 +72,12 @@ capture helper requires the exact fence revision Synced in Argo CD and a
 complete namespaced PodList showing zero other PVC mount users. Removal and
 restart require a later reviewed change; this stage does
 not quarantine the WAL, replay it, or resume the Deployment.
+
+The fenced Kustomization must retain both the inspector Pod and its exact-label
+`capture-stage/inspector-networkpolicy.yaml` resource. The capture helper
+requires the live Application's single `spec.sources` entry and matching
+`status.sync.revisions` entry for this repository, path, and exact `main` SHA;
+it rejects a missing policy or ambiguous source/revision list.
 
 After activation, privately record the live PVC UID, bound PV name and UID,
 the exact merged `main` SHA, and the intended kubectl context. The capture

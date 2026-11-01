@@ -112,7 +112,62 @@ def cluster_fixture():
     return deployment, pvc, pv, [inspector]
 
 
+def argo_application_fixture():
+    return {"spec": {"sources": [{
+        "repoURL": "https://github.com/Stuhlmuller/homelab.git",
+        "path": "clusters/homelab/apps/octelium-enterprise",
+        "targetRevision": "main"}]},
+        "status": {"sync": {"status": "Synced", "revisions": [SHA]}}}
+
+
 class RscstoreCaptureTest(unittest.TestCase):
+    def test_argo_guard_requires_live_single_source_shape_and_exact_revision(self):
+        application = argo_application_fixture()
+        with mock.patch.object(CAPTURE, "json_output", return_value=application):
+            CAPTURE.argo_guard("homelab", SHA)
+        changes = (
+            lambda app: app["spec"]["sources"].append(copy.deepcopy(app["spec"]["sources"][0])),
+            lambda app: app["spec"]["sources"][0].update(repoURL="https://github.com/other/repo.git"),
+            lambda app: app["spec"]["sources"][0].update(path="other"),
+            lambda app: app["spec"]["sources"][0].update(targetRevision="other"),
+            lambda app: app["spec"]["sources"][0].update(plugin={}),
+            lambda app: app["status"]["sync"].update(revisions=["b" * 40]),
+            lambda app: app["status"]["sync"].update(revisions=[SHA, SHA]),
+            lambda app: app["status"]["sync"].update(status="OutOfSync"),
+            lambda app: app["spec"].update(source=copy.deepcopy(app["spec"]["sources"][0])),
+            lambda app: app["status"]["sync"].update(revision=SHA),
+        )
+        for change in changes:
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                altered = copy.deepcopy(application)
+                change(altered)
+                with mock.patch.object(CAPTURE, "json_output", return_value=altered):
+                    CAPTURE.argo_guard("homelab", SHA)
+        singular = copy.deepcopy(application)
+        singular["spec"]["source"] = singular["spec"].pop("sources")[0]
+        singular["status"]["sync"]["revision"] = singular["status"]["sync"].pop("revisions")[0]
+        with mock.patch.object(CAPTURE, "json_output", return_value=singular), \
+                self.assertRaises(ValueError):
+            CAPTURE.argo_guard("homelab", SHA)
+
+    def test_fenced_kustomization_requires_inspector_policy(self):
+        current = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
+        future = ("apiVersion: kustomize.config.k8s.io/v1beta1\n"
+                  "kind: Kustomization\nresources:\n"
+                  "  - emergency-dataplane.yaml\n  - resources.yaml\n"
+                  "  - capture-stage/inspector.yaml\n"
+                  "  - capture-stage/inspector-networkpolicy.yaml\n"
+                  "components:\n  - capture-stage\n")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "kustomization.yaml"
+            path.write_text(future)
+            CAPTURE.fenced_kustomization_guard(path)
+            for invalid in (current, future.replace(
+                    "  - capture-stage/inspector-networkpolicy.yaml\n", "")):
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    path.write_text(invalid)
+                    CAPTURE.fenced_kustomization_guard(path)
+
     def test_s3_policy_examples_scope_new_prefix(self):
         prefix = "applications/octelium-rscstore/*"
         bucket = "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/"

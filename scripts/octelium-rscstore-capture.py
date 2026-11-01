@@ -115,26 +115,40 @@ def release_guard(expected_sha, context):
     require(output("gh", "api", "repos/Stuhlmuller/homelab/commits/main", "--jq", ".sha").strip()
             == expected_sha, "reviewed main has advanced")
     kustomization = ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml"
-    require(kustomization.read_text().splitlines() == [
-        "apiVersion: kustomize.config.k8s.io/v1beta1", "kind: Kustomization", "resources:",
-        "  - emergency-dataplane.yaml", "  - resources.yaml", "  - capture-stage/inspector.yaml",
-        "components:",
-        "  - capture-stage"], "capture component is not active in reviewed main")
+    fenced_kustomization_guard(kustomization)
     config = json_output("kubectl", "--context", context, "config", "view", "--minify", "-o", "json")
     require(config["clusters"][0]["cluster"]["server"] == SERVER,
             "kubectl context points at another cluster")
     argo_guard(context, expected_sha)
 
 
+def fenced_kustomization_guard(kustomization):
+    require(kustomization.read_text().splitlines() == [
+        "apiVersion: kustomize.config.k8s.io/v1beta1", "kind: Kustomization", "resources:",
+        "  - emergency-dataplane.yaml", "  - resources.yaml", "  - capture-stage/inspector.yaml",
+        "  - capture-stage/inspector-networkpolicy.yaml",
+        "components:",
+        "  - capture-stage"], "fenced capture source differs from reviewed shape")
+
+
 def argo_guard(context, expected_sha):
     application = json_output("kubectl", "--context", context, "-n", "argocd", "get",
                               "application", "octelium-enterprise", "-o", "json")
-    source = application["spec"].get("source", {})
-    sync = application["status"].get("sync", {})
-    require(source.get("path") == "clusters/homelab/apps/octelium-enterprise"
+    spec = application.get("spec", {})
+    sync = application.get("status", {}).get("sync", {})
+    sources = spec.get("sources")
+    revisions = sync.get("revisions")
+    require(spec.get("source") is None and sync.get("revision") is None
+            and isinstance(sources, list) and len(sources) == 1
+            and isinstance(sources[0], dict)
+            and isinstance(revisions, list) and len(revisions) == 1,
+            "Octelium Enterprise Argo CD sources or revisions changed")
+    source = sources[0]
+    require(set(source) == {"path", "targetRevision", "repoURL"}
+            and source.get("path") == "clusters/homelab/apps/octelium-enterprise"
             and source.get("targetRevision") == "main"
             and source.get("repoURL") == "https://github.com/Stuhlmuller/homelab.git"
-            and sync.get("status") == "Synced" and sync.get("revision") == expected_sha,
+            and sync.get("status") == "Synced" and revisions[0] == expected_sha,
             "Octelium Enterprise Argo CD state is not synced to reviewed main")
 
 
