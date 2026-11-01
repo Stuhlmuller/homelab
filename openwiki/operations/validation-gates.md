@@ -677,6 +677,18 @@ enforcing dataplane; require the isolated canary before activation.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
+After enforcement expands to Traefik's node, the protected `traefik-qualify`
+stage checks two temporary GitOps-owned, unmeshed Harbor Pods against the same
+Ready Traefik Pod IP. A signer-labeled positive control must receive the Harbor
+`/v2/` challenge before and after an unselected Pod reaches the permitted
+HBONE port 15008 but fails to connect to private TLS port 8443. The
+runner rejects source-side egress denial, policy drift and Pod or node identity
+changes; its bounded receipt stays private. The probe file remains outside
+Harbor's active Kustomize until a reviewed activation PR and leaves via a
+reviewed removal PR. This direct boundary test does not replace the tailnet,
+Octelium, Funnel and Harbor user-path receipts in the
+[Traefik runbook](../../clusters/homelab/apps/traefik/README.md).
+
 The offline static gate renders all nine DNS egress policies and requires their
 TCP/UDP port 53 peers to select only `kube-system` Pods labeled
 `k8s-app=kube-dns`. It also checks that the `kube-dns` Service selector and
@@ -1947,7 +1959,7 @@ flag and canary node remain unset. The full-catalog publication receipt
 passed; current-SHA recovery receipts, five-tag Harbor lock and an isolated
 canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
-The static registration fixture accepts only five exact policy/canary GitOps
+The static registration fixture accepts only six exact policy/canary GitOps
 source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
 canary retired. It rejects mismatched sync settings and manifests. Protected
 maintenance fetches full Git history and walks first-parent commits from the
@@ -1998,6 +2010,35 @@ arrive during deletion. Live activation stays blocked until isolated placement
 rules that out or a reviewed repository-owned isolation path is added. See
 the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
+On 2026-11-01 UTC, read-only `zimaboard-2` memory use was 1,367–1,368 MiB
+against about 1,308 MiB allocatable. The [placement budget](../../scripts/network-policy-placement.py)
+reserves the pinned 704 MiB runtime limit plus a 128 MiB margin, leaving a
+476 MiB ceiling for host and existing Pods. Even removing every non-system Pod
+projects 547–555 MiB of host and allowed DaemonSet use, above that ceiling.
+The [enforcer resources](../../clusters/homelab/platform/network-policy/daemonset.yaml)
+and [three fixture limits](../../clusters/homelab/platform/network-policy/canary/fixtures.yaml)
+are pinned. At current use, the planned [stateless move in PR #1584](https://github.com/Stuhlmuller/homelab/pull/1584)
+and [PostgreSQL move in PR #1583](https://github.com/Stuhlmuller/homelab/pull/1583)
+would free only about 33 MiB on `zimaboard-2`. The 547–555 MiB zero-app-Pod
+floor is a projection, not a post-evacuation receipt; host and cache use can
+change. A spare or larger isolated worker is the dependable next path unless
+fresh post-evacuation evidence shows this gate can pass. Recheck capacity
+before placement. The source-only split proposed after that measurement keeps
+the enforcer and probe client on `zimaboard-2` and pins both echo servers to
+`zimaboard-1`. It reduces the z2 planned memory limit to 576 MiB; with the
+128 MiB margin, the projected zero-app-Pod floor leaves only about 48–56 MiB
+extra. This is not a post-evacuation capacity receipt. The z1 source guard
+also rechecks Ready state, UID, boot ID, assigned-Pod requests, recent metrics,
+and node filesystem before admission. A 2026-11-01 read-only z1 snapshot had
+about 605 MiB request headroom after the two servers, but its image inventory
+did not contain the pinned fixture digest. The rollout therefore needs a
+reviewed GitOps fixture-first pull and a protected exact-digest/Ready proof
+before enforcer activation. The fixture Pods use `imagePullPolicy: Always`
+with the pinned Harbor digest, so Ready Pods with a runtime image ID establish
+registry resolution even when the node's capped image inventory omits them.
+The currently staged activation script still
+assumes enforcer-first order and must be updated before any rollout.
+
 The staged protected `canary-admit` path remains dormant until the protected
 `placement` stage writes a verified current-main, run-scoped receipt. A new
 placement run can refresh expired evidence on unchanged `main` while the old
@@ -2005,18 +2046,46 @@ receipt remains immutable. Admission takes the selected placement run ID and
 checks its exact S3 version. Placement binds a
 reviewed, less-than-one-hour-old versioned firewall capture to fresh Node and
 system Pod identities, requested resources, metrics and node filesystem
-headroom; it keeps platform activation disabled. Admission rejects placement
+headroom on both the isolated node and the exact `zimaboard-1` server node;
+it keeps platform activation disabled. Admission rejects placement
 older than 30 minutes or its baseline older than one hour, then rechecks the
 bound capture, Pod identities, Node metrics, filesystem and capacity before
 Node mutation. A separate fresh capacity gate is still needed before the later
 enforcer and fixture rollout. Qualification also requires a reviewed
 `activationEnabled: true` change in the maintenance config. The isolated
-canary does not protect Traefik on `zimaboard-0`; a later reviewed expansion
-and direct unauthorized-Pod denial plus positive private ingress, callback,
-Harbor, and Octelium checks remain separate acceptance gates. With a fresh
-receipt,
-admission verifies the exact Node UID and boot
-ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
+canary does not protect Traefik on its current `zimaboard-1` node; a later
+reviewed Traefik relocation onto isolated `zimaboard-2`, direct unauthorized-Pod denial,
+and positive private ingress, callback, Harbor, and Octelium checks remain
+separate acceptance gates. The live `tailnet-gateway` to
+`istio-ingressgateway` ClusterIP 443 path is a separate private-ingress bypass
+until protected migration or retirement of Octelium private services with
+caller acceptance, legacy private-route retirement or restriction, narrowed
+gateway access, and negative traffic proof. A new release/cleanup
+guard must retain the taint and enforcer while any desired or live Traefik
+endpoint remains on `zimaboard-2`; that guard is not implemented here. Before
+relocation, prove cold z2 reboot and image-GC startup ordering: the Harbor-hosted
+enforcer image depends on the Traefik-backed private registry path. A separate
+image availability path or measured fail-closed ordering must prevent Traefik
+from serving before enforcement after a cache miss. This remains unverified.
+
+On 2026-11-01 UTC, a read-only probe from a Radarr Pod to Grafana through the
+`istio-ingressgateway` ClusterIP on 443 returned HTTP 200 without passing
+through Octelium. A separate read-only Radarr probe reached the Harbor login
+surface through the `octelium-ingress-dataplane` ClusterIP with HTTP 200;
+that proves reachability, not data access. The repository still defines the
+[tailnet gateway](../../clusters/homelab/apps/istio/tailnet-gateway.yaml), the
+[Grafana private VirtualService](../../clusters/homelab/apps/grafana/virtualservice.yaml),
+and the [Octelium service catalog](../../docs/examples/octelium/homelab-services.yaml)
+pointing private upstreams at that gateway. This is a separate bypass of the
+private ingress boundary. Stage protected upstream migration to Traefik,
+retire or restrict legacy private VirtualServices and gateway access, then
+prove internal routes through both Istio and Octelium ingress are denied while
+authorized clients still work.
+No live fix is claimed by the split canary source.
+
+With a fresh receipt, admission verifies the exact
+Node UID and boot ID, system DaemonSet Pod identities, and absence of firewall
+enforcers, cleanup
 Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
 admission-run annotation atomically, then the selector label. A complete
 cluster-wide selector inventory must show

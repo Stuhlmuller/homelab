@@ -243,7 +243,7 @@ approved_platform_maintenance if {
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 13
-	dispatch.inputs.stage.options == ["inspect", "firewall-baseline", "firewall-baseline-recover", "placement", "canary-admit", "canary-admit-recover", "canary-abort", "canary-release", "canary-release-recover", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.stage.options == ["inspect", "firewall-baseline", "firewall-baseline-recover", "placement", "canary-admit", "canary-admit-recover", "canary-abort", "canary-release", "canary-release-recover", "qualify", "traefik-qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
 	dispatch.inputs.baseline_source_sha.required == false
 	dispatch.inputs.baseline_source_sha.type == "string"
 	dispatch.inputs.baseline_run_id.required == false
@@ -349,7 +349,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'468962ce40fe71673a86f54c7eba7a1e10362095e731ab7e3a3dfbe7b00ba7ba  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'d3bef94122121d748a37ea8557c0458a499e0b4f079ab6bacf83f144176f8198  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then

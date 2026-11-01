@@ -141,9 +141,11 @@ pin its only replica to `zimaboard-1`, whose ztunnel is Ready. Once merged and
 reconciled, this placement moves the private, callback, and registry listeners
 together; a failure of `zimaboard-1` then removes all three paths. Verify the
 replacement Pod, normal tailnet HTTPS, and Harbor `/v2/` before declaring
-recovery. Remove the pin through a reviewed PR after the upstream-image ztunnel
-fix restores all four nodes. Revert the placement through GitOps if the new Pod
-fails; do not patch the live Deployment.
+recovery. Keep the pin until a fresh, uncached image pull on `zimaboard-0`
+proves its recovered pull path, then remove it through a reviewed PR. On
+2026-10-31 its ztunnel was Ready and Traefik digest cached; neither proves that
+path. Revert the placement through GitOps if the new Pod fails; do not patch the live
+Deployment.
 
 The staged OpenClaw Enterprise console uses `console.oce.stinkyboi.com` through
 an authenticated Octelium Service. Only exact
@@ -263,6 +265,18 @@ destination-port checks to Istio AuthorizationPolicy.
 Istio rejects unrelated authenticated mesh principals; unmeshed intra-cluster
 callers still require application authentication. Registry source-IP restrictions
 have a trusted node-local bypass. Do not claim full east-west isolation.
+
+After kube-router reaches Traefik's node, the protected `traefik-qualify` stage
+uses temporary Harbor Pods on `acer` with matched and unmatched signer labels
+against the same Ready Traefik Pod IP on `zimaboard-1`. The runner rejects
+same-node placement to avoid Istio's trusted local-node bypass. The matched
+Pod must reach Harbor's private `/v2/` challenge before and after the unmatched
+Pod reaches allowed HBONE port 15008 but fails to connect to private TLS port
+8443; the runner rejects source egress denial, policy drift, and Pod/node
+replacement. Add the dormant fixture through Harbor GitOps only after firewall
+readiness, then remove
+it through GitOps. Keep tailnet, native Octelium, Funnel and Harbor user-path
+checks as separate acceptance receipts.
 
 During the staged CoreDNS switch, Traefik also permits only the retained
 `cluster.local/ns/octelium-client/sa/octelium-client` principal on private TLS

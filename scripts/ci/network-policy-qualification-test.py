@@ -201,6 +201,12 @@ class CanaryQualificationTests(unittest.TestCase):
                                      "timeAdded": "2026-10-18T00:00:00Z"}]},
                 "status": {"conditions": [{"type": "Ready", "status": "True"}],
                            "nodeInfo": {"bootID": "boot-id"}}}
+        server_node = {"metadata": {"name": self.module.FIXTURE_NODE,
+                                    "uid": "server-node-uid",
+                                    "labels": {self.module.HOSTNAME_LABEL: self.module.FIXTURE_NODE}},
+                       "spec": {"taints": []},
+                       "status": {"conditions": [{"type": "Ready", "status": "True"}],
+                                  "nodeInfo": {"bootID": "server-boot-id"}}}
         namespace = {"metadata": {"labels": {
             "pod-security.kubernetes.io/enforce": "restricted"}}}
         pods = {}
@@ -208,11 +214,16 @@ class CanaryQualificationTests(unittest.TestCase):
                            ("npq-denied", "denied")):
             pods[name] = {"metadata": {"name": name, "uid": f"{name}-uid",
                                       "labels": {"role": role}},
-                          "spec": {"nodeName": "zimaboard-0",
-                                   "nodeSelector": {self.module.CANARY_KEY: "true"},
-                                   "tolerations": [{"key": self.module.CANARY_KEY,
-                                                    "operator": "Equal", "value": "true",
-                                                    "effect": "NoSchedule"}],
+                          "spec": {"nodeName": ("zimaboard-0" if role == "client" else
+                                                self.module.FIXTURE_NODE),
+                                   "nodeSelector": ({self.module.CANARY_KEY: "true"}
+                                                    if role == "client" else
+                                                    {self.module.HOSTNAME_LABEL:
+                                                     self.module.FIXTURE_NODE}),
+                                   "tolerations": ([{"key": self.module.CANARY_KEY,
+                                                     "operator": "Equal", "value": "true",
+                                                     "effect": "NoSchedule"}]
+                                                    if role == "client" else []),
                                    "automountServiceAccountToken": False,
                                    "securityContext": {"runAsUser": 65532,
                                                        "runAsNonRoot": True,
@@ -226,6 +237,22 @@ class CanaryQualificationTests(unittest.TestCase):
                                                        "capabilities": {"drop": ["ALL"]}}}]},
                           "status": {"phase": "Running", "podIP": "10.42.0.2",
                                      "conditions": [{"type": "Ready", "status": "True"}]}}
+            container = pods[name]["spec"]["containers"][0]
+            container["resources"] = json.loads(json.dumps(self.module.FIXTURE_RESOURCES))
+            container["imagePullPolicy"] = "Always"
+            if role != "client":
+                container["ports"] = self.module.SERVER_PORTS
+                defaulted_probe = {**self.module.SERVER_PROBE,
+                                   "periodSeconds": 10, "timeoutSeconds": 1,
+                                   "failureThreshold": 3, "successThreshold": 1}
+                container["readinessProbe"] = dict(defaulted_probe)
+                container["livenessProbe"] = dict(defaulted_probe)
+                pods[name]["spec"]["tolerations"].append({
+                    "key": "node.kubernetes.io/memory-pressure",
+                    "operator": "Exists", "effect": "NoSchedule"})
+            pods[name]["status"]["containerStatuses"] = [{
+                "name": container["name"], "image": "sha256:runtime-config-digest",
+                "imageID": "harbor.example/image@sha256:runtime-platform-digest"}]
         firewall = {"metadata": {"uid": "daemonset-uid", "generation": 2},
                     "status": {"observedGeneration": 2, "desiredNumberScheduled": 1,
                                "updatedNumberScheduled": 1, "numberReady": 1}}
@@ -240,6 +267,7 @@ class CanaryQualificationTests(unittest.TestCase):
         policy = json.loads(json.dumps(self.module.EXPECTED_POLICY))
         objects = {
             ("get", "node", "zimaboard-0"): node,
+            ("get", "node", self.module.FIXTURE_NODE): server_node,
             ("get", "namespace", self.module.NAMESPACE): namespace,
             ("-n", "kube-system", "get", "daemonset", "kube-router-network-policy"): firewall,
             ("-n", "kube-system", "get", "pods", "-l",
@@ -254,6 +282,24 @@ class CanaryQualificationTests(unittest.TestCase):
         with patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]), \
                 patch.object(self.module, "inspect_firewall_source", return_value=firewall):
             self.assertEqual(self.module.inspect(config)[0]["metadata"]["uid"], "node-uid")
+            pods["npq-allowed"]["spec"]["nodeName"] = "zimaboard-0"
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config)
+            pods["npq-allowed"]["spec"]["nodeName"] = self.module.FIXTURE_NODE
+            pods["npq-allowed"]["spec"]["tolerations"].append({
+                "key": self.module.CANARY_KEY, "operator": "Exists",
+                "effect": "NoSchedule"})
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config)
+            pods["npq-allowed"]["spec"]["tolerations"].pop()
+            server_node["status"]["conditions"][0]["status"] = "False"
+            with self.assertRaisesRegex(ValueError, "fixture Node"):
+                self.module.inspect(config)
+            server_node["status"]["conditions"][0]["status"] = "True"
+            pods["npq-allowed"]["spec"]["containers"][0]["readinessProbe"]["periodSeconds"] = 1
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config)
+            pods["npq-allowed"]["spec"]["containers"][0]["readinessProbe"]["periodSeconds"] = 10
             objects[("-n", self.module.NAMESPACE, "get", "pods")]["items"].append({
                 "metadata": {"name": "foreign"}})
             with self.assertRaisesRegex(ValueError, "foreign or missing Pods"):
@@ -298,6 +344,16 @@ class CanaryQualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "fixture identity"):
                 self.module.inspect(config)
             container["securityContext"]["allowPrivilegeEscalation"] = original
+            client["containers"][0]["resources"]["limits"]["memory"] = "128Mi"
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config)
+            client["containers"][0]["resources"] = json.loads(
+                json.dumps(self.module.FIXTURE_RESOURCES))
+            pods["npq-denied"]["status"]["containerStatuses"][0]["imageID"] = ""
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config)
+            pods["npq-denied"]["status"]["containerStatuses"][0]["imageID"] = (
+                "harbor.example/image@sha256:runtime-platform-digest")
             for name in ("npq-client", "npq-allowed", "npq-denied"):
                 fixture = pods[name]["spec"]["containers"][0]
                 with self.subTest(name=name, field="command"):
@@ -388,10 +444,17 @@ class CanaryQualificationTests(unittest.TestCase):
     def test_receipt_is_private_exclusive_and_not_a_lifecycle_pass(self):
         node = {"metadata": {"name": "zimaboard-0", "uid": "node-uid"},
                 "status": {"nodeInfo": {"bootID": "boot-id"}}}
-        pods = {"npq-client": {"metadata": {"uid": "client-uid"}}}
+        server_node = {"metadata": {"name": self.module.FIXTURE_NODE,
+                                    "uid": "server-node-uid"},
+                       "status": {"nodeInfo": {"bootID": "server-boot-id"}}}
+        pods = {"npq-client": {"metadata": {"uid": "client-uid"},
+                               "spec": {"nodeName": "zimaboard-0"}}}
         firewall = {"metadata": {"uid": "firewall-uid"}}
         receipt = self.module.traffic_receipt(
-            "a" * 40, node, pods, firewall, "b" * 64, [{"permitted": False}])
+            "a" * 40, node, server_node, pods, firewall, "b" * 64,
+            [{"permitted": False}])
+        self.assertEqual(receipt["fixtureNodeUid"], "server-node-uid")
+        self.assertEqual(receipt["fixturePodNodes"], {"npq-client": "zimaboard-0"})
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "probe.json"
             self.module.private_output(path, receipt)

@@ -1,0 +1,68 @@
+# Dormant fixture: add this file to Harbor's Kustomization only after the
+# firewall is Ready on Traefik's node, then remove it through GitOps.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traefik-policy-allow
+  namespace: harbor
+  annotations:
+    checkov.io/skip1: CKV_K8S_8=Probe has no listener; process is checked.
+    checkov.io/skip2: CKV_K8S_9=Probe does not serve traffic.
+  labels:
+    app.kubernetes.io/name: harbor-image-signing
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: acer
+  serviceAccountName: default
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 65532
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: probe
+      image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      command: [/usr/bin/python3, -c, "import time; time.sleep(86400)"]
+      resources:
+        requests: {cpu: 10m, memory: 32Mi}
+        limits: {cpu: 100m, memory: 64Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traefik-policy-deny
+  namespace: harbor
+  annotations:
+    checkov.io/skip1: CKV_K8S_8=Probe has no listener; process is checked.
+    checkov.io/skip2: CKV_K8S_9=Probe does not serve traffic.
+  labels:
+    app.kubernetes.io/name: traefik-policy-deny
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: acer
+  serviceAccountName: default
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 65532
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: probe
+      image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      command: [/usr/bin/python3, -c, "import time; time.sleep(86400)"]
+      resources:
+        requests: {cpu: 10m, memory: 32Mi}
+        limits: {cpu: 100m, memory: 64Mi}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]

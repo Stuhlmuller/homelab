@@ -139,7 +139,12 @@ def placement_and_qualification(store, evidence_sha, node_name, qualification_ru
             placement.get("firewallBaselineEmpty") is not True or
             placement.get("placementRunId") != placement_run_id or
             placement.get("nodeUid") != admission["nodeUid"] or
-            placement.get("bootID") != admission["bootID"]):
+            placement.get("bootID") != admission["bootID"] or
+            placement.get("fixtureNode") != QUALIFY["FIXTURE_NODE"] or
+            not isinstance(placement.get("fixtureNodeUid"), str) or
+            not placement["fixtureNodeUid"] or
+            not isinstance(placement.get("fixtureBootID"), str) or
+            not placement["fixtureBootID"]):
         raise ValueError("verified pre-enable placement is missing")
     expected_cases = [
         {"source": source, "target": target, "port": port, "protocol": protocol,
@@ -154,6 +159,13 @@ def placement_and_qualification(store, evidence_sha, node_name, qualification_ru
             qualification.get("node") != node_name or
             qualification.get("nodeUid") != placement["nodeUid"] or
             qualification.get("bootID") != placement["bootID"] or
+            qualification.get("fixtureNode") != placement["fixtureNode"] or
+            qualification.get("fixtureNodeUid") != placement["fixtureNodeUid"] or
+            qualification.get("fixtureBootID") != placement["fixtureBootID"] or
+            qualification.get("fixturePodNodes") != {
+                "npq-client": node_name,
+                "npq-allowed": placement["fixtureNode"],
+                "npq-denied": placement["fixtureNode"]} or
             qualification.get("cases") != expected_cases or
             qualification.get("unverifiedLifecycleScenarios") !=
             list(QUALIFY["LIFECYCLE_SCENARIOS"])):

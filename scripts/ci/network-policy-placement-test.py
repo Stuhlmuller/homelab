@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SUT = runpy.run_path(str(ROOT / "scripts/network-policy-placement.py"))
 SHA = "a" * 40
 NODE = SUT["NODE"]
+FIXTURE_NODE = SUT["FIXTURE_NODE"]
 SYSTEM = [{"namespace": "kube-system", "name": "flannel-1", "uid": "pod-uid"}]
 
 
@@ -43,6 +44,16 @@ def pod():
                 "requests": {"memory": "100Mi", "cpu": "100m"}}}]},
             "status": {"phase": "Running", "conditions": [
                 {"type": "Ready", "status": "True"}]}}
+
+
+def fixture_node():
+    return {"metadata": {"name": FIXTURE_NODE, "uid": "fixture-node-uid",
+                         "labels": {SUT["HOSTNAME_LABEL"]: FIXTURE_NODE}},
+            "spec": {"taints": []},
+            "status": {"nodeInfo": {"bootID": "fixture-boot-id"},
+                       "conditions": [{"type": "Ready", "status": "True"}],
+                       "allocatable": {"memory": "7Gi", "cpu": "3950m"},
+                       "images": [{"names": [SUT["FIXTURE_IMAGE"]]}]}}
 
 
 class PlacementTests(unittest.TestCase):
@@ -120,7 +131,7 @@ class PlacementTests(unittest.TestCase):
 
         receipt = run(allocatable, listing, metrics, summary)
         self.assertEqual(receipt["requestedMemoryBytes"], 100 * SUT["MIB"])
-        for value in ("600Mi", "1000Mi"):
+        for value in ("700Mi", "1000Mi"):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "headroom"):
                 run(allocatable, listing, metrics | {"usage": {
                     "memory": value, "cpu": "150m"}}, summary)
@@ -134,6 +145,56 @@ class PlacementTests(unittest.TestCase):
             run(allocatable, listing, changed, summary)
         with self.assertRaisesRegex(ValueError, "assigned Pods"):
             run(allocatable, {"metadata": {}, "items": []}, metrics, summary)
+
+    def test_fixture_node_requires_exact_ready_host_and_fresh_headroom(self):
+        node = fixture_node()
+        assigned = pod()
+        assigned["spec"]["nodeName"] = FIXTURE_NODE
+        metrics = {"kind": "NodeMetrics", "metadata": {"name": FIXTURE_NODE},
+                   "timestamp": now(), "usage": {"memory": "6200Mi", "cpu": "1800m"}}
+        summary = {"node": {"nodeName": FIXTURE_NODE, "fs": {"time": now(),
+                   "availableBytes": 8 * 1024**3, "capacityBytes": 16 * 1024**3}}}
+
+        def kube_json(*args):
+            return node if args[:2] == ("get", "node") else {"metadata": {},
+                                                               "items": [assigned]}
+
+        drift_requests = [False]
+        def command(*args):
+            if drift_requests[0] and "metrics.k8s.io" in args[-1]:
+                assigned["spec"]["containers"][0]["resources"]["requests"]["memory"] = "200Mi"
+            return json.dumps(metrics if "metrics.k8s.io" in args[-1] else summary)
+
+        with patch.dict(SUT["CLEANUP"], {
+                "kubernetes_json": kube_json, "complete_items": lambda value, _: value["items"],
+                "command": command, "ready": lambda item: item["status"]["conditions"][0]
+                ["status"] == "True"}):
+            self.assertEqual(SUT["fixture_node"]()["metadata"]["uid"], "fixture-node-uid")
+            measured = SUT["fixture_capacity"](node)
+            self.assertEqual(measured["plannedMemoryLimitBytes"], 128 * SUT["MIB"])
+            self.assertTrue(measured["fixtureImageCached"])
+            node["status"]["images"] = []
+            self.assertFalse(SUT["fixture_capacity"](node)["fixtureImageCached"])
+            node["metadata"]["labels"][SUT["HOSTNAME_LABEL"]] = "other"
+            with self.assertRaisesRegex(ValueError, "fixture Node identity"):
+                SUT["fixture_node"]()
+            node["metadata"]["labels"][SUT["HOSTNAME_LABEL"]] = FIXTURE_NODE
+            node["spec"]["unschedulable"] = True
+            with self.assertRaisesRegex(ValueError, "fixture Node identity"):
+                SUT["fixture_node"]()
+            node["spec"]["unschedulable"] = False
+            metrics["usage"]["memory"] = "7000Mi"
+            with self.assertRaisesRegex(ValueError, "fixture Node memory"):
+                SUT["fixture_capacity"](node)
+            metrics["usage"]["memory"] = "6200Mi"
+            drift_requests[0] = True
+            with self.assertRaisesRegex(ValueError, "Pod requests changed"):
+                SUT["fixture_capacity"](node)
+            drift_requests[0] = False
+            assigned["spec"]["containers"][0]["resources"]["requests"]["memory"] = "100Mi"
+            assigned["spec"]["nodeName"] = NODE
+            with self.assertRaisesRegex(ValueError, "assigned Pod inventory"):
+                SUT["fixture_capacity"](node)
 
     def test_no_receipt_before_exact_source_and_live_recheck(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -173,7 +234,9 @@ class PlacementTests(unittest.TestCase):
                     patch.dict(SUT["execute"].__globals__, {
                         "pinned_manifests": lambda *_: None,
                         "read_baseline": lambda *_: (baseline(), "0" * 64, "version-1"),
-                        "capacity": lambda *_: {"measured": True}}), \
+                        "capacity": lambda *_: {"measured": True},
+                        "fixture_node": fixture_node,
+                        "fixture_capacity": lambda *_: {"fixtureImageCached": True}}), \
                     patch.dict(os.environ, {"GITHUB_RUN_ID": "456"}):
                 args = argparse.Namespace(config=SUT["CONFIG"], expected_sha=SHA,
                                           baseline_source_sha=SHA, baseline_run_id="123",
@@ -182,6 +245,7 @@ class PlacementTests(unittest.TestCase):
                 self.assertEqual(events[-1], "write")
                 self.assertEqual(store.record["sourceSha"], SHA)
                 self.assertEqual(store.record["placementRunId"], "456")
+                self.assertEqual(store.record["fixtureNodeUid"], "fixture-node-uid")
                 self.assertIn(f"/{SHA}/placement/456.json", store.key)
                 self.assertEqual(store.record["baselineCaptureSha256"], "0" * 64)
                 self.assertTrue(output.exists())
@@ -205,6 +269,9 @@ class PlacementTests(unittest.TestCase):
                    "placementRunId": "456",
                    "node": NODE, "canaryNode": NODE, "nodeUid": "node-uid",
                    "bootID": "boot-id", "measured": True,
+                   "fixtureNode": FIXTURE_NODE, "fixtureNodeUid": "fixture-node-uid",
+                   "fixtureBootID": "fixture-boot-id",
+                   "fixtureCapacity": {"fixtureImageCached": True},
                    "isolatedTaint": config["canary"]["taint"],
                    "firewallBaselineEmpty": True, "systemDaemonSetPods": SYSTEM,
                    "capturedAt": timestamp, "baselineSourceSha": SHA,
@@ -270,7 +337,9 @@ class PlacementTests(unittest.TestCase):
                     patch.dict(SUT["OWNERSHIP"], {"PrivateStore": Store}), \
                     patch.dict(SUT["check"].__globals__, {
                         "pinned_manifests": lambda *_: None,
-                        "read_baseline": lambda *_: (capture, "0" * 64, "version-1")}):
+                        "read_baseline": lambda *_: (capture, "0" * 64, "version-1"),
+                        "fixture_node": fixture_node,
+                        "fixture_capacity": lambda *_: {"fixtureImageCached": True}}):
                 SUT["check"](args)
                 self.assertFalse(args.check_placement.exists())
                 receipt["capturedAt"] = (datetime.now(timezone.utc) -
@@ -297,10 +366,11 @@ class PlacementTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "selected placement"):
                     SUT["check"](args)
                 args.placement_version_id = "version-2"
-                metric["usage"]["memory"] = "600Mi"
+                metric["usage"]["memory"] = "700Mi"
                 with self.assertRaisesRegex(ValueError, "headroom"):
                     SUT["check"](args)
                 for change in ({"nodeUid": "replacement"},
+                               {"fixtureNodeUid": "replacement"},
                                {"sourceSha": "b" * 40},
                                {"baselineCaptureVersionId": "version-2"},
                                {"baselineCaptureSha256": "f" * 64},

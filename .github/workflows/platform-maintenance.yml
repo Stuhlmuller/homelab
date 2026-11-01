@@ -1,3 +1,5 @@
+---
+# yamllint disable rule:line-length
 name: Platform Maintenance
 
 # checkov:skip=CKV_GHA_7: fixed operations are bound to the exact current main SHA.
@@ -12,7 +14,7 @@ on:
         description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-abort, canary-release, canary-release-recover, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, firewall-baseline, firewall-baseline-recover, placement, canary-admit, canary-admit-recover, canary-abort, canary-release, canary-release-recover, qualify, traefik-qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
       baseline_source_sha:
         description: Firewall-baseline main SHA, required for placement or recovery
         required: false
@@ -58,7 +60,7 @@ on:
         required: false
         type: string
 
-permissions: {}
+permissions: { }
 
 env:
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
@@ -201,7 +203,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'468962ce40fe71673a86f54c7eba7a1e10362095e731ab7e3a3dfbe7b00ba7ba  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'d3bef94122121d748a37ea8557c0458a499e0b4f079ab6bacf83f144176f8198  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then

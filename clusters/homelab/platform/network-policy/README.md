@@ -14,8 +14,10 @@ capacity admission, owned-rule cleanup, and live canary traffic/lifecycle
 qualification pass the [platform contract](../../../../specs/003-replace-openclaw-enterprise/contracts/platform.md).
 The separate `platform-network-policy-canary` Application tracks `canary/` at
 `main`, with automatic sync disabled and an empty Kustomization. Its excluded
-`fixtures.yaml` contains taint-bound TCP/UDP allow and deny probes plus an
-exact CoreDNS TCP/UDP 53 grant. Registration
+`fixtures.yaml` keeps the taint-bound client on `zimaboard-2` and pins the
+allowed and denied TCP/UDP servers to `zimaboard-1` by hostname. Only the
+client tolerates the canary taint. The policy grants the client exact CoreDNS
+TCP/UDP 53 access. Registration
 alone creates no namespace, Pods, or policy. The `homelab` AppProject admits
 the fixture namespace as an explicit destination.
 
@@ -48,9 +50,15 @@ with the same current-main SHA and the baseline run ID. Placement requires the
 capture to be less than one hour old, verifies its single KMS-encrypted S3
 version, checksum, empty IPv4/IPv6/ipset snapshot, Node UID/boot ID and exact
 system Pod UIDs, then checks live Pod requests, metrics younger than two minutes,
-and kubelet node filesystem space. The pinned enforcer and three fixtures need
-346 MiB/280m in requests and at most 704 MiB memory at their limits; placement
-requires another 128 MiB/100m and 5 GiB node filesystem free. It writes one
+and kubelet node filesystem space on both nodes. On `zimaboard-2`, the pinned
+enforcer and client need 282 MiB/260m in requests and 576 MiB at their memory
+limits. The two server fixtures need 64 MiB/20m in requests and 128 MiB at
+their memory limits on `zimaboard-1`. Each node needs another 128 MiB/100m
+and 5 GiB node filesystem free. The server Node must be Ready, schedulable,
+free of the canary label and NoSchedule/NoExecute taints, and retain its UID
+and boot ID through admission. Its image-cache observation is recorded but
+is not an admission requirement; the fixture-first GitOps stage below must
+prove the pull before enforcer activation. Placement writes one
 immutable receipt per placement run at
 `receipts/<current-main-sha>/placement/<placement-run-id>.json`. Another run
 can publish a fresh receipt on unchanged `main` after evidence expires, using a
@@ -61,7 +69,8 @@ version to the admission result. `canary-admit` accepts it only within 30 minute
 of measurement and one hour of the baseline
 capture, then repeats the read-only Pod, metrics, node filesystem, and headroom
 checks immediately before changing the Node. A new main commit,
-changed Node/Pod identity, insufficient headroom, or a failed read blocks the
+changed Node identity, changed canary system Pod identity, insufficient headroom
+on either node, or a failed read blocks the
 stage. The earlier host firewall snapshot can drift after capture; admission
 does not rerun the privileged probe.
 
@@ -70,7 +79,8 @@ versioned receipt under
 `openclaw-enterprise/platform/receipts/<current-main-sha>/placement/<placement-run-id>.json`.
 The receipt must
 have `format: 1`, `verified: true`, the exact `sourceSha`, `node` and
-`canaryNode`, `nodeUid`, `bootID`, `placementRunId`, a timestamp younger than
+`canaryNode`, `nodeUid`, `bootID`, `fixtureNode`, `fixtureNodeUid`,
+`fixtureBootID`, `placementRunId`, a timestamp younger than
 30 minutes,
 `measured: true`, the configured `isolatedTaint`, and
 `firewallBaselineEmpty: true` from an independently reviewed pre-enable
@@ -155,19 +165,38 @@ clean state without attributing the earlier patch. This check permits ordinary
 workloads that scheduled after untaint but rejects firewall and cleanup Pods.
 
 Admission only gates the Node taint and label. The later enforcer and fixture
-rollout still needs its own protected fresh capacity gate; that gate is not
-implemented, so do not enable the rollout yet. Once that gate and the fixture
-image mirror are ready, merge one reviewed change that sets `activationEnabled`
-to `true` in `scripts/config/platform-maintenance.json`, enables automated sync
-and pruning in both
-`IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl` and
-`IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`, and lists `fixtures.yaml` in
-`canary/kustomization.yaml`. Dispatch the protected Terragrunt Apply workflow
-on the exact current `main` SHA for `argocd_app=platform-network-policy` first;
-verify its DaemonSet is Ready on the admitted node. Then dispatch it for
-`argocd_app=platform-network-policy-canary`. Argo CD syncs the fixtures. Verify
-both Applications are Synced/Healthy and the three fixture Pods are Ready on
-the admitted node before dispatching the read-only `qualify` stage. An
+rollout still needs its own protected fresh capacity and first-pull gate; that
+gate is not implemented on this branch, so do not enable the rollout yet. A
+reviewed rollout must first sync `fixtures.yaml` through the canary GitOps
+Application while the enforcer is absent. Verify the two server Pods are Ready
+on `zimaboard-1`, the client is Ready on `zimaboard-2`, and each pulled image
+has the exact pinned source reference, a nonempty runtime image ID, and no
+image-pull failure. All fixtures set `imagePullPolicy: Always`, so the
+container runtime resolves the pinned digest at the registry for each start
+even when layers are cached ([Kubernetes image-pull behavior](https://kubernetes.io/docs/concepts/containers/images/)).
+This proves the kubelet started the pinned image before enforcer activation;
+runtime IDs can differ from the Harbor source digest.
+The protected gate must inspect these Pod fields directly because
+`Node.status.images` is capped and can omit a cached image. Only then may a
+protected fresh capacity and identity gate admit the enforcer GitOps sync. This sequence
+provides an authored first-pull path when the server image is not already
+cached on `zimaboard-1`. The downstream activation workflow must be changed
+to support fixture-first order before use. Once that gate and the fixture
+image mirror are ready, merge a reviewed first change that sets
+`activationEnabled` to `true` in
+`scripts/config/platform-maintenance.json`, enables automated sync and
+pruning only in
+`IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`,
+and lists `fixtures.yaml` in `canary/kustomization.yaml`. Dispatch protected
+Terragrunt Apply for `argocd_app=platform-network-policy-canary` on exact
+current `main`; verify the split fixture placement and protected first-pull
+digest proof.
+After the protected activation gate passes, merge a second reviewed change
+enabling automated sync and pruning in
+`IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl`, then dispatch
+its protected Apply on exact current `main`. Verify its DaemonSet is Ready
+only on `zimaboard-2` and both Applications are Synced/Healthy before dispatching
+the read-only `qualify` stage. An
 unrelated merge that stales either dispatch requires a retry against current
 `main`.
 
@@ -182,7 +211,7 @@ not remove the node taint or firewall while any fixture remains. This GitOps
 sequence uses Argo CD ownership; `qualify` never creates or removes Kubernetes
 resources. T019/T027 still require an admitted isolated canary and live
 lifecycle evidence.
-The static registration gate accepts only the five exact source phases in this
+The static registration gate accepts only the six exact source phases in this
 sequence. It does not authorize a live stage: the protected stage still
 requires exact-current-`main`, private qualification and ownership receipts,
 and live resource and Node identity checks.
@@ -191,7 +220,7 @@ workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC. It probes the
 fixed TCP/UDP allow/deny matrix and resolves the Kubernetes Service name over
 both DNS transports, requiring an A record matching the live Kubernetes Service.
-It rejects extra or unsafe fixture Pods, including changed
+It rejects extra or unsafe fixture Pods and placement drift, including changed
 commands, arguments, or container security overrides. It requires each traffic
 probe's outcome marker as well as its exit code, so a transport error cannot
 count as a traffic result. It stores a private receipt listing each
@@ -199,11 +228,22 @@ still-unverified lifecycle scenario. A successful
 fixture probe is not Talos qualification: cold bootstrap, first packets,
 enforcer stop/restart, API loss, policy/conntrack changes, Pod reschedule/IP
 reuse, node reboot, IPv6 absence, and real workload paths remain T027/T028
-acceptance gates. This isolated canary does not protect Traefik on
-`zimaboard-0`. After qualification, a separate reviewed rollout must extend
-enforcement to that node and prove denial from an unauthorized cluster Pod
-plus private ingress, callback, Harbor, and Octelium user paths before the
-ingress finding is closed.
+acceptance gates. This isolated canary does not protect Traefik on its current
+`zimaboard-1` node. A later reviewed rollout must relocate Traefik onto the
+isolated `zimaboard-2` enforcer node, prove denial from an unauthorized cluster
+Pod, and verify private ingress, callback, Harbor, and Octelium user paths.
+That relocation needs a new release/cleanup guard that retains the taint and
+enforcer while any desired or live Traefik endpoint remains on `zimaboard-2`;
+the guard is not implemented here. Before relocation, prove cold-node reboot
+and image-GC startup ordering: the enforcer image is Harbor-hosted while
+Harbor's private registry path depends on Traefik. Use an independent image
+availability path or measured fail-closed startup ordering so Traefik cannot
+serve before enforcement after a cache miss. This remains unverified. The live
+`tailnet-gateway` to
+`istio-ingressgateway` ClusterIP 443 path is a separate private-ingress bypass.
+Protected migration or retirement of Octelium private services with caller
+acceptance, legacy private-route retirement or restriction, narrowed gateway
+access, and negative traffic proof through both ingress paths remain gates.
 Removing the DaemonSet alone can leave firewall rules behind. The separately
 registered `platform-network-policy-cleanup` Application has automatic sync
 disabled and schedules only on the admitted tainted canary. After Enterprise

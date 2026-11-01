@@ -63,9 +63,11 @@ the target can pull the pinned Traefik image; the controller uses one surge Pod
 and zero unavailable Pods, retaining the old Pod until the replacement is Ready.
 An image-pull failure stalls the rollout with the old Pod retained. Verify
 the replacement Pod, Argo CD health, a tailnet HTTPS request, and a Harbor
-registry request before treating access as restored. After the upstream-image
-ztunnel fix restores all four nodes, remove the pin through a reviewed PR; a
-node failure while pinned otherwise removes the only Traefik replica.
+registry request before treating access as restored. Keep the pin until a fresh,
+uncached image pull on `zimaboard-0` proves its recovered pull path; remove it
+through a reviewed PR. A node failure while pinned removes the only Traefik
+replica. As of 2026-10-31, the ztunnel is Ready and the Traefik image cached on
+`zimaboard-0`; neither proves that fresh pull path.
 
 | Public callback | Allowed paths | Application authentication |
 | --- | --- | --- |
@@ -186,6 +188,33 @@ application URLs from a mesh client, Fleet device check-in, Harbor image pulls,
 and native Cordium execution/reconnection. Verify callback root/admin paths fail
 from outside the mesh and signed GitHub/n8n deliveries succeed. Prove certificate
 reload on the actual Linux deployment as a separate operational check.
+
+### Enforced private-ingress check
+
+After kube-router is Ready on Traefik's actual node, add the dormant
+[`Harbor probe Pods`](../harbor/traefik-network-policy-probes.yaml) to Harbor's
+`kustomization.yaml` in a reviewed PR. With Traefik pinned to `zimaboard-1`,
+both unmeshed probe Pods are pinned to `acer`: a distinct node avoids Istio's
+trusted local-node bypass. They use the same service account, image, and direct
+Traefik Pod IP; only the label differs. The pinned probe image was not cached on
+`acer` on 2026-10-31, so verify its first pull when activating the fixture.
+The signer-labeled control must receive Harbor's HTTPS `/v2/` 401. The
+unselected Pod must connect
+to the explicitly allowed ambient HBONE port 15008 before and
+after failing to connect to private TLS port 8443. A broken network connection
+to both ports, TLS error, or any HTTP response from the denied Pod fails the
+boundary. The runner checks current Healthy Argo
+Applications, no Harbor egress policy selecting the denied Pod, the live
+Traefik policy, and stable firewall and Pod/node identities.
+
+Dispatch protected **Platform Maintenance** stage `traefik-qualify` from exact
+current `main` with `expected_sha` set to that commit. It stores a bounded
+private receipt; the workflow log withholds cluster details. The fixture is
+absent from active Kustomize until that reviewed activation, and must be removed
+in a later reviewed GitOps PR. This check proves the direct private TLS listener
+boundary only. In the same rollout window, require real tailnet application and
+Fleet paths, Octelium native execution, permitted Funnel callbacks with root and
+admin paths denied, and Harbor node image pulls before accepting ingress.
 
 Existing Istio routes and their access allowances remain during staged migration.
 Change public callback settings and external callers only after the new Funnel

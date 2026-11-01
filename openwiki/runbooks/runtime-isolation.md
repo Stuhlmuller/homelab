@@ -184,11 +184,16 @@ PostgreSQL move to `acer` remains backup-gated. After source merges, verify
 Argo, endpoints, client paths, and fresh node capacity before treating the
 evacuation as live or admitting a canary.
 
-The planned enforcer and fixtures have 704 MiB in memory limits plus a 128 MiB
-reserve, so pre-canary measured use must be at most 476 MiB of the observed
-1,308 MiB allocatable. The 2026-10-26 measurement exceeds that gate; re-measure
-after any declared evacuation, and do not lower the guard without hardware
-evidence.
+The earlier all-on-`zimaboard-2` plan had 704 MiB in memory limits plus a
+128 MiB reserve, so pre-canary measured use had to be at most 476 MiB of the
+observed 1,308 MiB allocatable. The 2026-10-26 measurement exceeded that gate.
+The revised source pins only the enforcer and client to `zimaboard-2`: 576 MiB
+in memory limits plus the same 128 MiB reserve. Both echo servers are pinned to
+`zimaboard-1`, where placement independently checks 128 MiB in fixture limits
+plus another 128 MiB reserve. Re-measure both nodes after declared evacuation;
+the earlier snapshot is not an admission receipt. The exact server image must
+first be pulled through the reviewed fixture GitOps sync and verified before
+enforcer activation.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
@@ -280,7 +285,7 @@ prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
 runtime-source changes under the guarded operational roots or Nix flake
-inputs. The static gate accepts only five exact policy/canary source
+inputs. The static gate accepts only six exact policy/canary source
 phases; private receipts and live checks still gate protected operations.
 Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent
