@@ -242,8 +242,12 @@ approved_platform_maintenance if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	count(object.keys(workflow_events)) == 1
 	protected_workflow_run_settings
-	count(dispatch.inputs) == 7
-	dispatch.inputs.stage.options == ["inspect", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	count(dispatch.inputs) == 9
+	dispatch.inputs.stage.options == ["inspect", "firewall-baseline", "firewall-baseline-recover", "canary-admit", "canary-release", "qualify", "ownership-capture", "ownership-approve", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	dispatch.inputs.baseline_source_sha.required == false
+	dispatch.inputs.baseline_source_sha.type == "string"
+	dispatch.inputs.baseline_run_id.required == false
+	dispatch.inputs.baseline_run_id.type == "string"
 	dispatch.inputs.cleanup_run_id.required == false
 	dispatch.inputs.cleanup_run_id.type == "string"
 	dispatch.inputs.expected_sha.required == true
@@ -314,7 +318,7 @@ platform_maintenance_static_checkout := {"name": "Check Out Repository", "uses":
 platform_maintenance_private_checkout := {"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"fetch-depth": 0, "persist-credentials": false}}
 platform_maintenance_install_nix := {"name": "Install Nix", "uses": "chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909", "with": {"enable_kvm": false, "github_access_token": "${{ secrets.GITHUB_TOKEN }}"}}
 platform_maintenance_aws_credentials := {"name": "Configure AWS Credentials", "uses": "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508", "with": {"aws-region": "us-east-1", "mask-aws-account-id": true, "role-session-name": "homelab-platform-${{ github.run_id }}", "role-to-assume": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}", "unset-current-credentials": true}}
-platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
+platform_maintenance_private_env := {"RUN_STAGE": "${{ inputs.stage }}", "BASELINE_SOURCE_SHA": "${{ inputs.baseline_source_sha }}", "BASELINE_RUN_ID": "${{ inputs.baseline_run_id }}", "CLEANUP_RUN_ID": "${{ inputs.cleanup_run_id }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "QUALIFICATION_RUN_ID": "${{ inputs.qualification_run_id }}", "EVIDENCE_SOURCE_SHA": "${{ inputs.evidence_source_sha }}", "CAPTURE_RUN_ID": "${{ inputs.capture_run_id }}", "REVIEWED_SNAPSHOT_SHA256": "${{ inputs.reviewed_snapshot_sha256 }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}", "OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}", "OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}", "OCE_CONTROLPLANE_CONFIG_B64": "${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}", "OCE_WORKER_CONFIG_B64": "${{ secrets.OCE_WORKER_CONFIG_B64 }}", "GH_TOKEN": "${{ github.token }}"}
 
 platform_maintenance_main_check := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
@@ -337,7 +341,7 @@ if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
 talosctl version --client >/dev/null
-sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+sha256sum --check --status <<<'35a87a8ec697d46d7414e790e55415d842641a435f21bb4274c248a0735cec2a  scripts/ci/platform-maintenance-stage.sh'
 bash scripts/ci/platform-maintenance-stage.sh
 EOF
 then

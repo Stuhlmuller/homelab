@@ -12,7 +12,15 @@ on:
         description: Fixed inspection, canary, ownership, or upgrade stage
         required: true
         type: choice
-        options: [inspect, canary-admit, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+        options: [inspect, firewall-baseline, firewall-baseline-recover, canary-admit, canary-release, qualify, ownership-capture, ownership-approve, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+      baseline_source_sha:
+        description: Original firewall-baseline main SHA, required only for recovery
+        required: false
+        type: string
+      baseline_run_id:
+        description: Original firewall-baseline run ID, required only for recovery
+        required: false
+        type: string
       cleanup_run_id:
         description: Verified owned-cleanup run ID, required only for canary-release
         required: false
@@ -151,6 +159,8 @@ jobs:
       - name: Run Reviewed Platform Stage
         env:
           RUN_STAGE: ${{ inputs.stage }}
+          BASELINE_SOURCE_SHA: ${{ inputs.baseline_source_sha }}
+          BASELINE_RUN_ID: ${{ inputs.baseline_run_id }}
           CLEANUP_RUN_ID: ${{ inputs.cleanup_run_id }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           QUALIFICATION_RUN_ID: ${{ inputs.qualification_run_id }}
@@ -171,7 +181,7 @@ jobs:
           set -euo pipefail
           umask 077
           talosctl version --client >/dev/null
-          sha256sum --check --status <<<'6969b3e7bc02f203b470528dae3e1ce7e52a360312ebd9cb2b4863cee8a34312  scripts/ci/platform-maintenance-stage.sh'
+          sha256sum --check --status <<<'35a87a8ec697d46d7414e790e55415d842641a435f21bb4274c248a0735cec2a  scripts/ci/platform-maintenance-stage.sh'
           bash scripts/ci/platform-maintenance-stage.sh
           EOF
           then
