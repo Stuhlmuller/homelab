@@ -78,6 +78,35 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** open; PostgreSQL move backup blocked as of 2026-10-31
+- **Area:** Langfuse / CI access and storage recovery
+- **Evidence:** [Checkpoint run 40452838353](https://github.com/Stuhlmuller/homelab/actions/runs/40452838353)
+  passed static checks, protected inputs, and AWS authentication, then failed
+  in the capture step without a backup receipt. The
+  [workflow](../../.github/workflows/langfuse-postgres-checkpoint.yml)
+  withholds private command output, so the exact failing command is unconfirmed.
+  Read-only inspection found the Ready PostgreSQL Pod on `zimaboard-1`; its
+  `20Gi` PVC UID `bded36ce-1cac-4243-a02b-b99a9e23818f` and Bound, Retain NFS
+  PV UID `2a21f46b-9b0a-4b8b-8f23-998fb83fed0f` still match the
+  [checkpoint source](../../scripts/ci/langfuse-postgres-checkpoint.sh).
+  The database measured 14,284,467 bytes (13.6 MiB), below its 1 GiB guard.
+  Both GitHub environment `OCTELIUM_CI_AUTH_TOKEN` secrets were last updated
+  2026-09-26; the enabled Octelium `homelab-ci` WORKLOAD User has the 30-day
+  access-token lifetime required by the
+  [CI credential helper](../../scripts/octelium-ci-credential.sh). The saved
+  token is past that lifetime, although the masked run cannot prove where it
+  failed.
+- **Risk:** Neither draft [evacuation PR #1584](https://github.com/Stuhlmuller/homelab/pull/1584)
+  nor stacked [PostgreSQL move PR #1583](https://github.com/Stuhlmuller/homelab/pull/1583)
+  has a fresh source-bound, off-NAS restore receipt. Merging the database move
+  would restart PostgreSQL without its required recovery gate.
+- **Next step:** Rotate the shared token through the guarded CI credential
+  helper, then verify authenticated read-only Kubernetes access with the
+  protected [diagnostics workflow](../../.github/workflows/homelab-diagnostics.yml)
+  on exact current `main`. Recheck the source PVC/PV UIDs and capacity; run a
+  fresh exact-main checkpoint and require versioned off-NAS readback plus an
+  isolated restore receipt before merging #1584, then #1583.
+
 - **Status:** recovered; capacity follow-up open
 - **Area:** Talos / Argo CD reconciliation, 2026-10-10
 - **Evidence:** [Dated incident record](../../docs/argocd-node-pressure-2026-10-10.md).
