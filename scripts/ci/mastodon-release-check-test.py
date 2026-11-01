@@ -5,6 +5,7 @@ import contextlib
 from datetime import datetime, timezone
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -31,6 +32,25 @@ RESTORE = {"metadata": {"labels": {"app.kubernetes.io/name": "mastodon-restore-v
 
 
 class ReleaseCheckTest(unittest.TestCase):
+    def test_gitops_initial_and_scheduled_restore_templates_supply_release_evidence(self):
+        root = Path(__file__).parents[2]
+        rendered = subprocess.check_output(["kubectl", "kustomize", str(root / "clusters/homelab/apps/mastodon")],
+                                           text=True)
+        resources = json.loads(subprocess.check_output([
+            "yq", "eval-all", "-o=json", ". as $doc ireduce ([]; . + [$doc])", "-",
+        ], input=rendered, text=True))
+        resources = {resource["metadata"]["name"]: resource for resource in resources}
+        self.assertIn("mastodon-restore-verification", resources,
+                      "Scheduled restore producer is missing from the candidate manifests.")
+        self.assertIn("mastodon-restore-verification-v2", resources,
+                      "Initial restore producer is missing from the candidate manifests.")
+        scheduled = resources["mastodon-restore-verification"]
+        self.assertFalse(scheduled["spec"]["suspend"])
+        for template in (scheduled["spec"]["jobTemplate"], resources["mastodon-restore-verification-v2"]):
+            evidence = copy.deepcopy(template)
+            evidence["status"] = RESTORE["status"]
+            self.assertEqual(release.failures(APP, CRON, [BACKUP, evidence], NOW), [])
+
     def test_gate_rejects_fork_runtime_changes_and_failed_live_checks(self):
         workflow = Path(__file__).parents[2] / ".github/workflows/terragrunt-plan.yml"
         gate = textwrap.dedent(workflow.read_text().split("      - name: Require Applicable Checks\n", 1)[1]

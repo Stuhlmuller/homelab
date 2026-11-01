@@ -25,7 +25,7 @@ def completed_at(job, now):
         if completed.tzinfo is not None and now - timedelta(hours=24) <= completed <= now:
             return completed
     except (KeyError, TypeError, ValueError):
-        pass
+        return None
     return None
 
 
