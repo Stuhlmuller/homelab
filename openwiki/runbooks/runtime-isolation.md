@@ -155,28 +155,40 @@ keeps live Traefik on `zimaboard-1` and stages a second Traefik controller on
 `acer` with a userspace Tailscale sidecar, leaving the old controller and
 LoadBalancer serving during tests. Its Pod must match no existing private,
 Funnel, or registry Service selector. Private HTTP/HTTPS listeners would bind
-only to Pod loopback, with raw TCP Serve exposing them to the tailnet while
-Traefik retains TLS termination. This could close the private listener when
-kube-router or the sidecar is absent, without clearing another worker. It is
-not deployed or proven. The current Tailscale operator uses a separate proxy;
+only to Pod loopback, with raw TCP Serve exposing HTTPS 443 first while Traefik
+retains TLS termination. Port 80 needs separate review. This could close the
+private listener when kube-router or the sidecar is absent, without clearing
+another worker. Its source is staged but the runtime is not deployed or
+proven. The current Tailscale operator uses a separate proxy;
 [`tailnet-dns`](../../clusters/homelab/platform/tailnet-dns/README.md) derives
 answers from its LoadBalancer status,
 [`tailscale-ingress-sign.py`](../../scripts/tailscale-ingress-sign.py) signs
 that fixed proxy, and
 [CoreDNS](../../clusters/homelab/platform/dns/coredns-configmap.yaml) sends
 Harbor and Octelium API names to its Service. A selectorless headless Service
-with a ready EndpointSlice may let the pinned resolver publish a sidecar
-tailnet IP, but it needs an identity-bound owner that withdraws readiness on
-peer loss; a static stale IP is unsafe. The approved-name A/AAAA resolver view
-must have no public fallback, because an unready EndpointSlice alone would
-otherwise allow public address answers. Keep its allowlist in sync with the
-Traefik route and Service annotation. Resolver cache can retain a prior A for
-30 seconds after withdrawal, and client caches may last longer, so the
-identity-bound traffic guard must deny a lost or reassigned peer during that
-window. Require a negative tailnet probe immediately after test-peer withdrawal,
-before the cached A expires. Preserve the old internal Service
-until the replacements work; `loadBalancerClass` cannot be changed in place,
-so create a distinct internal Service before retiring the old one. Prove
+with a ready EndpointSlice could publish the sidecar device IP, but a static
+device IP is unsafe after reassignment. The candidate is a pinned-provider
+[Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
+with a stable IPv4 TailVIP and one exact, signed canary host approved through a
+repo-owned script.
+The Service endpoint uses raw TCP 443 to the canary loopback listener. A
+selectorless headless Service and reviewed EndpointSlice would publish that
+TailVIP; DNS may still answer it while the host is offline, so a cached-A
+negative test must show traffic fails after drain, peer loss, or wrong-host
+advertisement. Keep the approved-name A/AAAA view without public `fallthrough`
+or `forward`, and its allowlist aligned with Traefik routes and the Service
+annotation. Probe immediately after withdrawal, before the 30-second resolver
+cache expires; client caches may last longer. Narrow the broad tailnet grant,
+then add an explicit `svc:homelab-private-ingress` TCP 443 grant for intended
+test and production clients with positive and negative policy tests before DNS
+cutover. November 1
+read-only checks found the Terragrunt OAuth credential lacks Services write
+(403), and the SSM-backed operator credential returned 401 at token exchange;
+resolve a repo-owned credential path before activation. Confirm the connected
+Tailscale v1.40 NAS is not an ingress consumer or upgrade it. Preserve the old
+internal Service until the replacements work. `loadBalancerClass` cannot be
+changed in place; create a distinct internal Service before retiring the old
+one. Prove
 these contracts, persistent sidecar
 identity, a canary-only tailnet tag, Tailnet Lock, same-node/remote-node
 Pod-IP HTTP/HTTPS and tailnet-IP negative probes, native clients, and
