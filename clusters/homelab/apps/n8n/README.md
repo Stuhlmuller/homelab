@@ -174,13 +174,15 @@ isolated restore of the database and PVC before migration activation.
 
 ## Staged One-Shot Paired Checkpoint
 
-The [protected paired checkpoint](../../../../.github/workflows/n8n-paired-checkpoint.yml),
+The [manual paired checkpoint](../../../../.github/workflows/n8n-paired-checkpoint.yml),
 [reader Job](checkpoint-reader.job.yaml), and deny-all
 [reader NetworkPolicy](checkpoint-reader.networkpolicy.yaml) are staged source.
 The Job and policy are excluded from the active Kustomization and Helm values. The workflow runs
 only by manual dispatch from exact current `main` after the reviewed fence
-overlay is activated and `homelab-production` approves the run. Its source
-hashes are pinned before the workflow receives GitHub, AWS, or Octelium credentials.
+overlay is activated. On 2026-10-31, `homelab-production` had a branch policy
+but no required reviewer; dispatch starts the job without a GitHub approval pause.
+Obtain explicit operator approval before dispatch. Source hashes are pinned
+before the workflow accesses AWS or Octelium credentials.
 Do not dispatch it against the current one-replica stack.
 
 The declared one-shot script creates a run-named deny-all policy and reader Job
@@ -188,7 +190,7 @@ from the pinned manifests only after Argo
 reports the fenced revision Synced/Healthy, n8n desired/current/ready replicas
 are zero, no other n8n Pod or writer Job remains, PostgreSQL is Ready, and both
 PVC/PV bindings match the independently inventoried UIDs. The Job mounts the
-n8n PVC read-only and sleeps; the protected runner uses `kubectl exec` to
+n8n PVC read-only and sleeps; the workflow runner uses `kubectl exec` to
 stream an archive into private scratch. The Job receives no API token or AWS
 credential. The script verifies each resource's owner token and UID, then
 deletes the Job before its policy. A lost create response is reconciled by

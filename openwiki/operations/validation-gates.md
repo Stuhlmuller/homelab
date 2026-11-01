@@ -1050,8 +1050,11 @@ zero, with no migration Job in either render. Its
 requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
 before a paired capture; source rendering alone is not a live backup.
 The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-checkpoint.yml)
-is manual, exact-main, protected, and pins the capture script, restore helper,
-excluded reader Job, and deny-all policy by SHA-256 before credential access. Its offline
+is manual and exact-main. It pins the capture script, restore helper,
+excluded reader Job, and deny-all policy by SHA-256 before AWS or Octelium
+access. Read-only GitHub API inspection on 2026-10-31 found
+`homelab-production` has a branch policy but no required reviewer; a live
+dispatch needs explicit operator approval before starting. The offline
 `n8n-paired-checkpoint-test.py` checks stale-main, UID, permission, and
 zero-writer failures before Job creation, committed creates with lost responses,
 foreign ownership refusal, cleanup failure without a success receipt, and
