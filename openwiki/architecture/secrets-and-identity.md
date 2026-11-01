@@ -453,7 +453,17 @@ gate remains disabled; these permissions are source intent, not live access.
   Alertmanager does not call the hook because its standard webhook body lacks
   OpenClaw's required `message` field.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
-  target Secret `operator-oauth`.
+  target Secret `operator-oauth`. A repo-owned one-shot helper creates an
+  operator client through the Tailscale keys API using a separate Owner/Admin
+  API key file, verifies its `devices:core`, `auth_keys`, `services` scopes and
+  `tag:k8s-operator`, then stores the pair in the existing SSM SecureStrings.
+  Its private receipt makes partial SSM writes resumable. Because this
+  ExternalSecret uses `OnChange`, a reviewed metadata revision must refresh the
+  target Secret before a separate reviewed operator pod-annotation revision
+  restarts the chart's mounted-Secret consumer. The staged ingress canary's
+  `tag:homelab-ingress-canary` still needs a reviewed tailnet policy ownership
+  delegation to `tag:k8s-operator` before activation. See
+  [the rotation runbook](../../clusters/homelab/apps/tailscale/README.md).
 - Cordium uses the `cordium-agent-auth` ExternalSecret in `octelium`, sourced
   from `/homelab/cordium/agent-auth-token`, for the policy-bound
   `homelab-cordium-agent` Workload User. The PostSync configuration hook uses
