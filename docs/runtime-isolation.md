@@ -297,9 +297,12 @@ the separate candidate for general `NetworkPolicy` qualification.
 
 ### NetworkPolicy canary on an existing node (2026-11-01)
 
-No spare worker is available. A read-only snapshot found `zimaboard-2` using
-1,339 MiB against 1,308 MiB allocatable, before the staged 576 MiB
-enforcer/client limit budget and 128 MiB reserve. It cannot pass admission.
+No spare worker is available. A 2026-11-01 15:05 UTC read-only sample found
+`zimaboard-2` using 1,365 MiB of its 1,792 MiB physical memory before the
+staged 576 MiB enforcer/client limit budget and 128 MiB reserve. Ten foreign
+Pods used about 826 MiB; moving only app Pods leaves CoreDNS and metrics-server,
+which still fail exact-Pod isolation. Moving every foreign Pod leaves no
+proved peak or restart headroom. It cannot pass admission.
 Closed [#1584](https://github.com/Stuhlmuller/homelab/pull/1584) proposed moving
 only `zimaboard-2` workloads to `acer`/`zimaboard-1`; closed
 [#1583](https://github.com/Stuhlmuller/homelab/pull/1583) proposed restarting
@@ -307,18 +310,30 @@ Langfuse PostgreSQL on `acer`. Neither changed live state. Do not incur that
 database outage solely to clear `zimaboard-2`. Any later database move still
 requires a fresh verified off-NAS checkpoint.
 
-`zimaboard-0` is a conditional candidate, not an admitted canary. It has
-7,282 MiB allocatable, 5,852 MiB used, and 8.1 GiB node filesystem free.
-One enforcer, client, Traefik Pod, and 128 MiB reserve consume 1,216 MiB at
-their limits, leaving only 214 MiB at this snapshot. Traefik's current
-one-Pod surge raises that budget to 1,728 MiB, 298 MiB beyond free memory.
-The node also hosts 64 active app Pods, including 55 Octelium Pods, plus 19
-completed backup Pods and the `kube-system/image-rewrite` Deployment Pod.
-[Canary admission](../scripts/network-policy-canary-node.py) rejects all 84
-foreign assigned Pods, even completed ones or Pods in `kube-system`. Deluge,
-Radarr, Sonarr, and Bazarr have config volumes pinned to local `hostPath` PVs;
-Prometheus uses an NFS claim. The active app Pods request about 3,733 MiB,
-while `acer` and `zimaboard-1` together have about 3,052 MiB unrequested.
+`zimaboard-0` is a conditional candidate, not an admitted canary. The 15:03
+UTC sample found 7,766 MiB physical, 7,282 MiB allocatable, 5,838 MiB used,
+and 8.1 GiB node filesystem free. One enforcer, client, Traefik Pod, and
+128 MiB reserve consume 1,216 MiB at their limits, leaving about 712 MiB
+of sampled physical headroom. Traefik's current one-Pod surge raises that
+budget to 1,728 MiB, leaving about 200 MiB. These are not peak or restart
+measurements.
+
+A 15:20 UTC raw PodList recheck found 64 active app Pods (54 Octelium), an
+`octelium` gateway-agent DaemonSet, 19 completed backup Pods, and the
+`kube-system/image-rewrite` Deployment Pod.
+[Canary admission](../scripts/network-policy-canary-node.py) rejects all 85
+foreign assigned Pods, including the Octelium DaemonSet, completed Jobs, and
+ordinary Pods in `kube-system`. Deluge, Radarr, Sonarr, and Bazarr have config
+volumes pinned to local `hostPath` PVs;
+Prometheus uses an NFS claim. The active app Pods have about 3,920 MiB of
+scheduler-effective memory requests, including Deluge's restartable Gluetun
+init container. `acer` and `zimaboard-1` together have about 2,605 MiB
+unrequested.
+A separate Pod-slot gate rules out the initial acer-only native Octelium move:
+`acer` already has 70 nonterminal Pods of 110 allocatable slots, while 54
+Octelium app Pods, its gateway DaemonSet, and `octelium-client` select the
+dataplane label on `zimaboard-0`. Moving all 56 would require 126 slots before
+Prowlarr or rollout surge. Even removing 16 stale proxies leaves 110 of 110.
 A taint leaves existing Pods in place. Source-owned relocation or an explicitly
 planned service outage, storage recovery proof, and fresh capacity/Pod
 inventories are prerequisites to isolating this worker.
@@ -326,36 +341,55 @@ inventories are prerequisites to isolating this worker.
 A candidate existing-node maintenance route requires these source-owned stages
 and fresh capacity and recovery checks. The November 1 read-only check found
 no required reviewer on `homelab-plan`; restore it before any credentialed
-Terragrunt plan or apply in this route.
+Terragrunt plan or apply in this route. The protected PR plan currently omits
+`shared/kubernetes-node-labels`; add its saved plan and policy check before
+reviewing node-label or annotation changes. The current taint handoff is not
+implemented, so these stages are a design, not authority to evacuate a node.
 
 1. Verify current media config archives and the media PostgreSQL recovery path.
    Through GitOps, pause Prometheus and Deluge, Radarr, Sonarr, and Bazarr;
    preserve their PVCs and local PVs. Suspend the four media backup CronJobs
    and disable Bazarr's z0-pinned PostSync backup/reconcile Jobs for the outage.
    This pauses monitoring and four media apps, without moving their local
-   data. Their current requests total about 2,512 MiB, enough to close the
-   681 MiB destination request deficit at this snapshot.
+   data. Their scheduler-effective requests total about 2,640 MiB, enough to
+   close the 1,315 MiB destination request deficit at this snapshot.
 2. Set `successfulJobsHistoryLimit: 0` in the Bazarr, Deluge, Radarr, Sonarr,
    Harbor, Octelium storage, and Fleet `backup-cronjob.yaml` sources. Verify
    the controllers remove all 19 retained successful Jobs and Pods. Keep
-   Fleet, Harbor, and Octelium backups running. If reconciliation does not
-   remove them, add a reviewed, identity-bounded cleanup script; never delete
-   them by hand.
-3. Move Prowlarr's committed node selector to `acer`. Add Octelium dataplane
-   eligibility to `acer` through the node-label Terragrunt owner, update its
-   gateway override, and prove native/Multus endpoints and destination capacity
-   before removing `zimaboard-0` eligibility. The 55 Octelium Pods and client
-   use that label; existing Pods remain until eviction.
-4. Apply a temporary `NoExecute` taint to `zimaboard-0` through the repo-owned
-   node-label Terragrunt unit. Expect an Octelium/private-app interruption as
-   its gateway and 54 other Pods move together. Confirm `image-rewrite` moves
-   off the node and its webhook stays healthy. Require all displaced workloads
-   Ready and native gateway and client paths working after rescheduling.
+   Fleet, Harbor, and Octelium backups running only if their dependencies
+   remain healthy through the planned outage; otherwise verify a recent
+   backup, suspend the schedule, and resume it after recovery. If
+   reconciliation does not remove the completed Pods, add a reviewed,
+   identity-bounded cleanup script; never delete them by hand.
+3. Move Prowlarr's committed node selector to a measured destination. Keep
+   `acer`'s 25 existing emergency Octelium fallback Pods and prove their direct
+   paths, native Service coverage, protected CI Kubernetes API access, owner
+   access, and rollback before any native dataplane interruption. Remove
+   `zimaboard-0` native dataplane eligibility through its reviewed Terragrunt
+   owner only for a bounded maintenance window. Do not add the native dataplane
+   label to `acer`: its current Pod-slot count does not fit. The 56 selected
+   native Pods may remain Pending. A 15:34 UTC read-only selector join found
+   25 Services with Ready fallback endpoints and 29 native-only Services,
+   including the operator API, Talos API, Harbor, Langfuse, and Enterprise
+   paths. Accept that specific outage before evacuation. Preserve a trusted
+   LAN recovery path independent of the native operator and Talos APIs. Update
+   the hardcoded bootstrap assertions for this temporary state. Recheck real
+   memory peaks, etcd headroom, Pod slots, and all running destination workloads.
+4. Implement a protected, source-owned evacuation and taint handoff. After
+   backup and destination gates, add an exact-identity temporary `NoExecute`
+   taint to `zimaboard-0`. Expect an Octelium/private-app interruption as its
+   gateway, client, and 54 app Pods leave. Confirm `image-rewrite` moves off
+   the node and its webhook stays healthy. Require all displaced workloads
+   that are expected to remain online Ready and their fallback paths working.
    Verify every Pod except the reviewed system DaemonSet Pods has left,
-   including completed Jobs.
-   Obtain a fresh, exact-UID placement receipt and run protected canary
-   admission. Remove the temporary taint only after the dedicated canary
-   `NoSchedule` taint is installed, and recheck the Pod list.
+   including completed Jobs. With a fresh exact-UID placement receipt, the
+   protected admission operation must replace `NoExecute` with its dedicated
+   `NoSchedule` taint in one resource-version-guarded Node patch, recheck
+   isolation, then add the canary label. The current Terraform taint resource
+   cannot safely perform that handoff: [provider deletion](https://github.com/hashicorp/terraform-provider-kubernetes/blob/v3.2.1/kubernetes/resource_kubernetes_node_taint.go#L90-L93)
+   applies an empty [atomic Node taint list](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/api/core/v1/types.go#L6036-L6039),
+   which can conflict with or remove the canary taint. Keep `node_taints = {}`
+   and do not start evacuation until the protected handoff and tests exist.
 
 No stage above authorizes the firewall or Traefik. A shared-node Traefik move
 needs a guard that installs default-drop on its Pod interface before the
@@ -381,6 +415,13 @@ restart. Use `surge: 0` and
 outage. The legacy Istio/Octelium ClusterIP bypass must be retired after
 caller acceptance and negative probes. Keep enforcement disabled if any
 capacity, identity, policy, lifecycle, or bypass gate fails.
+
+After fixture qualification, use the protected firewall cleanup and canary
+release paths to remove only owned rules, label, and `NoSchedule` taint. Restore
+`zimaboard-0` dataplane eligibility through a reviewed Terragrunt plan, then
+verify native Octelium endpoints, the 29 affected Services, media local PV
+startup, monitoring, and backup schedules before ending the outage. Fixture
+success alone does not authorize broad enforcement or a Traefik move.
 
 The three Cordium Genesis policies have a [read-only expected-spec fixture](../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 for `cordium/ws-main`, `octelium/cordium-nocturne`, and

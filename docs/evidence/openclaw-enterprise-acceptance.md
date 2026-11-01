@@ -848,6 +848,52 @@ numbers, not measured peak, restart or recovery proof. Neither service has a
 complete independent whole-service restore. No pause, placement or canary
 activation occurred; T022, T027 and T035 remain open.
 
+At 2026-11-01 15:03:39–15:03:53 UTC, read-only `kubectl get nodes -o json`,
+`kubectl top nodes`, `kubectl describe node`, assigned-Pod JSON, and kubelet
+Summary API checks found all four workers Ready and untainted:
+
+| Node | Allocatable | Requested | Sampled use |
+| --- | ---: | ---: | ---: |
+| `acer` | 15,261 MiB | 13,390 MiB | 11,992 MiB |
+| `zimaboard-0` | 7,282 MiB | 4,507 MiB | 5,838 MiB |
+| `zimaboard-1` | 7,282 MiB | 6,548 MiB | 6,206 MiB |
+| `zimaboard-2` | 1,308 MiB | 965 MiB | 1,368 MiB |
+
+The Node API reports 7,766 MiB physical memory on `zimaboard-0` and 1,792
+MiB on `zimaboard-2`. Compare sampled node use with physical capacity and Pod
+requests with allocatable memory; they are different budgets.
+
+At 15:20:10 UTC, a read-only raw PodList with a resourceVersion found 90 Pods
+assigned to `zimaboard-0`: 71 Running, including 65 non-DaemonSet Pods, and
+19 Succeeded Jobs. Five system DaemonSet Pods match the admission allowlist;
+`octelium/octelium-gwagent-2kh76` is the sixth DaemonSet and is foreign to it.
+The gateway agent, 65 running non-DaemonSet Pods, and 19 completed Jobs are
+the 85 foreign assigned Pods. The 15:03 kubelet Summary API reported
+8,700,088,320 bytes of node filesystem space available.
+
+At 15:08 UTC, its 64 active app Pods requested 3,920 MiB after counting Deluge's
+128 MiB restartable Gluetun init container; the five candidate paused workloads
+accounted for 2,640 MiB. The 3,920 MiB app requests plus 48 MiB for
+`image-rewrite` and 539 MiB for DaemonSets match the Node's 4,507 MiB
+allocated requests. A same-day read-only Node/Pod recheck found `acer` at
+70 nonterminal Pods of 110 allocatable slots. The 54 Octelium app Pods, gateway
+DaemonSet, and `octelium-client` on `zimaboard-0` select its dataplane label;
+moving all 56 to `acer` would require 126 slots. Retiring 16 stale proxies
+would still leave 110 of 110 slots before Prowlarr or rollout surge. The
+25 emergency fallback Pods already on `acer` need direct path and CI proof
+before a bounded native outage. At 15:34 UTC, a read-only Service selector join
+found 25 Services with Ready native and emergency endpoints, and 29 native-only
+Services with Ready z0 endpoints and no acer fallback. The latter include
+operator Kubernetes and Talos APIs, Harbor, Langfuse, and Enterprise paths.
+No relocation is admitted from request math.
+
+`zimaboard-2` remains unqualified for the canary; node
+working set includes host use and is not a Pod-allocatable measurement. The
+[conditional existing-node route](../runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+still needs source-owned evacuation, destination peak and restart proof, and
+exact-Pod admission. No workload moved or firewall activated. This single
+sample is not a peak or an admission receipt.
+
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global

@@ -162,9 +162,18 @@ memory use is acer 67%, zimaboard-0 84%, zimaboard-1 84%, zimaboard-2 80%.
 This refresh does not satisfy T022's post-shutdown reservation/canary admission.
 
 **Alternatives considered:** Running old/new simultaneously is unnecessary after
-the fresh-install clarification. Lowering requests to hide the deficit, moving
-unrelated workloads, or assuming new hardware is not authorized by this plan.
-Failure to obtain an isolated canary or sufficient measured headroom blocks rollout.
+the fresh-install clarification. Lowering requests to hide the deficit or
+assuming new hardware is not authorized.
+
+**2026-11-01 capacity decision:** No spare worker is available. The
+[existing-node maintenance route](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+permits only reviewed, source-owned workload relocation or pauses with verified
+recovery and declared outages. Failure to obtain an isolated canary or
+sufficient measured headroom still blocks rollout. An acer-only native Octelium
+move exceeds its Pod slots. The conditional z0 route instead relies on the
+already-running emergency fallbacks during a bounded outage of uncovered
+native Services; the fallback, protected CI, backup, and taint handoff gates
+remain unproven.
 
 ## R5 — Stock deployment with repository-owned lifecycle hooks
 

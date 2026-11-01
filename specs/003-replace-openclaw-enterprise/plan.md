@@ -146,7 +146,7 @@ cover only missing operations; no new generalized operator or scheduler.
 | --- | --- | --- |
 | A — prepare | Review full source diff, publish required pinned artifacts, add fixture-tested maintenance/retirement paths, refresh read-only baseline | Exact images, node/storage identity, dependency and policy inventories |
 | B — legacy shutdown | Quiesce old gateway/jobs through GitOps; final full archive across local/NAS stores; verify independent recovery; keep replicas zero | No writers/deliveries; verified recovery receipt; retained PVs and credentials |
-| C — capacity | Recalculate after stopping old app; allocate a tainted canary and per-node reservations | All steady/transient requests and measured peaks fit; no unrelated eviction |
+| C — capacity | Recalculate after stopping old app; allocate a tainted canary and per-node reservations | All steady/transient requests and measured peaks fit after any reviewed, recoverable existing-node evacuation; no ad hoc eviction |
 | D — versions | Talos adjacent-minor ladder, Istio adjacent-minor ladder, then Kubernetes 1.35.9 | Per-node/component receipts, healthy API/etcd/DNS/storage/access/apps |
 | E — enforcement | Correct affected ingress/egress policies, deploy firewall-only canary, qualify, expand node-by-node | Complete allowed/denied and lifecycle matrix passes on real Talos |
 | F — foundation | Envoy/Gateway API, PostgreSQL roles/TLS, storage, ESO, private identity/routes | Independent dependencies Healthy; backup restore and access tests pass |

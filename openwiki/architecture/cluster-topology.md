@@ -224,12 +224,23 @@ a failover can start 51 dataplane-selected Deployments plus the node-local
 gateway agent at once. Seven-day measurements put the full fleet near 3.1 GiB
 memory at p95, while its declared memory requests total only about 315 MiB.
 
-Do not use the existing control-plane node or `zimaboard-1` as the replacement
-dataplane target. The control-plane node has etcd and rollout pod-slot risk;
+Do not use the existing control-plane node or `zimaboard-1` as the steady-state
+replacement dataplane target. The control-plane node has etcd and rollout pod-slot risk;
 `zimaboard-1` already hosts the Octelium control plane and stateful workloads.
 After the 16 stale `*.homelab` service proxies are removed, the retained
 dataplane still uses about 2.7 GiB memory at p95 and creates 35 Deployment Pods
 plus the gateway agent.
+
+The [existing-node NetworkPolicy canary route](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+uses `acer`'s already-running emergency fallback Pods during a bounded native
+dataplane outage. It does not add native dataplane eligibility to `acer`:
+70 existing active Pods plus 56 selector-bound Pods from `zimaboard-0` would
+exceed its 110 allocatable Pod slots, even before Prowlarr or surge. Prove
+fallback and protected CI access, list uncovered native paths, and accept their
+outage before changing the `zimaboard-0` label. A November 1 15:34 UTC selector
+check found 25 fallback-covered and 29 native-only Octelium Services. Its
+protected node-label PR plan and exact-identity taint handoff are not yet
+implemented. No placement change is admitted from scheduler requests alone.
 
 The durable recovery requirement is a dedicated third dataplane-capable worker
 with enough real memory and pod capacity for that retained fleet plus startup
