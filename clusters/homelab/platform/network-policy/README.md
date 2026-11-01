@@ -164,27 +164,41 @@ probe and complete, unchanged current Pod inventory produce a read-only
 clean state without attributing the earlier patch. This check permits ordinary
 workloads that scheduled after untaint but rejects firewall and cleanup Pods.
 
-Admission only gates the Node taint and label. The later enforcer and fixture
-rollout still needs its own protected fresh capacity and first-pull gate; that
-gate is not implemented on this branch, so do not enable the rollout yet. A
-reviewed rollout must first sync `fixtures.yaml` through the canary GitOps
+Admission only gates the Node taint and label. The protected
+`network-policy-activation-capacity.py` gate checks the selected immutable
+admission and placement versions, exact current `main`, Node identities and
+fresh capacity on both nodes before each targeted GitOps apply. Its `fixtures`
+phase requires absent runtime and reserves the full two-node budgets without
+creating a host firewall probe. A reviewed rollout first syncs `fixtures.yaml`
+through the canary GitOps
 Application while the enforcer is absent. Verify the two server Pods are Ready
 on `zimaboard-1`, the client is Ready on `zimaboard-2`, and each pulled image
-has the exact pinned source reference, a nonempty runtime image ID, and no
-image-pull failure. All fixtures set `imagePullPolicy: Always`, so the
+has the exact pinned source reference, a SHA-256 runtime image ID, a container
+ID, and zero restarts. All fixtures set `imagePullPolicy: Always`, so the
 container runtime resolves the pinned digest at the registry for each start
 even when layers are cached ([Kubernetes image-pull behavior](https://kubernetes.io/docs/concepts/containers/images/)).
 This proves the kubelet started the pinned image before enforcer activation;
 runtime IDs can differ from the Harbor source digest.
-The protected gate must inspect these Pod fields directly because
-`Node.status.images` is capped and can omit a cached image. Only then may a
-protected fresh capacity and identity gate admit the enforcer GitOps sync. This sequence
+The `enforcer` phase requires the canary Application Synced/Healthy at exact
+current `main`. It checks those exact Pods, policy, image IDs, container IDs,
+Pod IPs, Node UID/boot IDs, and the sole admitted client on `zimaboard-2` before and
+after a fresh, UID-owned host firewall baseline probe. The probe attempt is
+stored before Pod creation; a verified capture requires an empty firewall and
+observed Pod deletion. The phase then remeasures both nodes, crediting only
+the reviewed running client on `zimaboard-2` while reserving the full 576 MiB
+peak plus 128 MiB margin. The `zimaboard-1` check remains conservative: it
+reserves the full 128 MiB server peak plus margin even with both servers
+running. Either Pod drift, foreign Pod, Node identity change, or failed
+capacity check withholds the apply receipt. The gate inspects Pod fields
+directly because `Node.status.images` is capped and can omit a cached image.
+This sequence
 provides an authored first-pull path when the server image is not already
-cached on `zimaboard-1`. The downstream activation workflow must be changed
-to support fixture-first order before use. Once that gate and the fixture
+cached on `zimaboard-1`. Once the fixture
 image mirror are ready, merge a reviewed first change that sets
 `activationEnabled` to `true` in
-`scripts/config/platform-maintenance.json`, enables automated sync and
+`scripts/config/platform-maintenance.json` and selects the exact verified
+admission `{sourceSha, runId, versionId}`, sets the enforcer Kustomization to
+`resources: []` while its Application stays dormant, enables automated sync and
 pruning only in
 `IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`,
 and lists `fixtures.yaml` in `canary/kustomization.yaml`. Dispatch protected
@@ -192,7 +206,8 @@ Terragrunt Apply for `argocd_app=platform-network-policy-canary` on exact
 current `main`; verify the split fixture placement and protected first-pull
 digest proof.
 After the protected activation gate passes, merge a second reviewed change
-enabling automated sync and pruning in
+restoring `daemonset.yaml` to the enforcer Kustomization and enabling automated
+sync and pruning in
 `IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl`, then dispatch
 its protected Apply on exact current `main`. Verify its DaemonSet is Ready
 only on `zimaboard-2` and both Applications are Synced/Healthy before dispatching
@@ -221,7 +236,9 @@ selector, host mounts, service account, and read/watch RBAC. It probes the
 fixed TCP/UDP allow/deny matrix and resolves the Kubernetes Service name over
 both DNS transports, requiring an A record matching the live Kubernetes Service.
 It rejects extra or unsafe fixture Pods and placement drift, including changed
-commands, arguments, or container security overrides. It requires each traffic
+commands, arguments, or container security overrides. It compares fixture UID,
+node, Pod IP, container ID, and image ID before and after the traffic matrix
+and records those identities in its private receipt. It requires each traffic
 probe's outcome marker as well as its exit code, so a transport error cannot
 count as a traffic result. It stores a private receipt listing each
 still-unverified lifecycle scenario. A successful

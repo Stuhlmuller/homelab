@@ -252,6 +252,7 @@ class CanaryQualificationTests(unittest.TestCase):
                     "operator": "Exists", "effect": "NoSchedule"})
             pods[name]["status"]["containerStatuses"] = [{
                 "name": container["name"], "image": "sha256:runtime-config-digest",
+                "containerID": "containerd://" + name,
                 "imageID": "harbor.example/image@sha256:runtime-platform-digest"}]
         firewall = {"metadata": {"uid": "daemonset-uid", "generation": 2},
                     "status": {"observedGeneration": 2, "desiredNumberScheduled": 1,
@@ -286,6 +287,15 @@ class CanaryQualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "fixture identity"):
                 self.module.inspect(config)
             pods["npq-allowed"]["spec"]["nodeName"] = self.module.FIXTURE_NODE
+            pods["npq-allowed"]["metadata"]["deletionTimestamp"] = "2026-11-01T00:00:00Z"
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config, False)
+            del pods["npq-allowed"]["metadata"]["deletionTimestamp"]
+            pods["npq-allowed"]["metadata"]["ownerReferences"] = [{
+                "kind": "Job", "name": "replacement"}]
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config, False)
+            del pods["npq-allowed"]["metadata"]["ownerReferences"]
             pods["npq-allowed"]["spec"]["tolerations"].append({
                 "key": self.module.CANARY_KEY, "operator": "Exists",
                 "effect": "NoSchedule"})
@@ -441,6 +451,33 @@ class CanaryQualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "protected current-main"):
                 self.module.require_protected_source()
 
+    def test_traffic_receipt_refuses_same_uid_server_ip_change(self):
+        node = {"metadata": {"uid": "z2"}, "status": {"nodeInfo": {"bootID": "z2-boot"}}}
+        server = {"metadata": {"uid": "z1"}, "status": {"nodeInfo": {"bootID": "z1-boot"}}}
+        pods = {"npq-allowed": {"metadata": {"uid": "same-uid"},
+                                "spec": {"nodeName": self.module.FIXTURE_NODE},
+                                "status": {"podIP": "10.42.0.2",
+                                           "containerStatuses": [{
+                                               "containerID": "containerd://same",
+                                               "imageID": "repo@sha256:" + "1" * 64}]}}}
+        after = json.loads(json.dumps(pods))
+        after["npq-allowed"]["status"]["podIP"] = "10.42.0.3"
+        firewall = {"metadata": {"uid": "enforcer-uid"}}
+        inspections = iter(((node, server, pods, firewall, "policy"),
+                            (node, server, after, firewall, "policy")))
+        outputs = []
+        with patch.object(self.module, "require_protected_source", return_value="a" * 40), \
+                patch.object(self.module, "inspect", side_effect=lambda *_: next(inspections)), \
+                patch.object(self.module, "traffic_matrix", return_value=[]), \
+                patch.object(self.module, "private_output", side_effect=lambda _path, record:
+                             outputs.append(record)), \
+                patch.object(self.module.runpy, "run_path", return_value={
+                    "validate_config": lambda value: value}), \
+                patch.object(sys, "argv", ["qualification", "--output", "/tmp/probe.json"]):
+            self.assertEqual(self.module.main(), 1)
+        self.assertEqual([record["result"] for record in outputs], ["traffic-probe-failed"])
+        self.assertIn("identity changed", outputs[0]["diagnostic"])
+
     def test_receipt_is_private_exclusive_and_not_a_lifecycle_pass(self):
         node = {"metadata": {"name": "zimaboard-0", "uid": "node-uid"},
                 "status": {"nodeInfo": {"bootID": "boot-id"}}}
@@ -448,13 +485,22 @@ class CanaryQualificationTests(unittest.TestCase):
                                     "uid": "server-node-uid"},
                        "status": {"nodeInfo": {"bootID": "server-boot-id"}}}
         pods = {"npq-client": {"metadata": {"uid": "client-uid"},
-                               "spec": {"nodeName": "zimaboard-0"}}}
+                               "spec": {"nodeName": "zimaboard-0"},
+                               "status": {"podIP": "10.42.0.2",
+                                          "containerStatuses": [{
+                                              "containerID": "containerd://client",
+                                              "imageID": "repo@sha256:" + "1" * 64}]}}}
         firewall = {"metadata": {"uid": "firewall-uid"}}
         receipt = self.module.traffic_receipt(
             "a" * 40, node, server_node, pods, firewall, "b" * 64,
             [{"permitted": False}])
         self.assertEqual(receipt["fixtureNodeUid"], "server-node-uid")
         self.assertEqual(receipt["fixturePodNodes"], {"npq-client": "zimaboard-0"})
+        self.assertEqual(receipt["fixturePodIps"], {"npq-client": "10.42.0.2"})
+        after = json.loads(json.dumps(pods))
+        after["npq-client"]["status"]["podIP"] = "10.42.0.3"
+        self.assertNotEqual(self.module.fixture_identity(pods),
+                            self.module.fixture_identity(after))
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "probe.json"
             self.module.private_output(path, receipt)

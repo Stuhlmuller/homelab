@@ -78,7 +78,9 @@ def unexpected():
 
 def plan(path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    actions = (["no-op"] if config.get("existing_only_noop") else
+    actions = (["no-op"] if config.get("existing_only_noop") or
+               (config.get("network_policy_noop") and
+                config["target"].startswith("platform-network-policy")) else
                ["delete", "create"] if config.get("replacement") else ["create"])
     path.write_text(json.dumps({"unit": unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
@@ -171,11 +173,20 @@ elif tool == "conftest":
         data = path.read_bytes()
         event(json.loads(data)["unit"] + ".policy")
         Path(str(path) + ".checked").write_text(hashlib.sha256(data).hexdigest())
+elif tool == "python3":
+    if len(args) != 8 or args[0] != "-I" or not args[1].endswith(
+            "scripts/network-policy-activation-capacity.py") or args[2] != "--phase" or \
+            args[4:] != ["--expected-sha", config["sha"], "--bucket", "private-bucket"]:
+        unexpected()
+    event("capacity." + args[3])
+    if config.get("gate_fail"):
+        sys.exit(23)
 elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx",
+                     "platform-network-policy", "platform-network-policy-canary"):
             if name != config.get("missing_target"):
                 path = root / "IaC/homelab/us-west-2/apps" / name / "argocd/terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -205,6 +216,16 @@ elif tool == "terragrunt":
     elif command[:2] == ["show", "-json"] and len(command) == 3:
         event(unit + ".show")
         print(Path(command[2]).read_text(), end="")
+    elif command[:2] == ["render", "--config"] and command[3:] == [
+            "--json", "--write=false"]:
+        event("capacity.bucket")
+        print(json.dumps({"inputs": {"bucket": "private-bucket"}}))
+    elif command[:1] == ["--working-dir"] and command[3:] == [
+            "--json", "--write=false", "--no-color"] and command[2] == "render":
+        event("dormant.render")
+        print(json.dumps({"inputs": {"manifest": {"spec": {"syncPolicy": {
+            "automated": {"enabled": config.get("render_active", False),
+                          "prune": False, "allowEmpty": False}}}}}}))
     elif command[:2] == ["apply", "-no-color"] and len(command) == 3:
         event(unit + ".apply")
         if unit == "bootstrap":
@@ -226,6 +247,13 @@ elif tool == "terragrunt":
                 event("apps.plan")
                 plan(path)
                 path.with_suffix(".json").write_bytes(path.read_bytes())
+                if config.get("include_network_policy_plan"):
+                    extra = Path(command[command.index("--json-out-dir") + 1]) / \
+                        "platform-network-policy/argocd/tfplan.json"
+                    extra.parent.mkdir(parents=True, exist_ok=True)
+                    extra.write_text(json.dumps({"unit": "apps", "resource_changes": [
+                        {"type": "kubernetes_manifest",
+                         "change": {"actions": ["no-op"]}}]}))
             elif tail == ["apply", "-no-color"]:
                 checked(path)
                 bulk_apply()
@@ -278,12 +306,17 @@ class TerragruntApplyTest(unittest.TestCase):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, name + " is required for this offline test")
                 (binaries / name).symlink_to(executable)
-            for name in ("git", "terragrunt", "kubectl", "aws", "conftest", "helm"):
+            for name in ("git", "terragrunt", "kubectl", "aws", "conftest", "helm",
+                         "python3"):
                 path = binaries / name
                 path.write_text(f"#!{sys.executable}\n" + STUB)
                 path.chmod(0o700)
             scripts = root / "scripts/ci"
             scripts.mkdir(parents=True)
+            config_dir = root / "scripts/config"
+            config_dir.mkdir(parents=True)
+            (config_dir / "platform-maintenance.json").write_text(json.dumps({
+                "activationEnabled": config.get("activation_enabled", False)}))
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
                          "terragrunt-current-main.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
@@ -295,6 +328,20 @@ class TerragruntApplyTest(unittest.TestCase):
                          "homelab/us-west-2/shared/kubernetes-secrets/external-secrets-aws-ssm-auth",
                          "homelab/us-west-2/apps"):
                 (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
+            if target.startswith("platform-network-policy") or config.get(
+                    "include_network_policy_plan"):
+                policy = root / "clusters/homelab/platform/network-policy"
+                (policy / "canary").mkdir(parents=True)
+                (policy / "kustomization.yaml").write_text(
+                    "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                    + ("resources: []\n" if target ==
+                       "platform-network-policy-canary" and not config.get(
+                           "wrong_enforcer_source") else
+                       "resources:\n  - daemonset.yaml\n"))
+                (policy / "canary/kustomization.yaml").write_text(
+                    "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
+                    + ("resources: []\n" if config.get("dormant_source") else
+                     "resources:\n  - fixtures.yaml\n"))
             (root / "fixture.json").write_text(json.dumps(config))
             environment = {"PATH": str(binaries), "FIXTURE_ROOT": str(root),
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
@@ -335,6 +382,58 @@ class TerragruntApplyTest(unittest.TestCase):
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_network_policy_targets_require_phase_gate_before_apply(self):
+        for target, phase in (("platform-network-policy", "enforcer"),
+                              ("platform-network-policy-canary", "fixtures")):
+            with self.subTest(target=target):
+                result, events = self.run_apply(target=target, github_actions=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertLess(events.index("capacity." + phase), events.index("apps.apply"))
+                self.assertEqual(events[events.index("capacity." + phase) - 1],
+                                 "capacity.bucket")
+                result, events = self.run_apply(target=target, github_actions=True,
+                                                gate_fail=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("capacity." + phase, events)
+                self.assertNotIn("apps.apply", events)
+                result, events = self.run_apply(target=target, github_actions=True,
+                                                network_policy_noop=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn("capacity." + phase, events)
+                self.assertIn("apps.apply", events)
+
+    def test_fixture_first_rejects_nonempty_enforcer_source(self):
+        result, events = self.run_apply(
+            target="platform-network-policy-canary", github_actions=True,
+            wrong_enforcer_source=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Fixture first-pull requires empty enforcer source", result.stderr)
+        self.assertNotIn("capacity.fixtures", events)
+        self.assertNotIn("apps.apply", events)
+
+    def test_full_apply_allows_noop_dormant_pair_but_not_activation(self):
+        result, events = self.run_apply(target="", github_actions=True,
+                                        include_network_policy_plan=True,
+                                        dormant_source=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events.count("dormant.render"), 2)
+        self.assertIn("apps.apply", events)
+        result, events = self.run_apply(target="", github_actions=True,
+                                        include_network_policy_plan=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Non-targeted network-policy apply is not dormant", result.stderr)
+        self.assertNotIn("apps.apply", events)
+        result, events = self.run_apply(target="", github_actions=True,
+                                        activation_enabled=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Full apply is disabled", result.stderr)
+        self.assertEqual(events, ["generate"])
+        result, events = self.run_apply(target="nofx", github_actions=True,
+                                        include_network_policy_plan=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unexpected unit plan", result.stderr)
+        self.assertNotIn("apps.apply", events)
 
     def test_github_apply_checks_current_main_before_each_mutation(self):
         for target in ("langfuse", ""):
@@ -667,7 +766,7 @@ else:
         result, events = self.run_apply(
             target="", existing_argocd_only="true", existing_only_noop=True,
             live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !nofx/argocd | !platform-network-policy-canary/argocd | !platform-network-policy/argocd | !traefik/argocd")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events.count("apps.live"), 1)
         self.assertIn("apps.apply", events)
@@ -676,7 +775,7 @@ else:
     def test_existing_only_rejects_create_plan(self):
         result, events = self.run_apply(
             target="", existing_argocd_only="true", live_apps=["fleet", "langfuse", "mastodon"],
-            argocd_filter="*/argocd | !nofx/argocd | !traefik/argocd")
+            argocd_filter="*/argocd | !nofx/argocd | !platform-network-policy-canary/argocd | !platform-network-policy/argocd | !traefik/argocd")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("would create an Application", result.stderr)
         self.assertNotIn("apps.apply", events)

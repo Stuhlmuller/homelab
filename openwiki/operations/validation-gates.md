@@ -1960,8 +1960,9 @@ passed; current-SHA recovery receipts, five-tag Harbor lock and an isolated
 canary remain live gates. Passing these fixtures does not qualify a live Talos node or make
 existing policies effective.
 The static registration fixture accepts only six exact policy/canary GitOps
-source phases: dormant, fixtures active, fixtures pruned, enforcer pruned, and
-canary retired. It rejects mismatched sync settings and manifests. Protected
+source phases: dormant, fixture-first pull, fixtures with enforcer active,
+fixtures pruned, enforcer pruned, and canary retired. It rejects mismatched
+sync settings and manifests. Protected
 maintenance fetches full Git history and walks first-parent commits from the
 qualified evidence SHA to current `main`, requiring the two dedicated prunes
 in order while allowing unrelated merges and rejecting intervening policy
@@ -2036,8 +2037,23 @@ reviewed GitOps fixture-first pull and a protected exact-digest/Ready proof
 before enforcer activation. The fixture Pods use `imagePullPolicy: Always`
 with the pinned Harbor digest, so Ready Pods with a runtime image ID establish
 registry resolution even when the node's capped image inventory omits them.
-The currently staged activation script still
-assumes enforcer-first order and must be updated before any rollout.
+The staged protected [activation gate](../../scripts/network-policy-activation-capacity.py)
+now accepts fixture-first order. Its `fixtures` phase requires an empty
+enforcer Kustomization and dormant enforcer Application, binds the selected
+admission and placement versions, and rechecks both Node budgets before the
+first GitOps sync. Its `enforcer` phase requires the exact fixture
+Kustomization and its live Application Synced/Healthy at current `main`,
+then all three exact Ready fixture
+Pods, pinned `imagePullPolicy: Always` source, SHA-256 runtime image IDs,
+container IDs, Pod IPs, zero restarts, selected z1/z2 UID and boot IDs, the exact
+NetworkPolicy, and no foreign Pod on z2. A UID-owned host probe must prove an
+empty firewall and be deleted before a verified baseline capture. The gate
+then rechecks the same Pod/container signatures and both Node budgets, credits
+only the reviewed client on z2, and reserves the full z1 server peak even
+when the servers are already running. Each phase writes a separate private
+receipt before its targeted Terragrunt Apply. These source gates have not
+run on live activated fixtures; the reviewer-gated plan and merge remain
+pending.
 
 The staged protected `canary-admit` path remains dormant until the protected
 `placement` stage writes a verified current-main, run-scoped receipt. A new

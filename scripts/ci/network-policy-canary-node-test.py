@@ -476,6 +476,51 @@ class CanaryNodeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "foreign"):
                 SUT["verify_live_pods"](CONFIG, receipt)
 
+    def test_activation_allows_only_the_exact_ready_fixture_client(self):
+        client = {"metadata": {"namespace": "network-policy-canary",
+                               "name": "npq-client", "uid": "client-uid"},
+                  "spec": {"nodeName": CONFIG["canary"]["node"]},
+                  "status": {"phase": "Running", "conditions": [
+                      {"type": "Ready", "status": "True"}]}}
+        listing = {"metadata": {}, "items": [system_pod(), client]}
+        with patch.dict(SUT["CLEANUP"], {
+                "kubernetes_json": lambda *_: listing,
+                "complete_items": lambda value, _: value["items"],
+                "ready": lambda item: item["status"]["conditions"][0]["status"] == "True"}):
+            SUT["verify_live_pods"](CONFIG, placement(), "client-uid")
+            with self.assertRaisesRegex(ValueError, "foreign"):
+                SUT["verify_live_pods"](CONFIG, placement())
+            for mutation in (lambda item: item["metadata"].update(uid="replacement"),
+                             lambda item: item["metadata"].update(ownerReferences=[
+                                 {"kind": "Job", "name": "foreign"}]),
+                             lambda item: item["status"]["conditions"][0].update(
+                                 status="False")):
+                changed = copy.deepcopy(client)
+                mutation(changed)
+                listing["items"] = [system_pod(), changed]
+                with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                    SUT["verify_live_pods"](CONFIG, placement(), "client-uid")
+            listing["items"] = [system_pod(), client,
+                                {"metadata": {"namespace": "default", "name": "foreign",
+                                              "uid": "foreign-uid"},
+                                 "spec": {"nodeName": CONFIG["canary"]["node"]}}]
+            with self.assertRaisesRegex(ValueError, "foreign"):
+                SUT["verify_live_pods"](CONFIG, placement(), "client-uid")
+
+    def test_activation_runtime_exception_keeps_firewall_absent(self):
+        def command(*args):
+            if args[2:5] == ("-n", "kube-system", "get"):
+                return ""
+            return '{"kind":"Namespace"}'
+        with patch.dict(SUT["require_runtime_absent"].__globals__, {
+                "require_preflight_absent": lambda: None}), patch.dict(SUT["CLEANUP"], {
+                "command": command,
+                "kubernetes_json": lambda *_: {"metadata": {}, "items": []},
+                "complete_items": lambda value, _: value["items"]}):
+            with self.assertRaisesRegex(ValueError, "fixture namespace"):
+                SUT["require_runtime_absent"](True)
+            SUT["require_runtime_absent"](True, allow_reviewed_fixtures=True)
+
     def test_canary_pod_inventory_rejects_incomplete_or_terminating_entries(self):
         for listing in ({"items": [system_pod()]},
                         {"metadata": {"continue": "next"}, "items": [system_pod()]},
@@ -780,7 +825,9 @@ class CanaryNodeTests(unittest.TestCase):
 
     def test_release_source_allows_unrelated_main_advance_but_not_runtime_drift(self):
         current = "d" * 40
-        config = {"activationEnabled": True, "canary": {"node": "zimaboard-2"}}
+        config = {"activationEnabled": True, "canary": {"node": "zimaboard-2"},
+                  "activationAdmission": {"sourceSha": EVIDENCE_SHA,
+                                          "runId": "123", "versionId": "selected"}}
 
         def committed(command, **_):
             if "rev-list" in command:
@@ -816,6 +863,18 @@ class CanaryNodeTests(unittest.TestCase):
             return (ROOT / relative).read_bytes()
 
         with patch.object(SUT["subprocess"], "check_output", side_effect=changed_canary):
+            with self.assertRaisesRegex(ValueError, "configuration changed"):
+                SUT["require_release_source"](config, SHA, current)
+
+        def changed_admission(command, **_):
+            if "rev-list" in command:
+                return f"{current}\n{SHA}\n"
+            relative = command[-1].split(":", 1)[1]
+            if relative == "scripts/config/platform-maintenance.json":
+                return json.dumps({**config, "activationAdmission": None}).encode()
+            return (ROOT / relative).read_bytes()
+
+        with patch.object(SUT["subprocess"], "check_output", side_effect=changed_admission):
             with self.assertRaisesRegex(ValueError, "configuration changed"):
                 SUT["require_release_source"](config, SHA, current)
 

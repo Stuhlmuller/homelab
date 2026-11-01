@@ -38,6 +38,22 @@ verify_current_main_commit() {
   bash "${script_dir}/terragrunt-current-main.sh"
 }
 
+reviewed_dormant_network_policy_apps() {
+  local unit
+  local expected_policy=$'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml'
+  local expected_canary=$'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []'
+  [[ "$(cat "$repo_root/clusters/homelab/platform/network-policy/kustomization.yaml")" == "$expected_policy" &&
+     "$(cat "$repo_root/clusters/homelab/platform/network-policy/canary/kustomization.yaml")" == "$expected_canary" ]] || return 1
+  jq -e '.activationEnabled == false and .activationAdmission == null' \
+    "$repo_root/scripts/config/platform-maintenance.json" >/dev/null || return 1
+  for unit in platform-network-policy platform-network-policy-canary; do
+    terragrunt --working-dir "$repo_root/IaC/homelab/us-west-2/apps/$unit/argocd" \
+      --log-disable render --json --write=false --no-color |
+      jq -e '.inputs.manifest.spec.syncPolicy.automated |
+        .enabled == false and .prune == false and .allowEmpty == false' >/dev/null || return 1
+  done
+}
+
 destroy_deleted_terragrunt_units() {
   local deleted_units=()
   local snapshot_dir
@@ -188,6 +204,10 @@ plan_and_apply_application_backup_storage() {
 plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
+  local activation_phase=""
+  local activation_bucket
+  local expected_empty=$'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []'
+  local expected_fixtures=$'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml'
   local plan_json_files=()
   local live_apps
   local app_unit
@@ -224,6 +244,15 @@ plan_and_apply_argocd_apps() {
     return
   fi
 
+  if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+    for plan_json_file in "${plan_json_files[@]}"; do
+      [[ "$plan_json_file" == */"${TERRAGRUNT_ARGOCD_APP}"/argocd/tfplan.json ]] || {
+        echo "Targeted Argo CD apply selected an unexpected unit plan." >&2
+        return 1
+      }
+    done
+  fi
+
   conftest test --policy policy --output github "${plan_json_files[@]}"
   if [[ "$existing_argocd_only" == true ]] &&
     jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("create"))))' \
@@ -237,9 +266,85 @@ plan_and_apply_argocd_apps() {
     return 1
   fi
 
+  # A full or differently targeted run may include these units through the
+  # generated stack. Require one exact protected phase before either apply.
+  for plan_json_file in "${plan_json_files[@]}"; do
+    case "$plan_json_file" in
+      */platform-network-policy/argocd/tfplan.json)
+        if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+          reviewed_dormant_network_policy_apps || {
+            echo "Non-targeted network-policy apply is not dormant." >&2
+            return 1
+          }
+          continue
+        fi
+        [[ "${TERRAGRUNT_ARGOCD_APP:-}" == platform-network-policy ]] || {
+          echo "Network-policy activation requires a targeted protected apply." >&2
+          return 1
+        }
+        case "$(cat "$repo_root/clusters/homelab/platform/network-policy/kustomization.yaml")" in
+          $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml')
+            if jq -e 'any(.resource_changes[]?;
+              .type == "kubernetes_manifest" and .change.actions != ["no-op"])' \
+              "$plan_json_file" >/dev/null; then
+              [[ "$(cat "$repo_root/clusters/homelab/platform/network-policy/canary/kustomization.yaml")" == "$expected_fixtures" ]] || {
+                echo "Enforcer activation requires reviewed fixture source." >&2
+                return 1
+              }
+              activation_phase=enforcer
+            fi ;;
+          $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []') ;;
+          *) echo "Unreviewed network-policy source phase." >&2; return 1 ;;
+        esac
+        ;;
+      */platform-network-policy-canary/argocd/tfplan.json)
+        if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+          reviewed_dormant_network_policy_apps || {
+            echo "Non-targeted canary fixture apply is not dormant." >&2
+            return 1
+          }
+          continue
+        fi
+        [[ "${TERRAGRUNT_ARGOCD_APP:-}" == platform-network-policy-canary ]] || {
+          echo "Network-policy fixture activation requires a targeted protected apply." >&2
+          return 1
+        }
+        case "$(cat "$repo_root/clusters/homelab/platform/network-policy/canary/kustomization.yaml")" in
+          $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml')
+            if jq -e 'any(.resource_changes[]?;
+              .type == "kubernetes_manifest" and .change.actions != ["no-op"])' \
+              "$plan_json_file" >/dev/null; then
+              [[ "$(cat "$repo_root/clusters/homelab/platform/network-policy/kustomization.yaml")" == "$expected_empty" ]] || {
+                echo "Fixture first-pull requires empty enforcer source." >&2
+                return 1
+              }
+              terragrunt --working-dir "$repo_root/IaC/homelab/us-west-2/apps/platform-network-policy/argocd" \
+                --log-disable render --json --write=false --no-color |
+                jq -e '.inputs.manifest.spec.syncPolicy.automated |
+                  .enabled == false and .prune == false and .allowEmpty == false' >/dev/null || {
+                echo "Fixture first-pull requires dormant enforcer Application." >&2
+                return 1
+              }
+              activation_phase=fixtures
+            fi ;;
+          $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []') ;;
+          *) echo "Unreviewed canary fixture source phase." >&2; return 1 ;;
+        esac
+        ;;
+    esac
+  done
+
   (
     cd IaC/homelab/us-west-2/apps
     verify_current_main_commit
+    if [[ -n "$activation_phase" ]]; then
+      activation_bucket="$(terragrunt render --config "$repo_root/IaC/application-backup-storage.hcl" \
+        --json --write=false --log-disable | jq -er .inputs.bucket)"
+      python3 -I "$repo_root/scripts/network-policy-activation-capacity.py" \
+        --phase "$activation_phase" --expected-sha "${GITHUB_SHA:-}" \
+        --bucket "$activation_bucket"
+      verify_current_main_commit
+    fi
     terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
       --out-dir "$plan_dir" -- apply -no-color
   )
@@ -265,6 +370,7 @@ case "$backup_storage_scope" in
   false) ;;
   *) echo "Invalid backup-storage scope." >&2; exit 2 ;;
 esac
+
 terragrunt_generate_stack
 
 if [[ "$backup_storage_scope" == true ]]; then
@@ -272,6 +378,17 @@ if [[ "$backup_storage_scope" == true ]]; then
   plan_and_apply_application_backup_storage
   echo "::endgroup::"
   exit 0
+fi
+
+jq -e '(.activationEnabled | type) == "boolean"' \
+  scripts/config/platform-maintenance.json >/dev/null || {
+  echo "Reviewed platform activation state is unavailable." >&2
+  exit 1
+}
+if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]] &&
+   jq -e '.activationEnabled == true' scripts/config/platform-maintenance.json >/dev/null; then
+  echo "Full apply is disabled while the network-policy canary is active." >&2
+  exit 1
 fi
 
 repair_argocd_app_state_unit="$(

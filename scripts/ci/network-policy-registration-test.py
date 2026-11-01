@@ -39,7 +39,7 @@ def check_phase(policy, canary, policy_manifest, canary_manifest):
     empty_active = (True, True, True)
     phases = {
         (ENFORCER, EMPTY, dormant, dormant): "dormant",
-        (ENFORCER, FIXTURES, dormant, active): "fixture-first-pull",
+        (EMPTY, FIXTURES, dormant, active): "fixture-first-pull",
         (ENFORCER, FIXTURES, active, active): "fixture-qualification",
         (ENFORCER, EMPTY, active, empty_active): "fixture-pruned",
         (EMPTY, EMPTY, empty_active, empty_active): "firewall-pruned",
@@ -70,11 +70,24 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
             "targetRevision": "main"}])
 
     def test_source_pair_matches_reviewed_phase(self):
+        phase = check_phase(render(UNIT), render(CANARY_UNIT),
+                            POLICY_MANIFEST.read_text(), CANARY_MANIFEST.read_text())
         self.assertIn(
-            check_phase(render(UNIT), render(CANARY_UNIT),
-                        POLICY_MANIFEST.read_text(), CANARY_MANIFEST.read_text()),
+            phase,
             {"dormant", "fixture-first-pull", "fixture-qualification", "fixture-pruned",
              "firewall-pruned", "canary-retired"})
+        config = json.loads((ROOT / "scripts/config/platform-maintenance.json").read_text())
+        if phase in {"fixture-first-pull", "fixture-qualification"}:
+            selection = config.get("activationAdmission")
+            self.assertIs(config.get("activationEnabled"), True)
+            self.assertIsInstance(selection, dict)
+            self.assertEqual(set(selection), {"sourceSha", "runId", "versionId"})
+            self.assertRegex(selection["sourceSha"], r"^[0-9a-f]{40}$")
+            self.assertRegex(selection["runId"], r"^[1-9][0-9]*$")
+            self.assertTrue(selection["versionId"] and selection["versionId"] != "null")
+        elif phase == "dormant":
+            self.assertIs(config.get("activationEnabled"), False)
+            self.assertIsNone(config.get("activationAdmission"))
 
     def test_cleanup_application_is_separate_and_dormant(self):
         app = render(CLEANUP_UNIT)
@@ -118,7 +131,7 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
                                          app(True, True, True))
         reviewed = [
             (dormant, dormant, ENFORCER, EMPTY),
-            (dormant, active, ENFORCER, FIXTURES),
+            (dormant, active, EMPTY, FIXTURES),
             (active, active, ENFORCER, FIXTURES),
             (active, empty_active, ENFORCER, EMPTY),
             (empty_active, empty_active, EMPTY, EMPTY),
@@ -132,6 +145,7 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
             (dormant, active, ENFORCER, EMPTY),
             (dormant, empty_active, ENFORCER, EMPTY),
             (dormant, empty_active, ENFORCER, FIXTURES),
+            (dormant, active, ENFORCER, FIXTURES),
             (empty_active, empty_active, ENFORCER, EMPTY),
             (empty_active, dormant, ENFORCER, EMPTY),
             (dormant, dormant, EMPTY, EMPTY),

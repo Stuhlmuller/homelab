@@ -195,6 +195,107 @@ class PlacementTests(unittest.TestCase):
             assigned["spec"]["nodeName"] = NODE
             with self.assertRaisesRegex(ValueError, "assigned Pod inventory"):
                 SUT["fixture_capacity"](node)
+    def test_admitted_enforcer_capacity_preserves_full_peak_budget(self):
+        enforcer = pod()
+        enforcer["metadata"].update(name="kube-router-network-policy-abc", uid="enforcer-uid")
+        enforcer["spec"]["containers"][0]["resources"] = {
+            "requests": {"memory": "250Mi", "cpu": "250m"},
+            "limits": {"memory": "512Mi"}}
+        node = {"status": {"allocatable": {"memory": "1308Mi", "cpu": "1950m"}}}
+        listing = {"metadata": {}, "items": [pod(), enforcer]}
+        metrics = {"kind": "NodeMetrics", "metadata": {"name": NODE},
+                   "timestamp": now(), "usage": {"memory": "500Mi", "cpu": "300m"}}
+        summary = {"node": {"nodeName": NODE,
+                   "memory": {"time": now(), "workingSetBytes": 500 * SUT["MIB"]},
+                   "cpu": {"time": now(), "usageNanoCores": 300000000},
+                   "fs": {"time": now(), "availableBytes": 8 * 1024**3,
+                          "capacityBytes": 16 * 1024**3}},
+                   "pods": [{"podRef": {"namespace": "kube-system",
+                                        "name": "kube-router-network-policy-abc",
+                                        "uid": "enforcer-uid"},
+                             "memory": {"time": now(), "workingSetBytes": 100 * SUT["MIB"]},
+                             "cpu": {"time": now(), "usageNanoCores": 100000000}}]}
+
+        def run(fs=summary, metric=metrics, candidate=enforcer, available_node=node):
+            with patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": lambda *args: available_node if args[:2] == ("get", "node") else listing,
+                    "complete_items": lambda value, _: value["items"],
+                    "command": lambda *args: json.dumps(
+                        metric if "metrics.k8s.io" in args[-1] else fs),
+                    "ready": lambda *_: True}):
+                return SUT["capacity"](baseline(), candidate)
+
+        receipt = run()
+        self.assertEqual(receipt["observedMemoryBytes"], 400 * SUT["MIB"])
+        self.assertEqual(receipt["plannedMemoryLimitBytes"], 576 * SUT["MIB"])
+        self.assertTrue(receipt["enforcerAlreadyPresent"])
+        busy_node = copy.deepcopy(node)
+        busy_node["status"]["allocatable"]["cpu"] = "1000m"
+        busy_summary = copy.deepcopy(summary)
+        busy_summary["node"]["cpu"]["usageNanoCores"] = 950000000
+        busy_summary["pods"][0]["cpu"]["usageNanoCores"] = 800000000
+        with self.assertRaisesRegex(ValueError, "headroom"):
+            run(busy_summary, metrics | {"usage": {"memory": "500Mi", "cpu": "950m"}},
+                available_node=busy_node)
+        changed = copy.deepcopy(summary)
+        changed["node"]["memory"]["workingSetBytes"] = 711 * SUT["MIB"]
+        with self.assertRaisesRegex(ValueError, "headroom"):
+            run(changed, metrics | {"usage": {"memory": "711Mi", "cpu": "300m"}})
+        for mutation in (lambda value: value["pods"].clear(),
+                         lambda value: value["pods"][0]["podRef"].update(uid="wrong"),
+                         lambda value: value["pods"][0]["memory"].update(
+                             time=(datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()),
+                         lambda value: value["node"]["memory"].update(
+                             workingSetBytes=450 * SUT["MIB"])):
+            changed = copy.deepcopy(summary)
+            mutation(changed)
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                run(changed)
+
+    def test_ready_fixture_client_credit_keeps_full_enforcer_peak(self):
+        client = {"metadata": {"namespace": "network-policy-canary",
+                               "name": "npq-client", "uid": "client-uid"},
+                  "spec": {"nodeName": NODE, "containers": [{"resources": {
+                      "requests": {"memory": "32Mi", "cpu": "10m"},
+                      "limits": {"memory": "64Mi", "cpu": "100m"}}}]},
+                  "status": {"phase": "Running", "conditions": [
+                      {"type": "Ready", "status": "True"}]}}
+        assigned = {"metadata": {}, "items": [pod(), client]}
+        node = {"status": {"allocatable": {"memory": "1308Mi", "cpu": "1950m"}}}
+        metrics = {"kind": "NodeMetrics", "metadata": {"name": NODE},
+                   "timestamp": now(), "usage": {"memory": "500Mi", "cpu": "300m"}}
+        summary = {"node": {"nodeName": NODE,
+                   "memory": {"time": now(), "workingSetBytes": 500 * SUT["MIB"]},
+                   "cpu": {"time": now(), "usageNanoCores": 300000000},
+                   "fs": {"time": now(), "availableBytes": 8 * 1024**3,
+                          "capacityBytes": 16 * 1024**3}},
+                   "pods": [{"podRef": {"namespace": "network-policy-canary",
+                                        "name": "npq-client", "uid": "client-uid"},
+                             "memory": {"time": now(), "workingSetBytes": 32 * SUT["MIB"]},
+                             "cpu": {"time": now(), "usageNanoCores": 10000000}}]}
+        def run(candidate=client):
+            with patch.dict(SUT["CLEANUP"], {
+                    "kubernetes_json": lambda *args: node if args[:2] ==
+                    ("get", "node") else assigned,
+                    "complete_items": lambda value, _: value["items"],
+                    "command": lambda *args: json.dumps(metrics if
+                    "metrics.k8s.io" in args[-1] else summary)}):
+                return SUT["capacity"](baseline(), client=candidate)
+        result = run()
+        self.assertTrue(result["clientAlreadyPresent"])
+        self.assertEqual(result["observedMemoryBytes"], 468 * SUT["MIB"])
+        self.assertEqual(result["plannedMemoryLimitBytes"], 576 * SUT["MIB"])
+        changed = copy.deepcopy(client)
+        changed["metadata"]["uid"] = "replacement"
+        with self.assertRaisesRegex(ValueError, "assigned Pods"):
+            run(changed)
+        changed = copy.deepcopy(client)
+        changed["spec"]["containers"][0]["resources"]["requests"]["memory"] = "64Mi"
+        with self.assertRaisesRegex(ValueError, "requests differ"):
+            run(changed)
+        summary["pods"][0]["podRef"]["uid"] = "replacement"
+        with self.assertRaisesRegex(ValueError, "metrics identity"):
+            run()
 
     def test_no_receipt_before_exact_source_and_live_recheck(self):
         with tempfile.TemporaryDirectory() as directory:

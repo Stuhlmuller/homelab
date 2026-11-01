@@ -96,7 +96,7 @@ def require_preflight_absent():
         raise ValueError("preflight Pod must be deleted before canary placement")
 
 
-def require_runtime_absent(admit):
+def require_runtime_absent(admit, allow_reviewed_fixtures=False):
     require_preflight_absent()
     for name in (CLEANUP["ENFORCER"], CLEANUP["CLEANUP"] if admit else None):
         if name is None:
@@ -110,10 +110,11 @@ def require_runtime_absent(admit):
                                           "--chunk-size=0")
         if CLEANUP["complete_items"](pods, "firewall DaemonSet Pod"):
             raise ValueError("firewall DaemonSet Pod still exists")
-    namespace = CLEANUP["command"]("kubectl", "--request-timeout=20s", "get", "namespace",
-                                   "network-policy-canary", "--ignore-not-found", "-o", "json")
-    if namespace.strip():
-        raise ValueError("canary fixture namespace must be absent")
+    if not allow_reviewed_fixtures:
+        namespace = CLEANUP["command"]("kubectl", "--request-timeout=20s", "get", "namespace",
+                                       "network-policy-canary", "--ignore-not-found", "-o", "json")
+        if namespace.strip():
+            raise ValueError("canary fixture namespace must be absent")
 
 
 def require_release_runtime_quiesced(config, placement, cleanup_pod_uid):
@@ -262,7 +263,7 @@ def validate_placement(placement, config, source_sha, fresh):
             raise ValueError("reviewed placement is stale")
 
 
-def verify_live_pods(config, placement):
+def verify_live_pods(config, placement, fixture_client_uid=None):
     node_name = config["canary"]["node"]
     listing = CLEANUP["kubernetes_json"]("get", "pods", "-A", "--field-selector",
                                           f"spec.nodeName={node_name}", "--chunk-size=0")
@@ -273,6 +274,19 @@ def verify_live_pods(config, placement):
         metadata, spec = pod.get("metadata"), pod.get("spec")
         if not isinstance(metadata, dict) or not isinstance(spec, dict):
             raise ValueError("canary Pod inventory has an invalid entry")
+        if (fixture_client_uid is not None and
+                metadata.get("namespace") == "network-policy-canary" and
+                metadata.get("name") == "npq-client"):
+            if (not isinstance(fixture_client_uid, str) or not fixture_client_uid or
+                    metadata.get("uid") != fixture_client_uid or
+                    metadata.get("deletionTimestamp") or
+                    metadata.get("ownerReferences") or
+                    spec.get("nodeName") != node_name or
+                    pod.get("status", {}).get("phase") != "Running" or
+                    not CLEANUP["ready"](pod)):
+                raise ValueError("canary fixture client identity or readiness differs")
+            actual.append((metadata["namespace"], metadata["name"], metadata["uid"]))
+            continue
         owners = metadata.get("ownerReferences", [])
         if (spec.get("nodeName") != node_name or
                 metadata.get("namespace") not in SYSTEM_NAMESPACES or
@@ -290,6 +304,8 @@ def verify_live_pods(config, placement):
                        metadata.get("uid")))
     expected = {(pod["namespace"], pod["name"], pod["uid"])
                 for pod in placement["systemDaemonSetPods"]}
+    if fixture_client_uid is not None:
+        expected.add(("network-policy-canary", "npq-client", fixture_client_uid))
     if len(set(actual)) != len(actual) or set(actual) != expected:
         raise ValueError("canary Node Pod inventory differs from reviewed placement")
 
@@ -515,7 +531,8 @@ def require_release_source(config, release_sha, source_sha):
         cwd=ROOT, timeout=15))
     if (not isinstance(old_config, dict) or
             old_config.get("canary") != config["canary"] or
-            old_config.get("activationEnabled") != config["activationEnabled"]):
+            old_config.get("activationEnabled") != config["activationEnabled"] or
+            old_config.get("activationAdmission") != config.get("activationAdmission")):
         raise ValueError("canary release configuration changed after selected receipt")
 
 

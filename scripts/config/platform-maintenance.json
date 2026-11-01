@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "activationEnabled": false,
+  "activationAdmission": null,
   "protectedTalosEndpoint": "talos-api.homelab.local.stinkyboi.com:15000",
   "expectedStart": {
     "talos": "1.11.3",

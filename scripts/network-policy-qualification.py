@@ -254,7 +254,7 @@ def inspect_firewall_source():
     return daemonset
 
 
-def inspect(config):
+def inspect(config, require_firewall=True):
     canary = config.get("canary", {})
     node_name = canary.get("node")
     if (config.get("activationEnabled") is not True or
@@ -336,6 +336,8 @@ def inspect(config):
         image_status_valid = (
             len(statuses) == 1 and statuses[0].get("name") ==
             ("probe" if role == "client" else "server") and
+            isinstance(statuses[0].get("containerID"), str) and
+            bool(statuses[0]["containerID"]) and
             isinstance(statuses[0].get("imageID"), str) and
             bool(statuses[0]["imageID"]))
         reviewed_ports = [] if role == "client" else SERVER_PORTS
@@ -346,6 +348,8 @@ def inspect(config):
             reviewed_server_probe(container.get("readinessProbe")) and
             reviewed_server_probe(container.get("livenessProbe")))
         if (not ready(pod) or spec.get("nodeName") != expected_node or
+                pod["metadata"].get("deletionTimestamp") or
+                pod["metadata"].get("ownerReferences") or
                 pod["metadata"].get("labels", {}).get("role") != role or
                 spec.get("nodeSelector") != expected_selector or
                 not placement_tolerations_valid or
@@ -370,27 +374,30 @@ def inspect(config):
                 not pod["metadata"].get("uid") or not pod["status"].get("podIP")):
             raise ValueError(f"canary fixture identity or readiness differs: {name}")
         pods[name] = pod
-    firewall = inspect_firewall_source()
-    firewall_pods = kubernetes_json("-n", "kube-system", "get", "pods", "-l",
-                                    "app.kubernetes.io/name=kube-router-network-policy")
-    owners = [item for pod in firewall_pods.get("items", [])
-              for item in pod.get("metadata", {}).get("ownerReferences", [])
-              if item.get("controller") is True]
-    if (not firewall.get("metadata", {}).get("uid") or
-            firewall["status"].get("observedGeneration") !=
-            firewall["metadata"].get("generation") or
-            firewall["status"].get("desiredNumberScheduled") != 1 or
-            firewall["status"].get("updatedNumberScheduled") != 1 or
-            firewall["status"].get("numberReady") != 1 or
-            len(firewall_pods.get("items", [])) != 1 or
-            firewall_pods["items"][0]["spec"].get("nodeName") != node_name or
-            firewall_pods["items"][0]["spec"]["containers"][0].get("image") != FIREWALL_IMAGE or
-            len(owners) != 1 or owners[0].get("apiVersion") != "apps/v1" or
-            owners[0].get("kind") != "DaemonSet" or
-            owners[0].get("name") != "kube-router-network-policy" or
-            owners[0].get("uid") != firewall["metadata"]["uid"] or
-            not ready(firewall_pods["items"][0])):
-        raise ValueError("firewall is not ready only on the admitted canary")
+    firewall_pod = None
+    if require_firewall:
+        firewall = inspect_firewall_source()
+        firewall_pods = kubernetes_json("-n", "kube-system", "get", "pods", "-l",
+                                        "app.kubernetes.io/name=kube-router-network-policy")
+        owners = [item for pod in firewall_pods.get("items", [])
+                  for item in pod.get("metadata", {}).get("ownerReferences", [])
+                  if item.get("controller") is True]
+        if (not firewall.get("metadata", {}).get("uid") or
+                firewall["status"].get("observedGeneration") !=
+                firewall["metadata"].get("generation") or
+                firewall["status"].get("desiredNumberScheduled") != 1 or
+                firewall["status"].get("updatedNumberScheduled") != 1 or
+                firewall["status"].get("numberReady") != 1 or
+                len(firewall_pods.get("items", [])) != 1 or
+                firewall_pods["items"][0]["spec"].get("nodeName") != node_name or
+                firewall_pods["items"][0]["spec"]["containers"][0].get("image") != FIREWALL_IMAGE or
+                len(owners) != 1 or owners[0].get("apiVersion") != "apps/v1" or
+                owners[0].get("kind") != "DaemonSet" or
+                owners[0].get("name") != "kube-router-network-policy" or
+                owners[0].get("uid") != firewall["metadata"]["uid"] or
+                not ready(firewall_pods["items"][0])):
+            raise ValueError("firewall is not ready only on the admitted canary")
+        firewall_pod = firewall_pods["items"][0]
     inventory = runpy.run_path(str(ROOT / "scripts/network-policy-inventory.py"))
     policies = kubernetes_json("-n", NAMESPACE, "get", "networkpolicies")
     policy, = policies.get("items", [])
@@ -398,7 +405,7 @@ def inspect(config):
         return inventory["policy_fingerprint"](inventory["normalized_policy"](item))
     if fingerprint(policy) != fingerprint(EXPECTED_POLICY):
         raise ValueError("canary policy differs from reviewed traffic fixture")
-    return node, server_node, pods, firewall_pods["items"][0], fingerprint(policy)
+    return node, server_node, pods, firewall_pod, fingerprint(policy)
 
 
 def probe(source, address, port, protocol):
@@ -485,6 +492,15 @@ def private_output(path, record):
         os.close(parent_fd)
 
 
+def fixture_identity(pods):
+    return {name: {"uid": pod["metadata"]["uid"],
+                   "node": pod["spec"]["nodeName"],
+                   "podIP": pod["status"]["podIP"],
+                   "containerID": pod["status"]["containerStatuses"][0]["containerID"],
+                   "imageID": pod["status"]["containerStatuses"][0]["imageID"]}
+            for name, pod in pods.items()}
+
+
 def traffic_receipt(source_sha, node, server_node, pods, firewall, policy_hash, cases):
     """Record fixture probes without implying that lifecycle qualification passed."""
     return {
@@ -499,6 +515,11 @@ def traffic_receipt(source_sha, node, server_node, pods, firewall, policy_hash, 
         "firewallPodUid": firewall["metadata"]["uid"],
         "fixturePodUids": {name: pod["metadata"]["uid"] for name, pod in pods.items()},
         "fixturePodNodes": {name: pod["spec"]["nodeName"] for name, pod in pods.items()},
+        "fixturePodIps": {name: pod["status"]["podIP"] for name, pod in pods.items()},
+        "fixtureContainerIds": {name: pod["status"]["containerStatuses"][0]["containerID"]
+                                for name, pod in pods.items()},
+        "fixtureImageIds": {name: pod["status"]["containerStatuses"][0]["imageID"]
+                            for name, pod in pods.items()},
         "policySha256": policy_hash, "cases": cases,
         "unverifiedLifecycleScenarios": list(LIFECYCLE_SCENARIOS),
     }
@@ -523,9 +544,7 @@ def main():
                 server_after["status"]["nodeInfo"]["bootID"] != server_node["status"]["nodeInfo"]["bootID"] or
                 firewall_after["metadata"]["uid"] != firewall["metadata"]["uid"] or
                 policy_hash_after != policy_hash or
-                any(pods_after[name]["metadata"]["uid"] != pod["metadata"]["uid"] or
-                    pods_after[name]["spec"]["nodeName"] != pod["spec"]["nodeName"]
-                    for name, pod in pods.items())):
+                fixture_identity(pods_after) != fixture_identity(pods)):
             raise ValueError("canary identity changed during the traffic matrix")
         private_output(args.output, traffic_receipt(
             source_sha, node, server_node, pods, firewall, policy_hash, cases))
