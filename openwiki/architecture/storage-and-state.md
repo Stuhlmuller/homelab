@@ -456,6 +456,14 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
+The [one-shot PostgreSQL checkpoint](../../clusters/homelab/apps/langfuse/README.md#one-shot-postgresql-checkpoint)
+has a protected CI capture-and-restore path. When CI cluster access is down,
+a clean exact-main operator checkout can capture and verify the S3 object
+version, leaving a pending receipt. A separate protected workflow then checks
+that exact S3 version and source-identity metadata and restores it in a
+networkless Docker container. The restore job has no Kubernetes access, so it
+does not independently recheck live PVC/PV state. Only its matching final
+receipt qualifies as a PostgreSQL move safety copy, not whole-service recovery.
 The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
 and permanently detaches them without deleting their files. Repeated merge
 failures caused shared-NAS metadata pressure; application tables remain attached.

@@ -1099,6 +1099,13 @@ and exact usage. Include the real authentication-failure logging path; a
 pre-call-hook-only fixture misses dynamic callback extraction. Confirm actual
 Langfuse generations after rollout; a Ready Secret may still contain a provider
 placeholder and direct Astra recovery is outside gateway-only accounting.
+The [Langfuse capture fixture](../../scripts/ci/langfuse-postgres-checkpoint-test.py)
+checks protected CI capture and local upload-only mode, including source UID,
+exact-main, S3 readback and no verified receipt on local capture. The separate
+[object restore fixture](../../scripts/ci/langfuse-postgres-object-restore-test.py)
+rejects wrong key, version, digest, UID metadata and advanced main before a
+networkless Docker restore or final receipt. These mocked results do not
+replace the live exact-version restore receipt before moving PostgreSQL.
 
 Use the renderer that matches the changed source:
 

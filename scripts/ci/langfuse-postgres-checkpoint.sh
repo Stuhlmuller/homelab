@@ -2,23 +2,84 @@
 set -euo pipefail
 umask 077
 
-[[ "${GITHUB_ACTIONS:-}" == true &&
-   "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab &&
-   "${GITHUB_REF:-}" == refs/heads/main &&
-   "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
-   "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
-   "${EXPECTED_PVC_UID:-}" =~ ^[0-9a-f-]{36}$ &&
-   "${EXPECTED_PV_UID:-}" =~ ^[0-9a-f-]{36}$ &&
-   "${GITHUB_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&
-   "${GITHUB_RUN_ATTEMPT:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
-[[ "$GITHUB_SHA" == "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" ]] || exit 1
+mode=ci
+if [[ "${1:-}" == --local-upload ]]; then
+  mode=local
+  [[ $# == 9 ]] || exit 2
+  [[ "$2" == --expected-sha && "$4" == --expected-pvc-uid &&
+     "$6" == --expected-pv-uid && "$8" == --receipt-dir ]] || exit 2
+  checkpoint_sha="$3"
+  EXPECTED_PVC_UID="$5"
+  EXPECTED_PV_UID="$7"
+  receipt_dir="$9"
+  [[ "${GITHUB_ACTIONS:-}" != true && "$checkpoint_sha" =~ ^[0-9a-f]{40}$ &&
+     "$EXPECTED_PVC_UID" =~ ^[0-9a-f-]{36}$ &&
+     "$EXPECTED_PV_UID" =~ ^[0-9a-f-]{36}$ &&
+     "$receipt_dir" == /* && ! -L "$receipt_dir" ]] || exit 2
+  [[ "$(git rev-parse --show-toplevel)" == "$PWD" &&
+     -z "$(git status --porcelain --untracked-files=all)" &&
+     "$(git rev-parse HEAD)" == "$checkpoint_sha" ]] || exit 1
+else
+  [[ $# == 0 && "${GITHUB_ACTIONS:-}" == true &&
+     "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab &&
+     "${GITHUB_REF:-}" == refs/heads/main &&
+     "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ &&
+     "${EXPECTED_SHA:-}" == "$GITHUB_SHA" &&
+     "${EXPECTED_PVC_UID:-}" =~ ^[0-9a-f-]{36}$ &&
+     "${EXPECTED_PV_UID:-}" =~ ^[0-9a-f-]{36}$ &&
+     "${GITHUB_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&
+     "${GITHUB_RUN_ATTEMPT:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
+  checkpoint_sha="$GITHUB_SHA"
+  checkpoint_run_id="$GITHUB_RUN_ID"
+  checkpoint_attempt="$GITHUB_RUN_ATTEMPT"
+fi
+verify_current_main() {
+  [[ "$checkpoint_sha" == "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" ]] || return 1
+  if [[ "$mode" == local ]]; then
+    [[ "$(git rev-parse HEAD)" == "$checkpoint_sha" &&
+       -z "$(git status --porcelain --untracked-files=all)" ]] || return 1
+  fi
+}
+verify_current_main
+if [[ "$mode" == local ]]; then
+  receipt_dir="$(realpath "$receipt_dir")"
+  python3 - "$receipt_dir" <<'PY' || exit 1
+import os
+import stat
+import sys
+
+path = sys.argv[1]
+info = os.stat(path)
+if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid():
+    raise SystemExit(1)
+if stat.S_IMODE(info.st_mode) != 0o700:
+    raise SystemExit(1)
+PY
+  case "$receipt_dir/" in "$PWD/"*) exit 1 ;; esac
+  kubectl config view --minify --raw -o json |
+    jq -e '(.clusters | length) == 1 and
+      .clusters[0].cluster.server == "https://10.1.0.199:6443" and
+      .clusters[0].cluster."insecure-skip-tls-verify" != true and
+      .clusters[0].cluster."proxy-url" == null and
+      ((.clusters[0].cluster."certificate-authority-data" // "") | length > 0)' >/dev/null
+  checkpoint_run_id="$(python3 -c 'import time; print(time.time_ns())')"
+  checkpoint_attempt=1
+fi
+
+aws_checkpoint() {
+  if [[ "$mode" == local ]]; then
+    aws --profile default "$@"
+  else
+    aws "$@"
+  fi
+}
 
 bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
 account="${BASH_REMATCH[1]}"
-[[ "$(aws --region us-east-1 sts get-caller-identity --query Account --output text)" == "$account" ]] || exit 1
-[[ "$(aws --region us-east-1 s3api get-bucket-versioning --bucket "$bucket" --expected-bucket-owner "$account" --query Status --output text)" == Enabled ]] || exit 1
-[[ "$(aws --region us-east-1 s3api get-bucket-encryption --bucket "$bucket" --expected-bucket-owner "$account" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == aws:kms ]] || exit 1
+[[ "$(aws_checkpoint --region us-east-1 sts get-caller-identity --query Account --output text)" == "$account" ]] || exit 1
+[[ "$(aws_checkpoint --region us-east-1 s3api get-bucket-versioning --bucket "$bucket" --expected-bucket-owner "$account" --query Status --output text)" == Enabled ]] || exit 1
+[[ "$(aws_checkpoint --region us-east-1 s3api get-bucket-encryption --bucket "$bucket" --expected-bucket-owner "$account" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == aws:kms ]] || exit 1
 
 image="$(yq -r 'select(.kind == "Deployment" and .metadata.name == "langfuse-postgres") | .spec.template.spec.containers[] | select(.name == "postgres") | .image' clusters/homelab/apps/langfuse/datastores.yaml)"
 [[ "$image" =~ ^harbor\.stinkyboi\.com/mirror/docker\.io/pgvector/pgvector:[^@]+@sha256:[0-9a-f]{64}$ ]] || exit 1
@@ -126,30 +187,47 @@ bytes="$(wc -c <"$work/langfuse.dump" | tr -d '[:space:]')"
 [[ "$bytes" =~ ^[1-9][0-9]*$ && "$bytes" -lt 1073741824 ]] || exit 1
 checksum="$(openssl dgst -sha256 -binary "$work/langfuse.dump" | openssl base64 -A)"
 digest="$(sha256sum "$work/langfuse.dump" | cut -d' ' -f1)"
+if [[ "$mode" == local ]]; then verify_current_main; fi
 
-key="langfuse/postgresql/${GITHUB_SHA}/${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}/langfuse.dump"
-aws --region us-east-1 s3api list-object-versions --bucket "$bucket" \
+key="langfuse/postgresql/${checkpoint_sha}/${checkpoint_run_id}/${checkpoint_attempt}/langfuse.dump"
+aws_checkpoint --region us-east-1 s3api list-object-versions --bucket "$bucket" \
   --expected-bucket-owner "$account" --prefix "$key" --output json |
   jq -e --arg key "$key" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null
-put="$(aws --region us-east-1 s3api put-object --bucket "$bucket" --key "$key" \
+put="$(aws_checkpoint --region us-east-1 s3api put-object --bucket "$bucket" --key "$key" \
   --expected-bucket-owner "$account" --body "$work/langfuse.dump" \
   --server-side-encryption aws:kms --if-none-match '*' \
+  --metadata "source-revision=$checkpoint_sha,source-pvc-uid=$claim_uid,source-pv-uid=$pv_uid" \
   --checksum-algorithm SHA256 --checksum-sha256 "$checksum")"
 version="$(jq -er '.VersionId | select(type == "string" and . != "" and . != "null")' <<<"$put")"
-head="$(aws --region us-east-1 s3api head-object --bucket "$bucket" --key "$key" \
+head="$(aws_checkpoint --region us-east-1 s3api head-object --bucket "$bucket" --key "$key" \
   --expected-bucket-owner "$account" --version-id "$version" --checksum-mode ENABLED)"
 jq -e --arg version "$version" --arg checksum "$checksum" --argjson bytes "$bytes" \
+  --arg revision "$checkpoint_sha" --arg pvc "$claim_uid" --arg pv "$pv_uid" \
   '.VersionId == $version and .ChecksumSHA256 == $checksum and
-    .ContentLength == $bytes and .ServerSideEncryption == "aws:kms"' <<<"$head" >/dev/null
-aws --region us-east-1 s3api get-object --bucket "$bucket" --key "$key" \
+    .ContentLength == $bytes and .ServerSideEncryption == "aws:kms" and
+    .Metadata["source-revision"] == $revision and
+    .Metadata["source-pvc-uid"] == $pvc and .Metadata["source-pv-uid"] == $pv' <<<"$head" >/dev/null
+aws_checkpoint --region us-east-1 s3api get-object --bucket "$bucket" --key "$key" \
   --expected-bucket-owner "$account" --version-id "$version" --checksum-mode ENABLED \
   "$work/retrieved.dump" >"$work/readback.json"
 jq -e --arg version "$version" --arg checksum "$checksum" --argjson bytes "$bytes" \
+  --arg revision "$checkpoint_sha" --arg pvc "$claim_uid" --arg pv "$pv_uid" \
   '.VersionId == $version and .ChecksumSHA256 == $checksum and
-    .ContentLength == $bytes and .ServerSideEncryption == "aws:kms"' "$work/readback.json" >/dev/null
+    .ContentLength == $bytes and .ServerSideEncryption == "aws:kms" and
+    .Metadata["source-revision"] == $revision and
+    .Metadata["source-pvc-uid"] == $pvc and .Metadata["source-pv-uid"] == $pv' "$work/readback.json" >/dev/null
 [[ "$(sha256sum "$work/retrieved.dump" | cut -d' ' -f1)" == "$digest" ]] || exit 1
 
-volume="langfuse-checkpoint-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+if [[ "$mode" == local ]]; then
+  verify_current_main
+  receipt="$(mktemp "$receipt_dir/langfuse-checkpoint-pending.XXXXXXXX")"
+  printf 'Pending Langfuse PostgreSQL restore: key=%s version=%s sha256=%s bytes=%s pvc_uid=%s pv=%s pv_uid=%s\n' \
+    "$key" "$version" "$digest" "$bytes" "$claim_uid" "$pv_name" "$pv_uid" >"$receipt"
+  printf 'Pending receipt: %s\n' "$receipt"
+  exit 0
+fi
+
+volume="langfuse-checkpoint-${checkpoint_run_id}-${checkpoint_attempt}"
 docker volume create "$volume" >/dev/null
 container="$(docker run --detach --rm --network none \
   --mount "type=volume,src=$volume,dst=/var/lib/postgresql/data" \
