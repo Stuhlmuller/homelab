@@ -218,9 +218,17 @@ Stage it in reviewed source before cutting over:
    static slice would leave stale DNS after identity loss. Keep the new
    EndpointSlice unready until cutover. Add an owner that
    binds the IP to the exact online, signed node key and withdraws readiness
-   when that identity is lost; prove DNS becomes unavailable rather than
-   answering a stale or reassigned IP. Validate this with the real pinned
-   resolver and checker before private DNS can move. The
+   when that identity is lost. The resolver's approved-name A/AAAA view must
+   have no public `fallthrough` or `forward`: the former broad address view
+   could return a public address when an endpoint disappeared. Prove the pinned
+   resolver returns no address for empty or unready endpoints after its 30-second
+   cache bound. Prior answers can persist in client caches; the sidecar's
+   identity-bound traffic guard must reject a lost, unsigned, or reassigned peer
+   throughout that window. Run a negative tailnet probe immediately after
+   test-peer withdrawal, before the old A record expires. Its view allowlist,
+   Traefik route and Service
+   annotation must agree for each new private name. Validate this with the
+   real pinned resolver and checker before private DNS can move. The
    [CoreDNS rewrites](../clusters/homelab/platform/dns/coredns-configmap.yaml)
    for `harbor.stinkyboi.com` and `octelium-api.stinkyboi.com` currently target
    that Service; preserve it until both reviewed internal replacements and

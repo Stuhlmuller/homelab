@@ -167,7 +167,14 @@ that fixed proxy, and
 Harbor and Octelium API names to its Service. A selectorless headless Service
 with a ready EndpointSlice may let the pinned resolver publish a sidecar
 tailnet IP, but it needs an identity-bound owner that withdraws readiness on
-peer loss; a static stale IP is unsafe. Preserve the old internal Service
+peer loss; a static stale IP is unsafe. The approved-name A/AAAA resolver view
+must have no public fallback, because an unready EndpointSlice alone would
+otherwise allow public address answers. Keep its allowlist in sync with the
+Traefik route and Service annotation. Resolver cache can retain a prior A for
+30 seconds after withdrawal, and client caches may last longer, so the
+identity-bound traffic guard must deny a lost or reassigned peer during that
+window. Require a negative tailnet probe immediately after test-peer withdrawal,
+before the cached A expires. Preserve the old internal Service
 until the replacements work; `loadBalancerClass` cannot be changed in place,
 so create a distinct internal Service before retiring the old one. Prove
 these contracts, persistent sidecar

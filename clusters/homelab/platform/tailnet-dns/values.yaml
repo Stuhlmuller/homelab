@@ -32,7 +32,26 @@ servers:
       - name: ready
       - name: view
         parameters: private-addresses
-        configBlock: "expr type() in ['A', 'AAAA']"
+        # Keep this name set in sync with Traefik's approved hostname annotation.
+        # Only these A/AAAA queries may reach k8s_gateway; no public fallback.
+        configBlock: >-
+          expr type() in ['A', 'AAAA'] && (
+          name() in ['stinkyboi.com.', 'affine.stinkyboi.com.',
+          'argocd.stinkyboi.com.', 'bazarr.stinkyboi.com.',
+          'compass.stinkyboi.com.', 'deluge.stinkyboi.com.',
+          'dispatcharr.stinkyboi.com.', 'fleet.stinkyboi.com.',
+          'grafana.stinkyboi.com.', 'harbor.stinkyboi.com.',
+          'kiali.stinkyboi.com.', 'langfuse.stinkyboi.com.',
+          'litellm.stinkyboi.com.', 'multica.stinkyboi.com.',
+          'n8n.stinkyboi.com.', 'nofx.stinkyboi.com.',
+          'openclaw.stinkyboi.com.', 'policy-bot.stinkyboi.com.',
+          'prowlarr.stinkyboi.com.', 'radarr.stinkyboi.com.',
+          'sonarr.stinkyboi.com.', 'cordium.stinkyboi.com.',
+          'console.stinkyboi.com.', 'octelium.stinkyboi.com.',
+          'octelium-api.stinkyboi.com.', 'portal.stinkyboi.com.',
+          'console.oce.stinkyboi.com.'] ||
+          name() matches '^[^.]+\\.cordium\\.stinkyboi\\.com\\.$' ||
+          name() matches '^[^.]+\\.agents\\.oce\\.stinkyboi\\.com\\.$')
       - name: k8s_gateway
         parameters: stinkyboi.com
         configBlock: |-
@@ -40,9 +59,6 @@ servers:
           resources Service
           serviceLabelSelectors homelab.rst.io/private-dns=approved
           loadBalancerAddressPreference ip
-          fallthrough
-      - name: forward
-        parameters: . 1.1.1.1 1.0.0.1
       - name: cache
         parameters: "30"
       - name: reload
