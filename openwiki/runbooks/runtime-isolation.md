@@ -226,34 +226,49 @@ read-only capacity recheck found only about 580 MiB sampled peak headroom on
 registration, preserve its control-plane reserve, and prove image pull and
 admission there.
 
-The November 1 existing-node recheck found `zimaboard-2` at 1,339 MiB used
-against 1,308 MiB allocatable before the 576 MiB enforcer/client limit budget
-and 128 MiB reserve. It cannot host the staged canary. `zimaboard-0` is only
-a conditional candidate: 64 active app Pods remain, including 55 Octelium
-Pods, plus 19 completed backup Pods and the `kube-system/image-rewrite`
-Deployment Pod. The admission code rejects all 84 foreign assigned Pods,
-including completed Jobs and ordinary Pods in system namespaces. Deluge,
+The November 1 existing-node recheck found `zimaboard-2` using 1,365 MiB of
+1,792 MiB physical memory before the 576 MiB enforcer/client limit budget
+and 128 MiB reserve. Evacuating only app Pods leaves CoreDNS and metrics-server
+outside the allowed inventory; no peak or restart margin is proven.
+`zimaboard-0` is only a conditional candidate. A 15:20 UTC PodList recheck
+found 64 active app Pods (54 Octelium), an `octelium` gateway-agent DaemonSet,
+19 completed backup Pods, and the `kube-system/image-rewrite` Deployment Pod.
+The admission code rejects all 85 foreign assigned Pods, including that
+DaemonSet, completed Jobs, and ordinary Pods in system namespaces. Deluge,
 Radarr, Sonarr, and Bazarr config PVs are locally pinned.
-Its 1,430 MiB observed free memory leaves about 214 MiB after one enforcer,
-client, Traefik Pod, and reserve; the current Traefik surge exceeds that
-headroom. [The runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+Its 5,838 MiB sampled use against 7,766 MiB physical capacity leaves about
+712 MiB after one enforcer, client, Traefik Pod, and reserve, or about 200 MiB
+with the current Traefik surge. Neither proves peak or restart safety.
+`acer` has 70 nonterminal Pods against 110 allocatable slots; moving all 56
+native dataplane-selected Pods there would need 126 slots. Retiring 16 stale
+proxies alone fills all 110, before Prowlarr or surge.
+[The runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
 records the conditional maintenance route: verify local-volume archives;
 pause Prometheus and four media apps through GitOps, including Bazarr's
 z0-pinned PostSync Jobs; make seven backup CronJobs discard successful Job
-history and pause the four media schedules; move
-Prowlarr and Octelium placement through their source owners; then use a
-Terragrunt-owned temporary `NoExecute` taint to clear remaining Pods before
-protected admission. Restore the missing `homelab-plan` required reviewer
-before its credentialed plan or apply. The five paused workloads remove about 2,512
-MiB in requests, closing a 681 MiB destination deficit. Prove Octelium's
-native/Multus path on `acer` before eviction and all replacement health after.
+history and pause the four media schedules; move Prowlarr through its source
+owner and validate `acer`'s 25 already-running emergency Octelium fallback
+Pods, including protected CI access. Remove native z0 dataplane eligibility
+for a bounded, explicitly accepted outage of the 29 native-only Services
+found in the November 1 15:34 UTC selector check; then use a protected,
+source-owned `NoExecute` evacuation and atomic handoff to the
+canary `NoSchedule` taint before protected admission. This handoff is not
+implemented. The current Terraform taint resource can replace the whole Node
+taint list when removed, so it must not own the temporary taint. Restore the
+missing `homelab-plan` required reviewer and add `shared/kubernetes-node-labels`
+to its protected PR plan before any node-label change. The five paused workloads
+remove about 2,640 MiB in scheduler-effective requests, closing a 1,315 MiB
+destination deficit if all apps moved, but this is request-only math. Prove actual memory
+peaks, restart and Pod-slot headroom around etcd, and fallback path health.
 This route incurs monitoring and media outages plus an Octelium/private-app
 interruption during eviction. A persistent guard must deny
 Traefik Pod traffic before container start and through enforcer restart,
 independently of kube-router; no such guard is implemented. Cold boot,
 image-cache miss, IP reuse, and legacy ClusterIP bypass tests remain required.
 PRs #1583 and #1584 targeted `zimaboard-2` and were closed as superseded by
-the z0 route; neither changed live state. No worker is admitted.
+the z0 route; neither changed live state. No worker is admitted. The
+[platform capacity task](../../specs/003-replace-openclaw-enterprise/tasks.md)
+permits only a reviewed, recoverable existing-node evacuation before admission.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
