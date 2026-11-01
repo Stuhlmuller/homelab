@@ -2010,6 +2010,16 @@ arrive during deletion. Live activation stays blocked until isolated placement
 rules that out or a reviewed repository-owned isolation path is added. See
 the [maintenance runbook](../../docs/talos-control-plane-maintenance.md).
 
+On 2026-11-01 UTC, read-only `zimaboard-2` memory use was 1,367–1,368 MiB
+against about 1,308 MiB allocatable. The [placement budget](../../scripts/network-policy-placement.py)
+reserves the pinned 704 MiB runtime limit plus a 128 MiB margin, leaving a
+476 MiB ceiling for host and existing Pods. Even removing every non-system Pod
+projects 547–555 MiB of host and allowed DaemonSet use, above that ceiling.
+The [enforcer resources](../../clusters/homelab/platform/network-policy/daemonset.yaml)
+and [three fixture limits](../../clusters/homelab/platform/network-policy/canary/fixtures.yaml)
+are pinned. A spare or larger isolated worker is required; evacuation alone
+cannot satisfy this gate. Recheck fresh capacity before placement.
+
 The staged protected `canary-admit` path remains dormant until the protected
 `placement` stage writes a verified current-main, run-scoped receipt. A new
 placement run can refresh expired evidence on unchanged `main` while the old
