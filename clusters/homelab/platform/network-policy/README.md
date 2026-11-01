@@ -38,6 +38,7 @@ DaemonSet controller ownership, and exact reviewed Pod UID; it cannot identify
 arbitrary `kube-system` applications, so review each listed identity. The stage rejects
 existing enforcer/cleanup DaemonSets and fixture namespace, adds the dedicated
 taint, then checks the live assigned Pod list before adding the selector label.
+
 It requires a complete cluster-wide Node label inventory with no other canary
 selected before mutation and immediately before labeling; a post-label check
 removes this Node's label if another selected Node appears. It checks the Pod
@@ -45,6 +46,15 @@ list again after labeling. Each Node patch tests
 `resourceVersion` and UID and touches only the owned taint or label. A
 taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.
+
+For a read-only candidate snapshot before placement review, run
+`python3 -I scripts/network-policy-candidate-report.py --node zimaboard-0 > /private/tmp/network-policy-candidate.json`.
+The report records Node UID/boot ID, exact assigned Pod UIDs, foreign Pods,
+kubelet working set and filesystem space. Physical headroom is Node capacity
+minus working set; scheduler request headroom is allocatable memory minus
+effective requests of nonterminal assigned Pods, including restartable init
+containers. Keep the UID inventory private. One snapshot does not establish
+capacity admission or canary isolation.
 
 After a tainted node passes capacity admission and the fixture image is mirrored,
 merge one reviewed change that enables automated sync and pruning in both

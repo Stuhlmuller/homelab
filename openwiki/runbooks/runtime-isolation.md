@@ -50,6 +50,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-79ade26d1f528d349dc08fed
     resource: repo://scripts/network-policy-canary-node.py
+  - id: openwiki-source-bdb62680f3d94d9e85b85463d7547a1b
+    resource: repo://scripts/network-policy-candidate-report.py
   - id: openwiki-source-1d91dece74882a3fae04c364
     resource: repo://scripts/network-policy-cleanup.py
   - id: openwiki-source-221eda5e9e283a2549066105
@@ -287,6 +289,13 @@ expanding to another node. Stock Enterprise's public TCP/443 requirement
 remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
 
+The [candidate report](../../scripts/network-policy-candidate-report.py)
+reads one named Node, its complete assigned Pod list, and kubelet Summary. It
+reports physical headroom from capacity minus working set and scheduler request
+headroom from allocatable minus effective nonterminal Pod requests. It lists
+foreign Pod UIDs against the admission guard's system DaemonSet contract.
+Its snapshot is for review and cannot establish admission or isolation.
+
 The protected `canary-admit` source path requires a fresh measured placement
 receipt and exact Node and system Pod identities. It checks that the enforcer,
 cleanup Pods, and fixture traffic are absent, then adds the dedicated
@@ -300,6 +309,7 @@ first-parent history from the qualify SHA and rejects intervening policy
 runtime-source changes under the guarded operational roots or Nix flake
 inputs. The static gate accepts only five exact policy/canary source
 phases; private receipts and live checks still gate protected operations.
+
 Apply the fixture prune and verify
 the live `network-policy-canary` namespace and all fixture workloads are absent
 before ownership capture. The owner reviews the private full firewall snapshot
