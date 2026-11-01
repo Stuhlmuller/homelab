@@ -195,10 +195,12 @@ stream an archive into private scratch. Each dump/archive stream has a 15-minute
 timeout and 30-second forced termination; a timeout triggers cleanup and
 withholds the success receipt. Other Kubernetes calls have 30-second API and
 45-second command deadlines; cleanup deletes have a two-minute command limit.
-The Job receives no API token or AWS
-credential. The script verifies each resource's owner token and UID, then
-deletes the Job before its policy. A lost create response is reconciled by
-reading the created object; failed or unconfirmed deletion prevents a success
+The Job receives no API token or AWS credential. The script verifies each
+resource's owner token and UID, requests foreground Job deletion, and requires
+the complete run-owner Pod list to be empty before removing the policy. A
+lingering reader Pod keeps the policy and blocks the receipt. A lost create
+response is reconciled by reading the created object; failed or unconfirmed
+deletion prevents a success
 receipt. These pinned manifests and workflow are the repository-owned path for
 the temporary Job;
 do not run ad hoc `kubectl create` or `kubectl delete` commands.

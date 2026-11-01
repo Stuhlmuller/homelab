@@ -21,6 +21,7 @@ args = sys.argv[1:]
 root = Path(os.environ["TEST_ROOT"])
 job_record = root / "job-record.json"
 policy_record = root / "policy-record.json"
+linger_record = root / "reader-lingers"
 resource_name = "n8n-checkpoint-reader-123-1"
 image = os.environ["TEST_IMAGE"]
 reader_image = os.environ["TEST_READER_IMAGE"]
@@ -42,6 +43,10 @@ if name == "timeout":
                         ["--signal=TERM", "--kill-after=30s"])
     assert args[2] in ("45s", "2m", "15m")
     if (mode == "pg-dump-timeout" and "pg_dump" in args) or (mode == "pvc-tar-timeout" and "tar" in args):
+        raise SystemExit(124)
+    if mode == "job-absent-reader-lingers" and "pg_dump" in args:
+        job_record.unlink()
+        linger_record.touch()
         raise SystemExit(124)
     if mode == "job-delete-timeout" and "delete" in args and any(a.endswith("/job.json") for a in args):
         raise SystemExit(124)
@@ -159,6 +164,11 @@ elif name == "kubectl":
             "spec": {"replicas": 1, "template": {"spec": {"containers":
                 [{"name": "postgres", "image": image}]}}, "volumeClaimTemplates": [{"metadata": {"name": "data"}}]},
             "status": {"readyReplicas": 1, "updatedReplicas": 1, "observedGeneration": 1}}))
+    elif "pods" in args and "get" in args:
+        assert args[args.index("-l") + 1].startswith("homelab.stuhlmuller.dev/checkpoint-owner=")
+        assert "--chunk-size=0" in args
+        print(json.dumps({"kind": "PodList", "metadata": {"resourceVersion": "12345", "continue": ""},
+            "items": [{"metadata": {"uid": reader_u}}] if linger_record.exists() else []}))
     elif "pod" in args and "get" in args:
         print(json.dumps({"metadata": {"uid": pg_pod_u, "ownerReferences":
             [{"controller": True, "kind": "StatefulSet", "name": "n8n-postgres", "uid": st_u}]},
@@ -205,9 +215,12 @@ elif name == "kubectl":
             assert not job_record.exists()
             policy_record.unlink()
         else:
+            assert "--cascade=foreground" in args
             if mode == "job-delete-stuck":
                 raise SystemExit(1)
             job_record.unlink()
+            if mode == "reader-pod-lingers":
+                linger_record.touch()
     elif "exec" in args:
         if "psql" in args:
             print("12345" if "pg_database_size" in args[-1] else "1")
@@ -279,7 +292,8 @@ class CheckpointBoundaryTests(unittest.TestCase):
             } | overrides
             if mode in ("good", "policy-create-timeout", "job-create-timeout",
                         "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck",
-                        "pg-dump-timeout", "pvc-tar-timeout", "job-delete-timeout"):
+                        "pg-dump-timeout", "pvc-tar-timeout", "job-delete-timeout",
+                        "reader-pod-lingers", "job-absent-reader-lingers"):
                 env["EXPECTED_PG_PVC_UID"] = "2" * 8 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 12
                 env["EXPECTED_N8N_PV_UID"] = "3" * 8 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 12
                 env["EXPECTED_PG_PV_UID"] = "4" * 8 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 12
@@ -406,6 +420,19 @@ class CheckpointBoundaryTests(unittest.TestCase):
         deletes = [args for name, args in commands if name == "timeout" and args[2] == "2m" and "delete" in args]
         self.assertTrue(deletes)
         self.assertTrue(all("--request-timeout=60s" in args for args in deletes))
+
+    def test_lingering_reader_pod_keeps_policy_and_blocks_receipt(self):
+        for mode in ("reader-pod-lingers", "job-absent-reader-lingers"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
+                self.assertTrue(any(name == "kubectl" and "get" in args and "pods" in args and
+                                    "--chunk-size=0" in args for name, args in commands))
+                deletes = [args for name, args in commands if name == "kubectl" and
+                           args[:2] != ["auth", "can-i"] and "delete" in args]
+                self.assertEqual(len(deletes), 1 if mode == "reader-pod-lingers" else 0)
 
 
 if __name__ == "__main__":

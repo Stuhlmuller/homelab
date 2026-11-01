@@ -549,7 +549,8 @@ uses an excluded [read-only reader Job](../../clusters/homelab/apps/n8n/checkpoi
 under a temporary deny-all NetworkPolicy
 only after those gates pass. Its protected script binds four PVC/PV UIDs,
 reconciles run-named resources by owner token and UID even if create loses its
-response, and requires confirmed Job/policy cleanup before a success receipt.
+response, and requires foreground Job deletion plus confirmed reader-Pod
+absence before policy removal or a success receipt.
 An API outage that leaves either resource keeps the fence in place until a
 separately reviewed cleanup path removes it. The script
 uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,

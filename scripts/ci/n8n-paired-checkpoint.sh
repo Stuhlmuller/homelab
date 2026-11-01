@@ -216,6 +216,20 @@ absent() {
   result="$(kubectl -n automation get "$1" "$resource_name" -o json --ignore-not-found)" || return 1
   [[ -z "$result" ]]
 }
+reader_pods_gone() {
+  local _
+  for _ in {1..6}; do
+    if kubectl -n automation get pods \
+      -l "homelab.stuhlmuller.dev/checkpoint-owner=$owner_token" --chunk-size=0 -o json |
+      jq -e '.kind == "PodList" and
+        (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and
+        (.metadata.continue // "") == "" and (.items | type == "array" and length == 0)' >/dev/null; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
 cleanup_resources() {
   local current
   if [[ "$job_attempted" == true ]] && ! absent job; then
@@ -223,8 +237,11 @@ cleanup_resources() {
     [[ "$current" =~ $uuid && ( -z "$job_uid" || "$current" == "$job_uid" ) ]] || return 1
     timeout --signal=TERM --kill-after=30s 2m \
       "$kubectl_bin" --request-timeout=60s -n automation delete -f "$job_file" \
-      --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
+      --cascade=foreground --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
     absent job || return 1
+  fi
+  if [[ "$job_attempted" == true || "$policy_attempted" == true ]]; then
+    reader_pods_gone || return 1
   fi
   if [[ "$policy_attempted" == true ]] && ! absent networkpolicy; then
     current="$(owned_policy_uid)" || return 1
