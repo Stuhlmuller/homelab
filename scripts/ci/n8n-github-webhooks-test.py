@@ -248,7 +248,7 @@ class WebhookTests(unittest.TestCase):
                 return deepcopy(current_config)
             if path == hook_endpoint:
                 return deepcopy(current_hook)
-            self.fail('Unexpected GitHub API request: ' + path)
+            raise AssertionError('Unexpected GitHub API request: ' + path)
 
         def probe(url, method='GET'):
             probes.append((url, method))
@@ -258,7 +258,7 @@ class WebhookTests(unittest.TestCase):
                 return 404, {'Content-Type': 'text/plain; charset=utf-8'}
             if url == HOOKS.NATIVE_URL and method == 'OPTIONS':
                 return 204, {'Access-Control-Allow-Methods': 'OPTIONS, POST'}
-            self.fail('Unexpected network probe')
+            raise AssertionError('Unexpected network probe')
 
         return inventory, deliveries, detail, current_config, current_hook, api, calls, probe, probes
 
