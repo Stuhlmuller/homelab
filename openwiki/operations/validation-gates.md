@@ -615,6 +615,13 @@ Before mesh acceptance, run `tailscale-ingress-sign.py` in preview mode, then
 execute only from reviewed current main. Each proxy's public node and rotation
 keys must match the exact controller-owned Kubernetes resource and local lock
 peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
+The `scripts/tailscale-service-host-approve.py` fixture rejects broad tailnet
+grants, source/live policy drift, auto-approval, wrong Service ports or host
+ID, stale StatefulSet/Pod revisions, changed Pod placement/state, widened
+listeners or TLS mounts, unsigned or mismatched node identity, wrong Serve
+target, and a changed preview fingerprint before its only approval POST.
+It is offline proof of refusal paths; the Service, pending host, policy
+readback, signed canary, and TailVIP traffic still need live qualification.
 
 Before traffic cutover, verify observed Argo revision and health, certificate
 readiness, real mesh application access, Fleet device check-in, native Cordium

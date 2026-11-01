@@ -26,6 +26,7 @@ python3 -I scripts/ci/tailscale-operator-oauth-rotate-test.py
 python3 -I scripts/ci/harbor-tailscale-production-test.py
 python3 -I scripts/ci/harbor-tailscale-production-sign-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
+python3 -I scripts/ci/tailscale-service-host-approve-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
