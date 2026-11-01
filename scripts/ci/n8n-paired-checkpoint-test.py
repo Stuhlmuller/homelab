@@ -14,58 +14,18 @@ SCRIPT = ROOT / "scripts/ci/n8n-paired-checkpoint.sh"
 UUID = "1" * 8 + "-" + "1" * 4 + "-" + "1" * 4 + "-" + "1" * 4 + "-" + "1" * 12
 
 MOCK = r'''#!/usr/bin/env python3
-import json, os, sys
-from pathlib import Path
-name = Path(sys.argv[0]).name
-args = sys.argv[1:]
-mode = os.environ["TEST_MODE"]
-with open(os.environ["TEST_LOG"], "a") as log:
-    log.write(json.dumps([name, args]) + "\n")
-if name == "git":
-    print(os.environ["GITHUB_SHA"])
-elif name == "gh":
-    print("f" * 40 if mode == "main-advanced" else os.environ["GITHUB_SHA"])
-elif name == "rg":
-    raise SystemExit(1 if any("migration-v1.values.yaml" in arg or "checkpoint-reader.job.yaml" in arg
-                              for arg in args) else 0)
-elif name == "aws":
-    if "get-caller-identity" in args:
-        print("716182248480")
-    elif "get-bucket-versioning" in args:
-        print("Enabled")
-    elif "get-bucket-encryption" in args:
-        print("aws:kms")
-    else:
-        raise SystemExit("unexpected aws command")
-elif name == "kubectl":
-    if args[:2] == ["auth", "can-i"]:
-        print("no" if mode == "deny-job-create" and args[2:4] == ["create", "jobs"] else "yes")
-    elif "application" in args and "get" in args:
-        print(json.dumps({"status": {"sync": {"status": "OutOfSync" if mode == "fence-unsynced" else "Synced",
-            "revisions": ["4.4.0", os.environ["GITHUB_SHA"], os.environ["GITHUB_SHA"]]},
-            "health": {"status": "Healthy"}}}))
-    elif "deployment" in args and "get" in args:
-        print(json.dumps({"metadata": {"generation": 1}, "spec": {"replicas": 1},
-                          "status": {"observedGeneration": 1, "replicas": 1, "readyReplicas": 1}}))
-    else:
-        raise SystemExit("unexpected kubectl command")
-elif name == "yq":
-    print(os.environ["TEST_IMAGE"] if "statefulset.yaml" in args[-1] else os.environ["TEST_READER_IMAGE"])
-else:
-    raise SystemExit("unknown mock binary")
-'''
-
-FULL_MOCK = r'''#!/usr/bin/env python3
 import base64, hashlib, io, json, os, sys, tarfile
 from pathlib import Path
 name = Path(sys.argv[0]).name
 args = sys.argv[1:]
 root = Path(os.environ["TEST_ROOT"])
-created = root / "job-created"
-policy = root / "policy-created"
+job_record = root / "job-record.json"
+policy_record = root / "policy-record.json"
+resource_name = "n8n-checkpoint-reader-123-1"
 image = os.environ["TEST_IMAGE"]
 reader_image = os.environ["TEST_READER_IMAGE"]
 sha = os.environ["GITHUB_SHA"]
+mode = os.environ["TEST_MODE"]
 u = os.environ["TEST_UUID"]
 pg_u = "2" * 8 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 12
 pg_pv_u = "4" * 8 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 12
@@ -78,12 +38,27 @@ with open(os.environ["TEST_LOG"], "a") as log:
 if name == "git":
     print(sha)
 elif name == "gh":
-    print(sha)
+    print("f" * 40 if mode == "main-advanced" else sha)
 elif name == "rg":
-    raise SystemExit(1 if any("migration-v1.values.yaml" in a or "checkpoint-reader.job.yaml" in a
-                              for a in args) else 0)
+    if any("targetRevision" in a for a in args):
+        print('        targetRevision = "4.4.0"\n        targetRevision = local.shared.target_revision\n        targetRevision = local.shared.target_revision')
+    elif any("valueFiles" in a for a in args):
+        print('          valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml", "$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml"]')
+    else:
+        raise SystemExit(1)
 elif name == "yq":
-    print(image if "statefulset.yaml" in args[-1] else reader_image)
+    if args[0] == "-r":
+        print(image if "statefulset.yaml" in args[-1] else reader_image)
+    elif "networkpolicy" in args[-1]:
+        print(json.dumps({"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy",
+            "metadata": {"name": "n8n-checkpoint-reader", "namespace": "automation"},
+            "spec": {"podSelector": {"matchLabels": {"app.kubernetes.io/name": "n8n-checkpoint-reader"}},
+                     "policyTypes": ["Ingress", "Egress"]}}))
+    else:
+        print(json.dumps({"apiVersion": "batch/v1", "kind": "Job",
+            "metadata": {"name": "n8n-checkpoint-reader", "namespace": "automation", "labels": {}},
+            "spec": {"backoffLimit": 0, "activeDeadlineSeconds": 3600,
+                     "template": {"metadata": {"labels": {"app.kubernetes.io/name": "n8n-checkpoint-reader"}}}}}))
 elif name == "aws":
     if "get-caller-identity" in args:
         print("716182248480")
@@ -117,18 +92,21 @@ elif name == "aws":
         raise SystemExit("unexpected aws command " + repr(args))
 elif name == "kubectl":
     if args[:2] == ["auth", "can-i"]:
-        print("yes")
+        print("no" if mode == "deny-job-create" and args[2:4] == ["create", "jobs"] else "yes")
     elif "application" in args and "get" in args:
-        print(json.dumps({"status": {"sync": {"status": "Synced", "revisions": ["4.4.0", sha, sha]},
+        print(json.dumps({"status": {"sync": {"status": "OutOfSync" if mode == "fence-unsynced" else "Synced", "revisions": ["4.4.0", sha, sha]},
             "health": {"status": "Healthy"}}}))
     elif "deployment" in args and "get" in args:
-        print(json.dumps({"metadata": {"generation": 1}, "spec": {"replicas": 0},
-            "status": {"observedGeneration": 1, "replicas": 0, "readyReplicas": 0}}))
+        replicas = 1 if mode == "deployment-active" else 0
+        print(json.dumps({"metadata": {"generation": 1}, "spec": {"replicas": replicas},
+            "status": {"observedGeneration": 1, "replicas": replicas, "readyReplicas": replicas}}))
     elif args[:2] == ["get", "--raw"]:
         raw = args[2]
-        reader = {"metadata": {"name": "n8n-checkpoint-reader-abcde", "uid": reader_u,
-            "labels": {"app.kubernetes.io/name": "n8n-checkpoint-reader"},
-            "ownerReferences": [{"controller": True, "kind": "Job", "name": "n8n-checkpoint-reader", "uid": job_u}]},
+        owner = json.loads(job_record.read_text())["metadata"]["labels"]["homelab.stuhlmuller.dev/checkpoint-owner"] if job_record.exists() else ""
+        reader = {"metadata": {"name": resource_name + "-abcde", "uid": reader_u,
+            "labels": {"app.kubernetes.io/name": "n8n-checkpoint-reader",
+                       "homelab.stuhlmuller.dev/checkpoint-owner": owner},
+            "ownerReferences": [{"controller": True, "kind": "Job", "name": resource_name, "uid": job_u}]},
             "status": {"phase": "Running", "containerStatuses": [{"name": "reader", "ready": True}]},
             "spec": {"automountServiceAccountToken": False,
                 "containers": [{"name": "reader", "image": reader_image,
@@ -136,8 +114,8 @@ elif name == "kubectl":
                 "volumes": [{"name": "source", "persistentVolumeClaim":
                     {"claimName": "n8n", "readOnly": True}}]}}
         assert raw in ("/api/v1/namespaces/automation/pods?limit=500",
-                       "/api/v1/namespaces/automation/pods?labelSelector=job-name%3Dn8n-checkpoint-reader")
-        items = [reader] if created.exists() else []
+                       "/api/v1/namespaces/automation/pods?labelSelector=batch.kubernetes.io%2Fjob-name%3D" + resource_name)
+        items = [reader] if job_record.exists() else []
         print(json.dumps({"kind": "PodList", "metadata": {"resourceVersion": "12345", "continue": ""},
             "items": items}))
     elif "jobs,cronjobs" in args:
@@ -174,28 +152,46 @@ elif name == "kubectl":
                 "volumes": [{"name": "data", "persistentVolumeClaim":
                     {"claimName": "data-n8n-postgres-0"}}]}}))
     elif "job" in args and "get" in args:
-        print(json.dumps({"metadata": {"uid": job_u}, "spec":
-            {"backoffLimit": 0, "activeDeadlineSeconds": 3600}, "status": {"active": 1}}))
+        if job_record.exists():
+            print(job_record.read_text())
+        elif "--ignore-not-found" not in args:
+            raise SystemExit(1)
     elif "networkpolicy" in args and "get" in args:
-        assert policy.exists()
-        print(json.dumps({"spec": {"podSelector": {"matchLabels":
-            {"app.kubernetes.io/name": "n8n-checkpoint-reader"}},
-            "policyTypes": ["Ingress", "Egress"]}}))
+        if policy_record.exists():
+            print(policy_record.read_text())
+        elif "--ignore-not-found" not in args:
+            raise SystemExit(1)
     elif "create" in args:
-        if "networkpolicy" in args[args.index("-f") + 1]:
-            assert not policy.exists()
-            policy.touch()
-            print("networkpolicy.networking.k8s.io/n8n-checkpoint-reader")
+        source = Path(args[args.index("-f") + 1])
+        obj = json.loads(source.read_text())
+        assert obj["metadata"]["name"] == resource_name
+        if obj["kind"] == "NetworkPolicy":
+            assert not policy_record.exists()
+            obj["metadata"]["uid"] = "9" * 8 + "-" + "9" * 4 + "-" + "9" * 4 + "-" + "9" * 4 + "-" + "9" * 12
+            policy_record.write_text(json.dumps(obj))
+            if mode == "policy-create-timeout":
+                raise SystemExit(1)
+            print("networkpolicy.networking.k8s.io/" + resource_name)
         else:
-            assert policy.exists() and not created.exists()
-            created.touch()
-            print("job.batch/n8n-checkpoint-reader")
+            assert policy_record.exists() and not job_record.exists()
+            obj["metadata"]["uid"] = job_u
+            obj["status"] = {"active": 1}
+            if mode == "job-owner-mismatch":
+                obj["metadata"]["labels"]["homelab.stuhlmuller.dev/checkpoint-owner"] = "foreign"
+            job_record.write_text(json.dumps(obj))
+            if mode in ("job-create-timeout", "job-owner-mismatch"):
+                raise SystemExit(1)
+            print("job.batch/" + resource_name)
     elif "delete" in args:
-        if "networkpolicy" in args[args.index("-f") + 1]:
-            assert not created.exists()
-            policy.unlink()
+        source = Path(args[args.index("-f") + 1])
+        obj = json.loads(source.read_text())
+        if obj["kind"] == "NetworkPolicy":
+            assert not job_record.exists()
+            policy_record.unlink()
         else:
-            created.unlink()
+            if mode == "job-delete-stuck":
+                raise SystemExit(1)
+            job_record.unlink()
     elif "exec" in args:
         if "psql" in args:
             print("12345" if "pg_database_size" in args[-1] else "1")
@@ -221,10 +217,14 @@ elif name == "docker":
         print("container-1")
     elif args[0] == "exec" and "psql" in args:
         print("4")
+    elif args[0] == "rm" and mode == "docker-rm-stuck":
+        raise SystemExit(1)
     elif args[0] in ("exec", "rm", "volume"):
         pass
     else:
         raise SystemExit("unexpected docker command " + repr(args))
+elif name == "sleep":
+    pass
 else:
     raise SystemExit("unknown mock binary")
 '''
@@ -234,9 +234,9 @@ class CheckpointBoundaryTests(unittest.TestCase):
     def run_case(self, mode="deployment-active", **overrides):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
-            for name in ("git", "gh", "rg", "aws", "kubectl", "yq", "docker"):
+            for name in ("git", "gh", "rg", "aws", "kubectl", "yq", "docker", "sleep"):
                 fake = path / name
-                fake.write_text(FULL_MOCK if mode == "good" else MOCK)
+                fake.write_text(MOCK)
                 fake.chmod(0o755)
             log = path / "commands.jsonl"
             sha = "a" * 40
@@ -261,12 +261,17 @@ class CheckpointBoundaryTests(unittest.TestCase):
                 "TEST_ROOT": temporary,
                 "TEST_UUID": UUID,
             } | overrides
-            if mode == "good":
+            if mode in ("good", "policy-create-timeout", "job-create-timeout",
+                        "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck"):
                 env["EXPECTED_PG_PVC_UID"] = "2" * 8 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 12
                 env["EXPECTED_N8N_PV_UID"] = "3" * 8 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 12
                 env["EXPECTED_PG_PV_UID"] = "4" * 8 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 12
-            result = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
-                                    capture_output=True, text=True, timeout=30)
+            try:
+                result = subprocess.run(["bash", str(SCRIPT)], cwd=ROOT, env=env,
+                                        capture_output=True, text=True, timeout=60)
+            except subprocess.TimeoutExpired as error:
+                recent = log.read_text().splitlines()[-8:] if log.exists() else []
+                raise AssertionError(f"checkpoint fixture timed out after {recent}") from error
             commands = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
             receipt = path / "n8n-paired-checkpoint-receipt"
             return result, commands, receipt.read_text() if receipt.exists() else ""
@@ -309,7 +314,7 @@ class CheckpointBoundaryTests(unittest.TestCase):
 
     def test_success_publishes_only_after_pair_readback_and_offline_restore(self):
         result, commands, receipt = self.run_case("good")
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, 0, result.stderr + repr(commands[-12:]))
         self.assertIn("manifest=n8n/paired/" + "a" * 40 + "/123/1/manifest.json", receipt)
         self.assertIn("tables=4 files=1", receipt)
         self.assertNotIn("private-test-key", result.stdout + result.stderr + receipt)
@@ -318,7 +323,45 @@ class CheckpointBoundaryTests(unittest.TestCase):
                          ["n8n.dump", "n8n.tar", "manifest.json"])
         self.assertTrue(any(name == "docker" and args[0] == "run" and "--network" in args
                             for name, args in commands))
+        self.assertTrue(any(name == "docker" and args[:2] == ["exec", "container-1"] and
+                            "pg_restore" in args and args[args.index("-U") + 1] == "n8n"
+                            for name, args in commands))
+        self.assertTrue(any(name == "docker" and args[:2] == ["exec", "container-1"] and
+                            "SELECT 1 FROM public.workflow_entity LIMIT 0" in args and
+                            args[args.index("-U") + 1] == "n8n" for name, args in commands))
         self.assertTrue(any(name == "kubectl" and "delete" in args for name, args in commands))
+
+    def test_committed_create_with_lost_response_reconciles_and_cleans(self):
+        for mode in ("policy-create-timeout", "job-create-timeout"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertEqual(result.returncode, 0, result.stderr + repr(commands[-12:]))
+                self.assertIn("Verified n8n paired checkpoint", receipt)
+                deletions = [args for name, args in commands if name == "kubectl" and
+                             args[:2] != ["auth", "can-i"] and "delete" in args]
+                self.assertEqual(len(deletions), 2)
+
+    def test_failed_reader_cleanup_blocks_receipt(self):
+        result, commands, receipt = self.run_case("job-delete-stuck")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
+        self.assertTrue(any(name == "kubectl" and args[:2] != ["auth", "can-i"] and
+                            "delete" in args for name, args in commands))
+
+    def test_ambiguous_foreign_job_is_never_deleted(self):
+        result, commands, receipt = self.run_case("job-owner-mismatch")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any(name == "kubectl" and args[:2] != ["auth", "can-i"] and
+                             "delete" in args for name, args in commands))
+        self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
+
+    def test_failed_offline_restore_cleanup_blocks_receipt(self):
+        result, commands, receipt = self.run_case("docker-rm-stuck")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertEqual(sum(name == "aws" and "put-object" in args for name, args in commands), 3)
 
 
 if __name__ == "__main__":

@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '77e3c862a93f2770afe14ee113f7be1a68822c5ccbea6a88001a239701d68583' scripts/ci/n8n-paired-checkpoint.sh \
+            'd86da95257d11f2c90a9516266b71176e33bdf0137de030f7b2c8be918ecf990' scripts/ci/n8n-paired-checkpoint.sh \
             'fe37893553f2a8551b7d92ba73cd42817364cfff5dfbe7d889ba7fec58631147' scripts/ci/n8n-pvc-restore-check.py \
             '2bfe2de65802328e7523b8609e648f0de55ad078c757400e0afe48bc5e085695' clusters/homelab/apps/n8n/checkpoint-reader.job.yaml \
             '15d65d712dc1b106d7bb8751cc514ea4a47b215c058c53128c872fb7009364f9' clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml |
@@ -113,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' \
-            '77e3c862a93f2770afe14ee113f7be1a68822c5ccbea6a88001a239701d68583' scripts/ci/n8n-paired-checkpoint.sh \
+            'd86da95257d11f2c90a9516266b71176e33bdf0137de030f7b2c8be918ecf990' scripts/ci/n8n-paired-checkpoint.sh \
             'fe37893553f2a8551b7d92ba73cd42817364cfff5dfbe7d889ba7fec58631147' scripts/ci/n8n-pvc-restore-check.py \
             '2bfe2de65802328e7523b8609e648f0de55ad078c757400e0afe48bc5e085695' clusters/homelab/apps/n8n/checkpoint-reader.job.yaml \
             '15d65d712dc1b106d7bb8751cc514ea4a47b215c058c53128c872fb7009364f9' clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml |

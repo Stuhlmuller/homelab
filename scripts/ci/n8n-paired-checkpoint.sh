@@ -15,10 +15,20 @@ uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 stack=IaC/homelab/us-west-2/apps/n8n/stack.hcl
 job_manifest=clusters/homelab/apps/n8n/checkpoint-reader.job.yaml
 policy_manifest=clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml
-rg -Fq 'valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml", "$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml"]' "$stack"
-! rg -Fq 'migration-v1.values.yaml' "$stack"
-! rg -Fq 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml
-! rg -Fq 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml
+active_revisions="$(rg -N '^[[:space:]]*targetRevision[[:space:]]*=' "$stack" |
+  sed -E 's/^[[:space:]]*//; s/[[:space:]]*=[[:space:]]*/ = /')"
+expected_revisions=$'targetRevision = "4.4.0"\ntargetRevision = local.shared.target_revision\ntargetRevision = local.shared.target_revision'
+[[ "$active_revisions" == "$expected_revisions" ]]
+active_value_files="$(rg -N '^[[:space:]]*valueFiles[[:space:]]*=' "$stack" |
+  sed -E 's/^[[:space:]]*//; s/[[:space:]]*=[[:space:]]*/ = /')"
+# shellcheck disable=SC2016 # Helm's literal $values reference is expected here.
+[[ "$active_value_files" == 'valueFiles = ["$values/clusters/homelab/apps/n8n/values.yaml", "$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml"]' ]]
+if rg -Fq 'migration-v1.values.yaml' "$stack" ||
+   rg -Fq 'migration-github-trigger-v1.values.yaml' "$stack" ||
+   rg -Fq 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml ||
+   rg -Fq 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml; then
+  exit 1
+fi
 
 bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
@@ -128,20 +138,40 @@ pg_state() {
       [.metadata.uid, (.spec.containers[] | select(.name == "postgres") | .image)] | @tsv'
 }
 
+owned_policy_uid() {
+  kubectl -n automation get networkpolicy "$resource_name" -o json |
+    jq -er --arg name "$resource_name" --arg owner "$owner_token" '
+      select(.metadata.name == $name and .metadata.deletionTimestamp == null and
+        .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] == $owner and
+        .spec.podSelector.matchLabels["app.kubernetes.io/name"] == "n8n-checkpoint-reader" and
+        .spec.podSelector.matchLabels["homelab.stuhlmuller.dev/checkpoint-owner"] == $owner and
+        (.spec.policyTypes | sort) == ["Egress", "Ingress"] and
+        (.spec.ingress // []) == [] and (.spec.egress // []) == []) | .metadata.uid'
+}
+
+owned_job_uid() {
+  kubectl -n automation get job "$resource_name" -o json |
+    jq -er --arg name "$resource_name" --arg owner "$owner_token" '
+      select(.metadata.name == $name and .metadata.deletionTimestamp == null and
+        .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] == $owner and
+        .spec.backoffLimit == 0 and .spec.activeDeadlineSeconds == 3600 and
+        .spec.template.metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] == $owner) |
+      .metadata.uid'
+}
+
 reader_state() {
   local job_uid
-  job_uid="$(kubectl -n automation get job n8n-checkpoint-reader -o json |
-    jq -er 'select(.metadata.deletionTimestamp == null and .spec.backoffLimit == 0 and
-      .spec.activeDeadlineSeconds == 3600 and (.status.active // 0) == 1) | .metadata.uid')"
+  job_uid="$(owned_job_uid)"
   [[ "$job_uid" =~ $uuid ]] || return 1
-  kubectl get --raw '/api/v1/namespaces/automation/pods?labelSelector=job-name%3Dn8n-checkpoint-reader' |
-    jq -er --arg owner "$job_uid" --arg image "$reader_image" '
+  kubectl get --raw "/api/v1/namespaces/automation/pods?labelSelector=batch.kubernetes.io%2Fjob-name%3D${resource_name}" |
+    jq -er --arg owner "$job_uid" --arg name "$resource_name" --arg token "$owner_token" --arg image "$reader_image" '
       select(.kind == "PodList" and (.metadata.resourceVersion | type == "string" and . != "" and . != "0") and
         (.metadata.continue // "") == "" and (.items | length) == 1) |
       .items[0] | select(.metadata.deletionTimestamp == null and .status.phase == "Running" and
         .metadata.labels["app.kubernetes.io/name"] == "n8n-checkpoint-reader" and
+        .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] == $token and
         ([.metadata.ownerReferences[]? | select(.controller == true and .kind == "Job" and
-          .name == "n8n-checkpoint-reader" and .uid == $owner)] | length) == 1 and
+          .name == $name and .uid == $owner)] | length) == 1 and
         .spec.automountServiceAccountToken == false and
         ([.spec.volumes[] | select(.name == "source" and
           .persistentVolumeClaim.claimName == "n8n" and .persistentVolumeClaim.readOnly == true)] | length) == 1 and
@@ -152,22 +182,51 @@ reader_state() {
 }
 
 work="$(mktemp -d)"
-reader_created=false
-policy_created=false
+resource_name="n8n-checkpoint-reader-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+[[ "${#resource_name}" -le 63 ]] || exit 1
+owner_token="$(openssl rand -hex 16)"
+[[ "$owner_token" =~ ^[0-9a-f]{32}$ ]] || exit 1
+job_file="$work/job.json"
+policy_file="$work/policy.json"
+yq -o=json '.' "$job_manifest" |
+  jq --arg name "$resource_name" --arg owner "$owner_token" '
+    .metadata.name = $name |
+    .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] = $owner |
+    .spec.template.metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] = $owner' >"$job_file"
+yq -o=json '.' "$policy_manifest" |
+  jq --arg name "$resource_name" --arg owner "$owner_token" '
+    .metadata.name = $name |
+    .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"] = $owner |
+    .spec.podSelector.matchLabels["homelab.stuhlmuller.dev/checkpoint-owner"] = $owner' >"$policy_file"
+job_attempted=false
+policy_attempted=false
+job_uid=
+policy_uid=
 container=
 volume=
+absent() {
+  local result
+  result="$(kubectl -n automation get "$1" "$resource_name" -o json --ignore-not-found)" || return 1
+  [[ -z "$result" ]]
+}
+cleanup_resources() {
+  local current
+  if [[ "$job_attempted" == true ]] && ! absent job; then
+    current="$(owned_job_uid)" || return 1
+    [[ "$current" =~ $uuid && ( -z "$job_uid" || "$current" == "$job_uid" ) ]] || return 1
+    kubectl -n automation delete -f "$job_file" --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
+    absent job || return 1
+  fi
+  if [[ "$policy_attempted" == true ]] && ! absent networkpolicy; then
+    current="$(owned_policy_uid)" || return 1
+    [[ "$current" =~ $uuid && ( -z "$policy_uid" || "$current" == "$policy_uid" ) ]] || return 1
+    kubectl -n automation delete -f "$policy_file" --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
+    absent networkpolicy || return 1
+  fi
+}
 cleanup() {
   local result=$?
-  if [[ "$reader_created" == true ]]; then
-    if kubectl -n automation delete -f "$job_manifest" --ignore-not-found --wait=true >/dev/null 2>&1; then
-      reader_created=false
-    else
-      result=1
-    fi
-  fi
-  if [[ "$policy_created" == true && "$reader_created" == false ]]; then
-    kubectl -n automation delete -f "$policy_manifest" --ignore-not-found --wait=true >/dev/null 2>&1 || result=1
-  fi
+  cleanup_resources || result=1
   if [[ -n "$container" ]]; then docker rm -f "$container" >/dev/null 2>&1 || true; fi
   if [[ -n "$volume" ]]; then docker volume rm -f "$volume" >/dev/null 2>&1 || true; fi
   rm -rf -- "$work"
@@ -183,16 +242,20 @@ pg_record="$(pg_state)"
 database_bytes="$(kubectl -n automation exec n8n-postgres-0 -c postgres -- psql -XAt -w -U postgres -d n8n -c 'SELECT pg_database_size(current_database())')"
 [[ "$database_bytes" =~ ^[1-9][0-9]*$ && "$database_bytes" -lt 1073741824 ]] || exit 1
 
-created_policy="$(kubectl -n automation create -f "$policy_manifest" -o name)"
-policy_created=true
-[[ "$created_policy" == networkpolicy.networking.k8s.io/n8n-checkpoint-reader ]] || exit 1
-kubectl -n automation get networkpolicy n8n-checkpoint-reader -o json |
-  jq -e '.spec.podSelector.matchLabels["app.kubernetes.io/name"] == "n8n-checkpoint-reader" and
-    (.spec.policyTypes | sort) == ["Egress", "Ingress"] and
-    (.spec.ingress // []) == [] and (.spec.egress // []) == []' >/dev/null
-created_name="$(kubectl -n automation create -f "$job_manifest" -o name)"
-reader_created=true
-[[ "$created_name" == job.batch/n8n-checkpoint-reader ]] || exit 1
+policy_attempted=true
+kubectl -n automation create -f "$policy_file" -o name >"$work/policy-create.out" 2>"$work/policy-create.err" || true
+for _ in {1..5}; do
+  policy_uid="$(owned_policy_uid 2>/dev/null)" && break
+  sleep 2
+done
+[[ "$policy_uid" =~ $uuid ]] || exit 1
+job_attempted=true
+kubectl -n automation create -f "$job_file" -o name >"$work/job-create.out" 2>"$work/job-create.err" || true
+for _ in {1..5}; do
+  job_uid="$(owned_job_uid 2>/dev/null)" && break
+  sleep 2
+done
+[[ "$job_uid" =~ $uuid ]] || exit 1
 reader_record=
 for _ in {1..60}; do
   reader_record="$(reader_state 2>/dev/null)" && break
@@ -200,7 +263,7 @@ for _ in {1..60}; do
 done
 [[ -n "$reader_record" ]] || exit 1
 IFS=$'\t' read -r reader_pod reader_uid <<<"$reader_record"
-[[ "$reader_pod" =~ ^n8n-checkpoint-reader-[a-z0-9-]+$ && "$reader_uid" =~ $uuid ]] || exit 1
+[[ "$reader_pod" == "$resource_name"-* && "$reader_uid" =~ $uuid ]] || exit 1
 check_fence "$reader_uid"
 
 kubectl -n automation exec n8n-postgres-0 -c postgres -- \
@@ -213,10 +276,9 @@ kubectl -n automation exec "$reader_pod" -c reader -- \
    "$(binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID")" == "$pg_binding" ]] || exit 1
 check_fence "$reader_uid"
 
-kubectl -n automation delete -f "$job_manifest" --ignore-not-found --wait=true >/dev/null
-reader_created=false
-kubectl -n automation delete -f "$policy_manifest" --ignore-not-found --wait=true >/dev/null
-policy_created=false
+cleanup_resources
+job_attempted=false
+policy_attempted=false
 check_fence
 
 pg_bytes="$(wc -c <"$work/n8n.dump" | tr -d '[:space:]')"
@@ -282,11 +344,19 @@ for _ in {1..60}; do
   sleep 2
 done
 [[ "$ready" == true ]] || exit 1
+docker exec "$container" psql -v ON_ERROR_STOP=1 -XAt -w -U postgres -d postgres -c \
+  'CREATE ROLE n8n LOGIN' >/dev/null
+docker exec "$container" psql -v ON_ERROR_STOP=1 -XAt -w -U postgres -d postgres -c \
+  'ALTER DATABASE n8n OWNER TO n8n' >/dev/null
+docker exec "$container" psql -v ON_ERROR_STOP=1 -XAt -w -U postgres -d n8n -c \
+  'ALTER SCHEMA public OWNER TO n8n' >/dev/null
 docker exec "$container" pg_restore --clean --if-exists --exit-on-error \
-  --no-owner --no-privileges -U postgres -d n8n /checkpoint.dump >/dev/null
-tables="$(docker exec "$container" psql -XAt -w -U postgres -d n8n -c \
+  --no-owner --no-privileges -U n8n -d n8n /checkpoint.dump >/dev/null
+tables="$(docker exec "$container" psql -XAt -w -U n8n -d n8n -c \
   "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'")"
 [[ "$tables" =~ ^[1-9][0-9]*$ ]] || exit 1
+docker exec "$container" psql -XAt -w -U n8n -d n8n -c \
+  'SELECT 1 FROM public.workflow_entity LIMIT 0' >/dev/null
 
 check_fence
 [[ "$(pg_state)" == "$pg_record" &&
@@ -313,6 +383,13 @@ manifest_key="$prefix/manifest.json"
 manifest_object="$(publish "$work/manifest.json" "$manifest_key" "$work/retrieved-manifest.json")"
 cmp -s "$work/manifest.json" "$work/retrieved-manifest.json"
 IFS=$'\t' read -r manifest_version manifest_sha _ <<<"$manifest_object"
+
+docker rm -f "$container" >/dev/null
+container=
+docker volume rm -f "$volume" >/dev/null
+volume=
+rm -rf -- "$work"
+[[ ! -e "$work" ]] || exit 1
 
 printf 'Verified n8n paired checkpoint: manifest=%s version=%s sha256=%s pg_pvc_uid=%s pg_pv_uid=%s n8n_pvc_uid=%s n8n_pv_uid=%s tables=%s files=%s\n' \
   "$manifest_key" "$manifest_version" "$manifest_sha" "$pg_pvc_uid" "$pg_pv_uid" \

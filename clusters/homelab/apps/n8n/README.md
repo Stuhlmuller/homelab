@@ -183,24 +183,29 @@ overlay is activated and `homelab-production` approves the run. Its source
 hashes are pinned before the workflow receives GitHub, AWS, or Octelium credentials.
 Do not dispatch it against the current one-replica stack.
 
-The declared one-shot script creates the deny-all policy and exact reader Job only after Argo
+The declared one-shot script creates a run-named deny-all policy and reader Job
+from the pinned manifests only after Argo
 reports the fenced revision Synced/Healthy, n8n desired/current/ready replicas
 are zero, no other n8n Pod or writer Job remains, PostgreSQL is Ready, and both
 PVC/PV bindings match the independently inventoried UIDs. The Job mounts the
 n8n PVC read-only and sleeps; the protected runner uses `kubectl exec` to
 stream an archive into private scratch. The Job receives no API token or AWS
-credential. The script deletes the Job before removing its deny-all policy.
-These fixed manifests and workflow are the repository-owned path for the temporary Job;
+credential. The script verifies each resource's owner token and UID, then
+deletes the Job before its policy. A lost create response is reconciled by
+reading the created object; failed or unconfirmed deletion prevents a success
+receipt. These pinned manifests and workflow are the repository-owned path for
+the temporary Job;
 do not run ad hoc `kubectl create` or `kubectl delete` commands.
 
 The workflow puts a custom PostgreSQL dump and n8n PVC tar under one
 run-specific prefix in the versioned SSE-KMS backup bucket. It downloads both
-exact object versions, checks bytes and SHA-256, restores PostgreSQL in a
-disposable container with no network, and safely extracts the PVC archive in
+exact object versions, checks bytes and SHA-256, restores PostgreSQL as the
+`n8n` database owner in a disposable container with no network, and safely extracts the PVC archive in
 disposable runner scratch. The PVC check requires the persisted config and an
 encryption key but emits only a config checksum and file count. A third
 versioned manifest binds both object versions, hashes, source UIDs, fence SHA,
-and restore counts. The public Actions log receives only its sanitized
+and restore counts. The disposable database container, volume, and private
+scratch must be removed before the success receipt is written. The public Actions log receives only its sanitized
 manifest key/version/hash and source UIDs; raw data, credentials, config, and
 private diagnostics stay out of logs and artifacts.
 
@@ -218,10 +223,13 @@ gh workflow run n8n-paired-checkpoint.yml -R Stuhlmuller/homelab --ref main \
 ```
 
 Keep the success receipt with the migration record. A failed run may leave
-individual unverified objects in its private prefix; only a success receipt
-with a readable manifest and both exact object versions qualifies. If any
-gate fails, stop and restore one n8n replica through a separate reviewed
-GitOps revision. The database and n8n PVC remain untouched by this capture.
+individual unverified objects in its private prefix, or a run-named reader
+Job/policy if the Kubernetes API cannot confirm cleanup. Keep the fence active
+and use a separately reviewed repository-owned cleanup path for any residual
+resource before retrying or restoring the n8n replica. Only a success receipt
+with a readable manifest and both exact object versions qualifies. If a
+capture gate fails after confirmed cleanup, restore one n8n replica through a
+separate reviewed GitOps revision. The database and n8n PVC remain untouched by this capture.
 The reader Job itself has a one-hour deadline; a later retry requires a new
 run/attempt and fresh source UID inventory.
 

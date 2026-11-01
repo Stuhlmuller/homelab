@@ -1034,6 +1034,14 @@ remains outside the live n8n values and Kustomize inputs. A passing fixture
 does not establish the required paired
 database/PVC backup, GitHub App `Webhooks: write` permission, hook registration,
 or live signature verification.
+On 2026-10-31, read-only GitHub API inspection found `repository_hooks`
+absent from both the n8n App registration and its organization installation.
+GitHub requires repository `Webhooks: write` to create a hook, and an installed
+App's added repository permission takes effect only after account approval
+([webhook permission](https://docs.github.com/en/rest/repos/webhooks#create-a-repository-webhook),
+[App permission approval](https://docs.github.com/en/apps/maintaining-github-apps/modifying-a-github-app-registration)).
+Migration activation remains blocked until the registration and installation
+both show the permission and a fresh signed delivery passes.
 The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
 the active values render one Deployment replica and the fence overlay renders
@@ -1045,7 +1053,9 @@ The staged [paired checkpoint workflow](../../.github/workflows/n8n-paired-check
 is manual, exact-main, protected, and pins the capture script, restore helper,
 excluded reader Job, and deny-all policy by SHA-256 before credential access. Its offline
 `n8n-paired-checkpoint-test.py` checks stale-main, UID, permission, and
-zero-writer failures before Job creation; `n8n-pvc-restore-check-test.py`
+zero-writer failures before Job creation, committed creates with lost responses,
+foreign ownership refusal, cleanup failure without a success receipt, and
+restore checks under the `n8n` database role; `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
 Only a live success receipt binding both exact S3 object versions and an
 isolated restore qualifies for migration activation.

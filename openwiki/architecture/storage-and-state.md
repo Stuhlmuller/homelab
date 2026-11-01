@@ -548,6 +548,10 @@ The staged [one-shot paired checkpoint](../../.github/workflows/n8n-paired-check
 uses an excluded [read-only reader Job](../../clusters/homelab/apps/n8n/checkpoint-reader.job.yaml)
 under a temporary deny-all NetworkPolicy
 only after those gates pass. Its protected script binds four PVC/PV UIDs,
+reconciles run-named resources by owner token and UID even if create loses its
+response, and requires confirmed Job/policy cleanup before a success receipt.
+An API outage that leaves either resource keeps the fence in place until a
+separately reviewed cleanup path removes it. The script
 uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
 downloads and restores both in disposable runner storage, then publishes a
 checksum-bound manifest. This is source preparation, not a completed backup;
