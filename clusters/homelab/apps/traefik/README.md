@@ -56,6 +56,22 @@ tailnet DNS names; private custom application hostnames retain the certificate
 from [`certificate.yaml`](certificate.yaml).
 [Tailscale Funnel documentation](https://tailscale.com/kb/1223/funnel).
 
+The network-policy canary on `zimaboard-2` keeps
+its isolation until the reviewed GitOps node selector, live Deployment and
+active ReplicaSet templates, Pods, and EndpointSlice endpoints are all off that
+node. The cleanup and release stages
+check both sources before removing firewall objects or the isolation taint.
+The `RollingUpdate` settings allow one surge Pod with none unavailable; check
+capacity for two co-located Traefik Pods before changing node placement.
+At the 2026-11-01 07:58 UTC read-only Prometheus check, the retained 15-day
+Traefik working-set maximum was 125.625 MiB, with a roughly 45-hour scrape
+gap. The projected `zimaboard-2` combined budget is about 624 MiB; the
+[enforcer's 512 MiB limit](../../platform/network-policy/daemonset.yaml)
+leaves 112 MiB, below that observed Traefik peak. Keep Traefik off that node
+and keep its limit unchanged until an isolated enforcer peak is measured. A
+later steady `zimaboard-2` placement needs `surge: 0`, `unavailable: 1`, and a
+documented brief ingress outage during updates.
+
 During the 2026-10-27 ztunnel image-pull outage on `zimaboard-0`, Traefik is
 temporarily pinned to `zimaboard-1`, whose ztunnel is Ready. This moves all four
 listeners together without changing their routes or Service addresses. Verify
