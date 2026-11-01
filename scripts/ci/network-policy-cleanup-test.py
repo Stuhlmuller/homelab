@@ -2,6 +2,8 @@
 """Keep owned firewall rollback narrow across kube-router and foreign rules."""
 
 import argparse
+import copy
+import json
 import runpy
 import subprocess
 import tempfile
@@ -44,6 +46,122 @@ def state():
 
 
 class FirewallCleanupTests(unittest.TestCase):
+    def test_traefik_guard_requires_reviewed_off_node_source_and_complete_live_placement(self):
+        values_path = "clusters/homelab/apps/traefik/values.yaml"
+        stack_path = "IaC/homelab/us-west-2/apps/traefik/stack.hcl"
+        source = {name: (ROOT / name).read_text() for name in (values_path, stack_path)}
+        off_node_pod = {"metadata": {"namespace": "traefik", "name": "traefik-0",
+                                     "uid": "pod-uid"},
+                        "spec": {"nodeName": "zimaboard-1"},
+                        "status": {"conditions": [{"type": "Ready", "status": "True"}]}}
+        endpoint = {"nodeName": "zimaboard-1", "targetRef": {
+            "kind": "Pod", "namespace": "traefik", "name": "traefik-0", "uid": "pod-uid"}}
+        labels = {"app.kubernetes.io/controller": "traefik",
+                  "app.kubernetes.io/instance": "traefik",
+                  "app.kubernetes.io/name": "traefik"}
+        controller = {"kind": "Deployment", "metadata": {
+            "namespace": "traefik", "name": "traefik", "labels": labels},
+            "spec": {"selector": {"matchLabels": labels},
+                     "template": {"metadata": {"labels": labels}, "spec": {
+                         "nodeSelector": {"kubernetes.io/hostname": "zimaboard-1"}}}}}
+        def listed(items, continued=False):
+            return {"metadata": {"continue": "next"} if continued else {},
+                    "items": items}
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, content in source.items():
+                target = root / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content)
+            selector = "zimaboard-1"
+            controllers = listed([controller])
+            pods = listed([off_node_pod])
+            slices = listed([{"metadata": {"namespace": "traefik"},
+                              "endpoints": [endpoint]}])
+            queries, mains = [], []
+
+            def command(*args):
+                if args[0] == "git":
+                    return source[args[-1].split(":", 1)[1]]
+                self.assertEqual(args[:4], ("yq", "eval", "-o=json", "."))
+                return json.dumps({"controllers": {"traefik": {"pod": {
+                    "nodeSelector": {"kubernetes.io/hostname": selector}}}}})
+
+            def kubernetes_json(*args):
+                queries.append(args)
+                if "deployments,replicasets,statefulsets,daemonsets" in args:
+                    return controllers
+                return pods if "pods" in args else slices
+
+            with patch.dict(SUT["require_traefik_off_canary"].__globals__, {
+                    "ROOT": root, "command": command,
+                    "require_current_main": lambda sha: mains.append(sha),
+                    "kubernetes_json": kubernetes_json}):
+                guard = SUT["require_traefik_off_canary"]
+                guard("a" * 40, "zimaboard-2")
+                self.assertEqual(mains, ["a" * 40, "a" * 40])
+                self.assertEqual(len(queries), 3)
+                pods, slices = listed([]), listed([])
+                guard("a" * 40, "zimaboard-2")
+                stale_controller = copy.deepcopy(controller)
+                stale_selector = stale_controller["spec"]["template"]["spec"]["nodeSelector"]
+                stale_selector["kubernetes.io/hostname"] = "zimaboard-2"
+                controllers = listed([stale_controller])
+                with self.assertRaisesRegex(ValueError, "live Traefik controller"):
+                    guard("a" * 40, "zimaboard-2")
+                controllers = listed([controller, {"kind": "ReplicaSet",
+                    "metadata": {"namespace": "traefik", "name": "traefik-old"},
+                    "spec": {"replicas": 1, "template": {"spec": {
+                        "nodeSelector": {"kubernetes.io/hostname": "zimaboard-2"}}}}}])
+                with self.assertRaisesRegex(ValueError, "live Traefik controller"):
+                    guard("a" * 40, "zimaboard-2")
+                controllers["items"][1]["spec"]["replicas"] = 0
+                guard("a" * 40, "zimaboard-2")
+                controllers = listed([controller])
+                pods = listed([off_node_pod])
+                slices = listed([{"metadata": {"namespace": "traefik"},
+                                  "endpoints": [endpoint]}])
+
+                selector = "zimaboard-2"
+                queries.clear()
+                with self.assertRaisesRegex(ValueError, "nodeSelector"):
+                    guard("a" * 40, "zimaboard-2")
+                self.assertFalse(queries)
+                selector = "zimaboard-1"
+
+                (root / values_path).write_text(source[values_path] + "# local drift\n")
+                with self.assertRaisesRegex(ValueError, "exact current main"):
+                    guard("a" * 40, "zimaboard-2")
+                (root / values_path).write_text(source[values_path])
+
+                for candidate in (
+                        off_node_pod | {"spec": {"nodeName": "zimaboard-2"}},
+                        off_node_pod | {"metadata": {**off_node_pod["metadata"],
+                                                      "deletionTimestamp": "now"},
+                                        "spec": {"nodeName": "zimaboard-2"}}):
+                    with self.subTest(pod=candidate), self.assertRaisesRegex(
+                            ValueError, "Pod remains"):
+                        pods = listed([candidate])
+                        guard("a" * 40, "zimaboard-2")
+                pods = listed([off_node_pod | {"spec": {"nodeName": None}}])
+                with self.assertRaisesRegex(ValueError, "unknown or pending"):
+                    guard("a" * 40, "zimaboard-2")
+                pods = listed([off_node_pod])
+
+                for candidate, error in ((endpoint | {"nodeName": "zimaboard-2"},
+                                          "endpoint remains"),
+                                         (endpoint | {"nodeName": None},
+                                          "placement is incomplete")):
+                    with self.subTest(endpoint=candidate), self.assertRaisesRegex(
+                            ValueError, error):
+                        slices = listed([{"metadata": {"namespace": "traefik"},
+                                          "endpoints": [candidate]}])
+                        guard("a" * 40, "zimaboard-2")
+                slices = listed([], continued=True)
+                with self.assertRaisesRegex(ValueError, "inventory is incomplete"):
+                    guard("a" * 40, "zimaboard-2")
+
     def test_pre_removal_evidence_requires_exact_fixture_then_firewall_prune(self):
         manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
         application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
@@ -279,7 +397,7 @@ class FirewallCleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "reference to owned ipset"):
                     SUT["cleanup_plan"](candidate)
 
-    def test_main_drift_before_second_delete_records_interrupted(self):
+    def test_main_or_ingress_drift_before_second_delete_records_interrupted(self):
         source_sha = "a" * 40
         evidence_sha = "b" * 40
         placement = {"format": 1, "verified": True, "sourceSha": evidence_sha,
@@ -288,39 +406,51 @@ class FirewallCleanupTests(unittest.TestCase):
         ownership = {"evidenceSourceSha": evidence_sha, "captureRunId": "8",
                      "admissionRunId": "6", "placementRunId": "5",
                      "placementVersionId": "v1"}
-        checks = iter((source_sha, source_sha, "b" * 40))
-        operations = []
-        records = []
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory)
-            platform = SUT["PLATFORM"]
-            replacements = {"validate_config": lambda _: {"canary": {"node": "zimaboard-1"}},
-                            "protected_context": lambda _: None,
-                            "current_main_sha": lambda: next(checks),
-                            "private_directory": lambda value: value,
-                            "private_output": lambda value: value,
-                            "read_private_json": lambda value: placement if value.name ==
-                            "placement.json" else ownership}
-            globals_ = {"command": lambda *args: source_sha,
-                        "inspect_cluster": lambda *_: ("cleanup-pod", "pod-uid"),
-                        "snapshot": lambda *_: {"backend": "nft", "nft": "snapshot"},
-                        "cleanup_plan": lambda *_: ([("iptables-nft", "-D", "first"),
-                                                     ("iptables-nft", "-F", "second")], 1, 0),
-                        "require_firewall_removal_transition": lambda *_: None,
-                        "require_ownership": lambda *_: None,
-                        "exec_cleanup": lambda _pod, *args: operations.append(args),
-                        "write_record": lambda _path, record, replace=False:
-                        records.append(record.copy())}
-            with patch.dict(platform, replacements), patch.dict(SUT["execute"].__globals__,
-                                                             globals_):
-                args = argparse.Namespace(config=ROOT / "scripts/config/platform-maintenance.json",
-                                          expected_sha=source_sha, capture_run_id="8", receipt_dir=path,
-                                          output=path / "cleanup.json")
-                with self.assertRaisesRegex(ValueError, "exact current main"):
-                    SUT["execute"](args)
-        self.assertEqual(operations, [("iptables-nft", "-D", "first")])
-        self.assertEqual([record["status"] for record in records],
-                         ["started", "interrupted"])
+        for cause in ("main", "ingress"):
+            with self.subTest(cause=cause), tempfile.TemporaryDirectory() as directory:
+                checks = iter((source_sha, source_sha, "b" * 40))
+                operations, records = [], []
+                guard_calls = 0
+
+                def guard(*_):
+                    nonlocal guard_calls
+                    guard_calls += 1
+                    if cause == "ingress" and guard_calls == 3:
+                        raise ValueError("Traefik endpoint remains on canary")
+
+                path = Path(directory)
+                platform = SUT["PLATFORM"]
+                replacements = {"validate_config": lambda _: {"canary": {"node": "zimaboard-1"}},
+                                "protected_context": lambda _: None,
+                                "current_main_sha": lambda: next(checks) if cause ==
+                                "main" else source_sha,
+                                "private_directory": lambda value: value,
+                                "private_output": lambda value: value,
+                                "read_private_json": lambda value: placement if value.name ==
+                                "placement.json" else ownership}
+                globals_ = {"command": lambda *args: source_sha,
+                            "inspect_cluster": lambda *_: ("cleanup-pod", "pod-uid"),
+                            "snapshot": lambda *_: {"backend": "nft", "nft": "snapshot"},
+                            "cleanup_plan": lambda *_: ([("iptables-nft", "-D", "first"),
+                                                         ("iptables-nft", "-F", "second")], 1, 0),
+                            "require_firewall_removal_transition": lambda *_: None,
+                            "require_traefik_off_canary": guard,
+                            "require_ownership": lambda *_: None,
+                            "exec_cleanup": lambda _pod, *args: operations.append(args),
+                            "write_record": lambda _path, record, replace=False:
+                            records.append(record.copy())}
+                with patch.dict(platform, replacements), patch.dict(
+                        SUT["execute"].__globals__, globals_):
+                    args = argparse.Namespace(
+                        config=ROOT / "scripts/config/platform-maintenance.json",
+                        expected_sha=source_sha, capture_run_id="8", receipt_dir=path,
+                        output=path / "cleanup.json")
+                    error = "exact current main" if cause == "main" else "Traefik endpoint"
+                    with self.assertRaisesRegex(ValueError, error):
+                        SUT["execute"](args)
+                self.assertEqual(operations, [("iptables-nft", "-D", "first")])
+                self.assertEqual([record["status"] for record in records],
+                                 ["started", "interrupted"])
 
     def test_zero_object_review_records_verified_noop(self):
         source_sha, evidence_sha = "a" * 40, "b" * 40
@@ -350,6 +480,7 @@ class FirewallCleanupTests(unittest.TestCase):
                             "placement.json" else ownership}
             globals_ = {"command": lambda *args: source_sha,
                         "require_firewall_removal_transition": lambda *_: None,
+                        "require_traefik_off_canary": lambda *_: None,
                         "inspect_cluster": lambda *_: ("cleanup-pod", "pod-uid"),
                         "snapshot": lambda *_: snapshot,
                         "exec_cleanup": lambda _pod, *args: operations.append(args),

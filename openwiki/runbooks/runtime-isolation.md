@@ -304,6 +304,38 @@ reviewed recovery. A partial deletion requires a new capture and approval.
 Inventory checks and firewall deletion are not atomic: a taint-tolerating Pod
 could arrive during deletion. Live activation remains blocked until isolated
 placement rules that out or a reviewed repository-owned isolation path exists.
+Before owned firewall cleanup, release, or taint-removing recovery,
+[`network-policy-cleanup.py`](../../scripts/network-policy-cleanup.py) checks
+the exact current-main [Traefik values](../../clusters/homelab/apps/traefik/values.yaml)
+and complete live Traefik controller, Pod, and EndpointSlice inventories. A
+selector for `zimaboard-2`, a Pod or endpoint there, or unknown placement retains
+the canary taint; move Traefik away through reviewed GitOps first. The
+[static phase check](../../scripts/ci/network-policy-registration-test.py)
+also rejects an empty enforcer Kustomization with a z2 or unknown Traefik
+selector before the auto-prune commit passes CI. It cannot attest live placement
+at merge time. An empty
+live inventory is accepted only with the explicit off-node GitOps selector and
+successful complete list queries. Orphan firewall probe recovery still removes
+only its owned Pod. Traefik uses `RollingUpdate` with `surge: 1` and
+`unavailable: 0%`; a later update can temporarily place two Traefik Pods on
+one node. A 2026-11-01 read-only Prometheus check found 125.625 MiB as the
+retained 15-day Traefik working-set maximum, with a roughly 45-hour scrape
+gap. The projected 624 MiB `zimaboard-2` combined budget minus the
+[enforcer's 512 MiB limit](../../clusters/homelab/platform/network-policy/daemonset.yaml)
+leaves 112 MiB, below that observed peak. Do not move Traefik to the canary or
+reduce its limit until isolated enforcer peak use is measured. Any later steady
+placement there needs `surge: 0`, `unavailable: 1`, and a documented brief
+ingress outage during updates.
+
+The [kube-router v2.11.1 DaemonSet](../../clusters/homelab/platform/network-policy/daemonset.yaml)
+uses `/healthz` for Ready. Upstream [health state](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/healthcheck/health_controller.go#L290-L300)
+and [policy sync](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/npc_iptables.go#L123-L139)
+show a heartbeat can precede [iptables restore](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/npc_iptables.go#L180-L223).
+Cold z2 boot needs
+a separately reviewed node-local host firewall assertion tied to the current
+Traefik Pod IP before its container starts, plus reboot and image-GC negative
+probes. No such boot barrier exists in this source.
+
 The later enforcer and fixture rollout also lacks its own protected fresh
 capacity gate; admission does not authorize that rollout. The earlier firewall
 snapshot may drift after capture because admission does not run another

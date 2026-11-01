@@ -335,7 +335,7 @@ def execute(args):
     def require_runtime():
         if release:
             CANARY["require_release_runtime_quiesced"](
-                config, placement, attempt["cleanupPodUid"])
+                config, placement, attempt["cleanupPodUid"], args.expected_sha)
         else:
             CANARY["require_runtime_absent"](True)
 
