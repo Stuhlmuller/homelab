@@ -216,6 +216,9 @@ and restore counts. The disposable database container, volume, and private
 scratch must be removed before the success receipt is written. The public Actions log receives only its sanitized
 manifest key/version/hash and source UIDs; raw data, credentials, config, and
 private diagnostics stay out of logs and artifacts.
+Identity, source-binding, and S3 readback gates require a successful command
+exit as well as matching output; a partial response with an error withholds
+the receipt.
 
 After a separately reviewed PR activates `maintenance-fence.values.yaml`,
 inventory the four live source UIDs, confirm the zero-writer gates above, then
