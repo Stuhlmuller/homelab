@@ -172,7 +172,7 @@ desired state.
 | `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
-| `clusters/homelab/apps/octelium-enterprise/capture-stage/`, `scripts/octelium-rscstore-capture.py`, and `scripts/ci/octelium-rscstore-capture-test.py` | [Resource-store capture stages](architecture/storage-and-state.md), [offline and activation gates](operations/validation-gates.md#octelium-resource-store-inspector-stage) |
+| `clusters/homelab/apps/octelium-enterprise/capture-stage/`, `scripts/octelium-rscstore-capture.py`, and `scripts/ci/octelium-rscstore-capture-test.py` | [Resource-store capture stages](architecture/storage-and-state.md), [offline and activation gates](operations/validation-gates.md#octelium-resource-store-capture-fence) |
 | `docs/examples/octelium/homelab-services.yaml`, `scripts/openclaw-enterprise-access.py`, and `scripts/ci/openclaw-enterprise-access-test.py` | [Staged Enterprise console and redirect catalog](runbooks/octelium.md#openclaw-enterprise-access-staging), [private native routes](runbooks/tailnet-ingress.md#route-boundaries) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/terragrunt-catalog/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |

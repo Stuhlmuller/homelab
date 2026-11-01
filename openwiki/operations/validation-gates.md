@@ -1142,7 +1142,7 @@ kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
 
-## Octelium resource-store inspector stage
+## Octelium resource-store capture fence
 
 `scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
 the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
@@ -1152,10 +1152,10 @@ single Talos sandbox/container matching its 12-hex ID prefix, three matching
 archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must show the
-inspector Pod, its exact-label default-deny NetworkPolicy, one
-`octeliumee-rscstore` replica, and no fence component. Flannel does not
+inspector Pod, its exact-label default-deny NetworkPolicy, the fence component,
+and zero `octeliumee-rscstore` replicas. Flannel does not
 currently enforce the policy; it satisfies the source and Checkov contract.
-See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#resource-store-capture-fence).
 
 ```sh
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
@@ -1164,7 +1164,7 @@ kubectl kustomize clusters/homelab/apps/octelium-enterprise
 python3 -I scripts/ci/openwiki-check.py
 ```
 
-Before any future fence, the inspector-only GitOps stage must be Synced at the
+Before merging this fence, the inspector-only GitOps stage must be Synced at the
 exact merged `main` SHA. The writer was already `0/1` Ready and repeatedly
 failing WAL replay on November 1; Argo health may remain non-Healthy. Confirm
 the Terragrunt-owned `ApplyOutOfSyncOnly=true` option is live and the writer

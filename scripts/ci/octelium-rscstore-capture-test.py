@@ -158,19 +158,13 @@ class RscstoreCaptureTest(unittest.TestCase):
             CAPTURE.argo_guard("homelab", SHA)
 
     def test_fenced_kustomization_requires_inspector_policy(self):
-        current = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        future = ("apiVersion: kustomize.config.k8s.io/v1beta1\n"
-                  "kind: Kustomization\nresources:\n"
-                  "  - emergency-dataplane.yaml\n  - resources.yaml\n"
-                  "  - capture-stage/inspector.yaml\n"
-                  "  - capture-stage/inspector-networkpolicy.yaml\n"
-                  "components:\n  - capture-stage\n")
+        fenced = ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml"
+        CAPTURE.fenced_kustomization_guard(fenced)
+        source = fenced.read_text()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "kustomization.yaml"
-            path.write_text(future)
-            CAPTURE.fenced_kustomization_guard(path)
-            for invalid in (current, future.replace(
-                    "  - capture-stage/inspector-networkpolicy.yaml\n", "")):
+            for invalid in (source.replace("components:\n  - capture-stage\n", ""),
+                            source.replace("  - capture-stage/inspector-networkpolicy.yaml\n", "")):
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                     path.write_text(invalid)
                     CAPTURE.fenced_kustomization_guard(path)
@@ -187,10 +181,17 @@ class RscstoreCaptureTest(unittest.TestCase):
                               ["StringLike"]["s3:prefix"])
                 self.assertIn(bucket + prefix, statements[required]["Resource"])
 
-    def test_inspector_stage_keeps_writer_unfenced(self):
-        source = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        self.assertIn("  - capture-stage/inspector.yaml", source)
-        self.assertNotIn("components:", source)
+    def test_fenced_stage_stops_only_writer_and_retains_inspector(self):
+        kustomization = ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml"
+        CAPTURE.fenced_kustomization_guard(kustomization)
+        component = (kustomization.parent / "capture-stage/kustomization.yaml").read_text()
+        self.assertEqual(component.splitlines(), [
+            "apiVersion: kustomize.config.k8s.io/v1alpha1", "kind: Component", "patches:",
+            "  - path: rscstore-fence.patch", "    target:", "      group: apps",
+            "      version: v1", "      kind: Deployment",
+            "      name: octeliumee-rscstore", "      namespace: octelium"])
+        patch = (kustomization.parent / "capture-stage/rscstore-fence.patch").read_text()
+        self.assertEqual(patch.splitlines(), ["- op: replace", "  path: /spec/replicas", "  value: 0"])
         rendered = subprocess.check_output([
             "kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/octelium-enterprise")
         ], text=True)
@@ -203,7 +204,7 @@ class RscstoreCaptureTest(unittest.TestCase):
             self.assertEqual(len(matches), 1, (kind, name))
             return matches[0]
 
-        self.assertRegex(resource("Deployment", CAPTURE.DEPLOYMENT), r"(?m)^  replicas: 1$")
+        self.assertRegex(resource("Deployment", CAPTURE.DEPLOYMENT), r"(?m)^  replicas: 0$")
         inspector = resource("Pod", CAPTURE.INSPECTOR)
         self.assertEqual(inspector.count("readOnly: true"), 2)
         self.assertIn("imagePullPolicy: Always", inspector)
