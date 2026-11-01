@@ -366,6 +366,11 @@ inputs = {
       description   = "Tailscale Kubernetes operator OAuth client secret."
       initial_value = local.placeholder
     }
+    "/homelab/tailscale/traefik-sidecar-canary-auth-key" = {
+      description   = "Single-use non-ephemeral Tailscale auth key for the staged Traefik canary."
+      initial_value = local.placeholder
+      reader_access = false
+    }
     "/homelab/octelium/client-auth-token" = {
       description   = "Octelium authentication token for the homelab workload client connector."
       initial_value = local.placeholder

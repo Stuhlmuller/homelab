@@ -12,9 +12,8 @@ secrets, Octelium CI identity setup, and AWS OIDC role boundaries.
 ```sh
 nix run .#validate
 cd IaC
-cd live/aws-ssm-parameters
-terragrunt plan
-cd ../..
+terragrunt stack generate
+(cd homelab/us-west-2/shared/aws-ssm-parameters && terragrunt plan)
 terragrunt stack run --filter-affected --parallelism 1 --source-update plan -no-color
 ```
 

@@ -404,6 +404,24 @@ test_rejects_mastodon_reading_another_workload_secret if {
 	contains(msg, "outside its allowed application prefixes")
 }
 
+traefik_canary_secret(key) := {
+	"apiVersion": "external-secrets.io/v1",
+	"kind": "ExternalSecret",
+	"metadata": {"name": "traefik-sidecar-canary-auth", "namespace": "traefik"},
+	"spec": {
+		"secretStoreRef": {"kind": "ClusterSecretStore", "name": "aws-ssm"},
+		"data": [{"secretKey": "auth-key", "remoteRef": {"key": key}}],
+	},
+}
+
+test_traefik_canary_reads_only_its_enrollment_key if {
+	allowed := deny with input as traefik_canary_secret("/homelab/tailscale/traefik-sidecar-canary-auth-key")
+	count(allowed) == 0
+	denied := deny with input as traefik_canary_secret("/homelab/tailscale/oauth-client-secret")
+	some msg in denied
+	contains(msg, "outside its allowed application prefixes")
+}
+
 renovate_secret(key) := {
 	"apiVersion": "external-secrets.io/v1",
 	"kind": "ExternalSecret",

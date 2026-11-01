@@ -391,6 +391,7 @@ external_secret_allowed_prefixes := {
 	"octelium-public": {"/homelab/octelium/"},
 	"octelium-storage": {"/homelab/octelium/"},
 	"tailscale": {"/homelab/tailscale/"},
+	"traefik": {"/homelab/tailscale/traefik-sidecar-canary-auth-key"},
 }
 
 deny contains msg if {

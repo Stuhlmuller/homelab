@@ -329,6 +329,11 @@ and device connection tests.
 | `media-postgres`        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`        | `IaC/homelab/us-west-2/apps/media-postgres/argocd`        | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres`          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`          | `IaC/homelab/us-west-2/apps/n8n-postgres/argocd`          | external-secrets, platform-storage                          |
 
+The dormant Traefik sidecar canary has a declared SSM auth-key placeholder and
+shared-reader access disabled. Its ExternalSecret and Pod remain unregistered
+until a real single-use key and the
+[activation gates](../../clusters/homelab/apps/traefik/canary/README.md) pass.
+
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
 sinkholing Prowlarr indexer domains through Cloudflare Family category filters.

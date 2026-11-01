@@ -89,11 +89,15 @@ Fleet to the exact local Mac. Rotation requires reapplying that profile on each
 configured Mac; SSM updates do not automatically refresh device profiles.
 See the [Google login runbook](../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
 
-The `aws-ssm` ClusterSecretStore is constrained to namespaces with
-repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`fleet`, `media`, `monitoring`, `octelium-client`, `octelium-public`,
-`octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
-same PR that adds its first ExternalSecret.
+The `aws-ssm` ClusterSecretStore is constrained to the namespaces listed in
+`clusters/homelab/apps/external-secrets/cluster-secret-store.yaml`. The staged
+Traefik canary has an SSM placeholder with shared-reader access disabled and
+an exact CI remote-key policy. `traefik` is not admitted to the shared store;
+its ExternalSecret remains outside the live and canary Kustomizations. Enabling
+the shared reader would expose the key to any already-admitted namespace whose
+users can create ExternalSecrets. The activation PR must use a dedicated reader
+and SecretStore, or issue a short-lived single-use key immediately before
+registration and require Tailnet Lock to sign the exact device before traffic.
 
 ## Tailscale CI signing contract
 
@@ -381,6 +385,7 @@ cluster CA is intentionally rotated.
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
+| traefik canary (staged) | `traefik-sidecar-canary-auth` (not registered) | `traefik-sidecar-canary-auth` | `/homelab/tailscale/traefik-sidecar-canary-auth-key` (placeholder; shared reader disabled) |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
 | octelium-public | `octelium-public-cloudflared-credentials` | `octelium-public-cloudflared-credentials` | `/homelab/octelium/cloudflare-tunnel-credentials-json`, `/homelab/octelium/cloudflare-tunnel-id` |
 | octelium-public | retired Cloudflare zone-setting token; no runtime consumer | none | `/homelab/octelium/cloudflare-zone-settings-token` |

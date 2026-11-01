@@ -21,16 +21,22 @@ barrier, but acceptance must still prove that rule in ambient mode.
 ## Credential and state contract
 
 Before registration, define `tag:homelab-ingress-canary` with reviewed ownership
-and policy tests. Generate a dedicated, single-use, non-ephemeral Tailscale
-auth key for that tag and store it in SSM SecureString
-`/homelab/tailscale/traefik-sidecar-canary-auth-key` through a reviewed
-repository-owned path. Declare the SSM slot and its reader IAM grant, then add
-the exact key to `policy/kubernetes.rego` and `traefik` to the `aws-ssm`
-ClusterSecretStore namespace allowlist in the activation PR. These grants do
-not exist yet. `auth-externalsecret.yaml` is staged
-but excluded from this Kustomization until those grants pass. When registered,
-it projects `traefik-sidecar-canary-auth` key `auth-key` in `traefik`. Do not
-reuse the operator OAuth Secret. This source contains no credential value.
+and policy tests. The SSM SecureString slot
+`/homelab/tailscale/traefik-sidecar-canary-auth-key` is a placeholder with
+`reader_access = false`. CI policy reserves only this remote key for `traefik`,
+but the namespace cannot use the shared ClusterSecretStore yet. The staged
+`auth-externalsecret.yaml` remains outside this Kustomization.
+
+The activation PR must provide a dedicated reader and SecretStore for strict
+key isolation, or explicitly accept the shared-reader exposure: changing
+`reader_access` to `true` also lets any already-admitted namespace with
+ExternalSecret-create authority request this key. For the shared path, mint a
+short-lived, single-use, non-ephemeral auth key through reviewed repository
+code just before registration; admit `traefik`, register the canary, and sign
+the exact new device with Tailnet Lock before traffic acceptance. Retire the
+enrollment key after use. When registered, the ExternalSecret projects
+`traefik-sidecar-canary-auth` key `auth-key` in `traefik`. Do not reuse the
+operator OAuth Secret. This source contains no credential value.
 
 `tailscaled` stores its durable identity in the Kubernetes Secret
 `traefik-sidecar-canary-state`. Its Role allows namespace-wide `create` only

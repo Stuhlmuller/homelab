@@ -464,6 +464,17 @@ gate remains disabled; these permissions are source intent, not live access.
   `tag:homelab-ingress-canary` still needs a reviewed tailnet policy ownership
   delegation to `tag:k8s-operator` before activation. See
   [the rotation runbook](../../clusters/homelab/apps/tailscale/README.md).
+- The dormant Traefik canary declares its own SSM SecureString placeholder at
+  `/homelab/tailscale/traefik-sidecar-canary-auth-key` with shared-reader access
+  disabled. CI policy reserves that exact remote key for `traefik`, but the
+  namespace is not admitted to the shared ClusterSecretStore, and the
+  ExternalSecret remains outside both Kustomizations. Enabling the shared
+  reader would let any already-admitted namespace with ExternalSecret-create
+  authority request the key. The activation PR must use a dedicated reader and
+  SecretStore for strict isolation or inject a short-lived single-use key
+  immediately before registration, then sign the exact device with Tailnet
+  Lock before traffic acceptance. This stage does not enroll a device. See the
+  [canary contract](../../clusters/homelab/apps/traefik/canary/README.md).
 - Cordium uses the `cordium-agent-auth` ExternalSecret in `octelium`, sourced
   from `/homelab/cordium/agent-auth-token`, for the policy-bound
   `homelab-cordium-agent` Workload User. The PostSync configuration hook uses
