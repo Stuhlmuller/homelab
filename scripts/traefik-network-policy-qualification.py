@@ -160,6 +160,12 @@ def inspect_policies(probes, traefik, harbor_namespace):
     if not any(rule.get("to") == [peer] and rule.get("ports") == [{"protocol": "TCP", "port": 8443}]
                for rule in signer["spec"].get("egress", [])):
         raise ValueError("signer Egress does not allow exact Traefik Pod port")
+    signer_source = json.loads(command(
+        "yq", "-o=json",
+        'select(.kind == "NetworkPolicy" and .metadata.name == "harbor-image-signing")',
+        str(ROOT / "clusters/homelab/apps/harbor/networkpolicy.yaml")))
+    if normalize(signer) != normalize(signer_source):
+        raise ValueError("live Harbor signer Egress policy differs from reviewed source")
     if harbor_namespace.get("metadata", {}).get("labels", {}).get("istio.io/dataplane-mode") == "ambient":
         raise ValueError("Harbor source became ambient")
     traefik_policies = items(kubernetes_json("-n", "traefik", "get", "networkpolicies", "--chunk-size=0"))
