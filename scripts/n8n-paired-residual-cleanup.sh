@@ -17,9 +17,11 @@ valid_uid() { [[ "$1" == absent || "$1" =~ $uuid ]]; }
 valid_uid "$expected_job_uid" && valid_uid "$expected_policy_uid" || exit 2
 name="n8n-checkpoint-reader-${run_id}-${attempt}"
 [[ ${#name} -le 63 ]] || exit 2
-[[ "$(git rev-parse HEAD)" == "$main_sha" &&
-   "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" == "$main_sha" &&
-   -z "$(git status --porcelain)" ]] || exit 1
+local_head="$(git rev-parse HEAD)" || exit 1
+remote_main="$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" || exit 1
+worktree_status="$(git status --porcelain)" || exit 1
+[[ "$local_head" == "$main_sha" && "$remote_main" == "$main_sha" &&
+   -z "$worktree_status" ]] || exit 1
 
 kubectl_bin="$(command -v kubectl)"
 timeout_bin="$(command -v timeout)"
@@ -168,6 +170,12 @@ same_resource() {
   [[ "$observed" == "$expected" ]] || exit 1
 }
 
+absent() {
+  local kind=$1 output="$work/absent-${1}.json"
+  kubectl -n automation get "$kind" "$name" -o json --ignore-not-found >"$output" || return 1
+  [[ ! -s "$output" ]]
+}
+
 if [[ -s "$work/job.json" ]]; then
   if same_resource job "$work/job.json"; then
     # shortcut: run-scoped names have one writer; use API UID preconditions if concurrent recovery writers are added.
@@ -177,11 +185,11 @@ if [[ -s "$work/job.json" ]]; then
       delete_job >/dev/null
     fi
   fi
-  [[ -z "$(kubectl -n automation get job "$name" -o json --ignore-not-found)" ]] || exit 1
+  absent job || exit 1
 fi
 fenced absent
 if [[ -s "$work/policy.json" ]]; then
-  [[ -z "$(kubectl -n automation get job "$name" -o json --ignore-not-found)" ]] || exit 1
+  absent job || exit 1
   fenced absent
   if same_resource networkpolicy "$work/policy.json"; then
     if jq -e '.metadata.deletionTimestamp != null' "$work/current.json" >/dev/null; then
@@ -191,9 +199,8 @@ if [[ -s "$work/policy.json" ]]; then
       delete_policy >/dev/null
     fi
   fi
-  [[ -z "$(kubectl -n automation get networkpolicy "$name" -o json --ignore-not-found)" ]] || exit 1
+  absent networkpolicy || exit 1
 fi
-[[ -z "$(kubectl -n automation get job "$name" -o json --ignore-not-found)" &&
-   -z "$(kubectl -n automation get networkpolicy "$name" -o json --ignore-not-found)" ]] || exit 1
+absent job && absent networkpolicy || exit 1
 fenced absent
 echo "Confirmed residual reader Job and deny-all policy absent for run ${run_id}/${attempt}; n8n remains fenced."

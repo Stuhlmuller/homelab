@@ -79,7 +79,8 @@ elif name == "git":
     if args == ["rev-parse", "HEAD"]:
         print(os.environ["TEST_SHA"])
     elif args == ["status", "--porcelain"]:
-        pass
+        if mode == "git-status-error":
+            raise SystemExit(1)
     else:
         raise SystemExit(1)
 elif name == "gh":
@@ -144,9 +145,13 @@ elif name == "kubectl":
             state["reader_active"] = False
         state_file.write_text(json.dumps(state))
     elif "get" in args and "job" in args:
+        if state["job"] is None and mode == "job-get-after-delete-error":
+            raise SystemExit(1)
         if state["job"] is not None:
             print(json.dumps(state["job"]))
     elif "get" in args and "networkpolicy" in args:
+        if state["policy"] is None and mode == "policy-get-after-delete-error":
+            raise SystemExit(1)
         if state["policy"] is not None:
             print(json.dumps(state["policy"]))
     else:
@@ -248,8 +253,23 @@ class ResidualCleanupTests(unittest.TestCase):
                 self.assertIsNotNone(final["policy"])
                 self.assertGreaterEqual(len(deletes), 1)
 
+    def test_failed_post_delete_job_get_keeps_policy_and_withholds_receipt(self):
+        result, final, deletes = self.run_case(mode="job-get-after-delete-error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIsNone(final["job"])
+        self.assertIsNotNone(final["policy"])
+        self.assertNotIn("Confirmed residual", result.stdout)
+        self.assertEqual([args[args.index("delete") + 1] for args in deletes], ["job"])
+
+    def test_failed_post_delete_policy_get_withholds_receipt(self):
+        result, final, deletes = self.run_case(mode="policy-get-after-delete-error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIsNone(final["policy"])
+        self.assertNotIn("Confirmed residual", result.stdout)
+        self.assertEqual([args[args.index("delete") + 1] for args in deletes], ["job", "networkpolicy"])
+
     def test_stale_main_and_unfenced_writer_never_delete(self):
-        for mode in ("stale-main", "fence-unsynced", "writer-active"):
+        for mode in ("stale-main", "git-status-error", "fence-unsynced", "writer-active"):
             with self.subTest(mode=mode):
                 result, final, deletes = self.run_case(mode=mode)
                 self.assertNotEqual(result.returncode, 0)
