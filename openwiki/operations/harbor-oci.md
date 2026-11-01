@@ -708,10 +708,12 @@ records successful Linux audit CI at `279092e6`, with exact image/config identit
 `06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
 The available-fix gate passed; CVE clearance remains explicitly false.
 
-On 2026-10-29, [main validation](https://github.com/Stuhlmuller/homelab/actions/runs/40828576192)
+**Open finding (2026-11-01):** On 2026-10-29,
+[main validation](https://github.com/Stuhlmuller/homelab/actions/runs/40828576192)
 began failing `harbor-core-compatibility` with `validation:remediation`; the
 [2026-10-30 main run](https://github.com/Stuhlmuller/homelab/actions/runs/40999168427)
-failed the same check. The [last passing main run](https://github.com/Stuhlmuller/homelab/actions/runs/40616761747)
+failed the same check. The [2026-11-01 main run at `7114271`](https://github.com/Stuhlmuller/homelab/actions/runs/41318122367)
+also failed with the same sanitized category. The [last passing main run](https://github.com/Stuhlmuller/homelab/actions/runs/40616761747)
 on October 28 retained five unresolved matches. A
 [commit comparison](https://github.com/Stuhlmuller/homelab/compare/fbc8a96a12d26eabf85fb88b8fb7d08149b6563e...eccdfbc16d423c424349d6baa2a25344522cb749)
 shows no changes to the core recipe, scan/check scripts, Nix lock, or validation
