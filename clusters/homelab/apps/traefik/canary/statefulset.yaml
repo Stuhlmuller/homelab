@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: traefik-sidecar-canary
+  namespace: traefik
+spec:
+  replicas: 1
+  serviceName: traefik-sidecar-canary
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik-sidecar-canary
+      app.kubernetes.io/instance: traefik-sidecar-canary
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: traefik-sidecar-canary
+        app.kubernetes.io/instance: traefik-sidecar-canary
+    spec:
+      serviceAccountName: traefik-sidecar-canary
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: traefik
+          image: docker.io/library/traefik:v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
+          args:
+            - --global.checknewversion=false
+            - --global.sendanonymoususage=false
+            - --providers.file.directory=/etc/traefik/dynamic
+            - --providers.file.watch=true
+            - --entrypoints.web.address=127.0.0.1:8000
+            - --entrypoints.web.http.redirections.entrypoint.to=:443
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
+            - --entrypoints.websecure.address=127.0.0.1:8443
+            - --entrypoints.websecure.transport.respondingtimeouts.readtimeout=0
+            - --entrypoints.funnel.address=127.0.0.1:8080
+            - --entrypoints.funnel.forwardedheaders.trustedips=10.244.0.0/16
+            - --entrypoints.registry.address=127.0.0.1:9443
+            - --entrypoints.health.address=:9000
+            - --ping=true
+            - --ping.entrypoint=health
+            - --log.format=json
+            - --accesslog=true
+            - --accesslog.format=json
+            - --accesslog.fields.headers.defaultmode=drop
+          ports:
+            - name: health
+              containerPort: 9000
+              protocol: TCP
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          readinessProbe:
+            httpGet: {path: /ping, port: health}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /ping, port: health}
+            periodSeconds: 30
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: dynamic, mountPath: /etc/traefik/dynamic, readOnly: true}
+            - {name: traefik-tmp, mountPath: /tmp}
+        - name: tailscale
+          image: harbor.stinkyboi.com/mirror/docker.io/tailscale/tailscale:v1.102.3@sha256:8c42c4574ab066384fcb72f69e086a2ff1dd3652eb6f56856cee34bcf0d2f680
+          command: [/usr/local/bin/tailscaled]
+          args:
+            - --tun=userspace-networking
+            - --state=kube:traefik-sidecar-canary-state
+            - --statedir=/var/lib/tailscale
+            - --socket=/run/tailscale/tailscaled.sock
+          lifecycle:
+            postStart:
+              exec:
+                command: [/bin/sh, /etc/tailscale/activate.sh]
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - 'tailscale --socket=/run/tailscale/tailscaled.sock status --json | grep -Eq ''"BackendState"[[:space:]]*:[[:space:]]*"Running"'''
+            periodSeconds: 10
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: tailscale-api, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+            - {name: tailscale-auth, mountPath: /var/run/secrets/tailscale-auth, readOnly: true}
+            - {name: tailscale-start, mountPath: /etc/tailscale, readOnly: true}
+            - {name: tailscale-run, mountPath: /run/tailscale}
+            - {name: tailscale-var, mountPath: /var/lib/tailscale}
+      volumes:
+        - name: dynamic
+          projected:
+            defaultMode: 0444
+            sources:
+              - configMap: {name: traefik-sidecar-canary-routes}
+              - secret: {name: traefik-tls}
+        - name: traefik-tmp
+          emptyDir: {}
+        - name: tailscale-api
+          projected:
+            defaultMode: 0444
+            sources:
+              - serviceAccountToken: {path: token, expirationSeconds: 3600}
+              - configMap: {name: kube-root-ca.crt, items: [{key: ca.crt, path: ca.crt}]}
+              - downwardAPI: {items: [{path: namespace, fieldRef: {fieldPath: metadata.namespace}}]}
+        - name: tailscale-auth
+          secret:
+            secretName: traefik-sidecar-canary-auth
+            defaultMode: 0440
+        - name: tailscale-start
+          configMap:
+            name: traefik-sidecar-canary-start
+            defaultMode: 0555
+        - name: tailscale-run
+          emptyDir: {}
+        - name: tailscale-var
+          emptyDir: {}

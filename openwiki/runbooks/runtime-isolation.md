@@ -150,9 +150,9 @@ margin. `zimaboard-2` has four unrelated Pods, including single-replica
 requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
 
-The [private-ingress candidate](../../docs/runtime-isolation.md#private-ingress-on-the-current-worker-candidate-2026-11-01)
-keeps Traefik on its current `zimaboard-1` worker and stages a second Traefik
-controller with a userspace Tailscale sidecar, leaving the old controller and
+The [private-ingress candidate](../../docs/runtime-isolation.md#private-ingress-on-an-existing-worker-candidate-2026-11-01)
+keeps live Traefik on `zimaboard-1` and stages a second Traefik controller on
+`acer` with a userspace Tailscale sidecar, leaving the old controller and
 LoadBalancer serving during tests. Its Pod must match no existing private,
 Funnel, or registry Service selector. Private HTTP/HTTPS listeners would bind
 only to Pod loopback, with raw TCP Serve exposing them to the tailnet while
@@ -171,13 +171,29 @@ peer loss; a static stale IP is unsafe. Preserve the old internal Service
 until the replacements work; `loadBalancerClass` cannot be changed in place,
 so create a distinct internal Service before retiring the old one. Prove
 these contracts, persistent sidecar
-identity, Tailnet Lock, same-node/remote-node
+identity, a canary-only tailnet tag, Tailnet Lock, same-node/remote-node
 Pod-IP HTTP/HTTPS and tailnet-IP negative probes, native clients, and
 [legacy-route retirement](../../scripts/ci/legacy-ingress-retirement-check.py)
 before cutover, while preserving named Octelium control paths. The 18 legacy
 app routes still have 54 source entries. The
 existing-node evacuation below remains a separate general `NetworkPolicy`
 canary candidate, not a prerequisite for the sidecar test.
+
+The [dormant sidecar source](../../clusters/homelab/apps/traefik/canary/README.md)
+renders independently and is absent from the live Traefik Argo source. It has
+distinct Pod and Service labels, route ConfigMap, and ServiceAccount. Its
+first raw TCP Serve exposes only tailnet 443. The current broad grant reaches
+every signed device regardless of tag; narrow it and prove production clients
+cannot reach this peer before signing. Port 80 needs separate review. The
+Tailscale container alone receives its projected API token and file-backed auth
+key. Tailscale creates its mutable state Secret; Argo does not reconcile it.
+Backend Istio identity, Tailnet Lock signing, capacity, and negative-path probes
+remain activation gates. The November 1
+read-only capacity recheck found only about 580 MiB sampled peak headroom on
+`zimaboard-1`, below the canary's 768 MiB memory limit. `acer` had about
+3,164 MiB before that limit and about 2,396 MiB after it; remeasure before
+registration, preserve its control-plane reserve, and prove image pull and
+admission there.
 
 The November 1 existing-node recheck found `zimaboard-2` at 1,339 MiB used
 against 1,308 MiB allocatable before the 576 MiB enforcer/client limit budget

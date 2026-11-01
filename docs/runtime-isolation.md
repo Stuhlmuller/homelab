@@ -167,14 +167,21 @@ still has unqualified source-bound generated policies and broad egress findings.
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
-### Private ingress on the current worker (candidate, 2026-11-01)
+### Private ingress on an existing worker (candidate, 2026-11-01)
 
 Traefik is currently Ready on `zimaboard-1`; its operator-managed
-`traefik-private` Tailscale proxy is a separate Pod on that node. A read-only
-November 1 snapshot found 6,612 MiB requested against 7,282 MiB allocatable
-and 6,189 MiB actual use. This is room for investigation, not a sidecar
-capacity receipt: remeasure limits, image-pull space, peak use, and rollout
-surge before changing placement.
+`traefik-private` Tailscale proxy is a separate Pod on that node. The November 1
+read-only recheck found 6,612 MiB requested against 7,282 MiB allocatable on
+that worker. A sampled 24-hour Pod peak plus current host overhead leaves only
+about 580 MiB, below the canary's 768 MiB memory limit; the live controller
+also allows one surge Pod. Stage the separate canary on `acer` instead. It has
+13,390 MiB requested against 15,261 MiB allocatable; the same sampled estimate
+leaves about 3,164 MiB before the canary limit and 2,396 MiB after it. Both
+nodes were Ready, untainted, and pressure-free; `acer` has about 408 GB of
+node filesystem space but must pull both canary images. `acer` is a control-plane
+node, so preserve its reserve and check concurrent control-plane demand. These
+samples are not an activation receipt: remeasure limits, image pulls, peak use,
+and concurrent surges immediately before registration.
 
 The smaller private-listener design is a [userspace Tailscale sidecar](https://tailscale.com/docs/solutions/connect-kubernetes-pods-to-tailnet-using-sidecar)
 in the same Traefik Pod. Bind only the private `web` and `websecure` entrypoints
@@ -186,16 +193,25 @@ reach another Pod's loopback listener, so this boundary could survive a
 kube-router crash or cold start without relocating Traefik or draining
 `zimaboard-0`. It is a proposed architecture, not an enforced boundary yet.
 
+The dormant [canary source](../clusters/homelab/apps/traefik/canary/README.md)
+implements only TCP 443 Serve for the first test. The current broad tailnet
+grant reaches every signed device regardless of tag, so narrow it and prove
+production clients cannot reach the canary before signing. Its route ConfigMap,
+ServiceAccount, and headless health Service are outside the live Argo source.
+Activation requires a dedicated auth key, exact Tailnet Lock signing, backend
+Istio rules, capacity proof, and direct-path negative probes.
+
 Stage it in reviewed source before cutting over:
 
-1. Stage a second one-replica Traefik controller on `zimaboard-1` with distinct
+1. Stage a second one-replica Traefik controller on `acer` with distinct
    labels, route ConfigMap, and Tailscale sidecar. Prove no existing private,
    Funnel, or registry Service selector matches the new Pod; keep the current
-   controller and operator LoadBalancer intact. Use a distinct tailnet hostname,
-   pinned images, bounded resources, durable per-Pod Tailscale state, narrow Secret
-   RBAC, and a repository-owned authentication contract. Gate deployment on
-   measured two-controller capacity. Keep Tailnet Lock enabled and extend the
-   fixed signer to verify and sign only that exact identity. Prove raw TCP,
+   controller and operator LoadBalancer intact. Use a distinct tailnet hostname
+   and canary-only tag, pinned images, bounded resources, durable per-Pod
+   Tailscale state, narrow Secret RBAC, and a repository-owned authentication
+   contract. Gate deployment on measured two-controller capacity. Keep Tailnet
+   Lock enabled and extend the fixed signer to verify and sign only that exact
+   identity. Prove raw TCP,
    original TLS certificate, HTTPS, native gRPC, ACLs, and both containers'
    readiness on the test peer. A Tailscale health response proves an IP, not a
    signed peer or the intended Serve configuration; check both explicitly.
