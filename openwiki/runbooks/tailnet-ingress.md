@@ -204,6 +204,21 @@ these selectors. Recheck live Service and EndpointSlice routes and Pod labels,
 then prove allowed paths and denied peers on the isolated canary before
 enforcement; Mastodon's app Pods were absent at source review.
 
+### Legacy app ingress bypass
+
+The old Istio and Octelium ingress ClusterIPs remain callable from unrelated
+Pods. An audit probe from `media/radarr` reached Grafana through the Istio
+gateway, so private Traefik DNS alone does not remove the old app path. The
+[retirement source audit](../../scripts/ci/legacy-ingress-retirement-check.py)
+tracks 17 Istio-backed public WEB Services and direct Bazarr against their
+Traefik replacements. Its normal mode reports the retained catalog,
+Cloudflared, VirtualService, and broad Gateway hosts; `--retired` must pass
+after their reviewed removal. Confirm denial from an unrelated Pod and normal
+access from a mesh client, since source checks do not prove live enforcement.
+The [cutover runbook](../../clusters/homelab/apps/traefik/CUTOVER.md#legacy-application-bypass)
+records the exact positive and negative probes. Mastodon needs separate private
+routing and a public federation path boundary before its old route can retire.
+
 ## Tailnet Lock
 
 Keep Tailnet Lock enabled. A new operator proxy can be Ready and authorized yet
