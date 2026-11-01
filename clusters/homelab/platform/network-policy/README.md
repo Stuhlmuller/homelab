@@ -46,6 +46,10 @@ list again after labeling. Each Node patch tests
 `resourceVersion` and UID and touches only the owned taint or label. A
 taint-only interrupted attempt can retry with a fresh matching placement
 receipt; a labeled Node needs direct review before another admission attempt.
+Admission reads a raw, unpaginated `PodList` with a resource version so an
+incomplete assigned-Pod inventory cannot authorize labeling. It rejects any
+`NoExecute` taint: the planned temporary evacuation taint needs a separately
+reviewed protected handoff to `NoSchedule` before this stage can admit it.
 
 For a read-only candidate snapshot before placement review, run
 `python3 -I scripts/network-policy-candidate-report.py --node zimaboard-0 > /private/tmp/network-policy-candidate.json`.

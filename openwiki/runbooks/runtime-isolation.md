@@ -317,7 +317,10 @@ cleanup Pods, and fixture traffic are absent, then adds the dedicated
 `NoSchedule` taint before the selector label. A complete cluster-wide label
 inventory must exclude every other selected Node before mutation and just
 before labeling; a conflicting post-patch read removes its own label and keeps
-the taint. After a qualifying traffic probe, exact reviewed GitOps commits
+the taint. Admission requires a raw, unpaginated assigned-Pod `PodList` with a
+resource version and rejects any `NoExecute` taint. The temporary evacuation
+handoff is not implemented; it cannot be treated as an admitted canary. After
+a qualifying traffic probe, exact reviewed GitOps commits
 prune the fixtures and then the enforcer. Unrelated commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
