@@ -149,6 +149,18 @@ margin. `zimaboard-2` has four unrelated Pods, including single-replica
 `Recreate` Langfuse PostgreSQL; moving them could leave only 428 MiB by
 requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
+
+The November 1 existing-node recheck found `zimaboard-2` at 1,339 MiB used
+against 1,308 MiB allocatable before the 576 MiB enforcer/client limit budget
+and 128 MiB reserve. It cannot host the staged canary. `zimaboard-0` is only
+a conditional candidate: 64 non-system Pods remain, including 55 Octelium
+Pods, and Deluge, Radarr, Sonarr, and Bazarr config PVs are locally pinned.
+Its 1,430 MiB observed free memory leaves about 214 MiB after one enforcer,
+client, Traefik Pod, and reserve; the current Traefik surge exceeds that
+headroom. [The runbook](../../docs/runtime-isolation.md#existing-node-decision-2026-11-01)
+records the relocation, backup, cold-boot/restart fail-closed, and legacy
+ingress-bypass gates. Draft PRs #1583 and #1584 target `zimaboard-2`; revise
+or retire them before another node is chosen. No worker is admitted.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only

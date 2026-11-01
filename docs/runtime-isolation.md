@@ -167,6 +167,43 @@ still has unqualified source-bound generated policies and broad egress findings.
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
+### Existing-node decision (2026-11-01)
+
+No spare worker is available. A read-only snapshot found `zimaboard-2` using
+1,339 MiB against 1,308 MiB allocatable, before the staged 576 MiB
+enforcer/client limit budget and 128 MiB reserve. It cannot pass admission.
+Draft [#1584](https://github.com/Stuhlmuller/homelab/pull/1584) moves only
+`zimaboard-2` workloads to `acer`/`zimaboard-1`; draft
+[#1583](https://github.com/Stuhlmuller/homelab/pull/1583) restarts Langfuse
+PostgreSQL on `acer`. Revise or retire both before a different-node rollout;
+do not incur that database outage solely to clear `zimaboard-2`. Any later
+database move still requires a fresh verified off-NAS checkpoint.
+
+`zimaboard-0` is a conditional candidate, not an admitted canary. It has
+7,282 MiB allocatable, 5,852 MiB used, and 8.1 GiB node filesystem free.
+One enforcer, client, Traefik Pod, and 128 MiB reserve consume 1,216 MiB at
+their limits, leaving only 214 MiB at this snapshot. Traefik's current
+one-Pod surge raises that budget to 1,728 MiB, 298 MiB beyond free memory.
+The node also hosts 64 non-system Pods, including 55 Octelium Pods. Deluge,
+Radarr, Sonarr, and Bazarr have config volumes pinned to local `hostPath` PVs;
+Prometheus uses an NFS claim. The non-system Pods request about 3,861 MiB,
+while `acer` and `zimaboard-1` together have about 3,052 MiB unrequested.
+A taint leaves existing Pods in place. Source-owned relocation or an explicitly
+planned service outage, storage recovery proof, and fresh capacity/Pod
+inventories are prerequisites to isolating this worker.
+
+Only after an existing worker is empty of unrelated Pods, retarget and validate
+the canary source, then run the protected baseline, admission, fixture-first
+pull, enforcement, and traffic gates. Before placing Traefik there, prove a
+persistent fail-closed boundary through cold boot, image-cache miss, and
+enforcer stop/restart: [kube-router v2.11.1](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/npc_iptables.go)
+can report healthy before async policy sync and clear its tail chain during
+restart. Use `surge: 0` and
+`unavailable: 1` for any single-node Traefik move, with a documented ingress
+outage. The legacy Istio/Octelium ClusterIP bypass must be retired after
+caller acceptance and negative probes. Keep enforcement disabled if any
+capacity, identity, policy, lifecycle, or bypass gate fails.
+
 The three Cordium Genesis policies have a [read-only expected-spec fixture](../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 for `cordium/ws-main`, `octelium/cordium-nocturne`, and
 `octelium/cordium-rscserver`. Their complete specs match the live read-only
