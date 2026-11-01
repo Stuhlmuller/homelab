@@ -33,6 +33,7 @@ DEPLOY_UID = "33333333-3333-4333-8333-333333333333"
 POD_UID = "44444444-4444-4444-8444-444444444444"
 SHA = "a" * 40
 BOOT_ID = "55555555-5555-4555-8555-555555555555"
+CONTAINER_ID = "a" * 64
 
 
 def archive_bytes(include_database=True):
@@ -111,7 +112,9 @@ def cluster_fixture():
                                                             "readOnly": True}]}],
                           "volumes": [{"name": "source", "persistentVolumeClaim": {
                               "claimName": CAPTURE.CLAIM, "readOnly": True}}]},
-                 "status": {"phase": "Running", "containerStatuses": [{"ready": True}]}}
+                 "status": {"phase": "Running", "containerStatuses": [{
+                     "name": "inspection", "ready": True,
+                     "containerID": "containerd://" + CONTAINER_ID}]}}
     return deployment, pvc, pv, [inspector]
 
 
@@ -219,7 +222,8 @@ class RscstoreCaptureTest(unittest.TestCase):
                       "renewTime": datetime.now(timezone.utc).isoformat()}}
                       for name in CAPTURE.NODES]}
         state = {"nodes": nodes, "leases": leases, "views": {},
-                 "talos_writer": False, "talos_old_reader": False}
+                 "talos_writer": False, "talos_old_reader": False,
+                 "talos_inspector": "current"}
         for name in CAPTURE.NODES:
             state["views"][name] = {"pods": {"kind": "PodList", "items": [inspector]
                                                if name == "zimaboard-1" else []},
@@ -240,11 +244,21 @@ class RscstoreCaptureTest(unittest.TestCase):
             address = command[command.index("--nodes") + 1]
             header = "NODE NAMESPACE ID IMAGE PID STATUS\n"
             row = f"{address} k8s.io kube-system/example pause:3.10 123 SANDBOX_READY\n"
-            if address == CAPTURE.NODES["zimaboard-1"]:
+            if address == CAPTURE.NODES["zimaboard-1"] and state["talos_inspector"] in ("current", "duplicate", "duplicate-current"):
                 row += (f"{address} k8s.io octelium/{CAPTURE.INSPECTOR} "
                         "pause:3.10 456 SANDBOX_READY\n")
-                row += (f"{address} k8s.io └─ octelium/{CAPTURE.INSPECTOR}:inspection:abc123 "
+                row += (f"{address} k8s.io └─ octelium/{CAPTURE.INSPECTOR}:inspection:{CONTAINER_ID[:12]} "
                         "busybox:1.38.0 457 CONTAINER_RUNNING\n")
+            if address == CAPTURE.NODES["zimaboard-1"] and state["talos_inspector"] == "duplicate-current":
+                row += (f"{address} k8s.io octelium/{CAPTURE.INSPECTOR} "
+                        "pause:3.10 458 SANDBOX_READY\n")
+                row += (f"{address} k8s.io └─ octelium/{CAPTURE.INSPECTOR}:inspection:{CONTAINER_ID[:12]} "
+                        "busybox:1.38.0 459 CONTAINER_RUNNING\n")
+            if address == CAPTURE.NODES["zimaboard-1"] and state["talos_inspector"] in ("old-only", "duplicate"):
+                row += (f"{address} k8s.io octelium/{CAPTURE.INSPECTOR} "
+                        "pause:3.10 458 SANDBOX_READY\n")
+                row += (f"{address} k8s.io └─ octelium/{CAPTURE.INSPECTOR}:inspection:bbbbbbbbbbbb "
+                        "busybox:1.38.0 459 CONTAINER_RUNNING\n")
             if state["talos_writer"]:
                 row += (f"{address} k8s.io octelium/octeliumee-rscstore-old "
                         "store:0.22.0 1 CONTAINER_RUNNING\n")
@@ -291,6 +305,26 @@ class RscstoreCaptureTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Talos CRI retains"):
                 guard()
             state["talos_writer"] = False
+            for mode in ("old-only", "duplicate", "duplicate-current", "missing"):
+                state["talos_inspector"] = mode
+                with self.subTest(talos_inspector=mode), \
+                        self.assertRaisesRegex(ValueError, "Talos CRI inspector"):
+                    guard()
+            state["talos_inspector"] = "current"
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = []
+            with self.assertRaisesRegex(ValueError, "kubelet inspector Pod is missing"):
+                guard()
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = [inspector]
+            stale = copy.deepcopy(inspector)
+            stale["status"]["containerStatuses"][0]["containerID"] = "containerd://" + "b" * 64
+            state["views"]["zimaboard-1"]["pods"]["items"] = [stale]
+            with self.assertRaisesRegex(ValueError, "kubelet inspector container identity differs"):
+                guard()
+            state["views"]["zimaboard-1"]["pods"]["items"] = [inspector]
+            inspector["status"]["containerStatuses"][0]["containerID"] = "containerd://stale"
+            with self.assertRaisesRegex(ValueError, "current inspector container identity"):
+                guard()
+            inspector["status"]["containerStatuses"][0]["containerID"] = "containerd://" + CONTAINER_ID
             state["leases"]["items"][0]["spec"]["renewTime"] = "2020-01-01T00:00:00Z"
             with self.assertRaisesRegex(ValueError, "lease is stale"):
                 guard()

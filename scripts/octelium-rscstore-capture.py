@@ -277,6 +277,18 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
     api_by_name = {pod["metadata"]["name"]: pod for pod in pods}
     require(len(api_pods) == len(pods) == len(api_by_name),
             "API Pod identities are ambiguous")
+    inspector = api_by_name.get(INSPECTOR)
+    statuses = inspector.get("status", {}).get("containerStatuses", []) if inspector else []
+    require(inspector and inspector["metadata"]["uid"] == inspector_uid
+            and isinstance(statuses, list) and len(statuses) == 1
+            and isinstance(statuses[0], dict)
+            and statuses[0].get("name") == "inspection"
+            and isinstance(statuses[0].get("containerID"), str)
+            and re.fullmatch(r"containerd://[0-9a-f]{64}", statuses[0]["containerID"]),
+            "current inspector container identity is unavailable")
+    inspector_container_id = statuses[0]["containerID"]
+    inspector_cri_id = (f"{NAMESPACE}/{INSPECTOR}:inspection:"
+                        f"{inspector_container_id.removeprefix('containerd://')[:12]}")
     boot_ids = {}
     for node in nodes["items"]:
         name = node["metadata"]["name"]
@@ -294,6 +306,7 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                                f"/api/v1/nodes/{name}/proxy/{path}")
             require(view.get("kind") == "PodList" and isinstance(view.get("items"), list),
                     "kubelet Pod inventory is incomplete")
+            inspector_count = 0
             for pod in view["items"]:
                 metadata = pod["metadata"]
                 if metadata.get("namespace") != NAMESPACE:
@@ -301,6 +314,14 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                 identity = (metadata.get("name"), metadata.get("uid"))
                 require(identity in api_pods and not identity[0].startswith(DEPLOYMENT + "-"),
                         "kubelet retains a writer or orphan Octelium Pod")
+                if identity == (INSPECTOR, inspector_uid):
+                    inspector_count += 1
+                    require(name == inspector_node, "inspector runs on another node")
+                    if not running:
+                        kubelet_statuses = pod.get("status", {}).get("containerStatuses", [])
+                        require(len(kubelet_statuses) == 1
+                                and kubelet_statuses[0].get("containerID") == inspector_container_id,
+                                "kubelet inspector container identity differs")
                 api_pod = api_pods[identity]
                 api_mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                        == CLAIM for volume in api_pod["spec"].get("volumes", []))
@@ -313,6 +334,8 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                     require(not mounts_claim or (identity == (INSPECTOR, inspector_uid)
                                                  and name == inspector_node),
                             "kubelet retains another PVC mount user")
+            require(inspector_count == (1 if name == inspector_node else 0),
+                    "kubelet inspector Pod is missing or duplicated")
         inventory = output("talosctl", "--talosconfig", str(talosconfig),
                            "--endpoints", NODES["acer"], "--nodes", address,
                            "containers", "-k")
@@ -320,6 +343,7 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
         require(lines and lines[0].split() == ["NODE", "NAMESPACE", "ID", "IMAGE",
                                                 "PID", "STATUS"] and len(lines) > 1,
                 "Talos CRI inventory is incomplete")
+        inspector_sandboxes = inspector_containers = 0
         for line in lines[1:]:
             columns = line.split(maxsplit=2)
             require(len(columns) == 3 and columns[:2] == [address, "k8s.io"]
@@ -334,6 +358,18 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                 require(pod_name in api_by_name
                         and not pod_name.startswith(DEPLOYMENT + "-"),
                         "Talos CRI retains a resource-store or orphan Octelium Pod")
+                if pod_name == INSPECTOR:
+                    require(name == inspector_node, "Talos CRI inspector runs on another node")
+                    if fields[0] in ("└─", "├─"):
+                        require(container_id == inspector_cri_id
+                                and fields[-1] == "CONTAINER_RUNNING",
+                                "Talos CRI inspector container identity differs")
+                        inspector_containers += 1
+                    else:
+                        require(container_id == f"{NAMESPACE}/{INSPECTOR}"
+                                and fields[-1] == "SANDBOX_READY",
+                                "Talos CRI inspector sandbox differs")
+                        inspector_sandboxes += 1
                 pod = api_by_name[pod_name]
                 mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                    == CLAIM for volume in pod["spec"].get("volumes", []))
@@ -341,6 +377,8 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                                              and pod["metadata"]["uid"] == inspector_uid
                                              and name == inspector_node),
                         "Talos CRI retains another PVC mount user")
+        require(inspector_sandboxes == inspector_containers == (1 if name == inspector_node else 0),
+                "Talos CRI inspector sandbox or container is missing or duplicated")
     return dict(sorted(boot_ids.items()))
 
 

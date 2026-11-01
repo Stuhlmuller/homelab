@@ -90,7 +90,11 @@ each node's Talos Kubernetes container inventory. Any stale PVC mount,
 orphaned Octelium Pod, resource-store container or sandbox, unreachable node,
 or changed node boot ID fails closed. The inspector must run on the single node
 with the declared control-plane selector label, currently `zimaboard-1`; the
-receipt records all node boot IDs.
+receipt records all node boot IDs. Its exact UID must appear in both kubelet
+views; the kubelet container ID must match the API, and Talos must show exactly
+one current inspector sandbox and running container whose 12-hex ID matches
+the API container ID prefix. Old or duplicate
+same-name runtime rows block capture.
 This catches a former writer that disappeared from the API while its node
 kept running. It streams a tar of
 the entire PVC root three times: before, archive, after. All three byte counts

@@ -1147,7 +1147,9 @@ kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.c
 `scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
 the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
 Talos container inventories, fresh kubelet leases, stable boot IDs, zero other
-PVC mounts, the read-only inspector, three matching archive hashes, complete tar members, publisher
+PVC mounts, the read-only inspector's exact kubelet UID/full container ID and
+single Talos sandbox/container matching its 12-hex ID prefix, three matching
+archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must still show
 one `octeliumee-rscstore` replica and no inspector; the candidate inspector
