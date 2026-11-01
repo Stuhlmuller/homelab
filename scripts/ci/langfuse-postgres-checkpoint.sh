@@ -167,11 +167,7 @@ database_bytes="$(kubectl -n langfuse exec "$pod" -c postgres -- \
   psql -XAt -w -U langfuse -d langfuse -c 'SELECT pg_database_size(current_database())')"
 [[ "$database_bytes" =~ ^[1-9][0-9]*$ && "$database_bytes" -lt 1073741824 ]] || exit 1
 
-if [[ "$mode" == local ]]; then
-  work="$(mktemp -d /private/tmp/langfuse-checkpoint.XXXXXXXX)"
-else
-  work="$(mktemp -d)"
-fi
+work="$(mktemp -d)"
 container=
 volume=
 cleanup() {
