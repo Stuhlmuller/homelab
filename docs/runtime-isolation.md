@@ -432,6 +432,43 @@ implemented, so these stages are a design, not authority to evacuate a node.
    placement fence proves this race closed; do not infer that the taint patch,
    admission probes, or PodList alone provide that guarantee.
 
+   A candidate fence uses this cluster's **single** `acer` API server and etcd
+   member. Verify no second API server, etcd member, or direct etcd writer
+   exists. With the fail-closed policy covering
+   Pod `CREATE`/`UPDATE`, both Binding endpoints, and direct `spec.nodeName`
+   placement, keep `NoExecute` in place and the canary label absent. Verify
+   negative probes for all four request forms and record the policy and
+   binding UIDs and specs. After a verified off-node etcd snapshot, reboot
+   `acer` through a reviewed repository-owned operation. Verify a new boot
+   ID, new API server and etcd processes, the same etcd member ID and retained
+   data directory without restore or wipe, and a revision at least as high as
+   the pre-reboot receipt. Re-read the exact Node UID and `NoExecute` taint,
+   and the unchanged guard UIDs/specs; repeat all four negative probes. The
+   Kubernetes v1.34.11
+   [admission plugin](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/plugin.go#L194-L213)
+   denies requests until its [policy and binding caches](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/generic/policy_source.go#L146-L221)
+   sync. The reboot interrupts the sole Kubernetes API and may restart
+   dependent workloads; qualify that outage before using this route.
+
+   A reboot and PodList alone are insufficient: the single-member
+   [Raft read fast path](https://github.com/etcd-io/raft/blob/v3.6.0/raft.go#L1346-L1362)
+   does not itself prove older persisted proposals are applied. After reboot,
+   a reviewed
+   script must make a real resource-version-guarded Node annotation write with
+   a unique maintenance run ID while `NoExecute` remains. Require the write's
+   successful response and changed resource version, then a complete
+   [most-recent PodList](https://v1-34.docs.kubernetes.io/docs/reference/using-api/api-concepts/#semantics-for-get-and-list)
+   with resource version unset and a node runtime inventory. A successful
+   [later API write](https://etcd.io/docs/v3.6/learning/api_guarantees/)
+   applies any old proposal retained earlier in the same Raft log first;
+   discarded proposals cannot later appear. Abort if any
+   foreign Pod or container remains, the guard is missing, the write fails,
+   or topology differs. Only then may the protected atomic taint handoff run,
+   followed by another complete PodList, runtime check, and guard readback
+   before the label. Keep the guard unchanged through canary release.
+   This fence is **not implemented or live-validated**; keep activation blocked
+   until its source, tests, backup, outage, and recovery gates are reviewed.
+
    A temporary distinct Node name is also not an admitted fallback. The
    kubelet's [`system:node:<name>` identity](https://kubernetes.io/docs/reference/access-authn-authz/node/)
    must match the new name, and no validated Talos v1.11.3 no-wipe credential,

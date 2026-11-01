@@ -273,6 +273,12 @@ The [runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existin
 requires a reviewed placement fence before activation. A temporary Node rename
 has no validated Talos no-wipe credential and retirement path, and the four
 media `hostPath` PVs remain pinned to the old hostname; it is not a fallback.
+A candidate fence reboots the sole `acer` control plane under the fail-closed
+guard, then requires a successful post-reboot Kubernetes API Node-annotation
+barrier write before a complete PodList and runtime inventory. Reboot plus
+PodList alone cannot order older
+persisted writes. This source-owned operation and its backup, outage, and
+live checks are not implemented; activation remains blocked.
 
 [The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
 checks complete Service, Pod, and EndpointSlice lists against the 25 emergency

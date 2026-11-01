@@ -246,6 +246,13 @@ the kubelet needs a matching Node credential, no reviewed Talos no-wipe rejoin
 and old-Node retirement path exists, and four media `hostPath` PVs are pinned
 to its current hostname. The canary remains blocked on a proven placement
 fence for older Binding requests.
+The single `acer` control plane permits a candidate full-reboot fence while a
+fail-closed placement guard and `NoExecute` remain active. A successful
+post-reboot Kubernetes API Node-annotation barrier write must precede a
+complete Pod and runtime inventory;
+reboot and PodList alone do not order older persisted writes. This path still
+needs a reviewed source-owned operation, tested guard, etcd backup, outage
+acceptance, and live proof before activation.
 
 The durable recovery requirement is a dedicated third dataplane-capable worker
 with enough real memory and pod capacity for that retained fleet plus startup
