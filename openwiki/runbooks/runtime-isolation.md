@@ -202,8 +202,9 @@ The [dormant sidecar source](../../clusters/homelab/apps/traefik/canary/README.m
 renders independently and is absent from the live Traefik Argo source. It has
 distinct Pod and Service labels, route ConfigMap, and ServiceAccount. Its
 first raw TCP Serve exposes only tailnet 443. The current broad grant reaches
-every signed device regardless of tag; narrow it and prove production clients
-cannot reach this peer before signing. Port 80 needs separate review. The
+every signed device regardless of tag; narrow it and prove the applied policy
+denies every canary client before using the `--canary-only` signer. Add a test
+client grant after signing. Port 80 needs separate review. The
 Tailscale container alone receives its projected API token and file-backed auth
 key. Tailscale creates its mutable state Secret; Argo does not reconcile it.
 Backend Istio identity, Tailnet Lock signing, capacity, and negative-path probes

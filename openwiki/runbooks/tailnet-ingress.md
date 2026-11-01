@@ -240,6 +240,21 @@ signs only the `homelab-dns` proxy. It never adds a signing authority or disable
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.
 
+The staged Traefik sidecar uses a separate `--canary-only` preview/execute path;
+the default five targets remain unchanged. Its preview binds the current ready
+StatefulSet and Pod on `acer` to the canary tag, pinned images, state Secret
+UID and public node key. It also checks the signer peer and raw TCP 443 Serve
+to Traefik's loopback TLS listener. Execute requires clean, verified current
+`main` and reads the applied policy with the private Terragrunt OAuth
+client. It compares the complete live JSON policy with committed source and
+rejects destinations outside the ten reviewed legacy selectors. The current
+wildcard grant therefore blocks signing. First apply the reviewed narrow policy
+through Terragrunt, sign while all canary clients are denied, then add a
+reviewed test-client grant and prove TLS/route traffic. The signer verifies the
+TLS Secret mount, not certificate bytes; live TLS acceptance remains required.
+Tailscale v1.102.3 emits the raw ServeConfig from `serve status --json`,
+including the TCP forward target.
+
 CI uses three provider-managed reusable ephemeral keys, signed on the trusted
 Mac and published by `tailscale-ci-configure.py`. Run its read-only preview and
 then `--execute`; it accepts no arbitrary key or GitHub target. Preserve its
