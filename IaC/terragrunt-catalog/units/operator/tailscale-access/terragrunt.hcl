@@ -10,9 +10,13 @@ generate "tailscale_provider" {
   path      = "tailscale-provider.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
+# Authenticate with the Tailscale TF provider using a Tailscale API key
+# tied to your actual Tailscale login (not an OAuth client).
+# Set TS_API_KEY from https://login.tailscale.com/admin/settings/keys
+# before running terragrunt locally for bootstrap/imports.
 provider "tailscale" {
-  oauth_client_id     = "file:${pathexpand("~/.config/homelab/tailscale/terragrunt-oauth-client-id")}"
-  oauth_client_secret = "file:${pathexpand("~/.config/homelab/tailscale/terragrunt-oauth-client-secret")}"
+  api_key = "${get_env("TS_API_KEY")}"
+  tailnet = var.tailscale_tailnet
 }
 EOF
 }
@@ -21,4 +25,6 @@ inputs = {
   # Generation 2 exists in encrypted state since 2026-10-14 UTC; rotate 60 days after provider creation.
   ci_key_generation = 2
   policy            = file("${dirname(find_in_parent_folders("root.hcl"))}/../scripts/config/tailscale-policy.json")
+  tailscale_oidc_client_id = ""
+  tailscale_tailnet         = "tail67beb.ts.net"
 }
