@@ -24,6 +24,8 @@ spec:
         app.kubernetes.io/name: litellm-postgres
         app.kubernetes.io/part-of: homelab-ai
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: acer
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
@@ -130,7 +132,7 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 128Mi
             limits:
               cpu: "1"
               memory: 1Gi

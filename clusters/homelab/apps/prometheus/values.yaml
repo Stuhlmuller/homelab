@@ -3,6 +3,8 @@ grafana:
 nodeExporter:
   enabled: false
 kube-state-metrics:
+  nodeSelector:
+    kubernetes.io/hostname: zimaboard-1
   image:
     registry: harbor.stinkyboi.com
     repository: mirror/registry.k8s.io/kube-state-metrics/kube-state-metrics
@@ -85,6 +87,11 @@ prometheus:
 alertmanager:
   enabled: true
   alertmanagerSpec:
+    nodeSelector:
+      kubernetes.io/hostname: acer
+    resources:
+      requests:
+        memory: 64Mi
     image:
       registry: harbor.stinkyboi.com
       repository: mirror/quay.io/prometheus/alertmanager
