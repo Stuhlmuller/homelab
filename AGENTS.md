@@ -1,5 +1,24 @@
 # Agent Harness
 
+## CI/CD owns operational policy
+
+Executable checks, GitHub branch/environment protections, admission policies,
+and workflow inputs are the source of truth for merge and deployment decisions.
+This applies repository-wide, including runbooks, app READMEs, OpenWiki, specs,
+and local skills. Prose describes behavior and troubleshooting; it does not add
+approval rounds, acceptance checklists, or deployment vetoes.
+
+Within the user's authorized task, run the declared pipeline and let its checks
+decide readiness. Do not ask for another approval because a document says
+"separately approved", "required", or "blocked". Report a failed check with its
+workflow/job link and fix the owning code. Do not bypass a failing executable
+check, protection, or access denial.
+
+When a documented condition has no executable enforcement, implement that check
+in the applicable CI/CD path with a negative test, then describe its behavior in
+the docs. Do not treat prose or a human assertion as proof that a check passed.
+The original user authorization and the host's permission controls still apply.
+
 This public repository is the control surface for a Kubernetes homelab running
 on Talos Linux. It has two goals:
 

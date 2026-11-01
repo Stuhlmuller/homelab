@@ -6,6 +6,25 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+Operational conditions live in executable checks and GitHub protections.
+Documentation, including app READMEs, OpenWiki, specs, and agent skills, explains
+those checks without creating additional approvals or deployment vetoes.
+Missing credentials, failed validation, unavailable recovery evidence, and
+unhealthy rollouts are pipeline failures, with the failing check as the owner.
+Historical incident notes are observations rather than current policy.
+
+| Condition | Executable owner |
+| --- | --- |
+| PR approval | `.policy.yml` and GitHub rulesets |
+| Static, security, and manifest validation | `scripts/ci/offline-checks.sh`, `scripts/ci/static-checks.sh`, `scripts/ci/conftest-policies.sh` |
+| Current-main and environment restrictions | Production workflows and `scripts/ci/terragrunt-current-main.sh` |
+| Tailnet enrollment and signed credentials | `harbor-mirror.yml` credential check and Tailscale enrollment |
+| Image publication and complete pulls | `scripts/ci/harbor-publish.sh` |
+| Mastodon database release readiness | `scripts/ci/mastodon-release-check.py` in the protected live-plan job |
+
+Change the owning executable check when changing a condition. A new rule in
+prose does not change pipeline behavior.
+
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
   validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
   Their required status names stay unchanged, so eligible PRs can still merge.

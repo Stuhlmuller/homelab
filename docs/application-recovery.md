@@ -118,9 +118,10 @@ completed objects, has versioning/public-access blocking/TLS enforcement,
 incomplete multipart uploads. The publisher policy explicitly denies deletion
 and lifecycle/versioning changes. `retention-plan` merely suggests complete sets
 older than 30 days while protecting the newest seven. It never issues deletion;
-that list is not sufficient authority to prune. Before any future pruning,
-retrieve the protected sets, prove a restore, review full version inventory and
-legal/owner retention requirements, then approve a separate exact change.
+that list does not invoke pruning. The publisher has no deletion operation;
+its IAM policy denies object deletion and retention changes. A future pruning
+implementation can encode protected sets, verified restores, version inventory
+and retention policy as executable checks rather than a prose approval gate.
 Partial uploads and failed local scratch are also retained. No automatic local
 pruning is implemented: provision capacity, monitor it, and arrange reviewed
 cleanup of disposable verification copies. The hourly runner refuses to start
@@ -194,7 +195,7 @@ terragrunt --working-dir operator/application-backup-storage validate
 # Initialize the normal backend before the real plan under existing access.
 terragrunt --working-dir operator/application-backup-storage init
 terragrunt --working-dir operator/application-backup-storage plan
-# Apply only after separate approval of that exact plan:
+# The operator unit applies through Terragrunt:
 terragrunt --working-dir operator/application-backup-storage apply
 ```
 
@@ -279,8 +280,9 @@ verify authorized recovery access without copying values to git, CI output or
 issue comments. Preserve encryption keys rather than rotating them during a
 restore. Role globals intentionally omit password hashes; provision database
 roles from recovered private material before enabling clients. Test AWS/SSM,
-Talos, DNS and identity access with the cluster/NAS unavailable. Exporting real
-secret material or production archives requires the concrete approval above.
+Talos, DNS and identity access with the cluster/NAS unavailable. The publisher
+checks its committed S3 destination and uses KMS encryption for production
+archives; private credential material stays out of public logs.
 
 ## Rollback
 

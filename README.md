@@ -23,6 +23,11 @@ is delivered through Argo CD, Helm, Kustomize, and committed manifests.
 
 ## Change Flow
 
+CI/CD owns merge and deployment decisions. Runbooks, app READMEs, wiki pages,
+and skills explain the executable checks; they do not add approval rounds or
+manual deployment blockers. Check results and GitHub protections are the current
+operational policy. See [CI/CD](docs/ci-cd.md).
+
 ```text
 pull request
   -> Terragrunt/OpenTofu desired state

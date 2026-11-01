@@ -26,6 +26,7 @@ jobs:
       contents: read
     outputs:
       requires-live-plan: ${{ steps.live-plan-scope.outputs.requires-live-plan }}
+      requires-runtime-check: ${{ steps.live-plan-scope.outputs.requires-runtime-check }}
     steps:
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
@@ -43,8 +44,14 @@ jobs:
             exit 1
           }
           requires_live_plan=false
+          requires_runtime_check=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
+              clusters/homelab/apps/mastodon/*.md|IaC/*/mastodon/*.md) ;;
+              clusters/homelab/apps/mastodon/*|IaC/*/mastodon/*)
+                requires_live_plan=true
+                requires_runtime_check=true
+                ;;
               .github/workflows/terragrunt-plan.yml|IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
@@ -55,6 +62,7 @@ jobs:
           done <<<"${changed_paths}"
 
           echo "requires-live-plan=${requires_live_plan}" >>"${GITHUB_OUTPUT}"
+          echo "requires-runtime-check=${requires_runtime_check}" >>"${GITHUB_OUTPUT}"
           if [ "${requires_live_plan}" = "true" ]; then
             echo "Live Terragrunt plan is required for this pull request."
           else
@@ -133,6 +141,7 @@ jobs:
 
       - name: Run Live Terragrunt Plan
         env:
+          BASE_REF: ${{ github.base_ref }}
           ARM_CLIENT_ID: ${{ secrets.AZUREAD_CLIENT_ID }}
           ARM_USE_OIDC: "true"
           ARM_USE_CLI: "false"
@@ -152,6 +161,8 @@ jobs:
           bash scripts/ci/install-kubeconfig.sh
           echo "::group::Kubernetes API check"
           kubectl --request-timeout=15s version >/dev/null
+          echo "::group::Mastodon database release checks"
+          python3 -I scripts/ci/mastodon-release-check.py --base-ref "origin/$BASE_REF"
           echo "::group::Argo CD bootstrap plan"
           bash scripts/ci/terragrunt-plan.sh
           EOF
@@ -182,6 +193,7 @@ jobs:
       - name: Require Applicable Checks
         env:
           LIVE_PLAN_REQUIRED: ${{ needs.static-policy.outputs.requires-live-plan }}
+          RUNTIME_CHECK_REQUIRED: ${{ needs.static-policy.outputs.requires-runtime-check }}
           LIVE_PLAN_RESULT: ${{ needs.terragrunt-plan.result }}
           SKIP_NOTE_RESULT: ${{ needs.terragrunt-plan-skipped.result }}
           STATIC_RESULT: ${{ needs.static-policy.result }}
@@ -196,6 +208,17 @@ jobs:
           case "${LIVE_PLAN_REQUIRED}" in
             true|false) ;;
             *) echo "::error::Live plan scope was not resolved."; exit 1 ;;
+          esac
+          case "${RUNTIME_CHECK_REQUIRED}" in
+            true)
+              test "${TRUSTED_HEAD}" = "true" || {
+                echo "::error::Runtime changes need protected checks from a trusted repository branch."
+                exit 1
+              }
+              test "${LIVE_PLAN_REQUIRED}" = "true" || exit 1
+              ;;
+            false) ;;
+            *) echo "::error::Runtime check scope was not resolved."; exit 1 ;;
           esac
           if [[ "${TRUSTED_HEAD}" = "true" && "${LIVE_PLAN_REQUIRED}" = "true" ]]; then
             test "${LIVE_PLAN_RESULT}" = "success" || {
