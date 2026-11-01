@@ -135,6 +135,13 @@ the high-value Grafana-managed Argo CD alerts so Alertmanager still receives
 Argo CD application failures directly when Grafana provisioning, rule
 evaluation, or Grafana's Alertmanager contact point is unhealthy.
 
+The OutOfSync alert links to [stalled rollout recovery](../../../../docs/autonomous-task-lifecycle.md#recover-a-stalled-rollout):
+inspect the recorded revision and prior effects before retrying through GitOps.
+Changing this annotation leaves alert expressions and thresholds unchanged.
+Verify delivery with Argo's reconciled revision and Prometheus `/api/v1/rules`:
+the named rule must retain its expression and duration, report `health: ok`,
+and expose the updated `runbook_url`. Roll back the URL through a reviewed revert.
+
 `deluge-servicemonitor.yaml` scrapes the Deluge metrics sidecar in the `media`
 namespace. That sidecar exposes `deluge_daemon_rpc_healthy`, which checks
 whether `deluge-console status` can reach `deluged`. This catches Deluge daemon

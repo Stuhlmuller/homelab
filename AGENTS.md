@@ -122,6 +122,10 @@ base intentionally adopts them again and the documentation explains why.
 
 ## Default agent workflow
 
+For multistage tasks and interrupted handoffs, use
+[task lifecycle](.agents/skills/homelab-task-lifecycle/SKILL.md) to retain ownership,
+authority and evidence through functional acceptance.
+
 1. Read `openwiki/quickstart.md`, choose its task route, and inspect the relevant
    wiki sections and source before changing behavior. Use the repository
    `homelab-knowledge-base` skill for context and `openwiki` for search/updates.

@@ -38,6 +38,21 @@ Merge completion is verified in GitHub and `main`; deployment acceptance remains
 separate. A durable runner must resume pending work after checks or dependencies
 change; instructions alone do not schedule another agent session.
 
+## Task Lifecycle
+
+The [lifecycle skill](../../.agents/skills/homelab-task-lifecycle/SKILL.md) and
+[issue form](../../.github/ISSUE_TEMPLATE/agent-task.yml) retain scope, owner,
+authority, dependencies, stage, evidence and next action across sessions.
+The [runbook](../../docs/autonomous-task-lifecycle.md) extends existing PR
+delivery with revision-bound deployment and service-specific acceptance.
+Its read-only verifier rejects stale or incomplete rollout evidence; it does
+not supply functional acceptance or install a runner. Local atomic PR claims
+do not coordinate independent cloud clones. Keep one delivery owner and prove
+an actual scheduled wakeup before describing a task as unattended.
+
+[Research decisions](../../docs/autonomous-development-research.md) distinguish
+documented mechanisms, author claims and deferred integration work.
+
 ## Reference Coding
 
 Before nontrivial code with a relevant upstream or peer implementation, search

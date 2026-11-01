@@ -2672,6 +2672,19 @@ sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
 
+## Task lifecycle verification
+
+The [read-only GitOps verifier](../../scripts/verify-gitops.py) binds Application
+source comparisons to an exact homelab revision, checks Deployment convergence
+and ReplicaSet/Pod ownership, then rechecks for drift. Last successful operation
+revisions are separate because unchanged manifests need no new apply.
+Its [failure fixtures](../../scripts/ci/verify-gitops-test.py) run in the existing
+offline gate. The receipt explicitly excludes service-specific acceptance.
+The [lifecycle runbook](../../docs/autonomous-task-lifecycle.md) requires that
+acceptance before closure and retains blocked handoffs outside the cluster.
+Prometheus's OutOfSync annotation routes operators to the same recovery path;
+its loaded-rule API check is distinct from controller health.
+
 ## Mastodon activation gates
 
 The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,

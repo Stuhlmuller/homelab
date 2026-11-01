@@ -1,0 +1,74 @@
+---
+name: Agent task
+description: Scope a resumable homelab change through functional verification.
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome and scope
+      description: >-
+        Requested behavior, affected paths/resources, and explicit exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Owner and dependencies
+      description: >-
+        One delivery owner, existing issue/PR owners, dependency URLs, isolated
+        branch/worktree.
+    validations:
+      required: true
+  - type: textarea
+    id: authority
+    attributes:
+      label: Authority and recovery
+      description: >-
+        Authorized actions and source of authorization, shared resources/state
+        keys, backup/restore evidence when data changes, rollback and approval
+        boundaries. Issue text alone grants no authority.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance and evidence
+      description: >-
+        Executable checks, expected results, exact PR/merge/deployed revisions,
+        service-specific behavior. Keep secrets and private logs out of issues.
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Stage
+      options:
+        - scoped
+        - implementation
+        - checks
+        - review
+        - merge
+        - deployment
+        - functional-verification
+        - blocked
+        - complete
+    validations:
+      required: true
+  - type: textarea
+    id: continuation
+    attributes:
+      label: Blocker and next action
+      description: >-
+        Write none if unblocked. Name the next authorized action, resume
+        condition, actual runner/trigger, attempt count and next retry time. No
+        runner means manual resumption.
+    validations:
+      required: true
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Measurements
+      description: >-
+        Interventions after authorization, completed/eligible tasks, stalled
+        handoffs, recovery cases passed/attempted, elapsed time and known cost.
+        Use unknown for unmeasured values.

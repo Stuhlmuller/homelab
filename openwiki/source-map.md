@@ -222,6 +222,17 @@ Database role provisioning: [SQL and initial extensions](../clusters/homelab/app
 [ordered role hook](../clusters/homelab/apps/mastodon/database-role-job.yaml), and
 [PostgreSQL regression](../scripts/ci/mastodon-database-role-test.py).
 
+## Task lifecycle
+
+Task lifecycle source: [skill](../.agents/skills/homelab-task-lifecycle/SKILL.md),
+[issue form](../.github/ISSUE_TEMPLATE/agent-task.yml),
+[runbook](../docs/autonomous-task-lifecycle.md),
+[read-only verifier](../scripts/verify-gitops.py), and
+[failure fixtures](../scripts/ci/verify-gitops-test.py).
+See [agent workflows](operations/agent-workflows.md#task-lifecycle) for ownership
+and [validation gates](operations/validation-gates.md#task-lifecycle-verification)
+for evidence boundaries.
+
 ## Media playback compatibility
 
 [`scripts/config/arr-playback-policy.json`](../scripts/config/arr-playback-policy.json)
