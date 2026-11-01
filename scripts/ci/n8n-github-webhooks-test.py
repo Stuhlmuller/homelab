@@ -208,6 +208,182 @@ class WebhookTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             HOOKS.require_retired_absent(third_api)
 
+    def native_fixture(self):
+        inventory = [
+            {'id': HOOKS.EMERGENCY_HOOK, 'name': 'web', 'active': True,
+             'events': ['pull_request'], 'config': {'url': HOOKS.OLD_URL}},
+            {'id': 777777, 'name': 'web', 'active': True, 'events': ['pull_request'],
+             'config': {'url': HOOKS.NATIVE_URL, 'content_type': 'json',
+                        'insecure_ssl': '0', 'secret': 'redacted'}},
+        ]
+        deliveries = [
+            {'id': 61, 'event': 'ping', 'delivered_at': '2026-10-10T00:02:00Z'},
+            {'id': 62, 'event': 'pull_request', 'delivered_at': '2026-10-10T00:03:00Z'},
+        ]
+        detail = {'id': 62, 'event': 'pull_request', 'delivered_at': '2026-10-10T00:03:00Z',
+                  'url': HOOKS.NATIVE_URL, 'status_code': 200,
+                  'request': {'headers': {'X-Hub-Signature-256': 'sha256=' + 'a' * 64}}}
+        current_config = {'url': HOOKS.NATIVE_URL, 'content_type': 'json',
+                          'insecure_ssl': '0', 'secret': '********'}
+        current_hook = deepcopy(inventory[1])
+        current_hook['updated_at'] = '2026-10-10T00:01:00Z'
+        calls, probes = [], []
+        hook_endpoint = HOOKS.BASE + '777777'
+        endpoint = hook_endpoint + '/deliveries'
+
+        def api(method, path, body=None):
+            calls.append((method, path, body))
+            self.assertEqual(method, 'GET')
+            self.assertIsNone(body)
+            if path == HOOKS.COLLECTION:
+                return deepcopy(inventory)
+            if path == endpoint + '?per_page=100':
+                return deepcopy(deliveries)
+            if path == endpoint + '/62':
+                return deepcopy(detail)
+            if path == endpoint + '/63':
+                return dict(deepcopy(detail), id=63, delivered_at='2026-10-10T00:04:00Z',
+                            status_code=500)
+            if path == hook_endpoint + '/config':
+                return deepcopy(current_config)
+            if path == hook_endpoint:
+                return deepcopy(current_hook)
+            raise AssertionError('Unexpected GitHub API request: ' + path)
+
+        def probe(url, method='GET'):
+            probes.append((url, method))
+            if url == HOOKS.HOST + '/' and method == 'GET':
+                return 404, {}
+            if url == HOOKS.OLD_URL and method == 'OPTIONS':
+                return 404, {'Content-Type': 'text/plain; charset=utf-8'}
+            if url == HOOKS.NATIVE_URL and method == 'OPTIONS':
+                return 204, {'Access-Control-Allow-Methods': 'OPTIONS, POST'}
+            raise AssertionError('Unexpected network probe')
+
+        return inventory, deliveries, detail, current_config, current_hook, api, calls, probe, probes
+
+    def test_native_verifier_discovers_signed_delivery_and_only_reads(self):
+        _, _, _, _, _, api, calls, probe, probes = self.native_fixture()
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            self.assertTrue(HOOKS.verify_signed_trigger(api, '2026-10-10T00:00:00Z', probe))
+        self.assertEqual([path for _, path, _ in calls],
+                         [HOOKS.COLLECTION, HOOKS.BASE + '777777/deliveries?per_page=100',
+                          HOOKS.BASE + '777777/deliveries/62', HOOKS.BASE + '777777/config',
+                          HOOKS.BASE + '777777'])
+        self.assertEqual(probes, [(HOOKS.HOST + '/', 'GET'), (HOOKS.OLD_URL, 'OPTIONS'),
+                                  (HOOKS.NATIVE_URL, 'OPTIONS')])
+        self.assertNotIn('redacted', output.getvalue())
+        self.assertNotIn('sha256=', output.getvalue())
+
+    def test_native_verifier_rejects_missing_duplicate_and_drifted_hooks(self):
+        for mutation in ('missing', 'duplicate', 'wrong_host', 'wrong_event',
+                         'inactive', 'form', 'insecure', 'old_drift', 'retired'):
+            inventory, _, _, _, _, api, calls, probe, probes = self.native_fixture()
+            native = inventory[1]
+            if mutation == 'missing':
+                inventory.pop()
+            elif mutation == 'duplicate':
+                duplicate = deepcopy(native)
+                duplicate['id'] = 888888
+                inventory.append(duplicate)
+            elif mutation == 'wrong_host':
+                native['config']['url'] = 'https://elsewhere.example/webhook/' + HOOKS.NATIVE_PATH + '/webhook'
+            elif mutation == 'wrong_event':
+                native['events'] = ['push']
+            elif mutation == 'inactive':
+                native['active'] = False
+            elif mutation == 'form':
+                native['config']['content_type'] = 'form'
+            elif mutation == 'insecure':
+                native['config']['insecure_ssl'] = '1'
+            elif mutation == 'old_drift':
+                inventory[0]['config']['url'] = HOOKS.PREVIOUS_HOST + '/webhook/' + HOOKS.HOOKS[HOOKS.EMERGENCY_HOOK]
+            elif mutation == 'retired':
+                inventory.append({'id': HOOKS.RETIRED_HOOK, 'config': {'url': 'https://example.test'}})
+            with self.subTest(mutation=mutation), self.assertRaises(RuntimeError):
+                HOOKS.verify_signed_trigger(api, '2026-10-10T00:00:00Z', probe)
+            self.assertEqual([method for method, _, _ in calls], ['GET'])
+            self.assertEqual(probes, [])
+
+    def test_native_verifier_rejects_unsigned_stale_failed_or_superseded_delivery(self):
+        for mutation in ('unsigned', 'malformed', 'stale', 'failed', 'wrong_url', 'later_failure'):
+            _, deliveries, detail, _, _, api, calls, probe, _ = self.native_fixture()
+            if mutation == 'unsigned':
+                detail['request']['headers'] = {}
+            elif mutation == 'malformed':
+                detail['request']['headers']['X-Hub-Signature-256'] = 'sha256=bad'
+            elif mutation == 'stale':
+                detail['delivered_at'] = deliveries[1]['delivered_at'] = '2026-10-09T00:03:00Z'
+            elif mutation == 'failed':
+                detail['status_code'] = 500
+            elif mutation == 'wrong_url':
+                detail['url'] = HOOKS.OLD_URL
+            elif mutation == 'later_failure':
+                deliveries.append({'id': 63, 'event': 'pull_request', 'delivered_at': '2026-10-10T00:04:00Z'})
+            with self.subTest(mutation=mutation), self.assertRaises(RuntimeError):
+                HOOKS.verify_signed_trigger(api, '2026-10-10T00:00:00Z', probe)
+            self.assertTrue(all(method == 'GET' for method, _, _ in calls))
+
+    def test_native_verifier_rejects_missing_secret_and_hook_drift_after_delivery(self):
+        for mutation in ('missing_secret', 'empty_secret', 'unmasked_secret',
+                         'config_drift', 'updated_after_delivery', 'updated_at_delivery'):
+            _, _, _, config, current_hook, api, calls, probe, _ = self.native_fixture()
+            if mutation == 'missing_secret':
+                del config['secret']
+            elif mutation == 'empty_secret':
+                config['secret'] = ''
+            elif mutation == 'unmasked_secret':
+                config['secret'] = 'raw-value-must-not-print'
+            elif mutation == 'config_drift':
+                config['content_type'] = 'form'
+            elif mutation == 'updated_after_delivery':
+                current_hook['updated_at'] = '2026-10-10T00:04:00Z'
+            elif mutation == 'updated_at_delivery':
+                current_hook['updated_at'] = '2026-10-10T00:03:00Z'
+            output = io.StringIO()
+            with self.subTest(mutation=mutation), contextlib.redirect_stdout(output), \
+                 self.assertRaises(RuntimeError):
+                HOOKS.verify_signed_trigger(api, '2026-10-10T00:00:00Z', probe)
+            self.assertEqual(calls[-2][1:], (HOOKS.BASE + '777777/config', None))
+            self.assertEqual(calls[-1][1:], (HOOKS.BASE + '777777', None))
+            self.assertNotIn('raw-value-must-not-print', output.getvalue())
+
+    def test_native_verifier_requires_old_denial_new_route_and_activation_time(self):
+        _, _, _, _, _, api, calls, probe, _ = self.native_fixture()
+        for stamp in (None, '2026-10-10', '2026-10-10T00:00:00+01:00', '2999-01-01T00:00:00Z'):
+            with self.subTest(stamp=stamp), self.assertRaises(RuntimeError):
+                HOOKS.verify_signed_trigger(api, stamp, probe)
+        self.assertEqual(calls, [])
+        for denied in (False, True, 'n8n_404'):
+            def drift_probe(url, method='GET'):
+                status, headers = probe(url, method)
+                if denied is True and url == HOOKS.OLD_URL:
+                    return 204, headers
+                if denied == 'n8n_404' and url == HOOKS.OLD_URL:
+                    return 404, {'Content-Type': 'text/html; charset=utf-8',
+                                 'Access-Control-Allow-Methods': 'OPTIONS'}
+                if denied is False and url == HOOKS.NATIVE_URL:
+                    return 404, headers
+                return status, headers
+            with self.subTest(old_route_open=denied), self.assertRaises(RuntimeError):
+                HOOKS.verify_signed_trigger(api, '2026-10-10T00:00:00Z', drift_probe)
+
+    def test_native_cli_is_separate_from_legacy_mutation(self):
+        with patch.object(HOOKS.sys, 'argv', ['helper', '--verify-signed-trigger',
+                                             '--activated-after', '2026-10-10T00:00:00Z']), \
+             patch.object(HOOKS, 'verify_signed_trigger') as verify, \
+             patch.object(HOOKS, 'reconcile') as reconcile:
+            HOOKS.main()
+        verify.assert_called_once_with(activated_after='2026-10-10T00:00:00Z')
+        reconcile.assert_not_called()
+        for argument in ('--execute', '--retire-helper', '--require-delivery'):
+            with patch.object(HOOKS.sys, 'argv', ['helper', '--verify-signed-trigger', argument]), \
+                 patch.object(HOOKS, 'verify_signed_trigger') as verify, \
+                 contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                HOOKS.main()
+            verify.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

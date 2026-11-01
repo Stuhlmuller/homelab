@@ -120,9 +120,19 @@ n8n to load the published version. Verify the new signed hook and a fresh
 delivery before retiring the old unsigned hook through a reviewed
 repository-owned helper change. Keep Traefik's old-path exclusion in place
 through that verification and retirement; the new path is not excluded. The
-current callback helper still targets old hook `636944763` and cannot verify
-the new hook until that follow-up is added. Rollback requires the paired
-database and PVC restore; removing the Job does not undo the workflow edit.
+callback helper has a separate read-only `--verify-signed-trigger` mode for this
+post-activation check. Record a UTC timestamp immediately before activation,
+then run it with `--activated-after ACTIVATION_UTC` after the n8n restart and a
+real pull request event. It discovers exactly one new active JSON/TLS GitHub
+hook at the pinned native path, reads back its masked signing secret, and
+requires its latest pull request delivery to be newer than both that timestamp
+and the hook's `updated_at`, successful and signed. It checks that the old hook
+still points at its denied path. Safe OPTIONS probes require Traefik's
+plain-text 404 on the old path and 204 on the new POST-only path. The helper
+sends no webhook, does not calculate the HMAC, and does not prove workflow
+execution; check that separately before retiring the old hook. Rollback
+requires the paired database and PVC restore; removing the Job does not undo
+the workflow edit.
 
 ## Inactive Paired-Backup Maintenance Fence
 
@@ -327,6 +337,18 @@ with a SHA-256 signature header after its saved cutover receipt. It does not
 prove the receiver validated that signature. Historical success does not
 establish current callback acceptance. Keep the legacy Tunnel route until the
 surviving Policy Bot and Emergency callbacks pass their fresh delivery checks.
+
+After signed-trigger activation, verify the new registration and delivery with
+the UTC timestamp recorded before activation:
+
+```sh
+python3 -I scripts/n8n-github-webhooks.py --verify-signed-trigger --activated-after ACTIVATION_UTC
+```
+
+This mode performs only GitHub GET requests and safe GET/OPTIONS probes. It
+cannot be combined with legacy hook mutation flags. It needs repository hook
+read access and a pull request delivery after activation; a ping alone cannot
+pass. A successful check does not replace a real n8n workflow execution check.
 
 ## Database Readiness
 
