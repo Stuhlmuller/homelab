@@ -150,6 +150,10 @@ identity through the [Entra provider runbook](../../docs/entra-terraform-provide
 rerun the protected PR plan, and verify `Terragrunt Gate` before merging.
 If the static job cannot read the PR base diff, it fails before deciding to
 skip the live plan.
+The scope detector also treats
+[`scripts/config/tailscale-policy.json`](../../scripts/config/tailscale-policy.json)
+as a live plan input: the Tailscale access Terragrunt unit reads that file from
+outside `IaC/`, so policy-only changes must run the credentialed plan.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.

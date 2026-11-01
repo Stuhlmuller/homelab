@@ -15,11 +15,27 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AccessCheckTest(unittest.TestCase):
-    def test_existing_ingress_tag_allows_member_dns_without_ci_expansion(self):
+    def test_legacy_grant_preserves_access_without_exposing_canary(self):
         policy = json.loads((Path(__file__).resolve().parents[1] / "config/tailscale-policy.json").read_text())
         self.assertEqual(policy["tagOwners"]["tag:homelab-ingress"], ["tag:k8s-operator"])
-        self.assertTrue(any("autogroup:member" in grant["src"] and "*" in grant["dst"]
-                            and "*" in grant["ip"] for grant in policy["grants"]))
+        self.assertEqual(policy["tagOwners"]["tag:homelab-ingress-canary"], ["tag:k8s-operator"])
+        legacy_sources = {"autogroup:member", "tag:k8s", "tag:k8s-operator", "tag:ci"}
+        legacy_grants = [grant for grant in policy["grants"] if set(grant["src"]) == legacy_sources
+                         and grant["ip"] == ["*"]]
+        self.assertEqual(len(legacy_grants), 1)
+        self.assertEqual(set(legacy_grants[0]["dst"]), {
+            "autogroup:member", "tag:k8s", "tag:k8s-operator", "tag:ci",
+            "tag:homelab-ingress", "tag:homelab-funnel", "tag:homelab-ci-plan",
+            "tag:homelab-ci-apply", "tag:homelab-ci-cordium", "10.1.0.0/24",
+        })
+        self.assertFalse(any("*" in grant["dst"] for grant in policy["grants"]))
+        for source in ("rodman@stuhlmuller.net", "tag:k8s", "tag:k8s-operator", "tag:ci"):
+            tests = [test for test in policy["tests"] if test["src"] == source]
+            self.assertTrue(any({"tag:homelab-ingress-canary:443", "svc:homelab-private-ingress:443"}
+                                <= set(test.get("deny", [])) for test in tests), source)
+        member_tests = [test for test in policy["tests"] if test["src"] == "rodman@stuhlmuller.net"]
+        self.assertTrue(any({"tag:homelab-ingress:53", "10.1.0.199:6443"}
+                            <= set(test.get("accept", [])) for test in member_tests))
         self.assertFalse(any("tag:homelab-dns" in grant["dst"] for grant in policy["grants"]))
         self.assertTrue(all("udp:53" not in grant["ip"] and "tcp:53" not in grant["ip"]
                             for grant in policy["grants"] if "tag:homelab-ingress" in grant["dst"]

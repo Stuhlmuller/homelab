@@ -10,6 +10,9 @@
     "tag:homelab-ingress": [
       "tag:k8s-operator"
     ],
+    "tag:homelab-ingress-canary": [
+      "tag:k8s-operator"
+    ],
     "tag:homelab-funnel": [
       "tag:k8s-operator"
     ],
@@ -83,7 +86,16 @@
         "tag:ci"
       ],
       "dst": [
-        "*"
+        "autogroup:member",
+        "tag:k8s",
+        "tag:k8s-operator",
+        "tag:ci",
+        "tag:homelab-ingress",
+        "tag:homelab-funnel",
+        "tag:homelab-ci-plan",
+        "tag:homelab-ci-apply",
+        "tag:homelab-ci-cordium",
+        "10.1.0.0/24"
       ],
       "ip": [
         "*"
@@ -126,6 +138,61 @@
     }
   ],
   "tests": [
+    {
+      "src": "rodman@stuhlmuller.net",
+      "accept": [
+        "rodman@stuhlmuller.net:22",
+        "tag:homelab-ingress:53",
+        "tag:homelab-funnel:443",
+        "tag:k8s:443",
+        "tag:k8s-operator:443",
+        "10.1.0.199:6443"
+      ],
+      "deny": [
+        "tag:homelab-ingress-canary:443",
+        "svc:homelab-private-ingress:443"
+      ]
+    },
+    {
+      "src": "rodman@stuhlmuller.net",
+      "proto": "udp",
+      "accept": [
+        "tag:homelab-ingress:53"
+      ]
+    },
+    {
+      "src": "tag:k8s",
+      "accept": [
+        "tag:homelab-ingress:53",
+        "10.1.0.199:6443"
+      ],
+      "deny": [
+        "tag:homelab-ingress-canary:443",
+        "svc:homelab-private-ingress:443"
+      ]
+    },
+    {
+      "src": "tag:k8s-operator",
+      "accept": [
+        "tag:homelab-ingress:443",
+        "10.1.0.199:6443"
+      ],
+      "deny": [
+        "tag:homelab-ingress-canary:443",
+        "svc:homelab-private-ingress:443"
+      ]
+    },
+    {
+      "src": "tag:ci",
+      "accept": [
+        "tag:homelab-ingress:443",
+        "10.1.0.199:6443"
+      ],
+      "deny": [
+        "tag:homelab-ingress-canary:443",
+        "svc:homelab-private-ingress:443"
+      ]
+    },
     {
       "src": "tag:homelab-ci-plan",
       "accept": [

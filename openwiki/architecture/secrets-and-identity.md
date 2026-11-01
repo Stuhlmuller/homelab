@@ -175,6 +175,12 @@ It adopts the complete existing policy before changing it; applying an additive
 fragment would overwrite unrelated access. The committed policy preserves legacy
 users, tags, SSH and route approvals while giving new CI tags only explicit grants.
 Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
+The legacy all-protocol grant explicitly targets member devices, existing tags,
+and the `10.1.0.0/24` LAN route. The operator owns
+`tag:homelab-ingress-canary`, but no legacy source can reach that tag or
+`svc:homelab-private-ingress`; policy tests hold this boundary while preserving
+member DNS and LAN access. New tags, Services, and subnet routes need a reviewed
+grant before use.
 
 The local provider reads a dedicated administrator OAuth client from private
 `0600` ID and secret files. The Kubernetes operator's SSM-backed OAuth client

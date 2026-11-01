@@ -40,6 +40,15 @@ only their declared grants. Legacy route/exit-node approvals, SSH checks, and
 the standalone Funnel IP are retained. The broad `tag:k8s` Funnel permission is
 replaced by `tag:homelab-funnel`.
 
+The legacy all-protocol grant now limits destinations to member-owned devices,
+the previously declared tags, and `10.1.0.0/24`. The operator owns
+`tag:homelab-ingress-canary`, but that tag and the future
+`svc:homelab-private-ingress` have no member, Kubernetes, or legacy CI grant.
+Embedded tests preserve DNS, ingress, and LAN access while rejecting canary
+access from each legacy source. Before applying, compare the live policy,
+device tags, routes, and Services against this list. Add any needed destination
+through a reviewed grant and acceptance test before clients depend on it.
+
 The provider replaces the entire policy. Re-read and compare live policy before
 initial adoption, preserving any intervening unrelated changes. Its embedded
 positive and negative tests check the CI boundaries. An unknown-policy bootstrap

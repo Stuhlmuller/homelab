@@ -169,6 +169,34 @@ class PrivatePlanStageTest(unittest.TestCase):
             self.assertIn("Unable to determine live Terragrunt plan scope", result.stderr)
             self.assertFalse(output.exists())
 
+    def test_tailscale_policy_change_requires_live_plan(self):
+        workflow = WORKFLOW.read_text()
+        scope = textwrap.dedent(workflow.split(
+            "      - name: Detect Live Terragrunt Plan Scope\n", 1)[1]
+            .split("\n      - name: Install Nix\n", 1)[0]
+            .split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            (root / "README.md").write_text("fixture\n")
+            subprocess.run(["git", "add", "README.md"], cwd=root, check=True)
+            commit = ["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                      "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"]
+            subprocess.run(commit, cwd=root, check=True)
+            subprocess.run(["git", "update-ref", "refs/remotes/origin/main", "HEAD"], cwd=root, check=True)
+            policy = root / "scripts/config/tailscale-policy.json"
+            policy.parent.mkdir(parents=True)
+            policy.write_text("{}\n")
+            subprocess.run(["git", "add", str(policy.relative_to(root))], cwd=root, check=True)
+            subprocess.run(commit, cwd=root, check=True)
+            output = root / "github-output"
+            result = subprocess.run(["bash", "-euo", "pipefail", "-c", scope],
+                                    cwd=root, capture_output=True, text=True,
+                                    env={**os.environ, "BASE_REF": "main", "GITHUB_OUTPUT": str(output)},
+                                    timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("requires-live-plan=true", output.read_text())
+
     def test_workflow_streams_plan_output_and_keeps_artifacts_private(self):
         workflow = WORKFLOW.read_text()
         run = workflow.split("      - name: Run Live Terragrunt Plan\n", 1)[1]
