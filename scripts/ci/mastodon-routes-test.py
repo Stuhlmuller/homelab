@@ -86,7 +86,13 @@ class Routes(unittest.TestCase):
         ], input=rendered, text=True))
         by_name = {r["metadata"]["name"]: r for r in resources}
         backup = by_name["mastodon-initial-backup-v1"]
-        verify = by_name["mastodon-restore-verification-v1"]
+        verify = by_name["mastodon-restore-verification-v2"]
+        scheduled = by_name["mastodon-restore-verification"]
+        self.assertEqual(verify["spec"], scheduled["spec"]["jobTemplate"]["spec"])
+        self.assertEqual(scheduled["spec"]["schedule"], "35 3 * * *")
+        self.assertEqual(scheduled["spec"]["timeZone"], "America/Los_Angeles")
+        self.assertFalse(scheduled["spec"]["suspend"])
+        self.assertEqual(scheduled["spec"]["concurrencyPolicy"], "Forbid")
         self.assertEqual(backup["spec"], by_name["mastodon-backup"]["spec"]["jobTemplate"]["spec"])
         source_pod = documents("initial-backup-job.yaml")[0]["spec"]["template"]["spec"]
         for key, value in source_pod.items():
@@ -97,7 +103,7 @@ class Routes(unittest.TestCase):
         self.assertLess(wave(backup), wave(verify))
 
     def test_restore_failure_cannot_report_success(self):
-        script = documents("restore-verification-job.yaml")[0]["spec"]["template"]["spec"]["containers"][0]["args"][0]
+        script = documents("restore-verification-cronjob.yaml")[0]["spec"]["jobTemplate"]["spec"]["template"]["spec"]["containers"][0]["args"][0]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "restore").mkdir()
@@ -118,14 +124,15 @@ class Routes(unittest.TestCase):
             self.assertNotIn("catalog verified", result.stdout)
 
     def test_restore_cannot_mount_production_database_or_credentials(self):
-        job = documents("restore-verification-job.yaml")[0]
+        cron = documents("restore-verification-cronjob.yaml")[0]
+        job = cron["spec"]["jobTemplate"]
         pod = job["spec"]["template"]["spec"]
         self.assertFalse(pod["automountServiceAccountToken"])
         claims = [v["persistentVolumeClaim"] for v in pod["volumes"] if "persistentVolumeClaim" in v]
         self.assertEqual(claims, [{"claimName": "mastodon-backup", "readOnly": True}])
         self.assertFalse(any("secret" in v for v in pod["volumes"]))
         self.assertEqual(job["spec"]["backoffLimit"], 0)
-        self.assertEqual(int(job["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]), 4)
+        self.assertEqual(int(cron["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]), 4)
     def test_public_egress_matches_configured_smtp_port(self):
         config = documents("configmap.yaml")[0]["data"][".env.production"]
         entries = dict(line.split("=", 1) for line in config.splitlines() if "=" in line)
