@@ -34,7 +34,7 @@ variables {
   policy_name                           = "test-policy"
 }
 
-run "apply_role_reads_only_recovery_publisher_boundary" {
+run "apply_role_reads_only_recovery_publisher_resources" {
   command = plan
 
   plan_options {
@@ -43,19 +43,23 @@ run "apply_role_reads_only_recovery_publisher_boundary" {
   }
 
   assert {
-    condition = [
+    condition = toset([
       for statement in jsondecode(data.aws_iam_policy_document.parameter_reader_administration.json).Statement : {
         Effect    = statement.Effect
         Actions   = toset(flatten([statement.Action]))
         Resources = toset(flatten([statement.Resource]))
       }
       if anytrue([for resource in flatten([statement.Resource]) : strcontains(resource, "recovery-publisher")])
-      ] == [{
+      ]) == toset([{
         Effect    = "Allow"
         Actions   = toset(["iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyTags"])
         Resources = toset(["arn:aws:iam::123456789012:policy/homelab-oce-recovery-publisher-boundary"])
-    }]
-    error_message = "Recovery boundary refresh must allow only policy/version/tag reads on the exact managed policy, without IAM mutation or wildcard resources."
+        }, {
+        Effect    = "Allow"
+        Actions   = toset(["iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies"])
+        Resources = toset(["arn:aws:iam::123456789012:role/homelab-oce-recovery-publisher"])
+    }])
+    error_message = "Recovery refresh must allow only the exact policy and role metadata reads, without IAM mutation, assumption, pass-role, or wildcard resources."
   }
 }
 

@@ -657,6 +657,10 @@ The same operator policy grants `GetPolicy`, `GetPolicyVersion`, and
 `ListPolicyTags` on only `homelab-oce-recovery-publisher-boundary`, so the
 application-backup-storage plan can refresh its existing boundary. The module's
 boundary test rejects broader actions or resources; this grant adds no IAM writes.
+It also grants `GetRole`, `GetRolePolicy`, `ListRolePolicies`, and
+`ListAttachedRolePolicies` on only `homelab-oce-recovery-publisher` for the
+[pinned provider's role refresh](https://github.com/hashicorp/terraform-provider-aws/blob/v6.56.0/internal/service/iam/role.go#L278-L325).
+These reads grant no role assumption, pass-role, or role mutation.
 
 For a trust-only change, use the targeted operator runbook in
 `docs/operator-infrastructure.md`. It conditionally imports only the existing role,

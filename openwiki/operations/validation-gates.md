@@ -556,6 +556,9 @@ The operator policy allows only `GetPolicy`, `GetPolicyVersion`, and
 `ListPolicyTags` on `homelab-oce-recovery-publisher-boundary` for the CI
 application-backup-storage refresh. Its boundary test checks the exact action
 and resource set; the workflow cannot install this grant itself.
+The same test restricts publisher-role refresh to `GetRole`, `GetRolePolicy`,
+`ListRolePolicies`, and `ListAttachedRolePolicies` on the exact
+`homelab-oce-recovery-publisher` role, without assumption, pass-role, or writes.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
 
