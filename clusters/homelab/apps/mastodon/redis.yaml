@@ -58,7 +58,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redis
-          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -142,7 +142,7 @@ spec:
             sizeLimit: 64Mi
       initContainers:
         - name: own-local-directory
-          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.4.11-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
