@@ -99,6 +99,8 @@ activation = File.read(File.join(root, canary, "activate.sh"))
 check(activation.include?("--tcp=443 tcp://127.0.0.1:8443"), "Serve is not HTTPS-only raw TCP to loopback")
 check(!activation.include?("--tcp=80"), "Serve exposes unreviewed HTTP port")
 check(activation.index('"Running"') < activation.index("--auth-key=file:"), "persisted identity is not checked before auth key")
+shell = ENV.fetch("PATH").split(File::PATH_SEPARATOR).map { |dir| File.join(dir, "sh") }.find { |path| File.executable?(path) }
+check(shell, "test requires sh on PATH")
 
 Dir.mktmpdir("tc-", "/tmp") do |dir|
   socket_path = File.join(dir, "tailscaled.sock")
@@ -109,7 +111,7 @@ Dir.mktmpdir("tc-", "/tmp") do |dir|
   bin = File.join(dir, "bin")
   Dir.mkdir(bin)
   File.write(File.join(bin, "tailscale"), <<~SH)
-    #!/bin/sh
+    #!#{shell}
     printf '%s\n' "$*" >> "$MOCK_LOG"
     case "$*" in
       *'status --json'*) cat "$MOCK_STATE" ;;
@@ -132,7 +134,7 @@ Dir.mktmpdir("tc-", "/tmp") do |dir|
         File.delete(auth_path)
       end
       env = {"PATH" => "#{bin}:#{ENV.fetch('PATH')}", "MOCK_LOG" => log, "MOCK_STATE" => state}
-      _stdout, error, result = Open3.capture3(env, "/bin/sh", script)
+      _stdout, error, result = Open3.capture3(env, shell, script)
       check(result.success?, "#{scenario[:name]} startup failed: #{error}")
       calls = File.read(log)
       check(calls.include?("serve --yes --bg --tcp=443 tcp://127.0.0.1:8443"), "#{scenario[:name]} did not configure TCP Serve")
