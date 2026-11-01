@@ -2199,6 +2199,8 @@ wrapper or a shared/host PID namespace. It also requires failure on corrupt or
 stale newest archives, invalid checksum paths,
 empty required tables, missing encrypted-resource keys, and previous-day-only
 backups. A current invalid set fails even when a valid previous-day set exists.
+The fixture and normal failure cleanup stop PostgreSQL with fast shutdown;
+candidate cleanup tries bounded immediate shutdown only if fast stop fails.
 Rendered timing guards include the backup's late-start and execution deadlines
 plus a 15-minute margin. Rendered guards
 require only the read-only backup PVC plus bounded scratch, no credentials, and

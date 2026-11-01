@@ -23,7 +23,9 @@ cleanup() {
   result=$?
   trap - EXIT HUP INT TERM
   if [ "$postgres_started" = true ]; then
-    pg_ctl --pgdata="$work/pgdata" --mode=immediate --wait --timeout=30 stop >/dev/null 2>&1 || result=1
+    # Normal failures do not need a crash shutdown. Bound both stop attempts.
+    pg_ctl --pgdata="$work/pgdata" --mode=fast --wait --timeout=30 stop >/dev/null 2>&1 ||
+      pg_ctl --pgdata="$work/pgdata" --mode=immediate --wait --timeout=10 stop >/dev/null 2>&1 || result=1
   fi
   if [ "$result" -eq 0 ]; then
     printf '%s\n' 'Octelium PostgreSQL restore drill passed'
