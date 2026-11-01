@@ -433,6 +433,139 @@ def require_current_main(source_sha):
         raise ValueError("cleanup source is not exact current main")
 
 
+TRAEFIK_VALUES = "clusters/homelab/apps/traefik/values.yaml"
+TRAEFIK_STACK = "IaC/homelab/us-west-2/apps/traefik/stack.hcl"
+TRAEFIK_STACK_SHA256 = "31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+
+
+def traefik_node_selector(stack, values_file):
+    """Read only the controller selector referenced by the GitOps release."""
+    # Pin release wiring so inline Helm values or another source cannot override the selector.
+    if (hashlib.sha256(stack.encode()).hexdigest() != TRAEFIK_STACK_SHA256 or
+            len(re.findall(r'^\s*valueFiles\s*=\s*\["\$values/' +
+                       re.escape(TRAEFIK_VALUES) + r'"\]\s*$', stack, re.MULTILINE)) != 1 or
+            len(re.findall(r'^\s*releaseName\s*=\s*"traefik"\s*$',
+                           stack, re.MULTILINE)) != 1):
+        raise ValueError("Traefik GitOps values source is not the reviewed release")
+    values = json.loads(command("yq", "eval", "-o=json", ".", str(values_file)))
+    controllers = values.get("controllers") if isinstance(values, dict) else None
+    controller = controllers.get("traefik") if isinstance(controllers, dict) else None
+    pod = controller.get("pod") if isinstance(controller, dict) else None
+    selector = pod.get("nodeSelector") if isinstance(pod, dict) else None
+    hostname = selector.get("kubernetes.io/hostname") if isinstance(selector, dict) else None
+    if not isinstance(hostname, str) or not hostname:
+        raise ValueError("Traefik GitOps nodeSelector may place ingress on canary")
+    return hostname
+
+
+def require_traefik_off_canary(source_sha, node_name):
+    """Keep ingress away from the node before removing firewall isolation."""
+    require_current_main(source_sha)
+    reviewed = {}
+    for relative in (TRAEFIK_VALUES, TRAEFIK_STACK):
+        content = command("git", "-C", str(ROOT), "--no-replace-objects", "show",
+                          f"{source_sha}:{relative}")
+        if (ROOT / relative).read_text() != content:
+            raise ValueError("Traefik GitOps source differs from exact current main")
+        reviewed[relative] = content
+    if traefik_node_selector(reviewed[TRAEFIK_STACK], ROOT / TRAEFIK_VALUES) == node_name:
+        raise ValueError("Traefik GitOps nodeSelector may place ingress on canary")
+
+    controllers = complete_items(kubernetes_json(
+        "-n", "traefik", "get", "deployments,replicasets,statefulsets,daemonsets",
+        "--chunk-size=0"), "Traefik controller")
+    deployments = 0
+    traefik_labels = {"app.kubernetes.io/controller": "traefik",
+                      "app.kubernetes.io/instance": "traefik",
+                      "app.kubernetes.io/name": "traefik"}
+    for item in controllers:
+        kind = item.get("kind") if isinstance(item, dict) else None
+        metadata = item.get("metadata") if isinstance(item, dict) else None
+        spec = item.get("spec") if isinstance(item, dict) else None
+        if (kind not in {"Deployment", "ReplicaSet", "StatefulSet", "DaemonSet"} or
+                not isinstance(metadata, dict) or metadata.get("namespace") != "traefik" or
+                not isinstance(metadata.get("name"), str) or not metadata["name"] or
+                not isinstance(spec, dict)):
+            raise ValueError("Traefik controller inventory has an invalid entry")
+        if kind == "Deployment" and metadata["name"] == "traefik":
+            labels = metadata.get("labels")
+            selector = spec.get("selector")
+            template = spec.get("template")
+            template_metadata = template.get("metadata") if isinstance(template, dict) else None
+            template_labels = (template_metadata.get("labels") if
+                               isinstance(template_metadata, dict) else None)
+            match_labels = selector.get("matchLabels") if isinstance(selector, dict) else None
+            if (not isinstance(labels, dict) or
+                    labels.get("app.kubernetes.io/name") != "traefik" or
+                    not isinstance(template_labels, dict) or
+                    not isinstance(match_labels, dict) or
+                    any(match_labels.get(key) != value or
+                        template_labels.get(key) != value for key, value in
+                        traefik_labels.items())):
+                raise ValueError("live Traefik Deployment identity changed")
+            deployments += 1
+        if kind == "ReplicaSet":
+            replicas = spec.get("replicas", 1)
+            if type(replicas) is not int or replicas < 0:
+                raise ValueError("Traefik ReplicaSet has invalid replica count")
+            if replicas == 0:
+                continue
+        template = spec.get("template")
+        pod_spec = template.get("spec") if isinstance(template, dict) else None
+        selector = pod_spec.get("nodeSelector") if isinstance(pod_spec, dict) else None
+        hostname = selector.get("kubernetes.io/hostname") if isinstance(selector, dict) else None
+        if not isinstance(hostname, str) or not hostname or hostname == node_name:
+            raise ValueError("live Traefik controller may place ingress on canary")
+    if deployments != 1:
+        raise ValueError("exact live Traefik Deployment is absent or ambiguous")
+
+    pods = complete_items(kubernetes_json("-n", "traefik", "get", "pods",
+                                           "--chunk-size=0"), "Traefik Pod")
+    pod_nodes = {}
+    for pod in pods:
+        metadata = pod.get("metadata") if isinstance(pod, dict) else None
+        spec = pod.get("spec") if isinstance(pod, dict) else None
+        if (not isinstance(metadata, dict) or not isinstance(spec, dict) or
+                metadata.get("namespace") != "traefik" or
+                not isinstance(metadata.get("name"), str) or not metadata["name"] or
+                not isinstance(metadata.get("uid"), str) or not metadata["uid"]):
+            raise ValueError("Traefik Pod inventory has an invalid entry")
+        if not isinstance(spec.get("nodeName"), str) or not spec["nodeName"]:
+            raise ValueError("Traefik Pod placement is unknown or pending")
+        if spec.get("nodeName") == node_name:
+            raise ValueError("Traefik namespace Pod remains on canary")
+        identity = (metadata["name"], metadata["uid"])
+        if identity in pod_nodes:
+            raise ValueError("Traefik Pod inventory has duplicate identity")
+        pod_nodes[identity] = spec.get("nodeName")
+
+    slices = complete_items(kubernetes_json("-n", "traefik", "get",
+                                             "endpointslices.discovery.k8s.io",
+                                             "--chunk-size=0"), "Traefik EndpointSlice")
+    for item in slices:
+        metadata = item.get("metadata") if isinstance(item, dict) else None
+        endpoints = item.get("endpoints") if isinstance(item, dict) else None
+        if (not isinstance(metadata, dict) or metadata.get("namespace") != "traefik" or
+                not isinstance(endpoints, list)):
+            raise ValueError("Traefik EndpointSlice inventory has an invalid entry")
+        for endpoint in endpoints:
+            if not isinstance(endpoint, dict):
+                raise ValueError("Traefik EndpointSlice has an invalid endpoint")
+            endpoint_node = endpoint.get("nodeName")
+            target = endpoint.get("targetRef")
+            if endpoint_node == node_name:
+                raise ValueError("Traefik EndpointSlice endpoint remains on canary")
+            if (not isinstance(endpoint_node, str) or not endpoint_node or
+                    not isinstance(target, dict) or target.get("kind") != "Pod" or
+                    target.get("namespace", "traefik") != "traefik" or
+                    not isinstance(target.get("name"), str) or
+                    not isinstance(target.get("uid"), str) or
+                    (target["name"], target["uid"]) not in pod_nodes or
+                    pod_nodes[(target["name"], target["uid"])] != endpoint_node):
+                raise ValueError("Traefik EndpointSlice placement is incomplete or changed")
+    require_current_main(source_sha)
+
+
 def require_firewall_removal_transition(evidence_sha, source_sha):
     """Accept pre-removal evidence across two dedicated prunes and unrelated merges."""
     if (not isinstance(evidence_sha, str) or not PLATFORM["SHA"].fullmatch(evidence_sha) or
@@ -522,6 +655,7 @@ def execute(args):
         raise ValueError("cleanup ownership receipt differs from selected capture")
     evidence_sha = ownership.get("evidenceSourceSha")
     require_firewall_removal_transition(evidence_sha, args.expected_sha)
+    require_traefik_off_canary(args.expected_sha, node_name)
     placement = PLATFORM["read_private_json"](directory / "placement.json")
     if (placement.get("format") != 1 or placement.get("verified") is not True or
             placement.get("sourceSha") != evidence_sha or
@@ -564,6 +698,7 @@ def execute(args):
             # shortcut: Pod inventory and firewall deletion are not atomic; prove
             # exclusive placement before live rollout or add a reviewed isolation path.
             for operation in plan:
+                require_traefik_off_canary(args.expected_sha, node_name)
                 require_current_main(args.expected_sha)
                 exec_cleanup(pod, *operation)
         require_current_main(args.expected_sha)

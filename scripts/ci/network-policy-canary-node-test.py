@@ -209,14 +209,15 @@ class CanaryNodeTests(unittest.TestCase):
                     return {"metadata": {}, "items": []}
 
                 with patch.dict(SUT["CLEANUP"], {
-                        "command": lambda *_: "", "kubernetes_json": kube_json}):
+                        "command": lambda *_: "", "kubernetes_json": kube_json,
+                        "require_traefik_off_canary": lambda *_: None}):
                     if failure:
                         with self.assertRaisesRegex(ValueError, failure):
                             SUT["require_release_runtime_quiesced"](
-                                CONFIG, placement(EVIDENCE_SHA), "cleanup-pod-uid")
+                                CONFIG, placement(EVIDENCE_SHA), "cleanup-pod-uid", SHA)
                     else:
                         SUT["require_release_runtime_quiesced"](
-                            CONFIG, placement(EVIDENCE_SHA), "cleanup-pod-uid")
+                            CONFIG, placement(EVIDENCE_SHA), "cleanup-pod-uid", SHA)
 
     def test_clean_release_inventory_allows_workloads_but_rejects_firewall_or_incomplete_list(self):
         workload = {"metadata": {"namespace": "default", "name": "workload",
@@ -535,7 +536,8 @@ class CanaryNodeTests(unittest.TestCase):
     def run_action(self, action, state, remaining=False, pods=None, fail_label_patch=False,
                    cleanup_pods=None, label_inventory=None, capacity_error=None,
                    selected_run="456", selected_version="version-1", loaded_run=None,
-                   source_sha=SHA, run_id="123", fail_main_after_label=False):
+                   source_sha=SHA, run_id="123", fail_main_after_label=False,
+                   traefik_guard=None):
         commands, records, events = [], [], []
         self.last_commands = commands
         self.last_records = records
@@ -606,6 +608,7 @@ class CanaryNodeTests(unittest.TestCase):
                     ownership() if path.name == "firewall-ownership.json" else cleanup())}), \
                     patch.dict(SUT["CLEANUP"], {
                     "kubernetes_json": kube_json, "command": command,
+                    "require_traefik_off_canary": traefik_guard or (lambda *_: None),
                     "require_firewall_removal_transition": lambda *_: None,
                     "inspect_cluster": lambda *_: ("cleanup-pod", "pod-uid"),
                     "snapshot": lambda *_: {"backend": "nft"},
@@ -686,6 +689,7 @@ class CanaryNodeTests(unittest.TestCase):
                         "admission-attempt.json" else admission if path.name ==
                         "admission.json" else proof)}), patch.dict(SUT["CLEANUP"], {
                     "kubernetes_json": kube_json, "command": command,
+                    "require_traefik_off_canary": lambda *_: None,
                     "write_record": lambda _path, record, replace=False:
                     records.append(copy.deepcopy(record))}), patch.dict(SUT["OWNERSHIP"], {
                     "require_owner_attestation": lambda: None,
@@ -1016,6 +1020,24 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertNotIn(CANARY, state["metadata"]["labels"])
         self.assertEqual(len(state["spec"]["taints"]), 1)
 
+    def test_release_keeps_taint_if_traefik_arrives_after_unlabel(self):
+        state = node(admitted=True)
+        checks = 0
+
+        def guard(*_):
+            nonlocal checks
+            checks += 1
+            if checks == 3:
+                raise ValueError("Traefik EndpointSlice endpoint remains on canary")
+
+        with self.assertRaisesRegex(ValueError, "Traefik EndpointSlice"):
+            self.run_action("release", state, traefik_guard=guard)
+        self.assertEqual(checks, 3)
+        self.assertEqual(len(self.last_commands), 1)
+        self.assertNotIn(CANARY, state["metadata"]["labels"])
+        self.assertIn(TAINT, state["spec"]["taints"])
+        self.assertEqual(self.last_records[-1]["status"], "interrupted")
+
     def test_release_retains_taint_while_cleanup_pod_remains(self):
         state = node(admitted=True)
         with patch.object(SUT["time"], "monotonic", side_effect=[0, 121]):
@@ -1296,7 +1318,8 @@ class CanaryNodeTests(unittest.TestCase):
     def test_release_recovery_requires_matching_marker_and_atomic_untaint(self):
         source_sha = "d" * 40
 
-        def run(state, expected_error=None, proof_state=None, pods=None):
+        def run(state, expected_error=None, proof_state=None, pods=None,
+                traefik_guard=None):
             patches, records, sources = [], [], []
             proof_state = proof_state or ("taint-only" if TAINT in state["spec"]["taints"]
                                           else "clean")
@@ -1339,6 +1362,7 @@ class CanaryNodeTests(unittest.TestCase):
                         "private_output": lambda path: path,
                         "read_private_json": lambda path: selected[path.name]}), patch.dict(
                     SUT["CLEANUP"], {"kubernetes_json": kube_json, "command": command,
+                        "require_traefik_off_canary": traefik_guard or (lambda *_: None),
                         "require_firewall_removal_transition": lambda *_: None,
                         "write_record": lambda _path, record, replace=False:
                         records.append(copy.deepcopy(record))}), patch.dict(
@@ -1372,6 +1396,12 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertTrue(records[-1]["mutationPerformed"])
         self.assertFalse(records[-1]["observedClean"])
         self.assertEqual(sources, [(SHA, source_sha), (SHA, source_sha)])
+        def block_ingress(*_):
+            raise ValueError("Traefik Pod remains on canary")
+        patches, records, _ = run(taint_only(), "Traefik Pod remains",
+                                  traefik_guard=block_ingress)
+        self.assertEqual(patches, [])
+        self.assertEqual(records[-1]["status"], "interrupted")
         patches, _, _ = run(taint_only(run_id="999"), "admission marker")
         self.assertEqual(patches, [])
         patches, _, _ = run(node(admitted=True), "isolation state changed")

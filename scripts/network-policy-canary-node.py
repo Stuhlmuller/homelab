@@ -117,8 +117,9 @@ def require_runtime_absent(admit, allow_reviewed_fixtures=False):
             raise ValueError("canary fixture namespace must be absent")
 
 
-def require_release_runtime_quiesced(config, placement, cleanup_pod_uid):
+def require_release_runtime_quiesced(config, placement, cleanup_pod_uid, source_sha):
     """The cleanup controller remains installed, but must have no Pods."""
+    CLEANUP["require_traefik_off_canary"](source_sha, config["canary"]["node"])
     require_runtime_absent(False)
     if not isinstance(cleanup_pod_uid, str) or not cleanup_pod_uid:
         raise ValueError("selected cleanup Pod UID is missing")
@@ -633,7 +634,8 @@ def release_recover(args):
     if tainted:
         require_admission_marker(node, ownership["evidenceSourceSha"],
                                  ownership["admissionRunId"])
-    require_release_runtime_quiesced(config, placement, cleanup["cleanupPodUid"])
+    require_release_runtime_quiesced(config, placement, cleanup["cleanupPodUid"],
+                                     args.expected_sha)
     if observed_state == "clean":
         clean_release_pods(config, proof["observedPods"])
     else:
@@ -653,6 +655,8 @@ def release_recover(args):
     try:
         require_release_source(config, args.release_source_sha, args.expected_sha)
         if tainted:
+            CLEANUP["require_traefik_off_canary"](args.expected_sha,
+                                                   config["canary"]["node"])
             index = next(index for index, item in enumerate(node["spec"]["taints"])
                          if item.get("key") == CANARY)
             patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
@@ -666,7 +670,8 @@ def release_recover(args):
         node, labeled, tainted = node_state(config, placement)
         if labeled or tainted:
             raise ValueError("release recovery Node readback differs")
-        require_release_runtime_quiesced(config, placement, cleanup["cleanupPodUid"])
+        require_release_runtime_quiesced(config, placement, cleanup["cleanupPodUid"],
+                                         args.expected_sha)
         if observed_state == "clean":
             clean_release_pods(config, proof["observedPods"])
         else:
@@ -725,6 +730,8 @@ def recover(args):
         raise ValueError("unisolated canary label is not recoverable")
     if tainted:
         require_admission_marker(node, args.evidence_source_sha, args.admission_run_id)
+        CLEANUP["require_traefik_off_canary"](args.expected_sha,
+                                               config["canary"]["node"])
     require_runtime_absent(True)
     verify_live_pods(config, placement)
     require_exclusive_canary_label(config, placement, labeled)
@@ -746,6 +753,8 @@ def recover(args):
     CLEANUP["write_record"](output, record)
     try:
         if labeled:
+            CLEANUP["require_traefik_off_canary"](args.expected_sha,
+                                                   config["canary"]["node"])
             index = next(index for index, item in enumerate(node["spec"]["taints"])
                          if item.get("key") == CANARY)
             patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
@@ -762,6 +771,8 @@ def recover(args):
         if tainted:
             if abort:
                 require_abort_source(config, args.evidence_source_sha, args.expected_sha)
+            CLEANUP["require_traefik_off_canary"](args.expected_sha,
+                                                   config["canary"]["node"])
             index = next(index for index, item in enumerate(node["spec"]["taints"])
                          if item.get("key") == CANARY)
             patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
@@ -802,6 +813,7 @@ def execute(args):
     if args.action == "release":
         if args.placement_run_id or args.placement_version_id:
             raise ValueError("release selection is bound by reviewed ownership")
+        CLEANUP["require_traefik_off_canary"](args.expected_sha, config["canary"]["node"])
         ownership = PLATFORM["read_private_json"](directory / "firewall-ownership.json")
         validate_cleanup(PLATFORM["read_private_json"](directory / "cleanup.json"),
                          ownership, placement, config, args.expected_sha)
@@ -866,6 +878,8 @@ def execute(args):
             patch(node, [label_add], args.expected_sha)
         else:
             if labeled:
+                CLEANUP["require_traefik_off_canary"](args.expected_sha,
+                                                       config["canary"]["node"])
                 index = next(index for index, item in enumerate(node["spec"].get("taints", []))
                              if item.get("key") == CANARY)
                 patch(node, [{"op": "test", "path": LABEL_PATH, "value": "true"},
@@ -877,6 +891,8 @@ def execute(args):
                 node = wait_for_cleanup_pod_deletion(config, placement, pod)
                 require_runtime_absent(False)
                 verify_live_pods(config, placement)
+                CLEANUP["require_traefik_off_canary"](args.expected_sha,
+                                                       config["canary"]["node"])
                 index = next(index for index, item in enumerate(node["spec"].get("taints", []))
                              if item.get("key") == CANARY)
                 patch(node, [{"op": "test", "path": f"/spec/taints/{index}", "value": TAINT},
