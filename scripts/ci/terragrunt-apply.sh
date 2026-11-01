@@ -219,6 +219,42 @@ plan_and_apply_argocd_apps() {
     plan_json_files+=("$plan_json_file")
   done < <(find "$plan_dir" -name tfplan.json -type f -print | sort)
 
+  # The full filter may select Istio even when its plan artifact is missing.
+  # For changed-unit filters, enumerate selection before treating absence as
+  # an excluded Application.
+  local istio_plan_file selected_units
+  istio_plan_file="$(find "$plan_dir" -path '*/istio/argocd/tfplan.json' -type f -print -quit)"
+  if [[ -z "$istio_plan_file" ]]; then
+    if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == istio ]]; then
+      echo "Selected Istio Application has no saved plan to review." >&2
+      return 1
+    fi
+    if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+      case "$filter" in
+        '*/argocd')
+          echo "Selected Istio Application has no saved plan to review." >&2
+          return 1
+          ;;
+        '*/argocd | '*)
+          if ! selected_units="$(cd IaC/homelab/us-west-2/apps &&
+            terragrunt --log-disable list --filter "$filter" --format long)"; then
+            echo "Unable to enumerate selected Argo CD Applications." >&2
+            return 1
+          fi
+          if ! grep -Eq '^Type[[:space:]]+Path[[:space:]]*$' <<<"$selected_units"; then
+            echo "Unrecognized Argo CD Application selection output." >&2
+            return 1
+          fi
+          if grep -Eq '^unit[[:space:]]+istio/argocd[[:space:]]*$' <<<"$selected_units"; then
+            echo "Selected Istio Application has no saved plan to review." >&2
+            return 1
+          fi
+          ;;
+        *) echo "Unknown Argo CD Application filter; cannot verify Istio selection." >&2; return 1 ;;
+      esac
+    fi
+  fi
+
   if ((${#plan_json_files[@]} == 0)); then
     echo "No affected Argo CD Application registration units require apply."
     return
@@ -235,6 +271,14 @@ plan_and_apply_argocd_apps() {
     "${plan_json_files[@]}" >/dev/null; then
     echo "Argo CD Application replacement or deletion requires explicit state repair or deleted-unit handling." >&2
     return 1
+  fi
+
+  # This Application auto-syncs after registration. Inspect its saved plan
+  # whenever a full or targeted run includes the Istio unit.
+  if [[ -n "$istio_plan_file" ]]; then
+    terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
+      render --json --write=false --no-color |
+      python3 scripts/ci/istio-upgrade-gate.py authorize-apply --plan-dir "$plan_dir"
   fi
 
   (
