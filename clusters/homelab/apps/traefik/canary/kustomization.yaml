@@ -4,7 +4,6 @@ namespace: traefik
 resources:
   - serviceaccount.yaml
   - state-rbac.yaml
-  - auth-externalsecret.yaml
   - headless-service.yaml
   - authorizationpolicy.yaml
   - statefulset.yaml

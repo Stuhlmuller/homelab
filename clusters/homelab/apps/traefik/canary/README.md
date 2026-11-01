@@ -25,10 +25,12 @@ and policy tests. Generate a dedicated, single-use, non-ephemeral Tailscale
 auth key for that tag and store it in SSM SecureString
 `/homelab/tailscale/traefik-sidecar-canary-auth-key` through a reviewed
 repository-owned path. Declare the SSM slot and its reader IAM grant, then add
-`traefik` to the `aws-ssm` ClusterSecretStore namespace allowlist in the
-activation PR; neither contract exists yet. The `ExternalSecret` projects it
-as `traefik-sidecar-canary-auth` key `auth-key` in `traefik`. Do not reuse the
-operator OAuth Secret. This source contains no credential value.
+the exact key to `policy/kubernetes.rego` and `traefik` to the `aws-ssm`
+ClusterSecretStore namespace allowlist in the activation PR. These grants do
+not exist yet. `auth-externalsecret.yaml` is staged
+but excluded from this Kustomization until those grants pass. When registered,
+it projects `traefik-sidecar-canary-auth` key `auth-key` in `traefik`. Do not
+reuse the operator OAuth Secret. This source contains no credential value.
 
 `tailscaled` stores its durable identity in the Kubernetes Secret
 `traefik-sidecar-canary-state`. Its Role allows namespace-wide `create` only
