@@ -124,9 +124,11 @@ It is not held while CI runs. Never infer abandoned ownership just from its age.
 Changed heads or bases mark old records stale and require fresh inspection.
 
 A Codex heartbeat attached to the delivery chat supplies the recurring worker.
-Its saved scope is the homelab's existing PR delivery: prioritize actionable
-ancestors, repair routine conflicts/CI, promote only validated source-ready
-drafts, and merge through current protection using the signed-in GitHub user.
+Its saved prompt names the exact authorized PRs and a completion stop condition.
+A repository-wide mandate requires separate explicit owner authorization. Within
+that scope, prioritize actionable ancestors, repair routine conflicts/CI, and
+merge through current protection using the signed-in GitHub user. Do not expand
+a bounded delivery to other drafts, current PRs, or future PRs.
 It reads the merged runbook and helper from current `main` before each pass.
 An external prerequisite produces a durable next action and one notification;
 unchanged waits remain quiet. Local runner availability and account capacity
