@@ -34,6 +34,7 @@ def private_fixture(directory, name, value):
 
 def check_api_transport():
     seen = []
+    token_requests = []
     redirect_target = 'https://redirect.invalid/leak'
 
     class Transport(urllib.request.BaseHandler):
@@ -48,6 +49,14 @@ def check_api_transport():
                 response = urllib.response.addinfourl(BytesIO(b''), headers,
                                                       request.full_url, code=302)
                 response.msg = 'Found'
+            elif request.full_url.endswith('/oauth/token'):
+                token_requests.append((request.get_header('Content-type'), request.data,
+                                       request.get_header('Authorization')))
+                token = {'access_token': 'fixture-token', 'token_type': 'Bearer',
+                         'scope': ' '.join(rotation.SCOPES)}
+                response = urllib.response.addinfourl(BytesIO(json.dumps(token).encode()),
+                                                      headers, request.full_url, code=200)
+                response.msg = 'OK'
             else:
                 response = urllib.response.addinfourl(BytesIO(b'{"keys": []}'), headers,
                                                       request.full_url, code=200)
@@ -86,6 +95,16 @@ def check_api_transport():
         assert seen[-2] == (rotation.API + '/ok', f'Bearer {admin_key}', False)
         assert seen[-1] == (rotation.API + '/ok', 'Basic ' + rotation.base64.b64encode(
             f'{new_id}:{new_secret}'.encode()).decode(), False)
+
+        rotation.verify_new_client({'client_id': new_id, 'client_secret': new_secret})
+        assert len(token_requests) == 1
+        content_type, payload, authorization = token_requests[0]
+        assert content_type == 'application/x-www-form-urlencoded'
+        assert rotation.urllib.parse.parse_qs(payload.decode(), strict_parsing=True) == {
+            'grant_type': ['client_credentials'], 'scope': [' '.join(rotation.SCOPES)],
+            'tags': [rotation.TAG]}
+        assert authorization == 'Basic ' + rotation.base64.b64encode(
+            f'{new_id}:{new_secret}'.encode()).decode()
 
 
 check_api_transport()
@@ -181,7 +200,7 @@ with tempfile.TemporaryDirectory() as location:
                                                               'scope': 'devices:core auth_keys services'}) as api:
         rotation.verify_new_client(record)
         assert api.call_args.kwargs['basic'] == (new_id, new_secret)
-        assert api.call_args.kwargs['body']['tags'] == rotation.TAG
+        assert dict(api.call_args.kwargs['body'])['tags'] == rotation.TAG
     with patch.object(rotation, 'api_request', return_value={'access_token': 'fixture-token',
                                                               'token_type': 'Bearer', 'scope': 'devices:core'}):
         try:

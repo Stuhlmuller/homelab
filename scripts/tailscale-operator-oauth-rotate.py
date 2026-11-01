@@ -231,8 +231,8 @@ def create_client(api_key, revision, state, path):
 def verify_new_client(record):
     result = api_request('/oauth/token', method='POST',
                          basic=(record['client_id'], record['client_secret']),
-                         body={'grant_type': 'client_credentials',
-                               'scope': ' '.join(SCOPES), 'tags': TAG})
+                         body=[('grant_type', 'client_credentials'),
+                               ('scope', ' '.join(SCOPES)), ('tags', TAG)])
     if (not isinstance(result.get('access_token'), str) or not result['access_token']
             or str(result.get('token_type', '')).lower() != 'bearer'):
         raise RuntimeError('New OAuth client token check failed')
