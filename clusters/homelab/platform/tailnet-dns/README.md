@@ -11,12 +11,27 @@ The reviewed source of private names is the Traefik Service's
 [`routes.yaml`](../../apps/traefik/routes.yaml). The Service has the only
 `homelab.rst.io/private-dns=approved` label. The permanent static check rejects
 route/annotation drift; the one-time `--initial-migration` check compares the
-first rollout with the 27-name migration inventory. Later approved names require
-one route plus annotation change in the same PR, then the Service watch updates
-DNS without a record edit. A/AAAA for approved names are local; unmatched A/AAAA
-and all other record types go to public resolvers. The current Traefik Service
-publishes IPv4, so approved AAAA is authoritative NODATA. The TTL/cache bound is
-30 seconds.
+first rollout with the reviewed migration inventory. Later approved names require
+a route, the Service annotation, and the resolver's private view allowlist in
+the same PR. The static check rejects drift among them. The Service watch then
+updates the approved address without a DNS record edit. Approved A/AAAA queries
+stay in the private view; an absent Service or empty/unready EndpointSlice cannot
+fall through to public DNS. Unrelated A/AAAA and all non-address record types
+use public resolvers. The current Traefik Service publishes IPv4, so approved
+AAAA is authoritative NODATA. The TTL/cache bound is 30 seconds.
+After endpoint withdrawal, a prior private answer can remain in resolver cache
+for that bound; client caches may last longer. A sidecar cutover therefore also
+needs an identity-bound traffic guard during peer loss or IP reassignment. The
+live canary must deny traffic immediately after withdrawing the test peer,
+while a previously returned A record is still cached.
+
+The pinned resolver behavior can be checked without a live write. Build
+`k8s_gateway` v1.9.0 from its pinned source, then run
+`python3 -I scripts/ci/tailnet-dns-runtime-test.py --resolver-bin <BINARY>` in
+the repository's Nix shell. The fixture renders chart 4.0.0, serves a local
+Kubernetes API and public DNS stub, and checks ready, unready, empty, and
+missing-Service states over UDP/TCP. It keeps public A/AAAA and apex MX/TXT
+answers available while private A/AAAA never reaches the public forwarder.
 
 The approval label is selected cluster-wide; it is controlled by reviewed
 manifests and Kubernetes write access, not an admission policy. The handoff
@@ -49,10 +64,11 @@ python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-hand
 ```
 
 It binds the supplied IP to the online signed proxy and live Service, then
-requires authoritative A and AAAA responses over UDP/TCP for all 27 names,
-including a concrete Cordium wildcard child. It also checks public apex MX/TXT
-and an unrelated public name. A successful direct query is the handoff gate;
-the owner then adds this IP as a **restricted `stinkyboi.com` nameserver** in
+requires authoritative A and AAAA responses over UDP/TCP for all reviewed
+private names, including a concrete Cordium wildcard child. It also checks
+public apex MX/TXT and an unrelated public name. A successful direct query is
+the handoff gate. The owner then adds this IP as a **restricted `stinkyboi.com`
+nameserver** in
 Tailscale DNS. Enable **Use with exit node** for that nameserver if the clients
 use an exit node. Leave unrelated tailnet DNS settings alone. Normal OS lookup
 and HTTPS acceptance follow the owner change, before public record retirement.
@@ -69,7 +85,7 @@ an outage workaround. The apex remains privately answered while healthy and
 retains its existing public A and mail records.
 
 The current [26-name cutover contract](../../../../specs/005-retire-public-app-dns/contracts/cutover.md)
-requires owner DNS confirmation, all 27 private answers and HTTPS routes,
+requires owner DNS confirmation, all reviewed private answers and HTTPS routes,
 with declared and live zero-replica checks for intentionally stopped apps,
 per-name off-tailnet caller decisions, a complete public baseline, and the old
 maximum TTL. Preview and execute from reviewed `main`; verify public absence

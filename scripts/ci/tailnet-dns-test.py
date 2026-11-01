@@ -21,6 +21,10 @@ CORDIUM_RULE = r"^[^.]+\.cordium\.stinkyboi\.com$"
 OCE_RULE = r"^agent-[0-9a-f]{32}\.agents\.oce\.stinkyboi\.com$"
 WILDCARD_RULES = {CORDIUM_RULE: "*.cordium.stinkyboi.com",
                   OCE_RULE: "*.agents.oce.stinkyboi.com"}
+VIEW_WILDCARDS = {
+    "*.cordium.stinkyboi.com": r"^[^.]+\\.cordium\\.stinkyboi\\.com\\.$",
+    "*.agents.oce.stinkyboi.com": r"^[^.]+\\.agents\\.oce\\.stinkyboi\\.com\\.$",
+}
 HOST = re.compile(r"Host\(`([^`]+)`\)")
 HOST_REGEXP = re.compile(r"HostRegexp\(`([^`]+)`\)")
 NAME = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*stinkyboi\.com")
@@ -79,12 +83,44 @@ def expect_reject(values, routes, inventory, message):
     raise AssertionError(message)
 
 
-def mutation_checks(values, routes, inventory):
+def private_view_contract(names, dns_values):
+    plugins = dns_values["servers"][0]["plugins"]
+    view = next(plugin for plugin in plugins if plugin["name"] == "view")
+    expression = view["configBlock"]
+    require(expression.startswith("expr type() in ['A', 'AAAA'] && (")
+            and expression.endswith(")"), "private view must select approved A/AAAA only")
+    exact_match = re.search(r"name\(\) in \[([^\]]+)\]", expression)
+    require(exact_match is not None, "private view needs an exact-name allowlist")
+    skeleton = re.sub(r"name\(\) matches '[^']+'", "WILDCARD",
+                      re.sub(r"name\(\) in \[[^\]]+\]", "NAMES", expression))
+    require(skeleton == "expr type() in ['A', 'AAAA'] && ( NAMES || WILDCARD || WILDCARD)",
+            "private view contains an unexpected route condition")
+    exact_names = re.findall(r"'([^']+)'", exact_match.group(1))
+    wildcards = re.findall(r"name\(\) matches '([^']+)'", expression)
+    require(len(exact_names) == len(set(exact_names))
+            and set(exact_names) == {name + "." for name in names if "*" not in name},
+            "private view exact names differ from the approved Service annotation")
+    require(len(wildcards) == len(set(wildcards))
+            and set(wildcards) == {VIEW_WILDCARDS[name] for name in names if "*" in name},
+            "private view wildcards differ from the approved Service annotation")
+    require(not any(plugin["name"] == "forward" for plugin in plugins)
+            and "fallthrough" not in next(plugin for plugin in plugins
+                                         if plugin["name"] == "k8s_gateway")["configBlock"],
+            "private A/AAAA must not fall through to public DNS")
+
+
+def mutation_checks(values, routes, inventory, dns_values):
     added_values, added_routes = copy.deepcopy(values), copy.deepcopy(routes)
     added_values["service"]["private"]["annotations"]["coredns.io/hostname"] += ",probe.stinkyboi.com"
     added_routes["http"]["routers"]["probe"] = {
         "entryPoints": ["websecure"], "rule": "Host(`probe.stinkyboi.com`)"}
     approved_names(added_values, added_routes, inventory)
+    try:
+        private_view_contract(approved_names(added_values, added_routes, inventory), dns_values)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("new private name passed without a DNS view update")
     try:
         approved_names(added_values, added_routes, inventory, initial=True)
     except ValueError:
@@ -98,6 +134,12 @@ def mutation_checks(values, routes, inventory):
         .replace("affine.stinkyboi.com", "new-affine.stinkyboi.com"))
     renamed_routes["http"]["routers"]["affine"]["rule"] = "Host(`new-affine.stinkyboi.com`)"
     approved_names(renamed_values, renamed_routes, inventory)
+    try:
+        private_view_contract(approved_names(renamed_values, renamed_routes, inventory), dns_values)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("renamed private name passed without a DNS view update")
 
     removed_values, removed_routes = copy.deepcopy(values), copy.deepcopy(routes)
     removed_values["service"]["private"]["annotations"]["coredns.io/hostname"] = (
@@ -105,6 +147,12 @@ def mutation_checks(values, routes, inventory):
         .replace("affine.stinkyboi.com,", ""))
     del removed_routes["http"]["routers"]["affine"]
     approved_names(removed_values, removed_routes, inventory)
+    try:
+        private_view_contract(approved_names(removed_values, removed_routes, inventory), dns_values)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("removed private name passed without a DNS view update")
 
     expect_reject(added_values, routes, inventory, "DNS name without private route passed")
     added_values["service"]["private"]["annotations"]["coredns.io/hostname"] += ",probe.stinkyboi.com"
@@ -180,18 +228,22 @@ def rendered_contract():
 
     corefile = resources["ConfigMap", "tailnet-dns-k8s-gateway"]["data"]["Corefile"]
     blocks = corefile.split(".:1053 {")
+    view_expression = next(plugin for plugin in dns_values["servers"][0]["plugins"]
+                           if plugin["name"] == "view")["configBlock"]
     require(len(blocks) == 3 and "view private-addresses" in blocks[1]
-            and "expr type() in ['A', 'AAAA']" in blocks[1]
+            and view_expression in blocks[1]
             and "view " not in blocks[2] and "k8s_gateway" not in blocks[2],
-            "A/AAAA private view or public non-address forwarding changed")
+            "approved private view or public catch-all changed")
     require("k8s_gateway stinkyboi.com" in blocks[1]
             and "resources Service" in blocks[1]
             and "serviceLabelSelectors homelab.rst.io/private-dns=approved" in blocks[1]
             and "loadBalancerAddressPreference ip" in blocks[1]
-            and "fallthrough" in blocks[1]
+            and "fallthrough" not in blocks[1]
             and "ttl 30" in blocks[1]
-            and all("forward . 1.1.1.1 1.0.0.1" in block and "cache 30" in block
-                    for block in blocks[1:]), "private source or public forwarding changed")
+            and "forward" not in blocks[1]
+            and "forward . 1.1.1.1 1.0.0.1" in blocks[2]
+            and all("cache 30" in block for block in blocks[1:]),
+            "private fail-closed source or public forwarding changed")
     role = resources["ClusterRole", "tailnet-dns-k8s-gateway"]
     allowed = {"customresourcedefinitions", "services", "namespaces", "endpointslices"}
     granted = {resource for rule in role["rules"] for resource in rule["resources"]}
@@ -207,12 +259,14 @@ def main():
     values = load_yaml(VALUES)
     routes = load_yaml(ROUTES)
     inventory = json.loads(INVENTORY.read_text())
+    dns_values = load_yaml(DNS_VALUES)
     label_sources = {path for path in (ROOT / "clusters/homelab").rglob("*")
                      if path.suffix in {".yaml", ".yml"}
                      and "homelab.rst.io/private-dns:" in path.read_text()}
     require(label_sources == {VALUES}, "another cluster source declares the private DNS selector")
-    approved_names(values, routes, inventory, initial="--initial-migration" in args)
-    mutation_checks(values, routes, inventory)
+    names = approved_names(values, routes, inventory, initial="--initial-migration" in args)
+    private_view_contract(names, dns_values)
+    mutation_checks(values, routes, inventory, dns_values)
     if "--declarations" not in args:
         rendered_contract()
     print("Private DNS publication and resolver contract passed")
