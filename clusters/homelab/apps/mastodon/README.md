@@ -169,7 +169,6 @@ Both verifier paths use disposable PostgreSQL 18 storage, a read-only backup
 mount, no production database volume or credentials, and a private Unix socket.
 Success checks the restored schema, owner and media catalog. It does not prove
 media-file or stable application-key recovery.
-
 Kustomize copies each scheduled Job template into its corresponding initial
 Job. Version an initial Job name when changing its copied template; completed
 Kubernetes Job templates are immutable. The nightly verifier prevents the
