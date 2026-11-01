@@ -211,8 +211,11 @@ plan_and_apply_argocd_apps() {
 
   (
     cd IaC/homelab/us-west-2/apps
-    terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 --source-update \
-      --out-dir "$plan_dir" --json-out-dir "$plan_dir" -- plan -no-color
+    terragrunt_run_filter_args "$filter"
+    if ((${#TERRAGRUNT_RUN_FILTER_ARGS[@]} > 0)); then
+      terragrunt run --all "${TERRAGRUNT_RUN_FILTER_ARGS[@]}" --non-interactive --parallelism 1 --source-update \
+        --out-dir "$plan_dir" --json-out-dir "$plan_dir" -- plan -no-color
+    fi
   )
 
   while IFS= read -r plan_json_file; do
@@ -239,8 +242,9 @@ plan_and_apply_argocd_apps() {
 
   (
     cd IaC/homelab/us-west-2/apps
+    terragrunt_run_filter_args "$filter"
     verify_current_main_commit
-    terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
+    terragrunt run --all "${TERRAGRUNT_RUN_FILTER_ARGS[@]}" --non-interactive --parallelism 1 \
       --out-dir "$plan_dir" -- apply -no-color
   )
 }

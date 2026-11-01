@@ -169,7 +169,10 @@ echo "IaC/homelab/us-west-2/apps/langfuse/blob-storage is also excluded: its sta
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/homelab/us-west-2/apps
-  terragrunt run --all --filter "$(terragrunt_argocd_changed_filter true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
+  terragrunt_run_filter_args "$(terragrunt_argocd_changed_filter true)"
+  if ((${#TERRAGRUNT_RUN_FILTER_ARGS[@]} > 0)); then
+    terragrunt run --all "${TERRAGRUNT_RUN_FILTER_ARGS[@]}" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
+  fi
 )
 echo "::endgroup::"
 
