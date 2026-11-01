@@ -653,6 +653,11 @@ policies are declared in `IaC/homelab/us-west-2/operator/github-actions-role-pol
 deliberately outside the GitHub workflow traversal: an automation role must not
 be able to widen its own trust or replace the policy attached to itself.
 
+The same operator policy grants `GetPolicy`, `GetPolicyVersion`, and
+`ListPolicyTags` on only `homelab-oce-recovery-publisher-boundary`, so the
+application-backup-storage plan can refresh its existing boundary. The module's
+boundary test rejects broader actions or resources; this grant adds no IAM writes.
+
 For a trust-only change, use the targeted operator runbook in
 `docs/operator-infrastructure.md`. It conditionally imports only the existing role,
 saves a plan for `aws_iam_role.github_actions`, rejects non-trust role drift and

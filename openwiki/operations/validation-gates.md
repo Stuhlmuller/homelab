@@ -552,6 +552,10 @@ that directory.
 
 The GitHub workflow role must not plan or apply `IaC/homelab/us-west-2/operator`; those units own
 the permissions that protect the workflow from self-administration.
+The operator policy allows only `GetPolicy`, `GetPolicyVersion`, and
+`ListPolicyTags` on `homelab-oce-recovery-publisher-boundary` for the CI
+application-backup-storage refresh. Its boundary test checks the exact action
+and resource set; the workflow cannot install this grant itself.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
 

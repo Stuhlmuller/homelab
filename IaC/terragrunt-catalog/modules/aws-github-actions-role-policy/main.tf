@@ -16,10 +16,22 @@ locals {
     for index in range(var.parameter_reader_policy_slot_count) :
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/${var.parameter_reader_policy_name_prefix}${format("%02d", index)}"
   ]
-  langfuse_blob_storage_user_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
+  langfuse_blob_storage_user_arn  = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
+  recovery_publisher_boundary_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/homelab-oce-recovery-publisher-boundary"
 }
 
 data "aws_iam_policy_document" "parameter_reader_administration" {
+  statement {
+    sid    = "ReadRecoveryPublisherBoundary"
+    effect = "Allow"
+    actions = [
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:ListPolicyTags",
+    ]
+    resources = [local.recovery_publisher_boundary_arn]
+  }
+
   statement {
     sid    = "CreateTaggedHomelabParameterReaderPolicies"
     effect = "Allow"
