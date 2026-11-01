@@ -172,12 +172,12 @@ existing node safely admits the isolated canary.
 No spare worker is available. A read-only snapshot found `zimaboard-2` using
 1,339 MiB against 1,308 MiB allocatable, before the staged 576 MiB
 enforcer/client limit budget and 128 MiB reserve. It cannot pass admission.
-Draft [#1584](https://github.com/Stuhlmuller/homelab/pull/1584) moves only
-`zimaboard-2` workloads to `acer`/`zimaboard-1`; draft
-[#1583](https://github.com/Stuhlmuller/homelab/pull/1583) restarts Langfuse
-PostgreSQL on `acer`. Revise or retire both before a different-node rollout;
-do not incur that database outage solely to clear `zimaboard-2`. Any later
-database move still requires a fresh verified off-NAS checkpoint.
+Closed [#1584](https://github.com/Stuhlmuller/homelab/pull/1584) proposed moving
+only `zimaboard-2` workloads to `acer`/`zimaboard-1`; closed
+[#1583](https://github.com/Stuhlmuller/homelab/pull/1583) proposed restarting
+Langfuse PostgreSQL on `acer`. Neither changed live state. Do not incur that
+database outage solely to clear `zimaboard-2`. Any later database move still
+requires a fresh verified off-NAS checkpoint.
 
 `zimaboard-0` is a conditional candidate, not an admitted canary. It has
 7,282 MiB allocatable, 5,852 MiB used, and 8.1 GiB node filesystem free.
