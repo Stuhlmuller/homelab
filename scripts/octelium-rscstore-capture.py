@@ -274,6 +274,9 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                 "kubelet lease is stale or clock differs")
     api_pods = {(pod["metadata"]["name"], pod["metadata"]["uid"]): pod
                 for pod in pods}
+    api_by_name = {pod["metadata"]["name"]: pod for pod in pods}
+    require(len(api_pods) == len(pods) == len(api_by_name),
+            "API Pod identities are ambiguous")
     boot_ids = {}
     for node in nodes["items"]:
         name = node["metadata"]["name"]
@@ -322,8 +325,22 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
             require(len(columns) == 3 and columns[:2] == [address, "k8s.io"]
                     and len(columns[2].split()) >= 4,
                     "Talos CRI inventory format changed")
-            require("octelium/" not in columns[2] or "rscstore" not in columns[2],
-                    "Talos CRI retains a resource-store container or sandbox")
+            fields = columns[2].split()
+            container_id = fields[1] if fields[0] in ("└─", "├─") else fields[0]
+            require("/" in container_id and not container_id.startswith("─"),
+                    "Talos CRI container ID format changed")
+            if container_id.startswith(f"{NAMESPACE}/"):
+                pod_name = container_id.split(":", 1)[0].split("/", 1)[1]
+                require(pod_name in api_by_name
+                        and not pod_name.startswith(DEPLOYMENT + "-"),
+                        "Talos CRI retains a resource-store or orphan Octelium Pod")
+                pod = api_by_name[pod_name]
+                mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
+                                   == CLAIM for volume in pod["spec"].get("volumes", []))
+                require(not mounts_claim or (pod_name == INSPECTOR
+                                             and pod["metadata"]["uid"] == inspector_uid
+                                             and name == inspector_node),
+                        "Talos CRI retains another PVC mount user")
     return dict(sorted(boot_ids.items()))
 
 

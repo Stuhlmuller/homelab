@@ -218,7 +218,8 @@ class RscstoreCaptureTest(unittest.TestCase):
                   "items": [{"metadata": {"name": name}, "spec": {
                       "renewTime": datetime.now(timezone.utc).isoformat()}}
                       for name in CAPTURE.NODES]}
-        state = {"nodes": nodes, "leases": leases, "views": {}, "talos_writer": False}
+        state = {"nodes": nodes, "leases": leases, "views": {},
+                 "talos_writer": False, "talos_old_reader": False}
         for name in CAPTURE.NODES:
             state["views"][name] = {"pods": {"kind": "PodList", "items": [inspector]
                                                if name == "zimaboard-1" else []},
@@ -239,9 +240,17 @@ class RscstoreCaptureTest(unittest.TestCase):
             address = command[command.index("--nodes") + 1]
             header = "NODE NAMESPACE ID IMAGE PID STATUS\n"
             row = f"{address} k8s.io kube-system/example pause:3.10 123 SANDBOX_READY\n"
+            if address == CAPTURE.NODES["zimaboard-1"]:
+                row += (f"{address} k8s.io octelium/{CAPTURE.INSPECTOR} "
+                        "pause:3.10 456 SANDBOX_READY\n")
+                row += (f"{address} k8s.io └─ octelium/{CAPTURE.INSPECTOR}:inspection:abc123 "
+                        "busybox:1.38.0 457 CONTAINER_RUNNING\n")
             if state["talos_writer"]:
                 row += (f"{address} k8s.io octelium/octeliumee-rscstore-old "
                         "store:0.22.0 1 CONTAINER_RUNNING\n")
+            if state["talos_old_reader"] and address == CAPTURE.NODES["zimaboard-1"]:
+                row += (f"{address} k8s.io octelium/old-reader "
+                        "busybox:1.38.0 458 SANDBOX_READY\n")
             return header + row
 
         with tempfile.TemporaryDirectory() as directory:
@@ -270,7 +279,14 @@ class RscstoreCaptureTest(unittest.TestCase):
                     self.assertRaisesRegex(ValueError, "PVC mount user"):
                 CAPTURE.node_runtime_guard("homelab", talosconfig,
                                            [inspector, old_reader], POD_UID)
-            state["views"]["zimaboard-1"]["runningpods/"]["items"] = []
+            state["views"]["zimaboard-1"]["runningpods/"]["items"] = [inspector]
+            state["talos_old_reader"] = True
+            with mock.patch.object(CAPTURE, "json_output", side_effect=response), \
+                    mock.patch.object(CAPTURE, "output", side_effect=talos), \
+                    self.assertRaisesRegex(ValueError, "Talos CRI retains another PVC mount user"):
+                CAPTURE.node_runtime_guard("homelab", talosconfig,
+                                           [inspector, old_reader], POD_UID)
+            state["talos_old_reader"] = False
             state["talos_writer"] = True
             with self.assertRaisesRegex(ValueError, "Talos CRI retains"):
                 guard()
