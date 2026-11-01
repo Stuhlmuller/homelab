@@ -101,6 +101,15 @@ spec:
                 - 'tailscale --socket=/run/tailscale/tailscaled.sock status --json | grep -Eq ''"BackendState"[[:space:]]*:[[:space:]]*"Running"'''
             periodSeconds: 10
             timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - 'tailscale --socket=/run/tailscale/tailscaled.sock status --json >/dev/null'
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
           volumeMounts:
             - {name: tailscale-api, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
             - {name: tailscale-auth, mountPath: /var/run/secrets/tailscale-auth, readOnly: true}
