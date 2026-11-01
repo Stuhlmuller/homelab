@@ -53,10 +53,53 @@ liveness windows plus a 120-second termination grace so NFS-backed recovery can
 complete without a restart loop.
 
 The dormant [application-backup publisher](../../../../scripts/application-backup.py)
-accepts only a paired `globals.sql`, `dispatcharr.dump`, `data.tar` and
-`capture.json` with a reviewed stopped-writer reference. It does not capture
-these files or prove a restore. Keep both Pods running and both claims retained
-until a separate capture and isolated recovery drill pass.
+defines a paired `globals.sql`, `dispatcharr.dump`, `data.tar` and
+`capture.json` contract, but rejects Dispatcharr publication until a protected,
+durable writer-fence receipt exists. It does not capture these files or prove a
+restore. Keep both Pods running and both claims retained until a separate
+capture and isolated recovery drill pass.
+
+The [paired capture candidate](recovery-capture-candidate/) is excluded from
+this Application's active `kustomization.yaml`. Its one-shot Job would mount the
+`dispatcharr` data claim read-only, dump PostgreSQL 17 while the app and Celery
+writers are stopped, and write the four files plus `SHA256SUMS` to a retained
+NFS backup claim. A placeholder fence commit makes accidental activation fail
+before any backup is written. A valid commit-shaped value remains unverified:
+`capture.json` records `writers_fenced: false` and the requested reference. The
+job has no Kubernetes token and retries zero times. Its candidate NetworkPolicy
+permits only PostgreSQL and DNS egress; prove that policy under the eventual
+enforcer before activation. The Job is suspended even if the candidate directory
+is included, so GitOps inclusion alone cannot start a capture. A completed local
+set is not offsite recovery.
+
+To activate, first merge a separate reviewed GitOps change that scales the
+`dispatcharr` controller to zero without deleting either claim. Read back zero
+Deployment Pods and Jobs, one ready `dispatcharr-postgres` Pod, and the exact
+two bound source PV identities. Keep PostgreSQL running for the logical dump.
+Then replace the candidate's `FENCE_REF` with that fence change's signed merge
+SHA and include the candidate directory in this Application's kustomization in
+a second protected PR. Keep the Job suspended until a separately reviewed
+source change has durable preflight and continuous writer-fence proof for the
+whole capture window. Review the PVC provisioned path and the one-shot Job plan
+before sync. If any writer returns, stop the capture path in reviewed desired
+state; a `capture.json` assertion alone does not prove a fence.
+
+After a successful Job, verify its completion and the exact five files and
+checksums without printing private data. Retain the local set; the publisher
+must continue rejecting it until an independent protected operation binds
+pre/post writer and source-PV readbacks to the capture, stores a durable receipt,
+and verifies that receipt before publication. The backup host and AWS prefix
+grants remain unconfigured for Dispatcharr. After those prerequisites are
+reviewed and applied, mount only that backup PVC's exact QNAP subdirectory
+read-only on the approved backup host, declare its source root in
+`recovery/application-backups/schedule.json`, and run the protected
+`application-backup.py` prepare/publish/check/retrieve path. Independently
+restore the retrieved PostgreSQL 17 dump and file archive inside the approved
+disconnected recovery environment; check accounts, channels, configuration and
+private provider credentials while streaming and callbacks stay disabled.
+Record source PV IDs, capture ID, immutable offsite versions, retrieval,
+restore result and measured recovery time before any service retirement.
+Leave the source claims and failed partial sets retained through that review.
 
 The QNAP export maps writes from container root to UID/GID `65534`. The web
 container sets upstream `PUID`/`PGID` to that owner so nginx and Django can use
