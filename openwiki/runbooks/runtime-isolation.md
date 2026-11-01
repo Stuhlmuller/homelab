@@ -260,8 +260,23 @@ taint list when removed, so it must not own the temporary taint. Restore the
 missing `homelab-plan` required reviewer and add `shared/kubernetes-node-labels`
 to its protected PR plan before any node-label change. The five paused workloads
 remove about 2,640 MiB in scheduler-effective requests, closing a 1,315 MiB
-destination deficit if all apps moved, but this is request-only math. Prove actual memory
+destination deficit if all apps moved, but this is request-only math. Prove
+actual memory
 peaks, restart and Pod-slot headroom around etcd, and fallback path health.
+
+[The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+checks complete Service, Pod, and EndpointSlice lists against the 25 emergency
+Deployment selectors. It records Service identities and Ready Pod target UIDs,
+not endpoint addresses, and keeps admission unproven. The dated 25/29 counts
+do not identify all 54 Services; a fresh private report and owner-reviewed
+exact identity baseline are still required before outage acceptance.
+
+A November 1 17:03 UTC read-only inventory found 64 Octelium namespace
+Services: 25 Ready fallback-covered, 29 native-only, 9 independent of z0, and
+1 unresolved Enterprise store Service with one selected unready Pod and no
+Ready endpoint. The private full report stays
+outside git; this observation does not qualify the outage.
+
 This route incurs monitoring and media outages plus an Octelium/private-app
 interruption during eviction. A persistent guard must deny
 Traefik Pod traffic before container start and through enforcer restart,

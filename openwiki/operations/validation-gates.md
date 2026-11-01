@@ -703,6 +703,13 @@ between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
 
+The read-only [Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+joins complete namespace Service, Pod, and EndpointSlice snapshots to the 25
+source-declared emergency Deployments. Offline fixtures cover stale Service
+UID ownership, false Ready endpoints, selector drift, and fallback loss. Its
+sanitized output stays `admission: unproven` without a reviewed exact
+54-Service baseline, direct-path probes, and protected CI checks.
+
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete policy shapes to pinned `v0.12.7` constructors. The
 [Octelium fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
@@ -2237,6 +2244,8 @@ wrapper or a shared/host PID namespace. It also requires failure on corrupt or
 stale newest archives, invalid checksum paths,
 empty required tables, missing encrypted-resource keys, and previous-day-only
 backups. A current invalid set fails even when a valid previous-day set exists.
+The fixture and normal failure cleanup stop PostgreSQL with fast shutdown;
+candidate cleanup tries bounded immediate shutdown only if fast stop fails.
 Rendered timing guards include the backup's late-start and execution deadlines
 plus a 15-minute margin. Rendered guards
 require only the read-only backup PVC plus bounded scratch, no credentials, and
@@ -2716,12 +2725,18 @@ DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
 the DNS job installs Nix and runs both kubeconfig setup and publication inside
 the pinned shell. These fixtures do not contact SMTP or publish DNS.
 
-Before activation, require current-head protected checks and live Terragrunt
-plan, complete fixed-image publication, worker capacity, ready upstream
-Applications and declared SSM credentials. Register only the Mastodon target
-through the saved-plan apply path. Then verify actual Argo revision/health,
-migrations, owner login, loaded JSON gem, SMTP delivery and public HTTP,
-WebFinger, media and streaming. The DNS workflow requires Mastodon and the
-shared connector Synced/Healthy at its reviewed revision. Preserve data and
-stable keys through recovery; prove backups and isolated restore separately.
+The [scheduled verifier](../../clusters/homelab/apps/mastodon/restore-verification-cronjob.yaml)
+runs at 03:35 America/Los_Angeles after the backup execution window. Kustomize
+copies that same isolated template into `mastodon-restore-verification-v2` for
+immediate verification. The route/recovery fixtures check template equality,
+schedule, read-only backup access, disabled API-token mounting, and absence of
+production database or credential mounts. The verifier checks the dump checksum,
+restored schema, owner and media catalog; failures cannot report success.
+
+These declarations and fixtures are not live recovery receipts. Job outcomes
+record individual database rehearsals; they do not prove media-file or stable-key
+recovery. Protected CI and GitOps own delivery conditions. Login, SMTP, public
+HTTP, WebFinger, media and streaming remain distinct runtime observations.
+The DNS workflow checks Mastodon and the shared connector Synced/Healthy at
+its reviewed revision; this page adds no separate activation approval.
 See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).
