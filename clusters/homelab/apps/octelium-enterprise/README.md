@@ -53,8 +53,14 @@ change establishes they are no longer needed.
 GitOps stage adds `capture-stage/inspector.yaml` as a resource while the
 Deployment remains at one replica. Verify the pinned Harbor mirror image pulls,
 the Pod schedules and reaches Ready, and both read-only mount fields are live.
-Only a later reviewed fence stage adds `capture-stage` as a Kustomize component;
-its patch sets only `octeliumee-rscstore` to zero replicas. The inspector mounts
+The liveness probe checks the mounted directory; readiness checks that
+`store.db` exists and is readable. The proposed UID/GID 0 matches the upstream
+store's root behavior, but source PVC ownership and modes must be checked before
+activation. Retain root only if complete file access requires it; otherwise
+revise the inspector and capture guard to a proven nonroot UID. A successful
+readiness probe covers `store.db`; the full tar capture must still read every
+PVC entry. Only a later reviewed fence stage adds `capture-stage` as a
+Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas. The inspector mounts
 the exact `octelium-rscstore` claim read-only at the volume and container mount,
 has no API token, credentials, or writable image root, and is not selected by
 the resource-store Service. This image digest is declared in

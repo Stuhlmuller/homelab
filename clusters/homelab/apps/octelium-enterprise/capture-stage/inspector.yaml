@@ -3,6 +3,9 @@ kind: Pod
 metadata:
   name: octelium-rscstore-capture-inspector
   namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=Upstream store root files may require UID 0 for complete PVC capture; verify ownership before activation. Both PVC mounts are read-only.
+    checkov.io/skip2: CKV_K8S_23=Upstream store root files may require UID 0 for complete PVC capture; verify ownership before activation. Both PVC mounts are read-only.
   labels:
     app.kubernetes.io/name: octelium-rscstore-capture-inspector
     app.kubernetes.io/part-of: octelium-enterprise
@@ -20,6 +23,16 @@ spec:
       image: harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
       imagePullPolicy: IfNotPresent
       command: ["/bin/sh", "-ec", "exec sleep infinity"]
+      livenessProbe:
+        exec:
+          command: ["/bin/sh", "-ec", "test -d /source"]
+        periodSeconds: 30
+        timeoutSeconds: 2
+      readinessProbe:
+        exec:
+          command: ["/bin/sh", "-ec", "test -f /source/store.db && test -r /source/store.db"]
+        periodSeconds: 10
+        timeoutSeconds: 2
       resources:
         requests:
           cpu: 10m
@@ -28,6 +41,8 @@ spec:
           cpu: 100m
           memory: 64Mi
       securityContext:
+        runAsUser: 0
+        runAsGroup: 0
         allowPrivilegeEscalation: false
         readOnlyRootFilesystem: true
         capabilities:

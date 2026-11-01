@@ -1161,8 +1161,11 @@ python3 -I scripts/ci/openwiki-check.py
 ```
 
 Before any future fence, the inspector-only GitOps stage must be Synced and
-the pinned Harbor image pulled on its scheduled node. The later fence stage
-must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
+the pinned Harbor image pulled on its scheduled node. Verify the source PVC
+ownership and modes: retain the proposed inspector UID/GID 0 only if complete
+file access requires it; otherwise revise to a proven nonroot UID. Readiness
+checks `store.db` readability, while capture must read the whole PVC. The
+later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
 and no other Pod mounting the claim. Capture then requires private off-NAS
 storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
 readback, and isolated file extraction. The capture helper repeats the

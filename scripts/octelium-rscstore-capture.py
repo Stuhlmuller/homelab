@@ -195,13 +195,27 @@ def inspector_guard(deployment, pvc, pv, pods, expected_pvc_uid, expected_pv_uid
             and not container.get("env") and not container.get("envFrom")
             and len(container.get("volumeMounts", [])) == 1,
             "inspector command or credentials changed")
+    probe_fields = {"exec", "initialDelaySeconds", "periodSeconds", "timeoutSeconds",
+                    "failureThreshold", "successThreshold"}
+    for probe, command, period in (
+            (container.get("livenessProbe"), "test -d /source", 30),
+            (container.get("readinessProbe"),
+             "test -f /source/store.db && test -r /source/store.db", 10)):
+        require(isinstance(probe, dict) and set(probe) <= probe_fields
+                and probe.get("exec") == {"command": ["/bin/sh", "-ec", command]}
+                and probe.get("periodSeconds") == period and probe.get("timeoutSeconds") == 2
+                and probe.get("initialDelaySeconds", 0) == 0
+                and probe.get("failureThreshold", 3) == 3
+                and probe.get("successThreshold", 1) == 1,
+                "inspector health probe changed")
     mount = container["volumeMounts"][0]
     require(mount == {"name": "source", "mountPath": "/source", "readOnly": True}
             and volume == {"name": "source", "persistentVolumeClaim": {
                 "claimName": CLAIM, "readOnly": True}},
             "inspector PVC mount is not read-only")
     security = container.get("securityContext", {})
-    require(security.get("readOnlyRootFilesystem") is True
+    require(security.get("runAsUser") == 0 and security.get("runAsGroup") == 0
+            and security.get("readOnlyRootFilesystem") is True
             and security.get("allowPrivilegeEscalation") is False
             and security.get("capabilities", {}).get("drop") == ["ALL"]
             and spec.get("securityContext", {}).get("seccompProfile", {}).get("type") == "RuntimeDefault",

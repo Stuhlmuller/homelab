@@ -94,7 +94,14 @@ def cluster_fixture():
                           "securityContext": {"seccompProfile": {"type": "RuntimeDefault"}},
                           "containers": [{"name": "inspection", "image": CAPTURE.IMAGE,
                                           "command": ["/bin/sh", "-ec", "exec sleep infinity"],
-                                          "securityContext": {"readOnlyRootFilesystem": True,
+                                          "livenessProbe": {"exec": {"command": ["/bin/sh", "-ec",
+                                                                                  "test -d /source"]},
+                                                            "periodSeconds": 30, "timeoutSeconds": 2},
+                                          "readinessProbe": {"exec": {"command": ["/bin/sh", "-ec",
+                                                                                   "test -f /source/store.db && test -r /source/store.db"]},
+                                                             "periodSeconds": 10, "timeoutSeconds": 2},
+                                          "securityContext": {"runAsUser": 0, "runAsGroup": 0,
+                                                              "readOnlyRootFilesystem": True,
                                                               "allowPrivilegeEscalation": False,
                                                               "capabilities": {"drop": ["ALL"]}},
                                           "volumeMounts": [{"name": "source", "mountPath": "/source",
@@ -162,6 +169,32 @@ class RscstoreCaptureTest(unittest.TestCase):
         pods[0]["spec"]["volumes"][0]["persistentVolumeClaim"]["readOnly"] = False
         with self.assertRaises(ValueError):
             CAPTURE.inspector_guard(deployment, pvc, pv, pods, PVC_UID, PV_UID)
+
+    def test_inspector_probe_and_uid_drift_rejected(self):
+        deployment, pvc, pv, pods = cluster_fixture()
+        defaulted = copy.deepcopy(pods)
+        for name in ("livenessProbe", "readinessProbe"):
+            defaulted[0]["spec"]["containers"][0][name].update(
+                initialDelaySeconds=0, failureThreshold=3, successThreshold=1)
+        CAPTURE.inspector_guard(deployment, pvc, pv, defaulted, PVC_UID, PV_UID)
+        changes = (
+            lambda pod: pod["spec"]["containers"][0]["readinessProbe"].update(
+                initialDelaySeconds=3600),
+            lambda pod: pod["spec"]["containers"][0]["readinessProbe"].update(
+                grpc={"port": 443}),
+            lambda pod: pod["spec"]["containers"][0]["readinessProbe"]["exec"].update(
+                command=["/bin/sh", "-ec", "true"]),
+            lambda pod: pod["spec"]["containers"][0]["livenessProbe"]["exec"].update(
+                command=["/bin/sh", "-ec", "true"]),
+            lambda pod: pod["spec"]["containers"][0]["securityContext"].update(runAsUser=1000),
+            lambda pod: pod["spec"]["containers"][0]["securityContext"].update(runAsGroup=1000),
+        )
+        for change in changes:
+            with self.subTest(change=change):
+                altered = copy.deepcopy(pods)
+                change(altered[0])
+                with self.assertRaises(ValueError):
+                    CAPTURE.inspector_guard(deployment, pvc, pv, altered, PVC_UID, PV_UID)
 
     def test_complete_archive_prepares_for_versioned_publisher(self):
         with tempfile.TemporaryDirectory() as directory:

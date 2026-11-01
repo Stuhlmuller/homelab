@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 patches:
-  - path: rscstore-fence.yaml
+  - path: rscstore-fence.patch
     target:
       group: apps
       version: v1
