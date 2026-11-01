@@ -47,6 +47,83 @@ the store process; historical WAL quarantine files are never replayed or
 removed automatically. Preserve them until a reviewed recovery-retention
 change establishes they are no longer needed.
 
+## Dormant resource-store capture stage
+
+`capture-stage/` is excluded from the active app. First, a separate reviewed
+GitOps stage adds `capture-stage/inspector.yaml` as a resource while the
+Deployment remains at one replica. Verify the pinned Harbor mirror image pulls,
+the Pod schedules and reaches Ready, and both read-only mount fields are live.
+Only a later reviewed fence stage adds `capture-stage` as a Kustomize component;
+its patch sets only `octeliumee-rscstore` to zero replicas. The inspector mounts
+the exact `octelium-rscstore` claim read-only at the volume and container mount,
+has no API token, credentials, or writable image root, and is not selected by
+the resource-store Service. This image digest is declared in
+`clusters/homelab/platform/image-policy/images.json` and used by existing
+Harbor-backed workloads; the inspector's own live pull is still an activation
+gate. Merging this preparation alone does not stop or restart the store. The
+capture helper requires the exact fence revision Synced in Argo CD and a
+complete namespaced PodList showing zero other PVC mount users. Removal and
+restart require a later reviewed change; this stage does
+not quarantine the WAL, replay it, or resume the Deployment.
+
+After activation, privately record the live PVC UID, bound PV name and UID,
+the exact merged `main` SHA, and the intended kubectl context. The capture
+helper requires those identities, a settled zero-replica Deployment, no other
+Pod mounting the claim, and the pinned, ready inspector. It streams a tar of
+the entire PVC root three times: before, archive, after. All three byte counts
+and SHA-256 values must match. The archive includes the active WAL, dated
+quarantines, and recovery markers present on the claim; its private receipt
+records their names and hashes. Missing `store.db`, unsupported file types,
+changed identities, main advancing during capture, or changed bytes fail
+closed. The helper rechecks current `main`, Argo sync, and the stopped writer
+immediately before issuing its receipt. Private partials remain for
+inspection and cannot enter the publisher as a completed timestamp directory.
+
+Use a pre-existing, owned mode-0700 directory on durable **local off-NAS**
+storage with five times the archive size plus 64 MiB free. Do not use a Git
+checkout, temporary directory, NFS, or SMB mount. The two archive parts are
+each at most 5 GiB for S3 `PutObject`; the complete tar is bounded at 10 GiB.
+The 5000 Mi PVC request is not a file-system quota, so an oversized archive
+stops for a separately reviewed multipart path.
+
+```sh
+python3 -I scripts/octelium-rscstore-capture.py capture \
+  --context '<reviewed-homelab-context>' \
+  --expected-sha '<exact-merged-main-sha>' \
+  --expected-pvc-uid '<live-pvc-uid>' --expected-pv-uid '<live-pv-uid>' \
+  --workspace /private/durable-off-nas/rscstore
+python3 -I scripts/application-backup.py prepare \
+  --app octelium-rscstore --workspace /private/durable-off-nas/rscstore \
+  --source /private/durable-off-nas/rscstore/<capture-timestamp>
+python3 -I scripts/application-backup.py publish \
+  --app octelium-rscstore --workspace /private/durable-off-nas/rscstore \
+  --id '<prepared-id>' --aws-cli '<absolute-aws-cli-path>' \
+  --profile application-backup
+python3 -I scripts/octelium-rscstore-capture.py prove-retrieval \
+  --workspace /private/durable-off-nas/rscstore --id '<prepared-id>' \
+  --aws-cli '<absolute-aws-cli-path>' --profile application-backup-reader \
+  --proof /private/durable-off-nas/rscstore/<new-proof-directory>
+```
+
+The existing application-backup publisher conditionally creates each object
+in the committed versioned S3 bucket, reads each exact version back, and writes
+a versioned `complete.json` marker last. Its rscstore allowlist requires both
+archive parts and `capture.json`; it verifies the complete-PVC receipt and
+three matching hashes. The proof command itself retrieves a fresh set from S3
+through the publisher, then records the marker and object version IDs and
+rehashes files restored into a separate directory. A locally fabricated
+`complete.json` or `retrieval.json` cannot start a proof.
+The publisher and reader policy examples include only the new rscstore prefix;
+their attachment and the operator profile's actual rights remain a separate
+activation check. A failed S3 upload or retrieval leaves the writer fenced.
+Immediately before publication and any recovery decision, recheck current
+`main` against the capture receipt's fence SHA, Argo Synced at that revision,
+and zero live resource-store writers; drift requires a new capture and review.
+Only that published, retrieved, extracted set qualifies as the off-NAS archive
+gate. It does **not** prove DuckDB can reopen the checkpoint/WAL or that Octelium
+can serve traffic. Keep the writer fenced and all source files untouched until
+a separately reviewed recovery plan establishes those facts.
+
 The resource-store Deployment declares `initContainers: []` and
 `Replace=true,ServerSideApply=false` so Argo CD reconciles the complete Pod
 template without inheriting the Application's server-side apply mode. Server-side
@@ -84,8 +161,8 @@ Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
 images as `tag@sha256:digest`, preserve `Recreate` on the three store Deployments,
-omit `rollingUpdate`, keep `initContainers: []` and `Replace=true,ServerSideApply=false` on the
-resource store, preserve
+omit `rollingUpdate`, keep `initContainers: []` and
+`Replace=true,ServerSideApply=false` on the resource store, preserve
 the Argo image ignore rule for the four generated service proxy Deployments,
 and re-run validation.
 
