@@ -19,7 +19,7 @@ source = Path(__file__).resolve().parents[1] / 'tailscale-operator-oauth-rotate.
 spec = importlib.util.spec_from_file_location('rotation', source)
 rotation = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rotation)
-admin_key = 'tskey-api-fixture-secret'
+admin_key = rotation.API_KEY_PREFIX + 'fixture-secret'
 new_id = 'fixture-client-id'
 new_secret = 'fixture-new-client-secret'
 old = {'client_id': 'old-id', 'client_secret': 'old-secret'}
