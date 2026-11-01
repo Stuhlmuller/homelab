@@ -282,17 +282,20 @@ plan_and_apply_argocd_apps() {
           echo "Network-policy activation requires a targeted protected apply." >&2
           return 1
         }
+        terragrunt --working-dir "$repo_root/IaC/homelab/us-west-2/apps/platform-network-policy/argocd" \
+          --log-disable render --json --write=false --no-color |
+          jq -e '.inputs.manifest.spec.syncPolicy.automated |
+            .enabled == false and .prune == false and .allowEmpty == false' >/dev/null || {
+          echo "The enforcer Application must remain manual in every source phase." >&2
+          return 1
+        }
         case "$(cat "$repo_root/clusters/homelab/platform/network-policy/kustomization.yaml")" in
           $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml')
-            if jq -e 'any(.resource_changes[]?;
-              .type == "kubernetes_manifest" and .change.actions != ["no-op"])' \
-              "$plan_json_file" >/dev/null; then
-              [[ "$(cat "$repo_root/clusters/homelab/platform/network-policy/canary/kustomization.yaml")" == "$expected_fixtures" ]] || {
-                echo "Enforcer activation requires reviewed fixture source." >&2
-                return 1
-              }
-              activation_phase=enforcer
-            fi ;;
+            [[ "$(cat "$repo_root/clusters/homelab/platform/network-policy/canary/kustomization.yaml")" == "$expected_fixtures" ||
+               "$(cat "$repo_root/clusters/homelab/platform/network-policy/canary/kustomization.yaml")" == "$expected_empty" ]] || {
+              echo "Enforcer registration requires reviewed fixture source." >&2
+              return 1
+            } ;;
           $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []') ;;
           *) echo "Unreviewed network-policy source phase." >&2; return 1 ;;
         esac
@@ -479,6 +482,48 @@ if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   echo "::group::Targeted Argo CD Application registration apply"
   plan_and_apply_argocd_apps
   echo "::endgroup::"
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == platform-network-policy ]] &&
+     jq -e '.activationEnabled == true' scripts/config/platform-maintenance.json >/dev/null; then
+    [[ "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false ]] || {
+      echo "Firewall manual sync requires the normal targeted protected apply." >&2
+      exit 1
+    }
+    policy_source="$(cat clusters/homelab/platform/network-policy/kustomization.yaml)"
+    canary_source="$(cat clusters/homelab/platform/network-policy/canary/kustomization.yaml)"
+    if [[ "$policy_source" == $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml' &&
+          "$canary_source" == $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml' ]]; then
+      echo "::group::Protected manual firewall activation"
+      activation_bucket="$(terragrunt render --config "$repo_root/IaC/application-backup-storage.hcl" \
+        --json --write=false --log-disable | jq -er .inputs.bucket)"
+      verify_current_main_commit
+      python3 -I scripts/network-policy-manual-sync.py \
+        --phase enforcer --expected-sha "${GITHUB_SHA:-}" --bucket "$activation_bucket"
+      echo "::endgroup::"
+    elif [[ "$policy_source" == $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []' &&
+            "$canary_source" == $'apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []' ]]; then
+      canary_automated="$(terragrunt --working-dir \
+        "$repo_root/IaC/homelab/us-west-2/apps/platform-network-policy-canary/argocd" \
+        --log-disable render --json --write=false --no-color |
+        jq -ec .inputs.manifest.spec.syncPolicy.automated)"
+      if jq -e '.enabled == true and .prune == true and .allowEmpty == true' \
+        <<<"$canary_automated" >/dev/null; then
+        echo "::group::Protected manual firewall prune"
+        activation_bucket="$(terragrunt render --config "$repo_root/IaC/application-backup-storage.hcl" \
+          --json --write=false --log-disable | jq -er .inputs.bucket)"
+        verify_current_main_commit
+        python3 -I scripts/network-policy-manual-sync.py \
+          --phase prune --expected-sha "${GITHUB_SHA:-}" --bucket "$activation_bucket"
+        echo "::endgroup::"
+      elif jq -e '.enabled == false and .prune == false and .allowEmpty == false' \
+        <<<"$canary_automated" >/dev/null; then
+        echo "Retired canary requires its protected release verification, not a firewall prune retry." >&2
+        exit 1
+      else
+        echo "Unreviewed canary Application phase for firewall prune." >&2
+        exit 1
+      fi
+    fi
+  fi
   exit 0
 fi
 

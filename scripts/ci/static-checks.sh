@@ -63,6 +63,7 @@ python3 -I scripts/ci/network-policy-qualification-test.py
 python3 -I scripts/ci/traefik-network-policy-qualification-test.py
 python3 -I scripts/ci/network-policy-ownership-test.py
 python3 -I scripts/ci/network-policy-cleanup-test.py
+python3 -I scripts/ci/network-policy-manual-sync-test.py
 python3 -I scripts/ci/envoy-gateway-prerequisite-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

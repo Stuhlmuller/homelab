@@ -212,10 +212,6 @@ class FirewallCleanupTests(unittest.TestCase):
             def prune_firewall():
                 (root / manifest).write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n")
-                original = (root / application).read_text()
-                (root / application).write_text(original.replace(
-                    "        enabled = true\n        prune   = true\n",
-                    "        enabled    = true\n        prune      = true\n        allowEmpty = true\n"))
             def wiki_update(name):
                 target = root / name
                 target.parent.mkdir(parents=True, exist_ok=True)
@@ -223,8 +219,6 @@ class FirewallCleanupTests(unittest.TestCase):
             git("init", "-q")
             (root / canary_manifest).write_text(
                 "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - fixtures.yaml\n")
-            original = (root / application).read_text()
-            (root / application).write_text(original.replace(dormant, active))
             original = (root / canary_application).read_text()
             (root / canary_application).write_text(original.replace(
                 "        enabled = false\n        prune   = false\n",

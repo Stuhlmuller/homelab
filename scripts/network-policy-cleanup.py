@@ -567,7 +567,7 @@ def require_traefik_off_canary(source_sha, node_name):
 
 
 def require_firewall_removal_transition(evidence_sha, source_sha):
-    """Accept pre-removal evidence across two dedicated prunes and unrelated merges."""
+    """Accept the fixture prune and manual-only enforcer source removal."""
     if (not isinstance(evidence_sha, str) or not PLATFORM["SHA"].fullmatch(evidence_sha) or
             evidence_sha == source_sha):
         raise ValueError("firewall evidence is not from the reviewed pre-removal commit")
@@ -593,7 +593,7 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
     manifest = "clusters/homelab/platform/network-policy/kustomization.yaml"
     application = "IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl"
     old_manifest = "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - daemonset.yaml\n"
-    old_sync = "        enabled = true\n        prune   = true\n"
+    manual_sync = "        enabled = false\n        prune   = false\n"
     def non_operational(path):
         return (path.startswith(("openwiki/", "specs/")) or
                 (path.startswith("docs/") and
@@ -623,13 +623,11 @@ def require_firewall_removal_transition(evidence_sha, source_sha):
             phase = 1
         elif phase == 1 and {manifest, application} & changed:
             old_app = command("git", "-C", str(ROOT), "show", f"{previous}:{application}")
-            new_app = command("git", "-C", str(ROOT), "show", f"{commit_sha}:{application}")
-            if (changed - wiki_paths != {manifest, application} or
+            if (changed - wiki_paths != {manifest} or
                     command("git", "-C", str(ROOT), "show", f"{previous}:{manifest}") != old_manifest or
                     command("git", "-C", str(ROOT), "show", f"{commit_sha}:{manifest}") != empty_manifest or
-                    old_app.count(old_sync) != 1 or
-                    new_app != old_app.replace(old_sync, new_sync)):
-                raise ValueError("firewall removal differs from the reviewed GitOps transition")
+                    old_app.count(manual_sync) != 1):
+                raise ValueError("firewall removal differs from reviewed manual GitOps transition")
             phase = 2
         elif any(not non_operational(path) for path in changed):
             raise ValueError("policy cleanup source changed after qualification")

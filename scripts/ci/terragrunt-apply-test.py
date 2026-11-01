@@ -174,13 +174,27 @@ elif tool == "conftest":
         event(json.loads(data)["unit"] + ".policy")
         Path(str(path) + ".checked").write_text(hashlib.sha256(data).hexdigest())
 elif tool == "python3":
-    if len(args) != 8 or args[0] != "-I" or not args[1].endswith(
-            "scripts/network-policy-activation-capacity.py") or args[2] != "--phase" or \
-            args[4:] != ["--expected-sha", config["sha"], "--bucket", "private-bucket"]:
+    if len(args) == 8 and args[0] == "-I" and args[1].endswith(
+            "scripts/network-policy-activation-capacity.py") and args[2] == "--phase" and \
+            args[4:] == ["--expected-sha", config["sha"], "--bucket", "private-bucket"]:
+        event("capacity." + args[3])
+        if config.get("gate_fail"):
+            sys.exit(23)
+    elif args[:3] == ["-I", "scripts/network-policy-manual-sync.py", "--phase"] and \
+            len(args) == 8 and args[4:6] == ["--expected-sha", config["sha"]] and \
+            args[6:] == ["--bucket", "private-bucket"]:
+        phase = args[3]
+        if phase == "enforcer":
+            event("capacity.enforcer")
+            if config.get("gate_fail"):
+                sys.exit(23)
+        elif phase != "prune":
+            unexpected()
+        event("manual-sync." + phase)
+        if config.get("manual_sync_fail"):
+            sys.exit(23)
+    else:
         unexpected()
-    event("capacity." + args[3])
-    if config.get("gate_fail"):
-        sys.exit(23)
 elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
@@ -223,9 +237,13 @@ elif tool == "terragrunt":
     elif command[:1] == ["--working-dir"] and command[3:] == [
             "--json", "--write=false", "--no-color"] and command[2] == "render":
         event("dormant.render")
+        canary = "platform-network-policy-canary" in command[1]
+        active = (config.get("pruned_policy_source", False) and not config.get(
+            "canary_retired", False)) if canary else config.get("render_active", False)
         print(json.dumps({"inputs": {"manifest": {"spec": {"syncPolicy": {
-            "automated": {"enabled": config.get("render_active", False),
-                          "prune": False, "allowEmpty": False}}}}}}))
+            "automated": {"enabled": active,
+                          "prune": active if canary else False,
+                          "allowEmpty": active if canary else False}}}}}}))
     elif command[:2] == ["apply", "-no-color"] and len(command) == 3:
         event(unit + ".apply")
         if unit == "bootstrap":
@@ -334,9 +352,9 @@ class TerragruntApplyTest(unittest.TestCase):
                 (policy / "canary").mkdir(parents=True)
                 (policy / "kustomization.yaml").write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
-                    + ("resources: []\n" if target ==
-                       "platform-network-policy-canary" and not config.get(
-                           "wrong_enforcer_source") else
+                    + ("resources: []\n" if config.get("pruned_policy_source") or
+                       (target == "platform-network-policy-canary" and not config.get(
+                           "wrong_enforcer_source")) else
                        "resources:\n  - daemonset.yaml\n"))
                 (policy / "canary/kustomization.yaml").write_text(
                     "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n"
@@ -387,20 +405,34 @@ class TerragruntApplyTest(unittest.TestCase):
         for target, phase in (("platform-network-policy", "enforcer"),
                               ("platform-network-policy-canary", "fixtures")):
             with self.subTest(target=target):
-                result, events = self.run_apply(target=target, github_actions=True)
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertLess(events.index("capacity." + phase), events.index("apps.apply"))
-                self.assertEqual(events[events.index("capacity." + phase) - 1],
-                                 "capacity.bucket")
                 result, events = self.run_apply(target=target, github_actions=True,
-                                                gate_fail=True)
+                                                activation_enabled=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                if phase == "enforcer":
+                    self.assertLess(events.index("apps.apply"), events.index("capacity.enforcer"))
+                    self.assertLess(events.index("capacity.enforcer"),
+                                    events.index("manual-sync.enforcer"))
+                else:
+                    self.assertLess(events.index("capacity.fixtures"), events.index("apps.apply"))
+                if phase == "fixtures":
+                    self.assertEqual(events[events.index("capacity.fixtures") - 1],
+                                     "capacity.bucket")
+                result, events = self.run_apply(target=target, github_actions=True,
+                                                activation_enabled=True, gate_fail=True)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("capacity." + phase, events)
-                self.assertNotIn("apps.apply", events)
+                self.assertNotIn("manual-sync." + phase, events)
+                if phase == "fixtures":
+                    self.assertNotIn("apps.apply", events)
                 result, events = self.run_apply(target=target, github_actions=True,
+                                                activation_enabled=True,
                                                 network_policy_noop=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertNotIn("capacity." + phase, events)
+                if phase == "enforcer":
+                    self.assertIn("capacity.enforcer", events)
+                    self.assertIn("manual-sync.enforcer", events)
+                else:
+                    self.assertNotIn("capacity.fixtures", events)
                 self.assertIn("apps.apply", events)
 
     def test_fixture_first_rejects_nonempty_enforcer_source(self):
@@ -411,6 +443,33 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertIn("Fixture first-pull requires empty enforcer source", result.stderr)
         self.assertNotIn("capacity.fixtures", events)
         self.assertNotIn("apps.apply", events)
+
+    def test_manual_prune_requires_targeted_policy_apply_and_manual_app(self):
+        result, events = self.run_apply(
+            target="platform-network-policy", github_actions=True,
+            activation_enabled=True, dormant_source=True, pruned_policy_source=True,
+            network_policy_noop=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLess(events.index("apps.apply"), events.index("manual-sync.prune"))
+        self.assertNotIn("capacity.enforcer", events)
+        result, events = self.run_apply(
+            target="platform-network-policy", github_actions=True,
+            activation_enabled=True, dormant_source=True, pruned_policy_source=True,
+            render_active=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("The enforcer Application must remain manual", result.stderr)
+        self.assertNotIn("apps.apply", events)
+        self.assertNotIn("manual-sync.prune", events)
+
+    def test_retired_canary_rejects_manual_prune_retry(self):
+        result, events = self.run_apply(
+            target="platform-network-policy", github_actions=True,
+            activation_enabled=True, dormant_source=True, pruned_policy_source=True,
+            canary_retired=True, network_policy_noop=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("apps.apply", events)
+        self.assertNotIn("manual-sync.prune", events)
+        self.assertIn("Retired canary requires its protected release verification", result.stderr)
 
     def test_full_apply_allows_noop_dormant_pair_but_not_activation(self):
         result, events = self.run_apply(target="", github_actions=True,

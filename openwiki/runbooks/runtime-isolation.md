@@ -281,7 +281,22 @@ It permits ordinary post-untaint workloads but rejects firewall and cleanup
 Pods. It records `mutationPerformed: false` without attributing the earlier
 patch.
 After a qualifying traffic probe, exact reviewed GitOps commits
-prune the fixtures and then the enforcer. Unrelated commits may land before,
+prune the fixtures and then remove the enforcer from source. The enforcer
+Application remains manual in every phase, so merging the empty source cannot
+prune the live controller. Protected targeted Terragrunt Apply on exact current
+`main` verifies the empty fixture Application, selected admission and placement,
+Node UID and boot ID, taint, complete reviewed Pod inventory, exactly the four
+reviewed Argo-tracked firewall resources while the DaemonSet is active, and
+desired and live Traefik placement before a SHA-pinned manual Argo sync with
+`--prune` and four resource filters.
+It verifies the enforcer DaemonSet and Pods are gone and the Application is
+Synced/Healthy with no tracked resources. This prune does not qualify the
+controller, remove the taint, or establish ownership of residual firewall
+objects. A system DaemonSet Pod restart changes its selected placement UID
+and blocks prune; retain the taint and manual enforcer until a separately
+reviewed recovery path exists. A partial prune may retry when the DaemonSet
+and Pod are absent and remaining RBAC is still tracked by Argo. Unrelated
+commits may land before,
 between, or after these two dedicated commits. The protected stage walks full
 first-parent history from the qualify SHA and rejects intervening policy
 runtime-source changes under the guarded operational roots or Nix flake
@@ -312,7 +327,7 @@ selector for `zimaboard-2`, a Pod or endpoint there, or unknown placement retain
 the canary taint; move Traefik away through reviewed GitOps first. The
 [static phase check](../../scripts/ci/network-policy-registration-test.py)
 also rejects an empty enforcer Kustomization with a z2 or unknown Traefik
-selector before the auto-prune commit passes CI. It cannot attest live placement
+selector before the source commit passes CI. It cannot attest live placement
 at merge time. An empty
 live inventory is accepted only with the explicit off-node GitOps selector and
 successful complete list queries. Orphan firewall probe recovery still removes
@@ -336,10 +351,10 @@ a separately reviewed node-local host firewall assertion tied to the current
 Traefik Pod IP before its container starts, plus reboot and image-GC negative
 probes. No such boot barrier exists in this source.
 
-The later enforcer and fixture rollout also lacks its own protected fresh
-capacity gate; admission does not authorize that rollout. The earlier firewall
-snapshot may drift after capture because admission does not run another
-privileged probe.
+The protected fixture and enforcer rollout rechecks fresh capacity separately
+from admission; admission alone does not authorize that rollout. The protected
+enforcer stage repeats a UID-owned empty-firewall baseline probe just before
+its manual sync.
 `canary-release` verifies the cleanup, ownership and original placement
 receipts, the exact two dedicated commits in current `main` history, absent fixture
 namespace and workloads, and an empty owned firewall. It removes the label

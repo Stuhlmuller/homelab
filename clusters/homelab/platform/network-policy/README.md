@@ -6,7 +6,8 @@ the service proxy. The host-network privileged exception is necessary to
 program node firewall rules; the Pod mounts only the shared xtables lock.
 Its health endpoint listens on loopback on the selected node.
 
-The Argo Application registration is staged with automatic sync disabled. Its
+The Argo Application stays manual in every source phase: automatic sync and
+pruning remain disabled. Its
 selector currently matches no node. Admit only a reviewed, isolated canary
 before live qualification. Keep enforcement off other nodes until the legacy
 assistant archive, supported platform upgrades, full policy-owner/render review,
@@ -206,11 +207,12 @@ Terragrunt Apply for `argocd_app=platform-network-policy-canary` on exact
 current `main`; verify the split fixture placement and protected first-pull
 digest proof.
 After the protected activation gate passes, merge a second reviewed change
-restoring `daemonset.yaml` to the enforcer Kustomization and enabling automated
-sync and pruning in
-`IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl`, then dispatch
-its protected Apply on exact current `main`. Verify its DaemonSet is Ready
-only on `zimaboard-2` and both Applications are Synced/Healthy before dispatching
+restoring `daemonset.yaml` to the enforcer Kustomization only. Keep the
+enforcer Application manual. Dispatch its targeted protected Apply on exact
+current `main`. The stage rechecks capacity and the reviewed source and
+placement, then manually syncs the Application at that exact SHA. Verify its
+DaemonSet is Ready only on `zimaboard-2` and both Applications are
+Synced/Healthy before dispatching
 the read-only `qualify` stage. An
 unrelated merge that stales either dispatch requires a retry against current
 `main`.
@@ -227,9 +229,12 @@ sequence uses Argo CD ownership; `qualify` never creates or removes Kubernetes
 resources. T019/T027 still require an admitted isolated canary and live
 lifecycle evidence.
 The static registration gate accepts only the six exact source phases in this
-sequence. It does not authorize a live stage: the protected stage still
-requires exact-current-`main`, private qualification and ownership receipts,
-and live resource and Node identity checks.
+sequence and requires the enforcer Application to remain manual in each.
+Merging the enforcer source alone cannot activate or prune it. The gate does
+not authorize a live stage: protected activation and prune still require
+exact-current-`main`, selected private admission and placement, and live
+resource and Node identity checks. Later firewall cleanup separately requires
+qualification and approved ownership receipts.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC. It probes the
@@ -282,10 +287,26 @@ documentation and inventory evidence merges. The first
 removes the canary fixtures from `canary/kustomization.yaml` and enables
 `allowEmpty` in `IaC/homelab/us-west-2/apps/platform-network-policy-canary/stack.hcl`; apply it and
 verify the fixture namespace is absent. The second changes only
-`kustomization.yaml` here from the enforcer DaemonSet to `resources: []` and
-adds `allowEmpty = true` to the already automated
-`IaC/homelab/us-west-2/apps/platform-network-policy/stack.hcl`. Apply it and verify the enforcer is
-gone.
+`kustomization.yaml` here from the enforcer DaemonSet to `resources: []`.
+Keep the enforcer Application manual. After its merge, dispatch targeted
+protected Apply on exact current `main`; this stage checks the selected
+admission and placement, Node UID/boot ID and taint, reviewed Pod inventory,
+exactly the four reviewed Argo-tracked firewall resources while the DaemonSet
+is active, the empty fixture Application, and desired and live Traefik placement
+before
+explicitly running `argocd app sync --core --prune` at that SHA with four
+resource filters for the reviewed ServiceAccount, ClusterRole,
+ClusterRoleBinding, and DaemonSet. Verify the enforcer DaemonSet and Pods are
+gone and the Application is Synced/Healthy with
+no tracked resources. The canary taint and residual firewall objects remain
+until reviewed ownership capture, approval, and owned cleanup. Manual prune
+is not controller qualification or firewall ownership evidence.
+If a reviewed system DaemonSet Pod restarts before prune, the immutable
+admission placement no longer matches. Keep the taint and manual enforcer;
+stop for a separately reviewed recovery path. A failed prune can be retried
+when the enforcer DaemonSet and Pod are absent and all remaining live RBAC is
+still among the reviewed Argo-tracked resources. A deleting or unready
+DaemonSet blocks retry until a separately reviewed recovery path exists.
 Each commit may also include native updates to the affected OpenWiki pages,
 Claims, and run metadata; no other source changes are accepted.
 Quiesce tenants and sync the cleanup Pod. Capture, approval, cleanup, and

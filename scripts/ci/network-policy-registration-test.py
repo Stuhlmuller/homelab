@@ -43,10 +43,12 @@ def check_phase(policy, canary, policy_manifest, canary_manifest,
     phases = {
         (ENFORCER, EMPTY, dormant, dormant): "dormant",
         (EMPTY, FIXTURES, dormant, active): "fixture-first-pull",
-        (ENFORCER, FIXTURES, active, active): "fixture-qualification",
-        (ENFORCER, EMPTY, active, empty_active): "fixture-pruned",
-        (EMPTY, EMPTY, empty_active, empty_active): "firewall-pruned",
-        (EMPTY, EMPTY, empty_active, dormant): "canary-retired",
+        # The enforcer never auto-syncs or auto-prunes. Its only mutations use
+        # the protected, exact-main Argo sync after live activation/release gates.
+        (ENFORCER, FIXTURES, dormant, active): "fixture-qualification",
+        (ENFORCER, EMPTY, dormant, empty_active): "fixture-pruned",
+        (EMPTY, EMPTY, dormant, empty_active): "firewall-pruned",
+        (EMPTY, EMPTY, dormant, dormant): "canary-retired",
     }
     if state not in phases:
         raise ValueError("NetworkPolicy Application pair is not a reviewed GitOps phase")
@@ -144,10 +146,10 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
         reviewed = [
             (dormant, dormant, ENFORCER, EMPTY),
             (dormant, active, EMPTY, FIXTURES),
-            (active, active, ENFORCER, FIXTURES),
-            (active, empty_active, ENFORCER, EMPTY),
-            (empty_active, empty_active, EMPTY, EMPTY),
-            (empty_active, dormant, EMPTY, EMPTY),
+            (dormant, active, ENFORCER, FIXTURES),
+            (dormant, empty_active, ENFORCER, EMPTY),
+            (dormant, empty_active, EMPTY, EMPTY),
+            (dormant, dormant, EMPTY, EMPTY),
         ]
         for policy, canary, policy_source, canary_source in reviewed:
             with self.subTest(policy_source=policy_source, canary_source=canary_source):
@@ -163,14 +165,16 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
                             check_phase(policy, canary, policy_source, canary_source,
                                         selector, node)
         malformed = [
+            (active, active, ENFORCER, FIXTURES),
+            (active, empty_active, ENFORCER, EMPTY),
+            (empty_active, empty_active, EMPTY, EMPTY),
             (dormant, dormant, ENFORCER, FIXTURES),
             (dormant, active, ENFORCER, EMPTY),
-            (dormant, empty_active, ENFORCER, EMPTY),
             (dormant, empty_active, ENFORCER, FIXTURES),
-            (dormant, active, ENFORCER, FIXTURES),
+            (dormant, active, EMPTY, EMPTY),
             (empty_active, empty_active, ENFORCER, EMPTY),
             (empty_active, dormant, ENFORCER, EMPTY),
-            (dormant, dormant, EMPTY, EMPTY),
+            (dormant, dormant, EMPTY, FIXTURES),
             (dormant, dormant, ENFORCER, EMPTY + "# unreviewed\n"),
         ]
         for policy, canary, policy_source, canary_source in malformed:

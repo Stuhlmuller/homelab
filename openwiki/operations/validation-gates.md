@@ -1962,8 +1962,16 @@ existing policies effective.
 The static registration fixture accepts only six exact policy/canary GitOps
 source phases: dormant, fixture-first pull, fixtures with enforcer active,
 fixtures pruned, enforcer pruned, and canary retired. It rejects mismatched
-sync settings and manifests. Protected
-maintenance fetches full Git history and walks first-parent commits from the
+sync settings and manifests. The enforcer Application stays manual with
+automatic sync and pruning disabled in every phase. Its targeted protected
+Apply checks the current main SHA before a manual sync, and its retirement
+sync explicitly requests prune after live guard checks. The prune checks the
+selected Node UID/boot and taint, complete reviewed Pod inventory, and exactly
+the four reviewed Argo-tracked firewall resources while the DaemonSet is
+active before mutation. A partial retry accepts only reviewed remaining
+tracked resources. Afterward
+it requires zero tracked resources and absent controller, Pod, and RBAC.
+Protected maintenance fetches full Git history and walks first-parent commits from the
 qualified evidence SHA to current `main`, requiring the two dedicated prunes
 in order while allowing unrelated merges and rejecting intervening policy
 runtime-source edits, including the private receipt bucket and static gate.
@@ -2050,8 +2058,11 @@ NetworkPolicy, and no foreign Pod on z2. A UID-owned host probe must prove an
 empty firewall and be deleted before a verified baseline capture. The gate
 then rechecks the same Pod/container signatures and both Node budgets, credits
 only the reviewed client on z2, and reserves the full z1 server peak even
-when the servers are already running. Each phase writes a separate private
-receipt before its targeted Terragrunt Apply. These source gates have not
+when the servers are already running. The fixture phase writes a private
+receipt before its targeted Terragrunt Apply; the enforcer phase runs inside
+the targeted protected Apply immediately before an exact-SHA manual Argo sync.
+An already Synced/Healthy enforcer is accepted only with the reviewed live
+DaemonSet, Pod, and isolation readback. These source gates have not
 run on live activated fixtures; the reviewer-gated plan and merge remain
 pending.
 
@@ -2066,8 +2077,8 @@ headroom on both the isolated node and the exact `zimaboard-1` server node;
 it keeps platform activation disabled. Admission rejects placement
 older than 30 minutes or its baseline older than one hour, then rechecks the
 bound capture, Pod identities, Node metrics, filesystem and capacity before
-Node mutation. A separate fresh capacity gate is still needed before the later
-enforcer and fixture rollout. Qualification also requires a reviewed
+Node mutation. The protected fixture and enforcer rollout runs a separate
+fresh capacity gate. Qualification also requires a reviewed
 `activationEnabled: true` change in the maintenance config. The isolated
 canary does not protect Traefik on its current `zimaboard-1` node; a later
 reviewed Traefik relocation onto isolated `zimaboard-2`, direct unauthorized-Pod denial,
@@ -2076,9 +2087,10 @@ separate acceptance gates. The live `tailnet-gateway` to
 `istio-ingressgateway` ClusterIP 443 path is a separate private-ingress bypass
 until protected migration or retirement of Octelium private services with
 caller acceptance, legacy private-route retirement or restriction, narrowed
-gateway access, and negative traffic proof. A new release/cleanup
-guard must retain the taint and enforcer while any desired or live Traefik
-endpoint remains on `zimaboard-2`; that guard is not implemented here. Before
+gateway access, and negative traffic proof. The protected manual prune and
+subsequent cleanup/release retain the taint while any desired or live Traefik
+endpoint remains on `zimaboard-2`. The source check also rejects empty
+enforcer source with an on-canary or unknown Traefik selector. Before
 relocation, prove cold z2 reboot and image-GC startup ordering: the Harbor-hosted
 enforcer image depends on the Traefik-backed private registry path. A separate
 image availability path or measured fail-closed ordering must prevent Traefik
