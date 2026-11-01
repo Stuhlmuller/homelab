@@ -38,6 +38,9 @@ HASH_SET = re.compile(r"KUBE-(?:SRC|DST)-[A-Z2-7]{16}\Z")
 TERMINAL = {"ACCEPT", "DROP", "REJECT", "RETURN", "MARK", "NFLOG"}
 SET_REFERENCES = {"--match-set", "--add-set", "--del-set", "--map-set"}
 MAX_SNAPSHOT = 8 * 1024 * 1024
+CLEANUP_VOLUME = {"name": "xtables-lock", "hostPath": {
+    "path": "/run/xtables.lock", "type": "FileOrCreate"}}
+CLEANUP_MOUNT = {"name": "xtables-lock", "mountPath": "/run/xtables.lock"}
 
 
 def command(*args):
@@ -89,6 +92,35 @@ def ensure_quiesced(items):
             raise ValueError("Enterprise tenant Job is incomplete")
         if kind == "CronJob" and spec.get("suspend") is not True:
             raise ValueError("Enterprise tenant CronJob is active")
+
+
+def reviewed_cleanup_spec(spec):
+    """Accept only the privileged host access and executable from GitOps source."""
+    containers = spec.get("containers", [])
+    if len(containers) != 1:
+        return False
+    container, = containers
+    return (spec.get("automountServiceAccountToken") is False and
+            spec.get("hostNetwork") is True and
+            spec.get("hostPID") in (None, False) and
+            spec.get("hostIPC") in (None, False) and
+            spec.get("shareProcessNamespace") in (None, False) and
+            not spec.get("initContainers") and
+            not spec.get("ephemeralContainers") and
+            spec.get("volumes") == [CLEANUP_VOLUME] and
+            spec.get("securityContext") in (None, {}) and
+            container.get("name") == "cleanup" and
+            container.get("image") == IMAGE and
+            container.get("command") == ["/bin/sh", "-c"] and
+            container.get("args") == ["sleep 86400"] and
+            container.get("securityContext") == {"privileged": True} and
+            container.get("volumeMounts") == [CLEANUP_MOUNT] and
+            not container.get("volumeDevices") and
+            not container.get("env") and not container.get("envFrom") and
+            not container.get("lifecycle") and
+            not container.get("startupProbe") and
+            not container.get("readinessProbe") and
+            not container.get("livenessProbe"))
 
 
 def require_reviewed_node_pods(node_name, placement, cleanup_pod, daemonset_uid):
@@ -172,19 +204,16 @@ def inspect_cluster(config, placement):
         raise ValueError("canary fixture namespace must be absent")
     daemonset = kubernetes_json("-n", "kube-system", "get", "daemonset", CLEANUP)
     template = daemonset["spec"]["template"]["spec"]
-    container, = template["containers"]
     if (daemonset["metadata"].get("name") != CLEANUP or
             daemonset["spec"]["selector"].get("matchLabels") !=
             {"app.kubernetes.io/name": CLEANUP} or
             daemonset.get("status", {}).get("desiredNumberScheduled") != 1 or
             daemonset.get("status", {}).get("numberReady") != 1 or
             template.get("nodeSelector") != {CANARY: "true"} or
-            template.get("automountServiceAccountToken") is not False or
-            template.get("hostNetwork") is not True or
-            container.get("image") != IMAGE or
-            container.get("command") != ["/bin/sh", "-c"] or
-            container.get("args") != ["sleep 86400"] or
-            container.get("securityContext", {}).get("privileged") is not True):
+            template.get("dnsPolicy") != "ClusterFirstWithHostNet" or
+            template.get("tolerations") != [{"key": CANARY, "operator": "Equal",
+                                            "value": "true", "effect": "NoSchedule"}] or
+            not reviewed_cleanup_spec(template)):
         raise ValueError("cleanup DaemonSet differs from reviewed dormant source")
     candidates = complete_items(kubernetes_json("-n", "kube-system", "get", "pods", "-l",
                                                 f"app.kubernetes.io/name={CLEANUP}",
@@ -194,8 +223,9 @@ def inspect_cluster(config, placement):
     pod, = candidates
     if (pod["spec"].get("nodeName") != node_name or not ready(pod) or
             pod["metadata"].get("namespace") != "kube-system" or
-            pod["spec"].get("hostNetwork") is not True or
-            pod["spec"]["containers"][0].get("image") != IMAGE or
+            pod["spec"].get("nodeSelector") != {CANARY: "true"} or
+            pod["spec"].get("dnsPolicy") != "ClusterFirstWithHostNet" or
+            not reviewed_cleanup_spec(pod["spec"]) or
             pod["metadata"].get("deletionTimestamp") or
             not any(ref.get("uid") == daemonset["metadata"].get("uid") and
                     ref.get("kind") == "DaemonSet" and ref.get("controller") is True for ref in

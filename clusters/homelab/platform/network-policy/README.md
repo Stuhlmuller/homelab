@@ -110,6 +110,10 @@ source through Argo CD. The protected `owned-cleanup` stage requires a private
 `placement.json` proving that the node had no kube-router firewall objects
 before enforcement, plus a separately reviewed `firewall-ownership.json`
 pinning the full current firewall snapshot to the same node UID and boot ID.
+The stage also checks the privileged DaemonSet template and live Pod against
+the reviewed host-access allowlist. Added init or ephemeral containers, host
+namespaces or mounts, environment sources, and container hooks block cleanup;
+ordinary Kubernetes Pod defaults do not.
 The protected Platform Maintenance workflow has separate `ownership-capture`
 and `ownership-approve` stages. After a successful `qualify` run, merge two
 dedicated reviewed GitOps commits in order. Unrelated `main` commits may land
