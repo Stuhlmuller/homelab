@@ -138,10 +138,19 @@ base intentionally adopts them again and the documentation explains why.
    dependency, workflow, topology assumption, secret contract, storage
    requirement, validation gate, or build pattern.
 7. Re-run relevant validation.
-8. For live rollout work, run any documented live-cluster validation before
-   applying changes.
-9. Summarize what changed, what was validated, and any remaining operational
-   risk.
+8. Complete repository changes through
+   [protected PR delivery](.agents/skills/homelab-protected-prs/SKILL.md), unless
+   the user requested only local work or PR preparation. A dependent PR remains
+   the delivery owner's responsibility: repair authorized ancestors first,
+   merge them, then restack and deliver the requested descendants. Use one
+   writer per branch and one owner for the stack.
+9. For live rollout work, run any documented live-cluster validation before
+   applying changes. A source-only change need not wait for later activation;
+   a merge that changes running desired state must satisfy its rollout gates.
+10. Summarize what changed, what was validated, and any remaining operational
+    risk. If delivery must wait, preserve the exact blocker, owner, next action,
+    head/base revisions, and condition for resuming in a durable checkpoint.
+    A draft or auto-merge request is not completion.
 
 Treat security and reliability improvement as ongoing stewardship. When you
 notice a risk, drift, weak assumption, missing validation, or hardening

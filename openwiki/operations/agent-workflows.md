@@ -27,6 +27,17 @@ The homelab skills point to canonical runbooks; OpenWiki supplies searchable
 cross-cutting context. See [wiki maintenance](wiki-maintenance.md) for its
 installation, update, and verification workflow.
 
+## PR Delivery
+
+Repository change tasks continue through protected merge unless the user asks
+for preparation only. The [delivery runbook](../../docs/pr-delivery.md) connects
+PR contribution, protected merging, and stack maintenance. The delivery owner
+repairs actionable ancestors first, then restacks and resumes descendants.
+Drafts and external waits retain a specific next action and ready condition.
+Merge completion is verified in GitHub and `main`; deployment acceptance remains
+separate. A durable runner must resume pending work after checks or dependencies
+change; instructions alone do not schedule another agent session.
+
 ## Reference Coding
 
 Before nontrivial code with a relevant upstream or peer implementation, search
