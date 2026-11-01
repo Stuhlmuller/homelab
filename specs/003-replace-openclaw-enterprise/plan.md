@@ -38,6 +38,12 @@ before consumption. Recheck security/support advisories when implementing.
 **Storage**: Dedicated local PostgreSQL data; OCE-owned 10Gi RWO gateway claim
 on SQLite-compatible retained local storage; private bootstrap volume; independent
 verified database/configuration/secret/agent backups. Retain old local and NAS state.
+The pinned Secret Driver stores Kubernetes Secret UIDs in immutable database
+records. A database dump plus recreated Secret manifests is not a working
+whole-service restore. T049/T051 require a proven UID-preserving isolated
+cluster-state restore paired with the database/claims/credentials, or a supported
+upstream Secret import/rebind contract; the current drill restores PostgreSQL
+only. See the [recovery contract](contracts/enterprise.md#legacy-shutdown-and-new-recovery).
 
 **Testing**: Existing Nix/static/Conftest/Terragrunt/Helm gates; narrow Python
 fixtures for lifecycle/provisioning/archive boundaries; real Talos canary network
@@ -149,9 +155,9 @@ cover only missing operations; no new generalized operator or scheduler.
 | C — capacity | Recalculate after stopping old app; allocate a tainted canary and per-node reservations | All steady/transient requests and measured peaks fit after any reviewed, recoverable existing-node evacuation; no ad hoc eviction |
 | D — versions | Talos adjacent-minor ladder, Istio adjacent-minor ladder, then Kubernetes 1.35.9 | Per-node/component receipts, healthy API/etcd/DNS/storage/access/apps |
 | E — enforcement | Correct affected ingress/egress policies, deploy firewall-only canary, qualify, expand node-by-node | Complete allowed/denied and lifecycle matrix passes on real Talos |
-| F — foundation | Envoy/Gateway API, PostgreSQL roles/TLS, storage, ESO, private identity/routes | Independent dependencies Healthy; backup restore and access tests pass |
+| F — foundation | Envoy/Gateway API, PostgreSQL roles/TLS, storage, ESO, private identity/routes | Independent dependencies Healthy; isolated PostgreSQL restore and access tests pass |
 | G — Enterprise | Stock chart plus ordered hooks; native IAM; idempotent fresh agent setup | Console healthy, no duplicate resource/grant, lifecycle failure tests pass |
-| H — activate | Configure explicit model/key; deploy fresh agent; owner native UI/model tests | Three conversations, access denials, exact active revision, restore proof |
+| H — activate | Configure explicit model/key; deploy fresh agent; owner native UI/model tests | Three conversations, access denials, exact active revision, whole-service restore proof |
 | I — retire | Observe 24h; remove obsolete active routes/jobs/grants selectively | Only new assistant active; old data retained; shared services verified |
 
 Stage B may run before platform rollout to release OpenClaw's own resources.

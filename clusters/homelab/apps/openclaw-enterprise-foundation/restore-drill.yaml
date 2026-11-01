@@ -51,9 +51,9 @@ spec:
                   pg_ctl -D "$work/pgdata" -m immediate -w stop >/dev/null 2>&1 || result=1
                 fi
                 if [ "$result" -eq 0 ]; then
-                  echo 'OpenClaw Enterprise isolated restore passed' >&3
+                  echo 'OpenClaw Enterprise isolated PostgreSQL restore passed' >&3
                 else
-                  echo "OpenClaw Enterprise isolated restore failed at $stage" >&3
+                  echo "OpenClaw Enterprise isolated PostgreSQL restore failed at $stage" >&3
                 fi
                 exit "$result"
               }
@@ -77,7 +77,10 @@ spec:
               pg_restore --list database.dump >/dev/null
               for file in recovery.json postgres-root/tls.crt postgres-root/tls.key \
                 postgres-admin/password postgres-migrator/password postgres-app/password \
-                postgres-backup/password auth/secret gateway/occ bootstrap/output.json \
+                postgres-backup/password auth/secret gateway/occ \
+                gateway/tls/root/tls.crt gateway/tls/root/tls.key \
+                gateway/tls/listener/tls.crt gateway/tls/listener/tls.key \
+                bootstrap/initial-admin-password bootstrap/initial-admin-service-key.json \
                 journal/journal.json tenant/metadata.json agent/identity.json; do
                 test -s "material/$file"
               done
@@ -98,6 +101,8 @@ spec:
                 -h "$work/socket" -U occ_admin -d postgres -At <<'SQL' | grep -qx t
               SELECT jsonb_typeof(marker) = 'object'
                  AND marker->'writerStopped' = 'true'::jsonb
+                 AND marker->>'claimNamespace' = 'openclaw-agents'
+                 AND marker->>'claimName' ~ '^gateway-state-[0-9a-f]{12}$'
                  AND jsonb_typeof(marker->'claimUid') = 'string'
                  AND length(marker->>'claimUid') > 0
               FROM (SELECT pg_read_file(:'marker_path')::jsonb AS marker) recovered;

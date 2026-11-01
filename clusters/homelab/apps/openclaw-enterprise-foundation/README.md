@@ -46,13 +46,17 @@ this namespace exists and before the Enterprise Application's first sync.
 The application PreSync hook checks its exact bytes and chart checksum. No raw
 Secret is rendered or committed. `backup.sh` refuses an incomplete
 `/recovery-material` tree: `recovery.json`, all four DB password references,
-root CA key/certificate, session auth, private gateway key, bootstrap output,
-journal, tenant metadata/secrets and an identity-checked agent state snapshot.
-It requires `jq` and rejects a recovery marker unless `writerStopped` is true
-and `claimUid` is nonempty. The future T051 capture must verify that UID against
-the live claim and hold the writer fence throughout backup; the marker alone is
-not a live quiescence proof. The packager requires ordinary single-link files
-and discards a partial set when pre-copy, post-copy, and captured path/content
+PostgreSQL root CA key/certificate, session auth, private gateway key, generated
+gateway root and listener TLS pairs, the bootstrap PVC's
+`initial-admin-password` and `initial-admin-service-key.json`, journal, tenant
+metadata/secrets and a claim-identified agent state snapshot.
+It requires `jq` and rejects a recovery marker unless `writerStopped` is true,
+`claimNamespace` is `openclaw-agents`, `claimName` matches the OCE-owned
+`gateway-state-<agent-hash>` claim, and `claimUid` is nonempty. The future T051
+capture must verify those fields against the live claim and hold the writer fence
+throughout backup; the marker alone is not a live quiescence proof. The packager
+requires ordinary single-link files and discards a partial set when pre-copy,
+post-copy, and captured path/content
 manifests differ.
 T051 must supply that stopped-writer snapshot and an encrypted off-node `/backup`
 mount. `backup.sh` checks that `/backup` is a mount and rejects a symlinked
@@ -105,16 +109,17 @@ still required before T045/T049 can accept recurring restore evidence. Its Pod
 logs report only the fixed success/failure stage; raw restore details remain
 inside scratch and are not emitted to cluster logs. The Job reads the completed
 recovery set from a read-only mount, checks its hashes before and after restore,
-rejects a marker without a stopped writer and claim UID, and keeps only the
-restored database and private diagnostics in scratch. T051
+rejects a marker without a stopped writer and identified agent claim. It keeps
+only the restored database and private diagnostics in scratch. T051
 must publish completed directories without further writes; any change detected
 during a drill fails its final hash check. Storage
 placement and 24Gi restore scratch headroom need measured admission;
 private routes, applying the registration and live recovery remain gated.
 
-The current `bootstrap/output.json` packager input is not a producer for the
-pinned chart's bootstrap PVC: that PVC holds separate `initial-admin-password`
-and `initial-admin-service-key.json` files. The fresh Embedded Agent's SQLite,
+The former `bootstrap/output.json` placeholder was not a producer for the
+pinned chart's bootstrap PVC. The packager now requires its separate
+`initial-admin-password` and `initial-admin-service-key.json` files, but no
+declared capture produces them. The fresh Embedded Agent's SQLite,
 sessions and workspace live on an OCE-owned `gateway-state-<agent-hash>` claim in
 `openclaw-agents`; the bootstrap and operator-journal claims are in
 `openclaw-system`. No source path captures these claims together with tenant
@@ -127,9 +132,28 @@ close those gaps. T049 and T051 remain pending.
 These requirements follow the pinned upstream [bootstrap Job][up-bootstrap],
 [agent claim][up-agent-state], and [gateway TLS templates][up-gateway-tls].
 
+A Kubernetes Secret manifest export cannot restore stored OCC Secrets into a
+new cluster. OCC stores each Secret's Kubernetes `backend_uid` in an
+[immutable database row][up-secret-schema]; the [Secret Driver][up-secret-driver]
+rejects a different UID, and [Compute][up-compute-secret] checks that UID before
+projecting harness credentials. Kubernetes [generates object UIDs][k8s-uid] and
+marks them read-only. The pinned [Secret HTTP handlers][up-secret-http] offer
+create, value update, metadata read, and delete, with no import or UID rebind
+operation. T049/T051 need an isolated, UID-preserving cluster-state restore
+proven end to end, or a supported upstream Secret rebind/import contract, before
+this can be a complete recovery path. The existing [offline etcd check] only
+parses a snapshot; it does not start a control plane or restore PVCs. Do not
+edit `backend_uid` in a dump.
+
 [up-bootstrap]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/jobs.yaml#L130-L138
 [up-agent-state]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L12738-L12759
 [up-gateway-tls]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/gateway-routing.yaml#L23-L54
+[up-secret-schema]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/migrations/0013_secret_state.sql#L55-L102
+[up-secret-driver]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/secret/kubernetes/index.ts#L519-L546
+[up-compute-secret]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L13792-L13808
+[up-secret-http]: https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/http/secrets.ts#L1-L90
+[k8s-uid]: https://kubernetes.io/docs/reference/kubernetes-api/definitions/object-meta-v1-meta/#objectmeta
+[offline etcd check]: ../../../../docs/etcd-offline-restore-validation.md
 
 Validate this dormant boundary with
 `nix develop --command python3 -I scripts/ci/openclaw-enterprise-foundation-test.py`.

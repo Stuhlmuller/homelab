@@ -170,7 +170,8 @@ model failure reporting, and deny unauthorized console/agent/workspace/secret ac
 - [ ] T048 [US1] Execute browser and actual generated-policy acceptance from `specs/003-replace-openclaw-enterprise/quickstart.md`: use an authenticated human session with exact Agent `administer` to read `native-admin` and record its returned `data.origin` (service keys cannot inspect it);
   verify three authenticated conversations, visible model failure/revision, trusted native-origin TLS/WebSocket, denied unauthorized/private/cross-agent access and no inherited state/jobs/credentials; preserve the strict broad-egress finding and record
   sanitized results in `docs/evidence/openclaw-enterprise-acceptance.md`.
-- [ ] T049 [US1] Capture and restore the complete new DB/tenant metadata/secrets/agent volume/bootstrap/auth/gateway recovery set into isolation using `clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml`; verify it independently of legacy archives and accept US1 in `docs/evidence/openclaw-enterprise-acceptance.md` only after this restore and T048 pass.
+- [ ] T049 [US1] Capture and restore the complete new DB/tenant metadata/secrets/agent volume/bootstrap/auth/gateway recovery set into isolation, extending the PostgreSQL-only `clusters/homelab/apps/openclaw-enterprise-foundation/restore-drill.yaml`;
+  prove every restored active OCC Secret backend UID matches its Kubernetes Secret, or verify a supported upstream import/rebind path without manual database-row rewriting. Verify independently of legacy archives and accept US1 in `docs/evidence/openclaw-enterprise-acceptance.md` only after this whole-service restore and T048 pass.
 
 **Checkpoint**: MVP usable and recoverable. Console-only or credential-missing
 states remain incomplete. Old archives and stopped resources remain retained.
@@ -191,9 +192,10 @@ and complete recovery, then observe 24 hours before obsolete resources are remov
   recovery-material producer across the operator/Agent namespaces, exact tenant
   Secret values, and an encrypted off-node destination with a declared publisher
   credential path. Prove either a consistent online snapshot or a journaled
-  supported stop, capture, and new-revision deployment with failure recovery;
-  preserve ordinary no-change
-  reconciliation. Add `clusters/homelab/apps/openclaw-enterprise-foundation/backup-cronjob.yaml`
+  supported stop, capture, and new-revision deployment with failure recovery.
+  Before a fresh-cluster manifest restore, T049 must prove UID-preserving
+  recovery or supported rebind. Preserve ordinary no-change reconciliation.
+  Add `clusters/homelab/apps/openclaw-enterprise-foundation/backup-cronjob.yaml`
   using the verified T036 path; declare schedule, retention, resource
   reservations and failure reporting, wire it into foundation
   `kustomization.yaml`, and validate a scheduled complete backup/restore
