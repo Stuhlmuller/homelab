@@ -515,10 +515,19 @@ artifacts untouched and makes retries read-only; quarantined WALs are not
 deleted automatically. Recovery fails closed rather than overwrite a dated
 quarantine if its completion marker is missing.
 
-The November 1 resource-store capture candidate is dormant under
-`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
-activated and observed Ready before a separate GitOps fence reduces only
-`octeliumee-rscstore` to zero replicas. The source-owned capture helper requires
+The November 1 resource-store capture stage activates only the read-only
+inspector and its exact-label default-deny NetworkPolicy from
+`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Flannel does not
+enforce that policy, so it is a source and static-check contract, not live
+network isolation.
+At 18:52 UTC on November 1, the writer was already `0/1` Ready in
+`CrashLoopBackOff` after 2,065 restarts, with a WAL replay failure. The
+inspector's pinned Harbor image, Ready state, and read-only PVC mount must be
+observed while writer Deployment/Pod and PVC identities remain unchanged.
+Autonomous restarts may continue at their existing cadence; do not require
+writer readiness or claim recovery. Only a separate GitOps fence reduces
+`octeliumee-rscstore` to zero replicas. The source-owned capture
+helper requires
 Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
 namespaced PodList without another claim mount, and stable whole-PVC tar hashes
 before and after transfer. It includes any current WAL, dated quarantines and

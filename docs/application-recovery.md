@@ -42,7 +42,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | State and source | Current source-declared coverage | Proposed RPO / RTO | Remaining recovery requirement |
 | --- | --- | --- | --- |
 | Octelium PostgreSQL (`apps/octelium-storage`) | Daily consistent custom dump + password-free globals, 14 days on same QNAP; this PR can publish those complete sets independently | 24h / 4h | Retrieve a named S3 set; PostgreSQL 14 restore and Octelium startup/resource/decryption checks; recover DB auth, external root/encryption keys and identity bootstrap privately |
-| Octelium Redis AOF and Enterprise package storage | Retained PVCs; dormant rscstore whole-PVC S3 capture candidate, not yet activated; neither is included in the PostgreSQL dump | No loss accepted / 4h | Inventory runtime PVCs and Redis durability semantics; fence writers, capture AOF and packages, determine whether sessions/queues may be discarded; PostgreSQL coverage is not whole-Octelium coverage |
+| Octelium Redis AOF and Enterprise package storage | Retained PVCs; rscstore read-only inspector staged, whole-PVC S3 capture still inactive; neither is included in the PostgreSQL dump | No loss accepted / 4h | Inventory runtime PVCs and Redis durability semantics; fence writers, capture AOF and packages, determine whether sessions/queues may be discarded; PostgreSQL coverage is not whole-Octelium coverage |
 | Media PostgreSQL (`apps/media-postgres`) | Six nightly DB dumps + globals to QNAP; active data on Acer | 24h / 8h | All six are required by publisher; separate `pg_dump` snapshots do not establish cross-database atomicity. Fence all media writers for coordinated app/config recovery |
 | AFFiNE (`apps/affine`) | NFS PostgreSQL 16/pgvector, blobs and config; source says suspended; no independent paired capture | 24h / 8h | Paired publication adapter accepts `globals.sql`, `affine.dump`, `blobs.tar`, `config.tar`, `capture.json`; prove suspension live, fence all writers, capture one window; preserve ECDSA signing key and extensions. Ephemeral Redis/queued work loss needs approval |
 | Multica backend (`apps/multica`) | NFS pgvector PostgreSQL and uploads, no automatic independent capture | 24h / 8h | Paired adapter requires `globals.sql`, `multica.dump`, `uploads.tar`, `capture.json`; fence API/workers, retain JWT/DB secret dependencies; prove records refer to recovered uploads |
@@ -66,9 +66,10 @@ ownership. Automatic **capture** beyond existing Octelium/media jobs remains a
 gap. The paired adapters provide publication, not an approved writer-fencing or
 capture workflow. Do not enable them until that capture change is reviewed.
 
-The dormant [rscstore capture stage](../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
+The [rscstore capture stage](../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage)
 adds a source-owned stopped-writer whole-PVC path to the existing versioned
-application backup bucket. It needs separate inspector and fence activation,
+application backup bucket. Only its read-only inspector is activated here;
+it still needs a separate reviewed fence activation,
 exact-version readback, and isolated file extraction before an off-NAS archive
 can be claimed. It does not reopen DuckDB or repair the WAL.
 
