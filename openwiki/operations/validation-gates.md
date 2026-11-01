@@ -1654,6 +1654,11 @@ saved-plan policy gates and failure-before-downstream-write behavior without
 cloud or cluster access. Manual production and
 diagnostic dispatches reject every ref except `refs/heads/main`; the production
 environment independently limits deployments to the `main` branch.
+The full production AzureAD stage separately saves per-unit plans and JSON in
+one private temporary directory, checks every JSON input with Conftest, and
+uses the same filters and directory for saved-plan apply. The successful-unit
+report must match the saved-plan inventory; missing units, paired files, or a
+changed `main` stop before AzureAD writes. Cleanup removes the artifacts.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production

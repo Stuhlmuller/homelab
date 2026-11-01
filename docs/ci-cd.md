@@ -239,10 +239,14 @@ checks remain fresh.
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
   CD Application registrations serially, and finally materialize Kubernetes
-  Secrets from SSM. Stack-wide apply phases use Terragrunt's explicit
-  `run --all --filter ... --non-interactive -- apply ...` form so the run
-  queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
-  forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+  Secrets from SSM. The Entra phase saves a plan and JSON policy input for each
+  selected AzureAD or pilot-user unit in a private temporary directory. It
+  compares the successful-unit report with the saved-plan inventory, checks
+  every JSON plan with Conftest, rechecks current `main`, then applies those
+  saved plans with the same filters. Missing units, plans, or policy inputs
+  stop the phase. The directory is removed on exit. Other stack-wide apply
+  phases use Terragrunt's explicit `run --all --filter ... --non-interactive -- apply
+  ...` form so the run queue is accepted in Actions.
 
 ## Terragrunt Gate Ruleset Rollout
 
