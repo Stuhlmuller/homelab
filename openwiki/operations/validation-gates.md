@@ -2017,8 +2017,13 @@ reserves the pinned 704 MiB runtime limit plus a 128 MiB margin, leaving a
 projects 547–555 MiB of host and allowed DaemonSet use, above that ceiling.
 The [enforcer resources](../../clusters/homelab/platform/network-policy/daemonset.yaml)
 and [three fixture limits](../../clusters/homelab/platform/network-policy/canary/fixtures.yaml)
-are pinned. A spare or larger isolated worker is required; evacuation alone
-cannot satisfy this gate. Recheck fresh capacity before placement.
+are pinned. At current use, the planned [stateless move in PR #1584](https://github.com/Stuhlmuller/homelab/pull/1584)
+and [PostgreSQL move in PR #1583](https://github.com/Stuhlmuller/homelab/pull/1583)
+would free only about 33 MiB on `zimaboard-2`. The 547–555 MiB zero-app-Pod
+floor is a projection, not a post-evacuation receipt; host and cache use can
+change. A spare or larger isolated worker is the dependable next path unless
+fresh post-evacuation evidence shows this gate can pass. Recheck capacity
+before placement.
 
 The staged protected `canary-admit` path remains dormant until the protected
 `placement` stage writes a verified current-main, run-scoped receipt. A new
