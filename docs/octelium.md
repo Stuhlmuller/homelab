@@ -658,6 +658,16 @@ capacity, 24-hour native-fleet stability, direct native Pod probe, and public
 end-to-end gates in
 `openwiki/architecture/cluster-topology.md`.
 
+Run `python3 scripts/octelium-native-offramp-preflight.py` before proposing
+fallback removal. It reads Kubernetes deployments, Pods, nodes, and node metrics;
+it requires all 25 native twins and their worker to remain Ready for 24 hours,
+zero Pod restarts, and at least 2.7 GiB of observed and requested node memory
+headroom. The 2.7 GiB threshold screens against the measured native-fleet p95
+at this point in time; it does not admit OpenClaw Enterprise placement. A passing
+preflight does **not** replace direct native Pod-IP probes for every recovered
+path or `scripts/octelium-e2e-check.sh`; keep the fallback until those checks
+also pass and the source removal is reviewed and applied through GitOps.
+
 The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments use `Recreate` because each store opens a
 DuckDB-backed `store.db` on its PVC. Do not change those workloads back to
