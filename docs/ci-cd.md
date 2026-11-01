@@ -31,6 +31,11 @@ This repository uses GitHub Actions for the review and rollout path:
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
+  The protected live plan includes the shared `kubernetes-node-labels` unit,
+  so Octelium node eligibility and gateway annotation changes have a reviewed
+  plan and Terraform policy check before merge. The later production apply
+  creates and checks its own saved plan. Keep `node_taints = {}`; temporary
+  `NoExecute` needs a separate protected script with exact Node identity checks.
 - `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
   older request check, and prints the exact current-SHA dispatch command plus
   links to active applies. It has no production environment, stored secrets,

@@ -30,7 +30,7 @@ cleanup_temp_dirs() {
     fi
   done
 
-  clear_plan_artifacts IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage
+  clear_plan_artifacts IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage IaC/homelab/us-west-2/shared/kubernetes-node-labels
 }
 
 trap cleanup_temp_dirs EXIT
@@ -78,7 +78,7 @@ validate_terraform_plan_policies() {
   while IFS= read -r plan_json_file; do
     plan_json_files+=("$plan_json_file")
   done < <(
-    find IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage \
+    find IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage IaC/homelab/us-west-2/shared/kubernetes-node-labels \
       -name plan.json \
       -not -path '*/.terragrunt-cache/*' \
       -print 2>/dev/null | sort
@@ -145,7 +145,7 @@ plan_deleted_terragrunt_units() {
 
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
-clear_plan_artifacts IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage
+clear_plan_artifacts IaC/homelab/us-west-2/bootstrap IaC/homelab/us-west-2/apps IaC/homelab/us-west-2/operator/application-backup-storage IaC/homelab/us-west-2/shared/kubernetes-node-labels
 
 echo "::group::Argo CD bootstrap plan"
 (
@@ -162,6 +162,14 @@ echo "::group::OpenClaw legacy offsite bucket plan"
 )
 echo "::endgroup::"
 render_plan_json_if_present "IaC/homelab/us-west-2/operator/application-backup-storage"
+
+echo "::group::Kubernetes node label plan"
+(
+  cd IaC/homelab/us-west-2/shared/kubernetes-node-labels
+  terragrunt plan -lock=false -out plan.out -no-color
+)
+echo "::endgroup::"
+render_plan_json_if_present "IaC/homelab/us-west-2/shared/kubernetes-node-labels"
 
 echo "IaC/homelab/us-west-2/shared/aws-ssm-parameters is intentionally excluded from PR plans because it manages KMS, IAM, and secret declarations that require the protected production apply role."
 echo "IaC/homelab/us-west-2/apps/langfuse/blob-storage is also excluded: its state includes the runtime S3 key. The protected full or targeted Langfuse apply plans and policy-checks it before application registration."

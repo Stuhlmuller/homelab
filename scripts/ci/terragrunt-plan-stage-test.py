@@ -145,6 +145,52 @@ class PrivatePlanStageTest(unittest.TestCase):
                 if expected_code:
                     self.assertIn("AzureAD credentials are required", result.stderr)
 
+    def test_node_label_plan_reaches_policy_and_cleans_private_artifacts(self):
+        runner = PLAN_RUNNER.read_text()
+        setup = runner.split("\nprepare_terragrunt_filter_base\n", 1)[0]
+        stage = 'echo "::group::Kubernetes node label plan"\n' + runner.split(
+            'echo "::group::Kubernetes node label plan"\n', 1)[1].split(
+                '\necho "IaC/homelab/us-west-2/shared/aws-ssm-parameters', 1)[0]
+        stub = '''
+terragrunt() {
+  if [[ "$*" == "plan -lock=false -out plan.out -no-color" ]]; then
+    [[ "$MODE" != fail-plan ]] || return 21
+    printf 'saved plan' >plan.out
+  elif [[ "$1" == --log-disable && "$2" == show && "$3" == -json && "${4##*/}" == plan.out ]]; then
+    printf '{"resource_changes":[]}\\n'
+  else
+    return 22
+  fi
+}
+conftest() {
+  [[ "$*" == "test --policy policy --output github IaC/homelab/us-west-2/shared/kubernetes-node-labels/plan.json" ]] || return 23
+  printf 'checked\\n' >policy-called
+  [[ "$MODE" != fail-policy ]] || return 24
+}
+'''
+        for mode, expected_code, policy_called in (
+            ("ok", 0, True), ("fail-plan", 21, False),
+            ("fail-policy", 24, True),
+        ):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                scripts = root / "scripts/ci"
+                scripts.mkdir(parents=True)
+                (scripts / "terragrunt-filter-base.sh").write_text("")
+                script = scripts / "terragrunt-plan.sh"
+                script.write_text(setup + "\n" + stub + "\n" + stage +
+                                  "\nvalidate_terraform_plan_policies\n")
+                for unit in ("bootstrap", "apps", "operator/application-backup-storage",
+                             "shared/kubernetes-node-labels"):
+                    (root / "IaC/homelab/us-west-2" / unit).mkdir(parents=True)
+                result = subprocess.run(["bash", str(script)], cwd=root,
+                                        env={**os.environ, "MODE": mode},
+                                        text=True, capture_output=True, timeout=5)
+                self.assertEqual(result.returncode, expected_code, result.stderr)
+                self.assertEqual((root / "policy-called").exists(), policy_called)
+                self.assertFalse(list((root / "IaC").rglob("plan.out")))
+                self.assertFalse(list((root / "IaC").rglob("plan.json")))
+
     def test_scope_diff_failure_cannot_skip_live_plan(self):
         workflow = WORKFLOW.read_text()
         scope = textwrap.dedent(workflow.split(

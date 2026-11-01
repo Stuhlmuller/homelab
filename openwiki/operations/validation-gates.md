@@ -1632,7 +1632,13 @@ runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
 then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. The
 human-readable plan streams to the Actions log. Saved plan files and
 JSON policy inputs remain temporary and are removed on exit. Run the same
-order locally when reproducing a failure.
+order locally when reproducing a failure. The protected PR plan includes
+`shared/kubernetes-node-labels` and checks its plan JSON with Terraform
+Conftest policy. This covers Octelium node eligibility and gateway annotations.
+The separate production apply creates and checks a fresh saved plan.
+Keep `node_taints = {}`; a temporary `NoExecute` taint needs a separate
+protected script with exact Node identity checks. Secret-bearing shared units
+remain excluded from the PR plan.
 
 The protected PR plan requires the `homelab-plan` Entra identity when AzureAD
 stack or shared root sources, or plan inputs, change. Missing client and tenant
