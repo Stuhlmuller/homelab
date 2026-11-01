@@ -17,9 +17,42 @@
         "harbor.stinkyboi.com/homelab/chainguard/curl"
       ],
       "enabled": false
+    },
+    {
+      "description": "Validate Nix toolchain changes on every supported system before merging.",
+      "matchManagers": [
+        "nix"
+      ],
+      "groupName": "Nix toolchain",
+      "automerge": false
     }
   ],
   "lockFileMaintenance": {
     "enabled": true
-  }
+  },
+  "nix": {
+    "enabled": true
+  },
+  "argocd": {
+    "managerFilePatterns": [
+      "/^clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application\\.yaml$/"
+    ]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^IaC/homelab/us-west-2/apps/[^/]+/stack\\.hcl$/",
+        "/^IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt\\.hcl$/"
+      ],
+      "matchStrings": [
+        "repoURL\\s*=\\s*\"(?<registryUrl>https://[^\"\\s]+)\"\\s+chart\\s*=\\s*\"(?<chart>[^\"\\s]+)\"[^{}]*?targetRevision\\s*=\\s*\"(?<currentValue>[^\"\\s]+)\"",
+        "repoURL\\s*=\\s*\"(?<repository>[^\":\\s]+)\"\\s+chart\\s*=\\s*\"(?<chart>[^\"\\s]+)\"[^{}]*?targetRevision\\s*=\\s*\"(?<currentValue>[^\"\\s]+)\"",
+        "repository\\s*=\\s*\"(?<registryUrl>https://[^\"\\s]+)\"\\s+chart\\s*=\\s*\"(?<chart>[^\"\\s]+)\"\\s+chart_version\\s*=\\s*\"(?<currentValue>[^\"\\s]+)\""
+      ],
+      "datasourceTemplate": "{{#if registryUrl}}helm{{else}}docker{{/if}}",
+      "depNameTemplate": "{{#if registryUrl}}{{{chart}}}{{else}}{{{repository}}}/{{{chart}}}{{/if}}",
+      "versioningTemplate": "{{#if registryUrl}}helm{{else}}docker{{/if}}"
+    }
+  ]
 }

@@ -229,8 +229,24 @@ upstream kubeconfig stays inside Octelium and is never copied to the client or
 committed to this repository. The Service uses that kubeconfig's cluster CA;
 do not add `insecureSkipVerify`.
 
-Recreating that shared Secret briefly affects this private Service and the CI
-Service, so validate both after rotation.
+The kubeconfig helper validates and minifies the selected context, requires the
+canonical API endpoint and embedded CA, and verifies authenticated TLS plus the
+current operator authorization contract before creating a Secret. It accepts
+only an inline token or embedded client certificate/key pair; exec plugins,
+file references, proxy overrides, and insecure TLS are rejected. Private
+validation output stays outside git and is removed on exit.
+
+Existing Secrets are never overwritten or deleted. Initial bootstrap may create
+`homelab-ci-kubeconfig`; an existing name fails closed. For an authorized rotation,
+stage a new name such as `homelab-ci-kubeconfig-20261101t120000z` using
+`--secret-name`, optionally selecting `--context`. Staging does not cut over any
+consumer. Before cutover, a separate reviewed change must update both catalog
+Service references and their exact-name validation/credential-helper contracts.
+Apply that catalog through the declared workflow, then verify CI, operator and
+Cordium access. Retain the previous Secret through the rollback window; rollback
+restores the reviewed previous references. This helper provides no retirement
+operation. A failed create is checked by exact name; an ambiguous outcome must
+be inspected before retrying or choosing another name.
 
 From an operator workstation, install the current
 [Octelium CLI](https://octelium.com/docs/octelium/latest/install/cli/install)

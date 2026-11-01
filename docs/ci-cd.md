@@ -58,6 +58,29 @@ This repository uses GitHub Actions for the review and rollout path:
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
 
+## Release publication
+
+The release publisher takes one non-canceling `semantic-release-main` lock,
+then checks out current `main`. Pending runs may coalesce; the surviving run
+analyzes every commit since the last tag, including intervening pushes. Repeated
+runs with no new releasable commits create no tag. Publishers and independent,
+cancelable PR previews time out after 15 minutes.
+
+The flake pins Node/npm; `package-lock.json` pins semantic-release and plugins
+with package integrity hashes. `npm ci --ignore-scripts` installs without a
+step token. Only publication receives `GITHUB_TOKEN`; PR previews use a local
+bare Git repository without a token. Renovate's npm manager and lockfile
+maintenance propose updates through PRs. No npm package is published.
+
+After `npm ci --ignore-scripts`, run
+`nix develop --command python3 -I scripts/ci/release-test.py --runtime` to prove
+preview isolation, coalesced commit inclusion, and repeat-publication behavior
+against a disposable local remote. Confirm the first merged GitHub release run
+separately. Roll back by reverting the workflow and toolchain together.
+
+See [GitHub concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+and [semantic-release CI](https://semantic-release.org/recipes/ci-configurations/github-actions/).
+
 ## Monitoring
 
 Grafana owns the repository dashboard for the GitHub review path. The
@@ -379,13 +402,20 @@ defines:
   clientless Kubernetes Service;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
 
-Apply that catalog after materializing the upstream kubeconfig Secret, then
-create or rotate the GitHub environment secret in both CI environments:
+For initial bootstrap, apply that catalog after creating the upstream kubeconfig
+Secret, then create the GitHub environment secret in both CI environments:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
 scripts/octelium-ci-credential.sh --apply-catalog
 ```
+
+The kubeconfig helper validates the selected context and authenticated TLS/API
+access, then creates only a new Secret; it never overwrites the active one.
+Upstream kubeconfig rotation requires a staged timestamped name and a separate
+reviewed catalog/consumer cutover, preserving the previous Secret for rollback.
+See [the rotation contract](octelium.md#private-kubernetes-access). This differs
+from routine rotation of the downstream Octelium access token below.
 
 The helper requires an authenticated Octelium admin session for `octeliumctl`
 and GitHub CLI access to `Stuhlmuller/homelab`. The bootstrap command applies

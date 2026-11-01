@@ -27,6 +27,11 @@ before they become incidents.
 
 ## Stewardship Loop
 
+The [November 1 issue burndown](issue-burndown-2026-11-01.md) records all 98
+starting issues, independently verified closures, bounded source fixes, and
+remaining delivery/runtime gates. Preserve issue-specific acceptance evidence
+when continuing that inventory.
+
 1. Start from source-backed context: relevant code, runbooks, knowledge-base
    notes, and read-only live inspection when the question depends on current
    cluster reality.

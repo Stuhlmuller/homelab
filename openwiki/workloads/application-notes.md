@@ -297,7 +297,7 @@ removal require separate reviewed Recreate rollouts; live profiling is unverifie
 ## Prometheus
 
 Prometheus owns the durable notification path from in-cluster alert rules to
-Alertmanager, Discord, and OpenClaw. It selects repo-owned `ServiceMonitor`
+Alertmanager and its native Discord receiver. It selects repo-owned `ServiceMonitor`
 objects and repo-owned `PrometheusRule` objects in the `monitoring` namespace
 without requiring Helm release labels, so cross-workload alert coverage can
 live beside the responsible application manifests.

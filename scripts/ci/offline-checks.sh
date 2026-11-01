@@ -7,6 +7,9 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+python3 -I scripts/ci/release-test.py
+python3 -I scripts/ci/static-cache-test.py
+node --test scripts/ci/renovate-repository-test.js
 ruby scripts/ci/mastodon-launch-test.rb
 ruby scripts/ci/mastodon-bootstrap-test.rb
 python3 -I scripts/ci/mastodon-database-role-test.py

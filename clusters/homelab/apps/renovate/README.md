@@ -103,6 +103,33 @@ expected authentication denial. Hold writer cutover if an eligible private
 package requires a credential. Revert this route change through GitOps if it
 breaks registry access.
 
+### Homelab dependency discovery
+
+The repository's [`renovate.json`](../../../../renovate.json) enables native
+Nix input discovery and matches the authored Terragrunt Helm chart pins in
+`IaC/homelab/us-west-2/apps/*/stack.hcl` plus the bootstrap Argo CD catalog
+unit. HTTPS charts use the Helm datasource; OCI charts use their full registry
+and chart name with the Docker datasource. The native Argo CD manager matches
+only the NFS provisioner Application, preserving Git-backed `main` references.
+GitHub Actions retain their exact SHAs with same-line release metadata.
+The existing Image Updater ownership exclusions remain unchanged.
+
+Helm updates remain separate reviewed PRs. Nix updates form one `Nix toolchain`
+group with auto-merge disabled. Before merging a lock refresh, review the tool
+and supported-platform changes, run `nix flake check --all-systems --no-build`,
+then the normal static, Conftest, HCL and shell gates from the candidate shell.
+An insecure package or unsupported platform blocks that refresh; keep the
+previous lock until a compatible candidate passes. Roll back a bad refresh by
+reverting its `flake.lock` change through a reviewed PR and rerunning the gates.
+
+Run `node --test scripts/ci/renovate-repository-test.js` for chart-coverage,
+action-metadata and ownership checks. Validate the config and extraction with
+the pinned Renovate version before delivery. After merge, confirm the Dependency
+Dashboard lists the chart and Nix inputs without duplicates and a Nix refresh
+PR passes validation. Local extraction does not establish hosted discovery or
+change the separate cluster writer-cutover gates. Revert the config change to
+remove this discovery coverage.
+
 ### Cache failure and recovery
 
 An unavailable claim leaves the Job Pod pending with a mount or scheduling

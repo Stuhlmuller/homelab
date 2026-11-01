@@ -7,6 +7,14 @@ GitHub Actions now runs the same validation path for pull requests and
 post-merge applies. See `docs/ci-cd.md` for required GitHub environment
 secrets, Octelium CI identity setup, and AWS OIDC role boundaries.
 
+`scripts/ci/static-checks.sh` puts Terragrunt downloads and backend-free
+OpenTofu initialization metadata in a unique mode-0700 directory under `/tmp`,
+including Terragrunt launched by child checks. It removes that directory on
+success, failure, or handled termination. This cache location changes no
+desired-state inputs. The artifact scanner remains strict: pre-existing
+plan/state files inside the checkout still fail validation and require private
+inspection; the static gate does not delete or exempt them.
+
 ## Pre-Mutation Checks
 
 ```sh
