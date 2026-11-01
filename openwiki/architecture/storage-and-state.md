@@ -537,6 +537,14 @@ take a logical database dump and n8n PVC backup, restore into PostgreSQL 17+
 instead of changing the major image in place, then verify SQL, n8n readiness,
 and the public webhook before retiring the old PVC.
 
+The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+renders the Deployment at zero replicas only when a reviewed GitOps revision
+adds it to Helm `valueFiles`; the active stack omits it. A future paired
+checkpoint must verify that Argo CD synced the exact fence revision, no n8n
+writer Pods or Jobs remain, PostgreSQL is Ready, and both PVC/PV bindings stay
+fixed across the dump and PVC archive. An off-NAS receipt and isolated restore
+are still required before a separate GitOps revision restores one n8n replica.
+
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
 `SELECT 1` instead of treating socket acceptance as usable database service.

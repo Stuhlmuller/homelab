@@ -1034,6 +1034,13 @@ remains outside the live n8n values and Kustomize inputs. A passing fixture
 does not establish the required paired
 database/PVC backup, GitHub App `Webhooks: write` permission, hook registration,
 or live signature verification.
+The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
+has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
+the active values render one Deployment replica and the fence overlay renders
+zero, with no migration Job in either render. Its
+[workload runbook](../../clusters/homelab/apps/n8n/README.md#inactive-paired-backup-maintenance-fence)
+requires exact Argo revision, zero-writer, and PostgreSQL readiness checks
+before a paired capture; source rendering alone is not a live backup.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database

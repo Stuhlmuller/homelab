@@ -244,6 +244,11 @@ echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
 echo "::endgroup::"
 
+echo "::group::n8n inactive maintenance fence"
+python3 -I scripts/ci/n8n-maintenance-fence-negative-test.py
+bash scripts/ci/n8n-maintenance-fence-check.sh
+echo "::endgroup::"
+
 echo "::group::Secret scan"
 bash scripts/ci/secret-scan.sh --self-check
 bash scripts/ci/secret-scan.sh
