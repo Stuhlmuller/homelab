@@ -153,14 +153,31 @@ proof. T022 still has no admitted canary or storage placement.
 The November 1 existing-node recheck found `zimaboard-2` at 1,339 MiB used
 against 1,308 MiB allocatable before the 576 MiB enforcer/client limit budget
 and 128 MiB reserve. It cannot host the staged canary. `zimaboard-0` is only
-a conditional candidate: 64 non-system Pods remain, including 55 Octelium
-Pods, and Deluge, Radarr, Sonarr, and Bazarr config PVs are locally pinned.
+a conditional candidate: 64 active app Pods remain, including 55 Octelium
+Pods, plus 19 completed backup Pods and the `kube-system/image-rewrite`
+Deployment Pod. The admission code rejects all 84 foreign assigned Pods,
+including completed Jobs and ordinary Pods in system namespaces. Deluge,
+Radarr, Sonarr, and Bazarr config PVs are locally pinned.
 Its 1,430 MiB observed free memory leaves about 214 MiB after one enforcer,
 client, Traefik Pod, and reserve; the current Traefik surge exceeds that
 headroom. [The runbook](../../docs/runtime-isolation.md#existing-node-decision-2026-11-01)
-records the relocation, backup, cold-boot/restart fail-closed, and legacy
-ingress-bypass gates. Draft PRs #1583 and #1584 target `zimaboard-2`; revise
-or retire them before another node is chosen. No worker is admitted.
+records the conditional maintenance route: verify local-volume archives;
+pause Prometheus and four media apps through GitOps, including Bazarr's
+z0-pinned PostSync Jobs; make seven backup CronJobs discard successful Job
+history and pause the four media schedules; move
+Prowlarr and Octelium placement through their source owners; then use a
+Terragrunt-owned temporary `NoExecute` taint to clear remaining Pods before
+protected admission. Restore the missing `homelab-plan` required reviewer
+before its credentialed plan or apply. The five paused workloads remove about 2,512
+MiB in requests, closing a 681 MiB destination deficit. Prove Octelium's
+native/Multus path on `acer` before eviction and all replacement health after.
+This route incurs monitoring and media outages plus an Octelium/private-app
+interruption during eviction. A persistent guard must deny
+Traefik Pod traffic before container start and through enforcer restart,
+independently of kube-router; no such guard is implemented. Cold boot,
+image-cache miss, IP reuse, and legacy ClusterIP bypass tests remain required.
+Draft PRs #1583 and #1584 target `zimaboard-2`; revise or retire them before
+another node is chosen. No worker is admitted.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
