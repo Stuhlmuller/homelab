@@ -38,9 +38,9 @@ jq -e '
   .spec.project == "openclaw-enterprise" and
   .spec.destination.namespace == "openclaw-system" and
   .spec.sources == [
-    {"repoURL":"https://github.com/openclaw/openclaw-enterprise.git",
-     "path":"deploy/helm/openclaw-enterprise",
-     "targetRevision":"33bb74590a749f37934da4502fca6035cd234a55",
+    {"repoURL":"harbor.stinkyboi.com/mirror/helm",
+     "chart":"openclaw-enterprise",
+     "targetRevision":"0.1.0",
      "helm":{"releaseName":"oce","valueFiles":["$values/clusters/homelab/apps/openclaw-enterprise/values.yaml"]}},
     {"repoURL":"https://github.com/Stuhlmuller/homelab.git",
      "path":".","targetRevision":"main","ref":"values",
@@ -64,7 +64,7 @@ kubectl --request-timeout=15s -n argocd get application openclaw-enterprise-foun
   jq -e --arg sha "$EXPECTED_SHA" '.status.operationState.phase == "Succeeded" and .status.sync.revisions == [$sha] and .status.health.status == "Healthy"' >/dev/null
 [[ "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" == "$EXPECTED_SHA" ]] || exit 2
 argocd app sync openclaw-enterprise --core \
-  --revisions 33bb74590a749f37934da4502fca6035cd234a55 --source-positions 1 \
+  --revisions 0.1.0 --source-positions 1 \
   --revisions "$EXPECTED_SHA" --source-positions 2 \
   --revisions "$EXPECTED_SHA" --source-positions 3 \
   --timeout 1800 >/dev/null
@@ -72,7 +72,7 @@ argocd app wait openclaw-enterprise --core --sync --health --operation --timeout
 kubectl --request-timeout=15s -n argocd get application openclaw-enterprise -o json |
   jq -e --arg sha "$EXPECTED_SHA" '
     .status.operationState.phase == "Succeeded" and
-    .status.sync.revisions == ["33bb74590a749f37934da4502fca6035cd234a55", $sha, $sha] and
+    .status.sync.revisions == ["0.1.0", $sha, $sha] and
     .status.health.status == "Healthy"
   ' >/dev/null
 [[ "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" == "$EXPECTED_SHA" ]] || exit 2

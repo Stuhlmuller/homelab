@@ -15,7 +15,7 @@ inputs = {
   spec = {
     sources = [
       {
-        repoURL        = "ghcr.io/langfuse/langfuse-k8s/charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "langfuse"
         path           = "."
         targetRevision = "2.1.1"

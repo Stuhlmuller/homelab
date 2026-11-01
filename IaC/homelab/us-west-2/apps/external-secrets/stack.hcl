@@ -8,7 +8,7 @@ inputs = {
   spec = {
     sources = [
       {
-        repoURL        = "https://charts.external-secrets.io"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "external-secrets"
         path           = "."
         targetRevision = "2.0.1"

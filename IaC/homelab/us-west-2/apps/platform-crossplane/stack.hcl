@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://charts.crossplane.io/stable"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "crossplane"
         path           = "."
         targetRevision = "2.3.3"

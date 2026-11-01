@@ -36,12 +36,12 @@ terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/istio/argocd \
       $spec.syncPolicy.automated.selfHeal == true and
       ([ $spec.sources[] | select(has("chart")) |
         [.repoURL, .chart, .helm.releaseName, .targetRevision] ] == [
-        ["https://blob.istio.io/istio-release/charts", "base", "istio-base", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "istiod", "istiod", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "cni", "istio-cni", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "ztunnel", "ztunnel", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "gateway", "istio-ingressgateway", "1.27.3"],
-        ["https://blob.istio.io/istio-release/charts", "gateway", "octelium-api-ingressgateway", "1.27.3"]
+        ["harbor.stinkyboi.com/mirror/helm", "base", "istio-base", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "istiod", "istiod", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "cni", "istio-cni", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "ztunnel", "ztunnel", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "gateway", "istio-ingressgateway", "1.27.3"],
+        ["harbor.stinkyboi.com/mirror/helm", "gateway", "octelium-api-ingressgateway", "1.27.3"]
       ]) and
       any($spec.sources[];
         .chart == "ztunnel" and
@@ -1106,7 +1106,7 @@ done <<'EOF'
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml bb5ca9da4a9c2b3909129d71e574496aa4a5c7b4c118eed5f2dfac190ab24cbd
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
-.github/workflows/openclaw-enterprise-operations.yml c8cc843edf86c4f6526dc0e3a735fe0c9f0216c7cb5e80cb8f6657a05c32ad3b
+.github/workflows/openclaw-enterprise-operations.yml 622d23ad3d6402e76137cb54961fb9e012b78be6018f6af3d9b010c181625a23
 .github/workflows/openclaw-enterprise-startup.yml 8fc3a709d338571ce50a95d5364b32b372f78cfaea82c891aad18d3b81df2c09
 .github/workflows/platform-maintenance.yml a5b368ba6452d60ddb2eb47d98c45b545e78cda9b30056c76b8798e9dd3418cb
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -1652,7 +1652,7 @@ terragrunt --log-disable --working-dir IaC/homelab/us-west-2/apps/cert-manager/a
   render --json --write=false --no-color \
   | jq -e '
       any(.inputs.manifest.spec.sources[];
-        .repoURL == "https://charts.jetstack.io" and
+        .repoURL == "harbor.stinkyboi.com/mirror/helm" and
         .chart == "cert-manager" and
         .targetRevision == "v1.20.3" and
         .helm.valueFiles == ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]

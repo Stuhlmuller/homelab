@@ -8,7 +8,7 @@ inputs = {
   spec = {
     sources = [
       {
-        repoURL        = "https://helm.goharbor.io"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "harbor"
         path           = "."
         targetRevision = "1.19.2"

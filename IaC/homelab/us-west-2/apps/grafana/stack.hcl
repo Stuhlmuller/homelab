@@ -16,7 +16,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://grafana-community.github.io/helm-charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "grafana"
         path           = "."
         targetRevision = "12.11.2"

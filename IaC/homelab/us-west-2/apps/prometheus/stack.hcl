@@ -11,7 +11,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "https://prometheus-community.github.io/helm-charts"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "kube-prometheus-stack"
         path           = "."
         targetRevision = "85.2.0"

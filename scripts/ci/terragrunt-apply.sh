@@ -286,8 +286,8 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
   kubectl -n argocd get appproject homelab -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
     .spec |
     (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and
-    ($app != "langfuse" or (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null)) and
-    ($app != "traefik" or (.sourceRepos | index("https://bjw-s-labs.github.io/helm-charts") != null)) and
+    ($app != "langfuse" or (.sourceRepos | index("harbor.stinkyboi.com/mirror/helm") != null)) and
+    ($app != "traefik" or (.sourceRepos | index("harbor.stinkyboi.com/mirror/helm") != null)) and
     any(.destinations[]; .namespace == $app and .server == "https://kubernetes.default.svc") and
     any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace") and
     ($app != "mastodon" or (

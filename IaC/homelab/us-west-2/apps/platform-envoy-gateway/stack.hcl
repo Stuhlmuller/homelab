@@ -16,7 +16,7 @@ inputs = {
     }
     sources = [
       {
-        repoURL        = "docker.io/envoyproxy"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "gateway-crds-helm"
         path           = "."
         targetRevision = "v1.9.2"
@@ -26,7 +26,7 @@ inputs = {
         }
       },
       {
-        repoURL        = "docker.io/envoyproxy"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "gateway-helm"
         path           = "."
         targetRevision = "v1.9.2"

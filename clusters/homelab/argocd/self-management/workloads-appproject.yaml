@@ -10,7 +10,7 @@ spec:
   description: Namespaced homelab workloads without cluster-scoped resource access.
   sourceRepos:
     - https://github.com/Stuhlmuller/homelab.git
-    - https://bjw-s-labs.github.io/helm-charts
+    - harbor.stinkyboi.com/mirror/helm
   destinations:
     - server: https://kubernetes.default.svc
       namespace: ai

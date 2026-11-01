@@ -8,7 +8,7 @@ inputs = {
   spec = {
     sources = [
       {
-        repoURL        = "https://argoproj.github.io/argo-helm"
+        repoURL        = "harbor.stinkyboi.com/mirror/helm"
         chart          = "argocd-image-updater"
         path           = "."
         targetRevision = "1.3.1"
