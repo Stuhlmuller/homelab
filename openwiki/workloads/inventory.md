@@ -841,6 +841,14 @@ dumps use a separate 30 GiB NAS claim with 14-day retention. NAS media and
 backups share a failure domain; they are not independent disaster recovery.
 Preserve the database, media and stable encryption/signing keys during rollback.
 
+The [isolated verifier](../../clusters/homelab/apps/mastodon/restore-verification-cronjob.yaml)
+is declared at 03:35 America/Los_Angeles after the nightly backup window.
+Kustomize copies its template into `mastodon-restore-verification-v2` for
+immediate first verification. Both paths restore a checksum-verified dump into
+disposable storage with a read-only backup mount and no production database
+claim or credentials. This is declared automation, not a fresh live recovery
+receipt. Its database checks do not establish media-file or stable-key recovery.
+
 SSM generates internal credentials and the bootstrap-only owner password.
 Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
 files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
