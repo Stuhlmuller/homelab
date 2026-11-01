@@ -515,6 +515,14 @@ artifacts untouched and makes retries read-only; quarantined WALs are not
 deleted automatically. Recovery fails closed rather than overwrite a dated
 quarantine if its completion marker is missing.
 
+On 2026-11-01, read-only inspection found one selected but unready Enterprise
+resource-store Pod. The source and live Deployment/PVC match; DuckDB WAL replay
+reports a missing schema. Keep the failed WAL and checkpoint. A new
+repository-owned one-shot recovery needs an immutable PVC capture and offline
+candidate validation first; do not edit the live PVC manually. See the
+[Enterprise README](../../clusters/homelab/apps/octelium-enterprise/README.md)
+and the prior [WAL quarantine change](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8).
+
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from

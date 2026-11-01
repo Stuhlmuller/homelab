@@ -47,6 +47,15 @@ the store process; historical WAL quarantine files are never replayed or
 removed automatically. Preserve them until a reviewed recovery-retention
 change establishes they are no longer needed.
 
+On 2026-11-01, read-only inspection found the resource-store Pod selected but
+unready. Source and live Deployment/PVC state match; DuckDB WAL replay reports
+a missing schema. Treat this as a separate store recovery issue, not a
+dataplane selector failure. Capture the PVC immutably and validate an offline
+candidate before any reviewed one-shot recovery. Preserve the failed WAL and
+checkpoint; do not edit the live PVC by hand. The prior repository-owned
+[WAL quarantine pattern](https://github.com/Stuhlmuller/homelab/commit/28b6d7cf8)
+is context, not authorization to repeat it unchanged.
+
 The resource-store Deployment declares `initContainers: []` and
 `Replace=true,ServerSideApply=false` so Argo CD reconciles the complete Pod
 template without inheriting the Application's server-side apply mode. Server-side
@@ -72,6 +81,14 @@ not add the Multus annotation or a dataplane node label to these temporary
 Pods. If Octelium recreates a Service, refresh its generated
 `octelium.com/svc-uid` here before relying on the fallback.
 
+`scripts/network-policy-octelium-service-inventory.py` reads the complete
+Octelium namespace Service, Pod, and EndpointSlice lists and joins them to
+these 25 fallback Deployment labels. The sanitized report includes object IDs,
+readiness, and hashes but no endpoint addresses, ports, or upstream URLs. It
+does not prove that clients can reach a fallback. No exact source baseline for
+the 54 Services in the November 1 selector sample is checked in; the report
+marks admission unproven until a fresh private inventory is reviewed.
+
 Keep this recovery file until a correctly sized native dataplane worker has
 run the full package-managed fleet for 24 hours. Follow the direct native Pod
 probe and public end-to-end removal gate in
@@ -84,7 +101,8 @@ Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
 images as `tag@sha256:digest`, preserve `Recreate` on the three store Deployments,
-omit `rollingUpdate`, keep `initContainers: []` and `Replace=true,ServerSideApply=false` on the
+omit `rollingUpdate`, keep `initContainers: []` and
+`Replace=true,ServerSideApply=false` on the
 resource store, preserve
 the Argo image ignore rule for the four generated service proxy Deployments,
 and re-run validation.
@@ -94,5 +112,6 @@ and re-run validation.
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium-enterprise
 kubectl -n octelium get deploy,pod,svc,pvc -l octelium.com/app=octeliumee
+python3 -I scripts/ci/network-policy-octelium-service-inventory-test.py
 scripts/octelium-e2e-check.sh
 ```
