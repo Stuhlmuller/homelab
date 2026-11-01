@@ -264,6 +264,16 @@ destination deficit if all apps moved, but this is request-only math. Prove
 actual memory
 peaks, restart and Pod-slot headroom around etcd, and fallback path health.
 
+The handoff remains blocked even after its taint implementation exists.
+Kubernetes v1.34.11 accepts both `pods/binding` and `bindings`, and a timed
+wait, admission denial probes, and a complete PodList cannot prove that an
+older admitted Binding handler will not place a foreign Pod after the isolation
+check. The API server may time out the response while that handler continues.
+The [runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
+requires a reviewed placement fence before activation. A temporary Node rename
+has no validated Talos no-wipe credential and retirement path, and the four
+media `hostPath` PVs remain pinned to the old hostname; it is not a fallback.
+
 [The read-only Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
 checks complete Service, Pod, and EndpointSlice lists against the 25 emergency
 Deployment selectors. It records Service identities and Ready Pod target UIDs,

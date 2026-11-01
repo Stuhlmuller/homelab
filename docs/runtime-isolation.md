@@ -420,6 +420,27 @@ implemented, so these stages are a design, not authority to evacuate a node.
    which can conflict with or remove the canary taint. Keep `node_taints = {}`
    and do not start evacuation until the protected handoff and tests exist.
 
+   This handoff alone cannot establish strict isolation. Kubernetes v1.34.11
+   serves both [`pods/binding` and `bindings`](https://github.com/kubernetes/kubernetes/blob/v1.34.11/pkg/registry/core/rest/storage_core.go#L216-L235).
+   A direct Binding or `spec.nodeName` placement can bypass scheduler taints.
+   Admission denial probes cover new requests, while a request admitted before
+   the handoff can still complete later: an API server
+   [timeout](https://github.com/kubernetes/kubernetes/blob/v1.34.11/staging/src/k8s.io/apiserver/pkg/server/config.go#L973-L981)
+   can return to the caller without stopping its inner handler. A timed wait
+   and an empty foreign-Pod list therefore do not prove the old Binding
+   handlers have drained. Keep canary activation blocked until a reviewed
+   placement fence proves this race closed; do not infer that the taint patch,
+   admission probes, or PodList alone provide that guarantee.
+
+   A temporary distinct Node name is also not an admitted fallback. The
+   kubelet's [`system:node:<name>` identity](https://kubernetes.io/docs/reference/access-authn-authz/node/)
+   must match the new name, and no validated Talos v1.11.3 no-wipe credential,
+   rejoin, and old-Node retirement path is documented. Deluge, Radarr, Sonarr,
+   and Bazarr still have [local `hostPath` PVs](storage-nfs.md) with affinity
+   to the current hostname on Talos EPHEMERAL storage. Resolve those identity
+   and data recovery gates in a separate reviewed design before proposing a
+   rename.
+
 No stage above authorizes the firewall or Traefik. A shared-node Traefik move
 needs a guard that installs default-drop on its Pod interface before the
 container starts, survives kube-router loss, and ties openings to exact Pod
