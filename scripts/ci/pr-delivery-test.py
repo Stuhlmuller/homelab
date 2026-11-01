@@ -115,6 +115,28 @@ class DeliveryTests(unittest.TestCase):
         row = self.actions(snapshot(pull(1)), records={"1": {"head": "c" * 40, "base": BASE}})[0]
         self.assertTrue(row["checkpoint_stale"])
 
+    def test_same_name_status_and_check_must_both_pass(self):
+        for status, check, expected in [
+            ("success", "failure", "repair-checks"),
+            ("failure", "success", "repair-checks"),
+            ("pending", "failure", "repair-checks"),
+            ("failure", "in_progress", "repair-checks"),
+            ("success", "in_progress", "wait-checks"),
+            ("pending", "success", "wait-checks"),
+            ("success", "success", "verify-and-merge"),
+        ]:
+            pr = pull(1)
+            run = {"id": 2, "name": "gate", "conclusion": None if check == "in_progress" else check,
+                   "status": check}
+            older = {"id": 1, "name": "gate", "conclusion": "failure", "status": "completed"}
+            responses = [[pr], pr, [{"context": "gate", "state": status}],
+                         [{"type": "required_status_checks", "parameters": {
+                             "required_status_checks": [{"context": "gate"}]}}]]
+            with self.subTest(status=status, check=check), \
+                    patch.object(DELIVERY, "api", side_effect=responses), \
+                    patch.object(DELIVERY, "command", return_value=json.dumps([{"check_runs": [older, run]}])):
+                self.assertEqual(self.actions(DELIVERY.live_snapshot([1]))[0]["action"], expected)
+
     def test_fetches_pages_and_rejects_head_changed_during_inspection(self):
         with patch.object(DELIVERY, "command", return_value='[[1,2],[3]]') as command:
             self.assertEqual(DELIVERY.api("pulls", True), [1, 2, 3])

@@ -14,6 +14,8 @@ import tempfile
 
 REPO = "Stuhlmuller/homelab"
 SHA = re.compile(r"[0-9a-f]{40}")
+PASSED = {"success", "neutral", "skipped"}
+FAILED = {"failure", "cancelled", "timed_out", "action_required", "error", "startup_failure"}
 
 
 def command(*args):
@@ -78,11 +80,10 @@ def make_plan(snapshot, roots=None, records=None):
         checks = pr.get("checks", {})
         missing = [c["context"] for c in required if c["context"] not in checks]
         failed = [c["context"] for c in required
-                  if checks.get(c["context"]) in {"failure", "cancelled", "timed_out",
-                                                 "action_required", "error", "startup_failure"}]
+                  if checks.get(c["context"]) in FAILED]
         pending = [c["context"] for c in required
                    if c["context"] in checks
-                   and checks[c["context"]] not in {"success", "neutral", "skipped"}
+                   and checks[c["context"]] not in PASSED
                    and c["context"] not in failed]
         waiting = [n for n in parents if not prs[n].get("merged_at")]
         labels = [label["name"] for label in pr.get("labels", [])]
@@ -161,8 +162,13 @@ def live_snapshot(roots=None):
             pages = json.loads(command("gh", "api", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100",
                                        "--paginate", "--slurp"))
             runs = [run for page in pages for run in page["check_runs"]]
+            latest_runs = {}
             for run in sorted(runs, key=lambda r: r["id"], reverse=True):
-                checks.setdefault(run["name"], run["conclusion"] or run["status"])
+                latest_runs.setdefault(run["name"], run["conclusion"] or run["status"])
+            for name, outcome in latest_runs.items():
+                # GitHub requires both a status and a same-name check to pass.
+                if outcome in FAILED or checks.get(name, "success") in PASSED:
+                    checks[name] = outcome
         pr["checks"] = checks
         return number, pr
 
