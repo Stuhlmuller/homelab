@@ -18,7 +18,8 @@ SUT = runpy.run_path(str(ROOT / "scripts/network-policy-ownership.py"))
 FIXTURE = runpy.run_path(str(ROOT / "scripts/ci/network-policy-cleanup-test.py"))
 SHA = "a" * 40
 EVIDENCE_SHA = "b" * 40
-NODE = "zimaboard-1"
+NODE = "zimaboard-2"
+FIXTURE_NODE = SUT["QUALIFY"]["FIXTURE_NODE"]
 PLACEMENT_RUN = "5"
 ADMISSION_RUN = "6"
 
@@ -33,6 +34,10 @@ def qualification():
               for protocol in ("TCP", "UDP")]
     return {"format": 1, "result": "traffic-probe-passed-lifecycle-unverified",
             "sourceSha": EVIDENCE_SHA, "node": NODE, "nodeUid": "node-uid", "bootID": "boot-id",
+            "fixtureNode": FIXTURE_NODE, "fixtureNodeUid": "fixture-node-uid",
+            "fixtureBootID": "fixture-boot-id",
+            "fixturePodNodes": {"npq-client": NODE, "npq-allowed": FIXTURE_NODE,
+                                "npq-denied": FIXTURE_NODE},
             "cases": cases, "unverifiedLifecycleScenarios":
             list(SUT["QUALIFY"]["LIFECYCLE_SCENARIOS"])}
 
@@ -45,6 +50,8 @@ class MemoryStore:
             self.placement_key: {
                 "format": 1, "verified": True, "sourceSha": EVIDENCE_SHA, "node": NODE,
                 "nodeUid": "node-uid", "bootID": "boot-id", "firewallBaselineEmpty": True,
+                "fixtureNode": FIXTURE_NODE, "fixtureNodeUid": "fixture-node-uid",
+                "fixtureBootID": "fixture-boot-id",
                 "placementRunId": PLACEMENT_RUN,
             },
             f"{SUT['PREFIX']}/{EVIDENCE_SHA}/{ADMISSION_RUN}/canary-admit.json": {
@@ -154,7 +161,12 @@ class FirewallOwnershipTests(unittest.TestCase):
             SUT["capture"](self.store, SHA, EVIDENCE_SHA, "8", "7", ADMISSION_RUN, self.config)
         self.store.records[placement_key]["firewallBaselineEmpty"] = True
         for field, value in (("result", "traffic-probe-failed"),
-                             ("nodeUid", "other"), ("cases", []),
+                             ("nodeUid", "other"), ("fixtureNodeUid", "other"),
+                             ("fixtureBootID", "other"),
+                             ("fixturePodNodes", {"npq-client": FIXTURE_NODE,
+                                                  "npq-allowed": FIXTURE_NODE,
+                                                  "npq-denied": FIXTURE_NODE}),
+                             ("cases", []),
                              ("unverifiedLifecycleScenarios", [])):
             with self.subTest(field=field):
                 old = self.store.records[probe_key][field]

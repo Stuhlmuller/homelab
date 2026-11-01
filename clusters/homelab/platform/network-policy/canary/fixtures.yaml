@@ -39,6 +39,7 @@ spec:
   containers:
     - name: probe
       image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      imagePullPolicy: Always
       command: [/usr/bin/python3, -c, "import time; time.sleep(86400)"]
       resources:
         requests:
@@ -62,12 +63,7 @@ metadata:
     role: allowed
 spec:
   nodeSelector:
-    homelab.stinkyboi.com/network-policy-canary: "true"
-  tolerations:
-    - key: homelab.stinkyboi.com/network-policy-canary
-      operator: Equal
-      value: "true"
-      effect: NoSchedule
+    kubernetes.io/hostname: zimaboard-1
   automountServiceAccountToken: false
   securityContext:
     runAsUser: 65532
@@ -77,6 +73,7 @@ spec:
   containers:
     - name: server
       image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      imagePullPolicy: Always
       command:
         - /usr/bin/python3
         - -u
@@ -140,12 +137,7 @@ metadata:
     role: denied
 spec:
   nodeSelector:
-    homelab.stinkyboi.com/network-policy-canary: "true"
-  tolerations:
-    - key: homelab.stinkyboi.com/network-policy-canary
-      operator: Equal
-      value: "true"
-      effect: NoSchedule
+    kubernetes.io/hostname: zimaboard-1
   automountServiceAccountToken: false
   securityContext:
     runAsUser: 65532
@@ -155,6 +147,7 @@ spec:
   containers:
     - name: server
       image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      imagePullPolicy: Always
       command:
         - /usr/bin/python3
         - -u

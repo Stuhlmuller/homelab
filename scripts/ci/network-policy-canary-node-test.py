@@ -19,15 +19,18 @@ SHA = "a" * 40
 EVIDENCE_SHA = "b" * 40
 CANARY = SUT["CANARY"]
 TAINT = SUT["TAINT"]
-CONFIG = {"canary": {"node": "zimaboard-1",
+CONFIG = {"canary": {"node": "zimaboard-2",
                      "taint": f"{CANARY}=true:NoSchedule"}}
 
 
 def placement(source_sha=SHA):
     return {"format": 1, "verified": True, "sourceSha": source_sha,
             "placementRunId": "456",
-            "node": "zimaboard-1", "canaryNode": "zimaboard-1", "nodeUid": "uid",
+            "node": "zimaboard-2", "canaryNode": "zimaboard-2", "nodeUid": "uid",
             "bootID": "boot", "measured": True, "isolatedTaint": CONFIG["canary"]["taint"],
+            "fixtureNode": SUT["FIXTURE_NODE"], "fixtureNodeUid": "fixture-uid",
+            "fixtureBootID": "fixture-boot",
+            "fixtureCapacity": {"fixtureImageCached": False},
             "firewallBaselineEmpty": True,
             "baselineSourceSha": source_sha, "baselineCaptureVersionId": "version-1",
             "baselineRunId": "123", "baselineCaptureSha256": "a" * 64,
@@ -39,7 +42,7 @@ def placement(source_sha=SHA):
 
 def cleanup():
     return {"format": 1, "stage": "owned-firewall-cleanup", "status": "verified",
-            "verified": True, "sourceSha": SHA, "node": "zimaboard-1",
+            "verified": True, "sourceSha": SHA, "node": "zimaboard-2",
             "nodeUid": "uid", "bootID": "boot", "captureRunId": "456",
             "cleanupPodUid": "cleanup-pod-uid",
             "beforeSha256": "c" * 64, "afterSha256": "b" * 64,
@@ -51,21 +54,21 @@ def ownership():
             "evidenceSourceSha": EVIDENCE_SHA, "captureRunId": "456",
             "admissionRunId": "123", "placementRunId": "456",
             "placementVersionId": "version-1",
-            "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
+            "node": "zimaboard-2", "nodeUid": "uid", "bootID": "boot",
             "snapshotSha256": "c" * 64, "reviewedAt": "2026-10-19T00:00:00Z"}
 
 
 def admission_attempt():
     return {"format": 1, "stage": "canary-admit", "status": "attempted",
             "verified": False, "sourceSha": EVIDENCE_SHA, "runId": "123",
-            "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
+            "node": "zimaboard-2", "nodeUid": "uid", "bootID": "boot",
             "placementRunId": "456", "placementVersionId": "version-1"}
 
 
 def admission_receipt():
     return {"format": 1, "stage": "canary-admit", "status": "verified",
             "verified": True, "sourceSha": EVIDENCE_SHA, "runId": "123",
-            "node": "zimaboard-1", "nodeUid": "uid", "bootID": "boot",
+            "node": "zimaboard-2", "nodeUid": "uid", "bootID": "boot",
             "placementRunId": "456", "placementVersionId": "version-1",
             "resourceVersion": "11", "completedAt": "2026-10-19T00:00:00Z"}
 
@@ -75,7 +78,7 @@ def recovery_proof():
             "verified": True, "sourceSha": SHA, "evidenceSourceSha": EVIDENCE_SHA,
             "runId": "789",
             "admissionRunId": "123", "placementRunId": "456",
-            "placementVersionId": "version-1", "node": "zimaboard-1",
+            "placementVersionId": "version-1", "node": "zimaboard-2",
             "nodeUid": "uid", "bootID": "boot", "firewallBaselineEmpty": True,
             "ownedChains": 0, "ownedSets": 0, "podDeleted": True,
             "completedAt": datetime.now(timezone.utc).isoformat(),
@@ -89,7 +92,7 @@ def release_attempt():
             "cleanupRunId": "567", "captureRunId": "456",
             "cleanupPodUid": "cleanup-pod-uid", "evidenceSourceSha": EVIDENCE_SHA,
             "admissionRunId": "123", "placementRunId": "456",
-            "placementVersionId": "version-1", "node": "zimaboard-1",
+            "placementVersionId": "version-1", "node": "zimaboard-2",
             "nodeUid": "uid", "bootID": "boot"}
 
 
@@ -118,7 +121,7 @@ def node(admitted=False):
         labels[CANARY] = "true"
         annotations[SUT["ADMISSION"]] = SUT["admission_marker"](EVIDENCE_SHA, "123")
         taints.append(copy.deepcopy(TAINT))
-    return {"metadata": {"name": "zimaboard-1", "uid": "uid",
+    return {"metadata": {"name": "zimaboard-2", "uid": "uid",
                          "resourceVersion": "10", "labels": labels,
                          "annotations": annotations},
             "spec": {"taints": taints, "unschedulable": False},
@@ -139,7 +142,7 @@ def system_pod():
                          "uid": "system-pod-uid", "ownerReferences": [
                              {"kind": "DaemonSet", "name": "kube-flannel-ds",
                               "controller": True}]},
-            "spec": {"nodeName": "zimaboard-1"}}
+            "spec": {"nodeName": "zimaboard-2"}}
 
 
 def cleanup_pod():
@@ -218,7 +221,7 @@ class CanaryNodeTests(unittest.TestCase):
     def test_clean_release_inventory_allows_workloads_but_rejects_firewall_or_incomplete_list(self):
         workload = {"metadata": {"namespace": "default", "name": "workload",
                                  "uid": "workload-uid"},
-                    "spec": {"nodeName": "zimaboard-1"}}
+                    "spec": {"nodeName": "zimaboard-2"}}
         restarted = system_pod()
         restarted["metadata"]["uid"] = "restarted-system-pod"
         items = [restarted, workload]
@@ -1316,7 +1319,7 @@ class CanaryNodeTests(unittest.TestCase):
         self.assertEqual(patches, [])
         workload = {"metadata": {"namespace": "default", "name": "workload",
                                  "uid": "workload-uid"},
-                    "spec": {"nodeName": "zimaboard-1"}}
+                    "spec": {"nodeName": "zimaboard-2"}}
         patches, records, _ = run(node(), pods=[system_pod(), workload])
         self.assertEqual(patches, [])
         self.assertEqual([record["status"] for record in records], ["started", "verified"])

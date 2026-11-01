@@ -16,6 +16,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 NAMESPACE = "network-policy-canary"
 CANARY_KEY = "homelab.stinkyboi.com/network-policy-canary"
+FIXTURE_NODE = "zimaboard-1"
+HOSTNAME_LABEL = "kubernetes.io/hostname"
 IMAGE = "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
 SERVER_CODE = """import socket, threading, time
 def serve_tcp(port):
@@ -48,6 +50,12 @@ FIXTURE_SECURITY = {
     "readOnlyRootFilesystem": True,
     "capabilities": {"drop": ["ALL"]},
 }
+FIXTURE_RESOURCES = {"requests": {"cpu": "10m", "memory": "32Mi"},
+                     "limits": {"cpu": "100m", "memory": "64Mi"}}
+SERVER_PORTS = [{"name": "fixture-tcp", "containerPort": 8080, "protocol": "TCP"},
+                {"name": "fixture-udp", "containerPort": 8080, "protocol": "UDP"},
+                {"name": "alternate-tcp", "containerPort": 9090, "protocol": "TCP"}]
+SERVER_PROBE = {"tcpSocket": {"port": "fixture-tcp"}}
 FIREWALL_IMAGE = "harbor.stinkyboi.com/mirror/docker.io/cloudnativelabs/kube-router:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a@sha256:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a"
 FIREWALL_FLAGS = {
     "--run-router=false", "--run-service-proxy=false", "--run-loadbalancer=false",
@@ -261,6 +269,21 @@ def inspect(config):
             not any(item.get("type") == "Ready" and item.get("status") == "True"
                     for item in node["status"]["conditions"])):
         raise ValueError("canary label, taint, or node readiness differs")
+    server_node = kubernetes_json("get", "node", FIXTURE_NODE)
+    server_meta = server_node.get("metadata", {})
+    server_spec = server_node.get("spec", {})
+    server_status = server_node.get("status", {})
+    if (server_meta.get("name") != FIXTURE_NODE or
+            not server_meta.get("uid") or server_meta.get("deletionTimestamp") or
+            server_meta.get("labels", {}).get(HOSTNAME_LABEL) != FIXTURE_NODE or
+            server_meta.get("labels", {}).get(CANARY_KEY) == "true" or
+            not server_status.get("nodeInfo", {}).get("bootID") or
+            server_spec.get("unschedulable") is True or
+            any(item.get("effect") in {"NoSchedule", "NoExecute"}
+                for item in server_spec.get("taints", [])) or
+            not any(item.get("type") == "Ready" and item.get("status") == "True"
+                    for item in server_status.get("conditions", []))):
+        raise ValueError("fixture Node identity, readiness, or scheduling differs")
     namespace = kubernetes_json("get", "namespace", NAMESPACE)
     namespace_labels = namespace["metadata"].get("labels", {})
     if (namespace_labels.get("pod-security.kubernetes.io/enforce") != "restricted" or
@@ -271,32 +294,79 @@ def inspect(config):
             "npq-client", "npq-allowed", "npq-denied"} or len(fixture_pods) != 3:
         raise ValueError("canary namespace contains foreign or missing Pods")
     pods = {}
+    def reviewed_server_probe(probe):
+        if not isinstance(probe, dict):
+            return False
+        defaults = {"initialDelaySeconds": 0, "periodSeconds": 10,
+                    "timeoutSeconds": 1, "successThreshold": 1,
+                    "failureThreshold": 3}
+        return (probe.get("tcpSocket") == SERVER_PROBE["tcpSocket"] and
+                set(probe) <= {"tcpSocket", *defaults} and
+                all(probe.get(key, value) == value for key, value in defaults.items()))
     for name, role in (("npq-client", "client"), ("npq-allowed", "allowed"),
                        ("npq-denied", "denied")):
         pod = kubernetes_json("-n", NAMESPACE, "get", "pod", name)
         spec = pod["spec"]
         containers = spec.get("containers", [])
-        if (not ready(pod) or spec.get("nodeName") != node_name or
+        container = (containers[0] if isinstance(containers, list) and
+                     len(containers) == 1 and isinstance(containers[0], dict) else {})
+        expected_node = node_name if role == "client" else FIXTURE_NODE
+        expected_selector = ({CANARY_KEY: "true"} if role == "client" else
+                             {HOSTNAME_LABEL: FIXTURE_NODE})
+        tolerations = spec.get("tolerations", [])
+        if role == "client":
+            placement_tolerations_valid = any(
+                item.get("key") == CANARY_KEY and item.get("operator") == "Equal" and
+                item.get("value") == "true" and item.get("effect") == "NoSchedule"
+                for item in tolerations)
+        else:
+            # Kubernetes injects these transient and Burstable-Pod tolerations.
+            placement_tolerations_valid = all(
+                (item.get("key") in {"node.kubernetes.io/not-ready",
+                                     "node.kubernetes.io/unreachable"} and
+                 item.get("operator") == "Exists" and
+                 item.get("effect") == "NoExecute" and
+                 item.get("tolerationSeconds") == 300) or
+                (item.get("key") == "node.kubernetes.io/memory-pressure" and
+                 item.get("operator") == "Exists" and
+                 item.get("effect") == "NoSchedule" and
+                 "tolerationSeconds" not in item)
+                for item in tolerations)
+        statuses = pod["status"].get("containerStatuses", [])
+        image_status_valid = (
+            len(statuses) == 1 and statuses[0].get("name") ==
+            ("probe" if role == "client" else "server") and
+            isinstance(statuses[0].get("imageID"), str) and
+            bool(statuses[0]["imageID"]))
+        reviewed_ports = [] if role == "client" else SERVER_PORTS
+        probes_valid = (
+            container.get("readinessProbe") in (None, {}) and
+            container.get("livenessProbe") in (None, {})
+            if role == "client" else
+            reviewed_server_probe(container.get("readinessProbe")) and
+            reviewed_server_probe(container.get("livenessProbe")))
+        if (not ready(pod) or spec.get("nodeName") != expected_node or
                 pod["metadata"].get("labels", {}).get("role") != role or
-                spec.get("nodeSelector") != {CANARY_KEY: "true"} or
-                not any(toleration.get("key") == CANARY_KEY and
-                        toleration.get("operator") == "Equal" and
-                        toleration.get("value") == "true" and
-                        toleration.get("effect") == "NoSchedule"
-                        for toleration in spec.get("tolerations", [])) or
+                spec.get("nodeSelector") != expected_selector or
+                not placement_tolerations_valid or
                 spec.get("automountServiceAccountToken") is not False or
                 spec.get("hostNetwork") is True or spec.get("hostPID") is True or
                 spec.get("hostIPC") is True or spec.get("volumes") or
                 spec.get("initContainers") or spec.get("ephemeralContainers") or
-                spec.get("securityContext", {}).get("runAsNonRoot") is not True or
-                spec["securityContext"].get("runAsUser") != 65532 or
-                spec["securityContext"].get("seccompProfile") != {"type": "RuntimeDefault"} or
+                spec.get("securityContext") != {"runAsUser": 65532,
+                                                "runAsNonRoot": True,
+                                                "seccompProfile": {"type": "RuntimeDefault"}} or
                 len(containers) != 1 or
-                containers[0].get("name") != ("probe" if role == "client" else "server") or
-                containers[0].get("image") != IMAGE or
-                containers[0].get("command") != FIXTURE_COMMANDS[role] or
-                containers[0].get("args") not in (None, []) or
-                containers[0].get("securityContext") != FIXTURE_SECURITY or
+                container.get("name") != ("probe" if role == "client" else "server") or
+                container.get("image") != IMAGE or
+                container.get("command") != FIXTURE_COMMANDS[role] or
+                container.get("args") not in (None, []) or
+                container.get("securityContext") != FIXTURE_SECURITY or
+                container.get("resources") != FIXTURE_RESOURCES or
+                container.get("imagePullPolicy") != "Always" or
+                container.get("ports", []) != reviewed_ports or
+                not probes_valid or
+                not image_status_valid or
                 not pod["metadata"].get("uid") or not pod["status"].get("podIP")):
             raise ValueError(f"canary fixture identity or readiness differs: {name}")
         pods[name] = pod
@@ -328,7 +398,7 @@ def inspect(config):
         return inventory["policy_fingerprint"](inventory["normalized_policy"](item))
     if fingerprint(policy) != fingerprint(EXPECTED_POLICY):
         raise ValueError("canary policy differs from reviewed traffic fixture")
-    return node, pods, firewall_pods["items"][0], fingerprint(policy)
+    return node, server_node, pods, firewall_pods["items"][0], fingerprint(policy)
 
 
 def probe(source, address, port, protocol):
@@ -415,7 +485,7 @@ def private_output(path, record):
         os.close(parent_fd)
 
 
-def traffic_receipt(source_sha, node, pods, firewall, policy_hash, cases):
+def traffic_receipt(source_sha, node, server_node, pods, firewall, policy_hash, cases):
     """Record fixture probes without implying that lifecycle qualification passed."""
     return {
         "format": 1, "result": "traffic-probe-passed-lifecycle-unverified",
@@ -423,8 +493,12 @@ def traffic_receipt(source_sha, node, pods, firewall, policy_hash, cases):
         "sourceSha": source_sha,
         "node": node["metadata"]["name"], "nodeUid": node["metadata"]["uid"],
         "bootID": node["status"]["nodeInfo"]["bootID"],
+        "fixtureNode": server_node["metadata"]["name"],
+        "fixtureNodeUid": server_node["metadata"]["uid"],
+        "fixtureBootID": server_node["status"]["nodeInfo"]["bootID"],
         "firewallPodUid": firewall["metadata"]["uid"],
         "fixturePodUids": {name: pod["metadata"]["uid"] for name, pod in pods.items()},
+        "fixturePodNodes": {name: pod["spec"]["nodeName"] for name, pod in pods.items()},
         "policySha256": policy_hash, "cases": cases,
         "unverifiedLifecycleScenarios": list(LIFECYCLE_SCENARIOS),
     }
@@ -440,18 +514,21 @@ def main():
         source_sha = require_protected_source()
         config = json.loads(args.config.read_text())
         runpy.run_path(str(ROOT / "scripts/platform-maintenance.py"))["validate_config"](config)
-        node, pods, firewall, policy_hash = inspect(config)
+        node, server_node, pods, firewall, policy_hash = inspect(config)
         cases = traffic_matrix(pods)
-        node_after, pods_after, firewall_after, policy_hash_after = inspect(config)
+        node_after, server_after, pods_after, firewall_after, policy_hash_after = inspect(config)
         if (node_after["metadata"]["uid"] != node["metadata"]["uid"] or
                 node_after["status"]["nodeInfo"]["bootID"] != node["status"]["nodeInfo"]["bootID"] or
+                server_after["metadata"]["uid"] != server_node["metadata"]["uid"] or
+                server_after["status"]["nodeInfo"]["bootID"] != server_node["status"]["nodeInfo"]["bootID"] or
                 firewall_after["metadata"]["uid"] != firewall["metadata"]["uid"] or
                 policy_hash_after != policy_hash or
-                any(pods_after[name]["metadata"]["uid"] != pod["metadata"]["uid"]
+                any(pods_after[name]["metadata"]["uid"] != pod["metadata"]["uid"] or
+                    pods_after[name]["spec"]["nodeName"] != pod["spec"]["nodeName"]
                     for name, pod in pods.items())):
             raise ValueError("canary identity changed during the traffic matrix")
         private_output(args.output, traffic_receipt(
-            source_sha, node, pods, firewall, policy_hash, cases))
+            source_sha, node, server_node, pods, firewall, policy_hash, cases))
         print("Canary traffic probe passed; lifecycle and real workload qualification remain pending")
         return 0
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError,

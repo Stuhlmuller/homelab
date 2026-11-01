@@ -39,6 +39,7 @@ def check_phase(policy, canary, policy_manifest, canary_manifest):
     empty_active = (True, True, True)
     phases = {
         (ENFORCER, EMPTY, dormant, dormant): "dormant",
+        (ENFORCER, FIXTURES, dormant, active): "fixture-first-pull",
         (ENFORCER, FIXTURES, active, active): "fixture-qualification",
         (ENFORCER, EMPTY, active, empty_active): "fixture-pruned",
         (EMPTY, EMPTY, empty_active, empty_active): "firewall-pruned",
@@ -72,7 +73,7 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
         self.assertIn(
             check_phase(render(UNIT), render(CANARY_UNIT),
                         POLICY_MANIFEST.read_text(), CANARY_MANIFEST.read_text()),
-            {"dormant", "fixture-qualification", "fixture-pruned",
+            {"dormant", "fixture-first-pull", "fixture-qualification", "fixture-pruned",
              "firewall-pruned", "canary-retired"})
 
     def test_cleanup_application_is_separate_and_dormant(self):
@@ -117,6 +118,7 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
                                          app(True, True, True))
         reviewed = [
             (dormant, dormant, ENFORCER, EMPTY),
+            (dormant, active, ENFORCER, FIXTURES),
             (active, active, ENFORCER, FIXTURES),
             (active, empty_active, ENFORCER, EMPTY),
             (empty_active, empty_active, EMPTY, EMPTY),
@@ -127,7 +129,6 @@ class NetworkPolicyRegistrationTests(unittest.TestCase):
                 check_phase(policy, canary, policy_source, canary_source)
         malformed = [
             (dormant, dormant, ENFORCER, FIXTURES),
-            (dormant, active, ENFORCER, FIXTURES),
             (dormant, active, ENFORCER, EMPTY),
             (dormant, empty_active, ENFORCER, EMPTY),
             (dormant, empty_active, ENFORCER, FIXTURES),

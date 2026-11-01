@@ -136,7 +136,7 @@ class FirewallSourceTests(unittest.TestCase):
         self.assertIn({"source": f"docker.io/cloudnativelabs/kube-router:v2.11.1@sha256:{DIGEST}"},
                       catalog["images"])
 
-    def test_qualification_fixtures_stay_separate_and_tainted(self):
+    def test_qualification_fixtures_keep_split_placement(self):
         source = (SOURCE / "canary" / "kustomization.yaml").read_text()
         self.assertIn(source, {EMPTY_KUST, FIXTURES_KUST})
         fixtures = rendered_objects(SOURCE / "canary" / "fixtures.yaml")
@@ -160,15 +160,21 @@ class FirewallSourceTests(unittest.TestCase):
             if item["kind"] != "Pod":
                 continue
             spec = item["spec"]
-            self.assertEqual(spec["nodeSelector"], {
-                "homelab.stinkyboi.com/network-policy-canary": "true"})
-            self.assertEqual(spec["tolerations"], [{
-                "key": "homelab.stinkyboi.com/network-policy-canary",
-                "operator": "Equal", "value": "true", "effect": "NoSchedule"}])
+            if item["metadata"]["name"] == "npq-client":
+                self.assertEqual(spec["nodeSelector"], {
+                    "homelab.stinkyboi.com/network-policy-canary": "true"})
+                self.assertEqual(spec["tolerations"], [{
+                    "key": "homelab.stinkyboi.com/network-policy-canary",
+                    "operator": "Equal", "value": "true", "effect": "NoSchedule"}])
+            else:
+                self.assertEqual(spec["nodeSelector"], {
+                    "kubernetes.io/hostname": "zimaboard-1"})
+                self.assertNotIn("tolerations", spec)
             self.assertFalse(spec["automountServiceAccountToken"])
             image = spec["containers"][0]["image"]
             self.assertIn("harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:", image)
             self.assertIn("@sha256:", image)
+            self.assertEqual(spec["containers"][0]["imagePullPolicy"], "Always")
         policy, = (item for item in fixtures if item["kind"] == "NetworkPolicy")
         self.assertEqual(policy["spec"], qualification.EXPECTED_POLICY["spec"])
         self.assertEqual(policy["spec"]["podSelector"], {"matchLabels": {"role": "client"}})

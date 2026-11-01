@@ -23,6 +23,7 @@ LABEL_PATH = "/metadata/labels/" + CANARY.replace("~", "~0").replace("/", "~1")
 ADMISSION = "homelab.stinkyboi.com/network-policy-canary-admission"
 ADMISSION_PATH = "/metadata/annotations/" + ADMISSION.replace("/", "~1")
 SYSTEM_NAMESPACES = {"kube-system", "istio-system"}
+FIXTURE_NODE = "zimaboard-1"
 
 
 def require_current_main(source_sha):
@@ -223,7 +224,16 @@ def validate_placement(placement, config, source_sha, fresh):
             placement["baselineCaptureVersionId"] in {"", "null"} or
             not isinstance(placement.get("baselineCapturedAt"), str) or
             not isinstance(placement.get("nodeUid"), str) or not placement["nodeUid"] or
-            not isinstance(placement.get("bootID"), str) or not placement["bootID"]):
+            not isinstance(placement.get("bootID"), str) or not placement["bootID"] or
+            placement.get("fixtureNode") != FIXTURE_NODE or
+            FIXTURE_NODE == config["canary"]["node"] or
+            not isinstance(placement.get("fixtureNodeUid"), str) or
+            not placement["fixtureNodeUid"] or
+            not isinstance(placement.get("fixtureBootID"), str) or
+            not placement["fixtureBootID"] or
+            placement.get("fixtureNodeUid") == placement.get("nodeUid") or
+            not isinstance(placement.get("fixtureCapacity"), dict) or
+            type(placement["fixtureCapacity"].get("fixtureImageCached")) is not bool):
         raise ValueError("reviewed placement and empty firewall baseline are required")
     expected = placement.get("systemDaemonSetPods")
     if (not isinstance(expected, list) or
