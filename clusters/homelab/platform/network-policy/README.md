@@ -199,11 +199,11 @@ still-unverified lifecycle scenario. A successful
 fixture probe is not Talos qualification: cold bootstrap, first packets,
 enforcer stop/restart, API loss, policy/conntrack changes, Pod reschedule/IP
 reuse, node reboot, IPv6 absence, and real workload paths remain T027/T028
-acceptance gates. This isolated canary does not protect Traefik on
-`zimaboard-0`. After qualification, a separate reviewed rollout must extend
-enforcement to that node and prove denial from an unauthorized cluster Pod
-plus private ingress, callback, Harbor, and Octelium user paths before the
-ingress finding is closed.
+acceptance gates. This isolated canary does not protect Traefik on its reviewed
+`zimaboard-1` node. After qualification, a separate reviewed rollout must extend
+enforcement to Traefik's actual node and prove denial from an unauthorized
+cluster Pod, plus private ingress, callback, Harbor, and Octelium user paths,
+before the ingress finding is closed.
 Removing the DaemonSet alone can leave firewall rules behind. The separately
 registered `platform-network-policy-cleanup` Application has automatic sync
 disabled and schedules only on the admitted tainted canary. After Enterprise

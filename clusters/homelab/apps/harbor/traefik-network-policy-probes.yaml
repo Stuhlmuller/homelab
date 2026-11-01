@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/name: harbor-image-signing
 spec:
   nodeSelector:
-    kubernetes.io/hostname: zimaboard-1
+    kubernetes.io/hostname: acer
   serviceAccountName: default
   automountServiceAccountToken: false
   securityContext:
@@ -46,7 +46,7 @@ metadata:
     app.kubernetes.io/name: traefik-policy-deny
 spec:
   nodeSelector:
-    kubernetes.io/hostname: zimaboard-1
+    kubernetes.io/hostname: acer
   serviceAccountName: default
   automountServiceAccountToken: false
   securityContext:

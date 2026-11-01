@@ -53,6 +53,27 @@ class TraefikQualificationTests(unittest.TestCase):
         self.traefik = {"metadata": {"labels": {"app.kubernetes.io/name": "traefik"}}}
         self.harbor_namespace = {"metadata": {"labels": {"kubernetes.io/metadata.name": "harbor"}}}
 
+    def test_reviewed_placement_requires_distinct_acer_sources(self):
+        target = {"node": "zimaboard-1"}
+        sources = {"allow": {"node": "acer"}, "deny": {"node": "acer"}}
+        self.assertIsNone(CHECK.require_reviewed_placement(target, sources))
+        for changed_target, changed_sources, expected in (
+                ({"node": "zimaboard-0"}, sources, "Traefik placement changed"),
+                (target, {**sources, "deny": {"node": "zimaboard-0"}},
+                 "source probe placement changed"),
+                (target, {**sources, "allow": {"node": "zimaboard-1"}},
+                 "source probe shares Traefik node")):
+            with self.subTest(target=changed_target, sources=changed_sources), \
+                    self.assertRaisesRegex(ValueError, expected):
+                CHECK.require_reviewed_placement(changed_target, changed_sources)
+
+    def test_reviewed_placement_matches_gitops_source(self):
+        values = json.loads(subprocess.check_output(
+            ["yq", "-o=json", ".", str(ROOT / "clusters/homelab/apps/traefik/values.yaml")],
+            text=True))
+        self.assertEqual(values["controllers"]["traefik"]["pod"]["nodeSelector"]
+                         ["kubernetes.io/hostname"], CHECK.TRAEFIK_NODE)
+
     def inspect(self, harbor_policies=None, traefik_policies=None):
         harbor_policies = [self.signer] if harbor_policies is None else harbor_policies
         traefik_policies = [self.destination] if traefik_policies is None else traefik_policies
@@ -226,6 +247,8 @@ class TraefikQualificationTests(unittest.TestCase):
         self.assertEqual(rendered.count("kind: Pod\n"), 2)
         self.assertIn("name: traefik-policy-allow", rendered)
         self.assertIn("name: traefik-policy-deny", rendered)
+        self.assertEqual(rendered.count(f"kubernetes.io/hostname: {CHECK.PROBE_NODE}"), 2)
+        self.assertNotIn(f"kubernetes.io/hostname: {CHECK.TRAEFIK_NODE}", rendered)
 
 if __name__ == "__main__":
     unittest.main()

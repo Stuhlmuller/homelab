@@ -14,6 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INVENTORY = runpy.run_path(str(ROOT / "scripts/network-policy-inventory.py"))
 PROBES = {"allow": "traefik-policy-allow", "deny": "traefik-policy-deny"}
+TRAEFIK_NODE = "zimaboard-1"
+PROBE_NODE = "acer"
 REPO_URL = "https://github.com/Stuhlmuller/homelab.git"
 APPLICATIONS = {
     "harbor": ("https://helm.goharbor.io", "harbor", "1.19.2"),
@@ -113,6 +115,15 @@ def pod_identity(pod):
     return {**value, "node": spec["nodeName"], "ip": address}
 
 
+def require_reviewed_placement(target, sources):
+    if any(source["node"] == target["node"] for source in sources.values()):
+        raise ValueError("source probe shares Traefik node")
+    if target["node"] != TRAEFIK_NODE:
+        raise ValueError("Traefik placement changed")
+    if any(source["node"] != PROBE_NODE for source in sources.values()):
+        raise ValueError("source probe placement changed")
+
+
 def protected_source():
     source_sha = os.environ.get("GITHUB_SHA", "")
     platform = runpy.run_path(str(ROOT / "scripts/platform-maintenance.py"))
@@ -191,7 +202,7 @@ def inspect(source_sha):
         raise ValueError("expected one Ready Traefik Pod")
     traefik, = traefik_pods
     target = pod_identity(traefik)
-    if (target["node"] != "zimaboard-0" or traefik["spec"].get("hostNetwork") or
+    if (traefik["spec"].get("hostNetwork") or
             traefik.get("metadata", {}).get("deletionTimestamp")):
         raise ValueError("Traefik placement changed")
     probes = {mode: kubernetes_json("-n", "harbor", "get", "pod", name)
@@ -207,7 +218,7 @@ def inspect(source_sha):
                 labels.get("app.kubernetes.io/name") !=
                 ("harbor-image-signing" if mode == "allow" else "traefik-policy-deny") or
                 labels.get("istio.io/dataplane-mode") == "ambient" or
-                source["node"] != "zimaboard-1" or spec.get("hostNetwork") or
+                spec.get("hostNetwork") or
                 spec.get("serviceAccountName") != "default" or
                 spec.get("automountServiceAccountToken") is not False or
                 len(spec.get("containers", [])) != 1 or
@@ -216,6 +227,7 @@ def inspect(source_sha):
                 ["/usr/bin/python3", "-c", "import time; time.sleep(86400)"]):
             raise ValueError("source probe differs from reviewed fixture")
         sources[mode] = source
+    require_reviewed_placement(target, sources)
     if ({key: value for key, value in probes["allow"]["metadata"].get("labels", {}).items()
          if key != "app.kubernetes.io/name"} !=
             {key: value for key, value in probes["deny"]["metadata"].get("labels", {}).items()

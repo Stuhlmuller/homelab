@@ -2023,12 +2023,12 @@ bound capture, Pod identities, Node metrics, filesystem and capacity before
 Node mutation. A separate fresh capacity gate is still needed before the later
 enforcer and fixture rollout. Qualification also requires a reviewed
 `activationEnabled: true` change in the maintenance config. The isolated
-canary does not protect Traefik on `zimaboard-0`; a later reviewed expansion
-and direct unauthorized-Pod denial plus positive private ingress, callback,
-Harbor, and Octelium checks remain separate acceptance gates. With a fresh
-receipt,
-admission verifies the exact Node UID and boot
-ID, system DaemonSet Pod identities, and absence of firewall enforcers, cleanup
+canary does not protect Traefik on its reviewed `zimaboard-1` node; a later
+reviewed expansion on Traefik's actual node, direct unauthorized-Pod denial,
+and positive private ingress, callback, Harbor, and Octelium checks remain
+separate acceptance gates. With a fresh receipt, admission verifies the exact
+Node UID and boot ID, system DaemonSet Pod identities, and absence of firewall
+enforcers, cleanup
 Pods, and fixture traffic before adding the dedicated `NoSchedule` taint and
 admission-run annotation atomically, then the selector label. A complete
 cluster-wide selector inventory must show
