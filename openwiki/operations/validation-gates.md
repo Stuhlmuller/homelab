@@ -1042,6 +1042,17 @@ App's added repository permission takes effect only after account approval
 [App permission approval](https://docs.github.com/en/apps/maintaining-github-apps/modifying-a-github-app-registration)).
 Migration activation remains blocked until the registration and installation
 both show the permission and a fresh signed delivery passes.
+The [n8n callback helper](../../scripts/n8n-github-webhooks.py) now has a
+read-only `--verify-signed-trigger --activated-after ACTIVATION_UTC` gate for
+after a separately approved activation and restart. Record the UTC boundary
+immediately before activation. The gate discovers one exact active JSON/TLS
+native hook, reads back a masked signing secret, and requires the latest pull
+request delivery after both that boundary and the hook's `updated_at` to have
+a SHA-256 signature header and 2xx response. It confirms the old hook's
+Funnel path retains Traefik's plain-text 404 under safe OPTIONS. It sends no
+webhook and does not prove HMAC validation or workflow execution; verify a real
+workflow run separately before retiring the old unsigned hook. Run
+`python3 -I scripts/ci/n8n-github-webhooks-test.py` for the source fixture.
 The inactive [n8n maintenance fence](../../clusters/homelab/apps/n8n/maintenance-fence.values.yaml)
 has a [pinned chart render gate](../../scripts/ci/n8n-maintenance-fence-check.sh):
 the active values render one Deployment replica and the fence overlay renders
