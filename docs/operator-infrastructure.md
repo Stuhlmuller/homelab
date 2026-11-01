@@ -83,8 +83,11 @@ production environments in `Stuhlmuller/homelab` and
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
-current runtime-secret key. This metadata-only grant adds no cryptographic or
-key-administration actions. The role cannot manage this bootstrap
+current runtime-secret key. It also allows read-only IAM metadata for the exact
+`homelab/homelab-langfuse-s3` user and
+`homelab-oce-recovery-publisher-boundary` policy, so protected plans can refresh
+those resources. The grant adds no cryptographic, key-administration, or IAM write
+actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,

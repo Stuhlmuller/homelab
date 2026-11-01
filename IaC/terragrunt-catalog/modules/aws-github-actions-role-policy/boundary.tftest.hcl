@@ -106,6 +106,38 @@ run "apply_role_reads_only_langfuse_blob_storage_identity" {
   }
 }
 
+run "apply_role_reads_only_recovery_publisher_boundary" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.parameter_reader_administration]
+  }
+
+  assert {
+    condition = [
+      for statement in jsondecode(data.aws_iam_policy_document.parameter_reader_administration.json).Statement : {
+        Sid       = statement.Sid
+        Effect    = statement.Effect
+        Actions   = toset(flatten([statement.Action]))
+        Resources = toset(flatten([statement.Resource]))
+      }
+      if statement.Sid == "ReadEnterpriseRecoveryPublisherBoundary"
+      ] == [{
+        Sid    = "ReadEnterpriseRecoveryPublisherBoundary"
+        Effect = "Allow"
+        Actions = toset([
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListPolicyTags",
+          "iam:ListPolicyVersions",
+        ])
+        Resources = toset(["arn:aws:iam::123456789012:policy/homelab-oce-recovery-publisher-boundary"])
+    }]
+    error_message = "The CI role may read only the exact recovery publisher boundary policy; no IAM writes or broader policy access."
+  }
+}
+
 run "operator_role_excludes_companion_renovate" {
   command = plan
 
