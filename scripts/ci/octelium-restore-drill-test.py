@@ -40,7 +40,7 @@ class RestoreDrillTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         try:
-            run("pg_ctl", "-D", str(cls.source), "-m", "immediate", "-w", "stop")
+            run("pg_ctl", "-D", str(cls.source), "-m", "fast", "-w", "stop")
         finally:
             cls.temp.cleanup()
 
@@ -181,7 +181,7 @@ class RestoreDrillTest(unittest.TestCase):
                          "-XAt", "-v", "ON_ERROR_STOP=1", "-c", metadata_sql).stdout
             self.assertEqual(json.loads(actual), json.loads(expected))
         finally:
-            run("pg_ctl", "-D", str(restored), "-m", "immediate", "-w", "stop")
+            run("pg_ctl", "-D", str(restored), "-m", "fast", "-w", "stop")
 
     def test_corrupt_latest_archive_does_not_fall_back(self):
         self.backup(hours_old=24)
