@@ -245,6 +245,92 @@ plan_and_apply_argocd_apps() {
   )
 }
 
+plan_and_apply_azuread() {
+  local plan_dir
+  local changed_filter
+  local pilot_filter
+  local plan_file
+  local plan_json_file
+  local planned_units_file
+  local plan_json_files=()
+  local relative_plan_path
+  local report_file
+  local report_units_file
+  local unit_path
+
+  changed_filter="$(terragrunt_azuread_changed_filter)"
+  pilot_filter="$(terragrunt_azuread_pilot_filter)"
+  plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-azuread-apps.XXXXXX")"
+  cleanup_dirs+=("$plan_dir")
+  report_file="$plan_dir/run-report.json"
+  report_units_file="$plan_dir/report-units.txt"
+  planned_units_file="$plan_dir/planned-units.txt"
+
+  (
+    cd IaC/homelab/us-west-2/apps
+    verify_current_main_commit
+    terragrunt run --all --filter "$changed_filter" --filter "$pilot_filter" \
+      --non-interactive --parallelism 1 --source-update \
+      --out-dir "$plan_dir" --json-out-dir "$plan_dir" \
+      --report-file "$report_file" --report-format json -- plan -no-color
+  )
+
+  if ! jq -e '
+    type == "array" and all(.[];
+      (.Name | type) == "string" and
+      (.Name | test("^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$")) and
+      .Result == "succeeded" and (.Reason // "") == "")
+  ' "$report_file" >/dev/null; then
+    echo "AzureAD plan report is missing or contains an unverified unit result." >&2
+    return 1
+  fi
+  jq -r '.[].Name' "$report_file" | sort >"$report_units_file"
+  : >"$planned_units_file"
+  while IFS= read -r plan_file; do
+    plan_json_file="${plan_file%.tfplan}.json"
+    [[ -f "$plan_json_file" ]] || {
+      echo "AzureAD saved plan is missing its JSON policy input." >&2
+      return 1
+    }
+    relative_plan_path="${plan_file#"$plan_dir"/}"
+    unit_path="${relative_plan_path%/tfplan.tfplan}"
+    [[ "$unit_path" != "$relative_plan_path" ]] || {
+      echo "AzureAD saved plan has no unit path." >&2
+      return 1
+    }
+    printf '%s\n' "$unit_path" >>"$planned_units_file"
+    plan_json_files+=("$plan_json_file")
+  done < <(find "$plan_dir" -name tfplan.tfplan -type f -print | sort)
+  while IFS= read -r plan_json_file; do
+    [[ -f "${plan_json_file%.json}.tfplan" ]] || {
+      echo "AzureAD JSON policy input has no saved plan." >&2
+      return 1
+    }
+  done < <(find "$plan_dir" -name tfplan.json -type f -print | sort)
+  sort -o "$planned_units_file" "$planned_units_file"
+  if ! cmp -s "$report_units_file" "$planned_units_file"; then
+    echo "AzureAD saved plans differ from the successful unit report." >&2
+    return 1
+  fi
+
+  if ((${#plan_json_files[@]} == 0)); then
+    if [[ "$changed_filter" == '*/azuread' || "$pilot_filter" == 'fleet/pilot-user' ]]; then
+      echo "AzureAD units were selected but no saved plans were produced." >&2
+      return 1
+    fi
+    echo "No affected AzureAD units require apply."
+    return 0
+  fi
+
+  conftest test --policy policy --output github "${plan_json_files[@]}"
+  (
+    cd IaC/homelab/us-west-2/apps
+    verify_current_main_commit
+    terragrunt run --all --filter "$changed_filter" --filter "$pilot_filter" \
+      --non-interactive --parallelism 1 --out-dir "$plan_dir" -- apply -no-color
+  )
+}
+
 prepare_terragrunt_filter_base
 existing_argocd_only="${TERRAGRUNT_EXISTING_ARGOCD_ONLY:-false}"
 case "$existing_argocd_only" in
@@ -411,11 +497,7 @@ echo "::endgroup::"
 
 echo "::group::AzureAD application registration apply"
 if azuread_credentials_available; then
-  (
-    cd IaC/homelab/us-west-2/apps
-    verify_current_main_commit
-    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter)" --filter "$(terragrunt_azuread_pilot_filter)" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
-  )
+  plan_and_apply_azuread
 elif terragrunt_azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/homelab/us-west-2/apps changed or the apply diff could not be determined." >&2
   echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2

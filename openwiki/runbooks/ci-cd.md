@@ -131,6 +131,11 @@ It rechecks `main` before each live import or apply. Terragrunt's root hook
 repeats the check for each unit in a multi-unit apply, and the Argo CD
 bootstrap hook checks before each self-management manifest write. A failed
 lookup stops the write. These source guards await a live apply run.
+The full Entra phase checks private, same-run per-unit saved plans with
+Conftest before applying them. The successful-unit report must match the plan
+inventory, so a selected unit missing both files blocks apply. Plan/apply
+filters match, and a changed `main` or missing paired file blocks the AzureAD
+write. The plans and JSON are deleted on exit.
 
 The Octelium catalog stages a separate `homelab-ci-plan` User and a
 read-or-dry-run Policy for `kubernetes-api-ci`. Merging the source neither

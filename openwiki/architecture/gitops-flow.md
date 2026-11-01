@@ -79,6 +79,15 @@ in a multi-unit apply; the bootstrap `after_hook` checks before each Argo CD
 self-management manifest write. A later unit stops if `main` advances while the
 workflow runs. These source guards await a live apply run.
 
+The full production Entra stage uses the same-run saved-plan gate: it plans the
+selected AzureAD and pilot-user units into a private directory, checks each
+plan's JSON with Conftest, then applies the saved plans with identical filters
+after another current-`main` check. The successful-unit report must match the
+plan inventory, so a unit missing both plan and JSON blocks apply. A missing
+paired file also blocks apply. The private artifacts are removed when the stage
+exits. The pull-request plan
+does not supply production apply artifacts.
+
 `IaC/homelab/us-west-2/operator` is the deliberate exception to workflow-driven apply. It owns
 bootstrap permissions that the GitHub OIDC role must never change for itself;
 an administrator still uses reviewed Terragrunt/OpenTofu desired state and the

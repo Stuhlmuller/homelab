@@ -76,20 +76,25 @@ def unexpected():
     event("UNEXPECTED")
     sys.exit(99)
 
-def plan(path):
+def plan(path, planned_unit=None):
     path.parent.mkdir(parents=True, exist_ok=True)
     actions = (["no-op"] if config.get("existing_only_noop") else
                ["delete", "create"] if config.get("replacement") else ["create"])
-    path.write_text(json.dumps({"unit": unit, "resource_changes": [
+    path.write_text(json.dumps({"unit": planned_unit or unit, "resource_changes": [
         {"type": "kubernetes_manifest", "change": {"actions": actions}}
     ] if unit == "apps" else []}))
 
-def checked(path):
+def checked(path, planned_unit=None):
     data = path.read_bytes()
-    assert path.name == ("tfplan" if unit == "apps" else "plan.out")
-    assert json.loads(data)["unit"] == unit
+    assert path.name == ("tfplan.tfplan" if unit == "azure" else
+                         "tfplan" if unit == "apps" else "plan.out")
+    assert json.loads(data)["unit"] == (planned_unit or unit)
     receipt = path.with_suffix(".json.checked")
     assert receipt.read_text() == hashlib.sha256(data).hexdigest()
+
+def azure_plans(directory):
+    return [("azure.unit1", directory / "fleet/azuread/tfplan.tfplan"),
+            ("azure.unit2", directory / "fleet/pilot-user/tfplan.tfplan")]
 
 def bulk_apply():
     if not config.get("simulate_bulk_units"):
@@ -112,7 +117,11 @@ if tool == "git":
         checks = sum(json.loads(line)["event"] == name
                      for line in (root / "calls.jsonl").read_text().splitlines())
         threshold = config.get("stale_at_unit" if name == "unit.main.check" else "stale_at", 1000)
-        print(("e" * 40 if checks >= threshold else config["sha"])
+        prior_events = [json.loads(line)["event"]
+                        for line in (root / "calls.jsonl").read_text().splitlines()]
+        stale_after_policy = (config.get("stale_after_azure_policy") and
+                              "azure.unit2.policy" in prior_events)
+        print(("e" * 40 if checks >= threshold or stale_after_policy else config["sha"])
               + "\trefs/heads/main")
     elif args[:1] == ["rev-parse"]:
         if args == ["rev-parse", "--show-toplevel"]:
@@ -212,11 +221,19 @@ elif tool == "terragrunt":
         else:
             checked(Path(command[2]))
     elif command[:2] == ["run", "--all"]:
-        target = command[command.index("--filter") + 1]
+        filters = [command[index + 1] for index, value in enumerate(command)
+                   if value == "--filter"]
+        target = filters[0]
         if target.startswith("*/azuread"):
             unit = "azure"
-        expected = ((config["target"] + "/argocd") if config["target"] else ("*/azuread" if unit == "azure" else config.get("argocd_filter", "*/argocd") if unit == "apps" else "*"))
+        expected = ((config["target"] + "/argocd") if config["target"] else
+                    ("*/azuread | [main...HEAD]" if config.get("azure_unchanged") else
+                     "*/azuread") if unit == "azure" else
+                    config.get("argocd_filter", "*/argocd") if unit == "apps" else "*")
         assert target == expected
+        if unit == "azure":
+            assert filters == [expected, "fleet/pilot-user" +
+                               (" | [main...HEAD]" if config.get("azure_unchanged") else "")]
         assert "--non-interactive" in command and "--parallelism" in command
         tail = command[command.index("--") + 1:]
         if unit == "apps":
@@ -231,7 +248,47 @@ elif tool == "terragrunt":
                 bulk_apply()
             else:
                 unexpected()
-        elif unit in ("azure", "secrets") and tail == ["apply", "-no-color", "-auto-approve"]:
+        elif unit == "azure":
+            directory = Path(command[command.index("--out-dir") + 1])
+            if tail == ["plan", "-no-color"]:
+                assert command[command.index("--json-out-dir") + 1] == str(directory)
+                report_file = Path(command[command.index("--report-file") + 1])
+                assert command[command.index("--report-format") + 1] == "json"
+                (root / "azure-plan-scope.json").write_text(json.dumps({
+                    "filters": filters, "directory": str(directory)}))
+                event("azure.plan")
+                report = ([] if config.get("no_azure_plans") else [
+                    {"Name": "fleet/azuread", "Result": "succeeded"},
+                    {"Name": "fleet/pilot-user", "Result": "succeeded"},
+                ])
+                if config.get("bad_azure_report") == "excluded":
+                    report[1]["Result"] = "excluded"
+                elif config.get("bad_azure_report") == "ignored":
+                    report[1]["Reason"] = "error ignored"
+                elif config.get("bad_azure_report") == "missing":
+                    report = report[:1]
+                if config.get("bad_azure_report") != "absent":
+                    report_file.write_text(json.dumps(report))
+                if not config.get("no_azure_plans"):
+                    for number, (name, path) in enumerate(azure_plans(directory), 1):
+                        if config.get("missing_azure_artifacts") == number:
+                            continue
+                        plan(path, name)
+                        data = path.read_bytes()
+                        if config.get("missing_azure_plan") == number:
+                            path.unlink()
+                        if config.get("missing_azure_json") != number:
+                            path.with_suffix(".json").write_bytes(data)
+            elif tail == ["apply", "-no-color"]:
+                scope = json.loads((root / "azure-plan-scope.json").read_text())
+                assert filters == scope["filters"] and str(directory) == scope["directory"]
+                assert "--json-out-dir" not in command
+                for name, path in azure_plans(directory):
+                    checked(path, name)
+                bulk_apply()
+            else:
+                unexpected()
+        elif unit == "secrets" and tail == ["apply", "-no-color", "-auto-approve"]:
             bulk_apply()
         else:
             unexpected()
@@ -274,7 +331,7 @@ class TerragruntApplyTest(unittest.TestCase):
             binaries = root / "bin"
             binaries.mkdir()
             for name in ("bash", "dirname", "find", "rm", "grep", "sort", "sed",
-                         "awk", "comm", "cat", "mktemp", "jq"):
+                         "awk", "comm", "cat", "cmp", "mktemp", "jq"):
                 executable = shutil.which(name)
                 self.assertIsNotNone(executable, name + " is required for this offline test")
                 (binaries / name).symlink_to(executable)
@@ -287,6 +344,9 @@ class TerragruntApplyTest(unittest.TestCase):
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh",
                          "terragrunt-current-main.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
+            if config.get("azure_unchanged"):
+                with (scripts / "terragrunt-filter-base.sh").open("a") as filter_script:
+                    filter_script.write("\nterragrunt_azuread_stack_changed() { return 1; }\n")
             for unit in ("homelab/us-west-2/bootstrap/argocd",
                          "homelab/us-west-2/shared/aws-ssm-parameters",
                          "homelab/us-west-2/apps/langfuse/blob-storage",
@@ -323,6 +383,8 @@ class TerragruntApplyTest(unittest.TestCase):
             self.assertFalse(list(root.glob("homelab-langfuse-plan.*")))
             self.assertFalse(list(root.glob("homelab-openclaw-archive-plan.*")))
             self.assertFalse(list(root.glob("terragrunt-argocd-apps.*")))
+            self.assertFalse(list(root.glob("terragrunt-azuread-apps.*")))
+            self.last_calls = calls
             return result, [call["event"] for call in calls]
 
     def test_targeted_order_and_checked_saved_plans(self):
@@ -641,6 +703,68 @@ else:
         result, events = self.run_apply(target="", azuread_environment=OIDC_ENVIRONMENT)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("azure.apply", events)
+
+    def test_full_azure_apply_uses_same_checked_saved_plans(self):
+        result, events = self.run_apply(target="")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual([event for event in events if event.startswith("azure.")], [
+            "azure.plan", "azure.unit1.policy", "azure.unit2.policy", "azure.apply",
+        ])
+        runs = [call["args"] for call in self.last_calls
+                if call["tool"] == "terragrunt" and call["args"][:2] == ["run", "--all"]
+                and "*/azuread" in call["args"]]
+        self.assertEqual(len(runs), 2)
+        self.assertEqual([args[args.index("--") + 1:] for args in runs],
+                         [["plan", "-no-color"], ["apply", "-no-color"]])
+        self.assertEqual([args[args.index("--filter") + 1] for args in runs],
+                         ["*/azuread", "*/azuread"])
+        self.assertEqual([args[args.index("--filter", args.index("--filter") + 1) + 1]
+                          for args in runs], ["fleet/pilot-user", "fleet/pilot-user"])
+        self.assertEqual(runs[0][runs[0].index("--out-dir") + 1],
+                         runs[1][runs[1].index("--out-dir") + 1])
+        self.assertNotIn("-auto-approve", runs[1])
+
+    def test_full_azure_failure_stops_downstream_apply(self):
+        for failure in ("azure.plan", "azure.unit1.policy", "azure.unit2.policy",
+                        "azure.apply"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events[-1], failure)
+                if failure != "azure.apply":
+                    self.assertNotIn("azure.apply", events)
+                self.assertNotIn("apps.apply", events)
+
+    def test_full_azure_missing_saved_plan_or_policy_input_fails_closed(self):
+        for options in ({"no_azure_plans": True}, {"missing_azure_plan": 2},
+                        {"missing_azure_json": 1}, {"missing_azure_artifacts": 2},
+                        {"bad_azure_report": "missing"}, {"bad_azure_report": "absent"},
+                        {"bad_azure_report": "excluded"},
+                        {"bad_azure_report": "ignored"}):
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events[-1], "azure.plan")
+                self.assertNotIn("azure.apply", events)
+                self.assertNotIn("apps.apply", events)
+
+    def test_full_azure_zero_selected_units_is_no_op(self):
+        result, events = self.run_apply(target="", azure_unchanged=True,
+                                        no_azure_plans=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("azure.plan", events)
+        self.assertNotIn("azure.apply", events)
+        self.assertIn("apps.apply", events)
+
+    def test_main_advance_after_azure_policy_blocks_saved_apply(self):
+        result, events = self.run_apply(target="", github_actions=True,
+                                        stale_after_azure_policy=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("azure.unit2.policy", events)
+        self.assertEqual(events[-1], "main.check")
+        self.assertNotIn("azure.apply", events)
+        self.assertNotIn("apps.apply", events)
+        self.assertIn("Main advanced after dispatch", result.stderr)
 
     def test_incomplete_oidc_stops_full_apply_before_any_write(self):
         for missing in ("ARM_CLIENT_ID", "ARM_TENANT_ID", "ACTIONS_ID_TOKEN_REQUEST_URL",
