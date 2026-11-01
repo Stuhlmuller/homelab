@@ -62,6 +62,47 @@ checks the TLS Secret mount, not the certificate bytes. Verify the certificate
 and private route from an authorized tailnet client after signing and a separate
 reviewed test-client grant.
 
+## Exact Service host approval
+
+After a reviewed `svc:homelab-private-ingress` definition and one test-client
+TCP 443 grant are merged, run the repo-owned approval command in preview mode:
+
+```sh
+python3 -I scripts/tailscale-service-host-approve.py \
+  --api-key-file ~/.config/homelab/tailscale/service-approval-api-key
+```
+
+Use an Owner/Admin API key kept outside the repository as a regular mode 0600
+file in a mode 0700 directory. The command does not print it. Preview prints a
+fingerprint of the observed policy, TailVIP, StatefulSet/Pod/state Secret UIDs,
+device ID/public node key, Tailnet Lock signer key, and Tailscale IPs. Review
+that identity and the pending advertisement. From signed, current `main` only,
+the same command can take `--execute --expect-fingerprint <preview-sha256>`.
+It rechecks source versus live policy, the scoped grant, exact Service ports,
+converged StatefulSet/Pod revision, placement, pinned images, loopback
+listeners, read-only TLS mount, signed daemon/device identity, raw TCP Serve
+target, and the single pending host before one approval API write. It refuses
+an auto-approved host or changed identity. An already manually approved host
+gets readback only. This command does not create the Service, key, Pod,
+policy grant, or Tailnet Lock signature.
+
+Approval alone does not prove service traffic. A reported Tailscale daemon
+cache issue can require a declared re-advertisement after approval; do not
+cut over DNS until an authorized client reaches the TailVIP and withdrawal
+and wrong-host probes fail. The current [Tailscale host-list API](https://tailscale.com/api#tag/services/GET/tailnet/%7Btailnet%7D/services/%7BserviceName%7D/devices)
+uses `stableNodeID` and `not-approved`; its [approval API](https://tailscale.com/api#tag/services/POST/tailnet/%7Btailnet%7D/services/%7BserviceName%7D/device/%7BdeviceId%7D/approved)
+uses the singular `device` path. The first real preview must confirm those
+responses and the pending host before any execution. See the [approval refresh
+report](https://github.com/tailscale/tailscale/issues/18821).
+
+For rollback, first revert any later DNS/client grant through their reviewed
+GitOps or Terragrunt source and verify the old ingress still serves clients.
+Remove the canary's Service advertisement through a reviewed Argo source change;
+verify the TailVIP no longer reaches it. Keep the old ingress active. The
+manual approval record may remain after the host stops advertising, but it
+cannot route traffic without an advertisement and grant. Retire that record
+only through a separate reviewed repository-owned revocation path.
+
 ## Activation gates
 
 1. Run `scripts/ci/traefik-sidecar-canary-test.rb`, render this directory, and

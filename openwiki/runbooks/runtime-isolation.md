@@ -171,6 +171,17 @@ device IP is unsafe after reassignment. The candidate is a pinned-provider
 [Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
 with a stable IPv4 TailVIP and one exact, signed canary host approved through a
 repo-owned script.
+The [Service host approval command](../../scripts/tailscale-service-host-approve.py)
+requires live policy to match reviewed source, one test-user grant for only
+Service TCP 443, a single pending host, the exact `acer` canary Pod and
+persistent state identity, matching Tailscale device ID/public node key/tag,
+signed Tailnet Lock state, and raw TCP Serve to loopback 8443. Its preview
+fingerprint binds a later current-main approval to that observed identity.
+It rejects auto-approval and rechecks immediately before its sole host
+approval write; the staged policy and canary do not yet satisfy preflight.
+The first live preview must confirm the current Tailscale API's pending-host
+shape before execution. Traffic and wrong-host withdrawal probes remain
+required after API approval.
 The Service endpoint uses raw TCP 443 to the canary loopback listener. A
 selectorless headless Service and reviewed EndpointSlice would publish that
 TailVIP; DNS may still answer it while the host is offline, so a cached-A
