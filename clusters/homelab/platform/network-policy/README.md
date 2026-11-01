@@ -70,7 +70,10 @@ verify its DaemonSet is Ready on the admitted node. Then dispatch it for
 `argocd_app=platform-network-policy-canary`. Argo CD syncs the fixtures. Verify
 both Applications are Synced/Healthy and the three fixture Pods are Ready on
 the admitted node before dispatching the read-only `qualify` stage. An
-unrelated merge that stales either dispatch requires a retry against current
+unreviewed privileged container, host mount, command, environment source, or
+hook in the live firewall DaemonSet or Pod blocks its receipt. The check allows
+the Kubernetes-generated service-account projection and ordinary Pod defaults.
+An unrelated merge that stales either dispatch requires a retry against current
 `main`.
 
 To remove the fixtures, first merge a reviewed change restoring `resources: []`

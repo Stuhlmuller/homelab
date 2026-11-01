@@ -55,6 +55,10 @@ FIREWALL_FLAGS = {
     "--use-nftables-for-netpol=false", "--enable-ipv4=true", "--enable-ipv6=false",
     "--health-addr=127.0.0.1",
 }
+FIREWALL_VOLUME = {"name": "xtables-lock", "hostPath": {
+    "path": "/run/xtables.lock", "type": "FileOrCreate"}}
+FIREWALL_MOUNT = {"name": "xtables-lock", "mountPath": "/run/xtables.lock"}
+SERVICE_ACCOUNT_MOUNT = "/var/run/secrets/kubernetes.io/serviceaccount"
 LIFECYCLE_SCENARIOS = (
     "cold-bootstrap", "first-application-packet", "enforcer-graceful-stop",
     "enforcer-crash-restart", "api-loss", "policy-change-and-conntrack",
@@ -168,6 +172,87 @@ def ready(pod):
                 for item in pod.get("status", {}).get("conditions", [])))
 
 
+def reviewed_service_account_volume(volume):
+    """Allow only Kubernetes' generated projected token alongside xtables.lock."""
+    name = volume.get("name", "")
+    projected = volume.get("projected", {})
+    if (set(volume) != {"name", "projected"} or
+            not name.startswith("kube-api-access-") or
+            not name.removeprefix("kube-api-access-").isalnum() or
+            projected.get("defaultMode") not in (None, 420)):
+        return False
+    sources = projected.get("sources", [])
+    if len(sources) != 3:
+        return False
+    token, certificate, namespace = sources
+    token = token.get("serviceAccountToken", {}) if set(token) == {"serviceAccountToken"} else {}
+    certificate = certificate.get("configMap", {}) if set(certificate) == {"configMap"} else {}
+    namespace = namespace.get("downwardAPI", {}) if set(namespace) == {"downwardAPI"} else {}
+    return (set(projected) <= {"defaultMode", "sources"} and
+            set(token) == {"expirationSeconds", "path"} and
+            type(token.get("expirationSeconds")) is int and
+            token["expirationSeconds"] > 0 and token["path"] == "token" and
+            set(certificate) <= {"name", "items", "optional"} and
+            certificate.get("name") == "kube-root-ca.crt" and
+            certificate.get("items") == [{"key": "ca.crt", "path": "ca.crt"}] and
+            certificate.get("optional") in (None, False) and
+            namespace.get("items") == [{"fieldRef": {
+                "apiVersion": "v1", "fieldPath": "metadata.namespace"},
+                "path": "namespace"}])
+
+
+def reviewed_firewall_spec(spec, *, live_pod=False):
+    """Pin host execution while allowing the Pod's generated API token mount."""
+    containers = spec.get("containers", [])
+    if len(containers) != 1:
+        return False
+    container, = containers
+    volumes = spec.get("volumes", [])
+    mounts = container.get("volumeMounts", [])
+    if live_pod:
+        if (len(volumes) != 2 or volumes[0] != FIREWALL_VOLUME or
+                not reviewed_service_account_volume(volumes[1]) or
+                mounts != [FIREWALL_MOUNT, {"name": volumes[1]["name"],
+                    "mountPath": SERVICE_ACCOUNT_MOUNT, "readOnly": True}]):
+            return False
+    elif volumes != [FIREWALL_VOLUME] or mounts != [FIREWALL_MOUNT]:
+        return False
+    environment = container.get("env", [])
+    fields = {item.get("name"): item.get("valueFrom", {}).get("fieldRef", {}).get("fieldPath")
+              for item in environment}
+    args = container.get("args", [])
+    def reviewed_probe(probe):
+        handler = probe.get("httpGet", {})
+        return (set(probe) <= {"httpGet", "initialDelaySeconds", "periodSeconds",
+                              "timeoutSeconds", "successThreshold", "failureThreshold"} and
+                handler.get("host") == "127.0.0.1" and
+                handler.get("path") == "/healthz" and
+                handler.get("port") == "health" and
+                handler.get("scheme") in (None, "HTTP") and
+                set(handler) <= {"host", "path", "port", "scheme"})
+    return (spec.get("serviceAccountName") == "kube-router-network-policy" and
+            spec.get("hostNetwork") is True and
+            spec.get("hostPID") in (None, False) and
+            spec.get("hostIPC") in (None, False) and
+            spec.get("shareProcessNamespace") in (None, False) and
+            not spec.get("initContainers") and
+            not spec.get("ephemeralContainers") and
+            spec.get("securityContext") in (None, {}) and
+            container.get("name") == "kube-router" and
+            container.get("image") == FIREWALL_IMAGE and
+            not container.get("command") and
+            len(args) == len(FIREWALL_FLAGS) and set(args) == FIREWALL_FLAGS and
+            len(environment) == 2 and fields == {"NODE_NAME": "spec.nodeName",
+                                                 "POD_NAME": "metadata.name"} and
+            not container.get("envFrom") and
+            not container.get("lifecycle") and
+            not container.get("startupProbe") and
+            not container.get("volumeDevices") and
+            container.get("securityContext") == {"privileged": True} and
+            reviewed_probe(container.get("livenessProbe", {})) and
+            reviewed_probe(container.get("readinessProbe", {})))
+
+
 def require_protected_source():
     source_sha = os.environ.get("GITHUB_SHA", "")
     platform = runpy.run_path(str(ROOT / "scripts/platform-maintenance.py"))
@@ -207,41 +292,17 @@ def inspect_firewall_source():
             subjects[0].get("apiGroup") not in (None, "")):
         raise ValueError("firewall service account or RBAC differs from reviewed source")
     template = daemonset["spec"]["template"]["spec"]
-    containers = template.get("containers", [])
-    if len(containers) != 1:
-        raise ValueError("firewall container count differs from reviewed source")
-    container, = containers
-    args = container.get("args", [])
-    environment = container.get("env", [])
-    fields = {item.get("name"): item.get("valueFrom", {}).get("fieldRef", {}).get("fieldPath")
-              for item in environment}
     if (daemonset.get("metadata", {}).get("name") != name or
             daemonset["metadata"].get("namespace") != "kube-system" or
             daemonset["spec"].get("selector", {}).get("matchLabels") !=
             {"app.kubernetes.io/name": name} or
             template.get("serviceAccountName") != name or
-            template.get("hostNetwork") is not True or
             template.get("dnsPolicy") != "ClusterFirstWithHostNet" or
             template.get("priorityClassName") != "system-node-critical" or
-            template.get("hostPID") is True or template.get("hostIPC") is True or
-            template.get("initContainers") or
             template.get("nodeSelector") != {CANARY_KEY: "true"} or
             template.get("tolerations") != [{"key": CANARY_KEY, "operator": "Equal",
                                             "value": "true", "effect": "NoSchedule"}] or
-            template.get("volumes") != [{"name": "xtables-lock", "hostPath": {
-                "path": "/run/xtables.lock", "type": "FileOrCreate"}}] or
-            container.get("volumeMounts") != [{"name": "xtables-lock",
-                                               "mountPath": "/run/xtables.lock"}] or
-            container.get("image") != FIREWALL_IMAGE or
-            container.get("command") or
-            len(environment) != 2 or fields != {"NODE_NAME": "spec.nodeName",
-                                                 "POD_NAME": "metadata.name"} or
-            len(args) != len(FIREWALL_FLAGS) or set(args) != FIREWALL_FLAGS or
-            container.get("securityContext", {}).get("privileged") is not True or
-            container.get("livenessProbe", {}).get("httpGet", {}).get("host") !=
-            "127.0.0.1" or
-            container.get("readinessProbe", {}).get("httpGet", {}).get("host") !=
-            "127.0.0.1"):
+            not reviewed_firewall_spec(template)):
         raise ValueError("live firewall DaemonSet differs from firewall-only source")
     return daemonset
 
@@ -314,7 +375,11 @@ def inspect(config):
             firewall["status"].get("numberReady") != 1 or
             len(firewall_pods.get("items", [])) != 1 or
             firewall_pods["items"][0]["spec"].get("nodeName") != node_name or
-            firewall_pods["items"][0]["spec"]["containers"][0].get("image") != FIREWALL_IMAGE or
+            firewall_pods["items"][0]["spec"].get("nodeSelector") != {CANARY_KEY: "true"} or
+            firewall_pods["items"][0]["spec"].get("dnsPolicy") != "ClusterFirstWithHostNet" or
+            firewall_pods["items"][0]["spec"].get("priorityClassName") !=
+            "system-node-critical" or
+            not reviewed_firewall_spec(firewall_pods["items"][0]["spec"], live_pod=True) or
             len(owners) != 1 or owners[0].get("apiVersion") != "apps/v1" or
             owners[0].get("kind") != "DaemonSet" or
             owners[0].get("name") != "kube-router-network-policy" or
