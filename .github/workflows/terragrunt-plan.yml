@@ -171,7 +171,8 @@ jobs:
 
   terragrunt-gate:
     name: Terragrunt Gate
-    if: ${{ always() }}
+    # Report failed dependencies, but let superseded PR runs cancel.
+    if: ${{ !cancelled() }}
     needs:
       - static-policy
       - terragrunt-plan
