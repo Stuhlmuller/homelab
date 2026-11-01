@@ -176,8 +176,8 @@ interruption during eviction. A persistent guard must deny
 Traefik Pod traffic before container start and through enforcer restart,
 independently of kube-router; no such guard is implemented. Cold boot,
 image-cache miss, IP reuse, and legacy ClusterIP bypass tests remain required.
-Draft PRs #1583 and #1584 target `zimaboard-2`; revise or retire them before
-another node is chosen. No worker is admitted.
+PRs #1583 and #1584 targeted `zimaboard-2` and were closed as superseded by
+the z0 route; neither changed live state. No worker is admitted.
 Compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
 with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
