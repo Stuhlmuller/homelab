@@ -263,6 +263,14 @@ PR as the operational change.
 
 ## Repository OpenWiki Policy
 
+Scoped authored-page edits use normal file tools alongside their source change.
+CI runs `scripts/ci/openwiki-check.py` for links, navigation, frontmatter and
+agent entrypoints. Native OpenWiki remains the owner of generated Claims,
+indexes, provenance and run state when those artifacts are refreshed; an
+unrelated native refresh queue is not a merge or deployment prerequisite.
+This policy overrides native sequencing in generated setup text and local
+skills for ordinary authored-page edits. Do not hand-edit generated artifacts.
+
 No scheduled wiki workflow is installed. Update affected pages in the same PR
 as source changes. Read the quickstart task route before substantive work,
 then retrieve only the relevant sections. These repository rules take

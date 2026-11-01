@@ -159,18 +159,21 @@ and atomically publishes it to the retained NFS backup claim. It retains
 and stable application keys still need their final backup contract. NFS media
 and backups share a NAS and do not protect against NAS loss.
 
-The one-shot `mastodon-initial-backup-v1` Job runs the same template as the
-nightly CronJob after owner bootstrap, so a fresh installation need not wait
-until 03:00. The subsequent `mastodon-restore-verification-v1` Job restores the newest
-checksum-verified NAS dump into disposable PostgreSQL 18 storage after the
-application rollout. It mounts the backup read-only, has no production database
-volume or credentials, and listens only on its private Unix socket. Success
-requires the restored schema, approved owner, and readable media catalog.
-Its completed Job records this rehearsal; it does not continuously verify later
-backups or recover media files and application keys.
-Version the initial-backup Job name when changing the nightly Job template,
-and version the verification Job name when changing its template; completed
-Kubernetes Job templates are immutable.
+The one-shot `mastodon-initial-backup-v1` Job runs the nightly backup template
+at sync wave 3 after owner bootstrap. The subsequent
+`mastodon-restore-verification-v2` Job runs the scheduled verifier template at
+wave 4, restoring the newest checksum-verified NAS dump immediately after
+rollout. The `mastodon-restore-verification` CronJob repeats this rehearsal at
+03:35 America/Los_Angeles, after the 03:00 backup's 30-minute execution window.
+Both verifier paths use disposable PostgreSQL 18 storage, a read-only backup
+mount, no production database volume or credentials, and a private Unix socket.
+Success checks the restored schema, owner and media catalog. It does not prove
+media-file or stable application-key recovery.
+
+Kustomize copies each scheduled Job template into its corresponding initial
+Job. Version an initial Job name when changing its copied template; completed
+Kubernetes Job templates are immutable. The nightly verifier prevents the
+original one-shot result from becoming the only recovery evidence.
 
 Runtime and application-registration PRs run
 [`mastodon-release-check.py`](../../../../scripts/ci/mastodon-release-check.py)
