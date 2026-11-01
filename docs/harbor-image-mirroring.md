@@ -2,6 +2,10 @@
 
 <!-- markdownlint-configure-file { "MD013": false } -->
 
+Public mirroring uses the [production-only Tailscale HTTPS path](harbor-tailscale-production.md).
+Source publication does not authorize key installation or a live dispatch.
+
+
 ## Helm charts
 
 `scripts/config/harbor-helm-charts.json` pins the package SHA-256 for every
@@ -158,9 +162,9 @@ and alias verification on each run.
 Authenticated OCI-index pulls retry classified transport and Harbor HTTP 5xx
 read failures up to five times, with 2/4/8/16-second delays. Other authenticated
 reads have at most three attempts. Before each retry, the
-publisher replaces its Kubernetes port-forward and requires a fresh TLS/401
-registry challenge. Failed forward readiness is retried at most twice, stopping
-the failed process between attempts. It retains completed content in one
+publisher requires a fresh strict-TLS/401 registry challenge. The protected
+public mirror uses direct Tailscale HTTPS. Legacy private-publication callers
+retain their Kubernetes port-forward lifecycle until their separate cutover. It retains completed content in one
 temporary OCI directory and forces a recursive check of nested manifests and
 blobs on each attempt.
 HTTP 4xx, auth, missing-content, and digest failures still stop immediately;
@@ -359,9 +363,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `command-failed`; no write is retried or handed to another client on that
    basis. A scoped receipt never substitutes for a required full-catalog
    receipt.
-   Transient authenticated pull failures restart the private Harbor port-forward
-   and recheck its TLS registry challenge before retrying either Docker manifests
-   or OCI indexes. Hard authentication, missing-content and digest errors stop.
+   Transient authenticated pull failures recheck the private Harbor TLS registry
+   challenge before retrying either Docker manifests or OCI indexes. The direct
+   Tailscale mirror never starts a Kubernetes port-forward. Hard authentication, missing-content and digest errors stop.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.

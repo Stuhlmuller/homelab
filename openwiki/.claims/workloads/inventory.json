@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cde1d0826e4209356cc1f61331d3630172fbef698ceaa4962d34352201ca86ec",
+  "pageVersion": "sha256:4b46a7ba6f849990cc0692824ac21ce013db8f1e3ee159248ec5d421c738a9ff",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -263,7 +263,7 @@
           "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L22-L81",
+          "resource": "repo://docs/harbor-image-mirroring.md#L26-L85",
           "version": "repo-lines-v1:sha256:65cbd1e0e84e88a995173b618b06ad474b1f1468ae3a0595380abec441b6ed8e:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
         }
       ]
@@ -378,7 +378,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6d49bf4e9c5e445718e8adc6acb46dd4f24aecc6b4fcc0beac85f86475629e7d"
+          "version": "repo-file-v1:sha256:3540a143ba8f81fceb3ee9a015aab044b553a78e4ca805315ca1cd2ed8ca4734"
         }
       ]
     },
@@ -480,7 +480,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
+          "version": "repo-file-v1:sha256:69de99f266590569802a10af9e0d905c5d2543627249e684ad74f66362fd3bc9"
         }
       ]
     },
@@ -831,6 +831,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-30T03:21:04.974Z"
+    "at": "2026-10-31T22:40:48.699Z"
   }
 }

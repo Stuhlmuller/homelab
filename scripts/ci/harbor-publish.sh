@@ -2,10 +2,15 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus' >&2
+[[ ( $# -eq 1 || ( $# -eq 2 && "$2" == --tailscale ) ) && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm || "$1" == mirror-prometheus) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm|mirror-prometheus [--tailscale for public mirrors only]' >&2
   exit 2
 }
+tailnet_https=false
+if [[ $# -eq 2 ]]; then
+  [[ "$1" == mirror || "$1" == mirror-* ]] || exit 2
+  tailnet_https=true
+fi
 mode="$1"
 publish_outputs=(backend frontend)
 core_publication=false
@@ -128,12 +133,17 @@ fi
 if [[ "$mode" == publish ]]; then
   : "${GITHUB_OUTPUT:?GITHUB_OUTPUT must be set by GitHub Actions}"
 fi
-: "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
-[[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
-[[ ! -e "$HOME/.kube/config" ]] || {
-  echo 'Refusing to replace an existing runner kubeconfig.' >&2
-  exit 1
-}
+if "$tailnet_https"; then
+  [[ "$mode" == mirror && "${GITHUB_EVENT_NAME:-}" == workflow_dispatch &&
+     "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-mirror.yml@refs/heads/main ]] || exit 2
+else
+  : "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
+  [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
+  [[ ! -e "$HOME/.kube/config" ]] || {
+    echo 'Refusing to replace an existing runner kubeconfig.' >&2
+    exit 1
+  }
+fi
 if grep -Eq '(^|[[:space:]])harbor[.]stinkyboi[.]com([[:space:]]|$)|# homelab-harbor-ci$' /etc/hosts; then
   echo 'Refusing to replace existing Harbor host routing.' >&2
   exit 1
@@ -228,16 +238,24 @@ trap 'exit 143' TERM
 
 # Reuse the declared clientless Octelium Kubernetes CI lane. Kubernetes streams
 # carry image uploads, avoiding the public HTTP Tunnel's request-size limit.
-kubeconfig_added=true
-bash scripts/ci/install-kubeconfig.sh
-kubectl --request-timeout=15s version >/dev/null
-cp "$(command -v kubectl)" "$scratch/kubectl"
-chmod 700 "$scratch/kubectl"
-sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
+if ! "$tailnet_https"; then
+  kubeconfig_added=true
+  bash scripts/ci/install-kubeconfig.sh
+  kubectl --request-timeout=15s version >/dev/null
+  cp "$(command -v kubectl)" "$scratch/kubectl"
+  chmod 700 "$scratch/kubectl"
+  sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
+fi
 forward_timeout=2400
 [[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 start_private_forward() {
   local attempt ready status
+  if "$tailnet_https"; then
+    status="$(curl --silent --show-error --noproxy '*' --max-time 15 \
+      --output /dev/null --write-out '%{http_code}' https://harbor.stinkyboi.com/v2/ \
+      2>"$scratch/readiness.log")" && [[ "$status" == 401 ]]
+    return
+  fi
   for attempt in 1 2 3; do
     timeout --signal=TERM --kill-after=5s "$forward_timeout" \
       "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
@@ -277,9 +295,11 @@ stop_private_forward() {
   fi
 }
 
-hosts_added=true
-printf '%s\n' '127.0.0.1 harbor.stinkyboi.com # homelab-harbor-ci' |
-  sudo -n tee -a /etc/hosts >/dev/null
+if ! "$tailnet_https"; then
+  hosts_added=true
+  printf '%s\n' '127.0.0.1 harbor.stinkyboi.com # homelab-harbor-ci' |
+    sudo -n tee -a /etc/hosts >/dev/null
+fi
 start_private_forward
 
 # Credentials stay in restrictive temporary files; transfer output is withheld

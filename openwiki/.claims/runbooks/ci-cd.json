@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bef16e465a819329ac9cb35990248f55186c989448ff00ec5ede36145632b097",
+  "pageVersion": "sha256:4c78fda6613bf4400924347cd604f7d9b8c534d07b4b386f7e2c524a723b3838",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:58ea16efa22b54dd481398fa2af09363879bd22fa873b43d47c5248aa9a7faa8"
+          "version": "repo-file-v1:sha256:69de99f266590569802a10af9e0d905c5d2543627249e684ad74f66362fd3bc9"
         }
       ]
     },
@@ -191,7 +191,7 @@
           "version": "repo-lines-v1:sha256:ba9c47bd7b588eb40c7987e173bc49ac2dcdca77c3803cccc1acfa34f34716bb:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3MTQ4ZDE0OGI4ZWU3NzBlMDQ2NDA5NTE3NGEwM2E1NmFiZmM4NTZmYTdhYjg0NWQxNDY1YzY0NzcyMjc0NGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NGIyODhiMjk5NTc2ODQxMTc2YmM4ZTgxNDdjYmJhYjM1NTgwZmI2OGM1MjFkOTkxM2Y5ZDQ3ZmJiZWI2YjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmZGZjMTAwZmVkNTgxMjc2ZjBjMDQ5ZWEyMDkyMmIzZjBiZDNhZjRkODQwYWM2Mzc5NDFjZDFkYjE4NmI5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwNjc0N2E1MTcxZGQwOGMwMzc5YzdiZWEzZGYwYjIzZWM1NjRhZGQ4OTY3MTk4MDcyY2E1ZjYyZjFkNWFlMWUifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L631-L725",
+          "resource": "repo://policy/workflows.rego#L633-L727",
           "version": "repo-lines-v1:sha256:878ce88de52696eedf20590376360bcdc352b1972f6cae4ecd77db91d9d5ef66:eyJzZWxlY3RlZExpbmVDb3VudCI6OTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4MGQwOGEyYWRiMzJmNzEwODdkNzFhM2M4MTJjODAyODYyZTllMTk5NTgyMjVmMzRlNWRiZWMwYTU0OTAxYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDI5YzJkZDQ2MmUwNjJlOWY0M2I5ZjI4YmUzNDJiOWZiNGFlMzRhMDQwZTlhMzg4OTk3NmZlYTViZmZjNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljZGEzNzg4MGIwOWFiMzY5MzI0ZjY0ZmFhZDYxMTE3ZjZjOWRhNDFjZjI2ZDBlZDIzNjY2MmE0ZmMyMGViZmYifQ"
         },
         {
@@ -283,11 +283,11 @@
           "version": "repo-lines-v1:sha256:aaeb48c6c4815f846b0627a971dfd814e19cd33725e5606c0f5873254db0a2b7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiZjgzNzA0M2UxZGI4YjYzZGVjZDdjNDdlZmYyODI3MjU4MmJkNjJiZGVhYTEwNjgwYzk0OWI2OWIzOWUwZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0YTBjMTlkY2I5ODViNzg1NGYzYTkwNDg5NWM0NDM0YzRlNWRlZGQxZGRmNDU5MGJjNWUwNDVmNzFjZGFmZDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1M2U4NTg3OTE3YjNjOTE5YzRmZDg1ODdmM2M1ZjMwODc3MTU4N2RkMTI4MThmY2VmYjgxYWYwMGRkODM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5ZmYxNjliZDJlOWQyODVlNjQzYWIwN2ZmMjAwODM1ODgxZTU3MjcyMmUwY2I3YThmNzJlNDc4OGMxZmVlMWIifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L239-L250",
+          "resource": "repo://policy/workflows.rego#L241-L252",
           "version": "repo-lines-v1:sha256:8262c5e3f51c69b969d5d15b29da28dd2bb9a0a4f013485dd0a2dd09bfa47f7f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZWFlNDk2Yjc4ZmQ0OTU1ZGFiNThmNmFjMTJiNDcxMDg3ZWZmY2FkYjhjNGE1ZDc1OWE5YjczZDdjMWVhN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMzIwMjgwODNjNDdhNmQ5ZmE0YTY0NzFjZGFmMjY1OGJjNzA1ZTlkNTg2ZTY1MTZjNTdhNThmNjFhYmU2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlODA3MGYyNThkMzFhMjUxNmZjZDQzYWZlZjVmZjUyZDhlZDI3ZmJiMTY1MjBmZDc4ZjJlYmRmYjg3MGY1MWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjYmI2YjFiNzJkNzNmMDdkYzlmMTNlMTU0Y2JmMzk2MDI3ZWM4ZTA5NzhhZTRmZjgwMmZmYmQwOGRhNWM1NDMifQ"
         },
         {
-          "resource": "repo://policy/workflows.rego#L613-L627",
+          "resource": "repo://policy/workflows.rego#L615-L629",
           "version": "repo-lines-v1:sha256:71e2504324fb8b740b71cd84ca7263b2d8aa8c1011536b972dea2cd9c067f38d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ2MjIyOTMxMDcyMDgxNTRiOTUyMzI5ZWEwYzkwMTdkOGZlNWU5MGE1OTAyODRlMmIzYmU5ODI5MmMzODI2MDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4NzI1Mzc4YTZiOTE5NDM5ZDE1Zjc4ZDdjZmY3ZjhhYzZiMzJmYTA0MDZiNGIwZDViM2IzNzIzODUwNDBmMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFiOTVjNmMwOTZiOWI4YTNhY2Q3YjZiMzBhZTJiZmMxZGExNTNlMGVmY2RmODNmNDc5ZmRkZDQwNzQ0MGE1MjUifQ"
         },
         {
@@ -306,11 +306,11 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a84a9db52699377e2f60cbef5266d3e8320ab12577dc1a60b75e414340231dc5"
+          "version": "repo-file-v1:sha256:afd7d19b5d3090e0d810c117f336f7291fc9ada9465bf20daced0ef9a83e7fcb"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:4d9311cdfb35a53d5cedbedec02dd4f677d02e64e5c6be6bf5d7b6e61f34a08a"
+          "version": "repo-file-v1:sha256:68e58e257fdd68c5e8bc7b7c37f73981d59a21d9129c5d47e79492fa52f0312a"
         }
       ]
     },
@@ -327,12 +327,12 @@
           "version": "repo-lines-v1:sha256:f13433ae9373cb1e6a201408a326b0eccf2c7ce0e38c224509b0d22e8b94daa4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViZTk1MzlkZjgyOWVhYzM4YTlkMzNiODk2NjIxOTEzYjdhYmQ5ZTA3ZThlZDhjMzdmMjhkYWJkMjQwYzI0ODAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L100-L116",
+          "resource": "repo://docs/harbor-image-mirroring.md#L104-L120",
           "version": "repo-lines-v1:sha256:374109d8eff058b90a27c16d9c15c296545f84596324ce865f40ff7fb01329e3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMTFjOWI0ZDY1OTBiM2JhZWQ5M2Q2MmExNTBhNTQzM2IyZTc3MTFmYjQ3N2Y1NmNkMTA2MGM0OGNmMzg3ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg0OTQxYzMxZDc4MTBiMGI2ZWI1ODQ4ZTg3NjYxNjEyMTg5YzJjZWI2YWNlOTRkNDJjYWRjNzFmYWM2YTExOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1MWIxNTNjZWE4YmI3ODIzNWMzZTgxNTJiNWI0MjQ3Y2M0NTU4NDQxOTE0YTA5ODE1ZWYxYjdhOTgxYTg5NmMifQ"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:0febfbc3f20f53a529ea2a83c451432bcdc20e76c82fae4a03bf307c85d6cef3"
+          "version": "repo-file-v1:sha256:cdc426b31d9c58fde8cff05d7a632fa1bdabc18be84f819ca3944581960a7a31"
         }
       ]
     },
@@ -389,10 +389,64 @@
           "version": "repo-file-v1:sha256:c32a6d36d561e9f3903193aae0bbbea0db66ee4bb19aa146be20ec55605a6708"
         }
       ]
+    },
+    {
+      "id": "claim_5c4d2459e96748438602af55f00ba68b",
+      "statement": "The production-only signer defaults to read-only preview, restricts signing to existing apply generation 2 with exact expiry, approved actor, Mac and pinned CLI, and requires clean signed current main. Source publication does not authorize signing, installation or dispatch.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/harbor-tailscale-production-sign.py#L196-L210",
+          "version": "repo-lines-v1:sha256:63cb7752b41411094bb4df85d91b5d2b36928082f6aa771dd01f1a50d19741f0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MjEyYTlmMjQwNTg1MmFmYjBkYjE0ZmNhYmZiMWViMGJkNGYxMGEyMGYyMThiOTZkOTM1MTQ3M2ZmNTY2YzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMWU3ZTU5MWNmMWM3YzY5YWVlNmYxMzFmZmNkOTM3ODAzMzBmYWEzYzIyZmUyNTA1OGVlMGI0OWUyNTNlYTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhNTA2ODY5OGE2ODQ5NDEzOTAxYjUxMzBhM2Y5NWVmMDI2NzljMGZhY2UwZTZkOGVlZDczZmQwZTA3ZGE5MzUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiYzRhMzBiNGE0YWMzOWUxMzczMTNmNGJmMjE5MDYzYzNhYWY4MjhkMTRkODE0MjAxM2I1YWIwYTBjYzdlZTYifQ"
+        },
+        {
+          "resource": "repo://scripts/harbor-tailscale-production-sign.py#L93-L108",
+          "version": "repo-lines-v1:sha256:62182119d90e6bdfc48e14c60ce3151371b3a9515523e3523763e91ee0c6f238:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzMTIxMWJhZTQxYzMxZWEzZTc1YWFkODE1YjE1M2ViYjFhZjI4MTBkOWU5YjUzMjJhMTFhNWI3NTFlMjI2NjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyNmRmNzc0YTM1ZWEwNjk4MzhiYWI0MWM5MDM1YTQzNTRkOWY4ZmNlYWY4MmY5YmZjZGI0YWJkZDhmNDVhMjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFjMTJmNGY2ZmJjM2FhZGQ0Mzk0Yjg3NTQ2ZTMxYmRlNWE3ODgxNzcwNjg5YTFhMTcyNWNlOTRkMDgwZDNkNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE1MDg1OTg2ODExMmE2NTUyMDk5MDgyYzJhZTA4NTFlYjhmOTRlN2JlZjMyMTE2NGJlYmY4YjY2NThkYWM2MmYifQ"
+        },
+        {
+          "resource": "repo://specs/006-harbor-production-key-recovery/tasks.md",
+          "version": "repo-file-v1:sha256:34fd692c87586b655ffe24499d27c074202f6a8e6ff9d990a9a8cea2085ac98c"
+        }
+      ]
+    },
+    {
+      "id": "claim_83921a4042aa4fbe9856cac710edb4be",
+      "statement": "The signer persists private intent and exclusive capture before one stdin-only signing call. Existing intent/capture blocks execution; recovery never signs and requires matching provider, Mac, trust metadata/votes and cache before appending one apply record while preserving old records. Partial output stops without blind retry.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-tailscale-production-sign-test.py",
+          "version": "repo-file-v1:sha256:7f4d931a3f81fc121fa032cf94a52bd234d7487cab17864d3511199b7569ee07"
+        },
+        {
+          "resource": "repo://scripts/harbor-tailscale-production-sign.py#L138-L252",
+          "version": "repo-lines-v1:sha256:4c1777e2245977d568ae885475636f0a7ce2874c4d27d42a8dce61f3a7f0b3be:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3OGEwZTM5MGZkMzA3MWU0ZDM0MTljZjlkY2FjMGU3ODk0MDBiNDg1MWNmZmZjYzcwNTZlZDY0YjZiODA4OTQ1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI1NjMyZjE2ZTU1NzcwM2FkNzRmOWFhMWE4YmQyYWY1Y2IyMzcyYmRlMzVhMjJlNGMzMDA4YWUwNGExMjFkNGVjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4OWRmNTE2NjU0NTk5NzRjMTBkMjFhMTQxZDcyMzczMjJlZjJiNTBhNjdkZDViMDE5YzkwNDMwMWJmYWE3MzRjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIxMDBjMTMwODJmYTY2MTY3YTQ0ODdhNGQyOWE1Y2I2OGE3YWQ1MGI1NDc1MjdkNzMwMDBlMmEzMTQ5YzUyZjUzIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_f5888834b5a442c794099c24d299729c",
+      "statement": "The existing apply tag has cluster-admin and ingress/operator TCP443 access. Signing creates a persistent delegated authority; key expiry or secret deletion does not establish revocation. Secret installation, publication and runtime acceptance remain separate gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/tailscale/ci-rbac.yaml",
+          "version": "repo-file-v1:sha256:4713d337c69b91fbe9b5831711f89090ccf603c31f7b143114a237b2c141b056"
+        },
+        {
+          "resource": "repo://scripts/config/tailscale-policy.json",
+          "version": "repo-file-v1:sha256:69876995e4050ee76195f1a36bfd3f4684f162091a16c1e5e72b49b67d32e1fa"
+        },
+        {
+          "resource": "repo://specs/006-harbor-production-key-recovery/research.md",
+          "version": "repo-file-v1:sha256:88322a1d43ee77afcfbb97377faa373e8cc9805b2671e82f63deb6f7f492bbed"
+        },
+        {
+          "resource": "repo://specs/006-harbor-production-key-recovery/spec.md",
+          "version": "repo-file-v1:sha256:545ff6e88824acc28302c71f2b837630ae61a565867e208c84d1b918c07cb96c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-29T05:57:43.668Z"
+    "at": "2026-10-31T22:40:48.699Z"
   }
 }

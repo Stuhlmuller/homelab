@@ -143,7 +143,7 @@ sources:
 generated: { by: "codex", at: "2026-10-30T00:29:31.345Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-30T00:29:31.345Z
+    at: 2026-10-31T22:40:48.699Z
 ---
 
 # Secrets And Identity
