@@ -186,10 +186,11 @@ and concurrent surges immediately before registration.
 The smaller private-listener design is a [userspace Tailscale sidecar](https://tailscale.com/docs/solutions/connect-kubernetes-pods-to-tailnet-using-sidecar)
 in the same Traefik Pod. Bind only the private `web` and `websecure` entrypoints
 to `127.0.0.1:8000` and `127.0.0.1:8443`; configure [raw TCP Serve](https://tailscale.com/docs/reference/tailscale-cli/serve#use-a-tcp-forwarder)
-for tailnet ports 80 and 443 to those loopback ports. Traefik must still
-terminate HTTPS with its existing certificate. Keep the separate Funnel and
-registry listeners and their exact routes. A Pod-IP or ClusterIP caller cannot
-reach another Pod's loopback listener, so this boundary could survive a
+for tailnet port 443 to the HTTPS loopback listener. Port 80 needs separate
+caller review. Traefik must still terminate HTTPS with its existing certificate.
+Keep the separate Funnel and registry listeners and their exact routes. A
+Pod-IP or ClusterIP caller cannot reach another Pod's loopback listener, so
+this boundary could survive a
 kube-router crash or cold start without relocating Traefik or draining
 `zimaboard-0`. It is a proposed architecture, not an enforced boundary yet.
 
@@ -227,29 +228,50 @@ Stage it in reviewed source before cutting over:
    [`tailnet-dns` resolver](../clusters/homelab/platform/tailnet-dns/README.md)
    now publishes the `traefik-private` LoadBalancer status IP; its checker and
    [signer](../scripts/tailscale-ingress-sign.py) assume an operator proxy.
-   A candidate is a selectorless headless Service with
-   [`k8s-gateway.dns/resolve-endpoints: "true"`](https://github.com/k8s-gateway/k8s_gateway#endpoint-resolution)
-   and one repo-owned, ready EndpointSlice containing the sidecar's persistent
-   tailnet IP. The pinned resolver can answer from ready endpoints, but a
-   static slice would leave stale DNS after identity loss. Keep the new
-   EndpointSlice unready until cutover. Add an owner that
-   binds the IP to the exact online, signed node key and withdraws readiness
-   when that identity is lost. The resolver's approved-name A/AAAA view must
-   have no public `fallthrough` or `forward`: the former broad address view
-   could return a public address when an endpoint disappeared. Prove the pinned
-   resolver returns no address for empty or unready endpoints after its 30-second
-   cache bound. Prior answers can persist in client caches; the sidecar's
-   identity-bound traffic guard must reject a lost, unsigned, or reassigned peer
-   throughout that window. Run a negative tailnet probe immediately after
-   test-peer withdrawal, before the old A record expires. Its view allowlist,
-   Traefik route and Service
-   annotation must agree for each new private name. Validate this with the
-   real pinned resolver and checker before private DNS can move. The
+   A candidate is a [Tailscale Service](https://tailscale.com/docs/features/tailscale-services)
+   named `svc:homelab-private-ingress` with only `tcp:443`, declared through the
+   pinned [Terraform provider](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/service).
+   Its IPv4 TailVIP belongs to the Service rather than the canary device. After
+   device-only preflight, configure the pinned sidecar with raw TCP Serve for
+   that Service and advertise it. Do not add a matching auto-approver or tag
+   this Service `tag:ci`, which the current policy auto-approves. A repo-owned
+   approval path must match the Pod and persistent device identity, exact
+   signed node key, tag, Service name, and Serve endpoint before approving that
+   one host. A tag or `tailscale status` response alone does not prove this.
+   Tailnet Lock must still reject unsigned devices.
+
+   Publish the provider-owned IPv4 TailVIP through a selectorless headless Service
+   with [`k8s-gateway.dns/resolve-endpoints: "true"`](https://github.com/k8s-gateway/k8s_gateway#endpoint-resolution)
+   and a reviewed IPv4 EndpointSlice. Never publish the device IP in a static slice:
+   reassignment could send cached DNS clients to a different peer. A ready
+   TailVIP slice says the Service address exists, not that a host is online;
+   DNS may keep answering during a host outage. Prove an approved host serves
+   TLS and that the same cached A record fails closed after drain, offline,
+   unsigned-host, and wrong-host tests. The approved-name A/AAAA resolver view
+   must have no public `fallthrough` or `forward`; prove the pinned resolver
+   returns no address for absent or unready endpoints after its 30-second
+   cache bound. Keep its allowlist, Traefik routes, and Service annotation in
+   sync. Run the negative tailnet probe immediately after test-peer withdrawal,
+   before the old A record expires. Longer client caches make the TailVIP
+   traffic test necessary even if DNS is withdrawn. The
    [CoreDNS rewrites](../clusters/homelab/platform/dns/coredns-configmap.yaml)
    for `harbor.stinkyboi.com` and `octelium-api.stinkyboi.com` currently target
    that Service; preserve it until both reviewed internal replacements and
    Harbor node pulls and native Octelium clients pass.
-4. Validate the new peer and DNS from a trusted tailnet client, then change
+4. Before the Service or DNS change, resolve the credential, client, and access
+   gates. Narrow the current broad tailnet grant so the canary device and
+   Service are denied by default. Add a reviewed `svc:homelab-private-ingress`
+   destination grant for only the intended test identity on TCP 443, with
+   positive and negative policy tests. Add the reviewed production identities
+   before DNS cutover; otherwise the TailVIP has no authorized clients.
+   On November 1, the current Terragrunt OAuth client could list Services but
+   could not request Services write (403); the SSM-backed operator credential
+   returned 401 at the token endpoint. Verify a repo-owned credential path
+   without printing tokens. A connected NAS client reported Tailscale v1.40;
+   confirm it does not consume this ingress or upgrade it before TailVIP use.
+   Tailscale documents v1.86 as the Service host minimum and v1.94 as the
+   client version that needs no `accept-routes` setting.
+5. Validate the new peer and DNS from a trusted tailnet client, then change
    the declared private DNS path while the old controller still serves. Create
    a separate internal Service for the accepted Harbor/API callers, then
    retire the old operator LoadBalancer through GitOps after acceptance.
