@@ -94,9 +94,10 @@ class Routes(unittest.TestCase):
         self.assertFalse(scheduled["spec"]["suspend"])
         self.assertEqual(scheduled["spec"]["concurrencyPolicy"], "Forbid")
         self.assertEqual(backup["spec"], by_name["mastodon-backup"]["spec"]["jobTemplate"]["spec"])
-        source_pod = documents("initial-backup-job.yaml")[0]["spec"]["template"]["spec"]
-        for key, value in source_pod.items():
-            self.assertEqual(value, backup["spec"]["template"]["spec"][key])
+        for source, rendered_job in (("initial-backup-job.yaml", backup), ("restore-verification-job.yaml", verify)):
+            source_pod = documents(source)[0]["spec"]["template"]["spec"]
+            for key, value in source_pod.items():
+                self.assertEqual(value, rendered_job["spec"]["template"]["spec"][key])
         def wave(resource):
             return int(resource["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"])
         self.assertLess(wave(documents("bootstrap-job.yaml")[0]), wave(backup))
