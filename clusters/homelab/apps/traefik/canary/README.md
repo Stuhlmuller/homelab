@@ -46,7 +46,21 @@ The startup hook waits for restored state. A `Running` identity skips the auth
 key; only `NeedsLogin` reads the file-backed key, so an expired enrollment key
 does not break an ordinary restart. A lost or expired device identity needs a
 fresh key. Tailnet Lock must sign the exact canary identity before traffic is
-accepted; the current signer only covers the operator proxy.
+accepted. After the policy denies every client to the canary and the Pod passes
+admission, run `python3 -I scripts/tailscale-ingress-sign.py --canary-only` to
+preview. Add `--execute` only from clean, signed current `main`. This separate
+path requires the current ready StatefulSet revision and Pod on `acer`, its
+persistent state Secret UID, pinned images, canary tag, exact node key and
+local signer peer, and raw TCP 443 Serve to the Traefik loopback TLS listener.
+Execution reads the applied tailnet policy through the separate private
+Terragrunt OAuth client and requires it to match committed source with only
+the ten reviewed legacy destination selectors. The current wildcard policy
+fails this gate. No token or policy content is printed.
+It accepts only the pre-Service Serve configuration; a later TailVIP Service
+configuration needs a reviewed signer update before identity recovery. It
+checks the TLS Secret mount, not the certificate bytes. Verify the certificate
+and private route from an authorized tailnet client after signing and a separate
+reviewed test-client grant.
 
 ## Activation gates
 
@@ -60,11 +74,13 @@ accepted; the current signer only covers the operator proxy.
    768 MiB memory limit; keep at least 512 MiB after the canary and any surge.
    Preserve a control-plane reserve and prove the image pull and admission on
    `acer` before activation.
-3. Extend the exact-identity Tailnet Lock signer and provision the dedicated
-   auth key. The current broad tailnet grant reaches every signed device,
-   regardless of this canary tag. Narrow that grant and add a test-client rule
-   before signing; prove production clients cannot reach the canary device or
-   Service. Test HTTPS only. Port 80 needs a separate reviewed caller decision.
+3. Provision the dedicated auth key. The current broad tailnet grant reaches
+   every signed device, regardless of this canary tag. Narrow that grant,
+   prove the applied policy matches source and denies all canary destinations,
+   then use the exact-identity signer. Add a reviewed test-client grant only
+   after signing and before traffic probes. Prove production clients cannot
+   reach the canary device or Service. Test HTTPS only. Port 80 needs a
+   separate reviewed caller decision.
 4. Prove the canary's TCP Serve config and original certificate using an
    authorized tailnet client. Probe HTTP/HTTPS by Pod IP, headless Service,
    and sidecar tailnet IP from same-node and remote-node Pods; direct private

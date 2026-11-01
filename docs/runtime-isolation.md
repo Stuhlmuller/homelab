@@ -211,8 +211,10 @@ Stage it in reviewed source before cutting over:
    and canary-only tag, pinned images, bounded resources, durable per-Pod
    Tailscale state, narrow Secret RBAC, and a repository-owned authentication
    contract. Gate deployment on measured two-controller capacity. Keep Tailnet
-   Lock enabled and extend the fixed signer to verify and sign only that exact
-   identity. Prove raw TCP,
+   Lock enabled. The fixed signer's `--canary-only` path must match the applied
+   narrow policy and exact Pod/device/Serve identity before signing; it rejects
+   the current wildcard grant. Add the reviewed test-client grant after signing.
+   Prove raw TCP,
    original TLS certificate, HTTPS, native gRPC, ACLs, and both containers'
    readiness on the test peer. A Tailscale health response proves an IP, not a
    signed peer or the intended Serve configuration; check both explicitly.
