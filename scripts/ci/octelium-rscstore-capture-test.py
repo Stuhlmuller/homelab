@@ -208,7 +208,8 @@ class RscstoreCaptureTest(unittest.TestCase):
     def test_runtime_guard_requires_all_node_views_and_no_orphan_writer(self):
         inspector = cluster_fixture()[3][0]
         nodes = {"kind": "NodeList", "metadata": {"resourceVersion": "21"},
-                 "items": [{"metadata": {"name": name},
+                 "items": [{"metadata": {"name": name, "labels": {
+                     "octelium.com/node-mode-controlplane": ""} if name == "zimaboard-1" else {}},
                             "status": {"addresses": [{"type": "InternalIP", "address": address}],
                                        "nodeInfo": {"bootID": BOOT_ID},
                                        "conditions": [{"type": "Ready", "status": "True"}]}}
@@ -220,9 +221,9 @@ class RscstoreCaptureTest(unittest.TestCase):
         state = {"nodes": nodes, "leases": leases, "views": {}, "talos_writer": False}
         for name in CAPTURE.NODES:
             state["views"][name] = {"pods": {"kind": "PodList", "items": [inspector]
-                                               if name == "acer" else []},
+                                               if name == "zimaboard-1" else []},
                                     "runningpods/": {"kind": "PodList", "items": [inspector]
-                                                    if name == "acer" else []}}
+                                                    if name == "zimaboard-1" else []}}
 
         def response(*command):
             if command[-1] == "/api/v1/nodes":
@@ -280,6 +281,11 @@ class RscstoreCaptureTest(unittest.TestCase):
             state["leases"]["items"][0]["spec"]["renewTime"] = datetime.now(timezone.utc).isoformat()
             state["nodes"]["items"][0]["status"]["conditions"][0]["status"] = "Unknown"
             with self.assertRaisesRegex(ValueError, "readiness changed"):
+                guard()
+            state["nodes"]["items"][0]["status"]["conditions"][0]["status"] = "True"
+            state["nodes"]["items"][0]["metadata"]["labels"] = {
+                "octelium.com/node-mode-controlplane": ""}
+            with self.assertRaisesRegex(ValueError, "placement label is ambiguous"):
                 guard()
 
     def test_inspector_requires_exact_identity_and_zero_other_mounts(self):

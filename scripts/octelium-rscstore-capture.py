@@ -254,6 +254,11 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
             and not nodes.get("metadata", {}).get("continue")
             and {item["metadata"]["name"] for item in nodes["items"]} == set(NODES)
             and len(nodes["items"]) == len(NODES), "node inventory changed or is incomplete")
+    inspector_nodes = [item["metadata"]["name"] for item in nodes["items"]
+                       if item["metadata"].get("labels", {}).get(
+                           "octelium.com/node-mode-controlplane") == ""]
+    require(len(inspector_nodes) == 1, "inspector placement label is ambiguous")
+    inspector_node = inspector_nodes[0]
     leases = json_output("kubectl", "--context", context, "get", "--raw",
                          "/apis/coordination.k8s.io/v1/namespaces/kube-node-lease/leases")
     require(leases.get("kind") == "LeaseList" and isinstance(leases.get("items"), list)
@@ -297,13 +302,13 @@ def node_runtime_guard(context, talosconfig, pods, inspector_uid):
                 api_mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                        == CLAIM for volume in api_pod["spec"].get("volumes", []))
                 require(not api_mounts_claim or (identity == (INSPECTOR, inspector_uid)
-                                                 and name == "acer"),
+                                                 and name == inspector_node),
                         "kubelet retains another PVC mount user")
                 if not running:
                     mounts_claim = any(volume.get("persistentVolumeClaim", {}).get("claimName")
                                        == CLAIM for volume in pod.get("spec", {}).get("volumes", []))
                     require(not mounts_claim or (identity == (INSPECTOR, inspector_uid)
-                                                 and name == "acer"),
+                                                 and name == inspector_node),
                             "kubelet retains another PVC mount user")
         inventory = output("talosctl", "--talosconfig", str(talosconfig),
                            "--endpoints", NODES["acer"], "--nodes", address,

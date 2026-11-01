@@ -88,7 +88,9 @@ checkpoint it verifies all four expected nodes are Ready with leases renewed
 within 30 seconds, reads each kubelet's desired and CRI Pod lists, and reads
 each node's Talos Kubernetes container inventory. Any stale PVC mount,
 orphaned Octelium Pod, resource-store container or sandbox, unreachable node,
-or changed node boot ID fails closed. The receipt records those boot IDs.
+or changed node boot ID fails closed. The inspector must run on the single node
+with the declared control-plane selector label, currently `zimaboard-1`; the
+receipt records all node boot IDs.
 This catches a former writer that disappeared from the API while its node
 kept running. It streams a tar of
 the entire PVC root three times: before, archive, after. All three byte counts
