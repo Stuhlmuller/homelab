@@ -22,6 +22,34 @@ uses the repository Secret in `clusters/homelab/argocd/self-management` and its
 read-only mirror credential. If Harbor cannot serve charts, restore its registry
 and re-run the protected publication workflow before asking Argo CD to sync.
 
+The pending Istio 1.28.10 hop has a separate, five-chart inventory in
+`scripts/config/harbor-istio-1.28.10-charts.json`; the gateway chart serves both
+gateway Applications. Its package hashes were verified against Istio's
+`https://blob.istio.io/istio-release/charts` repository. Istio's
+[hosting migration notice](https://istio.io/latest/blog/2026/retirement-of-gcp/)
+retains that endpoint and retires the older GCS chart endpoint in December 2026.
+After this publication contract reaches `main`, dispatch
+`harbor-helm-charts.yml` with `chart_scope=istio-1.28.10` and `expected_sha` set
+to that exact current `main` SHA. The workflow checks current `main` before
+obtaining credentials and before each missing-chart push. It verifies each
+package by an authenticated Harbor tag pull, checks the OCI manifest's chart
+layer digest, then pulls by that manifest digest and records all five digests
+in the protected run summary and a 30-day JSON artifact. A changed `main` or
+mismatched existing tag requires another reviewed run; a partial run is not a
+complete receipt.
+
+The `argocd-harbor-istio-oci` ExternalSecret gives Argo CD the existing mirror
+reader credential from SSM. Its `repo-creds` template is scoped to
+`oci://harbor.stinkyboi.com/mirror/helm` and the `homelab` AppProject allows
+only the five Istio chart URLs. After a successful publication receipt, the
+consuming Applications may use Argo CD's [generic OCI chart source](https://argo-cd.readthedocs.io/en/release-3.4/user-guide/oci/):
+`repoURL: oci://harbor.stinkyboi.com/mirror/helm/<chart>`,
+`targetRevision: sha256:<verified-manifest-digest>`, and `path: .`. The
+manifest digest is created by Harbor publication and must come from that
+receipt; the upstream package SHA-256 is not an OCI manifest digest. Keep the
+Istio Applications on their current sources until the digest-pinned consuming
+change passes its separate gate.
+
 ## Chainguard source provenance
 
 `scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
