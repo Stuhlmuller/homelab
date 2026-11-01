@@ -1142,7 +1142,7 @@ kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
 
-## Dormant Octelium resource-store capture
+## Octelium resource-store inspector stage
 
 `scripts/ci/octelium-rscstore-capture-test.py` exercises exact PVC/PV identity,
 the unpaginated namespaced PodList guard, all-node kubelet desired/CRI and
@@ -1151,10 +1151,9 @@ PVC mounts, the read-only inspector's exact kubelet UID/full container ID and
 single Talos sandbox/container matching its 12-hex ID prefix, three matching
 archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
-backup fixtures and render the active app. The active render must still show
-one `octeliumee-rscstore` replica and no inspector; the candidate inspector
-resource and fence component render only when added to a temporary copy of the
-app Kustomization. See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+backup fixtures and render the active app. The active render must show the
+inspector Pod, one `octeliumee-rscstore` replica, and no fence component.
+See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
 ```sh
 python3 -I scripts/ci/octelium-rscstore-capture-test.py
@@ -1164,7 +1163,11 @@ python3 -I scripts/ci/openwiki-check.py
 ```
 
 Before any future fence, the inspector-only GitOps stage must be Synced and
-the pinned Harbor image pulled on its scheduled node. Verify the source PVC
+Healthy at the exact merged `main` SHA. Confirm its pinned Harbor image pulled,
+the inspector is Ready on the writer's node, both PVC mount fields and the
+runtime mount are read-only, and the writer Pod UID/restart count remain
+unchanged with one ready Deployment replica. On failure, revert the stage in
+Git and verify Argo CD prunes only the inspector. Verify the source PVC
 ownership and modes: retain the proposed inspector UID/GID 0 only if complete
 file access requires it; otherwise revise to a proven nonroot UID. Readiness
 checks `store.db` readability, while capture must read the whole PVC. The

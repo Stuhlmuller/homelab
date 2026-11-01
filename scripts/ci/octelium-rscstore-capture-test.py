@@ -6,8 +6,9 @@ import hashlib
 import importlib.util
 import io
 import json
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+import re
 import subprocess
 import tarfile
 import tempfile
@@ -186,9 +187,26 @@ class RscstoreCaptureTest(unittest.TestCase):
                               ["StringLike"]["s3:prefix"])
                 self.assertIn(bucket + prefix, statements[required]["Resource"])
 
-    def test_stage_is_dormant_in_active_kustomization(self):
+    def test_inspector_stage_keeps_writer_unfenced(self):
         source = (ROOT / "clusters/homelab/apps/octelium-enterprise/kustomization.yaml").read_text()
-        self.assertNotIn("capture-stage", source)
+        self.assertIn("  - capture-stage/inspector.yaml", source)
+        self.assertNotIn("components:", source)
+        rendered = subprocess.check_output([
+            "kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/octelium-enterprise")
+        ], text=True)
+        documents = rendered.split("\n---\n")
+
+        def resource(kind, name):
+            matches = [item for item in documents
+                       if re.search(rf"(?m)^kind: {kind}$", item)
+                       and re.search(rf"(?m)^  name: {name}$", item)]
+            self.assertEqual(len(matches), 1, (kind, name))
+            return matches[0]
+
+        self.assertRegex(resource("Deployment", CAPTURE.DEPLOYMENT), r"(?m)^  replicas: 1$")
+        inspector = resource("Pod", CAPTURE.INSPECTOR)
+        self.assertEqual(inspector.count("readOnly: true"), 2)
+        self.assertIn("imagePullPolicy: Always", inspector)
 
     def test_pod_list_requires_unpaginated_resource_version(self):
         deployment, pvc, pv, pods = cluster_fixture()

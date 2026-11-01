@@ -515,10 +515,12 @@ artifacts untouched and makes retries read-only; quarantined WALs are not
 deleted automatically. Recovery fails closed rather than overwrite a dated
 quarantine if its completion marker is missing.
 
-The November 1 resource-store capture candidate is dormant under
-`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Its inspector is
-activated and observed Ready before a separate GitOps fence reduces only
-`octeliumee-rscstore` to zero replicas. The source-owned capture helper requires
+The November 1 resource-store capture stage activates only the read-only
+inspector from `clusters/homelab/apps/octelium-enterprise/capture-stage/`.
+Its pinned Harbor image, Ready state, read-only PVC mount, and unchanged writer
+Pod UID and restart count must be observed before a separate GitOps fence
+reduces only `octeliumee-rscstore` to zero replicas. The source-owned capture
+helper requires
 Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
 namespaced PodList without another claim mount, and stable whole-PVC tar hashes
 before and after transfer. It includes any current WAL, dated quarantines and

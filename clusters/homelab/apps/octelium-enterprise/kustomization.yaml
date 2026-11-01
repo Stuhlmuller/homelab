@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - emergency-dataplane.yaml
   - resources.yaml
+  - capture-stage/inspector.yaml

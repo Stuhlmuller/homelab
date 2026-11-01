@@ -49,11 +49,10 @@ change establishes they are no longer needed.
 
 ## Dormant resource-store capture stage
 
-`capture-stage/` is excluded from the active app. First, a separate reviewed
-GitOps stage adds the inspector Pod and its exact-label NetworkPolicy while
-the Deployment remains at one replica. Verify the pinned Harbor mirror image
-pulls, the Pod schedules and reaches Ready, and both read-only mount fields are
-live.
+The active app includes only `capture-stage/inspector.yaml`; the
+`capture-stage` fence component remains excluded and the resource-store
+Deployment stays at one replica. Verify the pinned Harbor mirror image pulls,
+the Pod schedules and reaches Ready, and both read-only mount fields are live.
 The liveness probe checks the mounted directory; readiness checks that
 `store.db` exists and is readable. The proposed UID/GID 0 matches the upstream
 store's root behavior, but source PVC ownership and modes must be checked before
@@ -67,8 +66,10 @@ has no API token, credentials, or writable image root, and is not selected by
 the resource-store Service. This image digest is declared in
 `clusters/homelab/platform/image-policy/images.json` and used by existing
 Harbor-backed workloads; the inspector's own live pull is still an activation
-gate. Merging this preparation alone does not stop or restart the store. The
-capture helper requires the exact fence revision Synced in Argo CD and a
+gate. `imagePullPolicy: Always` requires a Harbor registry check even if the
+image layers are cached. Merging this inspector stage alone must not stop or
+restart the store. The capture helper requires the exact fence revision Synced
+in Argo CD and a
 complete namespaced PodList showing zero other PVC mount users. Removal and
 restart require a later reviewed change; this stage does
 not quarantine the WAL, replay it, or resume the Deployment.
@@ -78,6 +79,44 @@ The fenced Kustomization must retain both the inspector Pod and its exact-label
 requires the live Application's single `spec.sources` entry and matching
 `status.sync.revisions` entry for this repository, path, and exact `main` SHA;
 it rejects a missing policy or ambiguous source/revision list.
+
+Before this stage syncs, privately record the writer Deployment and Pod output
+below. Repeat after sync; require the same writer Pod UID and restart count,
+one ready replica, and the same Deployment generation. Keep a read-only
+Deployment watch open through sync; its ready count must not drop. Stop if any
+check differs.
+
+```sh
+kubectl -n octelium get deployment octeliumee-rscstore -o json |
+  jq -r '[.metadata.uid, .metadata.generation, .spec.replicas, (.status.readyReplicas // 0)] | @tsv'
+kubectl -n octelium get pod -l octelium.com/component=rscstore -o json |
+  jq -r '.items[] | [.metadata.uid, .spec.nodeName, .status.phase, ([.status.containerStatuses[]?.restartCount] | add // 0)] | @tsv'
+kubectl -n octelium get deployment octeliumee-rscstore -w
+```
+
+After sync, require the Application to be Synced and Healthy at the exact
+merged `main` SHA, one inspector Pod Ready on the writer's node, a nonempty
+image ID for the pinned Harbor reference, and `Pulling`/`Pulled` events for
+that reference. Both Pod mount fields must be `true`, the claim must be
+`octelium-rscstore`, and `/proc/mounts` must report `ro` for `/source`.
+Readiness proves access to `store.db`, not readability of every PVC entry.
+
+```sh
+kubectl -n argocd get application octelium-enterprise -o json |
+  jq -r '[.status.sync.revision, .status.sync.status, .status.health.status] | @tsv'
+kubectl -n octelium get pod octelium-rscstore-capture-inspector -o json |
+  jq -r '[.metadata.uid, .spec.nodeName, .status.phase, (.status.containerStatuses[0].ready // false), .spec.containers[0].image, (.status.containerStatuses[0].imageID // ""), .spec.containers[0].volumeMounts[0].readOnly, .spec.volumes[0].persistentVolumeClaim.readOnly, .spec.volumes[0].persistentVolumeClaim.claimName] | @tsv'
+kubectl -n octelium describe pod octelium-rscstore-capture-inspector
+kubectl -n octelium exec pod/octelium-rscstore-capture-inspector -c inspection -- \
+  sh -c 'grep " /source " /proc/mounts'
+```
+
+If pull, scheduling, mount, readiness, or writer continuity fails, revert the
+inspector-stage commit through a reviewed PR. The Application's automated
+prune removes the inspector after the rollback SHA syncs; verify it is absent
+and the retained PVC is still Bound. Do not add the fence component or run
+capture while this gate fails. The capture helper itself rejects this
+inspector-only Kustomization because its fence component is absent.
 
 After activation, privately record the live PVC UID, bound PV name and UID,
 the exact merged `main` SHA, and the intended kubectl context. The capture
