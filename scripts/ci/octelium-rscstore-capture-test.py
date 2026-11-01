@@ -207,6 +207,11 @@ class RscstoreCaptureTest(unittest.TestCase):
         inspector = resource("Pod", CAPTURE.INSPECTOR)
         self.assertEqual(inspector.count("readOnly: true"), 2)
         self.assertIn("imagePullPolicy: Always", inspector)
+        policy = resource("NetworkPolicy", "octelium-rscstore-capture-inspector-deny-all")
+        self.assertIn("app.kubernetes.io/name: octelium-rscstore-capture-inspector", policy)
+        self.assertIn("- Ingress", policy)
+        self.assertIn("- Egress", policy)
+        self.assertNotIn("octelium.com/component: rscstore", policy)
 
     def test_pod_list_requires_unpaginated_resource_version(self):
         deployment, pvc, pv, pods = cluster_fixture()

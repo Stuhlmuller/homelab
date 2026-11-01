@@ -1152,7 +1152,9 @@ single Talos sandbox/container matching its 12-hex ID prefix, three matching
 archive hashes, complete tar members, publisher
 allowlisting, and isolated extraction. Run it with the existing application
 backup fixtures and render the active app. The active render must show the
-inspector Pod, one `octeliumee-rscstore` replica, and no fence component.
+inspector Pod, its exact-label default-deny NetworkPolicy, one
+`octeliumee-rscstore` replica, and no fence component. Flannel does not
+currently enforce the policy; it satisfies the source and Checkov contract.
 See the [capture runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
 
 ```sh
@@ -1167,12 +1169,12 @@ Healthy at the exact merged `main` SHA. Confirm its pinned Harbor image pulled,
 the inspector is Ready on the writer's node, both PVC mount fields and the
 runtime mount are read-only, and the writer Pod UID/restart count remain
 unchanged with one ready Deployment replica. On failure, revert the stage in
-Git and verify Argo CD prunes only the inspector. Verify the source PVC
+Git and verify Argo CD prunes the inspector and its policy. Check source PVC
 ownership and modes: retain the proposed inspector UID/GID 0 only if complete
 file access requires it; otherwise revise to a proven nonroot UID. Readiness
 checks `store.db` readability, while capture must read the whole PVC. The
-later fence stage must be Synced at the exact reviewed `main` SHA, with the Deployment at zero
-and no other Pod mounting the claim. The capture guard also requires explicit
+later fence stage must be Synced at the exact reviewed `main` SHA, with the
+Deployment at zero and no other Pod mounting the claim. The capture guard also requires explicit
 Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
 writer still running on a disconnected node; a missing node inventory does not
 count as zero writers. Capture then requires private off-NAS

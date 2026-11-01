@@ -49,9 +49,10 @@ change establishes they are no longer needed.
 
 ## Dormant resource-store capture stage
 
-The active app includes only `capture-stage/inspector.yaml`; the
-`capture-stage` fence component remains excluded and the resource-store
-Deployment stays at one replica. Verify the pinned Harbor mirror image pulls,
+The active app includes only the inspector Pod and its exact-label default-deny
+NetworkPolicy from `capture-stage/`. The `capture-stage` fence component
+remains excluded and the resource-store Deployment stays at one replica.
+Verify the pinned Harbor mirror image pulls,
 the Pod schedules and reaches Ready, and both read-only mount fields are live.
 The liveness probe checks the mounted directory; readiness checks that
 `store.db` exists and is readable. The proposed UID/GID 0 matches the upstream
@@ -60,17 +61,20 @@ activation. Retain root only if complete file access requires it; otherwise
 revise the inspector and capture guard to a proven nonroot UID. A successful
 readiness probe covers `store.db`; the full tar capture must still read every
 PVC entry. Only a later reviewed fence stage adds `capture-stage` as a
-Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas. The inspector mounts
-the exact `octelium-rscstore` claim read-only at the volume and container mount,
+Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas.
+The inspector mounts the exact `octelium-rscstore` claim read-only at the
+volume and container mount,
 has no API token, credentials, or writable image root, and is not selected by
 the resource-store Service. This image digest is declared in
 `clusters/homelab/platform/image-policy/images.json` and used by existing
 Harbor-backed workloads; the inspector's own live pull is still an activation
-gate. `imagePullPolicy: Always` requires a Harbor registry check even if the
+gate. The policy selects only the inspector and declares no network access;
+current Flannel does not enforce NetworkPolicy, so it is not a live isolation
+claim. `imagePullPolicy: Always` requires a Harbor registry check even if the
 image layers are cached. Merging this inspector stage alone must not stop or
 restart the store. The capture helper requires the exact fence revision Synced
-in Argo CD and a
-complete namespaced PodList showing zero other PVC mount users. Removal and
+in Argo CD and a complete namespaced PodList showing zero other PVC mount
+users. Removal and
 restart require a later reviewed change; this stage does
 not quarantine the WAL, replay it, or resume the Deployment.
 
@@ -113,8 +117,9 @@ kubectl -n octelium exec pod/octelium-rscstore-capture-inspector -c inspection -
 
 If pull, scheduling, mount, readiness, or writer continuity fails, revert the
 inspector-stage commit through a reviewed PR. The Application's automated
-prune removes the inspector after the rollback SHA syncs; verify it is absent
-and the retained PVC is still Bound. Do not add the fence component or run
+prune removes the inspector and its policy after the rollback SHA syncs; verify
+they are absent and the retained PVC is still Bound. Do not add the fence
+component or run
 capture while this gate fails. The capture helper itself rejects this
 inspector-only Kustomization because its fence component is absent.
 

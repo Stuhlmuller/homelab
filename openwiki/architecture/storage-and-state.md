@@ -516,7 +516,10 @@ deleted automatically. Recovery fails closed rather than overwrite a dated
 quarantine if its completion marker is missing.
 
 The November 1 resource-store capture stage activates only the read-only
-inspector from `clusters/homelab/apps/octelium-enterprise/capture-stage/`.
+inspector and its exact-label default-deny NetworkPolicy from
+`clusters/homelab/apps/octelium-enterprise/capture-stage/`. Flannel does not
+enforce that policy, so it is a source and static-check contract, not live
+network isolation.
 Its pinned Harbor image, Ready state, read-only PVC mount, and unchanged writer
 Pod UID and restart count must be observed before a separate GitOps fence
 reduces only `octeliumee-rscstore` to zero replicas. The source-owned capture

@@ -4,3 +4,4 @@ resources:
   - emergency-dataplane.yaml
   - resources.yaml
   - capture-stage/inspector.yaml
+  - capture-stage/inspector-networkpolicy.yaml
