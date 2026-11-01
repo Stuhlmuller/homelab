@@ -371,10 +371,39 @@ implemented, so these stages are a design, not authority to evacuate a node.
    native Pods may remain Pending. A 15:34 UTC read-only selector join found
    25 Services with Ready fallback endpoints and 29 native-only Services,
    including the operator API, Talos API, Harbor, Langfuse, and Enterprise
-   paths. Accept that specific outage before evacuation. Preserve a trusted
+   paths. The [read-only Service inventory](../scripts/network-policy-octelium-service-inventory.py)
+   now joins complete Octelium namespace Service, Pod, and EndpointSlice lists
+   to the 25 source-declared emergency Deployments. It checks current Service
+   UID ownership, selectors, and Ready Pod targets without recording endpoint
+   addresses or ports. Its report remains `admission: unproven` and
+   `baselineQualified: false`: the dated 25/29 counts do not provide an exact
+   54-Service identity baseline. Capture a fresh private report and review its
+   complete identity set before making that baseline or accepting the outage.
+   Ready EndpointSlices do not prove direct paths or protected CI access.
+   Accept that specific outage before evacuation. Preserve a trusted
    LAN recovery path independent of the native operator and Talos APIs. Update
    the hardcoded bootstrap assertions for this temporary state. Recheck real
    memory peaks, etcd headroom, Pod slots, and all running destination workloads.
+
+   To capture this observation with the authenticated homelab Kubernetes
+   context, write its sanitized JSON to a private file outside the repository:
+
+   ```sh
+   umask 077
+   nix develop --command python3 -I \
+     scripts/network-policy-octelium-service-inventory.py \
+     --native-node zimaboard-0 \
+     > /private/tmp/octelium-service-inventory.json
+   ```
+
+   A November 1 17:03 UTC read-only observation found 64 namespace Services:
+   25 with Ready fallbacks, 29 native-only, 9 independent of z0, and 1
+   unresolved. The unresolved Enterprise store Service has one selected
+   unready Pod and no Ready endpoint. The complete Service identity digest was
+   `ccfdfcd58d54ab71c4d5363e621ce6b2e306d086ba356e06b90ffbb90c9b17a7`.
+   This is an unqualified snapshot; the full private report remains outside
+   git.
+
 4. Implement a protected, source-owned evacuation and taint handoff. After
    backup and destination gates, add an exact-identity temporary `NoExecute`
    taint to `zimaboard-0`. Expect an Octelium/private-app interruption as its

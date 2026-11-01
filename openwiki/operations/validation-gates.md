@@ -703,6 +703,13 @@ between single-direction and mixed also uses `drifted-policy`. Omitted or empty
 `policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
 an empty `egress` field alone does not add Egress.
 
+The read-only [Octelium Service inventory](../../scripts/network-policy-octelium-service-inventory.py)
+joins complete namespace Service, Pod, and EndpointSlice snapshots to the 25
+source-declared emergency Deployments. Offline fixtures cover stale Service
+UID ownership, false Ready endpoints, selector drift, and fallback loss. Its
+sanitized output stays `admission: unproven` without a reviewed exact
+54-Service baseline, direct-path probes, and protected CI checks.
+
 The [Cordium expected-spec fixture](../../clusters/homelab/apps/cordium-bootstrap/generated-networkpolicies.json)
 binds three complete policy shapes to pinned `v0.12.7` constructors. The
 [Octelium fixture](../../clusters/homelab/apps/octelium/generated-networkpolicies.json)
