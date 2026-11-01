@@ -28,6 +28,34 @@ resource "tailscale_acl" "homelab" {
   }
 }
 
+# Define the stable address before any canary advertises it. The Service has no
+# auto-approval tag; a separate identity-checked path must approve its host.
+resource "tailscale_service" "private_ingress" {
+  name       = "svc:homelab-private-ingress"
+  comment    = "Private HTTPS ingress on the isolated Traefik sidecar"
+  ports      = ["tcp:443"]
+  tags       = []
+  depends_on = [tailscale_acl.homelab]
+
+  lifecycle {
+    prevent_destroy = true
+
+    precondition {
+      condition = alltrue([
+        for grant in jsondecode(var.policy).grants :
+        !contains(try(grant.dst, []), "*") && (
+          !contains(try(grant.dst, []), "svc:homelab-private-ingress") ||
+          toset(try(grant.ip, [])) == toset(["tcp:443"])
+        )
+        ]) && !contains(
+        keys(try(jsondecode(var.policy).autoApprovers.services, {})),
+        "svc:homelab-private-ingress"
+      )
+      error_message = "Scope tailnet destinations, restrict this Service to TCP 443, and keep its host approval explicit before defining its TailVIP."
+    }
+  }
+}
+
 resource "tailscale_dns_configuration" "homelab" {
   magic_dns          = true
   override_local_dns = false

@@ -20,3 +20,8 @@ output "github_auth_keys" {
     }
   }
 }
+
+output "private_ingress_service_addrs" {
+  description = "TailVIP addresses for the inactive private-ingress Service; publish IPv4 in DNS only after host acceptance."
+  value       = tailscale_service.private_ingress.addrs
+}

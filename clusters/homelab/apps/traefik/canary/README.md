@@ -131,6 +131,12 @@ only through a separate reviewed repository-owned revocation path.
    authorized tailnet client. Probe HTTP/HTTPS by Pod IP, headless Service,
    and sidecar tailnet IP from same-node and remote-node Pods; direct private
    routes must fail even when Tailscale is absent, restarting, or unsigned.
+   Once the TailVIP host is approved, probe its IPv4 address on TCP 80 and 9000
+   from a client granted only Service TCP 443. Both must fail while 443 works.
+   [Tailscale's non-served-port issue](https://github.com/tailscale/tailscale/issues/20362)
+   reproduced with a wildcard Service grant and TUN forwarding; pinned
+   v1.102.3 has the [explicit VIP rejection](https://github.com/tailscale/tailscale/blob/v1.102.3/wgengine/netstack/netstack.go#L1619-L1629),
+   but the userspace canary still needs a live negative probe.
    Add narrowly scoped backend Istio `ALLOW` rules for the distinct
    `cluster.local/ns/traefik/sa/traefik-sidecar-canary` principal before
    expecting all routes to pass; current backends allow only the live Traefik

@@ -11,6 +11,10 @@ variables {
 run "identity_boundaries" {
   command = plan
   assert {
+    condition     = tailscale_service.private_ingress.name == "svc:homelab-private-ingress" && length(tailscale_service.private_ingress.ports) == 1 && contains(tailscale_service.private_ingress.ports, "tcp:443") && length(tailscale_service.private_ingress.tags) == 0
+    error_message = "Private ingress must have one untagged, TCP-443-only Service identity."
+  }
+  assert {
     condition     = !tailscale_acl.homelab.overwrite_existing_content && !tailscale_acl.homelab.reset_acl_on_destroy
     error_message = "Existing policy adoption must require import and must never reset policy on destroy."
   }
@@ -26,6 +30,44 @@ run "identity_boundaries" {
     condition     = tailscale_federated_identity.github["apply"].custom_claim_rules.workflow_ref == "Stuhlmuller/homelab/.github/workflows/*@refs/heads/main" && tailscale_federated_identity.github["cordium"].tags == toset(["tag:homelab-ci-cordium"])
     error_message = "Production trust stays on main; Cordium must not receive either Kubernetes CI tag."
   }
+}
+
+run "reject_wildcard_service_destination" {
+  command = plan
+  variables {
+    policy = jsonencode({ grants = [{ src = ["autogroup:member"], dst = ["*"], ip = ["*"] }] })
+  }
+  expect_failures = [tailscale_service.private_ingress]
+}
+
+run "allow_scoped_service_port" {
+  command = plan
+  variables {
+    policy = jsonencode({ grants = [{ src = ["autogroup:member"], dst = ["svc:homelab-private-ingress"], ip = ["tcp:443"] }] })
+  }
+  assert {
+    condition     = tailscale_service.private_ingress.name == "svc:homelab-private-ingress"
+    error_message = "A TCP-443-only client grant must keep the Service plannable."
+  }
+}
+
+run "reject_broad_service_port" {
+  command = plan
+  variables {
+    policy = jsonencode({ grants = [{ src = ["autogroup:member"], dst = ["svc:homelab-private-ingress"], ip = ["*"] }] })
+  }
+  expect_failures = [tailscale_service.private_ingress]
+}
+
+run "reject_service_auto_approval" {
+  command = plan
+  variables {
+    policy = jsonencode({
+      grants        = []
+      autoApprovers = { services = { "svc:homelab-private-ingress" = ["tag:homelab-ingress-canary"] } }
+    })
+  }
+  expect_failures = [tailscale_service.private_ingress]
 }
 
 run "reject_unknown_policy_baseline" {

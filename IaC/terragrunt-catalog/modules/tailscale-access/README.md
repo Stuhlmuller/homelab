@@ -45,6 +45,28 @@ initial adoption, preserving any intervening unrelated changes. Its embedded
 positive and negative tests check the CI boundaries. An unknown-policy bootstrap
 marker is rejected by the module.
 
+The staged private-ingress resource defines `svc:homelab-private-ingress` with only
+`tcp:443`, no Service tags, and a stable TailVIP. It does not advertise or
+approve a host. The resource depends on the reviewed policy update and refuses
+to plan while any grant has a wildcard destination, a Service grant allows
+anything other than TCP 443, or the Service has a direct auto-approver.
+`prevent_destroy` protects the address during later cutover.
+The current broad grant still fails this precondition. Narrow and validate it
+first; the administrator OAuth client also needs Services write permission
+before its saved plan can be applied. A 2026-11-01 read-only check returned 403
+for that write scope.
+
+After a reviewed saved-plan apply, read only the non-sensitive address output
+with `terragrunt output -json private_ingress_service_addrs`. Select the IPv4
+address for the later DNS EndpointSlice change; do not publish DNS until a
+signed, exact-identity host is approved and negative traffic probes pass. Never
+print the module's unfiltered outputs because they contain CI auth keys.
+Approval alone is not a traffic receipt: an [open Tailscale issue](https://github.com/tailscale/tailscale/issues/18821)
+reports stale daemon approval state on Linux v1.94.2 and v1.98.2/v1.98.9.
+After approval, verify the host advertises and a trusted client reaches the
+TailVIP on 443. If it stays pending, block cutover; any advertisement refresh
+must be added to the reviewed repository-owned activation path and retested.
+
 Generate the root stack, initialize the operator unit, and import existing
 singletons only when their addresses are absent from state:
 

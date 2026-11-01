@@ -153,6 +153,15 @@ fixed publisher; committed generation changes drive 60-day rotation of keys
 with 90-day expiry. The three unused federated identities remain protected until
 the final migration retirement, after signed-key CI acceptance.
 Follow its [private saved-plan runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
+The same administrator unit now stages `svc:homelab-private-ingress` as a
+provider-owned, TCP-443-only TailVIP with no auto-approval tag. Its plan guard
+rejects wildcard destinations, broader Service ports, and direct Service
+auto-approval; the current
+broad grant must be narrowed before a plan can create it. Defining the Service
+does not advertise or approve a host. The userspace Traefik sidecar, exact
+signed-host approval, scoped client grant, and negative non-443 TailVIP probe
+are separate activation gates. Verify real TailVIP traffic after host approval;
+stale approval state blocks cutover. No private DNS answer changes with this source.
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
