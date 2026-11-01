@@ -1,0 +1,193 @@
+name: n8n Paired Checkpoint
+
+# checkov:skip=CKV_GHA_7: reviewed current main and source file hashes pin the protected one-shot capture.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit with the n8n maintenance fence active
+        required: true
+        type: string
+      expected_n8n_pvc_uid:
+        description: n8n PVC UID from the pre-capture source inventory
+        required: true
+        type: string
+      expected_n8n_pv_uid:
+        description: Bound n8n PV UID from the same inventory
+        required: true
+        type: string
+      expected_pg_pvc_uid:
+        description: n8n PostgreSQL PVC UID from the same inventory
+        required: true
+        type: string
+      expected_pg_pv_uid:
+        description: Bound n8n PostgreSQL PV UID from the same inventory
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: n8n-paired-checkpoint-production
+  cancel-in-progress: false
+
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Static Policy And Security Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Trusted Source Files
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            '68bee90a450381f7345fb88fa5ca56bc4518b95cb01a50486f65d0b05aeb0ba5' scripts/ci/n8n-paired-checkpoint.sh \
+            'fe37893553f2a8551b7d92ba73cd42817364cfff5dfbe7d889ba7fec58631147' scripts/ci/n8n-pvc-restore-check.py \
+            '2bfe2de65802328e7523b8609e648f0de55ad078c757400e0afe48bc5e085695' clusters/homelab/apps/n8n/checkpoint-reader.job.yaml \
+            '15d65d712dc1b106d7bb8751cc514ea4a47b215c058c53128c872fb7009364f9' clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml |
+            sha256sum --check --status
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+
+  checkpoint:
+    name: Protected n8n Paired Checkpoint
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Trusted Source Files Before Credentials
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' \
+            '68bee90a450381f7345fb88fa5ca56bc4518b95cb01a50486f65d0b05aeb0ba5' scripts/ci/n8n-paired-checkpoint.sh \
+            'fe37893553f2a8551b7d92ba73cd42817364cfff5dfbe7d889ba7fec58631147' scripts/ci/n8n-pvc-restore-check.py \
+            '2bfe2de65802328e7523b8609e648f0de55ad078c757400e0afe48bc5e085695' clusters/homelab/apps/n8n/checkpoint-reader.job.yaml \
+            '15d65d712dc1b106d7bb8751cc514ea4a47b215c058c53128c872fb7009364f9' clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml |
+            sha256sum --check --status
+
+      - name: Verify Current Main Commit And Source UIDs
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          N8N_PVC_UID: ${{ inputs.expected_n8n_pvc_uid }}
+          N8N_PV_UID: ${{ inputs.expected_n8n_pv_uid }}
+          PG_PVC_UID: ${{ inputs.expected_pg_pvc_uid }}
+          PG_PV_UID: ${{ inputs.expected_pg_pv_uid }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for uid in "$N8N_PVC_UID" "$N8N_PV_UID" "$PG_PVC_UID" "$PG_PV_UID"; do
+            [[ "$uid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+          done
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protected Inputs
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          test -n "$AWS_APPLY_ROLE_ARN"
+          test -n "$OCTELIUM_AUTH_TOKEN"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-duration-seconds: 14400
+          role-session-name: homelab-n8n-checkpoint-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Capture And Verify Offline Restore
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_N8N_PVC_UID: ${{ inputs.expected_n8n_pvc_uid }}
+          EXPECTED_N8N_PV_UID: ${{ inputs.expected_n8n_pv_uid }}
+          EXPECTED_PG_PVC_UID: ${{ inputs.expected_pg_pvc_uid }}
+          EXPECTED_PG_PV_UID: ${{ inputs.expected_pg_pv_uid }}
+          GH_TOKEN: ${{ github.token }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/install-kubeconfig.sh
+          bash scripts/ci/n8n-paired-checkpoint.sh
+          EOF
+          then
+            echo "::error::n8n paired checkpoint failed; private diagnostics withheld."
+            exit 1
+          fi
+          echo "n8n paired checkpoint passed; private diagnostics withheld."
+
+      - name: Publish Sanitized Paired Receipt
+        run: |
+          set -euo pipefail
+          receipt="${RUNNER_TEMP}/n8n-paired-checkpoint-receipt"
+          trap 'rm -f "$receipt"' EXIT
+          test "$(wc -l <"$receipt")" -eq 1
+          LC_ALL=C grep -Eqx 'Verified n8n paired checkpoint: manifest=n8n/paired/[0-9a-f]{40}/[1-9][0-9]*/[1-9][0-9]*/manifest\.json version=[A-Za-z0-9._~+/=-]+ sha256=[0-9a-f]{64} pg_pvc_uid=[0-9a-f-]{36} pg_pv_uid=[0-9a-f-]{36} n8n_pvc_uid=[0-9a-f-]{36} n8n_pv_uid=[0-9a-f-]{36} tables=[1-9][0-9]* files=[1-9][0-9]*' "$receipt"
+          cat "$receipt"

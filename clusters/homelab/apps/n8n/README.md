@@ -172,6 +172,83 @@ never print it or rotate the SSM bootstrap value during capture. A successful
 off-NAS upload needs immutable object versions, byte-verified readback, and an
 isolated restore of the database and PVC before migration activation.
 
+## Staged One-Shot Paired Checkpoint
+
+The [manual paired checkpoint](../../../../.github/workflows/n8n-paired-checkpoint.yml),
+[reader Job](checkpoint-reader.job.yaml), and deny-all
+[reader NetworkPolicy](checkpoint-reader.networkpolicy.yaml) are staged source.
+The Job and policy are excluded from the active Kustomization and Helm values. The workflow runs
+only by manual dispatch from exact current `main` after the reviewed fence
+overlay is activated. On 2026-10-31, `homelab-production` had a branch policy
+but no required reviewer; dispatch starts the job without a GitHub approval pause.
+Obtain explicit operator approval before dispatch. Source hashes are pinned
+before the workflow accesses AWS or Octelium credentials.
+Do not dispatch it against the current one-replica stack.
+
+The declared one-shot script creates a run-named deny-all policy and reader Job
+from the pinned manifests only after Argo
+reports the fenced revision Synced/Healthy, n8n desired/current/ready replicas
+are zero, no other n8n Pod or writer Job remains, PostgreSQL is Ready, and both
+PVC/PV bindings match the independently inventoried UIDs. The Job mounts the
+n8n PVC read-only and sleeps; the workflow runner uses `kubectl exec` to
+stream an archive into private scratch. Each dump/archive stream has a 15-minute
+timeout and 30-second forced termination; a timeout triggers cleanup and
+withholds the success receipt. Other Kubernetes calls have 30-second API and
+45-second command deadlines; cleanup deletes have a two-minute command limit.
+The Job receives no API token or AWS credential. The script verifies each
+resource's owner token and UID, requests foreground Job deletion, and requires
+the complete run-owner Pod list to be empty before removing the policy. A
+lingering reader Pod keeps the policy and blocks the receipt. A lost create
+response is reconciled by reading the created object; failed or unconfirmed
+deletion prevents a success
+receipt. These pinned manifests and workflow are the repository-owned path for
+the temporary Job;
+do not run ad hoc `kubectl create` or `kubectl delete` commands.
+
+The workflow puts a custom PostgreSQL dump and n8n PVC tar under one
+run-specific prefix in the versioned SSE-KMS backup bucket. It downloads both
+exact object versions, checks bytes and SHA-256, restores PostgreSQL as the
+`n8n` database owner in a disposable container with no network, and safely extracts the PVC archive in
+disposable runner scratch. The PVC check requires the persisted config and an
+encryption key but emits only a config checksum and file count. A third
+versioned manifest binds both object versions, hashes, source UIDs, fence SHA,
+and restore counts. The disposable database container, volume, and private
+scratch must be removed before the success receipt is written. The public Actions log receives only its sanitized
+manifest key/version/hash and source UIDs; raw data, credentials, config, and
+private diagnostics stay out of logs and artifacts.
+
+After a separately reviewed PR activates `maintenance-fence.values.yaml`,
+inventory the four live source UIDs, confirm the zero-writer gates above, then
+dispatch with exact current main SHA and those UIDs:
+
+```sh
+gh workflow run n8n-paired-checkpoint.yml -R Stuhlmuller/homelab --ref main \
+  -f expected_sha='<exact-current-main-sha>' \
+  -f expected_n8n_pvc_uid='<n8n-pvc-uid>' \
+  -f expected_n8n_pv_uid='<n8n-pv-uid>' \
+  -f expected_pg_pvc_uid='<postgres-pvc-uid>' \
+  -f expected_pg_pv_uid='<postgres-pv-uid>'
+```
+
+Keep the success receipt with the migration record. A failed run may leave
+individual unverified objects in its private prefix, or a run-named reader
+Job/policy if the Kubernetes API cannot confirm cleanup. Keep the fence active
+and use a separately reviewed repository-owned cleanup path for any residual
+resource before retrying or restoring the n8n replica. Only a success receipt
+with a readable manifest and both exact object versions qualifies. If a
+capture gate fails after confirmed cleanup, restore one n8n replica through a
+separate reviewed GitOps revision. The database and n8n PVC remain untouched by this capture.
+The reader Job itself has a one-hour deadline; a later retry requires a new
+run/attempt and fresh source UID inventory.
+
+Source-only validation:
+
+```sh
+nix develop --command python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+nix develop --command python3 -I scripts/ci/n8n-pvc-restore-check-test.py
+nix develop --command bash scripts/ci/n8n-maintenance-fence-check.sh
+```
+
 After the verified checkpoint, a separate reviewed revision removes the fence
 value file from `valueFiles`. Require Argo CD Synced/Healthy, one Ready n8n
 replica, database-aware readiness, continued denial of the unsigned Emergency

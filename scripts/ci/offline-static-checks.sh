@@ -1021,6 +1021,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/mastodon-public-dns.yml:static-policy' \
     '.github/workflows/mastodon-smtp-credential.yml:credential' \
     '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
+    '.github/workflows/n8n-paired-checkpoint.yml:checkpoint' \
+    '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
     '.github/workflows/nofx-images.yml:publish' \
     '.github/workflows/nofx-images.yml:published-digests' \
     '.github/workflows/nofx-images.yml:test-build' \
@@ -1108,6 +1110,7 @@ done <<'EOF'
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
+.github/workflows/n8n-paired-checkpoint.yml 1acaf99c54b730a4bd4fc21663ff4e5edc2107ad3b1322ecf8eb4f9fadc47a26
 .github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 3c5eab39c1cc573a42bbcfa1568bb4c7c7f84571b67a74927b91a5fc582c9025
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
@@ -1140,6 +1143,7 @@ for workflow_job in \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
   '.github/workflows/mastodon-public-dns.yml:static-policy' \
   '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
+  '.github/workflows/n8n-paired-checkpoint.yml:static-policy' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
