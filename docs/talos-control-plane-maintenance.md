@@ -501,6 +501,21 @@ bound to the dispatched SHA. A protected producer and review path for these
 receipts remains T023 work, so no operator should set `activationEnabled` or
 the canary node yet.
 
+`scripts/platform-direct-recovery-prerequisite.py` prepares only a private
+candidate for the `direct-recovery` receipt. Run it from an exact, clean
+current-`main` checkout on the LAN with an existing mode-`0600` Talos
+`os:admin` client that has at least 24 hours of certificate life. The helper
+requires a same-subnet source socket, then connects directly to each committed
+node address on port `50000` with mutual TLS and checks an observed server
+identity/version for that address. It retains only a bounded private failure
+category. The current GitHub-hosted Octelium tunnel cannot establish this LAN
+source path. This socket check supports operator review; it is not a
+cryptographic attestation of the physical network route. The helper issues no
+credential and no T023 receipt: the private candidate has `verified: false`.
+Its random publication ID is for a future
+immutable per-run key; a protected owner-attested ingestion path and direct
+recovery drill are still required before maintenance.
+
 The executor writes a `started` marker to the KMS-encrypted, versioned backup
 bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its
 exact version and checksum before each Talos node command or the Kubernetes
