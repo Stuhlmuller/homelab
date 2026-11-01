@@ -22,6 +22,7 @@ GUARDS = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(GUARDS)
 API = 'https://api.tailscale.com/api/v2'
 SERVICE = 'svc:homelab-private-ingress'
+SERVICE_DEFINITION_PATH = '/tailnet/-/vip-services/' + SERVICE
 SERVICE_PATH = '/tailnet/-/services/' + SERVICE
 TAG = 'tag:homelab-ingress-canary'
 TAILNET = 'tail67beb.ts.net'
@@ -298,12 +299,12 @@ def inspect(key):
     server = GUARDS.command(['kubectl', 'config', 'view', '--minify', '-o',
                              'jsonpath={.clusters[0].cluster.server}'], 'Kubernetes context').strip()
     require(server == 'https://10.1.0.199:6443', 'Authenticated homelab Kubernetes context required')
-    service_addrs = service_contract(api_json(SERVICE_PATH, key))
+    service_addrs = service_contract(api_json(SERVICE_DEFINITION_PATH, key))
     sts = GUARDS.read_json(['kubectl', '-n', 'traefik', 'get', 'statefulset',
                             'traefik-sidecar-canary', '-o', 'json'], 'canary StatefulSet')
     pod_list = GUARDS.read_json(['kubectl', '-n', 'traefik', 'get', 'pods', '-l',
-                                 'app.kubernetes.io/name=traefik-sidecar-canary,'
-                                 'app.kubernetes.io/instance=traefik-sidecar-canary',
+                                 ('app.kubernetes.io/name=traefik-sidecar-canary,' +
+                                  'app.kubernetes.io/instance=traefik-sidecar-canary'),
                                  '-o', 'json'], 'canary Pod list')
     pod = GUARDS.read_json(['kubectl', '-n', 'traefik', 'get', 'pod', POD, '-o', 'json'], 'canary Pod')
     require(isinstance(pod_list.get('items'), list) and len(pod_list['items']) == 1

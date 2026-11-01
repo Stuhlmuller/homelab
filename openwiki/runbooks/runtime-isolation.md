@@ -179,9 +179,9 @@ signed Tailnet Lock state, and raw TCP Serve to loopback 8443. Its preview
 fingerprint binds a later current-main approval to that observed identity.
 It rejects auto-approval and rechecks immediately before its sole host
 approval write; the staged policy and canary do not yet satisfy preflight.
-The first live preview must confirm the current Tailscale API's pending-host
-shape before execution. Traffic and wrong-host withdrawal probes remain
-required after API approval.
+The first live preview must confirm the `/vip-services` definition read and
+`/services` pending-host shape before execution. Traffic and wrong-host
+withdrawal probes remain required after API approval.
 The Service endpoint uses raw TCP 443 to the canary loopback listener. A
 selectorless headless Service and reviewed EndpointSlice would publish that
 TailVIP; DNS may still answer it while the host is offline, so a cached-A

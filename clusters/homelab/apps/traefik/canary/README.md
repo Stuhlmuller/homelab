@@ -89,10 +89,15 @@ policy grant, or Tailnet Lock signature.
 Approval alone does not prove service traffic. A reported Tailscale daemon
 cache issue can require a declared re-advertisement after approval; do not
 cut over DNS until an authorized client reaches the TailVIP and withdrawal
-and wrong-host probes fail. The current [Tailscale host-list API](https://tailscale.com/api#tag/services/GET/tailnet/%7Btailnet%7D/services/%7BserviceName%7D/devices)
+and wrong-host probes fail. The [official Go client](https://github.com/tailscale/tailscale-client-go-v2/blob/main/services.go)
+reads the Service definition at `/vip-services/{name}`, while the
+[published API operation](https://tailscale.com/api#tag/services/GET/tailnet/%7Btailnet%7D/services/%7BserviceName%7D)
+currently documents `/services/{name}`. This helper uses the client path. The
+[Tailscale host-list API](https://tailscale.com/api#tag/services/GET/tailnet/%7Btailnet%7D/services/%7BserviceName%7D/devices)
 uses `stableNodeID` and `not-approved`; its [approval API](https://tailscale.com/api#tag/services/POST/tailnet/%7Btailnet%7D/services/%7BserviceName%7D/device/%7BdeviceId%7D/approved)
-uses the singular `device` path. The first real preview must confirm those
-responses and the pending host before any execution. See the [approval refresh
+uses the singular `device` path. The first real preview must confirm the
+definition read, both host responses, and pending host before any execution.
+See the [approval refresh
 report](https://github.com/tailscale/tailscale/issues/18821).
 
 For rollback, first revert any later DNS/client grant through their reviewed

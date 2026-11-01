@@ -6,8 +6,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
-import unittest
-from unittest import mock
+from unittest import TestCase, main, mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -99,7 +98,7 @@ def node_fixtures():
     return status, lock, serve, device
 
 
-class PolicyBoundary(unittest.TestCase):
+class PolicyBoundary(TestCase):
     def test_scoped_test_client_only(self):
         wanted = policy()
         APPROVAL.policy_contract(wanted, copy.deepcopy(wanted))
@@ -122,7 +121,7 @@ class PolicyBoundary(unittest.TestCase):
             APPROVAL.policy_contract(wanted, {'grants': []})
 
 
-class IdentityBoundary(unittest.TestCase):
+class IdentityBoundary(TestCase):
     def test_exact_service_pod_node_and_pending_host(self):
         self.assertEqual(APPROVAL.service_contract({'name': APPROVAL.SERVICE,
                                                      'ports': ['tcp:443'], 'tags': [],
@@ -207,15 +206,16 @@ class IdentityBoundary(unittest.TestCase):
             {'hosts': [{**hosts['hosts'][0], 'approvalLevel': 'approved:manual'}]},
             {'approved': True, 'autoApproved': False}, 'n123FAKE'))
 
-    def test_inspect_uses_current_official_service_api_shape(self):
+    def test_inspect_uses_distinct_definition_and_host_api_paths(self):
         wanted = policy()
         sts, pod, state_uid = pod_fixtures()
         status, lock, serve, device = node_fixtures()
         approval_path = APPROVAL.SERVICE_PATH + '/device/n123FAKE/approved'
         responses = {
             '/tailnet/-/acl': wanted,
-            APPROVAL.SERVICE_PATH: {'name': APPROVAL.SERVICE, 'ports': ['tcp:443'],
-                                    'tags': [], 'addrs': ['100.100.101.102']},
+            '/tailnet/-/vip-services/' + APPROVAL.SERVICE: {
+                'name': APPROVAL.SERVICE, 'ports': ['tcp:443'],
+                'tags': [], 'addrs': ['100.100.101.102']},
             '/device/n123FAKE': device,
             APPROVAL.SERVICE_PATH + '/devices': {'hosts': [{
                 'stableNodeID': 'n123FAKE', 'approvalLevel': 'not-approved',
@@ -259,7 +259,7 @@ class IdentityBoundary(unittest.TestCase):
         self.assertEqual([call.args[0] for call in api.call_args_list], list(responses))
 
 
-class MutationBoundary(unittest.TestCase):
+class MutationBoundary(TestCase):
     def test_execute_rechecks_before_one_exact_post(self):
         pending = {'identity': (('100.100.101.102',), ('sts', 'pod', 'state', 'n123FAKE')),
                    'approved': False, 'path': '/tailnet/-/services/' + APPROVAL.SERVICE +
@@ -304,4 +304,4 @@ class MutationBoundary(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()
