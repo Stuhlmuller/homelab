@@ -47,11 +47,16 @@ the store process; historical WAL quarantine files are never replayed or
 removed automatically. Preserve them until a reviewed recovery-retention
 change establishes they are no longer needed.
 
-## Dormant resource-store capture stage
+## Resource-store capture fence
 
-The active app includes only the inspector Pod and its exact-label default-deny
-NetworkPolicy from `capture-stage/`. The `capture-stage` fence component
-remains excluded and the resource-store Deployment stays at one replica.
+The active app includes the inspector Pod, its exact-label default-deny
+NetworkPolicy, and the `capture-stage` component. The component's only patch
+sets `octeliumee-rscstore` to zero replicas; Argo CD stops the current writer
+when this revision syncs. Do not merge the fence until the inspector-only stage
+is Synced and its read-only mount and writer-continuity gates passed. Confirm a
+durable off-NAS capture destination, current PVC/PV identities, and owner access
+before accepting this outage. The writer was already `0/1` Ready on November 1;
+fencing still prevents further WAL replay attempts and is consequential.
 Verify the pinned Harbor mirror image pulls, the Pod schedules and reaches
 Ready, and both read-only mount fields are live.
 The liveness probe checks the mounted directory; readiness checks that
@@ -60,8 +65,7 @@ store's root behavior, but source PVC ownership and modes must be checked before
 activation. Retain root only if complete file access requires it; otherwise
 revise the inspector and capture guard to a proven nonroot UID. A successful
 readiness probe covers `store.db`; the full tar capture must still read every
-PVC entry. Only a later reviewed fence stage adds `capture-stage` as a
-Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas.
+PVC entry.
 The inspector mounts the exact `octelium-rscstore` claim read-only at the
 volume and container mount, has no API token, credentials, or writable image
 root, and is outside the resource-store Service selector. The image digest is
@@ -70,10 +74,10 @@ Harbor-backed workloads use it. The inspector's live pull remains an activation
 gate. The policy selects only the inspector and declares no network access;
 current Flannel does not enforce NetworkPolicy, so it is not a live isolation
 claim. `imagePullPolicy: Always` requires a Harbor registry check even if the
-image layers are cached. Do not merge this stage until the Application's
-Terragrunt-owned `ApplyOutOfSyncOnly=true` option is live and the existing
-writer Deployment is `Synced`. Argo otherwise reapplies that Deployment with
-its `Replace=true` option, risking another restart. The capture helper requires
+image layers are cached. The earlier inspector-only stage requires the
+Terragrunt-owned `ApplyOutOfSyncOnly=true` option and a `Synced` writer resource
+to avoid an unrelated `Replace=true` reapply. This fence intentionally applies
+the changed writer replica count. The capture helper requires
 the exact fence revision Synced in Argo CD and a complete namespaced PodList
 with no other PVC mount users. Removal and restart require a later reviewed
 change; this stage does
@@ -132,7 +136,7 @@ kubectl -n octelium logs pod/<WRITER_POD> -c rscstore --previous --tail=80 |
 kubectl -n octelium get deployment octeliumee-rscstore -w
 ```
 
-After sync, require the Application to be Synced at the exact merged `main`
+After the inspector-only sync, require the Application to be Synced at the exact merged `main`
 SHA. Its health was `Progressing` before this stage because of the writer
 failure; do not count an incidental health change as recovery or accept a new
 `Degraded` state. Require one inspector Pod Ready on the writer's node, a
@@ -152,13 +156,19 @@ kubectl -n octelium exec pod/octelium-rscstore-capture-inspector -c inspection -
   sh -c 'grep " /source " /proc/mounts'
 ```
 
-If pull, scheduling, mount, readiness, or writer continuity fails, revert the
-inspector-stage commit through a reviewed PR. The Application's automated
-prune removes the inspector and its policy after the rollback SHA syncs; verify
-they are absent and the retained PVC is still Bound. Do not add the fence
-component or run
-capture while this gate fails. The capture helper itself rejects this
-inspector-only Kustomization because its fence component is absent.
+If pull, scheduling, mount, readiness, or writer continuity fails in the
+inspector-only stage, revert it through a reviewed PR. Argo CD prunes the
+inspector and its policy after rollback; verify both are absent and the PVC is
+still Bound. Do not merge this fence or run capture while that gate fails.
+
+After the fence syncs, require the Application `Synced` at the exact merged
+`main` SHA, Deployment desired/observed replicas zero, no writer Pod or other
+PVC mount user, and the same Ready inspector and PVC/PV UIDs. The capture
+helper enforces these checks again. If the fence fails or the writer remains,
+stop without capturing or touching WAL files. If the writer is stopped but
+capture fails, preserve the zero-replica state and all PVC contents for a
+reviewed recovery decision. Resume one writer through a separate GitOps revert
+only after the backup and restart risks are explicitly reviewed.
 
 After activation, privately record the live PVC UID, bound PV name and UID,
 the exact merged `main` SHA, and the intended kubectl context. The capture

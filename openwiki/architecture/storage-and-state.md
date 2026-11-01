@@ -515,8 +515,11 @@ artifacts untouched and makes retries read-only; quarantined WALs are not
 deleted automatically. Recovery fails closed rather than overwrite a dated
 quarantine if its completion marker is missing.
 
-The November 1 resource-store capture stage activates only the read-only
-inspector and its exact-label default-deny NetworkPolicy from
+The resource-store capture source declares a read-only inspector, its
+exact-label default-deny NetworkPolicy, and a component that changes only
+`octeliumee-rscstore` to zero desired replicas. Fence merge requires the
+inspector's live read-only gate and an off-NAS capture destination. The
+inspector and policy are from
 `clusters/homelab/apps/octelium-enterprise/capture-stage/`. Flannel does not
 enforce that policy, so it is a source and static-check contract, not live
 network isolation.
@@ -525,19 +528,18 @@ At 18:52 UTC on November 1, the writer was already `0/1` Ready in
 inspector's pinned Harbor image, Ready state, and read-only PVC mount must be
 observed while writer Deployment/Pod and PVC identities remain unchanged.
 Autonomous restarts may continue at their existing cadence; do not require
-writer readiness or claim recovery. Only a separate GitOps fence reduces
-`octeliumee-rscstore` to zero replicas. The source-owned capture
-helper requires
-Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
+writer readiness or claim recovery. The source-owned capture helper requires
+Argo CD Synced at the exact fence revision, a settled zero-replica Deployment,
+bound PVC/PV UIDs, and a complete
 namespaced PodList without another claim mount, and stable whole-PVC tar hashes
 before and after transfer. It includes any current WAL, dated quarantines and
 recovery markers. `scripts/application-backup.py` then publishes both archive
 parts and the private capture receipt to the existing versioned application
 backup bucket; exact-version readback and isolated file extraction are required
 before recovery review. The proof command itself fetches fresh S3 versions;
-local receipt files alone do not qualify. This is a prepared path, not a
-deployed backup or a DuckDB reopen proof. No WAL file is changed or store
-writer resumed by this stage. See the [workload runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#dormant-resource-store-capture-stage).
+local receipt files alone do not qualify. This is a declared path, not a
+verified live fence, deployed backup, or DuckDB reopen proof. No WAL file is
+changed or store writer resumed by this stage. See the [workload runbook](../../clusters/homelab/apps/octelium-enterprise/README.md#resource-store-capture-fence).
 
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
