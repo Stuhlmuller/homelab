@@ -167,7 +167,87 @@ still has unqualified source-bound generated policies and broad egress findings.
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
-### Existing-node decision (2026-11-01)
+### Private ingress on the current worker (candidate, 2026-11-01)
+
+Traefik is currently Ready on `zimaboard-1`; its operator-managed
+`traefik-private` Tailscale proxy is a separate Pod on that node. A read-only
+November 1 snapshot found 6,612 MiB requested against 7,282 MiB allocatable
+and 6,189 MiB actual use. This is room for investigation, not a sidecar
+capacity receipt: remeasure limits, image-pull space, peak use, and rollout
+surge before changing placement.
+
+The smaller private-listener design is a [userspace Tailscale sidecar](https://tailscale.com/docs/solutions/connect-kubernetes-pods-to-tailnet-using-sidecar)
+in the same Traefik Pod. Bind only the private `web` and `websecure` entrypoints
+to `127.0.0.1:8000` and `127.0.0.1:8443`; configure [raw TCP Serve](https://tailscale.com/docs/reference/tailscale-cli/serve#use-a-tcp-forwarder)
+for tailnet ports 80 and 443 to those loopback ports. Traefik must still
+terminate HTTPS with its existing certificate. Keep the separate Funnel and
+registry listeners and their exact routes. A Pod-IP or ClusterIP caller cannot
+reach another Pod's loopback listener, so this boundary could survive a
+kube-router crash or cold start without relocating Traefik or draining
+`zimaboard-0`. It is a proposed architecture, not an enforced boundary yet.
+
+Stage it in reviewed source before cutting over:
+
+1. Stage a second one-replica Traefik controller on `zimaboard-1` with distinct
+   labels, route ConfigMap, and Tailscale sidecar. Prove no existing private,
+   Funnel, or registry Service selector matches the new Pod; keep the current
+   controller and operator LoadBalancer intact. Use a distinct tailnet hostname,
+   pinned images, bounded resources, durable per-Pod Tailscale state, narrow Secret
+   RBAC, and a repository-owned authentication contract. Gate deployment on
+   measured two-controller capacity. Keep Tailnet Lock enabled and extend the
+   fixed signer to verify and sign only that exact identity. Prove raw TCP,
+   original TLS certificate, HTTPS, native gRPC, ACLs, and both containers'
+   readiness on the test peer. A Tailscale health response proves an IP, not a
+   signed peer or the intended Serve configuration; check both explicitly.
+2. Prove denied direct private routes from ordinary Pods on the same and a
+   different node, from a host, and through Pod IP on ports 80, 8000, 443,
+   and 8443, ClusterIP on ports 80 and 443, and the sidecar's `100.64.0.0/10`
+   address. Repeat while Tailscale is absent, restarting, unsigned, or unable
+   to pull its image.
+   Repeat after Traefik replacement, Pod-IP reuse, and node reboot. Prove
+   allowed tailnet clients and the independent registry/Funnel paths. Set a
+   no-surge rollout or prove measured two-Pod capacity before the live switch.
+3. Replace the current DNS and internal-client contracts in source. The
+   [`tailnet-dns` resolver](../clusters/homelab/platform/tailnet-dns/README.md)
+   now publishes the `traefik-private` LoadBalancer status IP; its checker and
+   [signer](../scripts/tailscale-ingress-sign.py) assume an operator proxy.
+   A candidate is a selectorless headless Service with
+   [`k8s-gateway.dns/resolve-endpoints: "true"`](https://github.com/k8s-gateway/k8s_gateway#endpoint-resolution)
+   and one repo-owned, ready EndpointSlice containing the sidecar's persistent
+   tailnet IP. The pinned resolver can answer from ready endpoints, but a
+   static slice would leave stale DNS after identity loss. Keep the new
+   EndpointSlice unready until cutover. Add an owner that
+   binds the IP to the exact online, signed node key and withdraws readiness
+   when that identity is lost; prove DNS becomes unavailable rather than
+   answering a stale or reassigned IP. Validate this with the real pinned
+   resolver and checker before private DNS can move. The
+   [CoreDNS rewrites](../clusters/homelab/platform/dns/coredns-configmap.yaml)
+   for `harbor.stinkyboi.com` and `octelium-api.stinkyboi.com` currently target
+   that Service; preserve it until both reviewed internal replacements and
+   Harbor node pulls and native Octelium clients pass.
+4. Validate the new peer and DNS from a trusted tailnet client, then change
+   the declared private DNS path while the old controller still serves. Create
+   a separate internal Service for the accepted Harbor/API callers, then
+   retire the old operator LoadBalancer through GitOps after acceptance.
+   [Kubernetes does not permit changing a set `loadBalancerClass`](https://kubernetes.io/docs/concepts/services-networking/service/#specifying-class-of-load-balancer-implementation),
+   so do not try to convert that Service in place. Keep a reviewed rollback to
+   its previous Service and DNS declarations until the new path survives
+   restart and client acceptance.
+   Retire the 18 old Octelium/Istio app routes and broad app gateway only after
+   each caller passes on the new path. Preserve named native Octelium control
+   paths and separately reviewed callbacks. Require
+   `scripts/ci/legacy-ingress-retirement-check.py --retired` and negative
+   in-cluster bypass probes. The current [audit](../scripts/ci/legacy-ingress-retirement-check.py)
+   reports 54 legacy source entries.
+
+This route addresses the private Traefik listener only. It does not enforce
+general `NetworkPolicy`, narrow the generated broad egress rules, or prove
+existing app backends inaccessible through other Services. Do not claim the
+private-ingress finding closed until the sidecar, DNS, old-route retirement,
+and live negative probes all pass. The isolated worker route below remains
+the separate candidate for general `NetworkPolicy` qualification.
+
+### NetworkPolicy canary on an existing node (2026-11-01)
 
 No spare worker is available. A read-only snapshot found `zimaboard-2` using
 1,339 MiB against 1,308 MiB allocatable, before the staged 576 MiB

@@ -150,6 +150,35 @@ margin. `zimaboard-2` has four unrelated Pods, including single-replica
 requests after the enforcer and fixtures, without measured peak or continuity
 proof. T022 still has no admitted canary or storage placement.
 
+The [private-ingress candidate](../../docs/runtime-isolation.md#private-ingress-on-the-current-worker-candidate-2026-11-01)
+keeps Traefik on its current `zimaboard-1` worker and stages a second Traefik
+controller with a userspace Tailscale sidecar, leaving the old controller and
+LoadBalancer serving during tests. Its Pod must match no existing private,
+Funnel, or registry Service selector. Private HTTP/HTTPS listeners would bind
+only to Pod loopback, with raw TCP Serve exposing them to the tailnet while
+Traefik retains TLS termination. This could close the private listener when
+kube-router or the sidecar is absent, without clearing another worker. It is
+not deployed or proven. The current Tailscale operator uses a separate proxy;
+[`tailnet-dns`](../../clusters/homelab/platform/tailnet-dns/README.md) derives
+answers from its LoadBalancer status,
+[`tailscale-ingress-sign.py`](../../scripts/tailscale-ingress-sign.py) signs
+that fixed proxy, and
+[CoreDNS](../../clusters/homelab/platform/dns/coredns-configmap.yaml) sends
+Harbor and Octelium API names to its Service. A selectorless headless Service
+with a ready EndpointSlice may let the pinned resolver publish a sidecar
+tailnet IP, but it needs an identity-bound owner that withdraws readiness on
+peer loss; a static stale IP is unsafe. Preserve the old internal Service
+until the replacements work; `loadBalancerClass` cannot be changed in place,
+so create a distinct internal Service before retiring the old one. Prove
+these contracts, persistent sidecar
+identity, Tailnet Lock, same-node/remote-node
+Pod-IP HTTP/HTTPS and tailnet-IP negative probes, native clients, and
+[legacy-route retirement](../../scripts/ci/legacy-ingress-retirement-check.py)
+before cutover, while preserving named Octelium control paths. The 18 legacy
+app routes still have 54 source entries. The
+existing-node evacuation below remains a separate general `NetworkPolicy`
+canary candidate, not a prerequisite for the sidecar test.
+
 The November 1 existing-node recheck found `zimaboard-2` at 1,339 MiB used
 against 1,308 MiB allocatable before the 576 MiB enforcer/client limit budget
 and 128 MiB reserve. It cannot host the staged canary. `zimaboard-0` is only
@@ -160,7 +189,7 @@ including completed Jobs and ordinary Pods in system namespaces. Deluge,
 Radarr, Sonarr, and Bazarr config PVs are locally pinned.
 Its 1,430 MiB observed free memory leaves about 214 MiB after one enforcer,
 client, Traefik Pod, and reserve; the current Traefik surge exceeds that
-headroom. [The runbook](../../docs/runtime-isolation.md#existing-node-decision-2026-11-01)
+headroom. [The runbook](../../docs/runtime-isolation.md#networkpolicy-canary-on-an-existing-node-2026-11-01)
 records the conditional maintenance route: verify local-volume archives;
 pause Prometheus and four media apps through GitOps, including Bazarr's
 z0-pinned PostSync Jobs; make seven backup CronJobs discard successful Job
