@@ -234,6 +234,10 @@ and Sonarr keep active app config on retained local volumes pinned to
 QNAP `/media` export for downloads, movies, and TV library data. Read-only
 `showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
+Radarr and Sonarr prepare their media directories with wave `-1` Argo CD Sync
+hooks after the wave `-2` claims and network policies. Argo CD deletes each
+successful directory Job and Pod; the retained PV/PVC pairs preserve media data.
+
 Bazarr follows the media config pattern: retained local config/SQLite state on
 `zimaboard-0`, a separate retained NFS backup claim, and existing `media-tv` and
 `media-movies` claims mounted at `/tv` and `/movies`. Subtitle files are written
