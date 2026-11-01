@@ -54,9 +54,17 @@ def failures(application, cronjob, jobs, now):
             started = datetime.fromisoformat(job["status"]["startTime"].replace("Z", "+00:00"))
             pod = job["spec"]["template"]["spec"]
             claims = [v["persistentVolumeClaim"] for v in pod["volumes"] if "persistentVolumeClaim" in v]
+            containers = pod.get("containers", []) + pod.get("initContainers", [])
+            secret_environment = any(
+                any("secretRef" in source for source in container.get("envFrom", []))
+                or any("secretKeyRef" in variable.get("valueFrom", {}) for variable in container.get("env", []))
+                for container in containers)
             isolated = (pod.get("automountServiceAccountToken") is False
                         and claims == [{"claimName": "mastodon-backup", "readOnly": True}]
-                        and not any("secret" in v for v in pod["volumes"]))
+                        and all(set(volume) <= {"name", "persistentVolumeClaim", "configMap", "emptyDir"}
+                                for volume in pod["volumes"])
+                        and not any(pod.get(field) for field in ("hostNetwork", "hostPID", "hostIPC"))
+                        and not secret_environment)
             if (completed is not None and backup_time is not None
                     and backup_time <= started <= completed and isolated):
                 restored = True

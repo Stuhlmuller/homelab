@@ -93,7 +93,8 @@ class ReleaseCheckTest(unittest.TestCase):
         self.assertEqual(len(release.failures({}, cron, [BACKUP, RESTORE], NOW)), 3)
 
     def test_restore_before_backup_and_production_mounts_fail(self):
-        for change in ("early", "secret", "production-pvc", "writable-backup", "api-token"):
+        for change in ("early", "secret", "production-pvc", "writable-backup", "api-token",
+                       "secret-env", "secret-env-from", "projected-token", "host-path", "host-network"):
             restore = copy.deepcopy(RESTORE)
             pod = restore["spec"]["template"]["spec"]
             if change == "early":
@@ -104,6 +105,16 @@ class ReleaseCheckTest(unittest.TestCase):
                 pod["volumes"].append({"name": "db", "persistentVolumeClaim": {"claimName": "production"}})
             elif change == "writable-backup":
                 pod["volumes"][0]["persistentVolumeClaim"]["readOnly"] = False
+            elif change == "secret-env":
+                pod["containers"] = [{"env": [{"name": "PASSWORD", "valueFrom": {"secretKeyRef": {}}}]}]
+            elif change == "secret-env-from":
+                pod["initContainers"] = [{"envFrom": [{"secretRef": {"name": "production"}}]}]
+            elif change == "projected-token":
+                pod["volumes"].append({"name": "token", "projected": {"sources": [{"serviceAccountToken": {}}]}})
+            elif change == "host-path":
+                pod["volumes"].append({"name": "host", "hostPath": {"path": "/var"}})
+            elif change == "host-network":
+                pod["hostNetwork"] = True
             else:
                 pod["automountServiceAccountToken"] = True
             self.assertEqual(len(release.failures(APP, CRON, [BACKUP, restore], NOW)), 1)
