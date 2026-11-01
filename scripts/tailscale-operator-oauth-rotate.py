@@ -36,7 +36,9 @@ DESCRIPTION_PREFIX = 'homelab-k8s-operator-'
 def private_file(path, *, must_exist=True):
     """Reject symlinks and shared files before loading private material."""
     path = Path(path).expanduser().absolute()
-    if path.is_relative_to(ROOT):
+    # Resolve ancestors before the repo boundary check; the final path remains
+    # lexical so lstat can still reject a symlinked key or receipt itself.
+    if path.parent.resolve().is_relative_to(ROOT):
         raise RuntimeError('Private file must be outside the repository')
     if must_exist:
         info = path.lstat()
@@ -162,6 +164,13 @@ def ssm_state(profile):
     return state
 
 
+class RefuseRedirect(urllib.request.HTTPRedirectHandler):
+    """Never forward an API key or client secret to a redirected origin."""
+
+    def redirect_request(self, request, response, code, message, headers, url):
+        raise RuntimeError('Credentialed Tailscale API redirect refused')
+
+
 def api_request(path, *, method='GET', bearer=None, body=None, basic=None):
     headers = {'Accept': 'application/json'}
     if bearer is not None:
@@ -178,7 +187,10 @@ def api_request(path, *, method='GET', bearer=None, body=None, basic=None):
             data = urllib.parse.urlencode(body).encode()
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
     request = urllib.request.Request(f'{API}{path}', data=data, headers=headers, method=method)
-    with urllib.request.urlopen(request, timeout=20) as response:
+    # The default opener reads proxy environment variables and carries
+    # Authorization to redirect targets. Neither is safe for these credentials.
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), RefuseRedirect())
+    with opener.open(request, timeout=20) as response:
         return json.load(response)
 
 
@@ -265,7 +277,8 @@ def main(argv=None):
     parser.add_argument('action', choices=('preflight', 'rotate'))
     parser.add_argument('--api-key-file', type=Path, required=True)
     parser.add_argument('--receipt', type=Path, required=True)
-    parser.add_argument('--aws-profile', required=True)
+    parser.add_argument('--aws-profile', required=True,
+                        help='Existing SSM-authorized named AWS profile chosen by the operator')
     args = parser.parse_args(argv)
     try:
         if not re.fullmatch(r'[A-Za-z0-9_-]+', args.aws_profile):

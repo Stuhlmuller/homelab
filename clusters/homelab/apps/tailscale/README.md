@@ -24,8 +24,8 @@ current `main` checkout. The one-shot command follows the
 to mint a client with exactly `devices:core`, `auth_keys`, `services` and
 `tag:k8s-operator`. Its authority is a separately supplied Owner/Admin Tailscale
 API key in a regular 0600 file inside a 0700 directory outside the repository;
-the existing limited Terragrunt OAuth client cannot authorize this replacement. Supply a named AWS
-profile that can read and write the two declared SSM SecureStrings. Place the
+the existing limited Terragrunt OAuth client cannot authorize this replacement. Choose an
+existing named AWS profile authorized to read and write the two declared SSM SecureStrings. Place the
 private receipt in an existing 0700 directory outside the repository. Never
 pass a key value as an argument or paste it into a log.
 
@@ -33,11 +33,11 @@ pass a key value as an argument or paste it into a log.
 python3 scripts/tailscale-operator-oauth-rotate.py preflight \
   --api-key-file /private/path/tailscale-owner-api-key \
   --receipt /private/0700-directory/operator-oauth-receipt.json \
-  --aws-profile homelab
+  --aws-profile YOUR_SSM_AUTHORIZED_PROFILE
 python3 scripts/tailscale-operator-oauth-rotate.py rotate \
   --api-key-file /private/path/tailscale-owner-api-key \
   --receipt /private/0700-directory/operator-oauth-receipt.json \
-  --aws-profile homelab
+  --aws-profile YOUR_SSM_AUTHORIZED_PROFILE
 ```
 
 `preflight` only reads: it checks the current main revision, local Secret and

@@ -2,13 +2,16 @@
 """Offline checks for the operator OAuth one-shot boundary and retry path."""
 
 import contextlib
+from email.message import Message
 import importlib.util
-import io
+from io import BytesIO, StringIO
 import json
 from pathlib import Path
 import stat
 import subprocess
 import tempfile
+import urllib.request
+import urllib.response
 from unittest.mock import patch
 
 
@@ -27,6 +30,65 @@ def private_fixture(directory, name, value):
     path.write_text(value)
     path.chmod(0o600)
     return path
+
+
+def check_api_transport():
+    seen = []
+    redirect_target = 'https://redirect.invalid/leak'
+
+    class Transport(urllib.request.BaseHandler):
+        handler_order = 400  # Before urllib's real HTTP(S) handlers.
+
+        def https_open(self, request):
+            seen.append((request.full_url, request.get_header('Authorization'),
+                         request.has_proxy()))
+            headers = Message()
+            if request.full_url.endswith('/redirect'):
+                headers['Location'] = redirect_target
+                response = urllib.response.addinfourl(BytesIO(b''), headers,
+                                                      request.full_url, code=302)
+                response.msg = 'Found'
+            else:
+                response = urllib.response.addinfourl(BytesIO(b'{"keys": []}'), headers,
+                                                      request.full_url, code=200)
+                response.msg = 'OK'
+            return response
+
+        http_open = https_open
+
+    build_opener = urllib.request.build_opener
+
+    def in_process_opener(*handlers):
+        return build_opener(*handlers, Transport())
+
+    with patch.object(rotation.urllib.request, 'build_opener', side_effect=in_process_opener):
+        for kwargs, credential in (({'bearer': admin_key}, admin_key),
+                                   ({'method': 'POST', 'basic': (new_id, new_secret),
+                                     'body': {'grant_type': 'client_credentials'}}, new_secret)):
+            try:
+                rotation.api_request('/redirect', **kwargs)
+                raise AssertionError('Credentialed redirect accepted')
+            except RuntimeError as error:
+                assert 'redirect refused' in str(error)
+                assert credential not in str(error)
+        assert len(seen) == 2
+        assert all(url.startswith(rotation.API) for url, _, _ in seen)
+
+        # Proxy settings must not redirect either credential to another origin.
+        proxy_vars = {name: 'http://proxy.invalid:8000' for name in
+                      ('HTTP_PROXY', 'http_proxy', 'HTTPS_PROXY', 'https_proxy',
+                       'ALL_PROXY', 'all_proxy')}
+        proxy_vars.update(NO_PROXY='', no_proxy='')
+        with patch.dict(rotation.os.environ, proxy_vars):
+            assert rotation.api_request('/ok', bearer=admin_key) == {'keys': []}
+            assert rotation.api_request('/ok', method='POST', basic=(new_id, new_secret),
+                                        body={'grant_type': 'client_credentials'}) == {'keys': []}
+        assert seen[-2] == (rotation.API + '/ok', f'Bearer {admin_key}', False)
+        assert seen[-1] == (rotation.API + '/ok', 'Basic ' + rotation.base64.b64encode(
+            f'{new_id}:{new_secret}'.encode()).decode(), False)
+
+
+check_api_transport()
 
 
 with tempfile.TemporaryDirectory() as location:
@@ -55,6 +117,13 @@ with tempfile.TemporaryDirectory() as location:
         raise AssertionError('Symlink API key accepted')
     except RuntimeError:
         pass
+    (directory / 'repo-alias').symlink_to(rotation.ROOT)
+    try:
+        rotation.private_file(directory / 'repo-alias' / 'scripts' / 'receipt.json',
+                              must_exist=False)
+        raise AssertionError('Symlinked ancestor into repository accepted')
+    except RuntimeError as error:
+        assert 'outside the repository' in str(error)
 
     read_state = {name: {'Name': parameter, 'Type': 'SecureString', 'Version': 2,
                          'Value': old[name]} for name, parameter in rotation.PARAMETERS.items()}
@@ -83,7 +152,7 @@ with tempfile.TemporaryDirectory() as location:
             patch.object(rotation, 'receipt_path', return_value=receipt), \
             patch.object(rotation, 'preflight', return_value=('a' * 40, state, rotation.read_receipt(receipt))), \
             patch.object(rotation, 'api_request') as api, \
-            contextlib.redirect_stderr(io.StringIO()) as error:
+            contextlib.redirect_stderr(StringIO()) as error:
         assert rotation.main(['rotate', '--api-key-file', str(key_file), '--receipt', str(receipt),
                               '--aws-profile', 'homelab']) == 1
         assert not api.called
