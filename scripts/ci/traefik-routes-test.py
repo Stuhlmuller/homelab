@@ -73,7 +73,8 @@ class RouteTests(unittest.TestCase):
             self.assertEqual(ROUTERS[name]["tls"], {})
 
     def test_private_harbor_transport_keeps_tls_service_and_full_route(self):
-        private = read_yaml("clusters/homelab/apps/traefik/values.yaml")["service"]["private"]
+        values = read_yaml("clusters/homelab/apps/traefik/values.yaml")
+        private = values["service"]["private"]
         self.assertEqual(private["ports"]["https"], {"port": 443, "targetPort": 8443})
         self.assertEqual(ROUTERS["harbor"], {
             "entryPoints": ["websecure"],
@@ -81,6 +82,13 @@ class RouteTests(unittest.TestCase):
             "service": "harbor",
             "tls": {},
         })
+
+    def test_registry_ingress_keeps_an_independent_bootstrap_image(self):
+        values = read_yaml("clusters/homelab/apps/traefik/values.yaml")
+        self.assertEqual(values["service"]["registry"]["controller"], "traefik")
+        image = values["controllers"]["traefik"]["containers"]["app"]["image"]
+        self.assertEqual(image["repository"], "docker.io/library/traefik")
+        self.assertIn("@sha256:", image["tag"])
 
     def test_fleet_setup_has_no_router(self):
         rule = ROUTERS["fleet"]["rule"]

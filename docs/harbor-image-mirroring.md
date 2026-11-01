@@ -414,7 +414,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    then verify the owned `/etc/hosts` mapping. Keep strict mirrors unapplied
    until that route and its native pull check pass.
 
-5. Apply one node at a time, workers first and the sole control plane last:
+5. Apply one node at a time, workers first and the sole control plane last.
+   This step is blocked while Traefik serves the Harbor registry route and its
+   image host is redirected there by the strict mirror declaration. Establish
+   and verify an independent cold-bootstrap image path in a reviewed change
+   before executing it; the helper also requires the live Traefik Deployment
+   image and ready replicas to match that source. A pre-pulled cache does not
+   satisfy this gate.
 
    ```sh
    python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 \
@@ -674,6 +680,17 @@ bootstrap uses upstream image names without the steady-state mirror patch.
 Bring up networking, DNS, secret management, ingress, Harbor and its retained
 storage, restore or republish the catalog, verify complete authenticated Harbor pulls, then enable
 strict mirrors. Preserve upstream references and recovery material.
+
+Traefik serves the `traefik-registry` route used by node pulls from Harbor.
+Keep Traefik's digest-pinned image on a path that does not require that route.
+Pre-pulling a Harbor image only protects the current cache; an evicted image or
+new node would recreate the bootstrapping loop. On 2026-10-25, a Harbor-pinned
+Traefik rollout left the registry route with no ready endpoint and blocked
+other Harbor image pulls. Require an independent registry path before changing
+Traefik or Talos strict mirrors to depend on Harbor.
+Traefik also serves the GitHub App webhook for the required Policy Bot check.
+If it cannot start, that check cannot post on the recovery PR; preserve an
+independent reviewed callback recovery path.
 
 For an unavailable Harbor, the reviewed rollback patch restores direct upstream
 endpoints without requiring Harbor or a successful publication run:
