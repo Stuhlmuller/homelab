@@ -1164,20 +1164,31 @@ kubectl kustomize clusters/homelab/apps/octelium-enterprise
 python3 -I scripts/ci/openwiki-check.py
 ```
 
-Before any future fence, the inspector-only GitOps stage must be Synced and
-Healthy at the exact merged `main` SHA. Confirm its pinned Harbor image pulled,
-the inspector is Ready on the writer's node, both PVC mount fields and the
-runtime mount are read-only, and the writer Pod UID/restart count remain
-unchanged with one ready Deployment replica. On failure, revert the stage in
-Git and verify Argo CD prunes the inspector and its policy. Check source PVC
+Before any future fence, the inspector-only GitOps stage must be Synced at the
+exact merged `main` SHA. The writer was already `0/1` Ready and repeatedly
+failing WAL replay on November 1; Argo health may remain non-Healthy. Confirm
+the Terragrunt-owned `ApplyOutOfSyncOnly=true` option is live and the writer
+Deployment resource is `Synced` before merging this stage, so Argo does not
+reapply its `Replace=true` resource during the inspector sync. Confirm
+the pinned Harbor image pulled, the inspector is Ready on the writer's node,
+and both PVC mount fields and the runtime mount are read-only. Record ten-minute
+pre/post writer restart cadence and failure signatures. Require unchanged
+Deployment generation, one desired replica, writer Pod UID/node, and PVC UID/PV
+binding, with no new mount failure, eviction, OOM kill, node pressure, or extra
+writer Pod. Sample node use each minute: require at least 320 MiB below
+allocatable memory and two free Pod slots before inspector placement. Limit the
+post-sync ten-minute restart increment to no more than one above the pre-sync
+increment, with the same WAL replay failure class. Do not require an unchanged
+restart count or claim writer recovery. On regression, revert the stage in Git
+and verify Argo CD prunes the inspector and its policy. Check source PVC
 ownership and modes: retain the proposed inspector UID/GID 0 only if complete
 file access requires it; otherwise revise to a proven nonroot UID. Readiness
 checks `store.db` readability, while capture must read the whole PVC. The
 later fence stage must be Synced at the exact reviewed `main` SHA, with the
-Deployment at zero and no other Pod mounting the claim. The capture guard also requires explicit
-Talos credentials and reachable `acer`/three Zimaboards. It rejects an orphan
-writer still running on a disconnected node; a missing node inventory does not
-count as zero writers. Capture then requires private off-NAS
+Deployment at zero and no other Pod mounting the claim. The capture guard
+requires explicit Talos credentials and reachable `acer`/three Zimaboards. It
+rejects an orphan writer still running on a disconnected node; a missing node
+inventory does not count as zero writers. Capture also requires private off-NAS
 storage, exact PVC/PV UIDs, versioned S3 publication with exact-version
 readback, and isolated file extraction. The capture helper repeats the
 current-main and Argo fence checks before issuing its receipt; the proof

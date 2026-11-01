@@ -52,8 +52,8 @@ change establishes they are no longer needed.
 The active app includes only the inspector Pod and its exact-label default-deny
 NetworkPolicy from `capture-stage/`. The `capture-stage` fence component
 remains excluded and the resource-store Deployment stays at one replica.
-Verify the pinned Harbor mirror image pulls,
-the Pod schedules and reaches Ready, and both read-only mount fields are live.
+Verify the pinned Harbor mirror image pulls, the Pod schedules and reaches
+Ready, and both read-only mount fields are live.
 The liveness probe checks the mounted directory; readiness checks that
 `store.db` exists and is readable. The proposed UID/GID 0 matches the upstream
 store's root behavior, but source PVC ownership and modes must be checked before
@@ -63,19 +63,20 @@ readiness probe covers `store.db`; the full tar capture must still read every
 PVC entry. Only a later reviewed fence stage adds `capture-stage` as a
 Kustomize component; its patch sets only `octeliumee-rscstore` to zero replicas.
 The inspector mounts the exact `octelium-rscstore` claim read-only at the
-volume and container mount,
-has no API token, credentials, or writable image root, and is not selected by
-the resource-store Service. This image digest is declared in
-`clusters/homelab/platform/image-policy/images.json` and used by existing
-Harbor-backed workloads; the inspector's own live pull is still an activation
+volume and container mount, has no API token, credentials, or writable image
+root, and is outside the resource-store Service selector. The image digest is
+in `clusters/homelab/platform/image-policy/images.json`; existing
+Harbor-backed workloads use it. The inspector's live pull remains an activation
 gate. The policy selects only the inspector and declares no network access;
 current Flannel does not enforce NetworkPolicy, so it is not a live isolation
 claim. `imagePullPolicy: Always` requires a Harbor registry check even if the
-image layers are cached. Merging this inspector stage alone must not stop or
-restart the store. The capture helper requires the exact fence revision Synced
-in Argo CD and a complete namespaced PodList showing zero other PVC mount
-users. Removal and
-restart require a later reviewed change; this stage does
+image layers are cached. Do not merge this stage until the Application's
+Terragrunt-owned `ApplyOutOfSyncOnly=true` option is live and the existing
+writer Deployment is `Synced`. Argo otherwise reapplies that Deployment with
+its `Replace=true` option, risking another restart. The capture helper requires
+the exact fence revision Synced in Argo CD and a complete namespaced PodList
+with no other PVC mount users. Removal and restart require a later reviewed
+change; this stage does
 not quarantine the WAL, replay it, or resume the Deployment.
 
 The fenced Kustomization must retain both the inspector Pod and its exact-label
@@ -84,30 +85,66 @@ requires the live Application's single `spec.sources` entry and matching
 `status.sync.revisions` entry for this repository, path, and exact `main` SHA;
 it rejects a missing policy or ambiguous source/revision list.
 
-Before this stage syncs, privately record the writer Deployment and Pod output
-below. Repeat after sync; require the same writer Pod UID and restart count,
-one ready replica, and the same Deployment generation. Keep a read-only
-Deployment watch open through sync; its ready count must not drop. Stop if any
-check differs.
+The November 1 18:52 UTC read-only baseline had the existing writer at `0/1`
+Ready in `CrashLoopBackOff`, with 2,065 restarts and a WAL replay failure.
+The inspector stage does not repair or claim recovery of that writer. Before
+sync, privately record a fresh ten-minute baseline: Deployment UID, generation,
+desired and ready replicas; every writer Pod UID, node, restart count and last
+failure; PVC UID and bound PV; Application health; node memory and Pod-slot
+headroom; and Pod events. Sample node usage and writer restarts every minute
+for ten minutes before and after sync. At every sample, require at least
+320 MiB between allocatable memory and reported use (the inspector's 64 MiB
+limit plus a 256 MiB reserve), no pressure condition, and at least two free
+Pod slots before adding the inspector. Require exactly one node with the
+control-plane selector label, matching the writer's node. Require the same
+Deployment generation and one desired replica, writer Pod UID/node, PVC UID/PV
+binding, and failure signature. No extra writer Pod, new mount/attach failure,
+eviction, OOM kill, or node pressure is acceptable. The existing restart count
+may rise; its post-sync ten-minute increment must not exceed the pre-sync
+increment by more than one. Privately compare previous-container logs for the
+same WAL replay failure and reject a new failure class. Keep a read-only
+Deployment watch open through sync. Revert if the baseline is incomplete or
+the stage worsens it.
 
 ```sh
+set -o pipefail
+kubectl -n argocd get application octelium-enterprise -o json |
+  jq -r '[(.spec.syncPolicy.syncOptions // [] | index("ApplyOutOfSyncOnly=true") != null), ([.status.resources[] | select(.kind == "Deployment" and .name == "octeliumee-rscstore") | .status] | join(",")), .status.health.status] | @tsv'
 kubectl -n octelium get deployment octeliumee-rscstore -o json |
   jq -r '[.metadata.uid, .metadata.generation, .spec.replicas, (.status.readyReplicas // 0)] | @tsv'
 kubectl -n octelium get pod -l octelium.com/component=rscstore -o json |
-  jq -r '.items[] | [.metadata.uid, .spec.nodeName, .status.phase, ([.status.containerStatuses[]?.restartCount] | add // 0)] | @tsv'
+  jq -r '.items[] | [.metadata.uid, .spec.nodeName, .status.phase, (.status.containerStatuses[0].restartCount // 0), (.status.containerStatuses[0].state.waiting.reason // ""), (.status.containerStatuses[0].lastState.terminated.exitCode // "")] | @tsv'
+kubectl -n octelium get pvc octelium-rscstore -o json |
+  jq -r '[.metadata.uid, .status.phase, .spec.volumeName] | @tsv'
+kubectl get pv <PV_NAME_FROM_PVC> -o json |
+  jq -r '[.metadata.uid, .spec.claimRef.uid] | @tsv'
+kubectl get nodes -l octelium.com/node-mode-controlplane -o json |
+  jq -r '.items[] | [.metadata.uid, .metadata.name] | @tsv'
+kubectl get node zimaboard-1 -o json |
+  jq -r '[.metadata.uid, .status.allocatable.pods, .status.allocatable.memory, ([.status.conditions[] | select(.type == "MemoryPressure" or .type == "DiskPressure" or .type == "PIDPressure") | .type + "=" + .status] | join(","))] | @tsv'
+kubectl get pods -A --field-selector spec.nodeName=zimaboard-1 -o json |
+  jq '[.items[] | select(.status.phase != "Succeeded" and .status.phase != "Failed")] | length'
+kubectl top node zimaboard-1
+kubectl -n octelium get events --field-selector involvedObject.name=<WRITER_POD> -o json |
+  jq '[.items[] | {reason, type}]'
+kubectl -n octelium logs pod/<WRITER_POD> -c rscstore --previous --tail=80 |
+  rg -qi 'Failure while replaying WAL file'
 kubectl -n octelium get deployment octeliumee-rscstore -w
 ```
 
-After sync, require the Application to be Synced and Healthy at the exact
-merged `main` SHA, one inspector Pod Ready on the writer's node, a nonempty
-image ID for the pinned Harbor reference, and `Pulling`/`Pulled` events for
+After sync, require the Application to be Synced at the exact merged `main`
+SHA. Its health was `Progressing` before this stage because of the writer
+failure; do not count an incidental health change as recovery or accept a new
+`Degraded` state. Require one inspector Pod Ready on the writer's node, a
+nonempty image ID for the pinned Harbor reference, and `Pulling`/`Pulled` events for
 that reference. Both Pod mount fields must be `true`, the claim must be
 `octelium-rscstore`, and `/proc/mounts` must report `ro` for `/source`.
 Readiness proves access to `store.db`, not readability of every PVC entry.
 
 ```sh
+set -o pipefail
 kubectl -n argocd get application octelium-enterprise -o json |
-  jq -r '[.status.sync.revision, .status.sync.status, .status.health.status] | @tsv'
+  jq -r '[.spec.sources[0].repoURL, .spec.sources[0].path, .spec.sources[0].targetRevision, .status.sync.revisions[0], .status.sync.status, .status.health.status] | @tsv'
 kubectl -n octelium get pod octelium-rscstore-capture-inspector -o json |
   jq -r '[.metadata.uid, .spec.nodeName, .status.phase, (.status.containerStatuses[0].ready // false), .spec.containers[0].image, (.status.containerStatuses[0].imageID // ""), .spec.containers[0].volumeMounts[0].readOnly, .spec.volumes[0].persistentVolumeClaim.readOnly, .spec.volumes[0].persistentVolumeClaim.claimName] | @tsv'
 kubectl -n octelium describe pod octelium-rscstore-capture-inspector

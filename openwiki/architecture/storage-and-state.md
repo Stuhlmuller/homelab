@@ -520,9 +520,13 @@ inspector and its exact-label default-deny NetworkPolicy from
 `clusters/homelab/apps/octelium-enterprise/capture-stage/`. Flannel does not
 enforce that policy, so it is a source and static-check contract, not live
 network isolation.
-Its pinned Harbor image, Ready state, read-only PVC mount, and unchanged writer
-Pod UID and restart count must be observed before a separate GitOps fence
-reduces only `octeliumee-rscstore` to zero replicas. The source-owned capture
+At 18:52 UTC on November 1, the writer was already `0/1` Ready in
+`CrashLoopBackOff` after 2,065 restarts, with a WAL replay failure. The
+inspector's pinned Harbor image, Ready state, and read-only PVC mount must be
+observed while writer Deployment/Pod and PVC identities remain unchanged.
+Autonomous restarts may continue at their existing cadence; do not require
+writer readiness or claim recovery. Only a separate GitOps fence reduces
+`octeliumee-rscstore` to zero replicas. The source-owned capture
 helper requires
 Argo CD Synced at the exact main revision, bound PVC/PV UIDs, a complete
 namespaced PodList without another claim mount, and stable whole-PVC tar hashes
