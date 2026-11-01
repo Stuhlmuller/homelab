@@ -52,6 +52,7 @@ python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/langfuse-postgres-checkpoint-test.py
 python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
 python3 -I scripts/ci/n8n-pvc-restore-check-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py

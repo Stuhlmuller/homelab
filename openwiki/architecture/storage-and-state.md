@@ -551,8 +551,11 @@ only after those gates pass. Its protected script binds four PVC/PV UIDs,
 reconciles run-named resources by owner token and UID even if create loses its
 response, and requires foreground Job deletion plus confirmed reader-Pod
 absence before policy removal or a success receipt.
-An API outage that leaves either resource keeps the fence in place until a
-separately reviewed cleanup path removes it. The script
+An API outage that leaves either resource keeps the fence in place until the
+[run-bound cleanup helper](../../scripts/n8n-paired-residual-cleanup.sh)
+verifies current main, the fence, observed resource UIDs and owner/spec, then
+removes the Job and its Pods before the deny-all policy. A mismatch leaves the
+fence and policy in place. The checkpoint script
 uploads the PostgreSQL dump and PVC tar as exact versioned SSE-KMS objects,
 downloads and restores both in disposable runner storage, then publishes a
 checksum-bound manifest. This is source preparation, not a completed backup;

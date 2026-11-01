@@ -232,9 +232,34 @@ gh workflow run n8n-paired-checkpoint.yml -R Stuhlmuller/homelab --ref main \
 
 Keep the success receipt with the migration record. A failed run may leave
 individual unverified objects in its private prefix, or a run-named reader
-Job/policy if the Kubernetes API cannot confirm cleanup. Keep the fence active
-and use a separately reviewed repository-owned cleanup path for any residual
-resource before retrying or restoring the n8n replica. Only a success receipt
+Job/policy if the Kubernetes API cannot confirm cleanup. Keep the fence active.
+From a clean checkout at current `main`, inventory only that run's resource
+identity; an absent object has no UID:
+
+```sh
+name="n8n-checkpoint-reader-<run-id>-<attempt>"
+for kind in job networkpolicy; do
+  kubectl -n automation get "$kind" "$name" -o json --ignore-not-found |
+    jq -r '[.metadata.uid, .metadata.labels["homelab.stuhlmuller.dev/checkpoint-owner"]] | @tsv'
+done
+```
+
+After separately reviewing the UIDs and matching owner label, use the
+[repository cleanup helper](../../../../scripts/n8n-paired-residual-cleanup.sh):
+
+```sh
+nix develop --command bash scripts/n8n-paired-residual-cleanup.sh \
+  '<exact-current-main-sha>' '<run-id>' '<attempt>' \
+  '<observed-job-uid-or-absent>' '<observed-policy-uid-or-absent>' '<owner-label>'
+```
+
+It rechecks the fence and resource specs, deletes only that run's Job with
+foreground Pod cleanup, confirms no reader Pod remains, then removes the
+deny-all policy. Matching objects already deleting are waited to absence with
+bounded timeouts; a deleting policy requires no reader Pod. A mismatch or API
+error leaves the fence in place and never requests policy deletion before Pod
+absence.
+Do not run raw `kubectl delete` commands. Only a success receipt
 with a readable manifest and both exact object versions qualifies. If a
 capture gate fails after confirmed cleanup, restore one n8n replica through a
 separate reviewed GitOps revision. The database and n8n PVC remain untouched by this capture.
@@ -245,6 +270,7 @@ Source-only validation:
 
 ```sh
 nix develop --command python3 -I scripts/ci/n8n-paired-checkpoint-test.py
+nix develop --command python3 -I scripts/ci/n8n-paired-residual-cleanup-test.py
 nix develop --command python3 -I scripts/ci/n8n-pvc-restore-check-test.py
 nix develop --command bash scripts/ci/n8n-maintenance-fence-check.sh
 ```

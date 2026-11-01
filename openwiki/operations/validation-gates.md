@@ -1062,6 +1062,10 @@ reader Pods that keep the deny-all policy, cleanup failure without a success
 receipt, and restore checks under the `n8n` database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
+`n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
+path: stale main or fence, foreign UID/owner/spec, failed Job deletion, and a
+remaining reader Pod must prevent deny-all policy removal. It does not run
+against the cluster during source validation.
 Only a live success receipt binding both exact S3 object versions and an
 isolated restore qualifies for migration activation.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
