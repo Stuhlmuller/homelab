@@ -353,16 +353,15 @@ talosctl machineconfig patch .talos/worker.yaml \
 
 ## Safety Gates
 
-Before changing live node state, run the repository checks that are available in
-this checkout:
+Before changing live node state, run the repository validation:
 
 ```sh
-nix flake check
+nix run .#validate
 ```
 
-This flake currently provides the operator development shell and flake
-evaluation check; it does not define a `validate` app. Pair the repository check
-with the nearest validation for the files being changed:
+This generates the Terragrunt stack, checks HCL formatting and validity, runs
+static checks, and applies Conftest policies. Pair it with the relevant
+change-specific validation:
 
 - Talos machine config: `talosctl validate --mode metal --strict`.
 - Kubernetes or Argo CD desired state: `kubectl kustomize`, `kubectl diff`, or a
