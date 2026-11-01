@@ -60,11 +60,15 @@ if name == "git":
     print(sha)
 elif name == "gh":
     print("f" * 40 if mode == "main-advanced" else sha)
+    if mode == "main-read-partial-error":
+        raise SystemExit(1)
 elif name == "rg":
     if any("targetRevision" in a for a in args):
         print('        targetRevision = "4.4.0"\n        targetRevision = local.shared.target_revision\n        targetRevision = local.shared.target_revision')
     elif any("valueFiles" in a for a in args):
         print('          valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml", "$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml"]')
+    elif mode == "source-rg-error" and "checkpoint-reader.job.yaml" in args:
+        raise SystemExit(2)
     else:
         raise SystemExit(1)
 elif name == "yq":
@@ -87,8 +91,12 @@ elif name == "aws":
         print("Enabled")
     elif "get-bucket-encryption" in args:
         print("aws:kms")
+        if mode == "encryption-read-partial-error":
+            raise SystemExit(1)
     elif "list-object-versions" in args:
         print(json.dumps({"Versions": [], "DeleteMarkers": []}))
+        if mode == "s3-list-partial-error":
+            raise SystemExit(1)
     elif "put-object" in args:
         key = args[args.index("--key") + 1]
         source = Path(args[args.index("--body") + 1])
@@ -109,11 +117,16 @@ elif name == "aws":
         if "get-object" in args:
             Path(args[-1]).write_bytes(body)
         print(json.dumps(metadata))
+        if (mode == "s3-head-partial-error" and "head-object" in args) or \
+           (mode == "s3-get-partial-error" and "get-object" in args):
+            raise SystemExit(1)
     else:
         raise SystemExit("unexpected aws command " + repr(args))
 elif name == "kubectl":
     if args[:2] == ["auth", "can-i"]:
         print("no" if mode == "deny-job-create" and args[2:4] == ["create", "jobs"] else "yes")
+        if mode == "auth-partial-error" and args[2:4] == ["create", "jobs"]:
+            raise SystemExit(1)
     elif "application" in args and "get" in args:
         print(json.dumps({"status": {"sync": {"status": "OutOfSync" if mode == "fence-unsynced" else "Synced", "revisions": ["4.4.0", sha, sha]},
             "health": {"status": "Healthy"}}}))
@@ -159,11 +172,23 @@ elif name == "kubectl":
                 "persistentVolumeReclaimPolicy": "Retain", "nfs": {"server": "10.1.0.2",
                     "path": "/homelab/automation-" + claim + "-pvc-" + uid},
                 "claimRef": {"namespace": "automation", "name": claim, "uid": uid}}}))
+        if mode == "pv-binding-partial-error" and uid == u:
+            calls = root / "n8n-pv-calls"
+            count = int(calls.read_text()) + 1 if calls.exists() else 1
+            calls.write_text(str(count))
+            if count == 2:
+                raise SystemExit(1)
     elif "statefulset" in args and "get" in args:
         print(json.dumps({"metadata": {"uid": st_u, "generation": 1},
             "spec": {"replicas": 1, "template": {"spec": {"containers":
                 [{"name": "postgres", "image": image}]}}, "volumeClaimTemplates": [{"metadata": {"name": "data"}}]},
             "status": {"readyReplicas": 1, "updatedReplicas": 1, "observedGeneration": 1}}))
+        if mode == "pg-state-partial-error":
+            calls = root / "statefulset-calls"
+            count = int(calls.read_text()) + 1 if calls.exists() else 1
+            calls.write_text(str(count))
+            if count == 2:
+                raise SystemExit(1)
     elif "pods" in args and "get" in args:
         assert args[args.index("-l") + 1].startswith("homelab.stuhlmuller.dev/checkpoint-owner=")
         assert "--chunk-size=0" in args
@@ -224,6 +249,8 @@ elif name == "kubectl":
     elif "exec" in args:
         if "psql" in args:
             print("12345" if "pg_database_size" in args[-1] else "1")
+            if mode == "pg-liveness-partial-error" and args[-1] == "SELECT 1":
+                raise SystemExit(1)
         elif "pg_dump" in args:
             sys.stdout.buffer.write(b"PGDMPtest-fixture")
         elif "tar" in args:
@@ -254,6 +281,11 @@ elif name == "docker":
         raise SystemExit("unexpected docker command " + repr(args))
 elif name == "sleep":
     pass
+elif name == "sha256sum":
+    source = Path(args[0])
+    print(hashlib.sha256(source.read_bytes()).hexdigest() + "  " + str(source))
+    if mode == "checksum-partial-error" and source.name == "retrieved.dump":
+        raise SystemExit(1)
 else:
     raise SystemExit("unknown mock binary")
 '''
@@ -263,7 +295,7 @@ class CheckpointBoundaryTests(unittest.TestCase):
     def run_case(self, mode="deployment-active", **overrides):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
-            for name in ("git", "gh", "rg", "aws", "kubectl", "yq", "docker", "timeout", "sleep"):
+            for name in ("git", "gh", "rg", "aws", "kubectl", "yq", "docker", "timeout", "sleep", "sha256sum"):
                 fake = path / name
                 fake.write_text(MOCK)
                 fake.chmod(0o755)
@@ -293,7 +325,11 @@ class CheckpointBoundaryTests(unittest.TestCase):
             if mode in ("good", "policy-create-timeout", "job-create-timeout",
                         "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck",
                         "pg-dump-timeout", "pvc-tar-timeout", "job-delete-timeout",
-                        "reader-pod-lingers", "job-absent-reader-lingers"):
+                        "reader-pod-lingers", "job-absent-reader-lingers",
+                        "pg-liveness-partial-error", "pg-state-partial-error",
+                        "pv-binding-partial-error", "checksum-partial-error",
+                        "s3-list-partial-error", "s3-head-partial-error",
+                        "s3-get-partial-error"):
                 env["EXPECTED_PG_PVC_UID"] = "2" * 8 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 12
                 env["EXPECTED_N8N_PV_UID"] = "3" * 8 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 12
                 env["EXPECTED_PG_PV_UID"] = "4" * 8 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 12
@@ -328,6 +364,21 @@ class CheckpointBoundaryTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual([name for name, _ in commands], ["git", "gh"])
 
+    def test_expected_preflight_output_with_failed_command_stops(self):
+        for mode in ("main-read-partial-error", "encryption-read-partial-error",
+                     "auth-partial-error"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assert_no_mutation(commands)
+
+    def test_failed_negative_source_search_stops_before_kubernetes(self):
+        result, commands, receipt = self.run_case("source-rg-error")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assert_no_mutation(commands)
+
     def test_missing_job_create_right_stops_before_kubernetes_mutation(self):
         result, commands, _ = self.run_case("deny-job-create")
         self.assertNotEqual(result.returncode, 0)
@@ -361,6 +412,25 @@ class CheckpointBoundaryTests(unittest.TestCase):
                             "SELECT 1 FROM public.workflow_entity LIMIT 0" in args and
                             args[args.index("-U") + 1] == "n8n" for name, args in commands))
         self.assertTrue(any(name == "kubectl" and "delete" in args for name, args in commands))
+
+    def test_source_check_output_with_failed_command_blocks_publication(self):
+        for mode in ("pg-liveness-partial-error", "pg-state-partial-error",
+                     "pv-binding-partial-error"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
+
+    def test_s3_success_output_with_failed_command_blocks_receipt(self):
+        for mode in ("s3-list-partial-error", "s3-head-partial-error",
+                     "s3-get-partial-error", "checksum-partial-error"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                puts = [args for name, args in commands if name == "aws" and "put-object" in args]
+                self.assertEqual(len(puts), 0 if mode == "s3-list-partial-error" else 1)
 
     def test_committed_create_with_lost_response_reconciles_and_cleans(self):
         for mode in ("policy-create-timeout", "job-create-timeout"):

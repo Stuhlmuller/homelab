@@ -9,8 +9,14 @@ uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
    "${EXPECTED_N8N_PV_UID:-}" =~ $uuid && "${EXPECTED_PG_PVC_UID:-}" =~ $uuid &&
    "${EXPECTED_PG_PV_UID:-}" =~ $uuid && "${GITHUB_RUN_ID:-}" =~ ^[1-9][0-9]*$ &&
    "${GITHUB_RUN_ATTEMPT:-}" =~ ^[1-9][0-9]*$ ]] || exit 2
-[[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" &&
-   "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" == "$GITHUB_SHA" ]] || exit 1
+checked_equal() {
+  local expected="$1" actual
+  shift
+  actual="$("$@")" || return 1
+  [[ "$actual" == "$expected" ]]
+}
+checked_equal "$GITHUB_SHA" git rev-parse HEAD || exit 1
+checked_equal "$GITHUB_SHA" gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha || exit 1
 
 kubectl_bin="$(command -v kubectl)"
 [[ -x "$kubectl_bin" ]] || exit 1
@@ -30,19 +36,22 @@ active_value_files="$(rg -N '^[[:space:]]*valueFiles[[:space:]]*=' "$stack" |
   sed -E 's/^[[:space:]]*//; s/[[:space:]]*=[[:space:]]*/ = /')"
 # shellcheck disable=SC2016 # Helm's literal $values reference is expected here.
 [[ "$active_value_files" == 'valueFiles = ["$values/clusters/homelab/apps/n8n/values.yaml", "$values/clusters/homelab/apps/n8n/maintenance-fence.values.yaml"]' ]]
-if rg -Fq 'migration-v1.values.yaml' "$stack" ||
-   rg -Fq 'migration-github-trigger-v1.values.yaml' "$stack" ||
-   rg -Fq 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml ||
-   rg -Fq 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml; then
-  exit 1
-fi
+literal_absent() {
+  local status=0
+  rg -Fq "$1" "$2" || status=$?
+  [[ "$status" -eq 1 ]]
+}
+literal_absent 'migration-v1.values.yaml' "$stack" || exit 1
+literal_absent 'migration-github-trigger-v1.values.yaml' "$stack" || exit 1
+literal_absent 'checkpoint-reader.job.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
+literal_absent 'checkpoint-reader.networkpolicy.yaml' clusters/homelab/apps/n8n/kustomization.yaml || exit 1
 
 bucket="$(sed -nE 's/^[[:space:]]*bucket[[:space:]]*=[[:space:]]*"([a-z0-9-]+)"[[:space:]]*$/\1/p' IaC/application-backup-storage.hcl)"
 [[ "$bucket" =~ ^homelab-application-backups-([0-9]{12})-us-east-1$ ]] || exit 1
 account="${BASH_REMATCH[1]}"
-[[ "$(aws --region us-east-1 sts get-caller-identity --query Account --output text)" == "$account" ]] || exit 1
-[[ "$(aws --region us-east-1 s3api get-bucket-versioning --bucket "$bucket" --expected-bucket-owner "$account" --query Status --output text)" == Enabled ]] || exit 1
-[[ "$(aws --region us-east-1 s3api get-bucket-encryption --bucket "$bucket" --expected-bucket-owner "$account" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == aws:kms ]] || exit 1
+checked_equal "$account" aws --region us-east-1 sts get-caller-identity --query Account --output text || exit 1
+checked_equal Enabled aws --region us-east-1 s3api get-bucket-versioning --bucket "$bucket" --expected-bucket-owner "$account" --query Status --output text || exit 1
+checked_equal aws:kms aws --region us-east-1 s3api get-bucket-encryption --bucket "$bucket" --expected-bucket-owner "$account" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text || exit 1
 
 for access in \
   'get applications -n argocd' \
@@ -62,7 +71,7 @@ for access in \
   'get persistentvolumes' \
   'create pods/exec -n automation'; do
   read -r -a args <<<"$access"
-  [[ "$(kubectl auth can-i "${args[@]}")" == yes ]] || exit 1
+  checked_equal yes kubectl auth can-i "${args[@]}" || exit 1
 done
 
 pg_image="$(yq -r 'select(.kind == "StatefulSet" and .metadata.name == "n8n-postgres") | .spec.template.spec.containers[] | select(.name == "postgres") | .image' clusters/homelab/apps/n8n-postgres/statefulset.yaml)"
@@ -104,7 +113,7 @@ binding() {
       select(.kind == "PersistentVolumeClaim" and .metadata.namespace == "automation" and
         .metadata.name == $name and .metadata.deletionTimestamp == null and
         .status.phase == "Bound" and .spec.storageClassName == "nfs-default" and
-        .spec.accessModes == ["ReadWriteOnce"]) | [.metadata.uid, .spec.volumeName] | @tsv')"
+        .spec.accessModes == ["ReadWriteOnce"]) | [.metadata.uid, .spec.volumeName] | @tsv')" || return 1
   IFS=$'\t' read -r claim_uid pv_name <<<"$record"
   [[ "$claim_uid" == "$expected_claim_uid" && "$pv_name" == "pvc-$claim_uid" ]] || return 1
   pv_uid="$(kubectl get pv "$pv_name" -o json |
@@ -116,7 +125,7 @@ binding() {
         .spec.nfs.server == "10.1.0.2" and
         .spec.nfs.path == ("/homelab/automation-" + $claim + "-pvc-" + $claim_uid) and
         .spec.claimRef.namespace == "automation" and .spec.claimRef.name == $claim and
-        .spec.claimRef.uid == $claim_uid) | .metadata.uid')"
+        .spec.claimRef.uid == $claim_uid) | .metadata.uid')" || return 1
   [[ "$pv_uid" == "$expected_pv_uid" ]] || return 1
   printf '%s\t%s\t%s\n' "$claim_uid" "$pv_name" "$pv_uid"
 }
@@ -130,7 +139,7 @@ pg_state() {
         .status.observedGeneration == .metadata.generation and
         ([.spec.template.spec.containers[] | select(.name == "postgres" and .image == $image)] | length) == 1 and
         ([.spec.volumeClaimTemplates[] | select(.metadata.name == "data")] | length) == 1) |
-      .metadata.uid')"
+      .metadata.uid')" || return 1
   [[ "$stateful_uid" =~ $uuid ]] || return 1
   kubectl -n automation get pod n8n-postgres-0 -o json |
     jq -er --arg owner "$stateful_uid" --arg image "$pg_image" '
@@ -168,7 +177,7 @@ owned_job_uid() {
 
 reader_state() {
   local job_uid
-  job_uid="$(owned_job_uid)"
+  job_uid="$(owned_job_uid)" || return 1
   [[ "$job_uid" =~ $uuid ]] || return 1
   kubectl get --raw "/api/v1/namespaces/automation/pods?labelSelector=batch.kubernetes.io%2Fjob-name%3D${resource_name}" |
     jq -er --arg owner "$job_uid" --arg name "$resource_name" --arg token "$owner_token" --arg image "$reader_image" '
@@ -266,7 +275,8 @@ check_fence
 n8n_binding="$(binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID")"
 pg_binding="$(binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID")"
 pg_record="$(pg_state)"
-[[ "$(kubectl -n automation exec n8n-postgres-0 -c postgres -- psql -XAt -w -U postgres -d n8n -c 'SELECT 1')" == 1 ]] || exit 1
+checked_equal 1 kubectl -n automation exec n8n-postgres-0 -c postgres -- \
+  psql -XAt -w -U postgres -d n8n -c 'SELECT 1' || exit 1
 database_bytes="$(kubectl -n automation exec n8n-postgres-0 -c postgres -- psql -XAt -w -U postgres -d n8n -c 'SELECT pg_database_size(current_database())')"
 [[ "$database_bytes" =~ ^[1-9][0-9]*$ && "$database_bytes" -lt 1073741824 ]] || exit 1
 
@@ -301,9 +311,10 @@ timeout --signal=TERM --kill-after=30s 15m \
 timeout --signal=TERM --kill-after=30s 15m \
   "$kubectl_bin" -n automation exec "$reader_pod" -c reader -- \
     tar -C /source -cf - . >"$work/n8n.tar"
-[[ "$(pg_state)" == "$pg_record" && "$(reader_state)" == "$reader_record" &&
-   "$(binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID")" == "$n8n_binding" &&
-   "$(binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID")" == "$pg_binding" ]] || exit 1
+checked_equal "$pg_record" pg_state || exit 1
+checked_equal "$reader_record" reader_state || exit 1
+checked_equal "$n8n_binding" binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID" || exit 1
+checked_equal "$pg_binding" binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID" || exit 1
 check_fence "$reader_uid"
 
 cleanup_resources
@@ -321,30 +332,31 @@ config_sha="$(jq -er '.config_sha256 | select(test("^[0-9a-f]{64}$"))' "$work/pv
 
 prefix="n8n/paired/${GITHUB_SHA}/${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
 publish() {
-  local source="$1" key="$2" target="$3" bytes checksum digest put version head
-  bytes="$(wc -c <"$source" | tr -d '[:space:]')"
-  checksum="$(openssl dgst -sha256 -binary "$source" | openssl base64 -A)"
-  digest="$(sha256sum "$source" | cut -d' ' -f1)"
+  local source="$1" key="$2" target="$3" bytes checksum digest put version head readback_sha
+  bytes="$(wc -c <"$source" | tr -d '[:space:]')" || return 1
+  checksum="$(openssl dgst -sha256 -binary "$source" | openssl base64 -A)" || return 1
+  digest="$(sha256sum "$source" | cut -d' ' -f1)" || return 1
   aws --region us-east-1 s3api list-object-versions --bucket "$bucket" \
     --expected-bucket-owner "$account" --prefix "$key" --output json |
-    jq -e --arg key "$key" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null
+    jq -e --arg key "$key" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null || return 1
   put="$(aws --region us-east-1 s3api put-object --bucket "$bucket" --key "$key" \
     --expected-bucket-owner "$account" --body "$source" \
     --server-side-encryption aws:kms --if-none-match '*' \
-    --checksum-algorithm SHA256 --checksum-sha256 "$checksum")"
-  version="$(jq -er '.VersionId | select(type == "string" and . != "" and . != "null")' <<<"$put")"
+    --checksum-algorithm SHA256 --checksum-sha256 "$checksum")" || return 1
+  version="$(jq -er '.VersionId | select(type == "string" and . != "" and . != "null")' <<<"$put")" || return 1
   head="$(aws --region us-east-1 s3api head-object --bucket "$bucket" --key "$key" \
-    --expected-bucket-owner "$account" --version-id "$version" --checksum-mode ENABLED)"
+    --expected-bucket-owner "$account" --version-id "$version" --checksum-mode ENABLED)" || return 1
   jq -e --arg version "$version" --arg checksum "$checksum" --argjson bytes "$bytes" \
     '.VersionId == $version and .ChecksumSHA256 == $checksum and
-      .ContentLength == $bytes and .ServerSideEncryption == "aws:kms"' <<<"$head" >/dev/null
+      .ContentLength == $bytes and .ServerSideEncryption == "aws:kms"' <<<"$head" >/dev/null || return 1
   aws --region us-east-1 s3api get-object --bucket "$bucket" --key "$key" \
     --expected-bucket-owner "$account" --version-id "$version" --checksum-mode ENABLED \
-    "$target" >"$work/readback.json"
+    "$target" >"$work/readback.json" || return 1
   jq -e --arg version "$version" --arg checksum "$checksum" --argjson bytes "$bytes" \
     '.VersionId == $version and .ChecksumSHA256 == $checksum and
-      .ContentLength == $bytes and .ServerSideEncryption == "aws:kms"' "$work/readback.json" >/dev/null
-  [[ "$(sha256sum "$target" | cut -d' ' -f1)" == "$digest" ]] || return 1
+      .ContentLength == $bytes and .ServerSideEncryption == "aws:kms"' "$work/readback.json" >/dev/null || return 1
+  readback_sha="$(sha256sum "$target" | cut -d' ' -f1)" || return 1
+  [[ "$readback_sha" == "$digest" ]] || return 1
   printf '%s\t%s\t%s\n' "$version" "$digest" "$bytes"
 }
 
@@ -389,9 +401,9 @@ docker exec "$container" psql -XAt -w -U n8n -d n8n -c \
   'SELECT 1 FROM public.workflow_entity LIMIT 0' >/dev/null
 
 check_fence
-[[ "$(pg_state)" == "$pg_record" &&
-   "$(binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID")" == "$n8n_binding" &&
-   "$(binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID")" == "$pg_binding" ]] || exit 1
+checked_equal "$pg_record" pg_state || exit 1
+checked_equal "$n8n_binding" binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID" || exit 1
+checked_equal "$pg_binding" binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID" || exit 1
 
 IFS=$'\t' read -r n8n_pvc_uid n8n_pv n8n_pv_uid <<<"$n8n_binding"
 IFS=$'\t' read -r pg_pvc_uid pg_pv pg_pv_uid <<<"$pg_binding"

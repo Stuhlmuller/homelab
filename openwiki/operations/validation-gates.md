@@ -1059,7 +1059,9 @@ dispatch needs explicit operator approval before starting. The offline
 zero-writer failures before Job creation, committed creates with lost responses,
 foreign ownership refusal, bounded stream and control-plane timeouts, lingering
 reader Pods that keep the deny-all policy, cleanup failure without a success
-receipt, and restore checks under the `n8n` database role;
+receipt, partial expected output followed by a failed GitHub, AWS,
+Kubernetes, PostgreSQL, or S3 command, and restore checks under the `n8n`
+database role;
 `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
 `n8n-paired-residual-cleanup-test.py` checks the separate source-owned recovery
