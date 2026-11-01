@@ -80,12 +80,77 @@ or prove offsite recovery; those verification steps remain separate.
 attaches one managed policy. Trust is limited to the protected plan and
 production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
-The permission grant is limited to the ten exact managed-policy slots
+The managed permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
 current runtime-secret key. This metadata-only grant adds no cryptographic or
 key-administration actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
+
+The same operator unit declares a dedicated `homelab-langfuse-raw-inventory`
+OIDC role trusted only by `Stuhlmuller/homelab` jobs in the
+`homelab-production` environment. That environment's main-only branch policy
+and the inventory workflow's exact-main guard are required because the OIDC
+environment subject itself does not identify a branch. The unprotected
+`homelab-plan` environment and companion `github-iac` repository cannot assume
+this role. Its inline policy grants bucket versioning and encryption
+inspection, version listing, and exact-version reads only for the bucket named
+in `IaC/langfuse-blob-storage.hcl`. KMS decrypt is limited to the regional
+S3 key resolved from `alias/aws/s3`, called through S3 with that bucket's
+encryption context. The bucket-owner precondition rejects a mismatched account
+or region. This source change grants no live permission until an administrator
+reviews and applies a saved plan for the operator unit. The trust-only rollout
+below targets only the shared `Github-TF-State` role and does not create this
+inventory role. Historical objects encrypted with a different key or context
+require a separately reviewed grant before the protected inventory can pass.
+
+For this dedicated role, generate the stack and validate the operator unit as
+described below, then use an administrator profile for a private, un-targeted
+saved plan from `IaC/homelab/us-west-2/operator/github-actions-role-policy`.
+The managed changes must be exactly these two creates, with no drift, import,
+or moved address. The generic PR Terragrunt plan does not include this unit.
+Keep the plan and JSON private; review the full saved plan and apply those same
+bytes only after this source is merged to `main`:
+
+```sh
+cd IaC
+terragrunt stack generate
+cd homelab/us-west-2/operator/github-actions-role-policy
+terragrunt --log-disable init -backend=false -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
+terragrunt --log-disable run --no-auto-init -- test -no-color
+operator_profile="<administrator-profile>"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
+umask 077
+inventory_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/langfuse-inventory-role.XXXXXX")"
+trap 'rm -rf -- "$inventory_plan_dir"' EXIT
+AWS_PROFILE="$operator_profile" terragrunt --log-disable plan -input=false \
+  -lock-timeout=5m -out="$inventory_plan_dir/role.tfplan" -no-color \
+  >"$inventory_plan_dir/plan.log" 2>&1
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -json \
+  "$inventory_plan_dir/role.tfplan" >"$inventory_plan_dir/plan.json"
+jq -e '
+  ([.resource_drift[]? | select(.change.actions != ["no-op"])] | length) == 0 and
+  ([.resource_changes[]? |
+    select(.previous_address != null or .change.importing != null)] | length) == 0 and
+  ([.resource_changes[]? |
+    select(.mode == "managed" and .change.actions != ["no-op"]) |
+    {address, actions: .change.actions}] | sort_by(.address)) == [
+      {address: "aws_iam_role.langfuse_raw_inventory", actions: ["create"]},
+      {address: "aws_iam_role_policy.langfuse_raw_inventory", actions: ["create"]}
+    ]
+' "$inventory_plan_dir/plan.json"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -no-color \
+  "$inventory_plan_dir/role.tfplan"
+# After reviewing the full plan and verifying this source is on main:
+AWS_PROFILE="$operator_profile" terragrunt --log-disable apply -no-color \
+  "$inventory_plan_dir/role.tfplan"
+```
+
+After apply, check the dedicated role's trust and inline policy through IAM
+read-only calls and require a fresh full-unit no-op plan before dispatching
+the protected raw-version inventory. The inventory alone is not a complete
+Langfuse backup.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and applies an operator-owned

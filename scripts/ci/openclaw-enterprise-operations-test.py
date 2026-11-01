@@ -190,7 +190,8 @@ sys.stdout.buffer.write(chunk)
         workflow = WORKFLOW.read_text().split('\n  legacy:\n', 1)[1].split('\n  enterprise:\n', 1)[0]
         role = ROLE.read_text()
         requested = re.findall(r'^\s+role-duration-seconds: (\d+)$', workflow, re.M)
-        maximum = re.findall(r'^\s+max_session_duration = (\d+)\b', role, re.M)
+        legacy_role = role.split('resource "aws_iam_role" "github_actions" {', 1)[1].split('\n}', 1)[0]
+        maximum = re.findall(r'^\s+max_session_duration = (\d+)\b', legacy_role, re.M)
         limit = re.findall(r'^    timeout-minutes: (\d+)$', workflow, re.M)
         self.assertEqual(requested, ['25200'])
         self.assertEqual(maximum, requested)
