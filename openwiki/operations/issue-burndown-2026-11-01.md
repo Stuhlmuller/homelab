@@ -53,6 +53,15 @@ is complete; hosted release/discovery acceptance remains separate.
 - Many August implementation PRs were closed unmerged. A draft's old test
   comment does not establish current implementation. Reuse compatible source
   only after checking current callers and acceptance requirements.
+- #920 still applies to current coverage verification: an offline reproduction
+  using the existing [Grype fixture](../../scripts/ci/harbor-core-scan-check-test.py)
+  passes zero-match publication validation without package inventory. The
+  [native receipt verifier](../../scripts/ci/harbor-native-chainguard-receipt.py)
+  also accepts successful scans with an empty severity summary. Independent
+  execution confirmed this validator behavior; it does not prove any real
+  scan omitted packages. Add positive, artifact-bound SBOM/package coverage
+  evidence before calling zero findings clearance. Do not require nonempty
+  vulnerability matches: clean, covered images legitimately have none.
 
 The remaining rows are triage dispositions, not independently certified runtime
 findings. Every open issue retains its own acceptance requirements. The
