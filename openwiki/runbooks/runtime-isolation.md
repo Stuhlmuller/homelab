@@ -351,6 +351,31 @@ a separately reviewed node-local host firewall assertion tied to the current
 Traefik Pod IP before its container starts, plus reboot and image-GC negative
 probes. No such boot barrier exists in this source.
 
+Enforcer restart is a separate hold. In kube-router v2.11.1,
+[`Run()`](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/npc_iptables.go#L40-L97)
+clears and rebuilds the default-deny tail before requesting an asynchronous
+full sync. The sync
+[populates the local-Pod ipset before iptables restore](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/npc_iptables.go#L187-L223),
+so a health check, chain-exists check, or ipset membership can attest too soon.
+An init gate would not re-run while the already-running Traefik container keeps
+serving after a firewall change. Qualify the exact existing-Pod and replacement
+paths under forced enforcer restart, failed restore, and Pod IP reuse before
+claiming a fail-closed rollout.
+
+[Talos 1.14's ingress firewall](https://docs.siderolabs.com/talos/v1.14/networking/ingress-firewall)
+explicitly does not filter Kubernetes Pod/Service traffic. A persistent
+node-level guard would need a separate owned rule installer and proven order
+on forwarded, host-originated, and bridged Pod traffic, plus safe
+Flannel/kube-proxy behavior.
+The kube-router `0x20000` mark is not sufficient on its own: a source Pod can
+mark a packet even if the destination Traefik chain is absent. Do not add a
+mark-only allow rule. A node-local privileged inspector could instead prove
+the current Pod IP's full ingress deny path and publish a boot/Pod-bound signal
+for a restricted Traefik init container; that does not solve later rule loss.
+The gate images also need uncached pulls independent of Traefik's Harbor route.
+The staged design and remaining checks are in the
+[network-policy source README](../../clusters/homelab/platform/network-policy/README.md#cold-boot-and-enforcer-restart-hold).
+
 The protected fixture and enforcer rollout rechecks fresh capacity separately
 from admission; admission alone does not authorize that rollout. The protected
 enforcer stage repeats a UID-owned empty-firewall baseline probe just before

@@ -6,6 +6,41 @@ the service proxy. The host-network privileged exception is necessary to
 program node firewall rules; the Pod mounts only the shared xtables lock.
 Its health endpoint listens on loopback on the selected node.
 
+## Cold boot and enforcer restart hold
+
+Do not place Traefik on an enforcing worker yet. Kube-router's `/healthz` can
+report healthy before its asynchronous full policy sync restores iptables.
+The sync also populates `kube-router-local-pods` before `iptables-restore`, so
+an ipset entry or top-level chain alone cannot prove that the current Traefik
+Pod has an ingress firewall. On restart, kube-router clears and rebuilds its
+default-deny tail before queuing a full sync. Existing per-Pod chains may keep
+protecting an existing Traefik Pod, but that path has not been qualified across
+enforcer restart, Pod replacement, IP reuse, or cold boot. A one-time init
+check would cover only initial container start.
+
+Talos 1.14 `NetworkRuleConfig` filters host ingress, not Kubernetes Pod or
+Service traffic. A separate, persistent node rule could in principle deny
+traffic while kube-router is absent, but this repository has no proven
+early-boot installer, ordering, or reconciliation for such a rule. A simple
+drop on packets without kube-router's `0x20000` mark is not a Traefik ingress
+proof: [another Pod's chain can set that mark](https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/pkg/controllers/netpol/pod.go#L159-L187)
+while the destination Pod's chain is missing. Before adopting a host guard,
+prove its `FORWARD`, host `OUTPUT`, and bridged packet paths with Flannel,
+kube-proxy, and both iptables backends; show that it is present
+before a workload starts, survives reboot and enforcer restart, and preserves
+the reviewed Tailscale, mesh, and registry flows. Keep its ownership and
+rollback in repository-owned Talos or GitOps source.
+
+The smaller candidate is a node-local host firewall inspector plus a restricted
+Traefik init gate. It must inspect the active backend for the *current* Pod
+IP's ingress jump, matching policy chain, and terminal deny, then bind a short
+lived assertion to Node UID, boot ID, Pod UID, and Pod IP. This still needs a
+continuous fail-closed answer when rules disappear after init. The Harbor
+mirror cannot be that gate's only image source because Traefik serves Harbor's
+registry route. Direct digest-pinned upstream image references resolve at the
+public registry, but node-side uncached pulls and reboot/image-GC negative
+probes remain required before scheduling Traefik on the canary.
+
 The Argo Application stays manual in every source phase: automatic sync and
 pruning remain disabled. Its
 selector currently matches no node. Admit only a reviewed, isolated canary
