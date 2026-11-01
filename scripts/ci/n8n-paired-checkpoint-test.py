@@ -33,8 +33,24 @@ reader_u = "5" * 8 + "-" + "5" * 4 + "-" + "5" * 4 + "-" + "5" * 4 + "-" + "5" *
 job_u = "6" * 8 + "-" + "6" * 4 + "-" + "6" * 4 + "-" + "6" * 4 + "-" + "6" * 12
 pg_pod_u = "7" * 8 + "-" + "7" * 4 + "-" + "7" * 4 + "-" + "7" * 4 + "-" + "7" * 12
 st_u = "8" * 8 + "-" + "8" * 4 + "-" + "8" * 4 + "-" + "8" * 4 + "-" + "8" * 12
-with open(os.environ["TEST_LOG"], "a") as log:
-    log.write(json.dumps([name, args]) + "\n")
+def record(binary, arguments):
+    with open(os.environ["TEST_LOG"], "a") as log:
+        log.write(json.dumps([binary, arguments]) + "\n")
+record(name, args)
+if name == "timeout":
+    assert args[:2] in (["--signal=TERM", "--kill-after=10s"],
+                        ["--signal=TERM", "--kill-after=30s"])
+    assert args[2] in ("45s", "2m", "15m")
+    if (mode == "pg-dump-timeout" and "pg_dump" in args) or (mode == "pvc-tar-timeout" and "tar" in args):
+        raise SystemExit(124)
+    if mode == "job-delete-timeout" and "delete" in args and any(a.endswith("/job.json") for a in args):
+        raise SystemExit(124)
+    assert Path(args[3]).name == "kubectl"
+    name = "kubectl"
+    args = args[4:]
+    if args and args[0].startswith("--request-timeout="):
+        args = args[1:]
+    record(name, args)
 if name == "git":
     print(sha)
 elif name == "gh":
@@ -234,7 +250,7 @@ class CheckpointBoundaryTests(unittest.TestCase):
     def run_case(self, mode="deployment-active", **overrides):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary)
-            for name in ("git", "gh", "rg", "aws", "kubectl", "yq", "docker", "sleep"):
+            for name in ("git", "gh", "rg", "aws", "kubectl", "yq", "docker", "timeout", "sleep"):
                 fake = path / name
                 fake.write_text(MOCK)
                 fake.chmod(0o755)
@@ -262,7 +278,8 @@ class CheckpointBoundaryTests(unittest.TestCase):
                 "TEST_UUID": UUID,
             } | overrides
             if mode in ("good", "policy-create-timeout", "job-create-timeout",
-                        "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck"):
+                        "job-delete-stuck", "job-owner-mismatch", "docker-rm-stuck",
+                        "pg-dump-timeout", "pvc-tar-timeout", "job-delete-timeout"):
                 env["EXPECTED_PG_PVC_UID"] = "2" * 8 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 4 + "-" + "2" * 12
                 env["EXPECTED_N8N_PV_UID"] = "3" * 8 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 4 + "-" + "3" * 12
                 env["EXPECTED_PG_PV_UID"] = "4" * 8 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 4 + "-" + "4" * 12
@@ -362,6 +379,33 @@ class CheckpointBoundaryTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(receipt, "")
         self.assertEqual(sum(name == "aws" and "put-object" in args for name, args in commands), 3)
+
+    def test_capture_stream_timeout_cleans_reader_without_receipt(self):
+        for mode in ("pg-dump-timeout", "pvc-tar-timeout"):
+            with self.subTest(mode=mode):
+                result, commands, receipt = self.run_case(mode)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(receipt, "")
+                self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
+                captures = [args for name, args in commands if name == "timeout" and args[2] == "15m"]
+                self.assertEqual(len(captures), 1 if mode == "pg-dump-timeout" else 2)
+                self.assertEqual([args[:3] for args in captures],
+                                 [["--signal=TERM", "--kill-after=30s", "15m"]] * len(captures))
+                deletions = [args for name, args in commands if name == "kubectl" and
+                             args[:2] != ["auth", "can-i"] and "delete" in args]
+                self.assertEqual(len(deletions), 2)
+
+    def test_control_plane_calls_are_bounded_and_cleanup_timeout_blocks_receipt(self):
+        result, commands, receipt = self.run_case("job-delete-timeout")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(receipt, "")
+        self.assertFalse(any(name == "aws" and "put-object" in args for name, args in commands))
+        bounded = [args for name, args in commands if name == "timeout" and args[2] == "45s"]
+        self.assertTrue(bounded)
+        self.assertTrue(all("--request-timeout=30s" in args for args in bounded))
+        deletes = [args for name, args in commands if name == "timeout" and args[2] == "2m" and "delete" in args]
+        self.assertTrue(deletes)
+        self.assertTrue(all("--request-timeout=60s" in args for args in deletes))
 
 
 if __name__ == "__main__":

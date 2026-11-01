@@ -12,6 +12,13 @@ uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" &&
    "$(gh api repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)" == "$GITHUB_SHA" ]] || exit 1
 
+kubectl_bin="$(command -v kubectl)"
+[[ -x "$kubectl_bin" ]] || exit 1
+kubectl() {
+  timeout --signal=TERM --kill-after=10s 45s \
+    "$kubectl_bin" --request-timeout=30s "$@"
+}
+
 stack=IaC/homelab/us-west-2/apps/n8n/stack.hcl
 job_manifest=clusters/homelab/apps/n8n/checkpoint-reader.job.yaml
 policy_manifest=clusters/homelab/apps/n8n/checkpoint-reader.networkpolicy.yaml
@@ -214,13 +221,17 @@ cleanup_resources() {
   if [[ "$job_attempted" == true ]] && ! absent job; then
     current="$(owned_job_uid)" || return 1
     [[ "$current" =~ $uuid && ( -z "$job_uid" || "$current" == "$job_uid" ) ]] || return 1
-    kubectl -n automation delete -f "$job_file" --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
+    timeout --signal=TERM --kill-after=30s 2m \
+      "$kubectl_bin" --request-timeout=60s -n automation delete -f "$job_file" \
+      --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
     absent job || return 1
   fi
   if [[ "$policy_attempted" == true ]] && ! absent networkpolicy; then
     current="$(owned_policy_uid)" || return 1
     [[ "$current" =~ $uuid && ( -z "$policy_uid" || "$current" == "$policy_uid" ) ]] || return 1
-    kubectl -n automation delete -f "$policy_file" --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
+    timeout --signal=TERM --kill-after=30s 2m \
+      "$kubectl_bin" --request-timeout=60s -n automation delete -f "$policy_file" \
+      --ignore-not-found --wait=true >/dev/null 2>&1 || return 1
     absent networkpolicy || return 1
   fi
 }
@@ -266,11 +277,13 @@ IFS=$'\t' read -r reader_pod reader_uid <<<"$reader_record"
 [[ "$reader_pod" == "$resource_name"-* && "$reader_uid" =~ $uuid ]] || exit 1
 check_fence "$reader_uid"
 
-kubectl -n automation exec n8n-postgres-0 -c postgres -- \
-  pg_dump --format=custom --no-owner --no-privileges --no-password \
-  -U postgres -d n8n >"$work/n8n.dump"
-kubectl -n automation exec "$reader_pod" -c reader -- \
-  tar -C /source -cf - . >"$work/n8n.tar"
+timeout --signal=TERM --kill-after=30s 15m \
+  "$kubectl_bin" -n automation exec n8n-postgres-0 -c postgres -- \
+    pg_dump --format=custom --no-owner --no-privileges --no-password \
+    -U postgres -d n8n >"$work/n8n.dump"
+timeout --signal=TERM --kill-after=30s 15m \
+  "$kubectl_bin" -n automation exec "$reader_pod" -c reader -- \
+    tar -C /source -cf - . >"$work/n8n.tar"
 [[ "$(pg_state)" == "$pg_record" && "$(reader_state)" == "$reader_record" &&
    "$(binding n8n "$EXPECTED_N8N_PVC_UID" "$EXPECTED_N8N_PV_UID")" == "$n8n_binding" &&
    "$(binding data-n8n-postgres-0 "$EXPECTED_PG_PVC_UID" "$EXPECTED_PG_PV_UID")" == "$pg_binding" ]] || exit 1

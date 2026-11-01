@@ -1057,7 +1057,8 @@ access. Read-only GitHub API inspection on 2026-10-31 found
 dispatch needs explicit operator approval before starting. The offline
 `n8n-paired-checkpoint-test.py` checks stale-main, UID, permission, and
 zero-writer failures before Job creation, committed creates with lost responses,
-foreign ownership refusal, cleanup failure without a success receipt, and
+foreign ownership refusal, bounded stream and control-plane timeouts, and cleanup failure without
+a success receipt, and
 restore checks under the `n8n` database role; `n8n-pvc-restore-check-test.py`
 checks safe extraction and persisted-key validation without logging a key.
 Only a live success receipt binding both exact S3 object versions and an

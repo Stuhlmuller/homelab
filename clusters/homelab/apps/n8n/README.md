@@ -191,7 +191,11 @@ reports the fenced revision Synced/Healthy, n8n desired/current/ready replicas
 are zero, no other n8n Pod or writer Job remains, PostgreSQL is Ready, and both
 PVC/PV bindings match the independently inventoried UIDs. The Job mounts the
 n8n PVC read-only and sleeps; the workflow runner uses `kubectl exec` to
-stream an archive into private scratch. The Job receives no API token or AWS
+stream an archive into private scratch. Each dump/archive stream has a 15-minute
+timeout and 30-second forced termination; a timeout triggers cleanup and
+withholds the success receipt. Other Kubernetes calls have 30-second API and
+45-second command deadlines; cleanup deletes have a two-minute command limit.
+The Job receives no API token or AWS
 credential. The script verifies each resource's owner token and UID, then
 deletes the Job before its policy. A lost create response is reconciled by
 reading the created object; failed or unconfirmed deletion prevents a success
