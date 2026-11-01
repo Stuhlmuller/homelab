@@ -239,6 +239,10 @@ signs only those five targets. For the DNS handoff, `--dns-only` previews or
 signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.
+The [pinned lock peer](https://github.com/tailscale/tailscale/blob/v1.102.3/ipn/ipnstate/ipnstate.go#L92-L100)'s
+numeric `ID`, stable `StableID`, and DNS `Name` must match the
+Pod status `Self.NodeID`, `Self.ID`, and `Self.DNSName`; tags come from the Pod
+status because lock peers do not carry them.
 
 The staged Traefik sidecar uses a separate `--canary-only` preview/execute path;
 the default five targets remain unchanged. Its preview binds the current ready

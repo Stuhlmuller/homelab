@@ -118,6 +118,8 @@ def validate_target(target, source, pod, status, lock, signer):
     dns = hostname + "." + TAILNET
     addresses = own.get("TailscaleIPs", [])
     require(status.get("BackendState") == "Running" and own.get("Online") is True
+            and isinstance(own.get("ID"), str) and bool(own["ID"])
+            and type(own.get("NodeID")) is int and own["NodeID"] > 0
             and status.get("CurrentTailnet", {}).get("MagicDNSSuffix") == TAILNET
             and own.get("DNSName", "").rstrip(".") == dns and own.get("Tags") == [tag]
             and lock.get("Enabled") is True and lock.get("NodeKey") == own.get("PublicKey")
@@ -132,10 +134,11 @@ def validate_target(target, source, pod, status, lock, signer):
     require(any(entry.get("hostname") == dns for entry in published)
             and all(entry["ip"] in addresses for entry in published if "ip" in entry),
             "Controller-published ingress identity differs from the proxy")
+    # Tailnet Lock peers use numeric ID and stable StableID, with Name for DNS.
     peers = [p for p in (signer.get("VisiblePeers") or []) + (signer.get("FilteredPeers") or [])
-             if p.get("ID") == own.get("ID")]
+             if p.get("StableID") == own["ID"] and p.get("ID") == own["NodeID"]]
     require(len(peers) == 1 and peers[0].get("NodeKey") == lock["NodeKey"]
-            and peers[0].get("DNSName", "").rstrip(".") == dns
+            and peers[0].get("Name", "").rstrip(".") == dns
             and set(peers[0].get("TailscaleIPs", [])) == set(addresses),
             "Local lock peer must match public keys read directly from the Kubernetes proxy")
     return {"dns": dns, "node_key": lock["NodeKey"], "rotation_key": lock["PublicKey"],
@@ -206,6 +209,7 @@ def validate_canary(source, pod, state_uid, status, lock, serve, signer):
     addresses = own.get("TailscaleIPs", [])
     require(status.get("BackendState") == "Running" and own.get("Online") is True
             and isinstance(own.get("ID"), str) and bool(own["ID"])
+            and type(own.get("NodeID")) is int and own["NodeID"] > 0
             and own.get("Expired") is not True
             and status.get("CurrentTailnet", {}).get("MagicDNSSuffix") == TAILNET
             and own.get("DNSName", "").rstrip(".") == dns and own.get("Tags") == [tag]
@@ -220,11 +224,9 @@ def validate_canary(source, pod, state_uid, status, lock, serve, signer):
     require(serve == {"TCP": {"443": {"TCPForward": "127.0.0.1:8443"}}},
             "Canary must serve only raw TCP 443 to its loopback TLS listener")
     peers = [p for p in (signer.get("VisiblePeers") or []) + (signer.get("FilteredPeers") or [])
-             if p.get("ID") == own.get("ID")]
+             if p.get("StableID") == own["ID"] and p.get("ID") == own["NodeID"]]
     require(len(peers) == 1 and peers[0].get("NodeKey") == lock["NodeKey"]
-            and peers[0].get("DNSName", "").rstrip(".") == dns
-            and peers[0].get("Tags") == [tag]
-            and peers[0].get("Expired") is not True
+            and peers[0].get("Name", "").rstrip(".") == dns
             and set(peers[0].get("TailscaleIPs", [])) == set(addresses),
             "Local lock peer must match the exact canary Pod identity")
     return {"dns": dns, "node_key": lock["NodeKey"], "rotation_key": lock["PublicKey"],

@@ -20,15 +20,16 @@ def fixture():
         "tailscale.com/managed": "true", "tailscale.com/parent-resource": "traefik-private",
         "tailscale.com/parent-resource-ns": "traefik", "tailscale.com/parent-resource-type": "svc",
         "app": "source-uid"}}, "status": {"conditions": [{"type": "Ready", "status": "True"}]}}
-    own = {"ID": "node-id", "PublicKey": "nodekey:" + "a" * 64,
+    own = {"ID": "node-id", "NodeID": 42, "PublicKey": "nodekey:" + "a" * 64,
            "DNSName": "homelab-ingress.tail67beb.ts.net.", "Tags": ["tag:homelab-ingress"],
            "Online": True, "TailscaleIPs": ["100.99.16.74"]}
     status = {"BackendState": "Running", "Self": own,
               "CurrentTailnet": {"MagicDNSSuffix": "tail67beb.ts.net"}}
     lock = {"Enabled": True, "NodeKey": own["PublicKey"], "PublicKey": "tlpub:" + "b" * 64,
             "NodeKeySigned": False}
-    signer = {"VisiblePeers": [], "FilteredPeers": [{"ID": own["ID"], "NodeKey": own["PublicKey"],
-               "DNSName": own["DNSName"], "TailscaleIPs": own["TailscaleIPs"]}]}
+    signer = {"VisiblePeers": [], "FilteredPeers": [{"ID": own["NodeID"],
+               "StableID": own["ID"], "NodeKey": own["PublicKey"],
+               "Name": own["DNSName"], "TailscaleIPs": own["TailscaleIPs"]}]}
     return source, pod, status, lock, signer
 
 
@@ -69,7 +70,7 @@ def canary_fixture():
            "status": {"conditions": [{"type": "Ready", "status": "True"}],
                       "containerStatuses": [{"name": "traefik", "ready": True},
                                             {"name": "tailscale", "ready": True}]}}
-    own = {"ID": "canary-device", "PublicKey": "nodekey:" + "a" * 64,
+    own = {"ID": "canary-device", "NodeID": 43, "PublicKey": "nodekey:" + "a" * 64,
            "DNSName": "homelab-ingress-canary.tail67beb.ts.net.",
            "Tags": ["tag:homelab-ingress-canary"], "Online": True,
            "TailscaleIPs": ["100.99.16.75"]}
@@ -78,9 +79,9 @@ def canary_fixture():
     lock = {"Enabled": True, "NodeKey": own["PublicKey"],
             "PublicKey": "tlpub:" + "b" * 64, "NodeKeySigned": False}
     serve = {"TCP": {"443": {"TCPForward": "127.0.0.1:8443"}}}
-    signer = {"VisiblePeers": [], "FilteredPeers": [{"ID": own["ID"],
-               "NodeKey": own["PublicKey"], "DNSName": own["DNSName"],
-               "Tags": own["Tags"], "TailscaleIPs": own["TailscaleIPs"]}]}
+    signer = {"VisiblePeers": [], "FilteredPeers": [{"ID": own["NodeID"],
+               "StableID": own["ID"], "NodeKey": own["PublicKey"],
+               "Name": own["DNSName"], "TailscaleIPs": own["TailscaleIPs"]}]}
     state_uid = "11111111-2222-3333-4444-555555555555"
     return source, pod, state_uid, status, lock, serve, signer
 
@@ -110,7 +111,7 @@ class IngressSigning(unittest.TestCase):
         own = data[2]["Self"]
         own["DNSName"] = "homelab-dns.tail67beb.ts.net."
         own["Tags"] = ["tag:homelab-ingress"]
-        data[4]["FilteredPeers"][0]["DNSName"] = own["DNSName"]
+        data[4]["FilteredPeers"][0]["Name"] = own["DNSName"]
         for index, value in [(1, "traefik"), (2, "other-dns"), (3, "tag:homelab-funnel")]:
             changed = copy.deepcopy(data)
             if index == 1:
@@ -162,7 +163,8 @@ class IngressSigning(unittest.TestCase):
     def test_mismatched_public_identity(self):
         for field, value in [("Tags", ["tag:k8s"]), ("DNSName", "fleet.tail67beb.ts.net."),
                              ("PublicKey", "nodekey:" + "c" * 64), ("Online", False),
-                             ("TailscaleIPs", ["10.1.0.199"])]:
+                             ("TailscaleIPs", ["10.1.0.199"]), ("NodeID", 0),
+                             ("ID", "")]:
             with self.subTest(field=field):
                 data = fixture()
                 data[2]["Self"][field] = value
@@ -174,6 +176,18 @@ class IngressSigning(unittest.TestCase):
         data[4]["FilteredPeers"][0]["NodeKey"] = "nodekey:" + "c" * 64
         with self.assertRaises(SIGNER.GUARDS.Failure):
             self.validate(data)
+
+    def test_lock_peer_uses_pinned_numeric_id_stable_id_and_name(self):
+        data = fixture()
+        peer = data[4]["FilteredPeers"][0]
+        self.assertEqual(set(peer), {"ID", "StableID", "Name", "NodeKey", "TailscaleIPs"})
+        self.assertFalse(self.validate(data)["signed"])
+        for field, value in (("ID", 999), ("StableID", "another-device"),
+                             ("Name", "other.tail67beb.ts.net.")):
+            changed = copy.deepcopy(data)
+            changed[4]["FilteredPeers"][0][field] = value
+            with self.subTest(field=field), self.assertRaises(SIGNER.GUARDS.Failure):
+                self.validate(changed)
 
     def test_ambiguous_or_missing_peer(self):
         for peers in [[], fixture()[4]["FilteredPeers"] * 2]:
@@ -254,10 +268,13 @@ class IngressSigning(unittest.TestCase):
             lambda d: d[1]["spec"]["containers"][1]["args"].append("--state=mem:"),
             lambda d: d[1]["spec"]["volumes"][0]["projected"]["sources"].pop(),
             lambda d: d[3]["Self"].update(Tags=["tag:homelab-ingress"]),
+            lambda d: d[3]["Self"].update(NodeID=0),
             lambda d: d[4].update(NodeKey="nodekey:" + "c" * 64),
             lambda d: d[5]["TCP"].update({"80": {"TCPForward": "127.0.0.1:8000"}}),
             lambda d: d[5]["TCP"]["443"].update(TCPForward="127.0.0.1:9443"),
-            lambda d: d[6]["FilteredPeers"][0].update(Tags=["tag:homelab-ingress"]),
+            lambda d: d[6]["FilteredPeers"][0].update(Name="wrong.tail67beb.ts.net."),
+            lambda d: d[6]["FilteredPeers"][0].update(StableID="different-device"),
+            lambda d: d[6]["FilteredPeers"][0].update(ID=44),
         )
         for index, change in enumerate(changes):
             data = copy.deepcopy(canary_fixture())
