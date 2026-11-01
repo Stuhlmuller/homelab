@@ -10,7 +10,8 @@ inputs = {
       namespace = "octelium"
     }
     syncPolicy = {
-      syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true"]
+      # Do not reapply Synced Enterprise resources during inspector-only sync.
+      syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true", "ApplyOutOfSyncOnly=true"]
     }
     ignoreDifferences = [
       {

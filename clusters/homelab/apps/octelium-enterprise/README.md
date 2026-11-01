@@ -47,6 +47,17 @@ the store process; historical WAL quarantine files are never replayed or
 removed automatically. Preserve them until a reviewed recovery-retention
 change establishes they are no longer needed.
 
+The Terragrunt-owned Application sets
+[`ApplyOutOfSyncOnly=true`](https://argo-cd.readthedocs.io/en/release-3.4/user-guide/sync-options/#selective-sync).
+An inspector-only sync leaves the `Recreate` resource-store Deployment out of
+the apply set while it remains `Synced`; a normal full sync would reapply that
+Deployment with its resource-level `Replace=true`. Before the inspector stage,
+verify the resource-store is still `Synced`, no unrelated resource is
+`OutOfSync`, and record the writer Deployment and Pod identities. Abort the
+stage if the store is `OutOfSync`: this option would apply it. Recheck those
+identities after sync. This setting does not repair the current WAL replay
+failure or authorize a storage fence.
+
 The resource-store Deployment declares `initContainers: []` and
 `Replace=true,ServerSideApply=false` so Argo CD reconciles the complete Pod
 template without inheriting the Application's server-side apply mode. Server-side

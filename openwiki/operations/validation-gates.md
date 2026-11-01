@@ -1142,6 +1142,21 @@ kubectl -n kube-system get configmap coredns -o yaml
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 ```
 
+## Octelium Enterprise selective sync
+
+The [Enterprise Application input](../../IaC/homelab/us-west-2/apps/octelium-enterprise/stack.hcl)
+sets `ApplyOutOfSyncOnly=true` for the later resource-store inspector stage.
+Argo CD then applies only `OutOfSync` resources, so its `Recreate` store is
+skipped while the resource remains `Synced`. Read-only inspection on
+2026-11-01 found the Application `Synced`/`Progressing`, with
+`octeliumee-rscstore` resource `Synced` but its writer Pod in WAL replay
+`CrashLoopBackOff`. Before any inspector-only sync, recheck every resource's
+sync status, the writer Deployment/Pod identities, and the PVC binding. If the
+store or an unrelated resource is `OutOfSync`, stop: this option can still
+apply it. After sync, verify the writer identities did not change. This source
+change requires a protected Terragrunt plan and apply; it is not a live
+storage repair.
+
 ## Octelium Cutover Checks
 
 Before running `octops init`, validate the self-hosted Cluster prerequisites:
