@@ -43,7 +43,8 @@ resource "tailscale_dns_configuration" "homelab" {
   split_dns {
     domain = "stinkyboi.com"
     nameservers {
-      address = "100.71.150.27"
+      address            = "100.71.150.27"
+      use_with_exit_node = true
     }
   }
 }
